@@ -1,0 +1,35 @@
+SkyTrack ICON SkyTrack.Ico
+
+1 VERSIONINFO
+  FILEVERSION 1,4,13
+  PRODUCTVERSION 1,4,13
+  FILEFLAGSMASK 0X3FL
+  FILEFLAGS 0X0L
+  FILEOS 0X4L
+  FILETYPE 0X1L
+  FILESUBTYPE 0X0L
+BEGIN
+  BLOCK "StringFileInfo"
+  BEGIN
+    BLOCK "040904E4"
+    BEGIN
+      VALUE "CompanyName", "White-Elephant GmbH\0"
+      VALUE "FileDescription", "SkyTrack\0"
+      VALUE "FileVersion", "1.4.13\0"
+      VALUE "InternalName", "SkyTrack\0"
+      VALUE "LegalCopyright", "Copyright \251 White Elephant GmbH 2018\0"
+      VALUE "OriginalName", "SkyTrack.Exe\0"
+      VALUE "ProductName", "SkyTrack\0"
+      VALUE "ProductVersion", "1.4.13\0"
+      VALUE "Compiler", "GNAT Version 7.3.1\0"
+    END
+  END
+  BLOCK "VarFileInfo"
+  BEGIN
+    VALUE "Translation", 0x409, 1252
+  END
+END
+
+
+
+

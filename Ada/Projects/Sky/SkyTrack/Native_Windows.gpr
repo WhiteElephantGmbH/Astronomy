@@ -1,0 +1,45 @@
+
+project Native_Windows is
+
+   package Naming is
+      for Casing use "mixedcase";
+   end Naming;
+
+   for Source_Dirs use ("..\..\..\Projects\Sky\SkyTrack",
+                        "..\..\..\Projects\Sky",
+                        "..\..\..\Projects",
+                        "..\..\..\Native_Windows",
+                        "..\..\..\SkyData",
+                        "..\..\..\Shared",
+                        "..\..\..\Shared\Windows");
+
+   for Object_Dir use "D:\Objects\Astronomy\Native_Windows";
+
+   for Exec_Dir use "D:\Product\Astronomy\Native_Windows";
+   for Main use ("SkyTrack.adb");
+
+   package Pretty_Printer is
+      for Default_Switches ("ada") use ("-i2", "-M0", "-aL", "-A1", "-A4");
+   end Pretty_Printer;
+
+   package Builder is
+      for Default_Switches ("ada") use ("-s", "-g");
+      for Executable ("SkyTrack.adb") use "SkyTrack";
+   end Builder;
+
+   package Compiler is
+      for Default_Switches ("ada") use
+         ("-O1", "-gnatQ", "-gnata", "-gnato", "-g", "-gnat12",
+          "-gnatwceGhijkmopruvz.c.n.p.t.w.x", "-gnatykmpM120");
+   end Compiler;
+
+   package Binder is
+      for Default_Switches ("ada") use ("-E");
+   end Binder;
+
+   package Linker is
+      for Linker_Options use ();
+      for Default_Switches ("ada") use ("-g", "-mwindows");
+   end Linker;
+
+end Native_Windows;
