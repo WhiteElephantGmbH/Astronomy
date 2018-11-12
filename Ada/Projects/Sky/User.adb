@@ -1383,7 +1383,7 @@ package body User is
                                The_Text_Handler      => Display_Text_Handler'access,
                                The_Click_Routine     => Select_Target'access,
                                The_Click_Kind        => Gui.Single_Click,
-                               Use_Proportional_Font => False);
+                               Use_Proportional_Font => True);
         if Persistent_Display.Storage_Is_Empty then
           The_Display_Data := (Width => Windows_Width - 35);
         end if;

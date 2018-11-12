@@ -45,6 +45,7 @@ with Gtk.Tree_Sortable;
 with Gtk.Tree_Selection;
 with Gtkada.Dialogs;
 with Gui.Router;
+with Os;
 with Pango.Font;
 with Pango.Layout;
 with Text;
@@ -1497,7 +1498,8 @@ package body Gui is
         Font_Description : Pango.Font.Pango_Font_Description;
       begin
         Pango.Font.Gdk_New (Font_Description);
-        Pango.Font.Set_Family (Font_Description, "Monospace");
+        Pango.Font.Set_Family (Font_Description, (case Os.Family is when Os.Windows => "Fixedsys",
+                                                                    when others     => "Monospace"));
         Data.The_Widget.Override_Font (Font_Description);
       end;
     end if;
