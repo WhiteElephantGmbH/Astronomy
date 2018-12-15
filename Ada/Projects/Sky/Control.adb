@@ -18,7 +18,6 @@ pragma Style_White_Elephant;
 with Ada.Calendar;
 with Ada.Real_Time;
 with Alignment;
-with Angle;
 with Application;
 with Data;
 with Earth;
@@ -387,7 +386,6 @@ package body Control is
 
     procedure Handle_Telescope_Information is
       use type Telescope.State;
-      use type Name.Id;
     begin -- Handle_Telescope_Information
       The_Data := Telescope.Information;
       User.Show (The_Data);
@@ -605,8 +603,6 @@ package body Control is
     when others =>
       Error.Raise_With (Application.Name & " - could not start Lx200 server");
     end Start_Lx200_Server;
-
-    use type Angle.Value;
 
   begin -- Start
     if not Os.Application.Is_First_Instance then
