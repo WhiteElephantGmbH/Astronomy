@@ -605,7 +605,14 @@ package body Control is
     end Start_Lx200_Server;
 
   begin -- Start
-    if not Os.Application.Is_First_Instance then
+    if (not Os.Is_Osx) and then (not Os.Application.Is_First_Instance) then
+      --
+      -- Note: This test is to prevent this application from being run more than once concurrently.
+      --       If we mandate that this application is always run from within an OSX .app bundle then
+      --       OSX will enforce this and therefore this test is not required.
+      --       In this case it is better not to attempt detecting first instance because if the application
+      --       is terminated by force quit the mutex is not released but remains until the host is rebooted.
+      --
       Error.Raise_With (Application.Name & " already running");
     elsif not Motor.Is_Stepper and then
       Ada.Calendar.Year(Ada.Calendar.Clock) > 2016 and then Ada.Calendar.Month (Ada.Calendar.Clock) > 6
