@@ -17,7 +17,7 @@ project Osx is
 
    for Exec_Dir use external ("HOME") & "/Product/Astronomy/Osx";
 
-   for Object_Dir use external ("HOME") & "/Objects";
+   for Object_Dir use external ("HOME") & "/Objects/SkyTrack";
 
 
    package Pretty_Printer is
