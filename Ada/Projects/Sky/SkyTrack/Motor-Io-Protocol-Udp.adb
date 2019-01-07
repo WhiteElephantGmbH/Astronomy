@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2015 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2015 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -593,7 +593,9 @@ package body Motor.Io.Protocol.Udp is
 
 
   procedure Define_Autoguiding is
-    Guiding_Offset : constant Step_Count := Autoguiding_Offset;
+    Guiding_Offset_1 : constant Step_Count := Autoguiding_Offset_Of (Device.D1);
+    Guiding_Offset_2 : constant Step_Count := Autoguiding_Offset_Of (Device.D2);
+    Guiding_Offset   : constant Step_Count := Step_Count'max (Guiding_Offset_1, Guiding_Offset_2);
   begin
     Log.Write ("define autoguiding - offset =>" & Guiding_Offset'img);
     if Guiding_Offset = 0 then
@@ -609,10 +611,8 @@ package body Motor.Io.Protocol.Udp is
 
   procedure Set_Initial_Count (C0_1 : Natural;
                                C0_2 : Natural) is
-    Guiding_Offset : constant Step_Count := Autoguiding_Offset;
   begin
     Log.Write ("set initial count: C0_1 =>" & C0_1'img & "; C0_2 =>" & C0_2'img);
-    Log.Write ("autoguiding offset =>" & Guiding_Offset'img);
     Transmit ((The_Command      => Initialize,
                Start_Count_1    => C0_1,
                Start_Count_2    => C0_2,

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2013 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2013 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -44,22 +44,24 @@ package body Parameter is
   Localization_Id : constant String := "Localization";
   Language_Key    : constant String := "Language";
 
-  Telescope_Id             : constant String := "Telescope";
-  Name_Key                 : constant String := "Name";
-  Ip_Address_Key           : constant String := "IP Address";
-  Serial_Port_Key          : constant String := "Serial Port";
-  Steps_Per_Revolution_Key : constant String := "Steps Per Revolution";
-  Clocks_Per_Second_Key    : constant String := "Clocks Per Second";
-  Park_Azimuth_Key         : constant String := "Park Azimuth";
-  Park_Altitude_Key        : constant String := "Park Altitude";
-  Pole_Height_Key          : constant String := "Pole Height";
-  Moving_Speed_List_Key    : constant String := "Moving Speed List";
-  First_Acceleration_Key   : constant String := "First Acceleration";
-  Second_Acceleration_Key  : constant String := "Second Acceleration";
-  First_Lower_Limit_Key    : constant String := "First Lower Limit";
-  First_Upper_Limit_Key    : constant String := "First Upper Limit";
-  Second_Lower_Limit_Key   : constant String := "Second Lower Limit";
-  Second_Upper_Limit_Key   : constant String := "Second Upper Limit";
+  Telescope_Id                    : constant String := "Telescope";
+  Name_Key                        : constant String := "Name";
+  Ip_Address_Key                  : constant String := "IP Address";
+  Serial_Port_Key                 : constant String := "Serial Port";
+  Steps_Per_Revolution_Key        : constant String := "Steps Per Revolution";
+  First_Steps_Per_Revolution_Key  : constant String := "First Steps Per Revolution";
+  Second_Steps_Per_Revolution_Key : constant String := "Second Steps Per Revolution";
+  Clocks_Per_Second_Key           : constant String := "Clocks Per Second";
+  Park_Azimuth_Key                : constant String := "Park Azimuth";
+  Park_Altitude_Key               : constant String := "Park Altitude";
+  Pole_Height_Key                 : constant String := "Pole Height";
+  Moving_Speed_List_Key           : constant String := "Moving Speed List";
+  First_Acceleration_Key          : constant String := "First Acceleration";
+  Second_Acceleration_Key         : constant String := "Second Acceleration";
+  First_Lower_Limit_Key           : constant String := "First Lower Limit";
+  First_Upper_Limit_Key           : constant String := "First Upper Limit";
+  Second_Lower_Limit_Key          : constant String := "Second Lower Limit";
+  Second_Upper_Limit_Key          : constant String := "Second Upper Limit";
 
   Stellarium_Id : constant String := "Stellarium";
   Lx200_Id      : constant String := "Lx200";
@@ -78,7 +80,7 @@ package body Parameter is
 
   The_Telescope_Name       : Text.String;
   Is_In_Setup_Mode         : Boolean;
-  The_Steps_Per_Revolution : Natural;
+  The_Steps_Per_Revolution : Device.Steps_Per_Revolution;
   The_Clocks_Per_Second    : Natural;
   The_Park_Azimuth         : Angle.Value;
   The_Park_Altitude        : Angle.Value;
@@ -259,6 +261,13 @@ package body Parameter is
         Ada.Text_IO.Put_Line (The_File, Line);
       end Put;
 
+      procedure Put_Steps_Per_Revolution (Steps : Positive) is
+        Steps_Image : constant String := Positive'image(Steps);
+      begin
+        Put (First_Steps_Per_Revolution_Key & "  =" & Steps_Image);
+        Put (Second_Steps_Per_Revolution_Key & " =" & Steps_Image);
+      end Put_Steps_Per_Revolution;
+
     begin -- Create_Default_Parameters
       begin
         Ada.Text_IO.Create (The_File, Name => Filename);
@@ -272,64 +281,64 @@ package body Parameter is
       case Default_Location is
       when Home =>
         Put ("[" & Telescope_Id & "]");
-        Put (Name_Key & "                 = Setup");
+        Put (Name_Key & "                        = Setup");
         if Is_Stepper_Driver then
-          Put (Ip_Address_Key & "           = SkyTracker" & (if Os.Is_Windows then "" else ".local"));
-          Put (Steps_Per_Revolution_Key & " =" & Positive'image(141 * 5 * 200 * 16)); -- EQU-6
-          Put (Clocks_Per_Second_Key & "    = 5000000");
+          Put (Ip_Address_Key & "                  = SkyTracker" & (if Os.Is_Windows then "" else ".local"));
+          Put_Steps_Per_Revolution (141 * 5 * 200 * 16); -- EQU-6
+          Put (Clocks_Per_Second_Key & "           = 5000000");
         else
-          Put (Ip_Address_Key & "           = 127.0.0.1");
+          Put (Ip_Address_Key & "                  = 127.0.0.1");
         end if;
-        Put (Park_Azimuth_Key & "         = +137°16'00.0""");
-        Put (Park_Altitude_Key & "        = +5°35'00.0""");
-        Put (Pole_Height_Key & "          = Latitude");
-        Put (Moving_Speed_List_Key & "    = 6""/s, 1'/s, 10'/s, 6°/s");
-        Put (First_Acceleration_Key & "   = 6°/s²");
-        Put (Second_Acceleration_Key & "  = 6°/s²");
-        Put (First_Lower_Limit_Key & "    = -5°");
-        Put (First_Upper_Limit_Key & "    = 185°");
-        Put (Second_Lower_Limit_Key & "   = 0°");
-        Put (Second_Upper_Limit_Key & "   = 0°");
+        Put (Park_Azimuth_Key & "                = +137°16'00.0""");
+        Put (Park_Altitude_Key & "               = +5°35'00.0""");
+        Put (Pole_Height_Key & "                 = Latitude");
+        Put (Moving_Speed_List_Key & "           = 6""/s, 1'/s, 10'/s, 6°/s");
+        Put (First_Acceleration_Key & "          = 6°/s²");
+        Put (Second_Acceleration_Key & "         = 6°/s²");
+        Put (First_Lower_Limit_Key & "           = -5°");
+        Put (First_Upper_Limit_Key & "           = 185°");
+        Put (Second_Lower_Limit_Key & "          = 0°");
+        Put (Second_Upper_Limit_Key & "          = 0°");
       when Sternwarte_Schaffhausen =>
         Put ("[" & Telescope_Id & "]");
-        Put (Name_Key & "                 = Newton");
+        Put (Name_Key & "                        = Newton");
         if Is_Stepper_Driver then
-          Put (Serial_Port_Key & "          = None");
-          Put (Steps_Per_Revolution_Key & " =" & Positive'image(240 * 8 * 200 * 16));
-          Put (Clocks_Per_Second_Key & "    = 5000228");
+          Put (Serial_Port_Key & "                 = None");
+          Put_Steps_Per_Revolution (240 * 8 * 200 * 16);
+          Put (Clocks_Per_Second_Key & "           = 5000228");
         else
-          Put (Ip_Address_Key & "           = 127.0.0.1");
+          Put (Ip_Address_Key & "                  = 127.0.0.1");
         end if;
-        Put (Park_Azimuth_Key & "         = +74°");
-        Put (Park_Altitude_Key & "        = -5°");
-        Put (Pole_Height_Key & "          = 90°");
-        Put (Moving_Speed_List_Key & "    = 6""/s, 1'/s, 10'/s, 3°00'/s");
-        Put (First_Acceleration_Key & "   = 30'/s²");
-        Put (Second_Acceleration_Key & "  = 30'/s²");
-        Put (First_Lower_Limit_Key & "    = -1726°");
-        Put (First_Upper_Limit_Key & "    = +1874°");
-        Put (Second_Lower_Limit_Key & "   = -10°");
-        Put (Second_Upper_Limit_Key & "   = +90°");
+        Put (Park_Azimuth_Key & "                       = +74°");
+        Put (Park_Altitude_Key & "                      = -5°");
+        Put (Pole_Height_Key & "                        = 90°");
+        Put (Moving_Speed_List_Key & "                  = 6""/s, 1'/s, 10'/s, 3°00'/s");
+        Put (First_Acceleration_Key & "                 = 30'/s²");
+        Put (Second_Acceleration_Key & "                = 30'/s²");
+        Put (First_Lower_Limit_Key & "                  = -1726°");
+        Put (First_Upper_Limit_Key & "                  = +1874°");
+        Put (Second_Lower_Limit_Key & "                 = -10°");
+        Put (Second_Upper_Limit_Key & "                 = +90°");
       when Unknown =>
         Put ("[" & Telescope_Id & "]");
-        Put (Name_Key & "                 = ");
+        Put (Name_Key & "                        = ");
         if Is_Stepper_Driver then
-          Put (Ip_Address_Key & "           = None");
-          Put (Steps_Per_Revolution_Key & " = 1232086"); -- M-Zero
-          Put (Clocks_Per_Second_Key & "    = 5000000");
+          Put (Ip_Address_Key & "                  = None");
+          Put_Steps_Per_Revolution (1232086); -- M-Zero
+          Put (Clocks_Per_Second_Key & "           = 5000000");
         else
-          Put (Ip_Address_Key & "           = 127.0.0.1");
+          Put (Ip_Address_Key & "                  = 127.0.0.1");
         end if;
-        Put (Park_Azimuth_Key & "         = +180°00'");
-        Put (Park_Altitude_Key & "        = +0°00'");
-        Put (Pole_Height_Key & "          = Latitude");
-        Put (Moving_Speed_List_Key & "    = 6""/s, 1'/s, 10'/s, 6°/s");
-        Put (First_Acceleration_Key & "   = 3°/s²");
-        Put (Second_Acceleration_Key & "  = 3°/s²");
-        Put (First_Lower_Limit_Key & "    = -360°");
-        Put (First_Upper_Limit_Key & "    = +360°");
-        Put (Second_Lower_Limit_Key & "   = -30°");
-        Put (Second_Upper_Limit_Key & "   = +210°");
+        Put (Park_Azimuth_Key & "                = +180°00'");
+        Put (Park_Altitude_Key & "               = +0°00'");
+        Put (Pole_Height_Key & "                 = Latitude");
+        Put (Moving_Speed_List_Key & "           = 6""/s, 1'/s, 10'/s, 6°/s");
+        Put (First_Acceleration_Key & "          = 3°/s²");
+        Put (Second_Acceleration_Key & "         = 3°/s²");
+        Put (First_Lower_Limit_Key & "           = -360°");
+        Put (First_Upper_Limit_Key & "           = +360°");
+        Put (Second_Lower_Limit_Key & "          = -30°");
+        Put (Second_Upper_Limit_Key & "          = +210°");
       end case;
       Put ("");
       Put ("[" & Lx200_Id & "]");
@@ -416,7 +425,17 @@ package body Parameter is
         end if;
         if Is_Stepper_Driver then
           The_Clocks_Per_Second := Number_Of (Clocks_Per_Second_Key);
-          The_Steps_Per_Revolution := Number_Of (Steps_Per_Revolution_Key);
+          if String_Value_Of (Steps_Per_Revolution_Key) = "" then
+            The_Steps_Per_Revolution(Device.D1) := Number_Of (First_Steps_Per_Revolution_Key);
+            The_Steps_Per_Revolution(Device.D2) := Number_Of (Second_Steps_Per_Revolution_Key);
+          elsif (String_Value_Of (First_Steps_Per_Revolution_Key) = "") and
+                (String_Value_Of (Second_Steps_Per_Revolution_Key) = "")
+          then
+            The_Steps_Per_Revolution(Device.D1) := Number_Of (Steps_Per_Revolution_Key);
+            The_Steps_Per_Revolution(Device.D2) := The_Steps_Per_Revolution(Device.D1);
+          else
+            Error.Raise_With ("The steps per revolution are defined more then once");
+          end if;
         end if;
         if The_Telescope_Connection.Kind = Is_Simulated then
           Text.Append_To (The_Telescope_Name, " Simulation");
@@ -574,7 +593,7 @@ package body Parameter is
   end Telescope_Connection;
 
 
-  function Steps_Per_Revolution return Positive is
+  function Steps_Per_Revolution return Device.Steps_Per_Revolution is
   begin
     return The_Steps_Per_Revolution;
   end Steps_Per_Revolution;

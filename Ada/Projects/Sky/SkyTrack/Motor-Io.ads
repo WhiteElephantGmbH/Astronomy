@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2014 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2014 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -23,7 +23,7 @@ private package Motor.Io is
 
   procedure Define (Parameters_1 :     Parameters;
                     Parameters_2 :     Parameters;
-                    The_Epsilon  : out Value);
+                    The_Epsilon  : out Values);
 
   procedure Connect;
 
@@ -68,7 +68,7 @@ private
 
   function Freq return Natural;
 
-  function Nspr return Natural;
+  function Nspr_Of (The_Drive : Device.Drive) return Natural;
 
   type Step_Direction is (Backward, Forward, Undefined);
 
@@ -132,6 +132,6 @@ private
     Offsets   : Step_Positions := (others => <>);
   end record;
 
-  function Autoguiding_Offset return Step_Count;
+  function Autoguiding_Offset_Of (The_Drive : Device.Drive) return Step_Count;
 
 end Motor.Io;

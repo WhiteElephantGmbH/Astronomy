@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2014 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2014 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -42,15 +42,12 @@ package body Motor.Io is
   end Freq;
 
 
-  The_Nspr : Natural := 0; -- steps per revolution
+  The_Nspr : Device.Steps_Per_Revolution; -- steps per revolution
 
-  function Nspr return Natural is
+  function Nspr_Of (The_Drive : Device.Drive) return Natural is
   begin
-    if The_Nspr = 0 then
-      raise Program_Error;
-    end if;
-    return The_Nspr;
-  end Nspr;
+    return The_Nspr(The_Drive);
+  end Nspr_Of;
 
 
   function C_Of (T : Time.Ut) return Natural is
@@ -60,21 +57,23 @@ package body Motor.Io is
   end C_Of;
 
 
-  function V_Of (C : Natural) return Value is
+  function V_Of (C : Natural;
+                 D : Device.Drive) return Value is
     use type Value;
   begin
     if C = Infinite then
       return 0.0;
     else
-      return Value(Freq) * 360.0 / (Value(Nspr) * Value(C));
+      return Value(Freq) * 360.0 / (Value(Nspr_Of (D)) * Value(C));
     end if;
   end V_Of;
 
 
-  function Dt_Of (V : Value) return Natural is
+  function Dt_Of (V : Value;
+                  D : Device.Drive) return Natural is
     use type Value;
   begin
-    return abs Integer(Value(Freq) * 360.0 / (Value(Nspr) * V));
+    return abs Integer(Value(Freq) * 360.0 / (Value(Nspr_Of (D)) * V));
   exception
   when others =>
     return Infinite;
@@ -82,36 +81,40 @@ package body Motor.Io is
 
 
   function C0_Of (T  : Natural;
-                  Ve : Value) return Natural is
+                  Ve : Value;
+                  D  : Device.Drive) return Natural is
     use Astro;
   begin
-    return Natural(0.676 * Value(Freq) * SQRT(Value(T) / Value(Freq) * 720.0 / (Value(Nspr) * abs Ve)));
+    return Natural(0.676 * Value(Freq) * SQRT(Value(T) / Value(Freq) * 720.0 / (Value(Nspr_Of (D)) * abs Ve)));
   end C0_Of;
 
 
-  function C0_Of (A : Value) return Natural is
+  function C0_Of (A : Value;
+                  D : Device.Drive) return Natural is
     use Astro;
   begin
-    return Natural(0.676 * Value(Freq) * SQRT(720.0 / (Value(Nspr) * abs A)));
+    return Natural(0.676 * Value(Freq) * SQRT(720.0 / (Value(Nspr_Of (D)) * abs A)));
   end C0_Of;
 
 
   function N_Of (Dt : Natural;
                  V  : Value;
-                 Ve : Value) return N_Type is
+                 Ve : Value;
+                 D  : Device.Drive) return N_Type is
     use type Value;
   begin
-    return N_Type(V * V * Value(Dt) / Value(Freq) * Value(Nspr) / (abs (Ve - V) * 720.0));
+    return N_Type(V * V * Value(Dt) / Value(Freq) * Value(Nspr_Of (D)) / (abs (Ve - V) * 720.0));
   exception
   when others =>
     return N_Type'last;
   end N_Of;
 
 
-  function N_Of (S : Value) return Integer is
+  function N_Of (S : Value;
+                 D : Device.Drive) return Integer is
     use type Value;
   begin
-    return Integer(Value(Nspr) * S / 360.0);
+    return Integer(Value(Nspr_Of (D)) * S / 360.0);
   exception
   when others =>
     Log.Error ("S =>" & S'img);
@@ -119,24 +122,26 @@ package body Motor.Io is
   end N_Of;
 
 
-  function S_Of (N : Integer) return Value is
+  function S_Of (N : Integer;
+                 D : Device.Drive) return Value is
     use type Value;
   begin
-    return Value(N) * 360.0 / Value(Nspr);
+    return Value(N) * 360.0 / Value(Nspr_Of (D));
   end S_Of;
 
 
-  function Distance (From, To : Integer) return Integer is
-    D    : Integer := To - From;
-    N180 : constant Natural := Nspr / 2; -- steps for 180 degrees
+  function Distance (From, To : Integer;
+                     D        : Device.Drive) return Integer is
+    The_Distance : Integer := To - From;
+    N180         : constant Natural := Nspr_Of (D) / 2; -- steps for 180 degrees
   begin
     loop
-      if D > N180 then
-        D := D - Nspr;
-      elsif D < - N180 then
-        D := D + Nspr;
+      if The_Distance > N180 then
+        The_Distance := The_Distance - Nspr_Of (D);
+      elsif The_Distance < - N180 then
+        The_Distance := The_Distance + Nspr_Of (D);
       else
-        return D;
+        return The_Distance;
       end if;
     end loop;
   end Distance;
@@ -258,24 +263,27 @@ package body Motor.Io is
   end Device_Version;
 
 
-  procedure Define (Parameters_1 : Parameters;
-                    Parameters_2 : Parameters;
-                    The_Epsilon  : out Value) is
+  procedure Define (Parameters_1 :     Parameters;
+                    Parameters_2 :     Parameters;
+                    The_Epsilon  : out Values) is
 
     use type Value;
 
   begin
     The_Frequency := Parameter.Clocks_Per_Second;
     The_Nspr := Parameter.Steps_Per_Revolution;
-    The_Epsilon := 360.0 / Value(The_Nspr);
-    C0(D1) := C0_Of (Parameters_1.Am);
-    C0(D2) := C0_Of (Parameters_2.Am);
-    Cm(D1) := Dt_Of (Parameters_1.Vm);
-    Cm(D2) := Dt_Of (Parameters_2.Vm);
+    for D in Device.Drive loop
+      The_Epsilon(D) := 360.0 / Value(The_Nspr(D));
+    end loop;
+    C0(D1) := C0_Of (Parameters_1.Am, D1);
+    C0(D2) := C0_Of (Parameters_2.Am, D2);
+    Cm(D1) := Dt_Of (Parameters_1.Vm, D1);
+    Cm(D2) := Dt_Of (Parameters_2.Vm, D2);
     Initialize_Data;
     Log.Write ("define");
     Log.Write ("  frequency  =>" & The_Frequency'img);
-    Log.Write ("  steps/rev  =>" & The_Nspr'img);
+    Log.Write ("  steps1/rev =>" & The_Nspr(D1)'img);
+    Log.Write ("  steps2/rev =>" & The_Nspr(D2)'img);
     Log.Write ("  C1 minimum =>" & The_Data(D1).Cmin'img);
     Log.Write ("  C1 maximum =>" & The_Data(D1).Cmax'img);
     Log.Write ("  C2 minimum =>" & The_Data(D2).Cmin'img);
@@ -324,15 +332,15 @@ package body Motor.Io is
 
   procedure Set_Positions (The_Positions : Values) is
   begin
-    Protocol.Define_Positions ((M1 => N_Of (The_Positions(D1)),
-                                M2 => N_Of (The_Positions(D2))));
+    Protocol.Define_Positions ((M1 => N_Of (The_Positions(D1), D1),
+                                M2 => N_Of (The_Positions(D2), D2)));
   end Set_Positions;
 
 
   procedure Update_Positions (Offsets : Alignment.Offsets) is
   begin
-    Protocol.Update_Positions ((M1 => N_Of (Offsets(D1)),
-                                M2 => N_Of (Offsets(D2))));
+    Protocol.Update_Positions ((M1 => N_Of (Offsets(D1), D1),
+                                M2 => N_Of (Offsets(D2), D2)));
   end Update_Positions;
 
 
@@ -345,10 +353,10 @@ package body Motor.Io is
   function Actual_Data return Information is
     D : constant Step_Information := Protocol.Stepper_Data;
   begin
-    return (Positions => (D1 => S_Of (D.Positions.M1),
-                          D2 => S_Of (D.Positions.M2)),
-            Offsets   => (D1 => S_Of (D.Offsets.M1),
-                          D2 => S_Of (D.Offsets.M2)));
+    return (Positions => (D1 => S_Of (D.Positions.M1, D1),
+                          D2 => S_Of (D.Positions.M2, D2)),
+            Offsets   => (D1 => S_Of (D.Offsets.M1, D1),
+                          D2 => S_Of (D.Offsets.M2, D2)));
   end Actual_Data;
 
 
@@ -431,8 +439,8 @@ package body Motor.Io is
 
   procedure Move (The_Distance : Values) is
 
-    Distance_1 : constant Integer := N_Of (The_Distance(D1));
-    Distance_2 : constant Integer := N_Of (The_Distance(D2));
+    Distance_1 : constant Integer := N_Of (The_Distance(D1), D1);
+    Distance_2 : constant Integer := N_Of (The_Distance(D2), D2);
 
     M1_Actions : constant Action_List := Action_List_For (Distance_1, C0(D1), Cm(D1));
     M2_Actions : constant Action_List := Action_List_For (Distance_2, C0(D2), Cm(D2));
@@ -460,7 +468,7 @@ package body Motor.Io is
 
     Actions : constant Action_List := Action_List_For (S   => Maximum_Steps_Of (With_Speed),
                                                        C_0 => C0(The_Drive),
-                                                       C_M => Dt_Of (With_Speed));
+                                                       C_M => Dt_Of (With_Speed, The_Drive));
   begin
     Log.Write ("direct " & The_Drive'img & " with speed" & With_Speed'img);
     case The_Drive is
@@ -485,7 +493,8 @@ package body Motor.Io is
 
   procedure Update (Profile : Update_Profile) is
 
-    procedure Append (D  : in out Drive_Data;
+    procedure Append (D  :        Drive;
+                      Da : in out Drive_Data;
                       A  : in out Action;
                       Ve :        Value;
                       K  :        Boolean;
@@ -493,18 +502,18 @@ package body Motor.Io is
                       T  : in out Natural;
                       Tr : in out Integer) is
 
-      C_Begin : constant Natural := D.C;
-      C_End   : constant Natural := Dt_Of (Ve);
+      C_Begin : constant Natural := Da.C;
+      C_End   : constant Natural := Dt_Of (Ve, D);
 
       procedure Append_Slow_Continue is
         use type Value;
       begin
         if S > 0 then
-          D.D := Forward;
+          Da.D := Forward;
         elsif S < 0 then
-          D.D := Backward;
+          Da.D := Backward;
         else
-          D.D := Undefined;
+          Da.D := Undefined;
         end if;
         A.S := abs (S);
         A.K := Keep_Speed;
@@ -512,16 +521,16 @@ package body Motor.Io is
           A.D := Undefined;
           A.N := T; -- rest clocks
           A.C := 0;
-          D.V := 0.0;
+          Da.V := 0.0;
         else
           A.C := T / A.S;
           A.N := T - A.C * A.S; -- rest clocks
-          D.V := Ve;
-          A.D := D.D;
+          Da.V := Ve;
+          A.D := Da.D;
           if Ve = 0.0 then
-            D.C := Infinite;
+            Da.C := Infinite;
           else
-            D.C := C_End;
+            Da.C := C_End;
           end if;
         end if;
       end Append_Slow_Continue;
@@ -531,11 +540,11 @@ package body Motor.Io is
         Tn : Natural;
       begin
         if S > 0 then
-          D.D := Forward;
+          Da.D := Forward;
         elsif S < 0 then
-          D.D := Backward;
+          Da.D := Backward;
         else
-          D.D := Undefined;
+          Da.D := Undefined;
         end if;
         A.S := abs (S);
         A.K := Keep_Speed;
@@ -543,27 +552,27 @@ package body Motor.Io is
           raise Program_Error;
         else
           A.C := T / A.S;
-          if A.C < D.Cmin then
-            A.C := D.Cmin;
+          if A.C < Da.Cmin then
+            A.C := Da.Cmin;
             A.S := T / A.C;
             A.N := 0;
             S := A.S;
             Tn := A.S * A.C;
             Tr := T - Tn;
             T := Tn;
-            if D.D = Backward then
+            if Da.D = Backward then
               S := -S;
             end if;
             Log.Warning ("continue correction Tr:" & Tr'img);
           else
             A.N := T - A.C * A.S; -- rest clocks
           end if;
-          D.V := Ve;
-          A.D := D.D;
+          Da.V := Ve;
+          A.D := Da.D;
           if Ve = 0.0 then
-            D.C := Infinite;
+            Da.C := Infinite;
           else
-            D.C := C_End;
+            Da.C := C_End;
           end if;
         end if;
       end Append_Continue;
@@ -580,66 +589,66 @@ package body Motor.Io is
                     Cb => A.C,
                     Nb => A.N,
                     K  => A.K,
-                    Cm => D.Cmin,
+                    Cm => Da.Cmin,
                     Te => Te,
                     Sn => Sn,
-                    Ce => D.C);
+                    Ce => Da.C);
         end Simulate;
 
         Sn1 : Natural;
 
       begin -- Append_Simulation
         if S > 0 then
-          D.D := Forward;
+          Da.D := Forward;
         elsif S < 0 then
-          D.D := Backward;
+          Da.D := Backward;
         else
-          D.D := Undefined;
+          Da.D := Undefined;
         end if;
         A.S := abs (S);
-        A.D := D.D;
-        if D.V < Ve then
-          if D.D = Forward then
+        A.D := Da.D;
+        if Da.V < Ve then
+          if Da.D = Forward then
             A.K := Accelerate;
           else
             A.K := Decelerate;
           end if;
-        elsif D.V > Ve then
-          if D.D = Forward then
+        elsif Da.V > Ve then
+          if Da.D = Forward then
             A.K := Decelerate;
           else
             A.K := Accelerate;
           end if;
         end if;
-        if D.C >= D.Cmax then
-          A.C := C0_Of (T, Ve);
+        if Da.C >= Da.Cmax then
+          A.C := C0_Of (T, Ve, D);
           A.N := 0;
           if Log.Is_Enabled then
-            Log.Write ("## simulate startup - D.C =>" & D.C'img);
+            Log.Write ("## simulate startup - D.C =>" & Da.C'img);
           end if;
           Simulate (Sn1);
         else
-          D.V := V_Of (D.C);
-          if D.D = Backward then
-            D.V := - D.V;
+          Da.V := V_Of (Da.C, D);
+          if Da.D = Backward then
+            Da.V := - Da.V;
           end if;
-          A.N := N_Of (T, D.V, Ve);
-          A.C := D.C;
+          A.N := N_Of (T, Da.V, Ve, D);
+          A.C := Da.C;
           if Log.Is_Enabled then
-            Log.Write ("## simulate continuation: D.V =>" & D.V'img & "; Ve =>" & Ve'img);
+            Log.Write ("## simulate continuation: D.V =>" & Da.V'img & "; Ve =>" & Ve'img);
           end if;
           Simulate (Sn1);
         end if;
-        if D.D = Forward then
+        if Da.D = Forward then
           S := A.S;
         else
           S := -A.S;
         end if;
         Tr := T - Te;
         T := Te;
-        D.V := V_Of (D.C);
-        if D.D = Backward then
-          D.V := - D.V;
+        Da.V := V_Of (Da.C, D);
+        if Da.D = Backward then
+          Da.V := - Da.V;
         end if;
         if A.K = Decelerate then
           if A.N < A.S then
@@ -660,7 +669,7 @@ package body Motor.Io is
         Log.Write ("## clocks  =>" & T'img);
         Log.Write ("##======================");
       end if;
-      if ((C_Begin >= D.Cmax / 2) and (C_End >= D.Cmax / 2)) then
+      if ((C_Begin >= Da.Cmax / 2) and (C_End >= Da.Cmax / 2)) then
         Log.Write ("## append case 1");
         Append_Slow_Continue;
       elsif S /= 0 then
@@ -695,8 +704,8 @@ package body Motor.Io is
         Log.Write ("## A.K => " & A.K'img);
         Log.Write ("## A.D => " & A.D'img);
       end if;
-      D.S := D.S + S;
-      D.T := D.T + Counter(T);
+      Da.S := Da.S + S;
+      Da.T := Da.T + Counter(T);
       if Log.Is_Enabled then
         Log.Write ("## Tr  =>" & Tr'img);
         Log.Write ("########################");
@@ -722,19 +731,19 @@ package body Motor.Io is
     use type Value;
 
   begin -- Update
-    for The_Drive in Device.Drive loop
+    for D in Device.Drive loop
       declare
-        D  : Drive_Data renames The_Data(The_Drive);
+        Da  : Drive_Data renames The_Data(D);
       begin
-        D.Tb := T;
-        D.S := N_Of (P(The_Drive).Sb) + D.Sr;
+        Da.Tb := T;
+        Da.S := N_Of (P(D).Sb, D) + Da.Sr;
       end;
     end loop;
     for The_Index in Update_List'range loop
       T := T + Delta_Time;
-      for The_Drive in Device.Drive loop
+      for D in Device.Drive loop
         declare
-          D  : Drive_Data renames The_Data(The_Drive);
+          Da : Drive_Data renames The_Data(D);
           Dt : Natural := C_Of (Delta_Time);
           Ve : Value;
           Ds : Integer;
@@ -744,43 +753,44 @@ package body Motor.Io is
             Log.Write ("=========================");
             Log.Write ("  Update Parameters");
             Log.Write ("-------------------------");
-            Log.Write ("  Sb  => " & Angle.Image_Of (+P(The_Drive).Sb));
-            Log.Write ("  Vb  =>" & P(The_Drive).Vb'img);
-            Log.Write ("  Tb  =>" & D.Tb'img);
+            Log.Write ("  Sb  => " & Angle.Image_Of (+P(D).Sb));
+            Log.Write ("  Vb  =>" & P(D).Vb'img);
+            Log.Write ("  Tb  =>" & Da.Tb'img);
             Log.Write ("  T   =>" & T'img);
           end if;
-          Get (S       => D.Se,
+          Get (S       => Da.Se,
                V       => Ve,
                T       => T,
-               T_Begin => D.Tb,
-               P       => P(The_Drive));
-          Ds := Distance (From => D.S, To => N_Of (D.Se));
+               T_Begin => Da.Tb,
+               P       => P(D));
+          Ds := Distance (From => Da.S, To => N_Of (Da.Se, D), D => D);
           if Log.Is_Enabled then
-            Log.Write ("  Se  => " & Angle.Image_Of (+D.Se));
+            Log.Write ("  Se  => " & Angle.Image_Of (+Da.Se));
             Log.Write ("  Ve  =>" & Ve'img);
             Log.Write ("-------------------------");
-            Log.Write ("  D.S  =>" & D.S'img);
-            Log.Write ("  D.T  =>" & D.T'img);
-            Log.Write ("  D.V  =>" & D.V'img);
-            Log.Write ("  D.Tr =>" & D.Tr'img);
-            Log.Write ("  Dt   =>" & Dt'img);
+            Log.Write ("  Da.S  =>" & Da.S'img);
+            Log.Write ("  Da.T  =>" & Da.T'img);
+            Log.Write ("  Da.V  =>" & Da.V'img);
+            Log.Write ("  Da.Tr =>" & Da.Tr'img);
+            Log.Write ("  Dt    =>" & Dt'img);
             Log.Write ("-------------------------");
           end if;
           Es := Ds;
-          Append (A  => The_Updates(The_Drive)(The_Index),
-                  D  => D,
+          Append (D  => D,
+                  A  => The_Updates(D)(The_Index),
+                  Da => Da,
                   Ve => Ve,
-                  K  => D.V = Ve,
+                  K  => Da.V = Ve,
                   S  => Ds,
                   T  => Dt,
-                  Tr => D.Tr);
-          D.Sr := Ds - Es;
-          Log.Write ("==> Sr:" & D.Sr'img);
-          if abs D.Sr > 1 then
-            if abs D.Sr > 7 then
-              Log.Error ("too big D.Sr:" & D.Sr'img);
+                  Tr => Da.Tr);
+          Da.Sr := Ds - Es;
+          Log.Write ("==> Sr:" & Da.Sr'img);
+          if abs Da.Sr > 1 then
+            if abs Da.Sr > 7 then
+              Log.Error ("too big Da.Sr:" & Da.Sr'img);
             else
-              Log.Warning ("D.Sr:" & D.Sr'img);
+              Log.Warning ("D.Sr:" & Da.Sr'img);
             end if;
           end if;
         end;
@@ -792,8 +802,9 @@ package body Motor.Io is
   end Update;
 
 
-  function Offset_Per_Action_For (The_Speed : Value) return Step_Count is
-    The_Offset : Step_Count := N_Of (The_Speed);
+  function Offset_Per_Action_For (The_Speed : Value;
+                                  The_Drive : Device.Drive) return Step_Count is
+    The_Offset : Step_Count := N_Of (The_Speed, The_Drive);
   begin
     if The_Offset > 0 then
       The_Offset := (The_Offset + (Actions_Per_Second / 2)) / Actions_Per_Second;
@@ -814,14 +825,14 @@ package body Motor.Io is
                     With_Speed : Value) is
   begin
     Log.Write ("adjust " & The_Drive'img & " with speed" & With_Speed'img);
-    Protocol.Do_Adjust (The_Drive, Offset_Per_Action_For (With_Speed));
+    Protocol.Do_Adjust (The_Drive, Offset_Per_Action_For (With_Speed, The_Drive));
   end Adjust;
 
 
-  function Autoguiding_Offset return Step_Count is
+  function Autoguiding_Offset_Of (The_Drive : Device.Drive) return Step_Count is
   begin
-    return Offset_Per_Action_For (The_Autoguiding_Speed);
-  end Autoguiding_Offset;
+    return Offset_Per_Action_For (The_Autoguiding_Speed, The_Drive);
+  end Autoguiding_Offset_Of;
 
 
   procedure Halt is

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2013 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2013 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -16,6 +16,7 @@
 pragma Style_White_Elephant;
 
 with Angle;
+with Device;
 with Network.Udp;
 with Serial_Io;
 
@@ -70,7 +71,7 @@ package Parameter is
 
   function Telescope_Connection return Connection;
 
-  function Steps_Per_Revolution return Positive;
+  function Steps_Per_Revolution return Device.Steps_Per_Revolution;
 
   function Clocks_Per_Second return Positive;
 

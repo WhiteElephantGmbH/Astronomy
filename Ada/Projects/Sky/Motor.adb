@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2014 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2014 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -30,21 +30,22 @@ package body Motor is
   P1 : Parameters; -- Motor1
   P2 : Parameters; -- Motor2
 
-  Epsilon : Value;
+  Epsilon : Values;
 
   use all type Device.Drive;
 
 
-  function Is_Equal (Left, Right : Value) return Boolean is
+  function Is_Equal (Left, Right : Value;
+                     D           : Device.Drive) return Boolean is
     use type Value;
   begin
-    return abs (Left - Right) < Epsilon;
+    return abs (Left - Right) < Epsilon(D);
   end Is_Equal;
 
 
   function "=" (Left, Right : Values) return Boolean is
   begin
-    return Is_Equal (Left(D1), Right(D1)) and Is_Equal (Left(D2), Right(D2));
+    return Is_Equal (Left(D1), Right(D1), D1) and Is_Equal (Left(D2), Right(D2), D2);
   end "=";
 
 
@@ -125,7 +126,8 @@ package body Motor is
     Io.Define (Parameters_1 => P1,
                Parameters_2 => P2,
                The_Epsilon  => Epsilon);
-    Log.Write ("Epsilon =>" & Epsilon'img);
+    Log.Write ("Epsilon_1 =>" & Epsilon(D1)'img);
+    Log.Write ("Epsilon_2 =>" & Epsilon(D2)'img);
 
     AM(D1) := +First_Acceleration;
     AM(D2) := +Second_Acceleration;
@@ -164,6 +166,7 @@ package body Motor is
     Vb : Value   := 0.0; -- speed at begin
     Ve : Value   := 0.0; -- speed at end
     A  : Value   := 0.0; -- actual accelleration
+    E  : Value;
   end record;
 
 
@@ -183,7 +186,7 @@ package body Motor is
 
   function Limits_Enabled (D : Drive) return Boolean is
   begin
-    return not Is_Equal (LL(D), UL(D));
+    return not Is_Equal (LL(D), UL(D), D);
   end Limits_Enabled;
 
 
@@ -652,7 +655,7 @@ package body Motor is
     Dsi := Value(Dte) * (M.Vb + M.Ve) / 2.0;
     Vb_P_Ve := M.Vb + M.Ve;
     Vb_M_Ve := M.Vb - M.Ve;
-    if abs(Vb_M_Ve) < Epsilon then
+    if abs(Vb_M_Ve) < M.E then
       Vb_M_Ve := 0.0;
     end if;
     Vb_Ve2 := Vb_M_Ve * Vb_M_Ve;
@@ -672,11 +675,11 @@ package body Motor is
       Log.Write ("Dsl =>" & Dsl'img);
       Log.Write ("Dsu =>" & Dsu'img);
     end if;
-    if Dse < (Dsl - Epsilon) then
+    if Dse < (Dsl - M.E) then
       Log.Warning ("Dse < Dsl");
       return False;
     else
-      if Dse > Dsu + Epsilon then
+      if Dse > Dsu + Epsilon(P.D) then
         Log.Warning ("Dse > Dsu");
         return False;
       end if;
@@ -699,7 +702,7 @@ package body Motor is
               M.Td := M.Tb;
               M.Tf := M.Tb + Dtf;
               X := Value(Dte) * M.Ve - (Value(Dtf) * (M.Ve - M.Vb) / 2.0);
-              if abs(Dse - X) > Epsilon then
+              if abs(Dse - X) > Epsilon(P.D) then
                 Log.Error ("@1 Dse <> X - Dse ->" & Dse'img & " - X =>" & X'img);
                 return False;
               end if;
@@ -717,7 +720,7 @@ package body Motor is
               M.Td := M.Tb + Dtd;
               M.Tf := M.Te;
               X := Value(Dte) * M.Vb - (Value(Dte - Dtd) * (M.Vb - M.Ve) / 2.0);
-              if abs(Dse - X) > Epsilon then
+              if abs(Dse - X) > Epsilon(P.D) then
                 Log.Error ("@2 Dse <> X - Dse ->" & Dse'img & " - X =>" & X'img);
                 return False;
               end if;
@@ -737,7 +740,7 @@ package body Motor is
               M.Td := M.Tb + Dtd;
               M.Tf := M.Te;
               X := Value(Dte) * M.Vb + (Value(Dte - Dtd) * (M.Ve - M.Vb) / 2.0);
-              if abs(Dse - X) > Epsilon then
+              if abs(Dse - X) > Epsilon(P.D) then
                 Log.Error ("@3 Dse <> X - Dse ->" & Dse'img & " - X =>" & X'img);
                 return False;
               end if;
@@ -755,7 +758,7 @@ package body Motor is
               M.Td := M.Tb;
               M.Tf := M.Tb + Dtf;
               X := Value(Dte) * M.Ve + (Value(Dtf) * (M.Vb - M.Ve) / 2.0);
-              if abs(Dse - X) > Epsilon then
+              if abs(Dse - X) > Epsilon(P.D) then
                 Log.Error ("@4 Dse <> X - Dse ->" & Dse'img & " - X =>" & X'img);
                 return False;
               end if;
@@ -776,7 +779,7 @@ package body Motor is
       M.A := -P.Am;
       X := X - Y;
       if X <= 0.0 then
-        if X < -Epsilon then
+        if X < -Epsilon(P.D) then
           Log.Error ("X - Y =>" & X'img);
         end if;
         X := 0.0;
@@ -787,7 +790,7 @@ package body Motor is
       M.A := P.Am;
       X := X + Y;
       if X <= 0.0 then
-        if X < -Epsilon then
+        if X < -Epsilon(P.D) then
           Log.Error ("X + Y =>" & X'img);
         end if;
         X := 0.0;
@@ -796,7 +799,7 @@ package body Motor is
       end if;
     end if;
     M.V := (M.A * Value(Dte) + Vb_P_Ve + X) / 2.0;
-    if (abs(M.V) - P.Vm) > Epsilon then
+    if (abs(M.V) - P.Vm) > Epsilon(P.D) then
       Log.Warning ("speed to high =>" & M.V'img);
       return False;
     end if;

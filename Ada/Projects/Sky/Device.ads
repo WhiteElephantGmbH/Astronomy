@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2014 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2014 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -51,5 +51,7 @@ package Device is
                    Set_Centering_Rate,
                    Set_Finding_Rate,
                    Set_Slewing_Rate);
+
+  type Steps_Per_Revolution is array (Drive) of Positive;
 
 end Device;
