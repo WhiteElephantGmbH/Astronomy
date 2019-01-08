@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2011 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2011 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -129,7 +129,7 @@ package body User is
 
   The_Status : Telescope.State := Telescope.Disconnected;
 
-  type Operation is (Set_Sky_Line, Align_Global, Align_Local, Align_1_Star, Align_3_Stars);
+  type Operation is (Set_Sky_Line, Align_Global, Align_Local, Align_1_Star, Align_Pole_Axis);
 
   subtype Azimuthal_Operation is Operation range Operation'first .. Align_1_Star;
 
@@ -315,7 +315,7 @@ package body User is
     case The_Operation is
     when Align_Global =>
       return True;
-    when Align_Local | Align_1_Star | Align_3_Stars | Set_Sky_Line =>
+    when Align_Local | Align_1_Star | Align_Pole_Axis | Set_Sky_Line =>
       return False;
     end case;
   end Next_Operation_Enabled;
@@ -356,7 +356,7 @@ package body User is
       when Align_1_Star =>
         Gui.Disable (Add_Or_Adjust_Button);
         Gui.Disable (Next_Or_Clear_Button);
-      when Align_3_Stars =>
+      when Align_Pole_Axis =>
         Gui.Disable (Add_Or_Adjust_Button);
         if not Alignment.Has_Correction then
           Gui.Disable (Next_Or_Clear_Button);
@@ -372,7 +372,7 @@ package body User is
     case The_Operation is
     when Align_1_Star =>
       Gui.Set_Text (Add_Or_Adjust_Button, "Synch");
-    when Align_3_Stars =>
+    when Align_Pole_Axis =>
       case The_Alignment_Star is
       when No_Star =>
         Gui.Set_Text (Add_Or_Adjust_Button, "Synch");
@@ -403,7 +403,7 @@ package body User is
         if Alignment.Has_One_Star_Offsets then
           Gui.Enable (Add_Or_Adjust_Button);
         end if;
-      when Align_Global | Align_Local | Align_3_Stars =>
+      when Align_Global | Align_Local | Align_Pole_Axis =>
         if Alignment_Adding_Is_Enabled then
           Set_Add_Button_Text;
           if The_Alignment_Star = No_Star then
@@ -577,7 +577,7 @@ package body User is
       end if;
     when Is_Setup =>
       case The_Operation is
-      when Set_Sky_Line | Align_Global | Align_1_Star | Align_3_Stars =>
+      when Set_Sky_Line | Align_Global | Align_1_Star | Align_Pole_Axis =>
         Gui.Set_Text (Aligned_Stars, "");
       when Align_Local =>
         Gui.Set_Text (Aligned_Stars, Strings.Trimmed (Alignment.Number_Of_Aligned_Stars'img));
@@ -881,7 +881,7 @@ package body User is
       Set_Add_Button_Text;
       Gui.Set_Text (Next_Or_Clear_Button, "Clear");
       Gui.Disable (Next_Or_Clear_Button);
-    when Align_3_Stars =>
+    when Align_Pole_Axis =>
       Alignment.Clear_Corrections;
       Matrix.Clear;
       Set_Add_Button_Text;
@@ -947,7 +947,7 @@ package body User is
                 The_Distance := Az_Distance;
                 The_Item := Item;
               end if;
-            when Align_Local | Align_1_Star | Align_3_Stars | Set_Sky_Line =>
+            when Align_Local | Align_1_Star | Align_Pole_Axis | Set_Sky_Line =>
               raise Program_Error;
             end case;
           end;
@@ -975,11 +975,11 @@ package body User is
     case The_Operation is
     when Align_Global =>
       Next_Global_Alignment;
-    when Align_Local | Align_3_Stars =>
+    when Align_Local | Align_Pole_Axis =>
       case The_Operation is
       when Align_Local =>
         Alignment_Adding_Is_Enabled := True;
-      when Align_3_Stars =>
+      when Align_Pole_Axis =>
         Alignment_Adding_Is_Enabled := False;
         The_Alignment_Star := First_Star;
       when others =>
@@ -1020,7 +1020,7 @@ package body User is
     when Align_1_Star =>
       Signal_Action (Synch);
       Gui.Disable (Add_Or_Adjust_Button);
-    when Align_Global | Align_Local | Align_3_Stars =>
+    when Align_Global | Align_Local | Align_Pole_Axis =>
       if Alignment_Synchronizing_Is_Enabled then
         Gui.Disable (Next_Or_Clear_Button);
         Alignment_Synchronizing_Is_Enabled := False;
@@ -1045,7 +1045,7 @@ package body User is
           if Alignment.Has_Correction then
             Gui.Enable (Next_Or_Clear_Button);
           end if;
-        when Align_3_Stars =>
+        when Align_Pole_Axis =>
           case The_Alignment_Star is
           when First_Star =>
             Alignment.Add_First;
