@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2012 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2012 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -54,7 +54,7 @@ package body Solar_System is
         SAT200 (T,L,B,R);
       when Uranus =>
         URA200 (T,L,B,R);
-      when Neptun =>
+      when Neptune =>
         NEP200 (T,L,B,R);
       when Pluto =>
         PLU200(T,L,B,R);

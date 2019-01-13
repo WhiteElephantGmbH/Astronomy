@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2012 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2012 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -545,7 +545,7 @@ package body Astro is
         when Uranus =>
           M := P2*FRAC(0.3967117+1.1902849*T);
           DL := 2.05+0.19*COS(M); DR:=1.86*SIN(M); DB:=-0.03*SIN(M);
-        when Neptun =>
+        when Neptune =>
           M := P2*FRAC(0.7214906+0.6068526*T);
           DL := 1.04+0.02*COS(M); DR:=0.27*SIN(M); DB:=0.03*SIN(M);
         when Pluto =>

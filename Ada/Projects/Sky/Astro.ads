@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2012 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2012 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -225,7 +225,7 @@ package Astro is
   --============================================
   package PLALIB is
 
-    type PLANET is (Sun, Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus, Neptun, Pluto);
+    type PLANET is (Sun, Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus, Neptune, Pluto);
 
     type MODUS is (Geometric, Astrometric, Apparent);
 
