@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2014 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2014 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -61,9 +61,9 @@ package Motor is
 
   procedure Connect_Communication;
 
-  function Version return Hardware_Version; 
+  function Version return Hardware_Version;
   -- PRECONDITION: after Connect_Communication
-  
+
   procedure Open_Communication (State_Handler : State_Handler_Access);
 
   procedure Initialize;
@@ -188,6 +188,8 @@ private
   end record;
 
   function "=" (Left, Right : Values) return Boolean;
+
+  function Is_Zero (Item : Values) return Boolean;
 
   type Parameters is record
     Vm : Value; -- maximum speed

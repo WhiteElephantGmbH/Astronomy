@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2011 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2011 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -429,7 +429,9 @@ package body Telescope is
     procedure Do_Position is
     begin
       The_Time_When_Stopped := Motor.Time_When_Positioned (Numerics.Position_Of (Name.Direction_Of (The_Landmark)));
-      The_State := Positioning;
+      if The_Time_When_Stopped > Time.In_The_Past then
+        The_State := Positioning;
+      end if;
     end Do_Position;
 
 
@@ -896,6 +898,8 @@ package body Telescope is
         The_State := Stopping;
       when Motor_Positioned =>
         Handle_Positioned;
+      when Motor_Parked =>
+        The_State := Parked;
       when Time_Increment =>
         Handle_Time_Increment;
       when others =>

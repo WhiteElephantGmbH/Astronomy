@@ -49,6 +49,13 @@ package body Motor is
   end "=";
 
 
+  function Is_Zero (Item : Values) return Boolean is
+    use type Value;
+  begin
+    return (abs (Item(D1)) < Epsilon(D1)) and (abs (Item(D2)) < Epsilon(D2));
+  end Is_Zero;
+
+
   function "-" (Left, Right : Values) return Values is
     use type Value;
   begin
@@ -419,6 +426,9 @@ package body Motor is
   begin -- Time_For_Positioning
     The_Distances(D1) := Distance_From_Actual (D1);
     The_Distances(D2) := Distance_From_Actual (D2);
+    if Is_Zero (The_Distances) then
+      return Time.In_The_Past;
+    end if;
     Io.Set_Positions (To - The_Distances);
     Io.Move (The_Distances);
     The_Time_1 := Time_For(D1);
