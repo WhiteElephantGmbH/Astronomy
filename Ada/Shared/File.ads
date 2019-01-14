@@ -18,7 +18,7 @@ pragma Style_White_Elephant;
 with Ada.Calendar;
 with Ada.Directories;
 
-private with Ada.Iterator_Interfaces;
+with Ada.Iterator_Interfaces;
 
 package File is
 
@@ -108,25 +108,24 @@ package File is
 
   function Iterator_For (Name : String) return Item;
 
-private
-
-  type Cursor_Data;
-
-  type Cursor is access all Cursor_Data;
+  type Cursor is private;
 
   function Has_More (Data : Cursor) return Boolean;
 
   package List_Iterator_Interfaces is new Ada.Iterator_Interfaces (Cursor, Has_More);
 
+  function Iterate (The_Item : Item) return List_Iterator_Interfaces.Forward_Iterator'class;
+
   function Constant_Reference (The_Item     : aliased Item;
                                Unused_Index : Cursor) return String with Inline;
-
-  function Iterate (The_Item : Item) return List_Iterator_Interfaces.Forward_Iterator'class;
+private
 
   type Cursor_Data is record
     Has_More : Boolean := False;
     Position : Ada.Directories.Search_Type;
   end record;
+
+  type Cursor is access all Cursor_Data;
 
   type Item (Name_Length : Natural) is tagged limited record
     Name   : String(1..Name_Length);
