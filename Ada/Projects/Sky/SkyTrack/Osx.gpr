@@ -42,6 +42,7 @@ project Osx is
    package Linker is
       for Linker_Options use ();
       for Default_Switches ("ada") use ("-g",
+                                        "-Wl,-headerpad_max_install_names",
                                         "-Wl,-macosx_version_min,10.11");
    end Linker;
 
