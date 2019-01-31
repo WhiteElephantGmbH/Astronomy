@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2002 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2002 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -244,7 +244,7 @@ package body Os.Application is
 
   function Product_Name return String is
   begin
-    return Value_Of ("ProductName", Module_Name);
+    return Value_Of ("InternalName", Module_Name);
   end Product_Name;
 
 
