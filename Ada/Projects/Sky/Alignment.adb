@@ -261,8 +261,6 @@ package body Alignment is
         end if;
       end Image_Of;
 
-      use type Angle.Signed;
-
     begin -- Add_Correction
       begin
         Ada.Text_IO.Open (File, Name => New_Alignment_Filename, Mode => Ada.Text_IO.Append_File);
@@ -416,7 +414,6 @@ package body Alignment is
 
 
     function Three_Star_Synchronized_Offsets return Offsets is
-      use type Angle.Degrees;
     begin
       Log.Write ("Third star Synchronized_Offsets");
       return (Device.D1 => The_Ra_Correction, Device.D2 => The_Dec_Correction);
@@ -649,7 +646,6 @@ package body Alignment is
 
     The_File : Ada.Text_IO.File_Type;
 
-    use type Strings.Item;
 
   begin
     --TEST ONLY--------------------

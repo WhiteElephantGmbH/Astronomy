@@ -327,7 +327,6 @@ package body Gui.Router is
   end Synchronous_Service;
 
   function Get_Window_Metrics (For_Window : Gtk.Window.Gtk_Window) return Window_Metrics is
-    use type State;
   begin
     if The_State = Active then
       declare

@@ -23,7 +23,6 @@ with Traces;
 package body Motor.Io is
 
   use all type Device.Drive;
-  use all type  Device.State;
 
   package Log is new Traces ("Stepper");
 
@@ -51,7 +50,6 @@ package body Motor.Io is
 
 
   function C_Of (T : Time.Ut) return Natural is
-    use Astro;
   begin
     return Natural(Freq * T);
   end C_Of;
@@ -170,8 +168,6 @@ package body Motor.Io is
                       Te : out Natural;
                       Sn : out Natural;
                       Ce : out Natural) is
-
-    use type Value;
 
     C : Natural;
     D : Natural;
@@ -676,7 +672,6 @@ package body Motor.Io is
         declare
           Ck : constant Natural := abs (T / S);
           Cd : constant Natural := Ck / 64;
-          use type Value;
         begin
           if Log.Is_Enabled then
             Log.Write ("## Ck:" & Ck'img);
@@ -725,7 +720,6 @@ package body Motor.Io is
     T           : Time.Ut := T_End;
     P           : Update_Profile := Profile;
 
-    use type Angle.Signed;
     use type Angle.Unsigned;
     use type Angle.Value;
     use type Value;

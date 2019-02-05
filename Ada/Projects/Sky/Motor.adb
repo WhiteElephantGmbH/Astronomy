@@ -490,7 +490,6 @@ package body Motor is
 
 
   function Max (X, Y : Time.Ut) return Time.Ut is
-    use type Time.Ut;
   begin
     if X > Y then
       return X;
@@ -932,8 +931,6 @@ package body Motor is
 
   procedure Update is
     P : Update_Profile;
-    use type Value;
-    use type Angle.Value;
   begin
     Log.Write ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
     Log.Write ("update M1");

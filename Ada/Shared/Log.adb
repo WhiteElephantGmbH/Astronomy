@@ -255,7 +255,6 @@ package body Log is
 
 
     procedure Write_Line (The_String : String) is
-      use type Category;
     begin
       if (The_Maximum_Size /= Unlimited) and then (The_Current_Size >= The_Maximum_Size) then
         Io.Close (The_File);

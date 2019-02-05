@@ -67,7 +67,6 @@ package body Name is
 
 
   function "<" (Left, Right : Element_Access) return Boolean is
-    use type Data.Kind;
   begin
     if Left.Number_Id < Right.Number_Id then
       return True;

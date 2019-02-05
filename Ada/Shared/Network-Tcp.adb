@@ -324,7 +324,6 @@ package body Network.Tcp is
   function Elements_From (Used_Socket     : Socket;
                           Receive_Timeout : Duration := Use_Socket_Timeout) return Elements is
     use type Index;
-    use type Unsigned.Longword;
     use type Ada.Calendar.Time;
     The_Size     : Index;
     The_Timeout  : Duration;

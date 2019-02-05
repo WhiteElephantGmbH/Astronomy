@@ -121,7 +121,6 @@ package body Neo is
                 The_Ut  : Time.Ut;
                 The_Az  : Angle.Value;
                 The_Alt : Angle.Value;
-                use type Time.T;
               begin
                 if Has_Data_Below_Horizon then
                   The_Ut := The_Data_Below_Horizon.Ut;
@@ -158,8 +157,6 @@ package body Neo is
                   return (Ut => Ut, Ra => Ra, Dec => Dec);
                 end if;
               end First_Above_Horizon;
-
-              use type Time.T;
 
             begin
               if The_Entry > The_List'last - 3 then

@@ -29,8 +29,6 @@ package body Stellarium is
 
   package IO renames Ada.Text_IO;
 
-  use type File.Folder;
-
   Configuration_Filename : constant String := Application.Composure ("config", "ini");
 
   Config_Handle : constant Configuration.File_Handle    := Configuration.Handle_For (Configuration_Filename);

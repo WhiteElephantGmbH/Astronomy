@@ -267,7 +267,6 @@ package body Motor.Io.Protocol.Udp is
       The_Expected_Sentinel := Start_Sentinel;
     end Disconnect;
 
-    use type Sentinel;
     use type Ada.Real_Time.Time;
 
   begin -- Control
@@ -545,7 +544,6 @@ package body Motor.Io.Protocol.Udp is
             Used_Socket => Connection.Socket);
       declare
         The_Telescope_Data : constant Telescope_Data := Datagram_From (Used_Socket => Connection.Socket);
-        use type Unsigned.Byte;
       begin
         if The_Telescope_Data.The_Sentinel = Start_Sentinel then
           Log.Write ("Connected SkyTracker protocol version " & Image_Of (The_Telescope_Data.The_Version));

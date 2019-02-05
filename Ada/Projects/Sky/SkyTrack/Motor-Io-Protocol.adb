@@ -26,7 +26,6 @@ package body Motor.Io.Protocol is
   package Log is new Traces ("Protocol");
 
   use all type Device.Drive;
-  use all type Device.State;
   use all type Parameter.Connection_Kind;
 
   The_Connection_Kind : Parameter.Connection_Kind;

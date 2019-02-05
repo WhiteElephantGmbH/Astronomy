@@ -38,7 +38,6 @@ with Persistent;
 with Refraction;
 with Sky_Line;
 with Space;
-with String_List;
 with Strings;
 with Time;
 with Traces;
@@ -295,8 +294,6 @@ package body User is
       Show_Description (Header & Image_Of (Value / 60, Upper_Unit) & Image_Of (Value mod 60, Lower_Unit));
     end Show_Duration;
 
-    use type Time.T;
-
     Delta_Time : constant Natural := Natural(Visible_In);
 
   begin -- Show
@@ -425,7 +422,6 @@ package body User is
 
   procedure Show (Information : Telescope.Data) is
     use type Telescope.State;
-    use type Angle.Signed;
     use type Device.Time_Synch_State;
   begin
     if The_Target_Selection = No_Target then
@@ -845,7 +841,6 @@ package body User is
   procedure Define_Operation is
 
     Control_Image : constant String := Identifier_Of (Gui.Contents_Of (Operation_Control));
-    use type Angle.Value;
 
     procedure Initialize_Next_Operation is
       use type Catalog.Magnitude;
@@ -912,7 +907,6 @@ package body User is
     The_Distance : Angle.Degrees;
     The_Item     : Name.Id;
     use Astro;
-    use MATLIB;
   begin
     Gui.Disable (Next_Or_Clear_Button);
     Log.Write ("Next_Azimuth :" & The_Next_Azimuth'img);
@@ -922,7 +916,6 @@ package body User is
       declare
         Item      : constant Name.Id := The_Targets.Ids(The_Index);
         Magnitude : constant Catalog.Magnitude := Catalog.Magnitude(Name.Magnitude_Of (Item));
-        use type String_List.Item;
         use all type Data.Object_Type;
         use type Catalog.Magnitude;
       begin
@@ -958,7 +951,6 @@ package body User is
       The_Next_Stars.Prepend (The_Item);
       declare
         Next_Star : constant String := Name.Image_Of (The_Item);
-        use type String_List.Item;
       begin
         Set_Target_Name (Next_Star);
         Signal_Action (Define_Target);

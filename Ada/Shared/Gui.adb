@@ -573,7 +573,6 @@ package body Gui is
                             The_Action : Key_Action_Access) return Boolean is
     Event_Type : constant Gdk.Event.Gdk_Event_Type := Gdk.Event.Get_Event_Type (The_Event);
     The_Key    : constant Key_Code := Key_Code(Gdk.Event.Get_Key_Val (The_Event));
-    use type Key_Code;
   begin
     if Key_Handling_Is_Enabled then
       case Event_Type is
@@ -1763,7 +1762,6 @@ package body Gui is
     Data : constant Sort_Direction_Data := (The_View   => The_Column.The_View,
                                             The_Column => The_Column.Column_Nr,
                                             The_Order  => Sort_Order_Of(The_Direction));
-    use type Gtk.List_Store.Gtk_List_Store;
   begin
     Gui.Router.Send (Data);
   end Sort;

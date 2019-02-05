@@ -352,7 +352,6 @@ package body Matrix is
             declare
               Offset    : Offsets renames The_Az_Data(Az_Angle_Index);
               Az_Angle  : constant Angle.Unsigned := Angle.Unsigned(Az_Angle_Index) * Angle_Increment;
-              use type Angle.Signed;
             begin
               if Next_Az_Index < Index'last then
                 if Az_Angle >= The_Data(Index_Of_Sorted_Az (Next_Az_Index + 1)).Az then

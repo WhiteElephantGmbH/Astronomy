@@ -154,8 +154,6 @@ package body Telescope is
 
   task body Control_Task is
 
-    use type Time.T;
-
     The_Current_Time       : Time.Ut := Time.In_The_Past;
     The_Arriving_Time      : Time.Ut := Time.In_The_Future;
     The_Time_When_Stopped  : Time.Ut := Time.In_The_Future;
@@ -368,7 +366,6 @@ package body Telescope is
 
 
     function Follow_New_Target return Boolean is
-      use type Earth.Direction;
     begin
       Id := Next_Id;
       Get_Direction := Next_Get_Direction;
@@ -535,7 +532,6 @@ package body Telescope is
 
 
     procedure Adjust_Time (Factor : Duration) is
-      use type Time.Value;
     begin
       The_Time_Adjusting_Factor := Factor;
       The_Adjusting_Start_Time := Time.Universal;

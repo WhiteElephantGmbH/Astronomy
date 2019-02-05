@@ -21,7 +21,6 @@ with Error;
 package body Data is
 
   use Astro;
-  use Astro.MATLIB;
   use Astro.PNULIB;
   use Astro.SPHLIB;
 

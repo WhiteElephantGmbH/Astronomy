@@ -68,7 +68,6 @@ package body Sssb is
     The_Object : Object;
 
     use type Object_List.Item;
-    use type Time.T;
 
   begin -- Read_Objects
     Ada.Text_IO.Open (The_File, Ada.Text_IO.In_File, Filename);
