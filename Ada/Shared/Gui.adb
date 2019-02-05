@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2015 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2015 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -26,7 +26,6 @@ with Gtk.Arguments;
 with Gtk.Bin;
 with Gtk.Box;
 with Gtk.Cell_Renderer_Text;
-with Gtk.Container;
 with Gtk.Enums;
 with Gtk.Handlers;
 with Gtk.Label;
@@ -2484,7 +2483,6 @@ package body Gui is
       end if;
       The_Box.Pack_Start (The_Label, Expand => False);
     else
-      Gtk.Container.Add (Gtk.Container.Gtk_Container(Data.Checked_Box), The_Box);
       The_Box.Pack_Start (Data.Checked_Box, Expand => False);
     end if;
 
@@ -2690,7 +2688,6 @@ package body Gui is
       end if;
       The_Box.Pack_Start (The_Label, Expand => False);
     else
-      Data.Checked_Box.Add (The_Box);
       The_Box.Pack_Start (Data.Checked_Box, Expand => False);
     end if;
     if Data.Is_Modifiable then
