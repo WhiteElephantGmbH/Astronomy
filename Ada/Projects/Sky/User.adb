@@ -84,7 +84,7 @@ package body User is
   Add_Or_Adjust_Button : Gui.Button;
   Next_Or_Clear_Button : Gui.Button;
   Orientation_Box      : Gui.Plain_Combo_Box;
-  Autoguiding_Speed    : Gui.Plain_Edit_Box;
+  Autoguiding_Rate     : Gui.Plain_Edit_Box;
   Air_Pressure         : Gui.Plain_Edit_Box;
   Temperature          : Gui.Plain_Edit_Box;
   Operation_Control    : Gui.Plain_Combo_Box;
@@ -98,7 +98,7 @@ package body User is
 
   type Setup_Data_Storage is record
     Image_Orientation : Telescope.Orientation;
-    Autoguiding_Speed : Angle.Value;
+    Autoguiding_Rate  : Device.Autoguiding_Rate;
     Air_Pressure      : Refraction.Hectopascal;
     Temperature       : Refraction.Celsius;
     Max_Magnitude     : Catalog.Magnitude;
@@ -108,11 +108,11 @@ package body User is
 
   The_Setup_Data : Persistent_Setup.Data;
 
-  The_Image_Orientation : Telescope.Orientation  renames The_Setup_Data.Storage.Image_Orientation;
-  The_Autoguiding_Speed : Angle.Value            renames The_Setup_Data.Storage.Autoguiding_Speed;
-  The_Air_Pressure      : Refraction.Hectopascal renames The_Setup_Data.Storage.Air_Pressure;
-  The_Temperature       : Refraction.Celsius     renames The_Setup_Data.Storage.Temperature;
-  Max_Magnitude         : Catalog.Magnitude      renames The_Setup_Data.Storage.Max_Magnitude;
+  The_Image_Orientation : Telescope.Orientation   renames The_Setup_Data.Storage.Image_Orientation;
+  The_Autoguiding_Rate  : Device.Autoguiding_Rate renames The_Setup_Data.Storage.Autoguiding_Rate;
+  The_Air_Pressure      : Refraction.Hectopascal  renames The_Setup_Data.Storage.Air_Pressure;
+  The_Temperature       : Refraction.Celsius      renames The_Setup_Data.Storage.Temperature;
+  Max_Magnitude         : Catalog.Magnitude       renames The_Setup_Data.Storage.Max_Magnitude;
 
   type Page is (Is_Control, Is_Display, Is_Setup);
 
@@ -732,31 +732,29 @@ package body User is
   The_Targets        : Name.Id_List_Access;
 
 
-  function Image_Of (The_Value : Angle.Value) return String is
-    use type Angle.Unsigned;
+  function Image_Of (The_Value : Device.Autoguiding_Rate) return String is
   begin
-    return Strings.Trimmed (Angle.Unsigned'(+The_Value)'img) & """/s";
+    return Strings.Trimmed (The_Value'img) & "%";
   end Image_Of;
 
 
   procedure Define_Autoguiding is
   begin
     declare
-      Value : constant String := Strings.Trimmed (Gui.Contents_Of (Autoguiding_Speed));
+      Value : constant String := Strings.Trimmed (Gui.Contents_Of (Autoguiding_Rate));
       Last  : Natural := Value'last;
-      use type Angle.Value;
     begin
       loop
         exit when Value(Last) in '0'..'9';
         Last := Last - 1;
       end loop;
-      The_Autoguiding_Speed := +Angle.Unsigned'value(Value(Value'first .. Last));
-      Motor.Set (The_Autoguiding_Speed);
+      The_Autoguiding_Rate := Device.Autoguiding_Rate'value(Value(Value'first .. Last));
+      Motor.Set (The_Autoguiding_Rate);
     exception
     when others =>
-      Show_Error ("Incorrect Autoguiding Speed: " & Value);
+      Show_Error ("Incorrect Autoguiding Rate: " & Value);
     end;
-    Gui.Set_Text (Autoguiding_Speed, Image_Of (The_Autoguiding_Speed));
+    Gui.Set_Text (Autoguiding_Rate, Image_Of (The_Autoguiding_Rate));
   exception
   when others =>
     Log.Error ("Define_Autoguiding");
@@ -1509,11 +1507,12 @@ package body User is
           Gui.Add_Text (Orientation_Box, Strings.Legible_Of (Value'img));
         end loop;
         Gui.Select_Text (Orientation_Box, Strings.Legible_Of (The_Image_Orientation'img));
-
-        Autoguiding_Speed := Gui.Create (Setup_Page, "Autoguiding", Image_Of (The_Autoguiding_Speed),
-                                         The_Action_Routine => Define_Autoguiding'access,
-                                         The_Size           => Text_Size,
-                                         The_Title_Size     => Title_Size);
+        if not Parameter.Is_Azimuthal_Mount then
+          Autoguiding_Rate := Gui.Create (Setup_Page, "Autoguiding", Image_Of (The_Autoguiding_Rate),
+                                          The_Action_Routine => Define_Autoguiding'access,
+                                          The_Size           => Text_Size,
+                                          The_Title_Size     => Title_Size);
+        end if;
         Air_Pressure := Gui.Create (Setup_Page, "Air Pressure", Image_Of (The_Air_Pressure),
                                     The_Action_Routine => Define_Air_Pressure'access,
                                     The_Size           => Text_Size,
@@ -1575,13 +1574,13 @@ package body User is
       Define_Control_Page;
       if Persistent_Setup.Storage_Is_Empty then
         The_Image_Orientation := Telescope.Correct;
-        The_Autoguiding_Speed := Angle.Zero;
+        The_Autoguiding_Rate := 0;
         The_Air_Pressure := 0;
         The_Temperature := 10;
         Max_Magnitude := 4.0;
       end if;
       Signal_Action (Set_Orientation);
-      Motor.Set (The_Autoguiding_Speed);
+      Motor.Set (The_Autoguiding_Rate);
       Refraction.Set (The_Air_Pressure);
       Refraction.Set (The_Temperature);
       Is_Setup_Mode := Parameter.Is_Setup_Mode;

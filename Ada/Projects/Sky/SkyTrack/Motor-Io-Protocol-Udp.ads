@@ -23,7 +23,7 @@ private package Motor.Io.Protocol.Udp is
 
   procedure Start;
 
-  procedure Define_Autoguiding;
+  procedure Set_Autoguiding_Rate (The_Rate : Device.Autoguiding_Rate);
 
   procedure Set_Initial_Count (C0_1 : Natural;
                                C0_2 : Natural);

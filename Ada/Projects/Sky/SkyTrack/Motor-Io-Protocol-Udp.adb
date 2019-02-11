@@ -38,9 +38,7 @@ package body Motor.Io.Protocol.Udp is
                    Update_Directions,
                    Adjust_1,
                    Adjust_2,
-                   Autoguiding_Off,
-                   Autoguiding_On,
-                   Inverse_Autoguiding_On,
+                   Set_Autoguiding,
                    Stop);
 
   type Protocol_Version is record
@@ -73,6 +71,20 @@ package body Motor.Io.Protocol.Udp is
 
   type Telescope_Identifier is new Unsigned.Byte;
 
+  type Autoguiding_Parameters is record
+    Steps_Per_Revolution_1 : Device.Step_Number;
+    Steps_Per_Revolution_2 : Device.Step_Number;
+    Rate                   : Device.Autoguiding_Rate;
+  end record
+  with
+    Alignment => 4,
+    Size      => 64;
+  for Autoguiding_Parameters use record
+    Rate                   at  0 range 0 .. 7;
+    Steps_Per_Revolution_1 at  1 range 0 .. 23;
+    Steps_Per_Revolution_2 at  4 range 0 .. 23;
+  end record;
+
   type Transmit_Data (The_Command       : Command := Initialize;
                       The_Protocol_Type : Protocol_Type := Stepper_Motor_Protocol;
                       Actions_Length_1  : Action_List_Length := 0;
@@ -88,12 +100,14 @@ package body Motor.Io.Protocol.Udp is
       Positions : Step_Positions;
     when Update_Directions =>
       Offsets : Step_Positions;
+    when Set_Autoguiding =>
+      Parameters : Autoguiding_Parameters;
     when Synchronize =>
       Actual_Time : Time.Ut;
     when Update =>
       Action_List_1 : Action_List(1..Actions_Length_1);
       Action_List_2 : Action_List(1..Actions_Length_2);
-    when Get_Data | Autoguiding_Off | Autoguiding_On | Inverse_Autoguiding_On | Adjust_1 | Adjust_2 | Stop =>
+    when Get_Data | Adjust_1 | Adjust_2 | Stop =>
       null;
     end case;
   end record
@@ -111,6 +125,7 @@ package body Motor.Io.Protocol.Udp is
     Start_Count_2     at 20 range 0..31;
     Positions         at 16 range 0..63;
     Offsets           at 16 range 0..63;
+    Parameters        at 16 range 0..63;
     Actual_Time       at 16 range 0..63;
   end record;
 
@@ -192,8 +207,9 @@ package body Motor.Io.Protocol.Udp is
 
   function Hardware_Version_Of (The_Version : Protocol_Version) return Hardware_Version is
     use type Unsigned.Byte;
+    use type Unsigned.Word;
   begin
-    if The_Version.Major_Id = 1 then
+    if The_Version.Major_Id = 2 then
       case The_Version.Minor_Id is
       when 3 =>
         return Stepper_Version_0;
@@ -279,14 +295,10 @@ package body Motor.Io.Protocol.Udp is
           when Update_Directions =>
             The_Update_Direction_Data := Data;
             Has_Update_Direction_Data := True;
-          when Autoguiding_Off =>
+          when Set_Autoguiding =>
             The_Guiding_Data := Data;
             Has_Guiding_Data := True;
-            Is_Autoguiding := False;
-          when Autoguiding_On | Inverse_Autoguiding_On =>
-            The_Guiding_Data := Data;
-            Has_Guiding_Data := True;
-            Is_Autoguiding := True;
+            Is_Autoguiding := Data.Parameters.Rate /= 0;
           when Adjust_1 | Adjust_2 =>
             if not Has_Guiding_Data then
               The_Guiding_Data := Data;
@@ -552,7 +564,7 @@ package body Motor.Io.Protocol.Udp is
           when Stepper_Version_0 | Stepper_Version_1 =>
             return;
           when others =>
-            Error.Raise_With ("expected version 0 or 1 of stepper hardware.");
+            Error.Raise_With ("firmware update required in stepper hardware.");
           end case;
         end if;
       end;
@@ -590,20 +602,16 @@ package body Motor.Io.Protocol.Udp is
   end Transmit;
 
 
+  The_Autoguiding_Rate : Device.Autoguiding_Rate;
+
   procedure Define_Autoguiding is
-    Guiding_Offset_1 : constant Step_Count := Autoguiding_Offset_Of (Device.D1);
-    Guiding_Offset_2 : constant Step_Count := Autoguiding_Offset_Of (Device.D2);
-    Guiding_Offset   : constant Step_Count := Step_Count'max (Guiding_Offset_1, Guiding_Offset_2);
   begin
-    Log.Write ("define autoguiding - offset =>" & Guiding_Offset'img);
-    if Guiding_Offset = 0 then
-      Transmit ((The_Command => Autoguiding_Off,
-                 others      => <>));
-    else
-      Transmit ((The_Command      => Autoguiding_On,
-                 Steps_Per_Action => Guiding_Offset,
-                 others           => <>));
-    end if;
+    Log.Write ("define autoguiding - rate =>" & The_Autoguiding_Rate'img & "%");
+    Transmit ((The_Command => Set_Autoguiding,
+               Parameters  => (Rate                   => The_Autoguiding_Rate,
+                               Steps_Per_Revolution_1 => Nspr_Of (Device.D1),
+                               Steps_Per_Revolution_2 => Nspr_Of (Device.D2)),
+               others      => <>));
   end Define_Autoguiding;
 
 
@@ -617,6 +625,12 @@ package body Motor.Io.Protocol.Udp is
                others           => <>));
     Define_Autoguiding;
   end Set_Initial_Count;
+
+
+  procedure Set_Autoguiding_Rate (The_Rate : Device.Autoguiding_Rate) is
+  begin
+    The_Autoguiding_Rate := The_Rate;
+  end Set_Autoguiding_Rate;
 
 
   function Actual_Stepper_State return Device.State is

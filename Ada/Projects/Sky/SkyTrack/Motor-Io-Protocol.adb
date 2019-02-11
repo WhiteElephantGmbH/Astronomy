@@ -66,7 +66,6 @@ package body Motor.Io.Protocol is
       Simulation.Start;
     when Is_Udp =>
       Udp.Start;
-      Udp.Define_Autoguiding;
     end case;
   end Do_Open_Communication;
 
@@ -83,6 +82,19 @@ package body Motor.Io.Protocol is
       Udp.Set_Initial_Count (C0_1, C0_2);
     end case;
   end Initialize;
+
+
+  procedure Do_Set_Autoguiding_Rate (The_Rate : Device.Autoguiding_Rate) is
+  begin
+    case The_Connection_Kind is
+    when Is_Serial =>
+      null;
+    when Is_Simulated =>
+      null;
+    when Is_Udp =>
+      Udp.Set_Autoguiding_Rate (The_Rate);
+    end case;
+  end Do_Set_Autoguiding_Rate;
 
 
   function Actual_Device_State return Device.State is

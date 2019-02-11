@@ -41,9 +41,9 @@ package body Motor.Io is
   end Freq;
 
 
-  The_Nspr : Device.Steps_Per_Revolution; -- steps per revolution
+  The_Nspr : Device.Steps_Per_Revolution;
 
-  function Nspr_Of (The_Drive : Device.Drive) return Natural is
+  function Nspr_Of (The_Drive : Device.Drive) return Device.Step_Number is
   begin
     return The_Nspr(The_Drive);
   end Nspr_Of;
@@ -305,12 +305,9 @@ package body Motor.Io is
   end Startup_Initialization;
 
 
-  The_Autoguiding_Speed : Value;
-
-  procedure Set_Autoguiding (The_Speed : Angle.Value) is
-    use type Angle.Value;
+  procedure Set_Autoguiding (The_Rate : Device.Autoguiding_Rate) is
   begin
-    The_Autoguiding_Speed := +The_Speed;
+    Protocol.Do_Set_Autoguiding_Rate (The_Rate);
   end Set_Autoguiding;
 
 
@@ -821,12 +818,6 @@ package body Motor.Io is
     Log.Write ("adjust " & The_Drive'img & " with speed" & With_Speed'img);
     Protocol.Do_Adjust (The_Drive, Offset_Per_Action_For (With_Speed, The_Drive));
   end Adjust;
-
-
-  function Autoguiding_Offset_Of (The_Drive : Device.Drive) return Step_Count is
-  begin
-    return Offset_Per_Action_For (The_Autoguiding_Speed, The_Drive);
-  end Autoguiding_Offset_Of;
 
 
   procedure Halt is

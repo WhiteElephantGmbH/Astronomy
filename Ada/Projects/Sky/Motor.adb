@@ -359,9 +359,9 @@ package body Motor is
   end Initialize;
 
 
-  procedure Set (Autoguiding_Speed : Angle.Value) is
+  procedure Set (Autoguiding_Rate : Device.Autoguiding_Rate) is
   begin
-    Io.Set_Autoguiding (Autoguiding_Speed);
+    Io.Set_Autoguiding (Autoguiding_Rate);
   end Set;
 
 

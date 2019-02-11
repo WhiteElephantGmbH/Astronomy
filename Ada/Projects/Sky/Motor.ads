@@ -68,7 +68,7 @@ package Motor is
 
   procedure Initialize;
 
-  procedure Set (Autoguiding_Speed : Angle.Value);
+  procedure Set (Autoguiding_Rate : Device.Autoguiding_Rate);
 
   procedure Define_Positions;
 

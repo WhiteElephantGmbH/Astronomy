@@ -26,6 +26,8 @@ private package Motor.Io.Protocol is
   procedure Initialize (C0_1 : Natural;
                         C0_2 : Natural);
 
+  procedure Do_Set_Autoguiding_Rate (The_Rate : Device.Autoguiding_Rate);
+
   function Actual_Device_State return Device.State;
 
   function Actual_Device_Synch_State return Device.Time_Synch_State;

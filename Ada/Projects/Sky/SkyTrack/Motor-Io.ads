@@ -33,7 +33,7 @@ private package Motor.Io is
 
   procedure Startup_Initialization;
 
-  procedure Set_Autoguiding (The_Speed : Angle.Value);
+  procedure Set_Autoguiding (The_Rate : Device.Autoguiding_Rate);
 
   function Actual_State return Device.State;
 
@@ -68,7 +68,7 @@ private
 
   function Freq return Natural;
 
-  function Nspr_Of (The_Drive : Device.Drive) return Natural;
+  function Nspr_Of (The_Drive : Device.Drive) return Device.Step_Number;
 
   type Step_Direction is (Backward, Forward, Undefined);
 
@@ -131,7 +131,5 @@ private
     Positions : Step_Positions := (others => <>);
     Offsets   : Step_Positions := (others => <>);
   end record;
-
-  function Autoguiding_Offset_Of (The_Drive : Device.Drive) return Step_Count;
 
 end Motor.Io;

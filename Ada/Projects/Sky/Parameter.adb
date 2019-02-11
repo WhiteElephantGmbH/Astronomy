@@ -407,6 +407,17 @@ package body Parameter is
           end;
         end Prepare_Serial;
 
+
+        function Step_Number_Of (Key : String) return Device.Step_Number is
+          Number : constant Positive := Number_Of (Key);
+        begin
+          if Number > Device.Step_Number'last  then
+            Error.Raise_With ("Too many steps per revolution");
+          end if;
+          return Number;
+        end Step_Number_Of;
+
+
         Port_Name : constant String := String_Value_Of (Serial_Port_Key);
 
       begin -- Connect_Telescope
@@ -426,12 +437,12 @@ package body Parameter is
         if Is_Stepper_Driver then
           The_Clocks_Per_Second := Number_Of (Clocks_Per_Second_Key);
           if String_Value_Of (Steps_Per_Revolution_Key) = "" then
-            The_Steps_Per_Revolution(Device.D1) := Number_Of (First_Steps_Per_Revolution_Key);
-            The_Steps_Per_Revolution(Device.D2) := Number_Of (Second_Steps_Per_Revolution_Key);
+            The_Steps_Per_Revolution(Device.D1) := Step_Number_Of (First_Steps_Per_Revolution_Key);
+            The_Steps_Per_Revolution(Device.D2) := Step_Number_Of (Second_Steps_Per_Revolution_Key);
           elsif (String_Value_Of (First_Steps_Per_Revolution_Key) = "") and
                 (String_Value_Of (Second_Steps_Per_Revolution_Key) = "")
           then
-            The_Steps_Per_Revolution(Device.D1) := Number_Of (Steps_Per_Revolution_Key);
+            The_Steps_Per_Revolution(Device.D1) := Step_Number_Of (Steps_Per_Revolution_Key);
             The_Steps_Per_Revolution(Device.D2) := The_Steps_Per_Revolution(Device.D1);
           else
             Error.Raise_With ("The steps per revolution are defined more then once");
