@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2011 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2011 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -31,6 +31,7 @@ with Neo;
 with Network.Tcp;
 with Numerics;
 with Os.Application;
+with Os.Ascom;
 with Parameter;
 with Os.Process;
 with Sky_Line;
@@ -185,39 +186,49 @@ package body Control is
                    Define_Target,
                    Stop,
                    Park,
+                   Align,
                    Synch,
                    Go_To,
                    Set_Orientation,
                    New_Goto_Direction,
+                   New_Synch_Direction,
                    Update,
                    New_Telescope_Information,
                    Close);
 
   protected Action_Handler is
-    procedure Put (A_Goto_Direction : Space.Direction);
+    procedure Put_Goto (The_Direction  : Space.Direction);
+    procedure Put_Synch (The_Direction : Space.Direction);
     procedure Put (The_Action       : User.Action);
     procedure Signal_New_Telescope_Data;
-    function Goto_Direction return Space.Direction;
+    function New_Direction return Space.Direction;
     entry Get (The_Command : out Command);
     procedure Enable_Termination;
     entry Wait_For_Termination;
   private
-    The_Goto_Direction     : Space.Direction;
-    Next_Command           : Command;
-    Has_New_Telescope_Data : Boolean := False;
-    Has_New_Goto_Direction : Boolean := False;
-    Define_Catalog_Pending : Boolean := False;
-    Define_Target_Pending  : Boolean := False;
-    Update_Pending         : Boolean := False;
-    Command_Is_Pending     : Boolean := False;
-    Termination_Is_Enabled : Boolean := False;
+    The_New_Direction       : Space.Direction;
+    Next_Command            : Command;
+    Has_New_Telescope_Data  : Boolean := False;
+    Has_New_Goto_Direction  : Boolean := False;
+    Has_New_Synch_Direction : Boolean := False;
+    Define_Catalog_Pending  : Boolean := False;
+    Define_Target_Pending   : Boolean := False;
+    Update_Pending          : Boolean := False;
+    Command_Is_Pending      : Boolean := False;
+    Termination_Is_Enabled  : Boolean := False;
   end Action_Handler;
 
 
   procedure Goto_Handler (The_Direction : Space.Direction) is
   begin
-    Action_Handler.Put (The_Direction);
+    Action_Handler.Put_Goto (The_Direction);
   end Goto_Handler;
+
+
+  procedure Synch_Handler (The_Direction : Space.Direction) is
+  begin
+    Action_Handler.Put_Synch (The_Direction);
+  end Synch_Handler;
 
 
   procedure User_Action_Handler (The_Action : User.Action) is
@@ -247,6 +258,9 @@ package body Control is
       when User.Stop =>
         Next_Command := Stop;
         Command_Is_Pending := True;
+      when User.Align =>
+        Next_Command := Align;
+        Command_Is_Pending := True;
       when User.Synch =>
         Next_Command := Synch;
         Command_Is_Pending := True;
@@ -261,13 +275,21 @@ package body Control is
       end case;
     end Put;
 
-    procedure Put (A_Goto_Direction : Space.Direction) is
+    procedure Put_Goto (The_Direction : Space.Direction) is
     begin
-      The_Goto_Direction := A_Goto_Direction;
+      The_New_Direction := The_Direction;
       if Next_Command /= Close then
         Has_New_Goto_Direction := True;
       end if;
-    end Put;
+    end Put_Goto;
+
+    procedure Put_Synch (The_Direction : Space.Direction) is
+    begin
+      The_New_Direction := The_Direction;
+      if Next_Command /= Close then
+        Has_New_Synch_Direction := True;
+      end if;
+    end Put_Synch;
 
     procedure Signal_New_Telescope_Data is
     begin
@@ -276,9 +298,9 @@ package body Control is
       end if;
     end Signal_New_Telescope_Data;
 
-
     entry Get (The_Command : out Command)
       when Has_New_Goto_Direction
+        or Has_New_Synch_Direction
         or Command_Is_Pending
         or Define_Catalog_Pending
         or Update_Pending
@@ -301,6 +323,9 @@ package body Control is
       elsif Has_New_Goto_Direction then
         The_Command := New_Goto_Direction;
         Has_New_Goto_Direction := False;
+      elsif Has_New_Synch_Direction then
+        The_Command := New_Synch_Direction;
+        Has_New_Synch_Direction := False;
       elsif Has_New_Telescope_Data then
         The_Command := New_Telescope_Information;
         Has_New_Telescope_Data := False;
@@ -310,10 +335,10 @@ package body Control is
       end if;
     end Get;
 
-    function Goto_Direction return Space.Direction is
+    function New_Direction return Space.Direction is
     begin
-      return The_Goto_Direction;
-    end Goto_Direction;
+      return The_New_Direction;
+    end New_Direction;
 
     procedure Enable_Termination is
     begin
@@ -365,21 +390,40 @@ package body Control is
     end Arrival_Time;
 
 
-    procedure Handle_Goto is
+    procedure Define_External_Target is
     begin
       User.Clear_Target;
-      New_Target_Direction := Action_Handler.Goto_Direction;
+      New_Target_Direction := Action_Handler.New_Direction;
       Telescope.Define_Space_Access (Target_Direction_Of'access, Name.No_Id);
       The_Landmark := Name.No_Id;
       The_Neo_Target := Name.No_Id;
       Is_Zero_Target := False;
+    end Define_External_Target;
+
+
+    procedure Handle_Goto is
+    begin
+      Define_External_Target;
       case The_Data.Status is
-      when Telescope.Disconnected =>
-        null;
+      when Telescope.Disconnected | Telescope.Ready | Telescope.Startup =>
+        Log.Error ("goto not executed");
       when others =>
         User.Perform_Goto;
       end case;
     end Handle_Goto;
+
+
+    procedure Handle_Synch is
+      use type Name.Id;
+    begin
+      Define_External_Target;
+      case The_Data.Status is
+      when Telescope.Disconnected | Telescope.Startup =>
+        Log.Error ("synch not executed");
+      when others =>
+        User.Perform_Synch;
+      end case;
+    end Handle_Synch;
 
 
     Telescope_Information_Is_Handled : Boolean := False;
@@ -432,6 +476,8 @@ package body Control is
         The_Travelling_Time := 0.0;
         User.Show (The_Progress => 0);
       end case;
+      Os.Ascom.Set (The_Data.Actual_Direction);
+      Os.Ascom.Set (Is_Approaching => The_Data.Status = Telescope.Approaching);
       Lx200.Set (The_Data.Actual_Direction);
       Stellarium.Set (The_Data.Actual_Direction);
     end Handle_Telescope_Information;
@@ -501,11 +547,13 @@ package body Control is
           end;
         when Stop =>
           Telescope.Halt;
+        when Align =>
+          Telescope.Align;
         when Synch =>
           if Is_Zero_Target then
             Telescope.Synch_Park_Position;
           else
-            Telescope.Synch;
+            Telescope.Synch_On_Target;
           end if;
         when Park =>
           Telescope.Park;
@@ -519,6 +567,8 @@ package body Control is
           Telescope.Set (User.Image_Orientation);
         when New_Goto_Direction =>
           Handle_Goto;
+        when New_Synch_Direction =>
+          Handle_Synch;
         when New_Telescope_Information =>
           Handle_Telescope_Information;
           Telescope_Information_Is_Handled := True;
@@ -527,6 +577,7 @@ package body Control is
           Telescope.Close;
           Stellarium.Close;
           Lx200.Close;
+          Os.Ascom.Close;
           exit;
         end case;
       or
@@ -548,6 +599,7 @@ package body Control is
     Telescope.Close;
     Stellarium.Close;
     Lx200.Close;
+    Os.Ascom.Close;
     Action_Handler.Enable_Termination;
   end Manager;
 
@@ -572,6 +624,8 @@ package body Control is
 
     procedure Startup is
     begin
+      Os.Ascom.Define_Handlers (Goto_Handler'access,
+                                Synch_Handler'access);
       Lx200.Define_Handler (Goto_Handler'access);
       Stellarium.Define_Handler (Goto_Handler'access);
       The_Manager := new Manager;
@@ -633,10 +687,12 @@ package body Control is
                   Park_Position       => Numerics.Position_Of (Earth.Direction_Of (Az  => Parameter.Park_Azimuth,
                                                                                    Alt => Parameter.Park_Altitude)));
     Start_Stellarium_Server;
+    Os.Ascom.Start;
     begin
       Start_Lx200_Server;
     exception
     when others =>
+      Os.Ascom.Close;
       Stellarium.Close;
       raise;
     end;

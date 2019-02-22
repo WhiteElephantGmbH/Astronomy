@@ -75,6 +75,9 @@ package Motor is
   procedure Synch_Park_Position;
   -- synchronises the park position
 
+  procedure Synch_Position (To : Position);
+  -- synchronises to a position
+
   function Time_When_Parked return Time.Ut;
   -- move to park position
 

@@ -23,6 +23,7 @@ with Numerics;
 with Parameter;
 with System;
 with Traces;
+with User;
 
 package body Telescope is
 
@@ -43,7 +44,9 @@ package body Telescope is
 
     entry Position_To (Landmark : Name.Id);
 
-    entry Synch;
+    entry Align;
+
+    entry Synch_On_Target;
 
     entry Synch_Park_Position;
 
@@ -109,10 +112,10 @@ package body Telescope is
   end Position_To;
 
 
-  procedure Synch is
+  procedure Align is
   begin
-    Control.Synch;
-  end Synch;
+    Control.Align;
+  end Align;
 
 
   Next_Id            : Name.Id;
@@ -124,6 +127,12 @@ package body Telescope is
     Next_Id := The_Id;
     Next_Get_Direction := Get_Direction;
   end Define_Space_Access;
+
+
+  procedure Synch_On_Target is
+  begin
+    Control.Synch_On_Target;
+  end Synch_On_Target;
 
 
   procedure Synch_Park_Position is
@@ -172,10 +181,11 @@ package body Telescope is
     The_Time_Adjustment       : Duration := 0.0;
 
     type Event is (No_Event,
+                   Align,
                    Halt,
+                   Synch_On_Target,
                    Synch_Park_Position,
                    Park,
-                   Synch,
                    Follow,
                    Position,
                    User_Command,
@@ -196,7 +206,7 @@ package body Telescope is
     Event_After_Stop : Event := No_Event;
 
     The_User_Command : Command;
-    Is_Synchronizing : Boolean := False;
+    Is_Aligning      : Boolean := False;
 
     Id            : Name.Id;
     Get_Direction : Get_Space_Access;
@@ -384,7 +394,7 @@ package body Telescope is
     begin
       The_Time_Adjustment := 0.0;
       The_Current_Time := Time.In_The_Past;
-      Is_Synchronizing := False;
+      Is_Aligning := False;
     end Time_Control_End;
 
 
@@ -402,6 +412,14 @@ package body Telescope is
       The_State := Stopping;
       Event_After_Stop := Position;
     end Stop_And_Position;
+
+
+    procedure Stop_And_Synch is
+    begin
+      Motor.Stop;
+      The_State := Stopping;
+      Event_After_Stop := Synch_On_Target;
+    end Stop_And_Synch;
 
 
     procedure Stop_And_Follow is
@@ -440,6 +458,27 @@ package body Telescope is
     end Do_Park;
 
 
+    procedure Do_Synch_On_Target is
+      Target_Direction : Space.Direction;
+      use type Space.Direction;
+    begin
+      The_State := Stopped;
+      if Next_Get_Direction = null then
+        Log.Error ("undefined synch target");
+      else
+        Target_Direction := Next_Get_Direction (Next_Id, Time.Universal);
+        if Target_Direction = Space.Unknown_Direction then
+          Log.Error ("undefined synch target direction");
+        else
+          Motor.Synch_Position (Numerics.Position_Of (Direction => Target_Direction,
+                                                      Rotations => Alignment.Corrections,
+                                                      At_Time   => Time.Universal));
+          User.Perform_Goto;
+        end if;
+      end if;
+    end Do_Synch_On_Target;
+
+
     procedure Synchronize_Time is
     begin
       Motor.Synchronize (The_Current_Time);
@@ -456,6 +495,8 @@ package body Telescope is
         Do_Park;
       when Position =>
         Do_Position;
+      when Synch_On_Target =>
+        Do_Synch_On_Target;
       when Follow =>
         Synchronize_Time;
       when others =>
@@ -737,6 +778,8 @@ package body Telescope is
         Direct_Handling;
       when Synch_Park_Position =>
         Motor.Synch_Park_Position;
+      when Synch_On_Target =>
+        Do_Synch_On_Target;
       when Park =>
         Do_Park;
       when Motor_Parked =>
@@ -762,6 +805,8 @@ package body Telescope is
         Do_Park;
       when Synch_Park_Position =>
         Motor.Synch_Park_Position;
+      when Synch_On_Target =>
+        Do_Synch_On_Target;
       when Motor_Ready =>
         The_State := Ready;
       when Motor_Parking =>
@@ -817,6 +862,8 @@ package body Telescope is
         Handle_Time_Increment;
       when Synch_Park_Position =>
         Motor.Synch_Park_Position;
+      when Synch_On_Target =>
+        Do_Synch_On_Target;
       when Motor_Parking =>
         The_State := Parking;
       when Motor_Parked =>
@@ -1038,12 +1085,14 @@ package body Telescope is
           Motor.Stop;
           The_State := Stopping;
         end if;
-      when Synch =>
-        Is_Synchronizing := True;
+      when Align =>
+        Is_Aligning := True;
+      when Synch_On_Target =>
+        Stop_And_Synch;
       when Time_Increment =>
         if Following_Target then
           Motor.Update;
-          if Is_Synchronizing then
+          if Is_Aligning then
             if Alignment.Is_One_Star then
               Motor.Synchronize_Positions;
             else
@@ -1052,7 +1101,7 @@ package body Telescope is
               Motor.Set_Undefined (Pe);
               Motor.Set_Undefined (Pn);
             end if;
-            Is_Synchronizing := False;
+            Is_Aligning := False;
           end if;
         else
           if Goto_Target then
@@ -1138,14 +1187,17 @@ package body Telescope is
           end Position_To;
           The_Event := Position;
         or
-          accept Synch;
-          The_Event := Synch;
+          accept Align;
+          The_Event := Align;
         or
           accept Park;
           The_Event := Park;
         or
           accept Synch_Park_Position;
           The_Event := Synch_Park_Position;
+        or
+          accept Synch_On_Target;
+          The_Event := Synch_On_Target;
         or
           accept Set (The_Orientation : Orientation) do
             Log.Write ("orientation => " & The_Orientation'img);

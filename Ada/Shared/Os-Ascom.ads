@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2017 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2011 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,18 +15,22 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Unsigned;
+with Space;
 
-package Program is
+package Os.Ascom is
 
-  Major_Id : constant := 1;
-  Minor_Id : constant := 4;
-  Revision : constant := 19;
+  type Handler is access procedure (Direction : Space.Direction);
 
-  function Version return String;
+  procedure Start;
 
-  function Version return Unsigned.Quadword;
+  procedure Define_Handlers (Goto_Handler  : Handler;
+                             Synch_Handler : Handler);
 
-end Program;
+  procedure Set (The_Location : Space.Direction);
 
+  procedure Set (Is_Approaching : Boolean);
+
+  procedure Close;
+
+end Os.Ascom;
 

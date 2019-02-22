@@ -384,6 +384,69 @@ package body Motor is
   end Synch_Park_Position;
 
 
+  function Normalized (The_Value : Value) return Value is
+    V : Value := The_Value;
+    use type Value;
+  begin
+    while V >= 270.0 loop
+      V := V - 360.0;
+    end loop;
+    while V < -90.0 loop
+      V := V + 360.0;
+    end loop;
+    return V;
+  end Normalized;
+
+
+  function Assigned (The_Values    : out Values;
+                     The_Position  :     Position) return Boolean is
+
+    use type Angle.Signed;
+    use type Angle.Value;
+    use type Value;
+
+    Se : Value;
+
+  begin
+    The_Values(D1) := +The_Position.First;
+    The_Values(D2) := +The_Position.Second;
+    if (UL(D2) - LL(D2) = 0.0) or ((UL(D2) - LL(D2)) >= 180.0) then -- allow inversion (D1 ??? not implemented)
+      if Is_Inverted then
+        Se := Normalized (The_Values(D1) - 180.0);
+      else
+        Se := Normalized (The_Values(D1));
+      end if;
+      if Se < LL(D1) or Se > UL(D1) then
+        if Inversion_Is_Enabled then
+          Is_Inverted := not Is_Inverted;
+        else
+          return False;
+        end if;
+      end if;
+      if Is_Inverted then
+        The_Values(D1) := Normalized (The_Values(D1) - 180.0);
+        The_Values(D2) := 180.0 - The_Values(D2);
+      end if;
+    end if;
+    return True;
+  end Assigned;
+
+
+  procedure Synch_Position (To : Position) is
+    P : Values;
+  begin
+    Allow_Inversion;
+    if Assigned (P, To) then
+      P(D1) := Normalized (P(D1));
+      P(D2) := Normalized (P(D2));
+      AP := P;
+      Io.Set_Positions (P);
+    else
+      Log.Error ("synch position not assigned");
+    end if;
+  end Synch_Position;
+
+
   function Time_For_Positioning (To : Values) return Time.Ut is
 
     function Distance_From_Actual (D : Drive) return Value is
@@ -521,54 +584,27 @@ package body Motor is
   end Min;
 
 
-  function Normalized (The_Value : Value) return Value is
-    V : Value := The_Value;
-    use type Value;
-  begin
-    while V >= 270.0 loop
-      V := V - 360.0;
-    end loop;
-    while V < -90.0 loop
-      V := V + 360.0;
-    end loop;
-    return V;
-  end Normalized;
-
-
   function Assigned (The_Position : Position;
                      The_Speed    : Speed) return Boolean is
 
     use type Angle.Signed;
-    use type Angle.Value;
     use type Value;
 
-    Se : Value;
+    The_Values : Values;
 
   begin
-    M1.Se := +The_Position.First;
-    M1.Ve := +The_Speed.First;
-    M2.Se := +The_Position.Second;
-    M2.Ve := +The_Speed.Second;
-    if (UL(D2) - LL(D2) = 0.0) or ((UL(D2) - LL(D2)) >= 180.0) then -- allow inversion (D1 ??? not implemented)
+    if Assigned (The_Values, The_Position) then
+      M1.Se := The_Values(D1);
+      M1.Ve := +The_Speed.First;
+      M2.Se := The_Values(D2);
+      M2.Ve := +The_Speed.Second;
       if Is_Inverted then
-        Se := Normalized (M1.Se - 180.0);
-      else
-        Se := Normalized (M1.Se);
-      end if;
-      if Se < LL(D1) or Se > UL(D1) then
-        if Inversion_Is_Enabled then
-          Is_Inverted := not Is_Inverted;
-        else
-          return False;
-        end if;
-      end if;
-      if Is_Inverted then
-        M1.Se := Normalized (M1.Se - 180.0);
-        M2.Se := 180.0 - M2.Se;
         M2.Ve := - M2.Ve;
       end if;
+      return True;
+    else
+      return False;
     end if;
-    return True;
   end Assigned;
 
 
@@ -1135,7 +1171,11 @@ package body Motor is
 
   begin
     The_First_Revolutions := Revolutions_Of (D1);
-    The_Second_Revolutions := Revolutions_Of (D2);
+    if Limits_Enabled (D2) then
+      The_Second_Revolutions := Revolutions_Of (D2);
+    else
+      The_Second_Revolutions := 0;
+    end if;
   end Calculate_Revolutions;
 
 

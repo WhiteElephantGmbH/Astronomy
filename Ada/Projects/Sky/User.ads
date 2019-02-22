@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2011 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2011 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -21,7 +21,7 @@ with Telescope;
 
 package User is
 
-  type Action is (Define_Catalog, Define_Target, Park, Stop, Synch, Go_To, Set_Orientation, Update, Close);
+  type Action is (Define_Catalog, Define_Target, Park, Stop, Align, Synch, Go_To, Set_Orientation, Update, Close);
 
   subtype Button_Action is Action range Park .. Go_To;
 

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2017 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2017 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -21,7 +21,7 @@ package User.Input is
 
   procedure Open;
 
-  type Source is (Button, Keypad, Handbox, Lx200);
+  type Source is (Ascom, Button, Keypad, Handbox, Lx200);
 
   procedure Put (The_Command : Device.Command;
                  From        : Source);

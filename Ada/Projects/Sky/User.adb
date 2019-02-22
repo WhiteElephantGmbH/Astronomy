@@ -124,6 +124,8 @@ package body User is
   The_Target_Selection  : Target_Selection := No_Target;
   Last_Target_Selection : Target_Selection;
 
+  Autoguiding_Change : Boolean := False;
+
   Synchronizing_Is_Enabled : Boolean := False;
 
   The_Status : Telescope.State := Telescope.Disconnected;
@@ -307,6 +309,12 @@ package body User is
   end Show;
 
 
+  function Is_Autoguiding return Boolean is
+  begin
+    return The_Autoguiding_Rate /= 0;
+  end Is_Autoguiding;
+
+
   function Next_Operation_Enabled return Boolean is
   begin
     case The_Operation is
@@ -318,12 +326,12 @@ package body User is
   end Next_Operation_Enabled;
 
 
-  Alignment_Synchronizing_Is_Enabled  : Boolean := False;
+  Align_Is_Enabled                    : Boolean := False;
   Is_Ready_For_Alignment_Calculations : Boolean := False;
 
   procedure Disable_Operation_Buttons (Is_Stopped : Boolean := False) is
   begin
-    Alignment_Synchronizing_Is_Enabled  := False;
+    Align_Is_Enabled  := False;
     Is_Ready_For_Alignment_Calculations := False;
     if Is_Setup_Mode then
       case The_Operation is
@@ -368,11 +376,11 @@ package body User is
     Is_Ready_For_Alignment_Calculations := False;
     case The_Operation is
     when Align_1_Star =>
-      Gui.Set_Text (Add_Or_Adjust_Button, "Synch");
+      Gui.Set_Text (Add_Or_Adjust_Button, "Align");
     when Align_Pole_Axis =>
       case The_Alignment_Star is
       when No_Star =>
-        Gui.Set_Text (Add_Or_Adjust_Button, "Synch");
+        Gui.Set_Text (Add_Or_Adjust_Button, "Align");
       when First_Star =>
         Gui.Set_Text (Add_Or_Adjust_Button, "Add First");
       when Second_Star =>
@@ -404,7 +412,7 @@ package body User is
         if Alignment_Adding_Is_Enabled then
           Set_Add_Button_Text;
           if The_Alignment_Star = No_Star then
-            Alignment_Synchronizing_Is_Enabled := True;
+            Align_Is_Enabled := True;
           end if;
         end if;
         Gui.Enable (Add_Or_Adjust_Button);
@@ -428,7 +436,8 @@ package body User is
       Define_Park_Position;
       return;
     end if;
-    if (The_Status /= Information.Status) or (Last_Target_Selection /= The_Target_Selection) then
+    if (The_Status /= Information.Status) or (Last_Target_Selection /= The_Target_Selection) or Autoguiding_Change then
+      Autoguiding_Change := False;
       The_Status := Information.Status;
       Last_Target_Selection := The_Target_Selection;
       Synchronizing_Is_Enabled := False;
@@ -446,7 +455,17 @@ package body User is
         end case;
       when Target_Object =>
         Gui.Set_Text (Goto_Or_Park_Button, "Goto");
-        Gui.Set_Text (Stop_Or_Synch_Button, "Stop");
+        if Is_Autoguiding then
+          case The_Status is
+          when Telescope.Ready | Telescope.Stopped | Telescope.Parked =>
+            Gui.Set_Text (Stop_Or_Synch_Button, "Synch");
+            Synchronizing_Is_Enabled := True;
+          when others =>
+            Gui.Set_Text (Stop_Or_Synch_Button, "Stop");
+          end case;
+        else
+          Gui.Set_Text (Stop_Or_Synch_Button, "Stop");
+        end if;
       when No_Target =>
         raise Program_Error;
       end case;
@@ -461,18 +480,27 @@ package body User is
         when Park_Position =>
           Gui.Enable (Stop_Or_Synch_Button);
         when Target_Object =>
-          Gui.Disable (Stop_Or_Synch_Button);
+          if Synchronizing_Is_Enabled then
+            Gui.Enable (Stop_Or_Synch_Button);
+          else
+            Gui.Disable (Stop_Or_Synch_Button);
+          end if;
         when others =>
           raise Program_Error;
         end case;
         Gui.Enable (Goto_Or_Park_Button);
       when Telescope.Parked =>
         Disable_Operation_Buttons;
-        Gui.Disable (Stop_Or_Synch_Button);
         case The_Target_Selection is
         when Park_Position =>
           Gui.Disable (Goto_Or_Park_Button);
+          Gui.Disable (Stop_Or_Synch_Button);
         when Target_Object =>
+          if Synchronizing_Is_Enabled then
+            Gui.Enable (Stop_Or_Synch_Button);
+          else
+            Gui.Disable (Stop_Or_Synch_Button);
+          end if;
           Gui.Enable (Goto_Or_Park_Button);
         when others =>
           raise Program_Error;
@@ -749,6 +777,7 @@ package body User is
         Last := Last - 1;
       end loop;
       The_Autoguiding_Rate := Device.Autoguiding_Rate'value(Value(Value'first .. Last));
+      Autoguiding_Change := True;
       Motor.Set (The_Autoguiding_Rate);
     exception
     when others =>
@@ -1008,15 +1037,15 @@ package body User is
       Sky_Line.Add (The_Actual_Direction);
       Gui.Enable (Next_Or_Clear_Button);
     when Align_1_Star =>
-      Signal_Action (Synch);
+      Signal_Action (Align);
       Gui.Disable (Add_Or_Adjust_Button);
     when Align_Global | Align_Local | Align_Pole_Axis =>
-      if Alignment_Synchronizing_Is_Enabled then
+      if Align_Is_Enabled then
         Gui.Disable (Next_Or_Clear_Button);
-        Alignment_Synchronizing_Is_Enabled := False;
+        Align_Is_Enabled := False;
         The_Alignment_Star := First_Star;
         Set_Add_Button_Text;
-        Signal_Action (Synch);
+        Signal_Action (Align);
       elsif Is_Ready_For_Alignment_Calculations then
         Is_Ready_For_Alignment_Calculations := False;
         Gui.Disable (Add_Or_Adjust_Button);
@@ -1497,7 +1526,7 @@ package body User is
                                     The_Style  => (Gui.Buttons_Fill_Horizontally => True,
                                                    Gui.Buttons_Fill_Vertically   => False));
 
-        Add_Or_Adjust_Button := Gui.Create (Setup_Page, "Synch", Handle_Add_Or_Adjust'access);
+        Add_Or_Adjust_Button := Gui.Create (Setup_Page, "Align", Handle_Add_Or_Adjust'access);
         Next_Or_Clear_Button := Gui.Create (Setup_Page, "Clear", Handle_Next_Or_Clear'access);
         Orientation_Box := Gui.Create (Setup_Page, Orientation_Key,
                                        The_Action_Routine => Set_Orientation'access,

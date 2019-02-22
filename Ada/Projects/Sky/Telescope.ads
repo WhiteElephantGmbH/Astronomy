@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2011 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2011 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -89,7 +89,9 @@ package Telescope is
 
   procedure Position_To (Landmark : Name.Id);
 
-  procedure Synch;
+  procedure Align;
+
+  procedure Synch_On_Target;
 
   procedure Synch_Park_Position;
 
