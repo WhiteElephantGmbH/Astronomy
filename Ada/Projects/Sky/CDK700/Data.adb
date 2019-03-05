@@ -41,9 +41,6 @@ package body Data is
 
   The_Last_Extension : Object := First_Extension - 1;
 
-  The_Last_Neo  : Object := Undefined;
-  The_First_Neo : Object := The_Last_Neo + 1; -- no objects
-
 
   procedure Apparent (Ra  : in out REAL;
                       Dec : in out REAL) is
@@ -127,8 +124,6 @@ package body Data is
       return Catalog.Hr_Id (Item);
     when Messier =>
       return Catalog.Messier_Id (Item);
-    when Neo =>
-      return The_First_Neo + Object(Item) - 1;
     when Ngc =>
       return Catalog.Ngc_Id (Item);
     when Ocl =>
@@ -162,10 +157,6 @@ package body Data is
       while Catalog.Messier_Id (The_Item) = Undefined loop
         The_Item := The_Item + 1;
       end loop;
-    when Neo =>
-      if The_Item > Natural(The_Last_Neo + 1 - The_First_Neo) then
-        raise End_Of_List;
-      end if;
     when Ngc =>
       while Catalog.Ngc_Id (The_Item) = Undefined loop
         The_Item := The_Item + 1;
@@ -257,36 +248,6 @@ package body Data is
     return The_Last_Extension;
   end New_Object_For;
 
-
-  function New_Neo_Object_For (Name        : String;
-                               Description : String;
-                               The_Type    : Object_Type) return Positive is
-  begin
-    if The_Last_Neo = Undefined then
-      The_First_Neo := The_Last_Extension + 1;
-    end if;
-    The_Last_Neo := New_Object_For (Name        => Name,
-                                    Description => Description,
-                                    The_Type    => The_Type);
-    return Neo_Index_Of (The_Last_Neo);
-  end New_Neo_Object_For;
-
-
-  function Neo_Object_Of (Name : String) return Object is
-  begin
-    for The_Index in The_First_Neo .. The_Last_Neo loop
-      if The_Extension_Table(The_Index).Name.all = Name then
-        return The_Index;
-      end if;
-    end loop;
-    raise Program_Error;
-  end Neo_Object_Of;
-
-
-  function Neo_Index_Of (Id : Object) return Positive is
-  begin
-    return Natural(Id + 1 - The_First_Neo);
-  end Neo_Index_Of;
 
   T : constant Time.T := Time.Tut;
 

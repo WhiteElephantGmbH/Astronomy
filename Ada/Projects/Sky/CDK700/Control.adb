@@ -94,8 +94,6 @@ package body Control is
               return Is_To_Add (User.Solar_System, Sssb.Direction_Of (Item, Ut));
             when Name.Landmark =>
               return True;
-            when Name.Near_Earth_Object =>
-              return False; -- not implemented
             when Name.Sky_Object =>
               declare
                 Object : constant Data.Object := Name.Object_Of (Item);
@@ -431,8 +429,6 @@ package body Control is
                 end if;
               when Name.Small_Solar_System_Body =>
                 Telescope.Define_Space_Access (Sssb.Direction_Of'access, The_Item);
-              when Name.Near_Earth_Object =>
-                null; -- not implemented
               when Name.Landmark =>
                 The_Landmark := The_Item;
               end case;

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2012 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                           (c) 2019 by White Elephant GmbH, Schaffhausen, Switzerland                              *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -22,7 +22,7 @@ with Time;
 
 package Data is
 
-  type Kind is (Favorites, Caldwell, Hip, Hr, Messier, Neo, Ngc, Ocl, Quasars);
+  type Kind is (Favorites, Caldwell, Hip, Hr, Messier, Ngc, Ocl, Quasars);
 
   procedure Apparent (Ra  : in out Astro.REAL;
                       Dec : in out Astro.REAL);
@@ -58,13 +58,4 @@ package Data is
                            Description : String;
                            The_Type    : Object_Type := Star;
                            Direction   : Space.Direction := Space.Unknown_Direction) return Object;
-
-  function New_Neo_Object_For (Name        : String;
-                               Description : String;
-                               The_Type    : Object_Type) return Positive;
-
-  function Neo_Object_Of (Name : String) return Object;
-
-  function Neo_Index_Of (Id : Object) return Positive;
-
 end Data;

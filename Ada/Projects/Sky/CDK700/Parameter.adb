@@ -15,17 +15,14 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Ada.Numerics;
 with Ada.Text_IO;
 with Application;
-with Astro;
 with Configuration;
 with Definite_Doubly_Linked_Lists;
 with Error;
 with File;
 with Language;
 with Mount;
-with Stellarium;
 with Strings;
 with Text;
 with Traces;
@@ -43,13 +40,10 @@ package body Parameter is
   Localization_Id : constant String := "Localization";
   Language_Key    : constant String := "Language";
 
-  Telescope_Id            : constant String := "Telescope";
-  Name_Key                : constant String := "Name";
-  Ip_Address_Key          : constant String := "IP Address";
-  Pole_Height_Key         : constant String := "Pole Height";
-  Moving_Speed_List_Key   : constant String := "Moving Speed List";
-  First_Acceleration_Key  : constant String := "First Acceleration";
-  Second_Acceleration_Key : constant String := "Second Acceleration";
+  PWI_Id                : constant String := "PWI";
+  Name_Key              : constant String := "Name";
+  Ip_Address_Key        : constant String := "IP Address";
+  Moving_Speed_List_Key : constant String := "Moving Speed List";
 
   Stellarium_Id : constant String := "Stellarium";
   Lx200_Id      : constant String := "Lx200";
@@ -59,17 +53,13 @@ package body Parameter is
   Longitude_Key : constant String := "Longitude";
   Latitude_Key  : constant String := "Latitude";
   Altitude_Key  : constant String := "Altitude";
-  Sky_Line_Key  : constant String := "Sky Line";
 
   The_Section : Configuration.Section_Handle;
 
-  The_Telescope_Name       : Text.String;
-  Is_In_Setup_Mode         : Boolean;
-  The_Pole_Height          : Angle.Value;
-  The_Moving_Speeds        : Angle_List.Item;
-  The_First_Acceleration   : Angle.Value;
-  The_Second_Acceleration  : Angle.Value;
-  The_Telescope_Connection : Connection;
+  The_Telescope_Name : Text.String;
+  Is_In_Setup_Mode   : Boolean;
+  The_Moving_Speeds  : Angle_List.Item;
+  The_PWI_Connection : Connection;
 
   --Servers
   The_Lx200_Port      : Network.Port_Number;
@@ -79,7 +69,11 @@ package body Parameter is
   The_Latitude  : Angle.Value;
   The_Longitude : Angle.Value;
   The_Altitude  : Integer; -- in meters above see level
-  The_Sky_Line  : Text.String;
+
+  CDK700_Latitude  : constant Angle.Degrees := 47.705500;
+  CDK700_Longitude : constant Angle.Degrees :=  8.609865;
+  CDK700_Altitude  : constant Integer       :=  540;
+
 
 
   procedure Set (Section : Configuration.Section_Handle) is
@@ -179,18 +173,6 @@ package body Parameter is
   end Angles_Of;
 
 
-  function Pole_Heigth return Angle.Value is
-    Key  : constant String := Pole_Height_Key;
-    Item : constant String := String_Value_Of (Key);
-  begin
-    if Item = "Latitude" then
-      return The_Latitude;
-    else
-      return Angle_Of (Key);
-    end if;
-  end Pole_Heigth;
-
-
   function Value_Of (Key  : String;
                      Unit : String := "") return Integer is
     Item : constant String := String_Of (Key);
@@ -221,33 +203,15 @@ package body Parameter is
         Error.Raise_With ("Can't create " & Filename);
       end;
       Put (Strings.Bom_8 & "[" & Localization_Id & "]");
-      Put (Language_Key & " = " & Strings.Legible_Of (Stellarium.Language'img));
+      Put (Language_Key & " = " & Strings.Legible_Of (Standard.Language.German'img));
       Put ("");
       case Default_Location is
-      when Home =>
-        Put ("[" & Telescope_Id & "]");
-        Put (Name_Key & "                        = Setup");
-        Put (Ip_Address_Key & "                  = 127.0.0.1");
-        Put (Pole_Height_Key & "                 = Latitude");
-        Put (Moving_Speed_List_Key & "           = 6""/s, 1'/s, 10'/s, 6°/s");
-        Put (First_Acceleration_Key & "          = 6°/s²");
-        Put (Second_Acceleration_Key & "         = 6°/s²");
-      when Sternwarte_Schaffhausen =>
-        Put ("[" & Telescope_Id & "]");
-        Put (Name_Key & "                               = CDK700");
-        Put (Ip_Address_Key & "                         = 127.0.0.1");
-        Put (Pole_Height_Key & "                        = 90°");
-        Put (Moving_Speed_List_Key & "                  = 6""/s, 1'/s, 10'/s, 3°00'/s");
-        Put (First_Acceleration_Key & "                 = 30'/s²");
-        Put (Second_Acceleration_Key & "                = 30'/s²");
-      when Unknown =>
-        Put ("[" & Telescope_Id & "]");
-        Put (Name_Key & "                        = ");
-        Put (Ip_Address_Key & "                  = 127.0.0.1");
-        Put (Pole_Height_Key & "                 = Latitude");
-        Put (Moving_Speed_List_Key & "           = 6""/s, 1'/s, 10'/s, 6°/s");
-        Put (First_Acceleration_Key & "          = 3°/s²");
-        Put (Second_Acceleration_Key & "         = 3°/s²");
+      when CDK700 =>
+        Put ("[" & PWI_Id & "]");
+        Put (Name_Key & "              = CDK700");
+        Put (Ip_Address_Key & "        = 127.0.0.1");
+        Put (Port_Key & "              = 8080");
+        Put (Moving_Speed_List_Key & " = 6""/s, 1'/s, 10'/s, 3°00'/s");
       end case;
       Put ("");
       Put ("[" & Lx200_Id & "]");
@@ -257,10 +221,12 @@ package body Parameter is
       Put (Port_Key & " = 10001");
       Put ("");
       Put ("[" & Site_Id & "]");
-      Put (Longitude_Key & " = " & Angle.Image_Of (+Stellarium.Longitude, Decimals => 2, Show_Signed => True));
-      Put (Latitude_Key & "  = " & Angle.Image_Of (+Stellarium.Latitude, Decimals => 2, Show_Signed => True));
-      Put (Altitude_Key & "  ="  & Stellarium.Altitude'img & "m");
-      Put (Sky_Line_Key & "  = " & Stellarium.Landscape);
+      case Default_Location is
+      when CDK700 =>
+        Put (Longitude_Key & " = " & Angle.Image_Of (+CDK700_Longitude, Decimals => 2, Show_Signed => True));
+        Put (Latitude_Key & "  = " & Angle.Image_Of (+CDK700_Latitude, Decimals => 2, Show_Signed => True));
+        Put (Altitude_Key & "  ="  & CDK700_Altitude'img & "m");
+      end case;
       Ada.Text_IO.Close (The_File);
     exception
     when Item: others =>
@@ -273,7 +239,7 @@ package body Parameter is
     procedure Read_Values is
 
       Handle              : constant Configuration.File_Handle    := Configuration.Handle_For (Filename);
-      Telescope_Handle    : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Telescope_Id);
+      PWI_Handle          : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, PWI_Id);
       Lx200_Handle        : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Lx200_Id);
       Stellarium_Handle   : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Stellarium_Id);
       Site_Handle         : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Site_Id);
@@ -281,35 +247,43 @@ package body Parameter is
 
       use type Angle.Degrees;
 
-      procedure Connect_Telescope is
+      procedure Connect_PWI is
 
-        procedure Prepare_Tcp (Telescope : String) is
+        The_Port : Network.Port_Number;
+
+        procedure Prepare_Tcp (Server : String) is
           Socket_Protocol : constant Network.Tcp.Protocol := Network.Tcp.Raw;
-          Server_Port     : constant Network.Port_Number := 8080;
           The_Ip_Address  : Network.Ip_Address;
         begin
           begin
             begin
-              The_Ip_Address := Network.Ip_Address_Of (Telescope);
+              The_Ip_Address := Network.Ip_Address_Of (Server);
             exception
             when others =>
-              The_Ip_Address := Network.Ip_Address_Of_Host (Telescope);
-              Log.Write ("IP address of: " & Telescope & " = " & Network.Image_Of (The_Ip_Address));
+              The_Ip_Address := Network.Ip_Address_Of_Host (Server);
+              Log.Write ("IP address of: " & Server & " = " & Network.Image_Of (The_Ip_Address));
             end;
-            The_Telescope_Connection := (Socket => Network.Tcp.Socket_For (The_Address  => The_Ip_Address,
-                                                                           The_Port     => Server_Port,
-                                                                           The_Protocol => Socket_Protocol),
-                                         Address => Network.Address_Of (The_Ip_Address, Server_Port));
-
+            The_PWI_Connection := (Socket => Network.Tcp.Socket_For (The_Address  => The_Ip_Address,
+                                                                     The_Port     => The_Port,
+                                                                     The_Protocol => Socket_Protocol),
+                                   Address => Network.Address_Of (The_Ip_Address, The_Port));
           exception
           when others =>
-            Error.Raise_With ("Can't find the telescope " & Telescope);
+            Error.Raise_With ("PlaneWave interface server not available");
           end;
         end Prepare_Tcp;
-      begin -- Connect_Telescope
+
+      begin -- Connect_PWI
+        begin
+          The_Port := Network.Port_Number (Value_Of (Port_Key));
+          Log.Write ("PWI port:" & The_Port'img);
+        exception
+        when others =>
+          Error.Raise_With ("PWI port number out of range");
+        end;
         Prepare_Tcp (String_Of (Ip_Address_Key));
         Mount.Connect_Communication;
-      end Connect_Telescope;
+      end Connect_PWI;
 
     begin -- Read_Values
       Set (Localization_Handle);
@@ -319,21 +293,16 @@ package body Parameter is
       The_Latitude := Angle_Of (Latitude_Key);
       The_Longitude := Angle_Of (Longitude_Key);
       The_Altitude := Value_Of (Altitude_Key, "m");
-      The_Sky_Line := Text.String_Of (String_Value_Of (Sky_Line_Key));
-      Log.Write (Sky_Line_Key & ": " & Sky_Line);
 
-      Set (Telescope_Handle);
+      Set (PWI_Handle);
       The_Telescope_Name := Text.String_Of (String_Value_Of ("Name"));
       Log.Write ("Name: " & Telescope_Name);
       Is_In_Setup_Mode := Telescope_Name = "Setup";
-      Connect_Telescope;
-      The_Pole_Height := Pole_Heigth;
+      Connect_PWI;
       The_Moving_Speeds := Angles_Of (Moving_Speed_List_Key, Speed_Unit);
       if Natural(Angle_List.Length (The_Moving_Speeds)) < 2 then
         Error.Raise_With ("The speed list must contain at least two values");
       end if;
-      The_First_Acceleration := Angle_Of (First_Acceleration_Key, Acceleration_Unit);
-      The_Second_Acceleration := Angle_Of (Second_Acceleration_Key, Acceleration_Unit);
       Set (Lx200_Handle);
       begin
         The_Lx200_Port := Network.Port_Number (Value_Of (Port_Key));
@@ -364,28 +333,9 @@ package body Parameter is
   -- Site --
   ----------
 
-  Home_Latitude  : constant Angle.Degrees := 47.695009;
-  Home_Longitude : constant Angle.Degrees :=  8.627870;
-
-  CDK700_Latitude  : constant Angle.Degrees := 47.705500;
-  CDK700_Longitude : constant Angle.Degrees :=  8.609865;
-
   function Default_Location return Location is
-
-    function "=" (Left, Right : Angle.Degrees) return Boolean is
-      use type Angle.Degrees;
-      Two_Meters : constant Angle.Degrees := 0.36 / (Astro.Earth_Equatorial_Radius * Ada.Numerics.Pi);
-    begin
-      return abs (Left - Right) < Two_Meters;
-    end "=";
-
   begin
-    if Stellarium.Latitude = Home_Latitude and then Stellarium.Longitude = Home_Longitude then
-      return Home;
-    elsif Stellarium.Latitude = CDK700_Latitude and then Stellarium.Longitude = CDK700_Longitude then
-      return Sternwarte_Schaffhausen;
-    end if;
-    return Unknown;
+    return CDK700;
   end Default_Location;
 
 
@@ -407,12 +357,6 @@ package body Parameter is
   end Altitude;
 
 
-  function Sky_Line return String is
-  begin
-    return Text.String_Of (The_Sky_Line);
-  end Sky_Line;
-
-
   ---------------
   -- Telescope --
   ---------------
@@ -429,46 +373,28 @@ package body Parameter is
   end Is_Setup_Mode;
 
 
-  function Telescope_Connection return Connection is
+  function PWI_Connection return Connection is
   begin
-    return The_Telescope_Connection;
-  end Telescope_Connection;
+    return The_PWI_Connection;
+  end PWI_Connection;
 
 
   function Pole_Height return Angle.Value is
   begin
-    return The_Pole_Height;
+    return Angle.Quadrant;
   end Pole_Height;
 
 
   function Is_Azimuthal_Mount return Boolean is
   begin
-    return The_Pole_Height = Angle.Quadrant;
+    return True;
   end Is_Azimuthal_Mount;
-
-
-  function Maximum_Speed return Angle.Value is
-  begin
-    return Angle_List.Last_Element (The_Moving_Speeds);
-  end Maximum_Speed;
 
 
   function Moving_Speeds return Angle.Values is
   begin
     return Angle.Values(Angle_List.Elements (The_Moving_Speeds));
   end Moving_Speeds;
-
-
-  function First_Acceleration return Angle.Value is
-  begin
-    return The_First_Acceleration;
-  end First_Acceleration;
-
-
-  function Second_Acceleration return Angle.Value is
-  begin
-    return The_Second_Acceleration;
-  end Second_Acceleration;
 
 
   -------------

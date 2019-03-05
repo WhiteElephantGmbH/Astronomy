@@ -17,14 +17,12 @@ pragma Style_White_Elephant;
 
 with Ada.Real_Time;
 with Ada.Unchecked_Conversion;
-with Alignment;
 with Application;
 with Data;
 with Device;
 with Earth;
 with Gui.Enumeration_Menu_Of;
 with Gui.Registered;
-with Gui.Key_Codes;
 with Lexicon;
 with Parameter;
 with Persistent;
@@ -47,7 +45,6 @@ package body User is
   Control_Page : Gui.Page;
   Goto_Button  : Gui.Button;
   Stop_Button  : Gui.Button;
-  Progress_Bar : Gui.Progress_Bar;
   Target       : Gui.Plain_Edit_Box;
   Description  : Gui.Plain_Edit_Box;
   Display      : Gui.List_View;
@@ -174,8 +171,6 @@ package body User is
       return "HR";
     when Messier =>
       null;
-    when Neo =>
-      return "NEO";
     when Ngc =>
       return "NGC";
     when Ocl =>
@@ -206,52 +201,6 @@ package body User is
   end Show_Error;
 
 
-  procedure Show (The_Progress : Percent) is
-  begin
-    Gui.Report_Progress (Progress_Bar, Natural(The_Progress));
-  end Show;
-
-
-  procedure Show (Visible_In : Duration) is
-
-    function Image_Of (Value : Natural;
-                       Unit  : String) return String is
-      Image : constant String := Value'img & " " & Unit;
-    begin
-      if Value = 0 then
-        return "";
-      elsif Value = 1 then
-        return Image;
-      else
-        return Image & "s";
-      end if;
-    end Image_Of;
-
-    Header : constant String := "Visible in";
-    Second : constant String := "second";
-    Minute : constant String := "minute";
-    Hour   : constant String := "hour";
-
-    procedure Show_Duration (Value      : Natural;
-                             Upper_Unit : String;
-                             Lower_Unit : String) is
-    begin
-      Show_Description (Header & Image_Of (Value / 60, Upper_Unit) & Image_Of (Value mod 60, Lower_Unit));
-    end Show_Duration;
-
-    Delta_Time : constant Natural := Natural(Visible_In);
-
-  begin -- Show
-    if Delta_Time = 0 then
-      Show_Description ("");
-    elsif Delta_Time < 3600 then
-      Show_Duration (Delta_Time, Minute, Second);
-    else
-      Show_Duration ((Delta_Time + 59) / 60, Hour, Minute);
-    end if;
-  end Show;
-
-
   procedure Show (Information : Telescope.Data) is
     use type Telescope.State;
     use type Device.Time_Synch_State;
@@ -279,10 +228,6 @@ package body User is
       end case;
     end if;
     Gui.Set_Status_Line (Information.Status'img);
-    if Earth.Direction_Is_Known (Information.Adjustment) then
-      Alignment.Set (Direction => Information.Local_Direction,
-                     Offset    => Information.Adjustment);
-    end if;
     case The_Page is
     when Is_Control =>
       null;
@@ -402,10 +347,7 @@ package body User is
   end Show_Description;
 
 
-  Is_Entering_Number : Boolean := False;
-  The_Number         : Natural;
-  The_Number_Id      : Name.Selector;
-  The_Targets        : Name.Id_List_Access;
+  The_Targets : Name.Id_List_Access;
 
 
   function Image_Of (The_Value : Refraction.Hectopascal) return String is
@@ -463,73 +405,11 @@ package body User is
   end Define_Temperature;
 
 
-  procedure Put (The_Command : Device.Command) is
-  begin
-    if not Is_Entering_Number then
-      Input.Put (The_Command, From => Input.Keypad);
-    end if;
-  end Put;
-
-
-  procedure Start_New_Number (Number_Id : Name.Selector) is
-  begin
-    if not Input.Is_Active then
-      The_Number_Id := Number_Id;
-      Is_Entering_Number := True;
-      The_Number := 0;
-    end if;
-  end Start_New_Number;
-
-
-  procedure Not_A_Number is
-  begin
-    Is_Entering_Number := False;
-  end Not_A_Number;
-
-
-  procedure Handle_Number (Value : Natural) is
-  begin
-    if Is_Entering_Number then
-      The_Number := The_Number * 10 + Value;
-    end if;
-  exception
-  when others =>
-    Not_A_Number;
-  end Handle_Number;
-
-
-  procedure Enter_Number is
-  begin
-    if Is_Entering_Number then
-      if The_Number = 0 then
-        null; -- no park position
-      else
-        for Index in The_Targets.Ids'first .. The_Targets.Last loop
-          declare
-            Item : constant Name.Id := The_Targets.Ids(Index);
-          begin
-            if Name.Matches (Item, The_Number_Id, The_Number) then
-              Set_Target_Name (Name.Image_Of (Item));
-              Signal_Action (Define_Target);
-              Signal_Action (Go_To);
-              exit;
-            end if;
-          end;
-        end loop;
-      end if;
-      Is_Entering_Number := False;
-    elsif The_Target_Selection = Target_Object and then Gui.Is_Enabled (Goto_Button) then
-      Signal_Action (Go_To);
-    end if;
-  end Enter_Number;
-
-
   procedure Enter_Control_Page is
   begin
     The_Page := Is_Control;
     Catalog_Menu.Enable;
     Selection_Menu.Enable;
-    Gui.Enable_Key_Handler;
     Gui.Clear_Focus;
   end Enter_Control_Page;
 
@@ -539,7 +419,6 @@ package body User is
     The_Page := Is_Display;
     Catalog_Menu.Disable;
     Selection_Menu.Disable;
-    Gui.Enable_Key_Handler;
     Gui.Clear_Focus;
   exception
   when others =>
@@ -552,7 +431,6 @@ package body User is
     The_Page := Is_Setup;
     Catalog_Menu.Disable;
     Selection_Menu.Disable;
-    Gui.Disable_Key_Handler;
   exception
   when others =>
     Log.Error ("Enter_Setup_Page");
@@ -561,98 +439,10 @@ package body User is
 
   procedure Enter_Handling is
   begin
-    Enter_Number;
+    if The_Target_Selection = Target_Object and then Gui.Is_Enabled (Goto_Button) then
+      Signal_Action (Go_To);
+    end if;
   end Enter_Handling;
-
-
-  Ignore_Next : Boolean := False;
-
-  procedure Key_Handler (The_Event    : Gui.Key_Event;
-                         The_Key_Code : Gui.Key_Code) is
-  begin
-    case The_Page is
-    when Is_Setup =>
-      return;
-    when Is_Control | Is_Display =>
-      null;
-    end case;
-    case The_Event is
-    when Gui.Key_Pressed =>
-      if Ignore_Next then
-        return;
-      end if;
-      Log.Write ("Key pressed: " & The_Key_Code'img);
-      case The_Key_Code is
-      when Gui.Key_Codes.KP_8 | Gui.Key_Codes.KP_Up | Gui.Key_Codes.K_Up =>
-        Put (Device.Move_Up);
-      when Gui.Key_Codes.KP_2 | Gui.Key_Codes.KP_Down | Gui.Key_Codes.K_Down =>
-        Put (Device.Move_Down);
-      when Gui.Key_Codes.KP_4 | Gui.Key_Codes.KP_Left | Gui.Key_Codes.K_Left =>
-        Put (Device.Move_Left);
-      when Gui.Key_Codes.KP_6 | Gui.Key_Codes.KP_Right | Gui.Key_Codes.K_Right =>
-        Put (Device.Move_Right);
-      when Gui.Key_Codes.KP_Add | Gui.Key_Codes.K_Page_Up =>
-        Put (Device.Increase);
-      when Gui.Key_Codes.KP_Subtract | Gui.Key_Codes.K_Page_Down =>
-        Put (Device.Decrease);
-      when Gui.Key_Codes.K_Back =>
-        Put (Device.Stop);
-      when Gui.Key_Codes.KP_Enter | Gui.Key_Codes.K_Return =>
-        Input.Put (Device.Enter, From => Input.Keypad);
-      when Gui.Key_Codes.K_Menu =>
-        Ignore_Next := True;
-      when others =>
-        null;
-      end case;
-    when  Gui.Key_Released =>
-      Log.Write ("Key released: " & The_Key_Code'img);
-      case The_Key_Code is
-      when Gui.Key_Codes.KP_Divide =>
-        Start_New_Number (Name.Messier);
-      when Gui.Key_Codes.KP_Multiply =>
-        Start_New_Number (Name.Enumerated);
-      when Gui.Key_Codes.K_Tab | Gui.Key_Codes.K_Delete =>
-        Start_New_Number (Name.Caldwell);
-      when Gui.Key_Codes.KP_0 =>
-        Handle_Number (0);
-      when Gui.Key_Codes.KP_1 =>
-        Handle_Number (1);
-      when Gui.Key_Codes.KP_2 | Gui.Key_Codes.KP_Down | Gui.Key_Codes.K_Down =>
-        Put (Device.No_Command);
-        Handle_Number (2);
-      when Gui.Key_Codes.KP_3 =>
-        Handle_Number (3);
-      when Gui.Key_Codes.KP_4 | Gui.Key_Codes.KP_Left | Gui.Key_Codes.K_Left =>
-        Put (Device.No_Command);
-        Handle_Number (4);
-      when Gui.Key_Codes.KP_5 =>
-        Handle_Number (5);
-      when Gui.Key_Codes.KP_6 | Gui.Key_Codes.KP_Right | Gui.Key_Codes.K_Right =>
-        Put (Device.No_Command);
-        Handle_Number (6);
-      when Gui.Key_Codes.KP_7 =>
-        Handle_Number (7);
-      when Gui.Key_Codes.KP_8 | Gui.Key_Codes.KP_Up | Gui.Key_Codes.K_Up =>
-        Put (Device.No_Command);
-        Handle_Number (8);
-      when Gui.Key_Codes.KP_9 =>
-        Handle_Number (9);
-      when Gui.Key_Codes.KP_Add | Gui.Key_Codes.K_Page_Up =>
-        Put (Device.No_Command);
-      when Gui.Key_Codes.KP_Subtract | Gui.Key_Codes.K_Page_Down =>
-        Put (Device.No_Command);
-      when Gui.Key_Codes.KP_Enter | Gui.Key_Codes.K_Return =>
-        Put (Device.No_Command);
-      when Gui.Key_Codes.K_Menu =>
-        Ignore_Next := False;
-      when others =>
-        Not_A_Number;
-      end case;
-    end case;
-  exception
-  when others =>
-    Log.Error ("Key_Handler failed");
-  end Key_Handler;
 
 
   function Convertion is new Ada.Unchecked_Conversion (Gui.Information, Name.Id_Access);
@@ -729,8 +519,6 @@ package body User is
         Gui.Disable (Goto_Button);
         Stop_Button := Gui.Create (Control_Page, "Stop", Perform_Stop'access);
         Gui.Disable (Stop_Button);
-        Progress_Bar := Gui.Create (Control_Page);
-        Gui.Define_Range (Progress_Bar, Natural(Percent'last));
 
         Target := Gui.Create (Control_Page, Title, "", The_Title_Size => Title_Size, Is_Modifiable  => False);
         Description := Gui.Create (Control_Page, "", "", Is_Modifiable  => False);
@@ -750,7 +538,6 @@ package body User is
                                               The_Title         => "",
                                               The_Width         => The_Display_Data.Width,
                                               The_Justification => Gui.Left);
-        Gui.Install_Key_Handler (Key_Handler'access);
       end Define_Control_Page;
 
 

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2011 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                           (c) 2019 by White Elephant GmbH, Schaffhausen, Switzerland                              *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -24,7 +24,7 @@ package Name is
 
   type Selector is (Enumerated, Caldwell, Messier);
 
-  type Object_Kind is (Landmark, Moon, Sun, Planet, Near_Earth_Object, Small_Solar_System_Body, Sky_Object);
+  type Object_Kind is (Landmark, Moon, Sun, Planet, Small_Solar_System_Body, Sky_Object);
 
   type Id is private;
 

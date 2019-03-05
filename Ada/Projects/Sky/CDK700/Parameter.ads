@@ -20,8 +20,7 @@ with Network.Tcp;
 
 package Parameter is
 
-  Acceleration_Unit : constant String := "/s²";
-  Speed_Unit        : constant String := "/s";
+  Speed_Unit : constant String := "/s";
 
   type Connection is record
     Socket  : Network.Tcp.Socket;
@@ -35,7 +34,7 @@ package Parameter is
   -- Site --
   ----------
 
-  type Location is (Home, Sternwarte_Schaffhausen, Unknown);
+  type Location is (CDK700);
 
   function Default_Location return Location;
 
@@ -44,8 +43,6 @@ package Parameter is
   function Longitude return Angle.Value;
 
   function Altitude return Integer; -- in meters above see level
-
-  function Sky_Line return String;
 
 
   ------------
@@ -56,19 +53,13 @@ package Parameter is
 
   function Is_Setup_Mode return Boolean;
 
-  function Telescope_Connection return Connection;
+  function PWI_Connection return Connection;
 
   function Pole_Height return Angle.Value;
 
   function Is_Azimuthal_Mount return Boolean;
 
-  function Maximum_Speed return Angle.Value; -- in angle / s
-
   function Moving_Speeds return Angle.Values; -- in angle / s
-
-  function First_Acceleration return Angle.Value; -- in angle / s²
-
-  function Second_Acceleration return Angle.Value; -- in angle / s²
 
 
   -------------

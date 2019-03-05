@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2011 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                           (c) 2019 by White Elephant GmbH, Schaffhausen, Switzerland                              *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -23,7 +23,6 @@ with Application;
 with Error;
 with File;
 with Lexicon;
-with Neo;
 with Parameter;
 with Sssb;
 with Strings;
@@ -119,8 +118,6 @@ package body Name is
     case Item.Data_Id is
     when Data.Favorites =>
       return To_String (Item.Element.Name);
-    when Data.Neo =>
-      return Data.Name_Of (Object_Of (Item));
     when Data.Caldwell =>
       return "C" & Id_And_Name;
     when Data.Hip =>
@@ -174,8 +171,6 @@ package body Name is
     case Item.Data_Id is
     when Data.Favorites =>
       return Item.Element.Kind;
-    when Data.Neo =>
-      return Near_Earth_Object;
     when others =>
       return Sky_Object;
     end case;
@@ -444,9 +439,6 @@ package body Name is
                       The_Element.Kind := Planet;
                     elsif Sssb.Exists (Object_Id) then
                       The_Element.Kind := Small_Solar_System_Body;
-                    elsif Neo.Exists (Object_Id) then
-                      The_Element.Kind := Near_Earth_Object;
-                      The_Element.Object := Data.Neo_Object_Of (Object_Id);
                     elsif (Item(Item'first) = 'C') or (Item(Item'first) = 'M') then
                       The_Element.Kind := Sky_Object;
                       if Parts.Count > 1 then
@@ -481,9 +473,6 @@ package body Name is
                           The_Element.Object := Data.Object_Of (Value, Data.Quasars);
                         elsif Sssb.Exists (Object_Id) then
                           The_Element.Kind := Small_Solar_System_Body;
-                        elsif Neo.Exists (Object_Id) then
-                          The_Element.Kind := Near_Earth_Object;
-                          The_Element.Object := Data.Neo_Object_Of (Object_Id);
                         else
                           Error.Raise_With (Object_Id & " unknown in " & Filename);
                         end if;
@@ -557,13 +546,8 @@ package body Name is
         Put (Image_Of (Lexicon.Pluto));
         Put ("");
         case Parameter.Default_Location is
-        when Parameter.Sternwarte_Schaffhausen =>
+        when Parameter.CDK700 =>
           Put ("LM " & Image_Of (Lexicon.Road_Sign) & " | 259°43' | 2°38'");
-        when others =>
-          Put ("LM " & Image_Of (Lexicon.North) & " |   0° | 0°");
-          Put ("LM " & Image_Of (Lexicon.South) & " | 180° | 0°");
-          Put ("LM " & Image_Of (Lexicon.West)  & " | 270° | 0°");
-          Put ("LM " & Image_Of (Lexicon.East)  & " |  90° | 0°");
         end case;
         Put ("");
         Put ("Nova del 2013 | PNV J20233073+2046041 | 20h23m30.7s | +20°46'04""");
@@ -713,8 +697,6 @@ package body Name is
           return (Data.Hr, False, False, The_Item_Id);
         when Data.Messier =>
           return (Data.Messier, False, False, The_Item_Id);
-        when Data.Neo =>
-          return (Data.Neo, False, False, The_Item_Id);
         when Data.Ngc =>
           return (Data.Ngc, False, False, The_Item_Id);
         when Data.Ocl =>

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2012 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                           (c) 2019 by White Elephant GmbH, Schaffhausen, Switzerland                              *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -24,7 +24,6 @@ with Parameter;
 with Error;
 with File;
 with Numerics;
-with Stellarium;
 with Strings;
 with Traces;
 
@@ -81,14 +80,9 @@ package body Sky_Line is
 
 
   function Actual_Filename return String is
-    Name      : constant String := Parameter.Sky_Line;
-    Landscape : constant String := (if Name = "" then Stellarium.Landscape else Name);
+    Name : constant String := Strings.Legible_Of (Parameter.Default_Location'img);
   begin
-    if Landscape = "" then
-      return "";
-    else
-      return File.Composure (Directory, Landscape, Extension);
-    end if;
+    return File.Composure (Directory, Name, Extension);
   end Actual_Filename;
 
 
@@ -120,104 +114,9 @@ package body Sky_Line is
 
 
     procedure Create_Default_Sky_Line is
-
-      use all type Parameter.Location;
-
-    begin -- Create_Default_Sky_Line
-      if Parameter.Default_Location = Home and then Parameter.Sky_Line = "Home" then
-        Create_File (Filename);
-        Put (Strings.Bom_8 & "0°00', 17°20'");
-        Put ("5°00', 18°00'");
-        Put ("10°00', 19°20'");
-        Put ("15°00', 20°00'");
-        Put ("20°00', 20°40'");
-        Put ("25°00', 21°20'");
-        Put ("30°20', 21°40'");
-        Put ("35°00', 22°00'");
-        Put ("40°00', 22°20'");
-        Put ("47°00', 22°00'");
-        Put ("48°00', 28°30'");
-        Put ("50°30', 39°00'");
-        Put ("53°00', 28°30'");
-        Put ("54°20', 21°20'");
-        Put ("60°00', 21°00'");
-        Put ("62°00', 22°00'");
-        Put ("63°20', 22°00'");
-        Put ("64°00', 20°20'");
-        Put ("70°00', 19°10'");
-        Put ("75°00', 18°50'");
-        Put ("80°00', 17°20'");
-        Put ("85°00', 16°00'");
-        Put ("90°00', 14°40'");
-        Put ("94°00', 13°30'");
-        Put ("94°10', 9°00'");
-        Put ("100°00', 8°00'");
-        Put ("105°00', 7°00'");
-        Put ("110°00', 6°00'");
-        Put ("115°00', 5°00'");
-        Put ("118°00', 8°00'");
-        Put ("120°00', 7°40'");
-        Put ("122°00', 8°30'");
-        Put ("125°00', 8°00'");
-        Put ("126°00', 8°00'");
-        Put ("128°00', 3°30'");
-        Put ("130°00', 3°40'");
-        Put ("135°00', 5°40'");
-        Put ("140°00', 6°00'");
-        Put ("145°00', 6°00'");
-        Put ("150°00', 5°20'");
-        Put ("153°00', 5°00'");
-        Put ("153°10', 8°00'");
-        Put ("155°00', 9°00'");
-        Put ("157°00', 7°00'");
-        Put ("160°00', 10°30'");
-        Put ("165°00', 10°20'");
-        Put ("170°00', 11°00'");
-        Put ("175°00', 12°30'");
-        Put ("180°00', 12°00'");
-        Put ("182°00', 9°30'");
-        Put ("189°00', 10°00'");
-        Put ("192°00', 8°30'");
-        Put ("192°30', 6°30'");
-        Put ("198°30', 6°30'");
-        Put ("200°00', 9°00'");
-        Put ("205°00', 13°00'");
-        Put ("210°00', 14°00'");
-        Put ("215°00', 13°00'");
-        Put ("220°00', 12°00'");
-        Put ("221°00', 21°00'");
-        Put ("225°00', 26°00'");
-        Put ("230°00', 23°00'");
-        Put ("235°00', 8°00'");
-        Put ("240°00', 9°00'");
-        Put ("245°00', 13°30'");
-        Put ("250°00', 20°30'");
-        Put ("255°00', 12°00'");
-        Put ("260°00', 16°00'");
-        Put ("265°00', 20°00'");
-        Put ("268°00', 22°00'");
-        Put ("272°00', 20°00'");
-        Put ("275°00', 22°40'");
-        Put ("277°00', 22°40'");
-        Put ("278°00', 20°00'");
-        Put ("285°00', 24°00'");
-        Put ("290°00', 23°40'");
-        Put ("295°00', 22°00'");
-        Put ("300°00', 17°00'");
-        Put ("303°00', 17°20'");
-        Put ("308°00', 16°00'");
-        Put ("310°00', 17°00'");
-        Put ("315°00', 18°00'");
-        Put ("320°00', 16°00'");
-        Put ("325°00', 17°00'");
-        Put ("330°00', 15°00'");
-        Put ("331°00', 12°00'");
-        Put ("340°00', 11°00'");
-        Put ("344°00', 10°00'");
-        Put ("350°00', 15°00'");
-        Put ("355°00', 16°00'");
-        Close_File;
-      elsif Parameter.Default_Location = Sternwarte_Schaffhausen and then Parameter.Sky_Line = "Newton" then
+    begin
+      case Parameter.Default_Location is
+      when Parameter.CDK700 =>
         Create_File (Filename);
         Put (Strings.Bom_8 & "000°00', +22°40'");
         Put ("007°00', +21°50'");
@@ -303,7 +202,7 @@ package body Sky_Line is
         Put ("350°00', +23°20'");
         Put ("355°00', +23°00'");
         Close_File;
-      end if;
+      end case;
     exception
     when others =>
       Error.Raise_With ("Can't create " & Filename);
@@ -411,35 +310,6 @@ package body Sky_Line is
     Sort (The_Element_List);
     Create_Horizon;
   end Read;
-
-
-  procedure Clear is
-  begin
-    File.Delete (Actual_Filename);
-  end Clear;
-
-
-  procedure Add (Direction : Earth.Direction) is
-    Filename : constant String := Actual_Filename;
-  begin
-    declare
-      Line : constant String := Earth.Az_Image_Of (Direction) & ", " & Earth.Alt_Image_Of (Direction);
-    begin
-      if File.Exists (Filename) then
-        Ada.Text_IO.Open (The_File, Ada.Text_IO.Append_File, Filename);
-        Put (Line);
-      else
-        Create_File (Filename);
-        Put (Strings.Bom_8 & Line);
-      end if;
-    end;
-    Close_File;
-    Read;
-  exception
-  when others =>
-    Log.Error ("Add failed");
-    Clear;
-  end Add;
 
 
   function Is_Defined return Boolean is
