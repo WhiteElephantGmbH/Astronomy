@@ -207,7 +207,6 @@ package body Motor.Io.Protocol.Udp is
 
   function Hardware_Version_Of (The_Version : Protocol_Version) return Hardware_Version is
     use type Unsigned.Byte;
-    use type Unsigned.Word;
   begin
     if The_Version.Major_Id = 2 then
       case The_Version.Minor_Id is

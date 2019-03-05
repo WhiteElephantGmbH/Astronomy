@@ -401,7 +401,6 @@ package body Motor is
   function Assigned (The_Values    : out Values;
                      The_Position  :     Position) return Boolean is
 
-    use type Angle.Signed;
     use type Angle.Value;
     use type Value;
 

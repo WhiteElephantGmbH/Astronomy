@@ -414,7 +414,6 @@ package body Control is
 
 
     procedure Handle_Synch is
-      use type Name.Id;
     begin
       Define_External_Target;
       case The_Data.Status is
