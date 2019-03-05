@@ -15,7 +15,6 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Angle;
 with Earth;
 with Name;
 with Space;
@@ -39,14 +38,10 @@ package Telescope is
   type State is (Disconnected, -- no connection to the motor controller
                  Startup,      -- controller startup
                  Ready,        -- controller ready (parameters initialized)
-                 Parked,       -- stopped (at park position)
-                 Parking,      -- parking
                  Stopped,      -- stopped (not waiting)
                  Stopping,     -- stopping
                  Directing,    -- moves the telescope in a direction
                  Positioning,  -- moves the telescope to a landmark
-                 Preparing,    -- moving to the targets rising direction
-                 Waiting,      -- stopped at the targets rising direction
                  Approaching,  -- approaching to target
                  Tracking,     -- following the target
                  Adjusting);   -- corrrect the target diretion
@@ -60,13 +55,7 @@ package Telescope is
     Actual_Direction  : Space.Direction;
     Local_Direction   : Earth.Direction;
     Adjustment        : Earth.Direction;
-    Alignment_Offsets : Earth.Direction;
-    Pole_Offsets      : Earth.Direction;
-    Rotations         : Space.Direction;
-    System_Error      : Angle.Value;
-    Arriving_Time     : Time.Ut;
     Universal_Time    : Time.Ut;
-    Time_Adjustment   : Duration;
   end record;
 
   type Get_Space_Access is access function (Id : Name.Id;
@@ -85,17 +74,9 @@ package Telescope is
 
   procedure Halt;
 
-  procedure Follow (Arriving_Time : Time.Ut);
+  procedure Follow;
 
   procedure Position_To (Landmark : Name.Id);
-
-  procedure Align;
-
-  procedure Synch_On_Target;
-
-  procedure Synch_Park_Position;
-
-  procedure Park;
 
   function Information return Data;
 

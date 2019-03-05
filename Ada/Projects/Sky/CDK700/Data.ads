@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2014 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2012 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,43 +15,56 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-private package Motor.Io.Protocol is
+with Astro;
+with Catalog;
+with Space;
+with Time;
 
-  procedure Do_Connect;
+package Data is
 
-  function Connected_Device_Version return Hardware_Version;
+  type Kind is (Favorites, Caldwell, Hip, Hr, Messier, Neo, Ngc, Ocl, Quasars);
 
-  procedure Do_Open_Communication;
+  procedure Apparent (Ra  : in out Astro.REAL;
+                      Dec : in out Astro.REAL);
 
-  procedure Initialize (C0_1 : Natural;
-                        C0_2 : Natural);
+  subtype Object is Catalog.Object;
 
-  procedure Do_Set_Autoguiding_Rate (The_Rate : Device.Autoguiding_Rate);
+  Undefined : constant := Catalog.Undefined;
 
-  function Actual_Device_State return Device.State;
+  type Object_Type is new Catalog.Object_Type;
 
-  function Actual_Device_Synch_State return Device.Time_Synch_State;
+  function Value_Of (Item : String) return Natural;
 
-  procedure Define_Positions (The_Positions : Step_Positions);
+  function Object_Of (Item     : Positive;
+                      The_Kind : Kind) return Object;
 
-  procedure Update_Positions (Offsets : Step_Positions);
+  End_Of_List : exception;
 
-  function Position_Known return Boolean;
+  function Next_Of (Item     : Natural;
+                    The_Kind : Kind) return Natural;
 
-  function Stepper_Data return Step_Information;
+  function Name_Of (Id : Object) return String;
 
-  function Hardware_Board_Temperature return Celsius;
+  function Descriptor_Of (Id : Object) return String;
 
-  procedure Do_Synchronize_Time (The_Time : out Time.Ut);
+  function Direction_Of (Id : Object;
+                         Ut : Time.Ut) return Space.Direction;
 
-  procedure Transfer (M1 : Action_List := No_Actions;
-                      M2 : Action_List := No_Actions);
+  function Magnitude_Of (Id : Object) return Float;
 
-  procedure Do_Adjust (The_Drive        : Device.Drive;
-                       Steps_Per_Update : Step_Count);
+  function Type_Of (Id : Object) return Object_Type;
 
-  procedure Do_Stop;
+  function New_Object_For (Name        : String;
+                           Description : String;
+                           The_Type    : Object_Type := Star;
+                           Direction   : Space.Direction := Space.Unknown_Direction) return Object;
 
-  procedure Do_Close_Communication;
+  function New_Neo_Object_For (Name        : String;
+                               Description : String;
+                               The_Type    : Object_Type) return Positive;
 
-end Motor.Io.Protocol;
+  function Neo_Object_Of (Name : String) return Object;
+
+  function Neo_Index_Of (Id : Object) return Positive;
+
+end Data;

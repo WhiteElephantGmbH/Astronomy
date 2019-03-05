@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2015 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2012 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,33 +15,22 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-private package Motor.Io.Protocol.Simulation is
+with Earth;
+with Space;
+with Time;
 
-  procedure Start;
+package Sky_Line is
 
-  function Actual_Stepper_State return Device.State;
+  procedure Read;
 
-  function Step_Position_Known return Boolean;
+  procedure Clear;
 
-  function Actual_Step_Data return Step_Information;
+  procedure Add (Direction : Earth.Direction);
 
-  procedure Set_Initial_Count (C0_1 : Natural;
-                               C0_2 : Natural);
+  function Is_Defined return Boolean;
 
-  procedure Set_Step_Positions (The_Positions : Step_Positions);
+  function Is_Above (Direction : Earth.Direction) return Boolean;
 
-  procedure Update_Step_Positions (Offsets : Step_Positions);
-
-  procedure Synchronize_Start_Time (The_Time : out Time.Ut);
-
-  procedure Transfer_Actions (M1 : Action_List := No_Actions;
-                              M2 : Action_List := No_Actions);
-
-  procedure Adjust (The_Drive         : Device.Drive;
-                    Offset_Per_Action : Step_Count);
-
-  procedure Stop_All;
-
-  procedure Finish;
-
-end Motor.Io.Protocol.Simulation;
+  function Is_Above (Direction : Space.Direction;
+                     Lmst      : Time.Value) return Boolean;
+end Sky_Line;

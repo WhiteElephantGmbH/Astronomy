@@ -17,7 +17,6 @@ pragma Style_White_Elephant;
 
 with Angle;
 with Earth;
-with Motor;
 with Space;
 with Time;
 
@@ -46,30 +45,5 @@ package Numerics is
 
   function Direction_Of (Direction : Earth.Direction;
                          Ut        : Time.Ut) return Space.Direction;
-
-
-  ---------------------------------------------
-  -- Motor position of eqatorial coordinates --
-  ---------------------------------------------
-
-  function Position_Of (Direction : Space.Direction;
-                        Rotations : Space.Direction;
-                        At_Time   : Time.Ut) return Motor.Position;
-
-
-  ----------------------------------------------
-  -- Motor position of horizontal coordinates --
-  ----------------------------------------------
-
-  function Position_Of (Direction : Earth.Direction) return Motor.Position;
-
-
-  ----------------------------------------------
-  -- Horizontal coordinates of motor position
-  ----------------------------------------------
-
-  procedure Calculate_Horizontal_Coordinates_For (Data          :     Motor.Position_Data;
-                                                  The_Positions : out Earth.Direction;
-                                                  The_Offsets   : out Earth.Direction);
 
 end Numerics;

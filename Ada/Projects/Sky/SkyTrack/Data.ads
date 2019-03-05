@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2015 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2012 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,43 +15,56 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-private package Motor.Io.Protocol.Udp is
+with Astro;
+with Catalog;
+with Space;
+with Time;
 
-  procedure Connect_Device;
-  
-  function Stepper_Version return Hardware_Version;
+package Data is
 
-  procedure Start;
+  type Kind is (Favorites, Caldwell, Hip, Hr, Messier, Neo, Ngc, Ocl, Quasars);
 
-  procedure Set_Autoguiding_Rate (The_Rate : Device.Autoguiding_Rate);
+  procedure Apparent (Ra  : in out Astro.REAL;
+                      Dec : in out Astro.REAL);
 
-  procedure Set_Initial_Count (C0_1 : Natural;
-                               C0_2 : Natural);
+  subtype Object is Catalog.Object;
 
-  function Actual_Stepper_State return Device.State;
+  Undefined : constant := Catalog.Undefined;
 
-  function Time_Synch_State return Device.Time_Synch_State;
+  type Object_Type is new Catalog.Object_Type;
 
-  function Step_Position_Known return Boolean;
+  function Value_Of (Item : String) return Natural;
 
-  function Actual_Step_Data return Step_Information;
+  function Object_Of (Item     : Positive;
+                      The_Kind : Kind) return Object;
 
-  function Actual_Temperature return Celsius;
+  End_Of_List : exception;
 
-  procedure Set_Step_Positions (The_Positions : Step_Positions);
+  function Next_Of (Item     : Natural;
+                    The_Kind : Kind) return Natural;
 
-  procedure Update_Step_Positions (Offsets : Step_Positions);
+  function Name_Of (Id : Object) return String;
 
-  procedure Synchronize_Start_Time (The_Time : out Time.Ut);
+  function Descriptor_Of (Id : Object) return String;
 
-  procedure Transfer_Actions (M1 : Action_List := No_Actions;
-                              M2 : Action_List := No_Actions);
+  function Direction_Of (Id : Object;
+                         Ut : Time.Ut) return Space.Direction;
 
-  procedure Adjust (The_Drive         : Device.Drive;
-                    Offset_Per_Action : Step_Count);
+  function Magnitude_Of (Id : Object) return Float;
 
-  procedure Stop_All;
+  function Type_Of (Id : Object) return Object_Type;
 
-  procedure Finish;
+  function New_Object_For (Name        : String;
+                           Description : String;
+                           The_Type    : Object_Type := Star;
+                           Direction   : Space.Direction := Space.Unknown_Direction) return Object;
 
-end Motor.Io.Protocol.Udp;
+  function New_Neo_Object_For (Name        : String;
+                               Description : String;
+                               The_Type    : Object_Type) return Positive;
+
+  function Neo_Object_Of (Name : String) return Object;
+
+  function Neo_Index_Of (Id : Object) return Positive;
+
+end Data;

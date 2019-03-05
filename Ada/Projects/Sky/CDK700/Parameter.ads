@@ -16,32 +16,19 @@
 pragma Style_White_Elephant;
 
 with Angle;
-with Device;
-with Network.Udp;
-with Serial_Io;
+with Network.Tcp;
 
 package Parameter is
 
   Acceleration_Unit : constant String := "/s²";
   Speed_Unit        : constant String := "/s";
 
-  Datagram_Timeout : constant Duration := 0.1;
-
-  type Connection_Kind is (Is_Serial, Is_Simulated, Is_Udp);
-
-  type Connection (Kind : Connection_Kind := Is_Simulated) is record
-    case Kind is
-    when Is_Udp =>
-      Socket  : Network.Udp.Socket;
-      Address : Network.Address;
-    when Is_Serial =>
-      Port : Serial_Io.Port;
-    when Is_Simulated =>
-      null;
-    end case;
+  type Connection is record
+    Socket  : Network.Tcp.Socket;
+    Address : Network.Address;
   end record;
 
-  procedure Read (Is_Stepper_Driver : Boolean);
+  procedure Read;
 
 
   ----------
@@ -71,14 +58,6 @@ package Parameter is
 
   function Telescope_Connection return Connection;
 
-  function Steps_Per_Revolution return Device.Steps_Per_Revolution;
-
-  function Clocks_Per_Second return Positive;
-
-  function Park_Azimuth return Angle.Value;
-
-  function Park_Altitude return Angle.Value;
-
   function Pole_Height return Angle.Value;
 
   function Is_Azimuthal_Mount return Boolean;
@@ -90,14 +69,6 @@ package Parameter is
   function First_Acceleration return Angle.Value; -- in angle / s²
 
   function Second_Acceleration return Angle.Value; -- in angle / s²
-
-  function First_Upper_Limit return Angle.Degrees;
-
-  function First_Lower_Limit return Angle.Degrees;
-
-  function Second_Upper_Limit return Angle.Degrees;
-
-  function Second_Lower_Limit return Angle.Degrees;
 
 
   -------------

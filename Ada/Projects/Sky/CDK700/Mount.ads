@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2014 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                           (c) 2019 by White Elephant GmbH, Schaffhausen, Switzerland                              *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,35 +15,40 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-private package Motor.Io.Protocol.Serial is
+with Angle;
+with Earth;
+with Device;
+with Space;
 
-  procedure Connect_Device;
+package Mount is
 
-  procedure Start;
+  type State is (Disconnected, Fault, Startup, Ready, Directing, Positioned, Positioning, Terminated);
 
-  function Actual_Stepper_State return Device.State;
+  type State_Handler_Access is access procedure (The_State : State);
 
-  function Step_Position_Known return Boolean;
+  procedure Connect_Communication;
 
-  function Actual_Step_Data return Step_Information;
+  procedure Open_Communication (State_Handler : State_Handler_Access);
 
-  procedure Set_Initial_Count (C0_1 : Natural;
-                               C0_2 : Natural);
+  procedure Initialize;
 
-  procedure Set_Step_Positions (P : Step_Positions);
+  procedure Goto_Target (Direction : Space.Direction);
 
-  procedure Update_Step_Positions (Offsets : Step_Positions);
+  procedure Goto_Mark (Direction : Earth.Direction);
 
-  procedure Synchronize_Start_Time (The_Time : out Time.Ut);
+  procedure Direct (The_Drive  : Device.Drive;
+                    With_Speed : Angle.Signed);
+  -- move drive
 
-  procedure Transfer_Actions (M1 : Action_List := No_Actions;
-                              M2 : Action_List := No_Actions);
+  procedure Adjust (The_Drive  : Device.Drive;
+                    With_Speed : Angle.Signed);
+  -- adjust drive
 
-  procedure Adjust (The_Drive         : Device.Drive;
-                    Offset_Per_Action : Step_Count);
+  procedure Stop;
+  -- stoppes the motors
 
-  procedure Stop_All;
+  function Actual_Direction return Space.Direction;
 
-  procedure Finish;
+  procedure Close_Communication;
 
-end Motor.Io.Protocol.Serial;
+end Mount;

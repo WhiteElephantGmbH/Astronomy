@@ -24,8 +24,7 @@ with Definite_Doubly_Linked_Lists;
 with Error;
 with File;
 with Language;
-with Motor;
-with Os;
+with Mount;
 with Stellarium;
 with Strings;
 with Text;
@@ -44,24 +43,13 @@ package body Parameter is
   Localization_Id : constant String := "Localization";
   Language_Key    : constant String := "Language";
 
-  Telescope_Id                    : constant String := "Telescope";
-  Name_Key                        : constant String := "Name";
-  Ip_Address_Key                  : constant String := "IP Address";
-  Serial_Port_Key                 : constant String := "Serial Port";
-  Steps_Per_Revolution_Key        : constant String := "Steps Per Revolution";
-  First_Steps_Per_Revolution_Key  : constant String := "First Steps Per Revolution";
-  Second_Steps_Per_Revolution_Key : constant String := "Second Steps Per Revolution";
-  Clocks_Per_Second_Key           : constant String := "Clocks Per Second";
-  Park_Azimuth_Key                : constant String := "Park Azimuth";
-  Park_Altitude_Key               : constant String := "Park Altitude";
-  Pole_Height_Key                 : constant String := "Pole Height";
-  Moving_Speed_List_Key           : constant String := "Moving Speed List";
-  First_Acceleration_Key          : constant String := "First Acceleration";
-  Second_Acceleration_Key         : constant String := "Second Acceleration";
-  First_Lower_Limit_Key           : constant String := "First Lower Limit";
-  First_Upper_Limit_Key           : constant String := "First Upper Limit";
-  Second_Lower_Limit_Key          : constant String := "Second Lower Limit";
-  Second_Upper_Limit_Key          : constant String := "Second Upper Limit";
+  Telescope_Id            : constant String := "Telescope";
+  Name_Key                : constant String := "Name";
+  Ip_Address_Key          : constant String := "IP Address";
+  Pole_Height_Key         : constant String := "Pole Height";
+  Moving_Speed_List_Key   : constant String := "Moving Speed List";
+  First_Acceleration_Key  : constant String := "First Acceleration";
+  Second_Acceleration_Key : constant String := "Second Acceleration";
 
   Stellarium_Id : constant String := "Stellarium";
   Lx200_Id      : constant String := "Lx200";
@@ -75,23 +63,12 @@ package body Parameter is
 
   The_Section : Configuration.Section_Handle;
 
-  --Telescope
-  Datagram_Port : constant := 44422;
-
   The_Telescope_Name       : Text.String;
   Is_In_Setup_Mode         : Boolean;
-  The_Steps_Per_Revolution : Device.Steps_Per_Revolution;
-  The_Clocks_Per_Second    : Natural;
-  The_Park_Azimuth         : Angle.Value;
-  The_Park_Altitude        : Angle.Value;
   The_Pole_Height          : Angle.Value;
   The_Moving_Speeds        : Angle_List.Item;
   The_First_Acceleration   : Angle.Value;
   The_Second_Acceleration  : Angle.Value;
-  The_First_Lower_Limit    : Angle.Degrees;
-  The_First_Upper_Limit    : Angle.Degrees;
-  The_Second_Lower_Limit   : Angle.Degrees;
-  The_Second_Upper_Limit   : Angle.Degrees;
   The_Telescope_Connection : Connection;
 
   --Servers
@@ -214,21 +191,6 @@ package body Parameter is
   end Pole_Heigth;
 
 
-  function Degrees_Of (Key : String) return Angle.Degrees is
-    Item  : constant String := String_Of (Key);
-  begin
-    declare
-      Image : constant String := Image_Of (Item, Unit => "°");
-    begin
-      Log.Write (Key & ": " & Item);
-      return Angle.Degrees'value(Image);
-    end;
-  exception
-  when others =>
-    Error.Raise_With ("Incorrect " & Key & ": <" & Item & ">");
-  end Degrees_Of;
-
-
   function Value_Of (Key  : String;
                      Unit : String := "") return Integer is
     Item : constant String := String_Of (Key);
@@ -240,17 +202,7 @@ package body Parameter is
   end Value_Of;
 
 
-  function Number_Of (Key  : String) return Positive is
-    Item : constant String := String_Of (Key);
-  begin
-    return Positive'value(Item);
-  exception
-  when others =>
-    Error.Raise_With ("Incorrect " & Key & ": <" & Item & ">");
-  end Number_Of;
-
-
-  procedure Read (Is_Stepper_Driver : Boolean) is
+  procedure Read is
 
     procedure Create_Default_Parameters is
 
@@ -260,13 +212,6 @@ package body Parameter is
       begin
         Ada.Text_IO.Put_Line (The_File, Line);
       end Put;
-
-      procedure Put_Steps_Per_Revolution (Steps : Positive) is
-        Steps_Image : constant String := Positive'image(Steps);
-      begin
-        Put (First_Steps_Per_Revolution_Key & "  =" & Steps_Image);
-        Put (Second_Steps_Per_Revolution_Key & " =" & Steps_Image);
-      end Put_Steps_Per_Revolution;
 
     begin -- Create_Default_Parameters
       begin
@@ -282,63 +227,27 @@ package body Parameter is
       when Home =>
         Put ("[" & Telescope_Id & "]");
         Put (Name_Key & "                        = Setup");
-        if Is_Stepper_Driver then
-          Put (Ip_Address_Key & "                  = SkyTracker" & (if Os.Is_Windows then "" else ".local"));
-          Put_Steps_Per_Revolution (141 * 5 * 200 * 16); -- EQU-6
-          Put (Clocks_Per_Second_Key & "           = 5000000");
-        else
-          Put (Ip_Address_Key & "                  = 127.0.0.1");
-        end if;
-        Put (Park_Azimuth_Key & "                = +137°16'00.0""");
-        Put (Park_Altitude_Key & "               = +5°35'00.0""");
+        Put (Ip_Address_Key & "                  = 127.0.0.1");
         Put (Pole_Height_Key & "                 = Latitude");
         Put (Moving_Speed_List_Key & "           = 6""/s, 1'/s, 10'/s, 6°/s");
         Put (First_Acceleration_Key & "          = 6°/s²");
         Put (Second_Acceleration_Key & "         = 6°/s²");
-        Put (First_Lower_Limit_Key & "           = -5°");
-        Put (First_Upper_Limit_Key & "           = 185°");
-        Put (Second_Lower_Limit_Key & "          = 0°");
-        Put (Second_Upper_Limit_Key & "          = 0°");
       when Sternwarte_Schaffhausen =>
         Put ("[" & Telescope_Id & "]");
-        Put (Name_Key & "                        = Newton");
-        if Is_Stepper_Driver then
-          Put (Serial_Port_Key & "                 = None");
-          Put_Steps_Per_Revolution (240 * 8 * 200 * 16);
-          Put (Clocks_Per_Second_Key & "           = 5000228");
-        else
-          Put (Ip_Address_Key & "                  = 127.0.0.1");
-        end if;
-        Put (Park_Azimuth_Key & "                       = +74°");
-        Put (Park_Altitude_Key & "                      = -5°");
+        Put (Name_Key & "                               = CDK700");
+        Put (Ip_Address_Key & "                         = 127.0.0.1");
         Put (Pole_Height_Key & "                        = 90°");
         Put (Moving_Speed_List_Key & "                  = 6""/s, 1'/s, 10'/s, 3°00'/s");
         Put (First_Acceleration_Key & "                 = 30'/s²");
         Put (Second_Acceleration_Key & "                = 30'/s²");
-        Put (First_Lower_Limit_Key & "                  = -1726°");
-        Put (First_Upper_Limit_Key & "                  = +1874°");
-        Put (Second_Lower_Limit_Key & "                 = -10°");
-        Put (Second_Upper_Limit_Key & "                 = +90°");
       when Unknown =>
         Put ("[" & Telescope_Id & "]");
         Put (Name_Key & "                        = ");
-        if Is_Stepper_Driver then
-          Put (Ip_Address_Key & "                  = None");
-          Put_Steps_Per_Revolution (1232086); -- M-Zero
-          Put (Clocks_Per_Second_Key & "           = 5000000");
-        else
-          Put (Ip_Address_Key & "                  = 127.0.0.1");
-        end if;
-        Put (Park_Azimuth_Key & "                = +180°00'");
-        Put (Park_Altitude_Key & "               = +0°00'");
+        Put (Ip_Address_Key & "                  = 127.0.0.1");
         Put (Pole_Height_Key & "                 = Latitude");
         Put (Moving_Speed_List_Key & "           = 6""/s, 1'/s, 10'/s, 6°/s");
         Put (First_Acceleration_Key & "          = 3°/s²");
         Put (Second_Acceleration_Key & "         = 3°/s²");
-        Put (First_Lower_Limit_Key & "           = -360°");
-        Put (First_Upper_Limit_Key & "           = +360°");
-        Put (Second_Lower_Limit_Key & "          = -30°");
-        Put (Second_Upper_Limit_Key & "          = +210°");
       end case;
       Put ("");
       Put ("[" & Lx200_Id & "]");
@@ -374,8 +283,10 @@ package body Parameter is
 
       procedure Connect_Telescope is
 
-        procedure Prepare_Udp (Telescope : String) is
-          The_Ip_Address : Network.Ip_Address;
+        procedure Prepare_Tcp (Telescope : String) is
+          Socket_Protocol : constant Network.Tcp.Protocol := Network.Tcp.Raw;
+          Server_Port     : constant Network.Port_Number := 8080;
+          The_Ip_Address  : Network.Ip_Address;
         begin
           begin
             begin
@@ -385,74 +296,19 @@ package body Parameter is
               The_Ip_Address := Network.Ip_Address_Of_Host (Telescope);
               Log.Write ("IP address of: " & Telescope & " = " & Network.Image_Of (The_Ip_Address));
             end;
-            The_Telescope_Connection := (Kind   => Is_Udp,
-                                         Socket => Network.Udp.Socket_For (Port            => Datagram_Port,
-                                                                           Receive_Timeout => Datagram_Timeout),
-                                         Address => Network.Address_Of (The_Ip_Address, Datagram_Port));
+            The_Telescope_Connection := (Socket => Network.Tcp.Socket_For (The_Address  => The_Ip_Address,
+                                                                           The_Port     => Server_Port,
+                                                                           The_Protocol => Socket_Protocol),
+                                         Address => Network.Address_Of (The_Ip_Address, Server_Port));
 
           exception
           when others =>
             Error.Raise_With ("Can't find the telescope " & Telescope);
           end;
-        end Prepare_Udp;
-
-        procedure Prepare_Serial (Port_Name : String) is
-        begin
-          begin
-            The_Telescope_Connection := (Kind => Is_Serial,
-                                         Port => Serial_Io.Port'value(Port_Name));
-          exception
-          when others =>
-            Error.Raise_With ("Incorrect Serial Port: <" & Port_Name & ">");
-          end;
-        end Prepare_Serial;
-
-
-        function Step_Number_Of (Key : String) return Device.Step_Number is
-          Number : constant Positive := Number_Of (Key);
-        begin
-          if Number > Device.Step_Number'last  then
-            Error.Raise_With ("Too many steps per revolution");
-          end if;
-          return Number;
-        end Step_Number_Of;
-
-
-        Port_Name : constant String := String_Value_Of (Serial_Port_Key);
-
+        end Prepare_Tcp;
       begin -- Connect_Telescope
-        if Port_Name /= "" then
-          if Port_Name /= "None" then
-            Prepare_Serial (Port_Name);
-          end if;
-        else
-          declare
-            Telescope : constant String := String_Of (Ip_Address_Key);
-          begin
-            if not Is_Stepper_Driver or else (Telescope /= "None") then
-              Prepare_Udp (Telescope);
-            end if;
-          end;
-        end if;
-        if Is_Stepper_Driver then
-          The_Clocks_Per_Second := Number_Of (Clocks_Per_Second_Key);
-          if String_Value_Of (Steps_Per_Revolution_Key) = "" then
-            The_Steps_Per_Revolution(Device.D1) := Step_Number_Of (First_Steps_Per_Revolution_Key);
-            The_Steps_Per_Revolution(Device.D2) := Step_Number_Of (Second_Steps_Per_Revolution_Key);
-          elsif (String_Value_Of (First_Steps_Per_Revolution_Key) = "") and
-                (String_Value_Of (Second_Steps_Per_Revolution_Key) = "")
-          then
-            The_Steps_Per_Revolution(Device.D1) := Step_Number_Of (Steps_Per_Revolution_Key);
-            The_Steps_Per_Revolution(Device.D2) := The_Steps_Per_Revolution(Device.D1);
-          else
-            Error.Raise_With ("The steps per revolution are defined more then once");
-          end if;
-        end if;
-        if The_Telescope_Connection.Kind = Is_Simulated then
-          Text.Append_To (The_Telescope_Name, " Simulation");
-          Log.Write ("Telescope Simulation");
-        end if;
-        Motor.Connect_Communication;
+        Prepare_Tcp (String_Of (Ip_Address_Key));
+        Mount.Connect_Communication;
       end Connect_Telescope;
 
     begin -- Read_Values
@@ -471,8 +327,6 @@ package body Parameter is
       Log.Write ("Name: " & Telescope_Name);
       Is_In_Setup_Mode := Telescope_Name = "Setup";
       Connect_Telescope;
-      The_Park_Azimuth := Angle_Of (Park_Azimuth_Key);
-      The_Park_Altitude := Angle_Of (Park_Altitude_Key);
       The_Pole_Height := Pole_Heigth;
       The_Moving_Speeds := Angles_Of (Moving_Speed_List_Key, Speed_Unit);
       if Natural(Angle_List.Length (The_Moving_Speeds)) < 2 then
@@ -480,29 +334,6 @@ package body Parameter is
       end if;
       The_First_Acceleration := Angle_Of (First_Acceleration_Key, Acceleration_Unit);
       The_Second_Acceleration := Angle_Of (Second_Acceleration_Key, Acceleration_Unit);
-      The_First_Lower_Limit := Degrees_Of (First_Lower_Limit_Key);
-      The_First_Upper_Limit := Degrees_Of (First_Upper_Limit_Key);
-      The_Second_Lower_Limit := Degrees_Of (Second_Lower_Limit_Key);
-      The_Second_Upper_Limit := Degrees_Of (Second_Upper_Limit_Key);
-      if The_First_Lower_Limit /= 0.0 or The_First_Upper_Limit /= 0.0 then
-        declare
-          The_Minimum_Range : Angle.Degrees;
-        begin
-          if The_Second_Upper_Limit = 0.0 or The_Second_Upper_Limit >= 180.0 then
-            The_Minimum_Range := 180.0;
-          else
-            The_Minimum_Range := 360.0;
-          end if;
-          if (The_First_Upper_Limit - The_First_Lower_Limit) < The_Minimum_Range then
-            Error.Raise_With ("Incorrect first limit range");
-          end if;
-        end;
-      end if;
-      if The_Second_Lower_Limit /= 0.0 or The_Second_Upper_Limit /= 0.0 then
-        if The_Second_Lower_Limit > 0.0 or The_Second_Upper_Limit < 90.0 then
-          Error.Raise_With ("Incorrect second limit range");
-        end if;
-      end if;
       Set (Lx200_Handle);
       begin
         The_Lx200_Port := Network.Port_Number (Value_Of (Port_Key));
@@ -533,11 +364,11 @@ package body Parameter is
   -- Site --
   ----------
 
-  Home_Latitude    : constant Angle.Degrees := 47.695009;
-  Home_Longitude   : constant Angle.Degrees :=  8.627870;
+  Home_Latitude  : constant Angle.Degrees := 47.695009;
+  Home_Longitude : constant Angle.Degrees :=  8.627870;
 
-  Newton_Latitude  : constant Angle.Degrees := 47.705500;
-  Newton_Longitude : constant Angle.Degrees :=  8.609865;
+  CDK700_Latitude  : constant Angle.Degrees := 47.705500;
+  CDK700_Longitude : constant Angle.Degrees :=  8.609865;
 
   function Default_Location return Location is
 
@@ -551,7 +382,7 @@ package body Parameter is
   begin
     if Stellarium.Latitude = Home_Latitude and then Stellarium.Longitude = Home_Longitude then
       return Home;
-    elsif Stellarium.Latitude = Newton_Latitude and then Stellarium.Longitude = Newton_Longitude then
+    elsif Stellarium.Latitude = CDK700_Latitude and then Stellarium.Longitude = CDK700_Longitude then
       return Sternwarte_Schaffhausen;
     end if;
     return Unknown;
@@ -604,30 +435,6 @@ package body Parameter is
   end Telescope_Connection;
 
 
-  function Steps_Per_Revolution return Device.Steps_Per_Revolution is
-  begin
-    return The_Steps_Per_Revolution;
-  end Steps_Per_Revolution;
-
-
-  function Clocks_Per_Second return Positive is
-  begin
-    return The_Clocks_Per_Second;
-  end Clocks_Per_Second;
-
-
-  function Park_Azimuth return Angle.Value is
-  begin
-    return The_Park_Azimuth;
-  end Park_Azimuth;
-
-
-  function Park_Altitude return Angle.Value is
-  begin
-    return The_Park_Altitude;
-  end Park_Altitude;
-
-
   function Pole_Height return Angle.Value is
   begin
     return The_Pole_Height;
@@ -662,30 +469,6 @@ package body Parameter is
   begin
     return The_Second_Acceleration;
   end Second_Acceleration;
-
-
-  function First_Lower_Limit return Angle.Degrees is
-  begin
-    return The_First_Lower_Limit;
-  end First_Lower_Limit;
-
-
-  function First_Upper_Limit return Angle.Degrees is
-  begin
-    return The_First_Upper_Limit;
-  end First_Upper_Limit;
-
-
-  function Second_Lower_Limit return Angle.Degrees is
-  begin
-    return The_Second_Lower_Limit;
-  end Second_Lower_Limit;
-
-
-  function Second_Upper_Limit return Angle.Degrees is
-  begin
-    return The_Second_Upper_Limit;
-  end Second_Upper_Limit;
 
 
   -------------

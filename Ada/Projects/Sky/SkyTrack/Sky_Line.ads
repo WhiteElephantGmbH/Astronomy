@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2019 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2012 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,57 +15,22 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Error;
-with Name;
-with Telescope;
+with Earth;
+with Space;
+with Time;
 
-package User is
+package Sky_Line is
 
-  type Action is (Define_Catalog, Define_Target, Stop, Go_To, Set_Orientation, Update, Close);
+  procedure Read;
 
-  subtype Button_Action is Action range Stop .. Go_To;
+  procedure Clear;
 
-  type Action_Handler is access procedure (The_Action : Action);
+  procedure Add (Direction : Earth.Direction);
 
-  type Percent is new Natural range 0 .. 100;
+  function Is_Defined return Boolean;
 
-  type Selection is (All_Objects, Solar_System, Clusters, Open_Clusters, Nebulas, Galaxies,
-                     Stars, Multiple_Stars, Near_Earth_Objects);
+  function Is_Above (Direction : Earth.Direction) return Boolean;
 
-  subtype Object is Selection range Selection'succ(Selection'first) .. Selection'last;
-
-  procedure Show_Error (The_Text : String := Error.Message);
-
-  procedure Show (The_Progress : Percent);
-
-  procedure Show (Visible_In : Duration);
-
-  procedure Show (Information : Telescope.Data);
-
-  procedure Clear_Target;
-
-  procedure Execute (The_Startup_Handler     : not null access procedure;
-                     The_Action_Handler      : Action_Handler;
-                     The_Termination_Handler : not null access procedure);
-
-  procedure Enter_Handling;
-
-  procedure Perform_Goto;
-
-  procedure Perform_Stop;
-
-  procedure Clear_Targets;
-
-  procedure Define (Targets : Name.Id_List_Access);
-
-  procedure Update_Targets;
-
-  function Target_Name return String;
-
-  procedure Show_Description (Image : String);
-
-  function Is_Selected (The_Object : Object) return Boolean;
-
-  function Image_Orientation return Telescope.Orientation;
-
-end User;
+  function Is_Above (Direction : Space.Direction;
+                     Lmst      : Time.Value) return Boolean;
+end Sky_Line;

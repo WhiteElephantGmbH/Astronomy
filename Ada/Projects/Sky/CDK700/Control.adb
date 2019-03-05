@@ -15,23 +15,16 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Ada.Calendar;
 with Ada.Real_Time;
-with Alignment;
 with Application;
 with Data;
-with Earth;
 with Error;
 with Gui;
 with Lx200;
 with Moon;
-with Motor;
 with Name;
-with Neo;
 with Network.Tcp;
-with Numerics;
 with Os.Application;
-with Os.Ascom;
 with Parameter;
 with Os.Process;
 with Sky_Line;
@@ -102,7 +95,7 @@ package body Control is
             when Name.Landmark =>
               return True;
             when Name.Near_Earth_Object =>
-              return User.Is_Selected (User.Near_Earth_Objects) and then Neo.Is_Arriving (Item);
+              return False; -- not implemented
             when Name.Sky_Object =>
               declare
                 Object : constant Data.Object := Name.Object_Of (Item);
@@ -185,21 +178,16 @@ package body Control is
   type Command is (Define_Catalog,
                    Define_Target,
                    Stop,
-                   Park,
-                   Align,
-                   Synch,
                    Go_To,
                    Set_Orientation,
                    New_Goto_Direction,
-                   New_Synch_Direction,
                    Update,
                    New_Telescope_Information,
                    Close);
 
   protected Action_Handler is
-    procedure Put_Goto (The_Direction  : Space.Direction);
-    procedure Put_Synch (The_Direction : Space.Direction);
-    procedure Put (The_Action       : User.Action);
+    procedure Put_Goto (The_Direction : Space.Direction);
+    procedure Put (The_Action : User.Action);
     procedure Signal_New_Telescope_Data;
     function New_Direction return Space.Direction;
     entry Get (The_Command : out Command);
@@ -210,7 +198,6 @@ package body Control is
     Next_Command            : Command;
     Has_New_Telescope_Data  : Boolean := False;
     Has_New_Goto_Direction  : Boolean := False;
-    Has_New_Synch_Direction : Boolean := False;
     Define_Catalog_Pending  : Boolean := False;
     Define_Target_Pending   : Boolean := False;
     Update_Pending          : Boolean := False;
@@ -223,12 +210,6 @@ package body Control is
   begin
     Action_Handler.Put_Goto (The_Direction);
   end Goto_Handler;
-
-
-  procedure Synch_Handler (The_Direction : Space.Direction) is
-  begin
-    Action_Handler.Put_Synch (The_Direction);
-  end Synch_Handler;
 
 
   procedure User_Action_Handler (The_Action : User.Action) is
@@ -249,20 +230,11 @@ package body Control is
         Define_Catalog_Pending := True;
       when User.Define_Target =>
         Define_Target_Pending := True;
-      when User.Park =>
-        Next_Command := Park;
-        Command_Is_Pending := True;
       when User.Go_To =>
         Next_Command := Go_To;
         Command_Is_Pending := True;
       when User.Stop =>
         Next_Command := Stop;
-        Command_Is_Pending := True;
-      when User.Align =>
-        Next_Command := Align;
-        Command_Is_Pending := True;
-      when User.Synch =>
-        Next_Command := Synch;
         Command_Is_Pending := True;
       when User.Update =>
         Update_Pending := True;
@@ -283,14 +255,6 @@ package body Control is
       end if;
     end Put_Goto;
 
-    procedure Put_Synch (The_Direction : Space.Direction) is
-    begin
-      The_New_Direction := The_Direction;
-      if Next_Command /= Close then
-        Has_New_Synch_Direction := True;
-      end if;
-    end Put_Synch;
-
     procedure Signal_New_Telescope_Data is
     begin
       if Next_Command /= Close then
@@ -300,7 +264,6 @@ package body Control is
 
     entry Get (The_Command : out Command)
       when Has_New_Goto_Direction
-        or Has_New_Synch_Direction
         or Command_Is_Pending
         or Define_Catalog_Pending
         or Update_Pending
@@ -323,9 +286,6 @@ package body Control is
       elsif Has_New_Goto_Direction then
         The_Command := New_Goto_Direction;
         Has_New_Goto_Direction := False;
-      elsif Has_New_Synch_Direction then
-        The_Command := New_Synch_Direction;
-        Has_New_Synch_Direction := False;
       elsif Has_New_Telescope_Data then
         The_Command := New_Telescope_Information;
         Has_New_Telescope_Data := False;
@@ -372,22 +332,7 @@ package body Control is
 
     The_Data : Telescope.Data;
 
-    Is_Zero_Target : Boolean := True;
-
-    The_Neo_Target : Name.Id;
-    The_Landmark   : Name.Id;
-
-    The_Travelling_Time : Time.Ut := 0.0;
-
-
-    function Arrival_Time return Time.Ut is
-    begin
-      if Name.Is_Known (The_Neo_Target) then
-        return Neo.Arrival_Time_Of (The_Neo_Target);
-      else
-        return Time.In_The_Past;
-      end if;
-    end Arrival_Time;
+    The_Landmark : Name.Id;
 
 
     procedure Define_External_Target is
@@ -396,8 +341,6 @@ package body Control is
       New_Target_Direction := Action_Handler.New_Direction;
       Telescope.Define_Space_Access (Target_Direction_Of'access, Name.No_Id);
       The_Landmark := Name.No_Id;
-      The_Neo_Target := Name.No_Id;
-      Is_Zero_Target := False;
     end Define_External_Target;
 
 
@@ -413,19 +356,6 @@ package body Control is
     end Handle_Goto;
 
 
-    procedure Handle_Synch is
-      use type Name.Id;
-    begin
-      Define_External_Target;
-      case The_Data.Status is
-      when Telescope.Disconnected | Telescope.Startup =>
-        Log.Error ("synch not executed");
-      when others =>
-        User.Perform_Synch;
-      end case;
-    end Handle_Synch;
-
-
     Telescope_Information_Is_Handled : Boolean := False;
 
     procedure Handle_Telescope_Information is
@@ -435,49 +365,18 @@ package body Control is
       User.Show (The_Data);
       if The_Data.Target_Lost then
         The_Landmark := Name.No_Id;
-        The_Neo_Target := Name.No_Id;
         User.Clear_Target;
-      end if;
-      if Name.Is_Known (The_Neo_Target) then
-        declare
-          Arriving_In : Time.Ut := Neo.Arrival_Time_Of (The_Neo_Target);
-        begin
-          if Arriving_In /= Time.In_The_Past then
-            Arriving_In := Arriving_In - Time.Universal;
-            if Arriving_In >= 0.0 then
-              User.Show (Arriving_In);
-            end if;
-          end if;
-        end;
       end if;
       case The_Data.Status is
       when Telescope.Startup =>
         return;
       when Telescope.Ready =>
-        Is_Zero_Target := True;
-        User.Define_Park_Position;
         return;
       when Telescope.Disconnected =>
         return;
-      when Telescope.Approaching | Telescope.Parking | Telescope.Positioning | Telescope.Preparing =>
-        declare
-          Actual_Duration : Time.Ut := The_Data.Arriving_Time - Time.Universal;
-        begin
-          if Actual_Duration < 0.0 then
-            Actual_Duration := 0.0;
-          end if;
-          if The_Travelling_Time <= Actual_Duration then
-            The_Travelling_Time := Actual_Duration;
-          elsif Actual_Duration /= 0.0 then
-            User.Show (User.Percent(Float(Actual_Duration) * Float(User.Percent'last) / Float(The_Travelling_Time)));
-          end if;
-        end;
       when others =>
-        The_Travelling_Time := 0.0;
-        User.Show (The_Progress => 0);
+        null;
       end case;
-      Os.Ascom.Set (The_Data.Actual_Direction);
-      Os.Ascom.Set (Is_Approaching => The_Data.Status = Telescope.Approaching);
       Lx200.Set (The_Data.Actual_Direction);
       Stellarium.Set (The_Data.Actual_Direction);
     end Handle_Telescope_Information;
@@ -513,7 +412,6 @@ package body Control is
           begin
             User.Show_Description ("");
             The_Landmark := Name.No_Id;
-            The_Neo_Target := Name.No_Id;
             Targets.Get_For (User.Target_Name, The_Item);
             if Name.Is_Known (The_Item)  then
               case Name.Kind_Of (The_Item) is
@@ -534,32 +432,17 @@ package body Control is
               when Name.Small_Solar_System_Body =>
                 Telescope.Define_Space_Access (Sssb.Direction_Of'access, The_Item);
               when Name.Near_Earth_Object =>
-                Telescope.Define_Space_Access (Neo.Direction_Of'access, The_Item);
-                The_Neo_Target := The_Item;
+                null; -- not implemented
               when Name.Landmark =>
                 The_Landmark := The_Item;
               end case;
-              Is_Zero_Target := False;
-            else
-              User.Define_Park_Position;
-              Is_Zero_Target := True;
             end if;
           end;
         when Stop =>
           Telescope.Halt;
-        when Align =>
-          Telescope.Align;
-        when Synch =>
-          if Is_Zero_Target then
-            Telescope.Synch_Park_Position;
-          else
-            Telescope.Synch_On_Target;
-          end if;
-        when Park =>
-          Telescope.Park;
         when Go_To =>
           if The_Landmark = Name.No_Id then
-            Telescope.Follow (Arrival_Time);
+            Telescope.Follow;
           else
             Telescope.Position_To (The_Landmark);
           end if;
@@ -567,8 +450,6 @@ package body Control is
           Telescope.Set (User.Image_Orientation);
         when New_Goto_Direction =>
           Handle_Goto;
-        when New_Synch_Direction =>
-          Handle_Synch;
         when New_Telescope_Information =>
           Handle_Telescope_Information;
           Telescope_Information_Is_Handled := True;
@@ -577,7 +458,6 @@ package body Control is
           Telescope.Close;
           Stellarium.Close;
           Lx200.Close;
-          Os.Ascom.Close;
           exit;
         end case;
       or
@@ -599,16 +479,13 @@ package body Control is
     Telescope.Close;
     Stellarium.Close;
     Lx200.Close;
-    Os.Ascom.Close;
     Action_Handler.Enable_Termination;
   end Manager;
 
 
   procedure Read_Data is
   begin
-    Alignment.Read;
     Sky_Line.Read;
-    Neo.Add_Objects;
     Name.Read_Favorites;
   end Read_Data;
 
@@ -624,8 +501,6 @@ package body Control is
 
     procedure Startup is
     begin
-      Os.Ascom.Define_Handlers (Goto_Handler'access,
-                                Synch_Handler'access);
       Lx200.Define_Handler (Goto_Handler'access);
       Stellarium.Define_Handler (Goto_Handler'access);
       The_Manager := new Manager;
@@ -668,31 +543,16 @@ package body Control is
       --       is terminated by force quit the mutex is not released but remains until the host is rebooted.
       --
       Error.Raise_With (Application.Name & " already running");
-    elsif not Motor.Is_Stepper and then
-      Ada.Calendar.Year(Ada.Calendar.Clock) > 2016 and then Ada.Calendar.Month (Ada.Calendar.Clock) > 6
-    then
-      Error.Raise_With (Application.Name & " licence timeout");
     end if;
     Os.Process.Set_Priority_Class (Os.Process.Realtime);
-    Parameter.Read (Motor.Is_Stepper);
+    Parameter.Read;
     Time.Set (Parameter.Longitude);
     Read_Data;
-    Motor.Define (First_Acceleration  => Parameter.First_Acceleration,
-                  Second_Acceleration => Parameter.Second_Acceleration,
-                  First_Lower_Limit   => Parameter.First_Lower_Limit,
-                  First_Upper_Limit   => Parameter.First_Upper_Limit,
-                  Second_Lower_Limit  => Parameter.Second_Lower_Limit,
-                  Second_Upper_Limit  => Parameter.Second_Upper_Limit,
-                  Maximum_Speed       => Parameter.Maximum_Speed,
-                  Park_Position       => Numerics.Position_Of (Earth.Direction_Of (Az  => Parameter.Park_Azimuth,
-                                                                                   Alt => Parameter.Park_Altitude)));
     Start_Stellarium_Server;
-    Os.Ascom.Start;
     begin
       Start_Lx200_Server;
     exception
     when others =>
-      Os.Ascom.Close;
       Stellarium.Close;
       raise;
     end;

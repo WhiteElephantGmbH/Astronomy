@@ -18,25 +18,17 @@ pragma Style_White_Elephant;
 with Ada.Real_Time;
 with Ada.Unchecked_Conversion;
 with Alignment;
-with Angle;
 with Application;
-with Astro;
-with Catalog;
 with Data;
-with Definite_Doubly_Linked_Lists;
 with Device;
 with Earth;
 with Gui.Enumeration_Menu_Of;
 with Gui.Registered;
 with Gui.Key_Codes;
 with Lexicon;
-with Matrix;
-with Motor;
-with Numerics;
 with Parameter;
 with Persistent;
 with Refraction;
-with Sky_Line;
 with Space;
 with Strings;
 with Time;
@@ -50,16 +42,15 @@ package body User is
   Application_Name : constant String := Application.Name;
   Version          : constant String := Application.Version;
 
-  Orientation_Key       : constant String := "Orientation";
-  Operation_Control_Key : constant String := "Operation";
+  Orientation_Key : constant String := "Orientation";
 
-  Control_Page         : Gui.Page;
-  Goto_Or_Park_Button  : Gui.Button;
-  Stop_Or_Synch_Button : Gui.Button;
-  Progress_Bar         : Gui.Progress_Bar;
-  Target               : Gui.Plain_Edit_Box;
-  Description          : Gui.Plain_Edit_Box;
-  Display              : Gui.List_View;
+  Control_Page : Gui.Page;
+  Goto_Button  : Gui.Button;
+  Stop_Button  : Gui.Button;
+  Progress_Bar : Gui.Progress_Bar;
+  Target       : Gui.Plain_Edit_Box;
+  Description  : Gui.Plain_Edit_Box;
+  Display      : Gui.List_View;
 
   Display_Page      : Gui.Page;
   Target_Ra         : Gui.Plain_Edit_Box;
@@ -68,40 +59,18 @@ package body User is
   Actual_Dec        : Gui.Plain_Edit_Box;
   Actual_Az         : Gui.Plain_Edit_Box;
   Actual_Alt        : Gui.Plain_Edit_Box;
-  Az_Adjustment     : Gui.Plain_Edit_Box;
-  Alt_Adjustment    : Gui.Plain_Edit_Box;
-  Az_Offset         : Gui.Plain_Edit_Box;
-  Alt_Offset        : Gui.Plain_Edit_Box;
-  First_Motor       : Gui.Plain_Edit_Box;
-  Second_Motor      : Gui.Plain_Edit_Box;
-  Board_Temperature : Gui.Plain_Edit_Box;
-  Synch_State       : Gui.Plain_Edit_Box;
   Lmst              : Gui.Plain_Edit_Box;
   Local_Time        : Gui.Plain_Edit_Box;
-  Time_Offset       : Gui.Plain_Edit_Box;
 
-  Setup_Page           : Gui.Page;
-  Add_Or_Adjust_Button : Gui.Button;
-  Next_Or_Clear_Button : Gui.Button;
-  Orientation_Box      : Gui.Plain_Combo_Box;
-  Autoguiding_Rate     : Gui.Plain_Edit_Box;
-  Air_Pressure         : Gui.Plain_Edit_Box;
-  Temperature          : Gui.Plain_Edit_Box;
-  Operation_Control    : Gui.Plain_Combo_Box;
-  Magnitude_Limit      : Gui.Plain_Edit_Box;
-  Aligned_Stars        : Gui.Plain_Edit_Box;
-  Pole_Az_Offset       : Gui.Plain_Edit_Box;
-  Pole_Height_Offset   : Gui.Plain_Edit_Box;
-  Ra_Rotation          : Gui.Plain_Edit_Box;
-  Dec_Rotation         : Gui.Plain_Edit_Box;
-  System_Error         : Gui.Plain_Edit_Box;
+  Setup_Page      : Gui.Page;
+  Orientation_Box : Gui.Plain_Combo_Box;
+  Air_Pressure    : Gui.Plain_Edit_Box;
+  Temperature     : Gui.Plain_Edit_Box;
 
   type Setup_Data_Storage is record
     Image_Orientation : Telescope.Orientation;
-    Autoguiding_Rate  : Device.Autoguiding_Rate;
     Air_Pressure      : Refraction.Hectopascal;
     Temperature       : Refraction.Celsius;
-    Max_Magnitude     : Catalog.Magnitude;
   end record;
 
   package Persistent_Setup is new Persistent (Setup_Data_Storage, "Setup");
@@ -109,47 +78,24 @@ package body User is
   The_Setup_Data : Persistent_Setup.Data;
 
   The_Image_Orientation : Telescope.Orientation   renames The_Setup_Data.Storage.Image_Orientation;
-  The_Autoguiding_Rate  : Device.Autoguiding_Rate renames The_Setup_Data.Storage.Autoguiding_Rate;
   The_Air_Pressure      : Refraction.Hectopascal  renames The_Setup_Data.Storage.Air_Pressure;
   The_Temperature       : Refraction.Celsius      renames The_Setup_Data.Storage.Temperature;
-  Max_Magnitude         : Catalog.Magnitude       renames The_Setup_Data.Storage.Max_Magnitude;
 
   type Page is (Is_Control, Is_Display, Is_Setup);
 
   Is_Setup_Mode : Boolean := False;
   The_Page      : Page := Is_Control;
 
-  type Target_Selection is (No_Target, Park_Position, Target_Object);
+  type Target_Selection is (No_Target, Target_Object);
 
   The_Target_Selection  : Target_Selection := No_Target;
   Last_Target_Selection : Target_Selection;
 
-  Autoguiding_Change : Boolean := False;
-
-  Synchronizing_Is_Enabled : Boolean := False;
-
   The_Status : Telescope.State := Telescope.Disconnected;
-
-  type Operation is (Set_Sky_Line, Align_Global, Align_Local, Align_1_Star, Align_Pole_Axis);
-
-  subtype Azimuthal_Operation is Operation range Operation'first .. Align_1_Star;
-
-  The_Operation               : Operation := Align_1_Star;
-  Alignment_Adding_Is_Enabled : Boolean := False;
-
-  type Alignment_Star is (No_Star, First_Star, Second_Star, Third_Star);
-
-  The_Alignment_Star : Alignment_Star := First_Star;
 
   Action_Routine   : Action_Handler;
   The_Last_Action  : Action := Action'pred (Button_Action'first);
   Last_Action_Time : Ada.Real_Time.Time := Ada.Real_Time.Time_First;
-
-
-  function Park_Position_Name return String is
-  begin
-    return "<" & Lexicon.Image_Of (Lexicon.Park_Position) & ">";
-  end Park_Position_Name;
 
 
   procedure Signal_Action (The_Action : Action) is
@@ -167,9 +113,6 @@ package body User is
       Action_Routine.all (The_Action);
       Last_Action_Time := Now;
       The_Last_Action := The_Action;
-      if The_Action = Go_To then
-        Alignment_Adding_Is_Enabled := True;
-      end if;
     end if;
   end Signal_Action;
 
@@ -309,227 +252,33 @@ package body User is
   end Show;
 
 
-  function Is_Autoguiding return Boolean is
-  begin
-    return The_Autoguiding_Rate /= 0;
-  end Is_Autoguiding;
-
-
-  function Next_Operation_Enabled return Boolean is
-  begin
-    case The_Operation is
-    when Align_Global =>
-      return True;
-    when Align_Local | Align_1_Star | Align_Pole_Axis | Set_Sky_Line =>
-      return False;
-    end case;
-  end Next_Operation_Enabled;
-
-
-  Align_Is_Enabled                    : Boolean := False;
-  Is_Ready_For_Alignment_Calculations : Boolean := False;
-
-  procedure Disable_Operation_Buttons (Is_Stopped : Boolean := False) is
-  begin
-    Align_Is_Enabled  := False;
-    Is_Ready_For_Alignment_Calculations := False;
-    if Is_Setup_Mode then
-      case The_Operation is
-      when Set_Sky_Line =>
-        if Is_Stopped then
-          Gui.Enable (Add_Or_Adjust_Button);
-        else
-          Gui.Disable (Add_Or_Adjust_Button);
-        end if;
-      when Align_Global =>
-        Gui.Disable (Add_Or_Adjust_Button);
-        Gui.Disable (Next_Or_Clear_Button);
-      when Align_Local =>
-        case The_Status is
-        when Telescope.Stopped =>
-          if Alignment.Has_Correction_Data then
-            Is_Ready_For_Alignment_Calculations := True;
-            Gui.Set_Text (Add_Or_Adjust_Button, "Apply");
-            Gui.Enable (Add_Or_Adjust_Button);
-          end if;
-        when others =>
-          Gui.Disable (Add_Or_Adjust_Button);
-        end case;
-        if not Alignment.Has_Correction then
-          Gui.Disable (Next_Or_Clear_Button);
-        end if;
-      when Align_1_Star =>
-        Gui.Disable (Add_Or_Adjust_Button);
-        Gui.Disable (Next_Or_Clear_Button);
-      when Align_Pole_Axis =>
-        Gui.Disable (Add_Or_Adjust_Button);
-        if not Alignment.Has_Correction then
-          Gui.Disable (Next_Or_Clear_Button);
-        end if;
-      end case;
-    end if;
-  end Disable_Operation_Buttons;
-
-
-  procedure Set_Add_Button_Text is
-  begin
-    Is_Ready_For_Alignment_Calculations := False;
-    case The_Operation is
-    when Align_1_Star =>
-      Gui.Set_Text (Add_Or_Adjust_Button, "Align");
-    when Align_Pole_Axis =>
-      case The_Alignment_Star is
-      when No_Star =>
-        Gui.Set_Text (Add_Or_Adjust_Button, "Align");
-      when First_Star =>
-        Gui.Set_Text (Add_Or_Adjust_Button, "Add First");
-      when Second_Star =>
-        Gui.Set_Text (Add_Or_Adjust_Button, "Add Second");
-      when Third_Star =>
-        Gui.Set_Text (Add_Or_Adjust_Button, "Add Third");
-      end case;
-    when Set_Sky_Line | Align_Global | Align_Local =>
-      Gui.Set_Text (Add_Or_Adjust_Button, "Add");
-    end case;
-  end Set_Add_Button_Text;
-
-
-  procedure Enable_Operation_Buttons is
-  begin
-    if Is_Setup_Mode then
-      case The_Operation is
-      when Set_Sky_Line =>
-        Set_Add_Button_Text;
-        Gui.Disable (Add_Or_Adjust_Button);
-        if Sky_Line.Is_Defined then
-          Gui.Enable (Next_Or_Clear_Button);
-        end if;
-      when Align_1_Star =>
-        if Alignment.Has_One_Star_Offsets then
-          Gui.Enable (Add_Or_Adjust_Button);
-        end if;
-      when Align_Global | Align_Local | Align_Pole_Axis =>
-        if Alignment_Adding_Is_Enabled then
-          Set_Add_Button_Text;
-          if The_Alignment_Star = No_Star then
-            Align_Is_Enabled := True;
-          end if;
-        end if;
-        Gui.Enable (Add_Or_Adjust_Button);
-        if Next_Operation_Enabled then
-          Gui.Enable (Next_Or_Clear_Button);
-        elsif Alignment.Has_Correction or The_Alignment_Star /= First_Star then
-          Gui.Enable (Next_Or_Clear_Button);
-        end if;
-      end case;
-    end if;
-  end Enable_Operation_Buttons;
-
-
-  The_Actual_Direction : Earth.Direction;
-
   procedure Show (Information : Telescope.Data) is
     use type Telescope.State;
     use type Device.Time_Synch_State;
   begin
     if The_Target_Selection = No_Target then
-      Define_Park_Position;
       return;
     end if;
-    if (The_Status /= Information.Status) or (Last_Target_Selection /= The_Target_Selection) or Autoguiding_Change then
-      Autoguiding_Change := False;
+    if (The_Status /= Information.Status) or (Last_Target_Selection /= The_Target_Selection) then
       The_Status := Information.Status;
       Last_Target_Selection := The_Target_Selection;
-      Synchronizing_Is_Enabled := False;
-      case The_Target_Selection is
-      when Park_Position =>
-        Gui.Set_Text (Goto_Or_Park_Button, "Park");
-        case The_Status is
-        when Telescope.Startup | Telescope.Stopped | Telescope.Ready =>
-          Gui.Set_Text (Stop_Or_Synch_Button, "Synch");
-          Synchronizing_Is_Enabled := True;
-        when Telescope.Parking | Telescope.Positioning | Telescope.Stopping | Telescope.Directing =>
-          Gui.Set_Text (Stop_Or_Synch_Button, "Stop");
-        when others =>
-          null;
-        end case;
-      when Target_Object =>
-        Gui.Set_Text (Goto_Or_Park_Button, "Goto");
-        if Is_Autoguiding then
-          case The_Status is
-          when Telescope.Ready | Telescope.Stopped | Telescope.Parked =>
-            Gui.Set_Text (Stop_Or_Synch_Button, "Synch");
-            Synchronizing_Is_Enabled := True;
-          when others =>
-            Gui.Set_Text (Stop_Or_Synch_Button, "Stop");
-          end case;
-        else
-          Gui.Set_Text (Stop_Or_Synch_Button, "Stop");
-        end if;
-      when No_Target =>
-        raise Program_Error;
-      end case;
       case The_Status is
       when Telescope.Startup | Telescope.Disconnected | Telescope.Directing | Telescope.Stopping =>
-        Disable_Operation_Buttons;
-        Gui.Disable (Stop_Or_Synch_Button);
-        Gui.Disable (Goto_Or_Park_Button);
+        Gui.Disable (Stop_Button);
+        Gui.Disable (Goto_Button);
       when Telescope.Ready | Telescope.Stopped =>
-        Disable_Operation_Buttons (Is_Stopped => The_Status = Telescope.Stopped);
-        case The_Target_Selection is
-        when Park_Position =>
-          Gui.Enable (Stop_Or_Synch_Button);
-        when Target_Object =>
-          if Synchronizing_Is_Enabled then
-            Gui.Enable (Stop_Or_Synch_Button);
-          else
-            Gui.Disable (Stop_Or_Synch_Button);
-          end if;
-        when others =>
-          raise Program_Error;
-        end case;
-        Gui.Enable (Goto_Or_Park_Button);
-      when Telescope.Parked =>
-        Disable_Operation_Buttons;
-        case The_Target_Selection is
-        when Park_Position =>
-          Gui.Disable (Goto_Or_Park_Button);
-          Gui.Disable (Stop_Or_Synch_Button);
-        when Target_Object =>
-          if Synchronizing_Is_Enabled then
-            Gui.Enable (Stop_Or_Synch_Button);
-          else
-            Gui.Disable (Stop_Or_Synch_Button);
-          end if;
-          Gui.Enable (Goto_Or_Park_Button);
-        when others =>
-          raise Program_Error;
-        end case;
+        Gui.Enable (Goto_Button);
       when Telescope.Adjusting =>
-        Disable_Operation_Buttons;
-        Gui.Disable (Goto_Or_Park_Button);
-      when Telescope.Parking =>
-        Disable_Operation_Buttons;
-        Gui.Enable (Stop_Or_Synch_Button);
-        Gui.Disable (Goto_Or_Park_Button);
-      when Telescope.Waiting =>
-        Disable_Operation_Buttons;
-        Gui.Disable (Stop_Or_Synch_Button);
-        Gui.Enable (Goto_Or_Park_Button);
-      when Telescope.Positioning | Telescope.Approaching | Telescope.Preparing =>
-        Disable_Operation_Buttons;
-        Gui.Enable (Stop_Or_Synch_Button);
-        Gui.Enable (Goto_Or_Park_Button);
+        Gui.Disable (Goto_Button);
+      when Telescope.Positioning | Telescope.Approaching =>
+        Gui.Enable (Stop_Button);
+        Gui.Enable (Goto_Button);
       when Telescope.Tracking =>
-        Enable_Operation_Buttons;
-        Gui.Enable (Stop_Or_Synch_Button);
-        Gui.Enable (Goto_Or_Park_Button);
+        Gui.Enable (Stop_Button);
+        Gui.Enable (Goto_Button);
       end case;
     end if;
     Gui.Set_Status_Line (Information.Status'img);
-    if Earth.Direction_Is_Known (Information.Local_Direction) then
-      The_Actual_Direction := Information.Local_Direction;
-    end if;
     if Earth.Direction_Is_Known (Information.Adjustment) then
       Alignment.Set (Direction => Information.Local_Direction,
                      Offset    => Information.Adjustment);
@@ -538,20 +287,6 @@ package body User is
     when Is_Control =>
       null;
     when Is_Display =>
-      if Earth.Direction_Is_Known (Information.Adjustment) then
-        Gui.Set_Text (Alt_Adjustment, Earth.Alt_Offset_Image_Of (Information.Adjustment));
-        Gui.Set_Text (Az_Adjustment, Earth.Az_Offset_Image_Of (Information.Adjustment));
-      else
-        Gui.Set_Text (Alt_Adjustment, "");
-        Gui.Set_Text (Az_Adjustment, "");
-      end if;
-      if Earth.Direction_Is_Known (Information.Alignment_Offsets) then
-        Gui.Set_Text (Alt_Offset, Earth.Alt_Offset_Image_Of (Information.Alignment_Offsets));
-        Gui.Set_Text (Az_Offset, Earth.Az_Offset_Image_Of (Information.Alignment_Offsets));
-      else
-        Gui.Set_Text (Alt_Offset, "");
-        Gui.Set_Text (Az_Offset, "");
-      end if;
       if Space.Direction_Is_Known (Information.Target_Direction) then
         Gui.Set_Text (Target_Dec, Space.Dec_Image_Of (Information.Target_Direction));
         Gui.Set_Text (Target_Ra, Space.Ra_Image_Of (Information.Target_Direction));
@@ -569,23 +304,9 @@ package body User is
       if Earth.Direction_Is_Known (Information.Local_Direction) then
         Gui.Set_Text (Actual_Alt, Earth.Alt_Image_Of (Information.Local_Direction));
         Gui.Set_Text (Actual_Az, Earth.Az_Image_Of (Information.Local_Direction));
-        Gui.Set_Text (First_Motor, Integer'image(Motor.First_Revolutions) & " Revolutions");
-        Gui.Set_Text (Second_Motor, Integer'image(Motor.Second_Revolutions) & " Revolutions");
       else
         Gui.Set_Text (Actual_Alt, "");
         Gui.Set_Text (Actual_Az, "");
-        Gui.Set_Text (First_Motor, "");
-        Gui.Set_Text (Second_Motor, "");
-      end if;
-      if Motor.Board_Temperature_Is_Known then
-        Gui.Set_Text (Board_Temperature, Motor.Board_Temperature'img & "°C");
-      else
-        Gui.Set_Text (Board_Temperature, "");
-      end if;
-      if Motor.Synch_State /= Device.Idle then
-        Gui.Set_Text (Synch_State, Strings.Legible_Of (Motor.Synch_State'img));
-      else
-        Gui.Set_Text (Synch_State, "");
       end if;
       if Information.Universal_Time = Time.In_The_Past then
         Gui.Set_Text (Lmst, "");
@@ -594,40 +315,8 @@ package body User is
         Gui.Set_Text (Lmst, Time.Image_Of (Time.Lmst_Of (Information.Universal_Time)));
         Gui.Set_Text (Local_Time, Time.Image_Of (Information.Universal_Time, Time_Only => True));
       end if;
-      if Information.Time_Adjustment = 0.0 then
-        Gui.Set_Text (Time_Offset, "");
-      else
-        Gui.Set_Text (Time_Offset, Information.Time_Adjustment'img & "s");
-      end if;
     when Is_Setup =>
-      case The_Operation is
-      when Set_Sky_Line | Align_Global | Align_1_Star | Align_Pole_Axis =>
-        Gui.Set_Text (Aligned_Stars, "");
-      when Align_Local =>
-        Gui.Set_Text (Aligned_Stars, Strings.Trimmed (Alignment.Number_Of_Aligned_Stars'img));
-      end case;
-      if Earth.Direction_Is_Known (Information.Pole_Offsets) then
-        Gui.Set_Text (Pole_Az_Offset, Earth.Az_Offset_Image_Of (Information.Pole_Offsets));
-        Gui.Set_Text (Pole_Height_Offset, Earth.Alt_Offset_Image_Of (Information.Pole_Offsets));
-      else
-        Gui.Set_Text (Pole_Az_Offset, "");
-        Gui.Set_Text (Pole_Height_Offset, "");
-      end if;
-      if Space.Direction_Is_Known (Information.Rotations) then
-        Gui.Set_Text (Ra_Rotation, Angle.Image_Of (Space.Ra_Of(Information.Rotations),
-                                                   Decimals    => 3,
-                                                   Show_Signed => True));
-        Gui.Set_Text (Dec_Rotation, Angle.Image_Of (Space.Dec_Of(Information.Rotations),
-                                                    Decimals    => 3,
-                                                    Show_Signed => True));
-        Gui.Set_Text (System_Error, Angle.Image_Of (Information.System_Error,
-                                                    Decimals    => 3,
-                                                    Show_Signed => True));
-      else
-        Gui.Set_Text (Ra_Rotation, "");
-        Gui.Set_Text (Dec_Rotation, "");
-        Gui.Set_Text (System_Error, "");
-      end if;
+      null;
     end case;
   end Show;
 
@@ -689,12 +378,6 @@ package body User is
   end Set_Orientation;
 
 
-  procedure Perform_Park is
-  begin
-    Signal_Action (Park);
-  end Perform_Park;
-
-
   procedure Perform_Goto is
   begin
     Signal_Action (Go_To);
@@ -705,41 +388,6 @@ package body User is
   begin
     Signal_Action (Stop);
   end Perform_Stop;
-
-
-  procedure Perform_Synch is
-  begin
-    Signal_Action (Synch);
-  end Perform_Synch;
-
-
-  procedure Perform_Stop_Or_Synch is
-  begin
-    if Synchronizing_Is_Enabled then
-      Perform_Synch;
-    else
-      Input.Put (Device.Stop, From => Input.Button);
-    end if;
-  exception
-  when others =>
-    Log.Error ("Perform_Stop_Or_Synch");
-  end Perform_Stop_Or_Synch;
-
-
-  procedure Perform_Goto_Or_Park is
-  begin
-    case The_Target_Selection is
-    when Park_Position =>
-      Perform_Park;
-    when Target_Object =>
-      Perform_Goto;
-    when No_Target =>
-      raise Program_Error;
-    end case;
-  exception
-  when others =>
-    Log.Error ("Perform_Goto_Or_Park");
-  end Perform_Goto_Or_Park;
 
 
   function Target_Name return String is
@@ -758,36 +406,6 @@ package body User is
   The_Number         : Natural;
   The_Number_Id      : Name.Selector;
   The_Targets        : Name.Id_List_Access;
-
-
-  function Image_Of (The_Value : Device.Autoguiding_Rate) return String is
-  begin
-    return Strings.Trimmed (The_Value'img) & "%";
-  end Image_Of;
-
-
-  procedure Define_Autoguiding is
-  begin
-    declare
-      Value : constant String := Strings.Trimmed (Gui.Contents_Of (Autoguiding_Rate));
-      Last  : Natural := Value'last;
-    begin
-      loop
-        exit when Value(Last) in '0'..'9';
-        Last := Last - 1;
-      end loop;
-      The_Autoguiding_Rate := Device.Autoguiding_Rate'value(Value(Value'first .. Last));
-      Autoguiding_Change := True;
-      Motor.Set (The_Autoguiding_Rate);
-    exception
-    when others =>
-      Show_Error ("Incorrect Autoguiding Rate: " & Value);
-    end;
-    Gui.Set_Text (Autoguiding_Rate, Image_Of (The_Autoguiding_Rate));
-  exception
-  when others =>
-    Log.Error ("Define_Autoguiding");
-  end Define_Autoguiding;
 
 
   function Image_Of (The_Value : Refraction.Hectopascal) return String is
@@ -845,266 +463,6 @@ package body User is
   end Define_Temperature;
 
 
-  procedure Define_Magnitude is
-    Value : constant String := Gui.Contents_Of (Magnitude_Limit);
-  begin
-    Max_Magnitude := Catalog.Magnitude'value(Value);
-  exception
-  when others =>
-    Show_Error ("Incorrect Magnitude: " & Value);
-  end Define_Magnitude;
-
-
-  use type Name.Id;
-
-  package Star_List is new Definite_Doubly_Linked_Lists (Name.Id);
-
-  The_Next_Stars    : Star_List.Item;
-  The_Next_Altitude : Angle.Degrees;
-  The_Next_Azimuth  : Angle.Degrees;
-  The_Next_Width    : Angle.Degrees;
-  Next_Is_First     : Boolean;
-
-  procedure Define_Operation is
-
-    Control_Image : constant String := Identifier_Of (Gui.Contents_Of (Operation_Control));
-
-    procedure Initialize_Next_Operation is
-      use type Catalog.Magnitude;
-    begin
-      Gui.Set_Text (Next_Or_Clear_Button, "Next");
-      The_Next_Stars.Clear;
-      Next_Is_First := True;
-      if Max_Magnitude <= 0.0 then
-        The_Next_Width := 45.0;
-      elsif Max_Magnitude <= 1.0 then
-        The_Next_Width := 30.0;
-      elsif Max_Magnitude <= 2.0 then
-        The_Next_Width := 20.0;
-      elsif Max_Magnitude <= 3.0 then
-        The_Next_Width := 15.0;
-      else
-        The_Next_Width := 10.0;
-      end if;
-      Log.Write ("Next Width:" & The_Next_Width'img);
-      Catalog_Menu.Set (Data.Hip);
-      Gui.Disable (Next_Or_Clear_Button);
-    end Initialize_Next_Operation;
-
-  begin -- Define_Operation
-    Define_Magnitude;
-    The_Operation := Operation'value(Control_Image);
-    Log.Write ("Operation - " & Control_Image & " - Maximum Magnitude:" & Max_Magnitude'img);
-    case The_Operation is
-    when Align_Global =>
-      Matrix.Clear;
-      Initialize_Next_Operation;
-    when Align_1_Star =>
-      Set_Add_Button_Text;
-      Gui.Set_Text (Next_Or_Clear_Button, "Clear");
-      Gui.Disable (Next_Or_Clear_Button);
-    when Align_Pole_Axis =>
-      Alignment.Clear_Corrections;
-      Matrix.Clear;
-      Set_Add_Button_Text;
-      Gui.Set_Text (Next_Or_Clear_Button, "Clear");
-      Gui.Disable (Next_Or_Clear_Button);
-    when Align_Local =>
-      Matrix.Clear;
-      Set_Add_Button_Text;
-      Gui.Set_Text (Next_Or_Clear_Button, "Clear");
-      Gui.Disable (Next_Or_Clear_Button);
-    when Set_Sky_Line =>
-      Set_Add_Button_Text;
-      Gui.Set_Text (Next_Or_Clear_Button, "Clear");
-      if Sky_Line.Is_Defined then
-        Gui.Enable (Next_Or_Clear_Button);
-      else
-        Gui.Disable (Next_Or_Clear_Button);
-      end if;
-    end case;
-    Gui.Disable (Add_Or_Adjust_Button);
-  exception
-  when others =>
-    Log.Error ("Define_Operation");
-  end Define_Operation;
-
-
-  procedure Next_Global_Alignment is
-    The_Distance : Angle.Degrees;
-    The_Item     : Name.Id;
-    use Astro;
-  begin
-    Gui.Disable (Next_Or_Clear_Button);
-    Log.Write ("Next_Azimuth :" & The_Next_Azimuth'img);
-    Log.Write ("Next_Altitude:" & The_Next_Altitude'img);
-    The_Distance := Angle.Degrees'last;
-    for The_Index in The_Targets.Ids'first .. The_Targets.Last loop
-      declare
-        Item      : constant Name.Id := The_Targets.Ids(The_Index);
-        Magnitude : constant Catalog.Magnitude := Catalog.Magnitude(Name.Magnitude_Of (Item));
-        use all type Data.Object_Type;
-        use type Catalog.Magnitude;
-      begin
-        if Name.Type_Of (Item) = Star and then not The_Next_Stars.Contains (Item) and then
-          (Name.Is_Visible (Item) and (Magnitude < Max_Magnitude))
-        then
-          declare
-            Direction : constant Earth.Direction := Numerics.Direction_Of (Name.Direction_Of (Item, Time.Universal),
-                                                                           Time.Lmst);
-            use type Angle.Value;
-            use type Angle.Signed;
-
-            Altitude     : constant Angle.Degrees := +Angle.Signed'(+Earth.Alt_Of (Direction));
-            Azimuth      : constant Angle.Degrees := +Earth.Az_Of (Direction);
-            Alt_Distance : constant Angle.Degrees := abs (The_Next_Altitude - Altitude);
-            Az_Distance  : constant Angle.Degrees := The_Next_Azimuth - Azimuth;
-            Max_Distance : constant Angle.Degrees := The_Next_Width / 2.0;
-          begin
-            case The_Operation is
-            when Align_Global =>
-              if (Az_Distance < The_Distance) and (Alt_Distance < Max_Distance) then
-                The_Distance := Az_Distance;
-                The_Item := Item;
-              end if;
-            when Align_Local | Align_1_Star | Align_Pole_Axis | Set_Sky_Line =>
-              raise Program_Error;
-            end case;
-          end;
-        end if;
-      end;
-    end loop;
-    if The_Distance < Angle.Degrees'last then
-      The_Next_Stars.Prepend (The_Item);
-      declare
-        Next_Star : constant String := Name.Image_Of (The_Item);
-      begin
-        Set_Target_Name (Next_Star);
-        Signal_Action (Define_Target);
-        Signal_Action (Go_To);
-        return;
-      end;
-    end if;
-  end Next_Global_Alignment;
-
-
-  procedure Handle_Next_Or_Clear is
-  begin -- Handle_Next_Or_Clear
-    Define_Magnitude;
-    case The_Operation is
-    when Align_Global =>
-      Next_Global_Alignment;
-    when Align_Local | Align_Pole_Axis =>
-      case The_Operation is
-      when Align_Local =>
-        Alignment_Adding_Is_Enabled := True;
-      when Align_Pole_Axis =>
-        Alignment_Adding_Is_Enabled := False;
-        The_Alignment_Star := First_Star;
-      when others =>
-        raise Program_Error;
-      end case;
-      Set_Add_Button_Text;
-      Alignment.Clear_Corrections;
-      Gui.Disable (Next_Or_Clear_Button);
-    when Set_Sky_Line =>
-      Sky_Line.Clear;
-      Gui.Disable (Next_Or_Clear_Button);
-    when Align_1_Star =>
-      raise Program_Error;
-    end case;
-  exception
-  when others =>
-    Log.Error ("Handle_Next_Or_Clear");
-  end Handle_Next_Or_Clear;
-
-
-  procedure Handle_Add_Or_Adjust is
-
-    procedure Initialize_First_Next is
-      use type Angle.Value;
-    begin
-      if Next_Is_First then
-        The_Next_Altitude := +Earth.Alt_Of (The_Actual_Direction);
-        The_Next_Azimuth := +Earth.Az_Of (The_Actual_Direction);
-        Next_Is_First := False;
-      end if;
-    end Initialize_First_Next;
-
-  begin -- Handle_Add_Or_Adjust
-    case The_Operation is
-    when Set_Sky_Line =>
-      Sky_Line.Add (The_Actual_Direction);
-      Gui.Enable (Next_Or_Clear_Button);
-    when Align_1_Star =>
-      Signal_Action (Align);
-      Gui.Disable (Add_Or_Adjust_Button);
-    when Align_Global | Align_Local | Align_Pole_Axis =>
-      if Align_Is_Enabled then
-        Gui.Disable (Next_Or_Clear_Button);
-        Align_Is_Enabled := False;
-        The_Alignment_Star := First_Star;
-        Set_Add_Button_Text;
-        Signal_Action (Align);
-      elsif Is_Ready_For_Alignment_Calculations then
-        Is_Ready_For_Alignment_Calculations := False;
-        Gui.Disable (Add_Or_Adjust_Button);
-        Gui.Set_Text (Add_Or_Adjust_Button, "busy...");
-        Alignment.Apply;
-        Gui.Set_Text (Add_Or_Adjust_Button, "Add");
-      elsif Alignment_Adding_Is_Enabled then
-        case The_Operation is
-        when Align_Global =>
-          Initialize_First_Next;
-          Alignment.Store;
-          Handle_Next_Or_Clear;
-        when Align_Local =>
-          Alignment.Add;
-          Gui.Set_Text (Add_Or_Adjust_Button, "Add");
-          if Alignment.Has_Correction then
-            Gui.Enable (Next_Or_Clear_Button);
-          end if;
-        when Align_Pole_Axis =>
-          case The_Alignment_Star is
-          when First_Star =>
-            Alignment.Add_First;
-            The_Alignment_Star := Second_Star;
-            Set_Add_Button_Text;
-          when Second_Star =>
-            Alignment.Add_Second;
-            The_Alignment_Star := Third_Star;
-            Set_Add_Button_Text;
-          when Third_Star =>
-            begin
-              Alignment.Add_Third;
-              Alignment_Adding_Is_Enabled := False;
-              The_Alignment_Star := No_Star;
-              Gui.Set_Text (Add_Or_Adjust_Button, "Adjust");
-              Signal_Action (Go_To);
-              return;
-            exception
-            when Alignment.Failure =>
-              The_Alignment_Star := First_Star;
-              Set_Add_Button_Text;
-            end;
-          when No_Star =>
-            null;
-          end case;
-          Gui.Enable (Next_Or_Clear_Button);
-        when Align_1_Star | Set_Sky_Line =>
-          raise Program_Error;
-        end case;
-      else
-        Set_Add_Button_Text;
-      end if;
-      Gui.Disable (Add_Or_Adjust_Button);
-    end case;
-  exception
-  when others =>
-    Log.Error ("Handle_Add_Or_Adjust");
-  end Handle_Add_Or_Adjust;
-
-
   procedure Put (The_Command : Device.Command) is
   begin
     if not Is_Entering_Number then
@@ -1140,20 +498,11 @@ package body User is
   end Handle_Number;
 
 
-  procedure Set_Park_Position is
-  begin
-    Set_Target_Name (Park_Position_Name);
-    The_Target_Selection := Park_Position;
-  end Set_Park_Position;
-
-
   procedure Enter_Number is
   begin
     if Is_Entering_Number then
       if The_Number = 0 then
-        Set_Park_Position;
-        Signal_Action (Define_Target);
-        Signal_Action (Park);
+        null; -- no park position
       else
         for Index in The_Targets.Ids'first .. The_Targets.Last loop
           declare
@@ -1169,7 +518,7 @@ package body User is
         end loop;
       end if;
       Is_Entering_Number := False;
-    elsif The_Target_Selection = Target_Object and then Gui.Is_Enabled (Goto_Or_Park_Button) then
+    elsif The_Target_Selection = Target_Object and then Gui.Is_Enabled (Goto_Button) then
       Signal_Action (Go_To);
     end if;
   end Enter_Number;
@@ -1212,11 +561,7 @@ package body User is
 
   procedure Enter_Handling is
   begin
-    if Is_Setup_Mode and then Gui.Is_Enabled (Add_Or_Adjust_Button) then
-      Handle_Add_Or_Adjust;
-    else
-      Enter_Number;
-    end if;
+    Enter_Number;
   end Enter_Handling;
 
 
@@ -1296,12 +641,6 @@ package body User is
         Put (Device.No_Command);
       when Gui.Key_Codes.KP_Subtract | Gui.Key_Codes.K_Page_Down =>
         Put (Device.No_Command);
-      when Gui.Key_Codes.KP_Decimal =>
-        if Is_Setup_Mode and then Gui.Is_Enabled (Next_Or_Clear_Button) then
-          Handle_Next_Or_Clear;
-        else
-          Not_A_Number;
-        end if;
       when Gui.Key_Codes.KP_Enter | Gui.Key_Codes.K_Return =>
         Put (Device.No_Command);
       when Gui.Key_Codes.K_Menu =>
@@ -1325,7 +664,7 @@ package body User is
   begin
     if For_Column = 0 then
       if Name_Id = null then
-        return "S0 " & Park_Position_Name;
+        return "";
       else
         return Name.Prefix_Of (Name_Id.all) & Name.Image_Of (Name_Id.all);
       end if;
@@ -1343,9 +682,7 @@ package body User is
     Name_Id : constant Name.Id_Access := Convertion (Item);
     use type Name.Id_Access;
   begin
-    if Name_Id = null then
-      Set_Park_Position;
-    else
+    if Name_Id /= null then -- not park position
       Set_Target_Name (Name.Image_Of (Name_Id.all));
     end if;
     Signal_Action (Define_Target);
@@ -1388,10 +725,10 @@ package body User is
                                       The_Style  => (Gui.Buttons_Fill_Horizontally => True,
                                                      Gui.Buttons_Fill_Vertically   => False));
 
-        Goto_Or_Park_Button := Gui.Create (Control_Page, "Goto", Perform_Goto_Or_Park'access);
-        Gui.Disable (Goto_Or_Park_Button);
-        Stop_Or_Synch_Button := Gui.Create (Control_Page, "Stop", Perform_Stop_Or_Synch'access);
-        Gui.Disable (Stop_Or_Synch_Button);
+        Goto_Button := Gui.Create (Control_Page, "Goto", Perform_Goto'access);
+        Gui.Disable (Goto_Button);
+        Stop_Button := Gui.Create (Control_Page, "Stop", Perform_Stop'access);
+        Gui.Disable (Stop_Button);
         Progress_Bar := Gui.Create (Control_Page);
         Gui.Define_Range (Progress_Bar, Natural(Percent'last));
 
@@ -1457,43 +794,6 @@ package body User is
                                   The_Size       => Text_Size,
                                   The_Title_Size => Title_Size);
 
-        Az_Adjustment := Gui.Create (Display_Page, "Az Adjustment", "",
-                                     Is_Modifiable  => False,
-                                     The_Size       => Text_Size,
-                                     The_Title_Size => Title_Size);
-        Alt_Adjustment := Gui.Create (Display_Page, Alt_Adjustment_Text, "",
-                                      Is_Modifiable  => False,
-                                      The_Size       => Text_Size,
-                                      The_Title_Size => Title_Size);
-
-        Az_Offset := Gui.Create (Display_Page, "Az Offset", "",
-                                 Is_Modifiable  => False,
-                                 The_Size       => Text_Size,
-                                 The_Title_Size => Title_Size);
-        Alt_Offset := Gui.Create (Display_Page, "Alt Offset", "",
-                                  Is_Modifiable  => False,
-                                  The_Size       => Text_Size,
-                                  The_Title_Size => Title_Size);
-
-        First_Motor := Gui.Create (Display_Page, "Motor 1", "",
-                                   Is_Modifiable  => False,
-                                   The_Size       => Text_Size,
-                                   The_Title_Size => Title_Size);
-
-        Second_Motor := Gui.Create (Display_Page, "Motor 2", "",
-                                    Is_Modifiable  => False,
-                                    The_Size       => Text_Size,
-                                    The_Title_Size => Title_Size);
-        Board_Temperature := Gui.Create (Display_Page, "Board Temp.", "",
-                                         Is_Modifiable  => False,
-                                         The_Size       => Text_Size,
-                                         The_Title_Size => Title_Size);
-
-        Synch_State := Gui.Create (Display_Page, "Synch State", "",
-                                   Is_Modifiable  => False,
-                                   The_Size       => Text_Size,
-                                   The_Title_Size => Title_Size);
-
         Lmst := Gui.Create (Display_Page, "LMST", "",
                             Is_Modifiable  => False,
                             The_Size       => Text_Size,
@@ -1503,31 +803,20 @@ package body User is
                                   Is_Modifiable  => False,
                                   The_Size       => Text_Size,
                                   The_Title_Size => Title_Size);
-        Time_Offset := Gui.Create (Display_Page, "Time Offset", "",
-                                   Is_Modifiable  => False,
-                                   The_Size       => Text_Size,
-                                   The_Title_Size => Title_Size);
       end Define_Display_Page;
 
 
       procedure Define_Setup_Page is
 
         -- largest texts
-        Max_Magnitude_Text      : constant String := "Max Magnitude";
-        Pole_Height_Offset_Text : constant String := "Pole Alt Offset";
-
-        Title_Size : constant Natural := Natural'max (Gui.Text_Size_Of (Max_Magnitude_Text),
-                                                      Gui.Text_Size_Of (Pole_Height_Offset_Text)) + Separation;
-        Text_Size : constant Natural := Natural'max (Gui.Text_Size_Of ("+360d00'00.000"""),
-                                                     Gui.Text_Size_Of ("Upside Down sb")) + Separation;
+        Title_Size : constant Natural := Gui.Text_Size_Of (Orientation_Key) + Separation;
+        Text_Size  : constant Natural := Gui.Text_Size_Of ("Upside Down sb") + Separation;
       begin
         Setup_Page := Gui.Add_Page (The_Title  => "Setup",
                                     The_Action => Enter_Setup_Page'access,
                                     The_Style  => (Gui.Buttons_Fill_Horizontally => True,
                                                    Gui.Buttons_Fill_Vertically   => False));
 
-        Add_Or_Adjust_Button := Gui.Create (Setup_Page, "Align", Handle_Add_Or_Adjust'access);
-        Next_Or_Clear_Button := Gui.Create (Setup_Page, "Clear", Handle_Next_Or_Clear'access);
         Orientation_Box := Gui.Create (Setup_Page, Orientation_Key,
                                        The_Action_Routine => Set_Orientation'access,
                                        The_Size           => Text_Size,
@@ -1536,12 +825,6 @@ package body User is
           Gui.Add_Text (Orientation_Box, Strings.Legible_Of (Value'img));
         end loop;
         Gui.Select_Text (Orientation_Box, Strings.Legible_Of (The_Image_Orientation'img));
-        if not Parameter.Is_Azimuthal_Mount then
-          Autoguiding_Rate := Gui.Create (Setup_Page, "Autoguiding", Image_Of (The_Autoguiding_Rate),
-                                          The_Action_Routine => Define_Autoguiding'access,
-                                          The_Size           => Text_Size,
-                                          The_Title_Size     => Title_Size);
-        end if;
         Air_Pressure := Gui.Create (Setup_Page, "Air Pressure", Image_Of (The_Air_Pressure),
                                     The_Action_Routine => Define_Air_Pressure'access,
                                     The_Size           => Text_Size,
@@ -1551,48 +834,6 @@ package body User is
                                    The_Size           => Text_Size,
                                    The_Title_Size     => Title_Size);
 
-        Operation_Control := Gui.Create (Setup_Page, Operation_Control_Key,
-                                         The_Action_Routine => Define_Operation'access,
-                                         The_Size           => Text_Size,
-                                         The_Title_Size     => Title_Size);
-        if Parameter.Is_Azimuthal_Mount then
-          for Value in Azimuthal_Operation'range loop
-            Gui.Add_Text (Operation_Control, Strings.Legible_Of (Value'img));
-          end loop;
-        else
-          for Value in Operation'range loop
-            Gui.Add_Text (Operation_Control, Strings.Legible_Of (Value'img));
-          end loop;
-        end if;
-        Gui.Select_Text (Operation_Control, Strings.Legible_Of (The_Operation'img));
-        Magnitude_Limit := Gui.Create (Setup_Page, Max_Magnitude_Text, Max_Magnitude'img,
-                                       The_Action_Routine => Define_Magnitude'access,
-                                       The_Size           => Text_Size,
-                                       The_Title_Size     => Title_Size);
-        Aligned_Stars := Gui.Create (Setup_Page, "Aligned Stars", "",
-                                     Is_Modifiable  => False,
-                                     The_Size       => Text_Size,
-                                     The_Title_Size => Title_Size);
-        Pole_Az_Offset := Gui.Create (Setup_Page, "Pole Az Offset", "",
-                                      Is_Modifiable  => False,
-                                      The_Size       => Text_Size,
-                                      The_Title_Size => Title_Size);
-        Pole_Height_Offset := Gui.Create (Setup_Page, Pole_Height_Offset_Text, "",
-                                          Is_Modifiable  => False,
-                                          The_Size       => Text_Size,
-                                          The_Title_Size => Title_Size);
-        Ra_Rotation := Gui.Create (Setup_Page, "Ra Rotation", "",
-                                   Is_Modifiable  => False,
-                                   The_Size       => Text_Size,
-                                   The_Title_Size => Title_Size);
-        Dec_Rotation := Gui.Create (Setup_Page, "Dec Rotation", "",
-                                    Is_Modifiable  => False,
-                                    The_Size       => Text_Size,
-                                    The_Title_Size => Title_Size);
-        System_Error := Gui.Create (Setup_Page, "System Error", "",
-                                    Is_Modifiable  => False,
-                                    The_Size       => Text_Size,
-                                    The_Title_Size => Title_Size);
       end Define_Setup_Page;
 
     begin -- Create_Interface
@@ -1603,13 +844,10 @@ package body User is
       Define_Control_Page;
       if Persistent_Setup.Storage_Is_Empty then
         The_Image_Orientation := Telescope.Correct;
-        The_Autoguiding_Rate := 0;
         The_Air_Pressure := 0;
         The_Temperature := 10;
-        Max_Magnitude := 4.0;
       end if;
       Signal_Action (Set_Orientation);
-      Motor.Set (The_Autoguiding_Rate);
       Refraction.Set (The_Air_Pressure);
       Refraction.Set (The_Temperature);
       Is_Setup_Mode := Parameter.Is_Setup_Mode;
@@ -1697,11 +935,5 @@ package body User is
   begin -- Update
     Name.Update (The_Targets, Remove_Target'access, Insert_Target'access);
   end Update_Targets;
-
-
-  procedure Define_Park_Position is
-  begin
-    Set_Park_Position;
-  end Define_Park_Position;
 
 end User;
