@@ -80,8 +80,8 @@ package body User is
 
   type Page is (Is_Control, Is_Display, Is_Setup);
 
-  Is_Setup_Mode : Boolean := False;
-  The_Page      : Page := Is_Control;
+  Is_Expert_Mode : Boolean := False;
+  The_Page       : Page := Is_Control;
 
   type Target_Selection is (No_Target, Target_Object);
 
@@ -750,8 +750,8 @@ package body User is
       Signal_Action (Set_Orientation);
       Refraction.Set (The_Air_Pressure);
       Refraction.Set (The_Temperature);
-      Is_Setup_Mode := Parameter.Is_Setup_Mode;
-      if Is_Setup_Mode then
+      Is_Expert_Mode := Parameter.Is_Expert_Mode;
+      if Is_Expert_Mode then
         Define_Display_Page;
         Define_Setup_Page;
       end if;

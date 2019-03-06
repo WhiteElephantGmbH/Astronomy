@@ -46,9 +46,11 @@ package Parameter is
 
   function Telescope_Name return String;
 
-  function Is_Simulation return Boolean;
+  function Is_Expert_Mode return Boolean;
 
-  function Is_Setup_Mode return Boolean;
+  function Is_Simulation_Mode return Boolean;
+
+  function Pointing_Model return String;
 
   function Pole_Height return Angle.Value;
 

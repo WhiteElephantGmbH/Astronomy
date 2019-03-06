@@ -34,8 +34,9 @@ package Mount is
 
   type State_Handler_Access is access procedure (The_State : State);
 
-  procedure Start (State_Handler : State_Handler_Access;
-                   Is_Simulation : Boolean);
+  procedure Start (State_Handler  : State_Handler_Access;
+                   Pointing_Model : String;
+                   Is_Simulation  : Boolean);
 
   procedure Connect;
 

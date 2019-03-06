@@ -43,6 +43,9 @@ package body Parameter is
 
   PWI_Id                : constant String := "PWI";
   Name_Key              : constant String := "Name";
+  Simulation_Mode_Key   : constant String := "Simulation Mode";
+  Expert_Mode_Key       : constant String := "Expert Mode";
+  Pointing_Model_Key    : constant String := "Pointing Model";
   Ip_Address_Key        : constant String := "IP Address";
   Moving_Speed_List_Key : constant String := "Moving Speed List";
 
@@ -57,8 +60,11 @@ package body Parameter is
 
   The_Section : Configuration.Section_Handle;
 
-  The_Telescope_Name : Text.String;
-  Is_In_Setup_Mode   : Boolean;
+  The_Telescope_Name    : Text.String;
+  Is_In_Expert_Mode     : Boolean;
+  Is_In_Simulation_Mode : Boolean;
+  The_Pointing_Model    : Text.String;
+
   The_Moving_Speeds  : Angle_List.Item;
   The_PWI_Address    : Network.Ip_Address;
   The_PWI_Port       : Network.Port_Number;
@@ -220,6 +226,9 @@ package body Parameter is
       when CDK700 =>
         Put ("[" & PWI_Id & "]");
         Put (Name_Key & "              = CDK700");
+        Put (Expert_Mode_Key & "       = False");
+        Put (Simulation_Mode_Key & "   = False");
+        Put (Pointing_Model_Key & "    = First.PXP");
         Put (Ip_Address_Key & "        = 127.0.0.1");
         Put (Port_Key & "              = 8080");
         Put (Moving_Speed_List_Key & " = 6""/s, 1'/s, 10'/s, 3°00'/s");
@@ -300,12 +309,14 @@ package body Parameter is
       The_Altitude := Value_Of (Altitude_Key, "m");
 
       Set (PWI_Handle);
-      The_Telescope_Name := Text.String_Of (String_Value_Of ("Name"));
+      The_Telescope_Name := Text.String_Of (String_Value_Of (Name_Key));
       Log.Write ("Name: " & Telescope_Name);
-      Is_In_Setup_Mode := Telescope_Name = "Setup";
+      Is_In_Expert_Mode := Strings.Is_Equal (String_Value_Of (Expert_Mode_Key), "True");
+      Is_In_Simulation_Mode := Strings.Is_Equal (String_Value_Of (Simulation_Mode_Key), "True");
+      The_Pointing_Model := Text.String_Of (String_Value_Of (Pointing_Model_Key));
+      Log.Write ("Pointing_Model: " & Pointing_Model);
       Connect_PWI;
       PWI.Install (PWI_Socket'access);
-
       The_Moving_Speeds := Angles_Of (Moving_Speed_List_Key, Speed_Unit);
       if Natural(Angle_List.Length (The_Moving_Speeds)) < 2 then
         Error.Raise_With ("The speed list must contain at least two values");
@@ -374,16 +385,22 @@ package body Parameter is
   end Telescope_Name;
 
 
-  function Is_Simulation return Boolean is
+  function Is_Expert_Mode return Boolean is
   begin
-    return True;
-  end Is_Simulation;
+    return Is_In_Expert_Mode;
+  end Is_Expert_Mode;
 
 
-  function Is_Setup_Mode return Boolean is
+  function Is_Simulation_Mode return Boolean is
   begin
-    return Is_In_Setup_Mode;
-  end Is_Setup_Mode;
+    return Is_In_Simulation_Mode;
+  end Is_Simulation_Mode;
+
+
+  function Pointing_Model return String is
+  begin
+    return Text.String_Of (The_Pointing_Model);
+  end Pointing_Model;
 
 
   function Pole_Height return Angle.Value is

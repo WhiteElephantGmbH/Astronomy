@@ -26,7 +26,7 @@ with Traces;
 package body Telescope is
 
   package Log is new Traces ("Telescope");
-
+  
   task type Control_Task with Priority => System.Max_Priority is
 
     entry Start;
@@ -705,7 +705,8 @@ package body Telescope is
   begin -- Control_Task
     accept Start do
       Mount.Start (Mount_State_Handler'access,
-                   Parameter.Is_Simulation);
+                   Parameter.Pointing_Model,
+                   Parameter.Is_Simulation_Mode);
     end Start;
     Log.Write ("Started");
     The_State := Disconnected;

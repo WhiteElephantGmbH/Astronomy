@@ -157,9 +157,11 @@ package body Mount is
   end Control;
 
 
-  procedure Start (State_Handler : State_Handler_Access;
-                   Is_Simulation : Boolean) is
+  procedure Start (State_Handler  : State_Handler_Access;
+                   Pointing_Model : String;
+                   Is_Simulation  : Boolean) is
   begin
+    PWI.Mount.Define_Pointing_Model (Pointing_Model);
     The_Control := new Control;
     The_Control.Start (State_Handler, Is_Simulation);
   end Start;
