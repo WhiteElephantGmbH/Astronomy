@@ -270,7 +270,6 @@ package body Parameter is
       procedure Connect_PWI is
 
         procedure Prepare_Tcp (Server : String) is
-          The_Socket : Network.Tcp.Socket;
         begin
           begin
             begin
@@ -280,8 +279,7 @@ package body Parameter is
               The_PWI_Address := Network.Ip_Address_Of_Host (Server);
               Log.Write ("IP address of: " & Server & " = " & Network.Image_Of (The_PWI_Address));
             end;
-            The_Socket := PWI_Socket;
-            Network.Tcp.Close (The_Socket);
+            Network.Tcp.Close (PWI_Socket);
           exception
           when others =>
             Error.Raise_With ("PlaneWave interface server not available");

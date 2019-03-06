@@ -35,9 +35,15 @@ package body PWI.XML is
 
   function Time_Of (Image : String) return Universal_Time is
   begin
-    return Universal_Time'(Hours   =>   Hour'value(Image(Image'first .. Image'first + 1)),
-                           Minutes => Minute'value(Image(Image'first + 3 .. Image'first + 4)),
-                           Seconds => Second'value(Image(Image'first + 6 .. Image'first + 7)));
+    if Image = "" then
+      return Universal_Time'(Hours   => 0,
+                             Minutes => 0,
+                             Seconds => 0);
+    else
+      return Universal_Time'(Hours   =>   Hour'value(Image(Image'first .. Image'first + 1)),
+                             Minutes => Minute'value(Image(Image'first + 3 .. Image'first + 4)),
+                             Seconds => Second'value(Image(Image'first + 6 .. Image'first + 7)));
+    end if;
   exception
   when others =>
     raise Parsing_Error;
@@ -57,11 +63,18 @@ package body PWI.XML is
 
   function Time_Of (Image : String) return Time is
   begin
-    return Time'(Hours         =>         Hour'value(Image(Image'first .. Image'last - 10)),
-                 Minutes       =>       Minute'value(Image(Image'last - 8 .. Image'last - 7)),
-                 Seconds       =>       Second'value(Image(Image'last - 5 .. Image'last - 4)),
-                 Milli_Seconds => Milli_Second'value(Image(Image'last - 2 .. Image'last)));
-  exception
+    if Image = "" then
+      return Time'(Hours         => 0,
+                   Minutes       => 0,
+                   Seconds       => 0,
+                   Milli_Seconds => 0);
+    else
+      return Time'(Hours         =>         Hour'value(Image(Image'first .. Image'last - 10)),
+                   Minutes       =>       Minute'value(Image(Image'last - 8 .. Image'last - 7)),
+                   Seconds       =>       Second'value(Image(Image'last - 5 .. Image'last - 4)),
+                   Milli_Seconds => Milli_Second'value(Image(Image'last - 2 .. Image'last)));
+    end if;
+    exception
   when others =>
     raise Parsing_Error;
   end Time_Of;
@@ -84,7 +97,12 @@ package body PWI.XML is
     return Julian_Day'value(Image);
   exception
   when others =>
-    raise Parsing_Error;
+    begin
+      return Julian_Day'value(Image & ".0");
+    exception
+    when others =>
+      raise Parsing_Error;
+    end;
   end Jd_Of;
 
 

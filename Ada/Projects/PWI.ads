@@ -8,8 +8,7 @@ with Network.Tcp;
 
 package PWI is
 
-  Command_Failed : exception;
-  No_Server      : exception;
+  No_Server : exception;
 
   type Open_Socket_Handler is access function return Network.Tcp.Socket;
 
