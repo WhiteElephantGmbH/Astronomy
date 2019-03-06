@@ -812,7 +812,6 @@ package body User is
   begin
     The_Targets := Targets;
     Gui.Set_Title (The_Targets_Column, Image_Of (The_Targets.Kind));
-    Gui.Add_To (Display, 1, Gui.No_Information);
     Update_Targets;
     Gui.Show (Display);
   end Define;
@@ -822,14 +821,14 @@ package body User is
 
     procedure Remove_Target (Index : Natural) is
     begin
-      Gui.Remove_From (Display, Index + 1);
+      Gui.Remove_From (Display, Index);
     end Remove_Target;
 
     procedure Insert_Target (Item  : Name.Id_Access;
                              Index : Natural) is
       function Convert is new Ada.Unchecked_Conversion (Name.Id_Access, Gui.Information);
     begin
-      Gui.Add_To (Display, Index + 1, Convert(Item));
+      Gui.Add_To (Display, Index, Convert(Item));
     end Insert_Target;
 
   begin -- Update
