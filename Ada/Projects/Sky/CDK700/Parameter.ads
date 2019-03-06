@@ -16,16 +16,11 @@
 pragma Style_White_Elephant;
 
 with Angle;
-with Network.Tcp;
+with Network;
 
 package Parameter is
 
   Speed_Unit : constant String := "/s";
-
-  type Connection is record
-    Socket  : Network.Tcp.Socket;
-    Address : Network.Address;
-  end record;
 
   procedure Read;
 
@@ -51,9 +46,9 @@ package Parameter is
 
   function Telescope_Name return String;
 
-  function Is_Setup_Mode return Boolean;
+  function Is_Simulation return Boolean;
 
-  function PWI_Connection return Connection;
+  function Is_Setup_Mode return Boolean;
 
   function Pole_Height return Angle.Value;
 

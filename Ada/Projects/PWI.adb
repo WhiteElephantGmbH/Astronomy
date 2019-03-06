@@ -4,13 +4,19 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Network.Tcp;
 with PWI.XML;
 with Traces;
 
 package body PWI is
 
   package Log is new Traces ("Pwi");
+
+  Open_Socket : Open_Socket_Handler;
+
+  procedure Install (Handler : Open_Socket_Handler) is
+  begin
+    Open_Socket := Handler;
+  end Install;
 
 
   procedure Execute (Item : String) is
@@ -22,8 +28,12 @@ package body PWI is
     The_Socket : Network.Tcp.Socket;
 
   begin
-    The_Socket := Network.Tcp.Socket_For (Server_Address, Server_Port, Socket_Protocol);
     Log.Write ("Execute " & Item);
+    if Open_Socket = null then
+      The_Socket := Network.Tcp.Socket_For (Server_Address, Server_Port, Socket_Protocol);
+    else
+      The_Socket := Open_Socket.all;
+    end if;
     begin
       Network.Tcp.Send ("GET /?" & Item & Ascii.Cr & Ascii.Lf & Ascii.Cr & Ascii.Lf, The_Socket);
       for Unused_Count in 1 .. 2 loop

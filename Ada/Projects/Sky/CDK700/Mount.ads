@@ -22,15 +22,32 @@ with Space;
 
 package Mount is
 
-  type State is (Disconnected, Fault, Startup, Ready, Directing, Positioned, Positioning, Terminated);
+  type State is (Unknown,
+                 Disconnected,
+                 Connected,
+                 Enabled,
+                 Homing,
+                 Synchronised,
+                 Stopped,
+                 Approaching,
+                 Tracking);
 
   type State_Handler_Access is access procedure (The_State : State);
 
-  procedure Connect_Communication;
+  procedure Start (State_Handler : State_Handler_Access;
+                   Is_Simulation : Boolean);
 
-  procedure Open_Communication (State_Handler : State_Handler_Access);
+  procedure Connect;
 
-  procedure Initialize;
+  procedure Disconnect;
+
+  procedure Enable;
+
+  procedure Disable;
+
+  procedure Find_Home;
+
+  procedure Set_Pointing_Model;
 
   procedure Goto_Target (Direction : Space.Direction);
 
@@ -49,6 +66,6 @@ package Mount is
 
   function Actual_Direction return Space.Direction;
 
-  procedure Close_Communication;
+  procedure Finish;
 
 end Mount;

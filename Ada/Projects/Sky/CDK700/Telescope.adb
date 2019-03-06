@@ -27,7 +27,6 @@ package body Telescope is
 
   package Log is new Traces ("Telescope");
 
-
   task type Control_Task with Priority => System.Max_Priority is
 
     entry Start;
@@ -37,6 +36,10 @@ package body Telescope is
     entry Set (The_Orientation : Orientation);
 
     entry Halt;
+
+    entry Startup;
+
+    entry Shutdown;
 
     entry Follow;
 
@@ -49,7 +52,6 @@ package body Telescope is
     entry Close;
 
   end Control_Task;
-
 
   type Control_Access is access Control_Task;
 
@@ -82,6 +84,18 @@ package body Telescope is
   begin
     Control.Set (The_Orientation);
   end Set;
+
+
+  procedure Startup is
+  begin
+    Control.Startup;
+  end Startup;
+
+
+  procedure Shutdown is
+  begin
+    Control.Shutdown;
+  end Shutdown;
 
 
   procedure Halt is
@@ -138,17 +152,21 @@ package body Telescope is
     The_Adjusting_Kind : Adjusting_Kind;
 
     type Event is (No_Event,
+                   Startup,
+                   Shutdown,
                    Halt,
                    Follow,
                    Position,
                    User_Command,
-                   Motor_Disconnected,
-                   Motor_Fault,
-                   Motor_Startup,
-                   Motor_Ready,
-                   Motor_Positioned,
-                   Motor_Positioning,
-                   Motor_Directing);
+                   Mount_Unknown,
+                   Mount_Disconnected,
+                   Mount_Connected,
+                   Mount_Enabled,
+                   Mount_Homing,
+                   Mount_Synchronised,
+                   Mount_Stopped,
+                   Mount_Approaching,
+                   Mount_Tracking);
 
     The_State  : State := Disconnected;
     The_Event  : Event := No_Event;
@@ -244,6 +262,7 @@ package body Telescope is
     procedure Stop_Target is
     begin
       Mount.Stop;
+      The_State := Stopping;
     end Stop_Target;
 
 
@@ -379,56 +398,198 @@ package body Telescope is
   --==  States ==
   --=============
 
+    -------------
+    -- Unknown --
+    -------------
+    procedure Unknown_State is
+    begin
+      case The_Event is
+      when Mount_Disconnected =>
+        The_State := Disconnected;
+      when others =>
+        null;
+      end case;
+    end Unknown_State;
+
     ------------------
     -- Disconnected --
     ------------------
     procedure Disconnected_State is
     begin
       case The_Event is
-      when Motor_Startup =>
-        Mount.Initialize;
-        The_State := Startup;
-      when Motor_Ready =>
-        The_State := Ready;
-      when Motor_Positioned =>
-        The_State := Stopped;
+      when Startup =>
+        Mount.Connect;
+        The_State := Connecting;
       when others =>
-        Mount.Stop;
+        null;
       end case;
     end Disconnected_State;
 
-    -------------
-    -- Startup --
-    -------------
-    procedure Startup_State is
+    -------------------
+    -- Disconnecting --
+    -------------------
+    procedure Disconnecting_State is
     begin
       case The_Event is
-      when Motor_Startup =>
-        Mount.Initialize;
-        The_State := Startup;
-      when Motor_Ready =>
-        The_State := Ready;
-      when Motor_Positioned =>
-        The_State := Stopped;
+      when Mount_Disconnected =>
+        The_State := Disconnected;
+      when Mount_Connected =>
+        Mount.Disconnect;
+      when Halt =>
+        The_State := Connected;
       when others =>
         null;
       end case;
-    end Startup_State;
+    end Disconnecting_State;
 
-    -----------
-    -- Ready --
-    -----------
-    procedure Ready_State is
+    ----------------
+    -- Connecting --
+    ----------------
+    procedure Connecting_State is
     begin
       case The_Event is
-      when User_Command =>
-        Direct_Handling;
-      when Motor_Directing =>
-        The_State := Directing;
+      when Mount_Connected =>
+        Mount.Enable;
+        The_State := Enabling;
+      when Mount_Enabled =>
+        Mount.Find_Home;
+        The_State := Homing;
+      when Mount_Synchronised =>
+        Mount.Set_Pointing_Model;
+        The_State := Initializing;
+      when Mount_Stopped =>
+        The_State := Stopped;
+      when Halt =>
+        The_State := Disconnected;
       when others =>
         null;
       end case;
-    end Ready_State;
+    end Connecting_State;
+
+    ---------------
+    -- Connected --
+    ---------------
+    procedure Connected_State is
+    begin
+      case The_Event is
+      when Startup =>
+        Mount.Connect;
+        The_State := Connecting;
+      when Shutdown =>
+        Mount.Disconnect;
+        The_State := Disconnecting;
+      when others =>
+        null;
+      end case;
+    end Connected_State;
+
+    ---------------
+    -- Disabling --
+    ---------------
+    procedure Disabling_State is
+    begin
+      case The_Event is
+      when Mount_Disconnected =>
+        The_State := Disconnected;
+      when Mount_Connected =>
+        Mount.Disconnect;
+        The_State := Disconnecting;
+      when Halt =>
+        The_State := Enabled;
+      when others =>
+        null;
+      end case;
+    end Disabling_State;
+
+    -----------------
+    -- Enablinging --
+    -----------------
+    procedure Enabling_State is
+    begin
+      case The_Event is
+      when Mount_Enabled =>
+        Mount.Find_Home;
+        The_State := Homing;
+      when Mount_Homing =>
+        The_State := Homing;
+      when Mount_Synchronised =>
+        Mount.Set_Pointing_Model;
+        The_State := Initializing;
+      when Mount_Stopped =>
+        The_State := Stopped;
+      when Halt =>
+        The_State := Connected;
+      when others =>
+        null;
+      end case;
+    end Enabling_State;
+
+    -------------
+    -- Enabled --
+    -------------
+    procedure Enabled_State is
+    begin
+      case The_Event is
+      when Startup =>
+        Mount.Find_Home;
+        The_State := Homing;
+      when Shutdown =>
+        Mount.Disable;
+        The_State := Disabling;
+      when others =>
+        null;
+      end case;
+    end Enabled_State;
+
+    ------------
+    -- Homing --
+    ------------
+    procedure Homing_State is
+    begin
+      case The_Event is
+      when Mount_Synchronised =>
+        Mount.Set_Pointing_Model;
+        The_State := Initializing;
+      when Mount_Stopped =>
+        The_State := Stopped;
+      when Halt =>
+        The_State := Connected;
+      when others =>
+        null;
+      end case;
+    end Homing_State;
+
+    ------------------
+    -- Synchronised --
+    ------------------
+    procedure Synchronised_State is
+    begin
+      case The_Event is
+      when Startup =>
+        Mount.Set_Pointing_Model;
+        The_State := Initializing;
+      when Shutdown =>
+        Mount.Disable;
+        The_State := Disabling;
+      when others =>
+        null;
+      end case;
+    end Synchronised_State;
+
+    ------------------
+    -- Initializing --
+    ------------------
+    procedure Initializing_State is
+    begin
+      case The_Event is
+      when Mount_Stopped =>
+        The_State := Stopped;
+      when Halt =>
+        The_State := Connected;
+      when others =>
+        null;
+      end case;
+    end Initializing_State;
 
     -------------
     -- Stopped --
@@ -440,11 +601,10 @@ package body Telescope is
         Direct_Handling;
       when Position =>
         Do_Position;
+      when Shutdown =>
+        Mount.Disable;
+        The_State := Disabling;
       when Follow =>
-        null;
-      when Motor_Directing =>
-        The_State := Directing;
-      when Motor_Positioned =>
         null;
       when others =>
         null;
@@ -457,8 +617,6 @@ package body Telescope is
     procedure Stopping_State is
     begin
       case The_Event is
-      when Motor_Ready =>
-        The_State := Ready;
       when others =>
         null;
       end case;
@@ -471,13 +629,9 @@ package body Telescope is
     begin
       case The_Event is
       when Halt =>
-        Mount.Stop;
+        Stop_Target;
       when User_Command =>
         End_Direct_Handling;
-      when Motor_Ready =>
-        The_State := Ready;
-      when Motor_Positioned =>
-        The_State := Stopped;
       when others =>
         null;
       end case;
@@ -491,8 +645,6 @@ package body Telescope is
       case The_Event is
       when Halt =>
         Stop_Target;
-      when Motor_Fault =>
-        The_State := Stopping;
       when others =>
         null;
       end case;
@@ -504,8 +656,6 @@ package body Telescope is
     procedure Approaching_State is
     begin
       case The_Event is
-      when Position =>
-        null;
       when Halt =>
         Stop_Target;
       when Follow =>
@@ -554,13 +704,16 @@ package body Telescope is
 
   begin -- Control_Task
     accept Start do
-      Mount.Open_Communication (Mount_State_Handler'access);
+      Mount.Start (Mount_State_Handler'access,
+                   Parameter.Is_Simulation);
     end Start;
+    Log.Write ("Started");
     The_State := Disconnected;
     loop
       begin
         select
           accept Close;
+          Log.Write ("Close");
           exit;
         or
           accept Halt;
@@ -568,6 +721,12 @@ package body Telescope is
         or
           accept Follow;
           The_Event := Follow;
+        or
+          accept Startup;
+          The_Event := Startup;
+        or
+          accept Shutdown;
+          The_Event := Shutdown;
         or
           accept Position_To (Landmark : Name.Id) do
             The_Landmark := Landmark;
@@ -593,31 +752,34 @@ package body Telescope is
           end Set;
         or
           accept Execute (The_Command : Command) do
-            if The_State > Startup then
+            if The_State >= Stopped then
               The_Event := User_Command;
               The_User_Command := The_Command;
             end if;
           end Execute;
         or
           accept New_Mount_State (New_State : Mount.State) do
+            Log.Write ("New_Mount_State " & New_State'img);
             case New_State is
+            when Mount.Unknown =>
+              The_State := Unknown;
+              The_Event := Mount_Unknown;
             when Mount.Disconnected =>
-              The_State := Disconnected;
-              The_Event := Motor_Disconnected;
-            when Mount.Startup =>
-              The_Event := Motor_Startup;
-            when Mount.Fault =>
-              The_Event := Motor_Fault;
-            when Mount.Ready =>
-              The_Event := Motor_Ready;
-            when Mount.Positioned =>
-              The_Event := Motor_Positioned;
-            when Mount.Positioning =>
-              The_Event := Motor_Positioning;
-            when Mount.Directing =>
-              The_Event := Motor_Directing;
-            when Mount.Terminated =>
-              raise Program_Error;
+              The_Event := Mount_Disconnected;
+            when Mount.Connected =>
+              The_Event := Mount_Connected;
+            when Mount.Enabled =>
+              The_Event := Mount_Enabled;
+            when Mount.Homing =>
+              The_Event := Mount_Homing;
+            when Mount.Synchronised =>
+              The_Event := Mount_Synchronised;
+            when Mount.Stopped =>
+              The_Event := Mount_Stopped;
+            when Mount.Approaching =>
+              The_Event := Mount_Approaching;
+            when Mount.Tracking =>
+              The_Event := Mount_Tracking;
             end case;
             Has_New_Data := True;
           end New_Mount_State;
@@ -639,16 +801,24 @@ package body Telescope is
         if The_Event /= No_Event then
           Log.Write ("state => " & The_State'img & " - event => " & The_Event'img);
           case The_State is
-          when Disconnected => Disconnected_State;
-          when Startup      => Startup_State;
-          when Ready        => Ready_State;
-          when Stopped      => Stopped_State;
-          when Stopping     => Stopping_State;
-          when Directing    => Directing_State;
-          when Positioning  => Positioning_State;
-          when Approaching  => Approaching_State;
-          when Tracking     => Tracking_State;
-          when Adjusting    => Adjusting_State;
+          when Unknown       => Unknown_State;
+          when Disconnected  => Disconnected_State;
+          when Disconnecting => Disconnecting_State;
+          when Connecting    => Connecting_State;
+          when Connected     => Connected_State;
+          when Disabling     => Disabling_State;
+          when Enabling      => Enabling_State;
+          when Enabled       => Enabled_State;
+          when Homing        => Homing_State;
+          when Synchronised  => Synchronised_State;
+          when Initializing  => Initializing_State;
+          when Stopped       => Stopped_State;
+          when Stopping      => Stopping_State;
+          when Directing     => Directing_State;
+          when Positioning   => Positioning_State;
+          when Approaching   => Approaching_State;
+          when Tracking      => Tracking_State;
+          when Adjusting     => Adjusting_State;
           end case;
           Has_New_Data := True;
         end if;
@@ -661,22 +831,7 @@ package body Telescope is
         Log.Termination (Item);
       end;
     end loop;
-    Mount.Close_Communication;
-    declare
-      Is_Terminated : Boolean := False;
-      use type Mount.State;
-    begin
-      while not Is_Terminated loop
-        begin
-          accept New_Mount_State (New_State : Mount.State) do
-            Is_Terminated := New_State = Mount.Terminated;
-          end New_Mount_State;
-        exception
-        when others =>
-          exit;
-        end;
-      end loop;
-    end;
+    Mount.Finish;
     Log.Write ("end");
   exception
   when Item: others =>

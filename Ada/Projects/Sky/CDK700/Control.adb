@@ -175,6 +175,8 @@ package body Control is
 
   type Command is (Define_Catalog,
                    Define_Target,
+                   Startup,
+                   Shutdown,
                    Stop,
                    Go_To,
                    Set_Orientation,
@@ -228,6 +230,12 @@ package body Control is
         Define_Catalog_Pending := True;
       when User.Define_Target =>
         Define_Target_Pending := True;
+      when User.Startup =>
+        Next_Command := Startup;
+        Command_Is_Pending := True;
+      when User.Shutdown =>
+        Next_Command := Shutdown;
+        Command_Is_Pending := True;
       when User.Go_To =>
         Next_Command := Go_To;
         Command_Is_Pending := True;
@@ -346,10 +354,10 @@ package body Control is
     begin
       Define_External_Target;
       case The_Data.Status is
-      when Telescope.Disconnected | Telescope.Ready | Telescope.Startup =>
-        Log.Error ("goto not executed");
-      when others =>
+      when Telescope.Stopped | Telescope.Approaching | Telescope.Tracking =>
         User.Perform_Goto;
+      when others =>
+        Log.Error ("goto not executed");
       end case;
     end Handle_Goto;
 
@@ -358,7 +366,7 @@ package body Control is
 
     procedure Handle_Telescope_Information is
       use type Telescope.State;
-    begin -- Handle_Telescope_Information
+    begin
       The_Data := Telescope.Information;
       User.Show (The_Data);
       if The_Data.Target_Lost then
@@ -366,17 +374,12 @@ package body Control is
         User.Clear_Target;
       end if;
       case The_Data.Status is
-      when Telescope.Startup =>
-        return;
-      when Telescope.Ready =>
-        return;
-      when Telescope.Disconnected =>
-        return;
+      when Telescope.Stopped | Telescope.Approaching | Telescope.Tracking =>
+        Lx200.Set (The_Data.Actual_Direction);
+        Stellarium.Set (The_Data.Actual_Direction);
       when others =>
         null;
       end case;
-      Lx200.Set (The_Data.Actual_Direction);
-      Stellarium.Set (The_Data.Actual_Direction);
     end Handle_Telescope_Information;
 
 
@@ -434,6 +437,10 @@ package body Control is
               end case;
             end if;
           end;
+        when Startup =>
+          Telescope.Startup;
+        when Shutdown =>
+          Telescope.Shutdown;
         when Stop =>
           Telescope.Halt;
         when Go_To =>

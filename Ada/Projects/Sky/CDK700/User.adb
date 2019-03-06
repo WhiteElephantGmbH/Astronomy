@@ -43,8 +43,8 @@ package body User is
   Orientation_Key : constant String := "Orientation";
 
   Control_Page : Gui.Page;
-  Goto_Button  : Gui.Button;
-  Stop_Button  : Gui.Button;
+  Left_Button  : Gui.Button;
+  Right_Button : Gui.Button;
   Target       : Gui.Plain_Edit_Box;
   Description  : Gui.Plain_Edit_Box;
   Display      : Gui.List_View;
@@ -88,7 +88,7 @@ package body User is
   The_Target_Selection  : Target_Selection := No_Target;
   Last_Target_Selection : Target_Selection;
 
-  The_Status : Telescope.State := Telescope.Disconnected;
+  The_Status : Telescope.State := Telescope.Unknown;
 
   Action_Routine   : Action_Handler;
   The_Last_Action  : Action := Action'pred (Button_Action'first);
@@ -201,30 +201,143 @@ package body User is
   end Show_Error;
 
 
+  Perform_Left_Handler : access procedure := null;
+
+  procedure Perform_Left is
+  begin
+    Perform_Left_Handler.all;
+  end Perform_Left;
+
+
+  Perform_Right_Handler : access procedure := null;
+
+  procedure Perform_Right is
+  begin
+    Perform_Right_Handler.all;
+  end Perform_Right;
+
+
+  procedure Perform_Startup is
+  begin
+    Signal_Action (Startup);
+  end Perform_Startup;
+
+
+  procedure Perform_Shutdown is
+  begin
+    Signal_Action (Shutdown);
+  end Perform_Shutdown;
+
+
+  procedure Set_Startup_Text is
+  begin
+    Gui.Set_Text (Left_Button, "Startup");
+  end Set_Startup_Text;
+
+
+  procedure Set_Goto_Text is
+  begin
+    Gui.Set_Text (Left_Button, "Goto");
+  end Set_Goto_Text;
+
+
+  procedure Set_Stop_Text is
+  begin
+    Gui.Set_Text (Right_Button, "Stop");
+  end Set_Stop_Text;
+
+
+  procedure Set_Shutdown_Text is
+  begin
+    Gui.Set_Text (Right_Button, "Shutdown");
+  end Set_Shutdown_Text;
+
+
+  procedure Disable_Startup_Button is
+  begin
+    Set_Startup_Text;
+    Gui.Disable (Left_Button);
+  end Disable_Startup_Button;
+
+
+  procedure Enable_Startup_Button is
+  begin
+    Perform_Left_Handler := Perform_Startup'access;
+    Set_Startup_Text;
+    Gui.Enable (Left_Button);
+  end Enable_Startup_Button;
+
+
+  procedure Disable_Stop_Button is
+  begin
+    Set_Stop_Text;
+    Gui.Disable (Right_Button);
+  end Disable_Stop_Button;
+
+
+  procedure Enable_Stop_Button is
+  begin
+    Perform_Right_Handler := Perform_Stop'access;
+    Set_Stop_Text;
+    Gui.Enable (Right_Button);
+  end Enable_Stop_Button;
+
+
+  procedure Enable_Goto_Button is
+  begin
+    Perform_Left_Handler := Perform_Goto'access;
+    Set_Goto_Text;
+    Gui.Enable (Left_Button);
+  end Enable_Goto_Button;
+
+
+  procedure Enable_Shutdown_Button is
+  begin
+    Perform_Right_Handler := Perform_Shutdown'access;
+    Set_Shutdown_Text;
+    Gui.Enable (Right_Button);
+  end Enable_Shutdown_Button;
+
+
+  procedure Disable_Shutdown_Button is
+  begin
+    Set_Shutdown_Text;
+    Gui.Disable (Right_Button);
+  end Disable_Shutdown_Button;
+
+
   procedure Show (Information : Telescope.Data) is
     use type Telescope.State;
     use type Device.Time_Synch_State;
   begin
-    if The_Target_Selection = No_Target then
-      return;
-    end if;
     if (The_Status /= Information.Status) or (Last_Target_Selection /= The_Target_Selection) then
       The_Status := Information.Status;
       Last_Target_Selection := The_Target_Selection;
       case The_Status is
-      when Telescope.Startup | Telescope.Disconnected | Telescope.Directing | Telescope.Stopping =>
-        Gui.Disable (Stop_Button);
-        Gui.Disable (Goto_Button);
-      when Telescope.Ready | Telescope.Stopped =>
-        Gui.Enable (Goto_Button);
-      when Telescope.Adjusting =>
-        Gui.Disable (Goto_Button);
-      when Telescope.Positioning | Telescope.Approaching =>
-        Gui.Enable (Stop_Button);
-        Gui.Enable (Goto_Button);
-      when Telescope.Tracking =>
-        Gui.Enable (Stop_Button);
-        Gui.Enable (Goto_Button);
+      when Telescope.Unknown =>
+        Disable_Startup_Button;
+        Disable_Stop_Button;
+      when Telescope.Disconnected =>
+        Enable_Startup_Button;
+        Disable_Shutdown_Button;
+      when Telescope.Connected | Telescope.Enabled | Telescope.Synchronised =>
+        Enable_Startup_Button;
+        Enable_Shutdown_Button;
+      when Telescope.Disconnecting | Telescope.Disabling =>
+        Disable_Startup_Button;
+        Enable_Stop_Button;
+      when Telescope.Connecting | Telescope.Enabling | Telescope.Homing | Telescope.Initializing =>
+        Disable_Startup_Button;
+        Enable_Stop_Button;
+      when Telescope.Stopped =>
+        Enable_Goto_Button;
+        Enable_Shutdown_Button;
+      when Telescope.Stopping =>
+        null;--!!!
+      when Telescope.Adjusting | Telescope.Directing =>
+        null;--!!!
+      when Telescope.Positioning | Telescope.Approaching | Telescope.Tracking =>
+        null;--!!!
       end case;
     end if;
     Gui.Set_Status_Line (Information.Status'img);
@@ -439,7 +552,7 @@ package body User is
 
   procedure Enter_Handling is
   begin
-    if The_Target_Selection = Target_Object and then Gui.Is_Enabled (Goto_Button) then
+    if The_Target_Selection = Target_Object and then Gui.Is_Enabled (Left_Button) then
       Signal_Action (Go_To);
     end if;
   end Enter_Handling;
@@ -515,10 +628,10 @@ package body User is
                                       The_Style  => (Gui.Buttons_Fill_Horizontally => True,
                                                      Gui.Buttons_Fill_Vertically   => False));
 
-        Goto_Button := Gui.Create (Control_Page, "Goto", Perform_Goto'access);
-        Gui.Disable (Goto_Button);
-        Stop_Button := Gui.Create (Control_Page, "Stop", Perform_Stop'access);
-        Gui.Disable (Stop_Button);
+        Left_Button := Gui.Create (Control_Page, "", Perform_Left'access);
+        Gui.Disable (Left_Button);
+        Right_Button := Gui.Create (Control_Page, "", Perform_Right'access);
+        Gui.Disable (Right_Button);
 
         Target := Gui.Create (Control_Page, Title, "", The_Title_Size => Title_Size, Is_Modifiable  => False);
         Description := Gui.Create (Control_Page, "", "", Is_Modifiable  => False);

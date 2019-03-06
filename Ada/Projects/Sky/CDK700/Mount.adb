@@ -15,31 +15,154 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with PWI.Mount;
 with Traces;
 
 package body Mount is
 
   package Log is new Traces ("Mount");
 
-  procedure Connect_Communication is
+  type Command is (Finish, Stop, Connect, Disconnect, Enable, Disable, Find_Home, Set_Pointing_Model);
+
+
+  protected Action is
+
+    procedure Put (Item : Command);
+
+    entry Get (Item : out Command);
+
+  private
+    Is_Pending  : Boolean := False;
+    The_Command : Command;
+  end Action;
+
+
+  protected body Action is
+
+    procedure Put (Item : Command) is
+    begin
+      The_Command := Item;
+      Is_Pending := True;
+    end Put;
+
+    entry Get (Item : out Command) when Is_Pending is
+    begin
+      Item := The_Command;
+      Is_Pending := False;
+    end Get;
+
+  end Action;
+
+
+  task type Control is
+
+    entry Start (Item          : State_Handler_Access;
+                 Is_Simulation : Boolean);
+
+  end Control;
+
+  The_Control : access Control;
+
+
+  task body Control is
+
+    The_State_Handler : State_Handler_Access;
+    Is_Simulating     : Boolean;
+
+    The_Command : Command;
+    The_State   : State := Unknown;
+
+    use type PWI.Mount.State;
+
   begin
-    Log.Write ("Connect_Communication");
-  end Connect_Communication;
+    accept Start (Item : State_Handler_Access;
+                  Is_Simulation : Boolean)
+    do
+      The_State_Handler := Item;
+      Is_Simulating := Is_Simulation;
+    end Start;
+    Log.Write ("Control started" & (if Is_Simulating then " Simulation" else ""));
+    loop
+      begin
+        select
+          Action.Get (The_Command);
+          case The_Command is
+          when Finish =>
+            exit;
+          when Stop =>
+            PWI.Mount.Stop;
+          when Connect =>
+            PWI.Mount.Connect;
+            if Is_Simulating then
+              The_State := Connected;
+            end if;
+          when Disconnect =>
+            PWI.Mount.Disconnect;
+            if Is_Simulating then
+              The_State := Disconnected;
+            end if;
+          when Enable =>
+            PWI.Mount.Enable;
+            if Is_Simulating then
+              The_State := Enabled;
+            end if;
+          when Disable =>
+            PWI.Mount.Disable;
+            if Is_Simulating then
+              The_State := Connected;
+            end if;
+          when Find_Home =>
+            PWI.Mount.Find_Home;
+            if Is_Simulating then
+              The_State := Synchronised;
+            end if;
+          when Set_Pointing_Model =>
+            PWI.Mount.Set_Pointing_Model;
+            if Is_Simulating then
+              The_State := Stopped;
+            end if;
+          end case;
+        or
+          delay 1.0;
+          PWI.Get_System;
+          case PWI.Mount.Status is
+          when PWI.Mount.Disconnected =>
+            The_State := Disconnected;
+          when PWI.Mount.Connected =>
+            The_State := Connected;
+          when PWI.Mount.Enabled =>
+            The_State := Enabled;
+          when PWI.Mount.Homing =>
+            The_State := Homing;
+          when PWI.Mount.Synchronised =>
+            The_State := Synchronised;
+          when PWI.Mount.Stopped =>
+            The_State := Stopped;
+          when PWI.Mount.Approaching =>
+            The_State := Approaching;
+          when PWI.Mount.Tracking =>
+            The_State := Tracking;
+          end case;
+        end select;
+      exception
+      when PWI.No_Server =>
+        The_State := Unknown;
+      end ;
+      The_State_Handler (The_State);
+    end loop;
+    Log.Write ("Control terminated");
+  exception
+  when Occurrence: others =>
+    Log.Termination (Occurrence);
+  end Control;
 
 
-  The_State_Handler : State_Handler_Access with Unreferenced;
-
-  procedure Open_Communication (State_Handler : State_Handler_Access) is
+  procedure Start (State_Handler : State_Handler_Access;
+                   Is_Simulation : Boolean) is
   begin
-    Log.Write ("Open_Communication");
-    The_State_Handler := State_Handler;
-  end Open_Communication;
-
-
-  procedure Initialize is
-  begin
-    Log.Write ("Initialize");
-  end Initialize;
+    The_Control := new Control;
+    The_Control.Start (State_Handler, Is_Simulation);
+  end Start;
 
 
   function Image_Of (The_Direction : Space.Direction) return String is
@@ -58,6 +181,48 @@ package body Mount is
     end if;
     return "Unknown";
   end Image_Of;
+
+
+  procedure Connect is
+  begin
+    Log.Write ("Connect");
+    Action.Put (Connect);
+  end Connect;
+
+
+  procedure Disconnect is
+  begin
+    Log.Write ("Disconnect");
+    Action.Put (Disconnect);
+  end Disconnect;
+
+
+  procedure Enable is
+  begin
+    Log.Write ("Enable");
+    Action.Put (Enable);
+  end Enable;
+
+
+  procedure Disable is
+  begin
+    Log.Write ("Disable");
+    Action.Put (Disable);
+  end Disable;
+
+
+  procedure Find_Home is
+  begin
+    Log.Write ("Find_Home");
+    Action.Put (Find_Home);
+  end Find_Home;
+
+
+  procedure Set_Pointing_Model is
+  begin
+    Log.Write ("Set_Pointing_Model");
+    Action.Put (Set_Pointing_Model);
+  end Set_Pointing_Model;
 
 
   procedure Goto_Target (Direction : Space.Direction) is
@@ -91,6 +256,7 @@ package body Mount is
   procedure Stop is
   begin
     Log.Write ("Stop");
+    Action.Put (Stop);
   end Stop;
 
 
@@ -101,9 +267,9 @@ package body Mount is
   end Actual_Direction;
 
 
-  procedure Close_Communication is
+  procedure Finish is
   begin
-    Log.Write ("Close_Communication");
-  end Close_Communication;
+    Action.Put (Finish);
+  end Finish;
 
 end Mount;

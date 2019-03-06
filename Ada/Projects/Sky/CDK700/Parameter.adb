@@ -22,7 +22,8 @@ with Definite_Doubly_Linked_Lists;
 with Error;
 with File;
 with Language;
-with Mount;
+with Network.Tcp;
+with PWI;
 with Strings;
 with Text;
 with Traces;
@@ -59,7 +60,8 @@ package body Parameter is
   The_Telescope_Name : Text.String;
   Is_In_Setup_Mode   : Boolean;
   The_Moving_Speeds  : Angle_List.Item;
-  The_PWI_Connection : Connection;
+  The_PWI_Address    : Network.Ip_Address;
+  The_PWI_Port       : Network.Port_Number;
 
   --Servers
   The_Lx200_Port      : Network.Port_Number;
@@ -184,6 +186,15 @@ package body Parameter is
   end Value_Of;
 
 
+  function PWI_Socket return Network.Tcp.Socket is
+    Socket_Protocol : constant Network.Tcp.Protocol := Network.Tcp.Raw;
+  begin
+    return Network.Tcp.Socket_For (The_Address  => The_PWI_Address,
+                                   The_Port     => The_PWI_Port,
+                                   The_Protocol => Socket_Protocol);
+  end PWI_Socket;
+
+
   procedure Read is
 
     procedure Create_Default_Parameters is
@@ -249,24 +260,19 @@ package body Parameter is
 
       procedure Connect_PWI is
 
-        The_Port : Network.Port_Number;
-
         procedure Prepare_Tcp (Server : String) is
-          Socket_Protocol : constant Network.Tcp.Protocol := Network.Tcp.Raw;
-          The_Ip_Address  : Network.Ip_Address;
+          The_Socket : Network.Tcp.Socket;
         begin
           begin
             begin
-              The_Ip_Address := Network.Ip_Address_Of (Server);
+              The_PWI_Address := Network.Ip_Address_Of (Server);
             exception
             when others =>
-              The_Ip_Address := Network.Ip_Address_Of_Host (Server);
-              Log.Write ("IP address of: " & Server & " = " & Network.Image_Of (The_Ip_Address));
+              The_PWI_Address := Network.Ip_Address_Of_Host (Server);
+              Log.Write ("IP address of: " & Server & " = " & Network.Image_Of (The_PWI_Address));
             end;
-            The_PWI_Connection := (Socket => Network.Tcp.Socket_For (The_Address  => The_Ip_Address,
-                                                                     The_Port     => The_Port,
-                                                                     The_Protocol => Socket_Protocol),
-                                   Address => Network.Address_Of (The_Ip_Address, The_Port));
+            The_Socket := PWI_Socket;
+            Network.Tcp.Close (The_Socket);
           exception
           when others =>
             Error.Raise_With ("PlaneWave interface server not available");
@@ -275,14 +281,13 @@ package body Parameter is
 
       begin -- Connect_PWI
         begin
-          The_Port := Network.Port_Number (Value_Of (Port_Key));
-          Log.Write ("PWI port:" & The_Port'img);
+          The_PWI_Port := Network.Port_Number (Value_Of (Port_Key));
+          Log.Write ("PWI port:" & The_PWI_Port'img);
         exception
         when others =>
           Error.Raise_With ("PWI port number out of range");
         end;
         Prepare_Tcp (String_Of (Ip_Address_Key));
-        Mount.Connect_Communication;
       end Connect_PWI;
 
     begin -- Read_Values
@@ -299,6 +304,8 @@ package body Parameter is
       Log.Write ("Name: " & Telescope_Name);
       Is_In_Setup_Mode := Telescope_Name = "Setup";
       Connect_PWI;
+      PWI.Install (PWI_Socket'access);
+
       The_Moving_Speeds := Angles_Of (Moving_Speed_List_Key, Speed_Unit);
       if Natural(Angle_List.Length (The_Moving_Speeds)) < 2 then
         Error.Raise_With ("The speed list must contain at least two values");
@@ -367,16 +374,16 @@ package body Parameter is
   end Telescope_Name;
 
 
+  function Is_Simulation return Boolean is
+  begin
+    return True;
+  end Is_Simulation;
+
+
   function Is_Setup_Mode return Boolean is
   begin
     return Is_In_Setup_Mode;
   end Is_Setup_Mode;
-
-
-  function PWI_Connection return Connection is
-  begin
-    return The_PWI_Connection;
-  end PWI_Connection;
 
 
   function Pole_Height return Angle.Value is

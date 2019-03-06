@@ -21,9 +21,9 @@ with Telescope;
 
 package User is
 
-  type Action is (Define_Catalog, Define_Target, Stop, Go_To, Set_Orientation, Update, Close);
+  type Action is (Define_Catalog, Define_Target, Startup, Shutdown, Stop, Go_To, Set_Orientation, Update, Close);
 
-  subtype Button_Action is Action range Stop .. Go_To;
+  subtype Button_Action is Action range Startup .. Go_To;
 
   type Action_Handler is access procedure (The_Action : Action);
 

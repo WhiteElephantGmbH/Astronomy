@@ -35,16 +35,24 @@ package Telescope is
                    Set_Finding_Rate,
                    Set_Slewing_Rate);
 
-  type State is (Disconnected, -- no connection to the motor controller
-                 Startup,      -- controller startup
-                 Ready,        -- controller ready (parameters initialized)
-                 Stopped,      -- stopped (not waiting)
-                 Stopping,     -- stopping
-                 Directing,    -- moves the telescope in a direction
-                 Positioning,  -- moves the telescope to a landmark
-                 Approaching,  -- approaching to target
-                 Tracking,     -- following the target
-                 Adjusting);   -- corrrect the target diretion
+  type State is (Unknown, -- PWI server not available
+                 Disconnected,
+                 Disconnecting,
+                 Connecting,
+                 Connected,
+                 Disabling,
+                 Enabling,
+                 Enabled,
+                 Homing,
+                 Synchronised,
+                 Initializing,
+                 Stopped,
+                 Stopping,
+                 Directing,
+                 Positioning,
+                 Approaching,
+                 Adjusting,
+                 Tracking);
 
   type Orientation is (Correct, Upside_Down, Backwards, Rotated);
 
@@ -71,6 +79,10 @@ package Telescope is
   procedure Execute (The_Command : Command);
 
   procedure Set (The_Orientation : Orientation);
+
+  procedure Startup;
+
+  procedure Shutdown;
 
   procedure Halt;
 
