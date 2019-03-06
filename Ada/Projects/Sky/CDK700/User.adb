@@ -86,7 +86,7 @@ package body User is
   type Target_Selection is (No_Target, Target_Object);
 
   The_Target_Selection  : Target_Selection := No_Target;
-  Last_Target_Selection : Target_Selection;
+  Last_Target_Selection : Target_Selection := Target_Object;
 
   The_Status : Telescope.State := Telescope.Unknown;
 
@@ -116,10 +116,12 @@ package body User is
 
   procedure Set_Target_Name (Item : String) is
   begin
-    if Item /= "" then
+    if Item = "" then
+      The_Target_Selection := No_Target;
+    else
       Log.Write ("Target: " & Item);
+      The_Target_Selection := Target_Object;
     end if;
-    The_Target_Selection := Target_Object;
     Gui.Set_Text (Target, Item);
     Gui.Set_Text (Description, "");
   end Set_Target_Name;
@@ -255,6 +257,7 @@ package body User is
 
   procedure Disable_Startup_Button is
   begin
+    Perform_Left_Handler := null;
     Set_Startup_Text;
     Gui.Disable (Left_Button);
   end Disable_Startup_Button;
@@ -270,6 +273,7 @@ package body User is
 
   procedure Disable_Stop_Button is
   begin
+    Perform_Right_Handler := null;
     Set_Stop_Text;
     Gui.Disable (Right_Button);
   end Disable_Stop_Button;
@@ -281,6 +285,14 @@ package body User is
     Set_Stop_Text;
     Gui.Enable (Right_Button);
   end Enable_Stop_Button;
+
+
+  procedure Disable_Goto_Button is
+  begin
+    Perform_Left_Handler := null;
+    Set_Goto_Text;
+    Gui.Disable (Left_Button);
+  end Disable_Goto_Button;
 
 
   procedure Enable_Goto_Button is
@@ -301,6 +313,7 @@ package body User is
 
   procedure Disable_Shutdown_Button is
   begin
+    Perform_Right_Handler := null;
     Set_Shutdown_Text;
     Gui.Disable (Right_Button);
   end Disable_Shutdown_Button;
@@ -330,14 +343,19 @@ package body User is
         Disable_Startup_Button;
         Enable_Stop_Button;
       when Telescope.Stopped =>
-        Enable_Goto_Button;
+        if The_Target_Selection = Target_Object then
+          Enable_Goto_Button;
+        else
+          Disable_Goto_Button;
+        end if;
         Enable_Shutdown_Button;
       when Telescope.Stopping =>
-        null;--!!!
+        Disable_Goto_Button;
+        Disable_Stop_Button;
       when Telescope.Adjusting | Telescope.Directing =>
-        null;--!!!
+        null;--!!! not implemented
       when Telescope.Positioning | Telescope.Approaching | Telescope.Tracking =>
-        null;--!!!
+        null;--!!! not implemented
       end case;
     end if;
     Gui.Set_Status_Line (Information.Status'img);
@@ -552,7 +570,7 @@ package body User is
 
   procedure Enter_Handling is
   begin
-    if The_Target_Selection = Target_Object and then Gui.Is_Enabled (Left_Button) then
+    if Perform_Left_Handler = Perform_Goto'access then
       Signal_Action (Go_To);
     end if;
   end Enter_Handling;
@@ -585,7 +603,7 @@ package body User is
     Name_Id : constant Name.Id_Access := Convertion (Item);
     use type Name.Id_Access;
   begin
-    if Name_Id /= null then -- not park position
+    if Name_Id /= null then
       Set_Target_Name (Name.Image_Of (Name_Id.all));
     end if;
     Signal_Action (Define_Target);
