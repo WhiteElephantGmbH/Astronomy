@@ -22,6 +22,7 @@ with Definite_Doubly_Linked_Lists;
 with Error;
 with File;
 with Language;
+with Os.Process;
 with Network.Tcp;
 with PWI;
 with Strings;
@@ -43,6 +44,7 @@ package body Parameter is
 
   PWI_Id                : constant String := "PWI";
   Name_Key              : constant String := "Name";
+  Program_Key           : constant String := "Program";
   Simulation_Mode_Key   : constant String := "Simulation Mode";
   Expert_Mode_Key       : constant String := "Expert Mode";
   Pointing_Model_Key    : constant String := "Pointing Model";
@@ -226,6 +228,7 @@ package body Parameter is
       when CDK700 =>
         Put ("[" & PWI_Id & "]");
         Put (Name_Key & "              = CDK700");
+        Put (Program_Key & "           = C:\Program Files (x86)\PlaneWave Instruments\PlaneWave interface\PWI.exe");
         Put (Expert_Mode_Key & "       = False");
         Put (Simulation_Mode_Key & "   = False");
         Put (Pointing_Model_Key & "    = First.PXP");
@@ -267,7 +270,8 @@ package body Parameter is
 
       procedure Connect_PWI is
 
-        procedure Prepare_Tcp (Server : String) is
+        procedure Prepare_Tcp is
+          Server : constant String := String_Of (Ip_Address_Key);
         begin
           begin
             begin
@@ -278,13 +282,16 @@ package body Parameter is
               Log.Write ("IP address of: " & Server & " = " & Network.Image_Of (The_PWI_Address));
             end;
             Network.Tcp.Close (PWI_Socket);
-          exception
-          when others =>
-            Error.Raise_With ("PlaneWave interface server not available");
           end;
         end Prepare_Tcp;
 
+        PWI_Program_Filename : constant String := String_Value_Of (Program_Key);
+
       begin -- Connect_PWI
+        Log.Write ("PWI program file: """ & PWI_Program_Filename & """");
+        if not File.Exists (PWI_Program_Filename) then
+          Error.Raise_With ("PWI program file """ & PWI_Program_Filename & """ not found");
+        end if;
         begin
           The_PWI_Port := Network.Port_Number (Value_Of (Port_Key));
           Log.Write ("PWI port:" & The_PWI_Port'img);
@@ -292,7 +299,25 @@ package body Parameter is
         when others =>
           Error.Raise_With ("PWI port number out of range");
         end;
-        Prepare_Tcp (String_Of (Ip_Address_Key));
+        begin
+          Prepare_Tcp;
+        exception
+        when others =>
+          begin
+            Os.Process.Create (PWI_Program_Filename);
+            begin
+              Prepare_Tcp;
+            exception
+            when others =>
+              Error.Raise_With ("PlaneWave interface server not enabled");
+            end;
+          exception
+          when Error.Occurred =>
+            raise;
+          when others =>
+            Error.Raise_With ("PlaneWave interface server not available");
+          end;
+        end;
       end Connect_PWI;
 
     begin -- Read_Values
