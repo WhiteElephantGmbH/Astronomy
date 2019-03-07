@@ -51,10 +51,10 @@ package Device is
                    Set_Centering_Rate,
                    Set_Finding_Rate,
                    Set_Slewing_Rate);
-                   
+
   subtype Autoguiding_Rate is Integer range 0 .. 100;
 
-  subtype Step_Number is Positive range 1 .. 2**24 - 1;
+  subtype Step_Number is Positive range 1 .. 2**28 - 1;
 
   type Steps_Per_Revolution is array (Drive) of Step_Number;
 

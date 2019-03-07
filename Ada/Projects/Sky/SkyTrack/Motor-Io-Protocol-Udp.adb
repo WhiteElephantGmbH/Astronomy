@@ -80,9 +80,9 @@ package body Motor.Io.Protocol.Udp is
     Alignment => 4,
     Size      => 64;
   for Autoguiding_Parameters use record
-    Rate                   at  0 range 0 .. 7;
-    Steps_Per_Revolution_1 at  1 range 0 .. 23;
-    Steps_Per_Revolution_2 at  4 range 0 .. 23;
+    Rate                   at  0 range 0  .. 7;
+    Steps_Per_Revolution_1 at  1 range 0  .. 27;
+    Steps_Per_Revolution_2 at  1 range 28 .. 55;
   end record;
 
   type Transmit_Data (The_Command       : Command := Initialize;
