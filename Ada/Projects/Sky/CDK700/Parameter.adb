@@ -265,8 +265,6 @@ package body Parameter is
       Site_Handle         : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Site_Id);
       Localization_Handle : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Localization_Id);
 
-      use type Angle.Degrees;
-
       procedure Connect_PWI is
 
         procedure Prepare_Tcp (Server : String) is

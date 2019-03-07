@@ -18,7 +18,6 @@ pragma Style_White_Elephant;
 with Angle;
 with Device;
 with Mount;
-with Numerics;
 with Parameter;
 with System;
 with Traces;
@@ -26,7 +25,7 @@ with Traces;
 package body Telescope is
 
   package Log is new Traces ("Telescope");
-  
+
   task type Control_Task with Priority => System.Max_Priority is
 
     entry Start;
@@ -60,7 +59,9 @@ package body Telescope is
 
   procedure Mount_State_Handler (New_State : Mount.State) is
   begin
-    Control.New_Mount_State (New_State);
+    if not Control'terminated then
+      Control.New_Mount_State (New_State);
+    end if;
   end Mount_State_Handler;
 
 
@@ -605,7 +606,8 @@ package body Telescope is
         Mount.Disable;
         The_State := Disabling;
       when Follow =>
-        null;
+        Follow_New_Target;
+        The_State := Approaching;
       when others =>
         null;
       end case;
@@ -617,6 +619,8 @@ package body Telescope is
     procedure Stopping_State is
     begin
       case The_Event is
+      when Mount_Stopped =>
+        The_State := Stopped;
       when others =>
         null;
       end case;
@@ -656,6 +660,10 @@ package body Telescope is
     procedure Approaching_State is
     begin
       case The_Event is
+      when Mount_Stopped =>
+        The_State := Stopped;
+      when Mount_Tracking =>
+        The_State := Tracking;
       when Halt =>
         Stop_Target;
       when Follow =>
@@ -671,6 +679,10 @@ package body Telescope is
     procedure Tracking_State is
     begin
       case The_Event is
+      when Mount_Stopped =>
+        The_State := Stopped;
+      when Mount_Approaching =>
+        The_State := Approaching;
       when Halt =>
         Stop_Target;
       when Follow =>
@@ -697,7 +709,6 @@ package body Telescope is
       end case;
     end Adjusting_State;
 
-    use type Earth.Direction;
     use type Angle.Signed;
 
     Has_New_Data : Boolean := True;
@@ -779,8 +790,14 @@ package body Telescope is
               The_Event := Mount_Stopped;
             when Mount.Approaching =>
               The_Event := Mount_Approaching;
+              if Parameter.Is_Simulation_Mode then
+                The_State := Approaching;
+              end if;
             when Mount.Tracking =>
               The_Event := Mount_Tracking;
+              if Parameter.Is_Simulation_Mode then
+                The_State := Tracking;
+              end if;
             end case;
             Has_New_Data := True;
           end New_Mount_State;
@@ -788,7 +805,13 @@ package body Telescope is
           accept Get (The_Data : out Data) do
             The_Data.Status := The_State;
             The_Data.Universal_Time := Time.Universal;
-            The_Data.Actual_Direction := Numerics.Direction_Of (The_Data.Local_Direction, The_Data.Universal_Time);
+            declare
+              Info : constant Mount.Information := Mount.Actual_Info;
+            begin
+              The_Data.Actual_J2000_Direction := Info.J2000_Direction;
+              The_Data.Actual_Direction := Info.Actual_Direction;
+              The_Data.Local_Direction := Info.Local_Direction;
+            end;
             if Get_Direction = null then
               The_Data.Target_Direction := Space.Unknown_Direction;
             else

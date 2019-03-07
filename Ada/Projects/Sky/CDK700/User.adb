@@ -19,7 +19,6 @@ with Ada.Real_Time;
 with Ada.Unchecked_Conversion;
 with Application;
 with Data;
-with Device;
 with Earth;
 with Gui.Enumeration_Menu_Of;
 with Gui.Registered;
@@ -49,15 +48,17 @@ package body User is
   Description  : Gui.Plain_Edit_Box;
   Display      : Gui.List_View;
 
-  Display_Page      : Gui.Page;
-  Target_Ra         : Gui.Plain_Edit_Box;
-  Target_Dec        : Gui.Plain_Edit_Box;
-  Actual_Ra         : Gui.Plain_Edit_Box;
-  Actual_Dec        : Gui.Plain_Edit_Box;
-  Actual_Az         : Gui.Plain_Edit_Box;
-  Actual_Alt        : Gui.Plain_Edit_Box;
-  Lmst              : Gui.Plain_Edit_Box;
-  Local_Time        : Gui.Plain_Edit_Box;
+  Display_Page       : Gui.Page;
+  Target_Ra          : Gui.Plain_Edit_Box;
+  Target_Dec         : Gui.Plain_Edit_Box;
+  Actual_J2000_Ra    : Gui.Plain_Edit_Box;
+  Actual_J2000_Dec   : Gui.Plain_Edit_Box;
+  Actual_Ra          : Gui.Plain_Edit_Box;
+  Actual_Dec         : Gui.Plain_Edit_Box;
+  Actual_Az          : Gui.Plain_Edit_Box;
+  Actual_Alt         : Gui.Plain_Edit_Box;
+  Lmst               : Gui.Plain_Edit_Box;
+  Local_Time         : Gui.Plain_Edit_Box;
 
   Setup_Page      : Gui.Page;
   Orientation_Box : Gui.Plain_Combo_Box;
@@ -297,9 +298,14 @@ package body User is
 
   procedure Enable_Goto_Button is
   begin
-    Perform_Left_Handler := Perform_Goto'access;
     Set_Goto_Text;
-    Gui.Enable (Left_Button);
+    if The_Target_Selection = Target_Object then
+      Perform_Left_Handler := Perform_Goto'access;
+      Gui.Enable (Left_Button);
+    else
+      Perform_Left_Handler := null;
+      Disable_Goto_Button;
+    end if;
   end Enable_Goto_Button;
 
 
@@ -321,7 +327,6 @@ package body User is
 
   procedure Show (Information : Telescope.Data) is
     use type Telescope.State;
-    use type Device.Time_Synch_State;
   begin
     if (The_Status /= Information.Status) or (Last_Target_Selection /= The_Target_Selection) then
       The_Status := Information.Status;
@@ -343,19 +348,17 @@ package body User is
         Disable_Startup_Button;
         Enable_Stop_Button;
       when Telescope.Stopped =>
-        if The_Target_Selection = Target_Object then
-          Enable_Goto_Button;
-        else
-          Disable_Goto_Button;
-        end if;
+        Enable_Goto_Button;
         Enable_Shutdown_Button;
-      when Telescope.Stopping =>
+      when Telescope.Approaching | Telescope.Tracking=>
+        Enable_Goto_Button;
+        Enable_Stop_Button;
+      when Telescope.Stopping | Telescope.Adjusting | Telescope.Directing =>
         Disable_Goto_Button;
         Disable_Stop_Button;
-      when Telescope.Adjusting | Telescope.Directing =>
-        null;--!!! not implemented
-      when Telescope.Positioning | Telescope.Approaching | Telescope.Tracking =>
-        null;--!!! not implemented
+      when Telescope.Positioning =>
+        Disable_Goto_Button;
+        Enable_Stop_Button;
       end case;
     end if;
     Gui.Set_Status_Line (Information.Status'img);
@@ -369,6 +372,13 @@ package body User is
       else
         Gui.Set_Text (Target_Dec, "");
         Gui.Set_Text (Target_Ra, "");
+      end if;
+      if Space.Direction_Is_Known (Information.Actual_J2000_Direction) then
+        Gui.Set_Text (Actual_J2000_Dec, Space.Dec_Image_Of (Information.Actual_J2000_Direction));
+        Gui.Set_Text (Actual_J2000_Ra, Space.Ra_Image_Of (Information.Actual_J2000_Direction));
+      else
+        Gui.Set_Text (Actual_J2000_Dec, "");
+        Gui.Set_Text (Actual_J2000_Ra, "");
       end if;
       if Space.Direction_Is_Known (Information.Actual_Direction) then
         Gui.Set_Text (Actual_Dec, Space.Dec_Image_Of (Information.Actual_Direction));
@@ -693,6 +703,15 @@ package body User is
                                   Is_Modifiable  => False,
                                   The_Size       => Text_Size,
                                   The_Title_Size => Title_Size);
+
+        Actual_J2000_Ra := Gui.Create (Display_Page, "J2000 RA", "",
+                                       Is_Modifiable  => False,
+                                       The_Size       => Text_Size,
+                                       The_Title_Size => Title_Size);
+        Actual_J2000_Dec := Gui.Create (Display_Page, "J2000 DEC", "",
+                                        Is_Modifiable  => False,
+                                        The_Size       => Text_Size,
+                                        The_Title_Size => Title_Size);
 
         Actual_Ra := Gui.Create (Display_Page, "Actual RA", "",
                                  Is_Modifiable  => False,

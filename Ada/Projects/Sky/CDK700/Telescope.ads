@@ -57,13 +57,14 @@ package Telescope is
   type Orientation is (Correct, Upside_Down, Backwards, Rotated);
 
   type Data is record
-    Status            : State;
-    Target_Lost       : Boolean;
-    Target_Direction  : Space.Direction;
-    Actual_Direction  : Space.Direction;
-    Local_Direction   : Earth.Direction;
-    Adjustment        : Earth.Direction;
-    Universal_Time    : Time.Ut;
+    Status                 : State;
+    Target_Lost            : Boolean;
+    Target_Direction       : Space.Direction;
+    Actual_J2000_Direction : Space.Direction;
+    Actual_Direction       : Space.Direction;
+    Local_Direction        : Earth.Direction;
+    Adjustment             : Earth.Direction;
+    Universal_Time         : Time.Ut;
   end record;
 
   type Get_Space_Access is access function (Id : Name.Id;

@@ -22,28 +22,46 @@ package body Mount is
 
   package Log is new Traces ("Mount");
 
-  type Command is (Finish, Stop, Connect, Disconnect, Enable, Disable, Find_Home, Set_Pointing_Model);
+  type Command is (Finish, Stop, Connect, Disconnect, Enable, Disable, Find_Home, Set_Pointing_Model, Move);
 
 
   protected Action is
 
-    procedure Put (Item : Command);
+    entry Put (Item : Command);
+
+    entry Lock (Item : Command);
+
+    entry Unlock;
 
     entry Get (Item : out Command);
 
   private
     Is_Pending  : Boolean := False;
+    Is_Locked   : Boolean := False;
     The_Command : Command;
   end Action;
 
 
   protected body Action is
 
-    procedure Put (Item : Command) is
+    entry Put (Item : Command) when not Is_Locked is
     begin
       The_Command := Item;
       Is_Pending := True;
     end Put;
+
+    entry Lock (Item : Command) when (not Is_Locked) and (not Is_Pending) is
+    begin
+      The_Command := Item;
+      Is_Pending := True;
+      Is_Locked := True;
+    end Lock;
+
+    entry Unlock when not Is_Pending is
+    begin
+      pragma Assert (Is_Locked);
+      Is_Locked := False;
+    end Unlock;
 
     entry Get (Item : out Command) when Is_Pending is
     begin
@@ -86,11 +104,15 @@ package body Mount is
       begin
         select
           Action.Get (The_Command);
+          Log.Write ("Handle " & The_Command'img);
           case The_Command is
           when Finish =>
             exit;
           when Stop =>
             PWI.Mount.Stop;
+            if Is_Simulating then
+              The_State := Stopped;
+            end if;
           when Connect =>
             PWI.Mount.Connect;
             if Is_Simulating then
@@ -120,6 +142,10 @@ package body Mount is
             PWI.Mount.Set_Pointing_Model;
             if Is_Simulating then
               The_State := Stopped;
+            end if;
+          when Move =>
+            if Is_Simulating then
+              The_State := Approaching;
             end if;
           end case;
         or
@@ -185,6 +211,26 @@ package body Mount is
   end Image_Of;
 
 
+  function Actual_Info return Information is
+    Mount_Info : constant PWI.Mount.Information := PWI.Mount.Info;
+    use type Angle.Value;
+  begin
+    case Mount_Info.Status is
+    when PWI.Mount.Stopped | PWI.Mount.Approaching | PWI.Mount.Tracking =>
+      return (J2000_Direction  => Space.Direction_Of (Ra  => Angle.Value'(+Angle.Hours(Mount_Info.Ra_2000)),
+                                                      Dec => Angle.Value'(+Angle.Degrees(Mount_Info.Dec_2000))),
+              Actual_Direction => Space.Direction_Of (Ra  => Angle.Value'(+Angle.Hours(Mount_Info.Ra)),
+                                                      Dec => Angle.Value'(+Angle.Degrees(Mount_Info.Dec))),
+              Local_Direction  => Earth.Direction_Of (Az  => Angle.Value'(+Angle.Degrees(Mount_Info.Azm)),
+                                                      Alt => Angle.Value'(+Angle.Degrees(Mount_Info.Alt))));
+    when others =>
+      return (J2000_Direction  => Space.Unknown_Direction,
+              Actual_Direction => Space.Unknown_Direction,
+              Local_Direction  => Earth.Unknown_Direction);
+    end case;
+  end Actual_Info;
+
+
   procedure Connect is
   begin
     Log.Write ("Connect");
@@ -228,8 +274,22 @@ package body Mount is
 
 
   procedure Goto_Target (Direction : Space.Direction) is
+    use type Angle.Signed;
+    use type Angle.Value;
   begin
     Log.Write ("Goto_Target " & Image_Of (Direction));
+    pragma Assert (Space.Direction_Is_Known (Direction));
+    Action.Lock (Move);
+    begin
+      PWI.Mount.Move (Ra         => PWI.Mount.Hours(Angle.Hours'(+Space.Ra_Of (Direction))),
+                      Dec        => PWI.Mount.Degrees(Angle.Degrees'(+Angle.Signed'(+Space.Dec_Of (Direction)))),
+                      From_J2000 => False);
+      Action.Unlock;
+    exception
+    when Occurrence: others =>
+      Log.Termination (Occurrence);
+      Action.Unlock;
+    end;
   end Goto_Target;
 
 

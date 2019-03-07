@@ -32,11 +32,19 @@ package Mount is
                  Approaching,
                  Tracking);
 
+  type Information is record
+    J2000_Direction  : Space.Direction;
+    Actual_Direction : Space.Direction;
+    Local_Direction  : Earth.Direction;
+  end record;
+
   type State_Handler_Access is access procedure (The_State : State);
 
   procedure Start (State_Handler  : State_Handler_Access;
                    Pointing_Model : String;
                    Is_Simulation  : Boolean);
+
+  function Actual_Info return Information;
 
   procedure Connect;
 

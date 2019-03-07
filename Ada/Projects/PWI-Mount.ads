@@ -8,7 +8,7 @@ package PWI.Mount is
 
   type Hours is delta 0.00000001 range 0.0 .. 24.0;
 
-  type Degrees is delta 0.0000001 range -90.0 .. 90.0;
+  type Degrees is delta 0.0000001 range -360.0 .. 360.0;
 
   type State is (Disconnected, -- not Connected
                  Connected,    -- Connected and not (Azm_Enabled and Alt_Enabled)
@@ -25,13 +25,15 @@ package PWI.Mount is
     Dec      : Degrees;
     Ra_2000  : Hours;
     Dec_2000 : Degrees;
+    Azm      : Degrees;
+    Alt      : Degrees;
   end   record;
-
-  function Info return Information;
 
   procedure Define_Pointing_Model (Filename : String);
 
   function Defined_Pointing_Model return String;
+
+  function Info return Information;
 
   function Status return State;
 
