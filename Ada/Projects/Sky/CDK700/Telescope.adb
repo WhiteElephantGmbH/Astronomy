@@ -270,6 +270,7 @@ package body Telescope is
     procedure Do_Position is
     begin
       Mount.Goto_Mark (Name.Direction_Of (The_Landmark));
+      Log.Write ("position to Landmark");
     end Do_Position;
 
 
@@ -668,6 +669,8 @@ package body Telescope is
         Stop_Target;
       when Follow =>
         Follow_New_Target;
+      when Position =>
+        Do_Position;
       when others =>
         null;
       end case;
@@ -687,6 +690,8 @@ package body Telescope is
         Stop_Target;
       when Follow =>
         Follow_New_Target;
+      when Position =>
+        Do_Position;
       when User_Command =>
         Adjust_Handling;
       when others =>
@@ -725,7 +730,6 @@ package body Telescope is
       begin
         select
           accept Close;
-          Log.Write ("Close");
           exit;
         or
           accept Halt;
@@ -746,7 +750,7 @@ package body Telescope is
           The_Event := Position;
         or
           accept Set (The_Orientation : Orientation) do
-            Log.Write ("orientation => " & The_Orientation'img);
+            Log.Write ("Orientation => " & The_Orientation'img);
             case The_Orientation is
             when Correct =>
               First_Adjust_Factor := 1;
@@ -771,7 +775,7 @@ package body Telescope is
           end Execute;
         or
           accept New_Mount_State (New_State : Mount.State) do
-            Log.Write ("New_Mount_State " & New_State'img);
+            Log.Write ("Mount State " & New_State'img);
             case New_State is
             when Mount.Unknown =>
               The_State := Unknown;
@@ -823,7 +827,7 @@ package body Telescope is
           end Get;
         end select;
         if The_Event /= No_Event then
-          Log.Write ("state => " & The_State'img & " - event => " & The_Event'img);
+          Log.Write ("State => " & The_State'img & " - Event => " & The_Event'img);
           case The_State is
           when Unknown       => Unknown_State;
           when Disconnected  => Disconnected_State;
@@ -856,7 +860,7 @@ package body Telescope is
       end;
     end loop;
     Mount.Finish;
-    Log.Write ("end");
+    Log.Write ("Control end");
   exception
   when Item: others =>
     Log.Termination (Item);

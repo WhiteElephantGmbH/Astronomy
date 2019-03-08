@@ -176,7 +176,7 @@ package body Mount is
       end ;
       The_State_Handler (The_State);
     end loop;
-    Log.Write ("Control terminated");
+    Log.Write ("Control end");
   exception
   when Occurrence: others =>
     Log.Termination (Occurrence);
@@ -294,8 +294,20 @@ package body Mount is
 
 
   procedure Goto_Mark (Direction : Earth.Direction) is
+    use type Angle.Value;
   begin
     Log.Write ("Goto_Mark " & Image_Of (Direction));
+    pragma Assert (Earth.Direction_Is_Known (Direction));
+    Action.Lock (Move);
+    begin
+      PWI.Mount.Move (Alt => PWI.Mount.Degrees(Angle.Degrees'(+Earth.Alt_Of (Direction))),
+                      Azm => PWI.Mount.Degrees(Angle.Degrees'(+Earth.Az_Of (Direction))));
+      Action.Unlock;
+    exception
+    when Occurrence: others =>
+      Log.Termination (Occurrence);
+      Action.Unlock;
+    end;
   end Goto_Mark;
 
 

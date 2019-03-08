@@ -53,6 +53,9 @@ package PWI.Mount is
                   Dec        : Degrees;
                   From_J2000 : Boolean := False);
 
+  procedure Move (Alt : Degrees;
+                  Azm : Degrees);
+
   procedure Stop;
 
 end PWI.Mount;

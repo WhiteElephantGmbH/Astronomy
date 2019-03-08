@@ -159,6 +159,18 @@ package body PWI.Mount is
   end Move;
 
 
+  procedure Move (Alt : Degrees;
+                  Azm : Degrees) is
+
+    Alt_Image : constant String := Strings.Trimmed (Alt'img);
+    Azm_Image : constant String := Strings.Trimmed (Azm'img);
+
+  begin
+    Execute (Command_Name   => "move",
+             Parameters     => "alt=" & Alt_Image & "&azm=" & Azm_Image & "&rarate=15.041&decrate=0");
+  end Move;
+
+
   procedure Stop is
   begin
     Execute ("stop");
