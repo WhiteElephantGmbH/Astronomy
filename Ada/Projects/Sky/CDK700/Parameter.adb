@@ -303,14 +303,24 @@ package body Parameter is
           Prepare_Tcp;
         exception
         when others =>
+          declare
+            The_Number_Of_Retries : Natural := 3;
           begin
             Os.Process.Create (PWI_Program_Filename);
-            begin
-              Prepare_Tcp;
-            exception
-            when others =>
-              Error.Raise_With ("PlaneWave interface server not enabled");
-            end;
+            loop
+              begin
+                Prepare_Tcp;
+                exit;
+              exception
+              when others =>
+                if The_Number_Of_Retries = 0 then
+                  Error.Raise_With ("PlaneWave interface server not enabled");
+                end if;
+                delay 1.0;
+                The_Number_Of_Retries := The_Number_Of_Retries - 1;
+                Log.Write ("retry to connect to PWI server");
+              end;
+            end loop;
           exception
           when Error.Occurred =>
             raise;
