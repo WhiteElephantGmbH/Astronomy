@@ -683,12 +683,12 @@ package body User is
 
 
       procedure Define_Display_Page is
-        -- largest texts
-        Alt_Adjustment_Text : constant String := "Alt Adjustment";
 
-        Title_Size : constant Natural := Gui.Text_Size_Of (Alt_Adjustment_Text) + Separation;
-        Text_Size  : constant Natural := Natural'max (Gui.Text_Size_Of ("+360d00'00.000"""),
-                                                      Gui.Text_Size_Of ("99 Revolutions")) + Separation;
+        Target_Declination_Text : constant String := "Target DEC"; -- largest text
+
+        Title_Size : constant Natural := Gui.Text_Size_Of (Target_Declination_Text) + Separation;
+        Text_Size  : constant Natural := Gui.Text_Size_Of ("+360d00'00.0""") + Separation;
+
       begin
         Display_Page := Gui.Add_Page (The_Title  => "Display",
                                       The_Action => Enter_Display_Page'access,
@@ -699,7 +699,7 @@ package body User is
                                  Is_Modifiable  => False,
                                  The_Size       => Text_Size,
                                  The_Title_Size => Title_Size);
-        Target_Dec := Gui.Create (Display_Page, "Target DEC", "",
+        Target_Dec := Gui.Create (Display_Page, Target_Declination_Text, "",
                                   Is_Modifiable  => False,
                                   The_Size       => Text_Size,
                                   The_Title_Size => Title_Size);
