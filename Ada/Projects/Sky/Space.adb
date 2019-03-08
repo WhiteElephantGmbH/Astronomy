@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2014 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2014 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -65,7 +65,7 @@ package body Space is
 
   function Ra_Image_Of (The_Direction : Direction) return String is
   begin
-    return Angle.Image_Of (The_Direction.Ra, Unit => Angle.In_Hours);
+    return Angle.Image_Of (The_Direction.Ra, Unit => Angle.In_Hours, Decimals => 2);
   end Ra_Image_Of;
 
 
