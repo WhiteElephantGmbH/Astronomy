@@ -53,13 +53,13 @@ package body Mount is
     entry Lock (Item : Command) when (not Is_Locked) and (not Is_Pending) is
     begin
       The_Command := Item;
-      Is_Pending := True;
       Is_Locked := True;
     end Lock;
 
     entry Unlock when not Is_Pending is
     begin
       pragma Assert (Is_Locked);
+      Is_Pending := True;
       Is_Locked := False;
     end Unlock;
 
@@ -93,7 +93,7 @@ package body Mount is
     use type PWI.Mount.State;
 
   begin
-    accept Start (Item : State_Handler_Access;
+    accept Start (Item          : State_Handler_Access;
                   Is_Simulation : Boolean)
     do
       The_State_Handler := Item;
@@ -151,6 +151,19 @@ package body Mount is
         or
           delay 1.0;
           PWI.Get_System;
+        end select;
+        if Is_Simulating then
+          case PWI.Mount.Status is
+          when PWI.Mount.Approaching =>
+            The_State := Approaching;
+          when PWI.Mount.Tracking =>
+            The_State := Tracking;
+          when others =>
+            if The_State = Unknown then
+              The_State := Disconnected;
+            end if;
+          end case;
+        else
           case PWI.Mount.Status is
           when PWI.Mount.Disconnected =>
             The_State := Disconnected;
@@ -169,11 +182,11 @@ package body Mount is
           when PWI.Mount.Tracking =>
             The_State := Tracking;
           end case;
-        end select;
+        end if;
       exception
       when PWI.No_Server =>
         The_State := Unknown;
-      end ;
+      end;
       The_State_Handler (The_State);
     end loop;
     Log.Write ("Control end");
