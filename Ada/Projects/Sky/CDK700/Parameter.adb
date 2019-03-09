@@ -224,32 +224,27 @@ package body Parameter is
       Put (Strings.Bom_8 & "[" & Localization_Id & "]");
       Put (Language_Key & " = " & Strings.Legible_Of (Standard.Language.German'img));
       Put ("");
-      case Default_Location is
-      when CDK700 =>
-        Put ("[" & PWI_Id & "]");
-        Put (Name_Key & "              = CDK700");
-        Put (Program_Key & "           = C:\Program Files (x86)\PlaneWave Instruments\PlaneWave interface\PWI.exe");
-        Put (Expert_Mode_Key & "       = False");
-        Put (Simulation_Mode_Key & "   = False");
-        Put (Pointing_Model_Key & "    = First.PXP");
-        Put (Ip_Address_Key & "        = 127.0.0.1");
-        Put (Port_Key & "              = 8080");
-        Put (Moving_Speed_List_Key & " = 6""/s, 1'/s, 10'/s, 3°00'/s");
-      end case;
+      Put ("[" & PWI_Id & "]");
+      Put (Name_Key & "              = CDK Ost");
+      Put (Program_Key & "           = C:\Program Files (x86)\PlaneWave Instruments\PlaneWave interface\PWI.exe");
+      Put (Expert_Mode_Key & "       = False");
+      Put (Simulation_Mode_Key & "   = False");
+      Put (Pointing_Model_Key & "    = First.PXP");
+      Put (Ip_Address_Key & "        = 127.0.0.1");
+      Put (Port_Key & "              = 8080");
+      Put (Moving_Speed_List_Key & " = 6""/s, 1'/s, 10'/s, 3°00'/s");
       Put ("");
       Put ("[" & Lx200_Id & "]");
       Put (Port_Key & " = 4030");
       Put ("");
       Put ("[" & Stellarium_Id & "]");
-      Put (Port_Key & " = 10001");
+      Put (Program_Key & " = C:\Program Files\Stellarium\Stellarium.exe");
+      Put (Port_Key & "    = 10001");
       Put ("");
       Put ("[" & Site_Id & "]");
-      case Default_Location is
-      when CDK700 =>
-        Put (Longitude_Key & " = " & Angle.Image_Of (+CDK700_Longitude, Decimals => 2, Show_Signed => True));
-        Put (Latitude_Key & "  = " & Angle.Image_Of (+CDK700_Latitude, Decimals => 2, Show_Signed => True));
-        Put (Altitude_Key & "  ="  & CDK700_Altitude'img & "m");
-      end case;
+      Put (Longitude_Key & " = " & Angle.Image_Of (+CDK700_Longitude, Decimals => 2, Show_Signed => True));
+      Put (Latitude_Key & "  = " & Angle.Image_Of (+CDK700_Latitude, Decimals => 2, Show_Signed => True));
+      Put (Altitude_Key & "  ="  & CDK700_Altitude'img & "m");
       Ada.Text_IO.Close (The_File);
     exception
     when Item: others =>
@@ -288,6 +283,9 @@ package body Parameter is
         PWI_Program_Filename : constant String := String_Value_Of (Program_Key);
 
       begin -- Connect_PWI
+        if PWI_Program_Filename = "" then
+          Error.Raise_With ("No PWI program file specified");
+        end if;
         Log.Write ("PWI program file: """ & PWI_Program_Filename & """");
         if not File.Exists (PWI_Program_Filename) then
           Error.Raise_With ("PWI program file """ & PWI_Program_Filename & """ not found");
@@ -330,6 +328,24 @@ package body Parameter is
         end;
       end Connect_PWI;
 
+      procedure Startup_Stellarium is
+        Stellarium_Filename : constant String := String_Value_Of (Program_Key);
+      begin
+        if Stellarium_Filename = "" then
+          return;
+        end if;
+        Log.Write ("Stellarium program file: """ & Stellarium_Filename & """");
+        if not File.Exists (Stellarium_Filename) then
+          Error.Raise_With ("Stellarium program file """ & Stellarium_Filename & """ not found");
+        end if;
+        begin
+          Os.Process.Create (Stellarium_Filename);
+        exception
+        when others =>
+          Error.Raise_With ("Stellarium not started");
+        end;
+      end Startup_Stellarium;
+
     begin -- Read_Values
       Set (Localization_Handle);
       Standard.Language.Define (Language);
@@ -361,6 +377,7 @@ package body Parameter is
         Error.Raise_With ("Lx200 port number out of range");
       end;
       Set (Stellarium_Handle);
+      Startup_Stellarium;
       begin
         The_Stellarium_Port := Network.Port_Number (Value_Of (Port_Key));
         Log.Write ("Stellarium Port:" & The_Stellarium_Port'img);
@@ -381,12 +398,6 @@ package body Parameter is
   ----------
   -- Site --
   ----------
-
-  function Default_Location return Location is
-  begin
-    return CDK700;
-  end Default_Location;
-
 
   function Latitude return Angle.Value is
   begin

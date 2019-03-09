@@ -23,7 +23,6 @@ with Application;
 with Error;
 with File;
 with Lexicon;
-with Parameter;
 with Sssb;
 with Strings;
 
@@ -545,10 +544,7 @@ package body Name is
         Put (Image_Of (Lexicon.Neptune));
         Put (Image_Of (Lexicon.Pluto));
         Put ("");
-        case Parameter.Default_Location is
-        when Parameter.CDK700 =>
-          Put ("LM " & Image_Of (Lexicon.Road_Sign) & " | 259°43' | 2°38'");
-        end case;
+        Put ("LM " & Image_Of (Lexicon.Road_Sign) & " | 259°43' | 12°38'");
         Put ("");
         Put ("Nova del 2013 | PNV J20233073+2046041 | 20h23m30.7s | +20°46'04""");
         Put ("");

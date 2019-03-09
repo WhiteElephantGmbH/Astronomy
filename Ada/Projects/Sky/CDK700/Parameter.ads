@@ -29,10 +29,6 @@ package Parameter is
   -- Site --
   ----------
 
-  type Location is (CDK700);
-
-  function Default_Location return Location;
-
   function Latitude return Angle.Value;
 
   function Longitude return Angle.Value;
