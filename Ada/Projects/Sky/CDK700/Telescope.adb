@@ -169,6 +169,8 @@ package body Telescope is
                    Mount_Approaching,
                    Mount_Tracking);
 
+    subtype Mount_Startup is Event range Mount_Disconnected .. Mount_Synchronised;
+
     The_State  : State := Disconnected;
     The_Event  : Event := No_Event;
 
@@ -375,6 +377,22 @@ package body Telescope is
   --==  States ==
   --=============
 
+    function Mount_Startup_State (The_Startup_Event : Mount_Startup) return State is
+    begin
+      case The_Startup_Event is
+      when Mount_Disconnected =>
+        return Disconnected;
+      when Mount_Connected =>
+        return Connected;
+      when Mount_Enabled =>
+        return Enabled;
+      when Mount_Homing =>
+        return Homing;
+      when Mount_Synchronised =>
+        return Synchronised;
+      end case;
+    end Mount_Startup_State;
+
     -------------
     -- Unknown --
     -------------
@@ -574,8 +592,8 @@ package body Telescope is
     procedure Stopped_State is
     begin
       case The_Event is
-      when Mount_Disconnected =>
-        The_State := Disconnected;
+      when Mount_Startup =>
+        The_State := Mount_Startup_State (The_Event);
       when Mount_Approaching =>
         The_State := Approaching;
       when Mount_Tracking =>
@@ -601,8 +619,8 @@ package body Telescope is
     procedure Stopping_State is
     begin
       case The_Event is
-      when Mount_Disconnected =>
-        The_State := Disconnected;
+      when Mount_Startup =>
+        The_State := Mount_Startup_State (The_Event);
       when Mount_Stopped =>
         The_State := Stopped;
       when Mount_Approaching =>
@@ -620,8 +638,8 @@ package body Telescope is
     procedure Approaching_State is
     begin
       case The_Event is
-      when Mount_Disconnected =>
-        The_State := Disconnected;
+      when Mount_Startup =>
+        The_State := Mount_Startup_State (The_Event);
       when Mount_Stopped =>
         The_State := Stopped;
       when Mount_Tracking =>
@@ -643,8 +661,8 @@ package body Telescope is
     procedure Tracking_State is
     begin
       case The_Event is
-      when Mount_Disconnected =>
-        The_State := Disconnected;
+      when Mount_Startup =>
+        The_State := Mount_Startup_State (The_Event);
       when Mount_Stopped =>
         The_State := Stopped;
       when Mount_Approaching =>
