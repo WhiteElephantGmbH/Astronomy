@@ -26,6 +26,7 @@ with File;
 with Language;
 with Motor;
 with Os;
+with Os.Process;
 with Stellarium;
 with Strings;
 with Text;
@@ -66,6 +67,7 @@ package body Parameter is
   Stellarium_Id : constant String := "Stellarium";
   Lx200_Id      : constant String := "Lx200";
   Port_Key      : constant String := "Port";
+  Program_Key   : constant String := "Program";
 
   Site_Id       : constant String := "Site";
   Longitude_Key : constant String := "Longitude";
@@ -281,24 +283,24 @@ package body Parameter is
       case Default_Location is
       when Home =>
         Put ("[" & Telescope_Id & "]");
-        Put (Name_Key & "                        = Setup");
+        Put (Name_Key & "                 = Setup");
         if Is_Stepper_Driver then
-          Put (Ip_Address_Key & "                  = SkyTracker" & (if Os.Is_Windows then "" else ".local"));
+          Put (Ip_Address_Key & "           = SkyTracker" & (if Os.Is_Windows then "" else ".local"));
           Put_Steps_Per_Revolution (141 * 5 * 200 * 16); -- EQU-6
-          Put (Clocks_Per_Second_Key & "           = 5000000");
+          Put (Clocks_Per_Second_Key & "    = 5000000");
         else
-          Put (Ip_Address_Key & "                  = 127.0.0.1");
+          Put (Ip_Address_Key & "           = 127.0.0.1");
         end if;
-        Put (Park_Azimuth_Key & "                = +137°16'00.0""");
-        Put (Park_Altitude_Key & "               = +5°35'00.0""");
-        Put (Pole_Height_Key & "                 = Latitude");
-        Put (Moving_Speed_List_Key & "           = 6""/s, 1'/s, 10'/s, 6°/s");
-        Put (First_Acceleration_Key & "          = 6°/s²");
-        Put (Second_Acceleration_Key & "         = 6°/s²");
-        Put (First_Lower_Limit_Key & "           = -5°");
-        Put (First_Upper_Limit_Key & "           = 185°");
-        Put (Second_Lower_Limit_Key & "          = 0°");
-        Put (Second_Upper_Limit_Key & "          = 0°");
+        Put (Park_Azimuth_Key & "         = +137°16'00.0""");
+        Put (Park_Altitude_Key & "        = +5°35'00.0""");
+        Put (Pole_Height_Key & "          = Latitude");
+        Put (Moving_Speed_List_Key & "    = 6""/s, 1'/s, 10'/s, 6°/s");
+        Put (First_Acceleration_Key & "   = 6°/s²");
+        Put (Second_Acceleration_Key & "  = 6°/s²");
+        Put (First_Lower_Limit_Key & "    = -5°");
+        Put (First_Upper_Limit_Key & "    = 185°");
+        Put (Second_Lower_Limit_Key & "   = 0°");
+        Put (Second_Upper_Limit_Key & "   = 0°");
       when Sternwarte_Schaffhausen =>
         Put ("[" & Telescope_Id & "]");
         Put (Name_Key & "                        = Newton");
@@ -309,16 +311,16 @@ package body Parameter is
         else
           Put (Ip_Address_Key & "                  = 127.0.0.1");
         end if;
-        Put (Park_Azimuth_Key & "                       = +74°");
-        Put (Park_Altitude_Key & "                      = -5°");
-        Put (Pole_Height_Key & "                        = 90°");
-        Put (Moving_Speed_List_Key & "                  = 6""/s, 1'/s, 10'/s, 3°00'/s");
-        Put (First_Acceleration_Key & "                 = 30'/s²");
-        Put (Second_Acceleration_Key & "                = 30'/s²");
-        Put (First_Lower_Limit_Key & "                  = -1726°");
-        Put (First_Upper_Limit_Key & "                  = +1874°");
-        Put (Second_Lower_Limit_Key & "                 = -10°");
-        Put (Second_Upper_Limit_Key & "                 = +90°");
+        Put (Park_Azimuth_Key & "                = +74°");
+        Put (Park_Altitude_Key & "               = -5°");
+        Put (Pole_Height_Key & "                 = 90°");
+        Put (Moving_Speed_List_Key & "           = 6""/s, 1'/s, 10'/s, 3°00'/s");
+        Put (First_Acceleration_Key & "          = 30'/s²");
+        Put (Second_Acceleration_Key & "         = 30'/s²");
+        Put (First_Lower_Limit_Key & "           = -1726°");
+        Put (First_Upper_Limit_Key & "           = +1874°");
+        Put (Second_Lower_Limit_Key & "          = -10°");
+        Put (Second_Upper_Limit_Key & "          = +90°");
       when Unknown =>
         Put ("[" & Telescope_Id & "]");
         Put (Name_Key & "                        = ");
@@ -345,7 +347,8 @@ package body Parameter is
       Put (Port_Key & " = 4030");
       Put ("");
       Put ("[" & Stellarium_Id & "]");
-      Put (Port_Key & " = 10001");
+      Put (Program_Key & " = C:\Program Files\Stellarium\Stellarium.exe");
+      Put (Port_Key & "    = 10001");
       Put ("");
       Put ("[" & Site_Id & "]");
       Put (Longitude_Key & " = " & Angle.Image_Of (+Stellarium.Longitude, Decimals => 2, Show_Signed => True));
@@ -455,6 +458,24 @@ package body Parameter is
         Motor.Connect_Communication;
       end Connect_Telescope;
 
+      procedure Startup_Stellarium is
+        Stellarium_Filename : constant String := String_Value_Of (Program_Key);
+      begin
+        if Stellarium_Filename = "" then
+          return;
+        end if;
+        Log.Write ("Stellarium program file: """ & Stellarium_Filename & """");
+        if not File.Exists (Stellarium_Filename) then
+          Error.Raise_With ("Stellarium program file """ & Stellarium_Filename & """ not found");
+        end if;
+        begin
+          Os.Process.Create (Stellarium_Filename);
+        exception
+        when others =>
+          Error.Raise_With ("Stellarium not started");
+        end;
+      end Startup_Stellarium;
+
     begin -- Read_Values
       Set (Localization_Handle);
       Standard.Language.Define (Language);
@@ -512,6 +533,7 @@ package body Parameter is
         Error.Raise_With ("Lx200 port number out of range");
       end;
       Set (Stellarium_Handle);
+      Startup_Stellarium;
       begin
         The_Stellarium_Port := Network.Port_Number (Value_Of (Port_Key));
         Log.Write ("Stellarium Port:" & The_Stellarium_Port'img);
