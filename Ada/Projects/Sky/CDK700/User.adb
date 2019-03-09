@@ -353,12 +353,9 @@ package body User is
       when Telescope.Approaching | Telescope.Tracking=>
         Enable_Goto_Button;
         Enable_Stop_Button;
-      when Telescope.Stopping | Telescope.Adjusting | Telescope.Directing =>
+      when Telescope.Stopping =>
         Disable_Goto_Button;
         Disable_Stop_Button;
-      when Telescope.Positioning =>
-        Disable_Goto_Button;
-        Enable_Stop_Button;
       end case;
     end if;
     Gui.Set_Status_Line (Information.Status'img);

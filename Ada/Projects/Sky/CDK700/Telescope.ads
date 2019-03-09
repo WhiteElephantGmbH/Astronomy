@@ -48,10 +48,7 @@ package Telescope is
                  Initializing,
                  Stopped,
                  Stopping,
-                 Directing,
-                 Positioning,
                  Approaching,
-                 Adjusting,
                  Tracking);
 
   type Orientation is (Correct, Upside_Down, Backwards, Rotated);

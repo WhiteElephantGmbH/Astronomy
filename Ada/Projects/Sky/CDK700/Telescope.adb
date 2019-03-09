@@ -307,17 +307,6 @@ package body Telescope is
     end Direct_Handling;
 
 
-    procedure End_Direct_Handling is
-    begin
-      case The_User_Command is
-      when End_Move =>
-        Mount.Stop;
-      when others =>
-        null;
-      end case;
-    end End_Direct_Handling;
-
-
     First_Adjust_Factor : Angle.Signed := 1;
 
     procedure Adjust_First (The_Speed : Angle.Signed) is
@@ -325,7 +314,6 @@ package body Telescope is
     begin
       Mount.Adjust (Device.D1, The_Speed * First_Adjust_Factor);
       The_Adjusting_Kind := First_Adjusting;
-      The_State := Adjusting;
     end Adjust_First;
 
 
@@ -336,7 +324,6 @@ package body Telescope is
     begin
       Mount.Adjust (Device.D2, The_Speed * Second_Adjust_Factor);
       The_Adjusting_Kind := Second_Adjusting;
-      The_State := Adjusting;
     end Adjust_Second;
 
 
@@ -348,7 +335,6 @@ package body Telescope is
       when Second_Adjusting =>
         Mount.Adjust (Device.D2, Adjusting_Stopped);
       end case;
-      The_State := Tracking;
     end End_Adjust;
 
 
@@ -383,17 +369,6 @@ package body Telescope is
         Set_Adjusting_Speed (Moving_Speeds'last);
       end case;
     end Adjust_Handling;
-
-
-    procedure End_Adjust_Handling is
-    begin
-      case The_User_Command is
-      when End_Move | End_Change =>
-        End_Adjust;
-      when others =>
-        null;
-      end case;
-    end End_Adjust_Handling;
 
 
   --=============
@@ -599,6 +574,12 @@ package body Telescope is
     procedure Stopped_State is
     begin
       case The_Event is
+      when Mount_Disconnected =>
+        The_State := Disconnected;
+      when Mount_Approaching =>
+        The_State := Approaching;
+      when Mount_Tracking =>
+        The_State := Tracking;
       when User_Command =>
         Direct_Handling;
       when Position =>
@@ -620,40 +601,18 @@ package body Telescope is
     procedure Stopping_State is
     begin
       case The_Event is
+      when Mount_Disconnected =>
+        The_State := Disconnected;
       when Mount_Stopped =>
         The_State := Stopped;
+      when Mount_Approaching =>
+        The_State := Approaching;
+      when Mount_Tracking =>
+        The_State := Tracking;
       when others =>
         null;
       end case;
     end Stopping_State;
-
-    ---------------
-    -- Directing --
-    ---------------
-    procedure Directing_State is
-    begin
-      case The_Event is
-      when Halt =>
-        Stop_Target;
-      when User_Command =>
-        End_Direct_Handling;
-      when others =>
-        null;
-      end case;
-    end Directing_State;
-
-    -----------------
-    -- Positioning --
-    -----------------
-    procedure Positioning_State is
-    begin
-      case The_Event is
-      when Halt =>
-        Stop_Target;
-      when others =>
-        null;
-      end case;
-    end Positioning_State;
 
     -----------------
     -- Approaching --
@@ -661,6 +620,8 @@ package body Telescope is
     procedure Approaching_State is
     begin
       case The_Event is
+      when Mount_Disconnected =>
+        The_State := Disconnected;
       when Mount_Stopped =>
         The_State := Stopped;
       when Mount_Tracking =>
@@ -682,6 +643,8 @@ package body Telescope is
     procedure Tracking_State is
     begin
       case The_Event is
+      when Mount_Disconnected =>
+        The_State := Disconnected;
       when Mount_Stopped =>
         The_State := Stopped;
       when Mount_Approaching =>
@@ -698,21 +661,6 @@ package body Telescope is
         null;
       end case;
     end Tracking_State;
-
-    ---------------
-    -- Adjusting --
-    ---------------
-    procedure Adjusting_State is
-    begin
-      case The_Event is
-      when Follow =>
-        Follow_New_Target;
-      when User_Command =>
-        End_Adjust_Handling;
-      when others =>
-        null;
-      end case;
-    end Adjusting_State;
 
     use type Angle.Signed;
 
@@ -842,11 +790,8 @@ package body Telescope is
           when Initializing  => Initializing_State;
           when Stopped       => Stopped_State;
           when Stopping      => Stopping_State;
-          when Directing     => Directing_State;
-          when Positioning   => Positioning_State;
           when Approaching   => Approaching_State;
           when Tracking      => Tracking_State;
-          when Adjusting     => Adjusting_State;
           end case;
           Has_New_Data := True;
         end if;
