@@ -302,7 +302,7 @@ package body Parameter is
         exception
         when others =>
           declare
-            The_Number_Of_Retries : Natural := 3;
+            The_Number_Of_Retries : Natural := 5;
           begin
             Os.Process.Create (PWI_Program_Filename);
             loop
