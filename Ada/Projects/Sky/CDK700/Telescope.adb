@@ -467,6 +467,8 @@ package body Telescope is
     procedure Connected_State is
     begin
       case The_Event is
+      when Mount_Disconnected =>
+        The_State := Disconnected;
       when Startup =>
         Mount.Connect;
         The_State := Connecting;
@@ -525,6 +527,10 @@ package body Telescope is
     procedure Enabled_State is
     begin
       case The_Event is
+      when Mount_Disconnected =>
+        The_State := Disconnected;
+      when Mount_Connected =>
+        The_State := Connected;
       when Startup =>
         Mount.Find_Home;
         The_State := Homing;
@@ -548,7 +554,7 @@ package body Telescope is
       when Mount_Stopped =>
         The_State := Stopped;
       when Halt =>
-        The_State := Connected;
+        The_State := Enabled;
       when others =>
         null;
       end case;
@@ -560,6 +566,12 @@ package body Telescope is
     procedure Synchronised_State is
     begin
       case The_Event is
+      when Mount_Disconnected =>
+        The_State := Disconnected;
+      when Mount_Connected =>
+        The_State := Connected;
+      when Mount_Enabled =>
+        The_State := Enabled;
       when Startup =>
         Mount.Set_Pointing_Model;
         The_State := Initializing;
@@ -580,7 +592,7 @@ package body Telescope is
       when Mount_Stopped =>
         The_State := Stopped;
       when Halt =>
-        The_State := Connected;
+        The_State := Synchronised;
       when others =>
         null;
       end case;
