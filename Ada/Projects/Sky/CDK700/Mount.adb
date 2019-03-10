@@ -15,6 +15,7 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with Parameter;
 with PWI.Mount;
 with Traces;
 
@@ -74,8 +75,7 @@ package body Mount is
 
   task type Control is
 
-    entry Start (Item          : State_Handler_Access;
-                 Is_Simulation : Boolean);
+    entry Start (Item : State_Handler_Access);
 
   end Control;
 
@@ -85,7 +85,7 @@ package body Mount is
   task body Control is
 
     The_State_Handler : State_Handler_Access;
-    Is_Simulating     : Boolean;
+    Is_Simulating     : constant Boolean := Parameter.Is_Simulation_Mode;
 
     The_Command : Command;
     The_State   : State := Unknown;
@@ -93,11 +93,9 @@ package body Mount is
     use type PWI.Mount.State;
 
   begin
-    accept Start (Item          : State_Handler_Access;
-                  Is_Simulation : Boolean)
+    accept Start (Item : State_Handler_Access)
     do
       The_State_Handler := Item;
-      Is_Simulating := Is_Simulation;
     end Start;
     Log.Write ("Control started" & (if Is_Simulating then " Simulation" else ""));
     loop
@@ -114,34 +112,40 @@ package body Mount is
               The_State := Stopped;
             end if;
           when Connect =>
-            PWI.Mount.Connect;
             if Is_Simulating then
               The_State := Connected;
+            else
+              PWI.Mount.Connect;
             end if;
           when Disconnect =>
-            PWI.Mount.Disconnect;
             if Is_Simulating then
               The_State := Disconnected;
+            else
+              PWI.Mount.Disconnect;
             end if;
           when Enable =>
-            PWI.Mount.Enable;
             if Is_Simulating then
               The_State := Enabled;
+            else
+              PWI.Mount.Enable;
             end if;
           when Disable =>
-            PWI.Mount.Disable;
             if Is_Simulating then
               The_State := Connected;
+            else
+              PWI.Mount.Disable;
             end if;
           when Find_Home =>
-            PWI.Mount.Find_Home;
             if Is_Simulating then
               The_State := Synchronised;
+            else
+              PWI.Mount.Find_Home;
             end if;
           when Set_Pointing_Model =>
-            PWI.Mount.Set_Pointing_Model;
             if Is_Simulating then
               The_State := Stopped;
+            else
+              PWI.Mount.Set_Pointing_Model;
             end if;
           when Move =>
             if Is_Simulating then
@@ -197,12 +201,11 @@ package body Mount is
 
 
   procedure Start (State_Handler  : State_Handler_Access;
-                   Pointing_Model : String;
-                   Is_Simulation  : Boolean) is
+                   Pointing_Model : String) is
   begin
     PWI.Mount.Define_Pointing_Model (Pointing_Model);
     The_Control := new Control;
-    The_Control.Start (State_Handler, Is_Simulation);
+    The_Control.Start (State_Handler);
   end Start;
 
 

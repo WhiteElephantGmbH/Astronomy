@@ -701,8 +701,7 @@ package body Telescope is
   begin -- Control_Task
     accept Start do
       Mount.Start (Mount_State_Handler'access,
-                   Parameter.Pointing_Model,
-                   Parameter.Is_Simulation_Mode);
+                   Parameter.Pointing_Model);
     end Start;
     Log.Write ("Started");
     The_State := Disconnected;
