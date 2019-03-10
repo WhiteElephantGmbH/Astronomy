@@ -44,6 +44,7 @@ package body User is
   Control_Page : Gui.Page;
   Left_Button  : Gui.Button;
   Right_Button : Gui.Button;
+  Progress_Bar : Gui.Progress_Bar;
   Target       : Gui.Plain_Edit_Box;
   Description  : Gui.Plain_Edit_Box;
   Display      : Gui.List_View;
@@ -202,6 +203,12 @@ package body User is
     Gui.Beep;
     Gui.Message_Box (The_Text);
   end Show_Error;
+
+
+  procedure Show (The_Progress : Percent) is
+  begin
+    Gui.Report_Progress (Progress_Bar, Natural(The_Progress));
+  end Show;
 
 
   Perform_Left_Handler : access procedure := null;
@@ -657,6 +664,9 @@ package body User is
         Gui.Disable (Left_Button);
         Right_Button := Gui.Create (Control_Page, "", Perform_Right'access);
         Gui.Disable (Right_Button);
+
+        Progress_Bar := Gui.Create (Control_Page);
+        Gui.Define_Range (Progress_Bar, Natural(Percent'last));
 
         Target := Gui.Create (Control_Page, Title, "", The_Title_Size => Title_Size, Is_Modifiable  => False);
         Description := Gui.Create (Control_Page, "", "", Is_Modifiable  => False);

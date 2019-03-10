@@ -272,10 +272,11 @@ package body Mount is
   end Disable;
 
 
-  procedure Find_Home is
+  procedure Find_Home (Completion_Time : out Time.Ut) is
   begin
     Log.Write ("Find_Home");
     Action.Put (Find_Home);
+    Completion_Time := Time.Universal + 125.0;
   end Find_Home;
 
 
@@ -286,7 +287,8 @@ package body Mount is
   end Set_Pointing_Model;
 
 
-  procedure Goto_Target (Direction : Space.Direction) is
+  procedure Goto_Target (Direction       :     Space.Direction;
+                         Completion_Time : out Time.Ut) is
     use type Angle.Signed;
     use type Angle.Value;
   begin
@@ -298,15 +300,18 @@ package body Mount is
                       Dec        => PWI.Mount.Degrees(Angle.Degrees'(+Angle.Signed'(+Space.Dec_Of (Direction)))),
                       From_J2000 => False);
       Action.Unlock;
+      Completion_Time := Time.Universal + 22.0;
     exception
     when Occurrence: others =>
       Log.Termination (Occurrence);
       Action.Unlock;
+      Completion_Time := 0.0;
     end;
   end Goto_Target;
 
 
-  procedure Goto_Mark (Direction : Earth.Direction) is
+  procedure Goto_Mark (Direction       :     Earth.Direction;
+                       Completion_Time : out Time.Ut) is
     use type Angle.Value;
   begin
     Log.Write ("Goto_Mark " & Image_Of (Direction));
@@ -316,10 +321,12 @@ package body Mount is
       PWI.Mount.Move (Alt => PWI.Mount.Degrees(Angle.Degrees'(+Earth.Alt_Of (Direction))),
                       Azm => PWI.Mount.Degrees(Angle.Degrees'(+Earth.Az_Of (Direction))));
       Action.Unlock;
+      Completion_Time := Time.Universal + 25.0;
     exception
     when Occurrence: others =>
       Log.Termination (Occurrence);
       Action.Unlock;
+      Completion_Time := 0.0;
     end;
   end Goto_Mark;
 

@@ -144,6 +144,8 @@ package body Telescope is
 
   task body Control_Task is
 
+    The_Completion_Time : Time.Ut := Time.In_The_Future;
+
     The_Landmark : Name.Id;
 
     type Adjusting_Kind is (First_Adjusting, Second_Adjusting);
@@ -200,7 +202,7 @@ package body Telescope is
       if Get_Direction = null then
         raise Program_Error; -- unknown target;
       end if;
-      Mount.Goto_Target (Target_Direction);
+      Mount.Goto_Target (Target_Direction, The_Completion_Time);
     exception
     when Target_Lost =>
       null;
@@ -271,7 +273,7 @@ package body Telescope is
 
     procedure Do_Position is
     begin
-      Mount.Goto_Mark (Name.Direction_Of (The_Landmark));
+      Mount.Goto_Mark (Name.Direction_Of (The_Landmark), The_Completion_Time);
       Log.Write ("position to Landmark");
     end Do_Position;
 
@@ -447,7 +449,7 @@ package body Telescope is
         Mount.Enable;
         The_State := Enabling;
       when Mount_Enabled =>
-        Mount.Find_Home;
+        Mount.Find_Home (The_Completion_Time);
         The_State := Homing;
       when Mount_Synchronised =>
         Mount.Set_Pointing_Model;
@@ -505,7 +507,7 @@ package body Telescope is
     begin
       case The_Event is
       when Mount_Enabled =>
-        Mount.Find_Home;
+        Mount.Find_Home (The_Completion_Time);
         The_State := Homing;
       when Mount_Homing =>
         The_State := Homing;
@@ -532,7 +534,7 @@ package body Telescope is
       when Mount_Connected =>
         The_State := Connected;
       when Startup =>
-        Mount.Find_Home;
+        Mount.Find_Home (The_Completion_Time);
         The_State := Homing;
       when Shutdown =>
         Mount.Disable;
@@ -787,6 +789,12 @@ package body Telescope is
           accept Get (The_Data : out Data) do
             The_Data.Status := The_State;
             The_Data.Universal_Time := Time.Universal;
+            case The_State is
+            when Approaching | Homing =>
+              The_Data.Completion_Time := The_Completion_Time;
+            when others =>
+              The_Data.Completion_Time := 0.0;
+            end case;
             declare
               Info : constant Mount.Information := Mount.Actual_Info;
             begin

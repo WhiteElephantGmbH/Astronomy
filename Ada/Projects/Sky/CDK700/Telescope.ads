@@ -60,7 +60,7 @@ package Telescope is
     Actual_J2000_Direction : Space.Direction;
     Actual_Direction       : Space.Direction;
     Local_Direction        : Earth.Direction;
-    Adjustment             : Earth.Direction;
+    Completion_Time        : Time.Ut;
     Universal_Time         : Time.Ut;
   end record;
 

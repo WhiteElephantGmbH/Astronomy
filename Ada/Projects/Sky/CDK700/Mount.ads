@@ -19,6 +19,7 @@ with Angle;
 with Earth;
 with Device;
 with Space;
+with Time;
 
 package Mount is
 
@@ -54,13 +55,15 @@ package Mount is
 
   procedure Disable;
 
-  procedure Find_Home;
+  procedure Find_Home (Completion_Time : out Time.Ut);
 
   procedure Set_Pointing_Model;
 
-  procedure Goto_Target (Direction : Space.Direction);
+  procedure Goto_Target (Direction       :     Space.Direction;
+                         Completion_Time : out Time.Ut);
 
-  procedure Goto_Mark (Direction : Earth.Direction);
+  procedure Goto_Mark (Direction       :     Earth.Direction;
+                       Completion_Time : out Time.Ut);
 
   procedure Direct (The_Drive  : Device.Drive;
                     With_Speed : Angle.Signed);

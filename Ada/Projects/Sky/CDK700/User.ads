@@ -36,6 +36,8 @@ package User is
 
   procedure Show_Error (The_Text : String := Error.Message);
 
+  procedure Show (The_Progress : Percent);
+  
   procedure Show (Information : Telescope.Data);
 
   procedure Clear_Target;

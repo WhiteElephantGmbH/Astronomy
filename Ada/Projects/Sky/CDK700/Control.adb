@@ -340,6 +340,8 @@ package body Control is
 
     The_Landmark : Name.Id;
 
+    The_Completion_Time : Time.Ut := 0.0;
+
 
     procedure Define_External_Target is
     begin
@@ -373,6 +375,24 @@ package body Control is
         The_Landmark := Name.No_Id;
         User.Clear_Target;
       end if;
+      case The_Data.Status is
+      when Telescope.Homing | Telescope.Approaching =>
+        declare
+          Actual_Duration : Time.Ut := The_Data.Completion_Time - Time.Universal;
+        begin
+          if Actual_Duration < 0.0 then
+            Actual_Duration := 0.0;
+          end if;
+          if The_Completion_Time <= Actual_Duration then
+            The_Completion_Time := Actual_Duration;
+          elsif Actual_Duration /= 0.0 then
+            User.Show (User.Percent(Float(Actual_Duration) * Float(User.Percent'last) / Float(The_Completion_Time)));
+          end if;
+        end;
+      when others =>
+        The_Completion_Time := 0.0;
+        User.Show (The_Progress => 0);
+      end case;
       case The_Data.Status is
       when Telescope.Stopped | Telescope.Approaching | Telescope.Tracking =>
         Lx200.Set (The_Data.Actual_Direction);
