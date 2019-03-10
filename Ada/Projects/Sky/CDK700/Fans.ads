@@ -15,54 +15,8 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Angle;
-with Network;
+package Fans is
 
-package Parameter is
+  procedure Turn_On_Or_Off;
 
-  Speed_Unit : constant String := "/s";
-
-  procedure Read;
-
-
-  ----------
-  -- Site --
-  ----------
-
-  function Latitude return Angle.Value;
-
-  function Longitude return Angle.Value;
-
-  function Altitude return Integer; -- in meters above see level
-
-
-  ------------
-  -- Device --
-  ------------
-
-  function Telescope_Name return String;
-
-  function Is_Expert_Mode return Boolean;
-
-  function Is_Simulation_Mode return Boolean;
-
-  function Turn_Fans_On return Boolean;
-
-  function Pointing_Model return String;
-
-  function Pole_Height return Angle.Value;
-
-  function Is_Azimuthal_Mount return Boolean;
-
-  function Moving_Speeds return Angle.Values; -- in angle / s
-
-
-  -------------
-  -- Servers --
-  -------------
-
-  function Lx200_Port return Network.Port_Number;
-
-  function Stellarium_Port return Network.Port_Number;
-
-end Parameter;
+end Fans;

@@ -277,6 +277,8 @@ package body PWI.XML is
 
     procedure Set (Data : XML.Response);
 
+    function Fans_Turned_On return Boolean;
+
     function Mount_Flags return XML.Mount_Flag;
 
     function Mount_Data return XML.Mount_Info;
@@ -797,6 +799,15 @@ package body PWI.XML is
   end Parse;
 
 
+  package body Fans is
+
+    function Turned_On return Boolean is
+    begin
+      return System.Fans_Turned_On;
+    end Turned_On;
+
+  end Fans;
+
   package body Mount is
 
     The_Pointing_Model : Text.String;
@@ -919,6 +930,12 @@ package body PWI.XML is
         Log.Write ("End");
       end if;
     end Set;
+
+
+    function Fans_Turned_On return Boolean is
+    begin
+      return The_Data.Fans.On;
+    end Fans_Turned_On;
 
 
     function Mount_Flags return XML.Mount_Flag is

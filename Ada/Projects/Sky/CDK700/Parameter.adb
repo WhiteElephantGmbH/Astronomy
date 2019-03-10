@@ -47,6 +47,7 @@ package body Parameter is
   Program_Key           : constant String := "Program";
   Simulation_Mode_Key   : constant String := "Simulation Mode";
   Expert_Mode_Key       : constant String := "Expert Mode";
+  Fans_Key              : constant String := "Fans";
   Pointing_Model_Key    : constant String := "Pointing Model";
   Ip_Address_Key        : constant String := "IP Address";
   Moving_Speed_List_Key : constant String := "Moving Speed List";
@@ -65,6 +66,7 @@ package body Parameter is
   The_Telescope_Name    : Text.String;
   Is_In_Expert_Mode     : Boolean;
   Is_In_Simulation_Mode : Boolean;
+  Fans_On               : Boolean;
   The_Pointing_Model    : Text.String;
 
   The_Moving_Speeds  : Angle_List.Item;
@@ -229,6 +231,7 @@ package body Parameter is
       Put (Program_Key & "           = C:\Program Files (x86)\PlaneWave Instruments\PlaneWave interface\PWI.exe");
       Put (Expert_Mode_Key & "       = False");
       Put (Simulation_Mode_Key & "   = False");
+      Put (Fans_Key & "              = On");
       Put (Pointing_Model_Key & "    = First.PXP");
       Put (Ip_Address_Key & "        = 127.0.0.1");
       Put (Port_Key & "              = 8080");
@@ -346,6 +349,19 @@ package body Parameter is
         end;
       end Startup_Stellarium;
 
+      procedure Define_Fans_State is
+        Fans_State : constant String := String_Value_Of (Fans_Key);
+      begin
+        Log.Write ("Fans: " & Fans_State);
+        if Strings.Is_Equal (Fans_State, "On") then
+          Fans_On := True;
+        elsif Strings.Is_Equal (Fans_State, "Off") then
+          Fans_On := False;
+        else
+          Error.Raise_With ("Fans must be either On or Off");
+        end if;
+      end Define_Fans_State;
+
     begin -- Read_Values
       Set (Localization_Handle);
       Standard.Language.Define (Language);
@@ -360,6 +376,7 @@ package body Parameter is
       Log.Write ("Name: " & Telescope_Name);
       Is_In_Expert_Mode := Strings.Is_Equal (String_Value_Of (Expert_Mode_Key), "True");
       Is_In_Simulation_Mode := Strings.Is_Equal (String_Value_Of (Simulation_Mode_Key), "True");
+      Define_Fans_State;
       The_Pointing_Model := Text.String_Of (String_Value_Of (Pointing_Model_Key));
       Log.Write ("Pointing_Model: " & Pointing_Model);
       Connect_PWI;
@@ -437,6 +454,12 @@ package body Parameter is
   begin
     return Is_In_Simulation_Mode;
   end Is_Simulation_Mode;
+
+
+  function Turn_Fans_On return Boolean is
+  begin
+    return Fans_On;
+  end Turn_Fans_On;
 
 
   function Pointing_Model return String is

@@ -219,6 +219,12 @@ private package PWI.XML is
 
   procedure Parse (Data : String);
 
+  package Fans is
+
+    function Turned_On return Boolean;
+    
+  end Fans;
+
   package Mount is
 
     procedure Define_Pointing_Model (Filename : String);

@@ -105,6 +105,12 @@ package body Mount is
           Log.Write ("Handle " & The_Command'img);
           case The_Command is
           when Finish =>
+            begin
+              PWI.Mount.Stop;
+            exception
+            when others =>
+              null; -- PWI server could have been terminated
+            end;
             exit;
           when Stop =>
             PWI.Mount.Stop;

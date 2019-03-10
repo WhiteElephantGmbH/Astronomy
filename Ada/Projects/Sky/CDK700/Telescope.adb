@@ -17,6 +17,7 @@ pragma Style_White_Elephant;
 
 with Angle;
 with Device;
+with Fans;
 with Mount;
 with Parameter;
 with System;
@@ -401,10 +402,11 @@ package body Telescope is
     procedure Unknown_State is
     begin
       case The_Event is
-      when Mount_Disconnected =>
-        The_State := Disconnected;
-      when others =>
+      when Mount_Unknown =>
         null;
+      when others =>
+        Mount.Stop;
+        The_State := Disconnected;
       end case;
     end Unknown_State;
 
@@ -605,6 +607,7 @@ package body Telescope is
     -------------
     procedure Stopped_State is
     begin
+      Fans.Turn_On_Or_Off;
       case The_Event is
       when Mount_Startup =>
         The_State := Mount_Startup_State (The_Event);
@@ -773,14 +776,8 @@ package body Telescope is
               The_Event := Mount_Stopped;
             when Mount.Approaching =>
               The_Event := Mount_Approaching;
-              if Parameter.Is_Simulation_Mode then
-                The_State := Approaching;
-              end if;
             when Mount.Tracking =>
               The_Event := Mount_Tracking;
-              if Parameter.Is_Simulation_Mode then
-                The_State := Tracking;
-              end if;
             end case;
             Has_New_Data := True;
           end New_Mount_State;
