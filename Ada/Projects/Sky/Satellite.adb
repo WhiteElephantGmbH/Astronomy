@@ -19,7 +19,7 @@ with Ada.Directories;
 with Ada.Text_IO;
 with File;
 with Norad;
-with Stellarium;
+with Parameter;
 with String_List;
 with Strings;
 with Text;
@@ -30,12 +30,6 @@ package body Satellite is
   package Log is new Traces ("Satellite");
 
   use type File.Folder;
-
-  Satellites_Directory : constant File.Folder := Stellarium.Application.Data_Directory + "modules" + "Satellites";
-
-  Json_Filename : constant String := File.Composure (Directory => Satellites_Directory,
-                                                     Filename  => "satellites",
-                                                     Extension => "json");
 
   procedure Read_Stellarium_Data is
 
@@ -412,12 +406,13 @@ package body Satellite is
       end if;
     end Get_Value;
 
+    Json_Filename : constant String := Parameter.Satellites_Filename;
+
   begin -- Read_Stellarium_Data
-    if not File.Exists (Json_Filename) then
-      Log.Warning ("missing file: """ & Json_Filename & '"');
+    File.Delete_Directory (Directory);
+    if Json_Filename = "" then
       return;
     end if;
-    File.Delete_Directory (Directory);
     Ada.Directories.Create_Path (Directory);
     Ada.Text_IO.Open (The_File, Ada.Text_IO.In_File, Json_Filename);
     Get_Token (Start_Object);

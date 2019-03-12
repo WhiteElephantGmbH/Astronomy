@@ -64,10 +64,11 @@ package body Parameter is
   Second_Lower_Limit_Key          : constant String := "Second Lower Limit";
   Second_Upper_Limit_Key          : constant String := "Second Upper Limit";
 
-  Stellarium_Id : constant String := "Stellarium";
-  Lx200_Id      : constant String := "Lx200";
-  Port_Key      : constant String := "Port";
-  Program_Key   : constant String := "Program";
+  Stellarium_Id  : constant String := "Stellarium";
+  Lx200_Id       : constant String := "Lx200";
+  Port_Key       : constant String := "Port";
+  Program_Key    : constant String := "Program";
+  Satellites_Key : constant String := "Satellites";
 
   Site_Id       : constant String := "Site";
   Longitude_Key : constant String := "Longitude";
@@ -97,8 +98,9 @@ package body Parameter is
   The_Telescope_Connection : Connection;
 
   --Servers
-  The_Lx200_Port      : Network.Port_Number;
-  The_Stellarium_Port : Network.Port_Number;
+  The_Lx200_Port          : Network.Port_Number;
+  The_Stellarium_Port     : Network.Port_Number;
+  The_Satellites_Filename : Text.String;
 
   -- Site
   The_Latitude  : Angle.Value;
@@ -347,8 +349,9 @@ package body Parameter is
       Put (Port_Key & " = 4030");
       Put ("");
       Put ("[" & Stellarium_Id & "]");
-      Put (Program_Key & " = C:\Program Files\Stellarium\Stellarium.exe");
-      Put (Port_Key & "    = 10001");
+      Put (Program_Key & "    = C:\Program Files\Stellarium\Stellarium.exe");
+      Put (Satellites_Key & " = " & Stellarium.Satellites_Filename);
+      Put (Port_Key & "       = 10001");
       Put ("");
       Put ("[" & Site_Id & "]");
       Put (Longitude_Key & " = " & Angle.Image_Of (+Stellarium.Longitude, Decimals => 2, Show_Signed => True));
@@ -476,6 +479,21 @@ package body Parameter is
         end;
       end Startup_Stellarium;
 
+      procedure Define_Satellites_Filename is
+        Json_Filename : constant String := String_Value_Of (Satellites_Key);
+      begin
+        if Json_Filename = "" or Strings.Is_Equal (Json_Filename, "None") then
+          Log.Write ("No Satellites");
+          Text.Clear (The_Satellites_Filename);
+        else
+          Log.Write ("Stellarium satellites file: """ & Json_Filename & """");
+          if not File.Exists (Json_Filename) then
+            Error.Raise_With ("Stellarium satellites file """ & Json_Filename & """ not found");
+          end if;
+          The_Satellites_Filename := Text.String_Of (Json_Filename);
+        end if;
+      end Define_Satellites_Filename;
+
     begin -- Read_Values
       Set (Localization_Handle);
       Standard.Language.Define (Language);
@@ -533,7 +551,7 @@ package body Parameter is
         Error.Raise_With ("Lx200 port number out of range");
       end;
       Set (Stellarium_Handle);
-      Startup_Stellarium;
+      Define_Satellites_Filename;
       begin
         The_Stellarium_Port := Network.Port_Number (Value_Of (Port_Key));
         Log.Write ("Stellarium Port:" & The_Stellarium_Port'img);
@@ -541,6 +559,7 @@ package body Parameter is
       when others =>
         Error.Raise_With ("Stellarium port number out of range");
       end;
+      Startup_Stellarium;
     end Read_Values;
 
   begin -- Read
@@ -724,5 +743,11 @@ package body Parameter is
   begin
     return The_Stellarium_Port;
   end Stellarium_Port;
+
+
+  function Satellites_Filename return String is
+  begin
+    return Text.String_Of (The_Satellites_Filename);
+  end Satellites_Filename;
 
 end Parameter;

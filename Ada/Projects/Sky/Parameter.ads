@@ -108,4 +108,6 @@ package Parameter is
 
   function Stellarium_Port return Network.Port_Number;
 
+  function Satellites_Filename return String;
+
 end Parameter;

@@ -47,6 +47,14 @@ package body Stellarium is
                                                                Filename  => "user_locations",
                                                                Extension => "txt");
 
+  use type File.Folder;
+
+  Satellites_Directory : constant File.Folder := Application.Data_Directory + "modules" + "Satellites";
+
+  Satellites_Json : constant String := File.Composure (Directory => Satellites_Directory,
+                                                       Filename  => "satellites",
+                                                       Extension => "json");
+
   Paris_Altitude  : constant Natural       := 42;
   Paris_Latitude  : constant Angle.Degrees := 48.8534083333;
   Paris_Longitude : constant Angle.Degrees := 2.4488;
@@ -56,6 +64,12 @@ package body Stellarium is
   The_Longitude : Angle.Degrees := Paris_Longitude;
 
   type Location_Kind is (Automatic, Paris, User_Defined);
+
+
+  function Satellites_Filename return String is
+  begin
+    return Satellites_Json;
+  end Satellites_Filename;
 
 
   function Read_Location return Location_Kind is

@@ -39,6 +39,8 @@ package Stellarium is
 
   function Language return Language.Kind;
 
+  function Satellites_Filename return String;
+  
   procedure Start (Used_Port : Port_Number);
 
   procedure Define_Handler (The_Handler : Goto_Handler);
