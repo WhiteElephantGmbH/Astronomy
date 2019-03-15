@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2014 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                           (c) 2019 by White Elephant GmbH, Schaffhausen, Switzerland                              *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,28 +15,12 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with Angle;
+with Earth;
+with Space;
+with Time;
+
 package Device is
-
-  type Extended_Drive is (D1, D2, D3);
-
-  subtype Drive is Extended_Drive range D1 .. D2;
-
-  type State is (Disconnected,
-                 Startup,      -- power up or session timeout
-                 Initialized,  -- processor initialized
-                 Stopped,      -- telescope stopped (directions known)
-                 Synchronised, -- telescope Synchronised (handling of updates)
-                 Moving,       -- telescope moving
-                 Fault);       -- telescope fault detected
-
-  Stopping : constant State := Moving;
-
-  type Time_Synch_State is (Idle,          -- no synchronization
-                            Waiting,       -- waiting for low synch signal low
-                            Started,       -- start (synch signal high)
-                            Measuring,     -- synch signal low
-                            Ready,         -- synch duration mesuared (signal High)
-                            Synchronised); -- time synchronized (minutes addred)
 
   type Command is (No_Command,
                    Move_Left,
@@ -51,11 +35,73 @@ package Device is
                    Set_Centering_Rate,
                    Set_Finding_Rate,
                    Set_Slewing_Rate);
-                   
-  subtype Autoguiding_Rate is Integer range 0 .. 100;
 
-  subtype Step_Number is Positive range 1 .. 2**24 - 1;
+  package Fans is
 
-  type Steps_Per_Revolution is array (Drive) of Step_Number;
+    procedure Turn_On_Or_Off;
+
+  end Fans;
+
+  package Mount is
+
+    type Drive is (D1, D2);
+
+    type State is (Unknown,
+                   Disconnected,
+                   Connected,
+                   Enabled,
+                   Homing,
+                   Synchronised,
+                   Stopped,
+                   Approaching,
+                   Tracking);
+
+    type Information is record
+      J2000_Direction  : Space.Direction;
+      Actual_Direction : Space.Direction;
+      Local_Direction  : Earth.Direction;
+    end record;
+
+    type State_Handler_Access is access procedure (The_State : State);
+
+    function Actual_Info return Information;
+
+    procedure Connect;
+
+    procedure Disconnect;
+
+    procedure Enable;
+
+    procedure Disable;
+
+    procedure Find_Home (Completion_Time : out Time.Ut);
+
+    procedure Set_Pointing_Model;
+
+    procedure Goto_Target (Direction       :     Space.Direction;
+                           Completion_Time : out Time.Ut);
+
+    procedure Goto_Mark (Direction       :     Earth.Direction;
+                         Completion_Time : out Time.Ut);
+
+    procedure Direct (The_Drive  : Drive;
+                      With_Speed : Angle.Signed);
+    -- move drive
+
+    procedure Adjust (The_Drive  : Drive;
+                      With_Speed : Angle.Signed);
+    -- adjust drive
+
+    procedure Stop;
+    -- stoppes the motors
+
+    function Actual_Direction return Space.Direction;
+
+  end Mount;
+
+  procedure Start (Mount_State_Handler  : Mount.State_Handler_Access;
+                   Pointing_Model       : String);
+
+  procedure Finalize;
 
 end Device;

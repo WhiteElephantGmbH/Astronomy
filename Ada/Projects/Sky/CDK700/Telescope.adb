@@ -17,8 +17,6 @@ pragma Style_White_Elephant;
 
 with Angle;
 with Device;
-with Fans;
-with Mount;
 with Parameter;
 with System;
 with Traces;
@@ -26,6 +24,10 @@ with Traces;
 package body Telescope is
 
   package Log is new Traces ("Telescope");
+
+  package Fans renames Device.Fans;
+
+  package Mount renames Device.Mount;
 
   task type Control_Task with Priority => System.Max_Priority is
 
@@ -285,13 +287,13 @@ package body Telescope is
     begin
       case The_User_Command is
       when Move_Left =>
-        Mount.Direct (Device.D1, -Speed);
+        Mount.Direct (Mount.D1, -Speed);
       when Move_Right =>
-        Mount.Direct (Device.D1, +Speed);
+        Mount.Direct (Mount.D1, +Speed);
       when Move_Up =>
-        Mount.Direct (Device.D2, +Speed);
+        Mount.Direct (Mount.D2, +Speed);
       when Move_Down =>
-        Mount.Direct (Device.D2, -Speed);
+        Mount.Direct (Mount.D2, -Speed);
       when End_Move =>
         Mount.Stop;
       when Increase =>
@@ -317,7 +319,7 @@ package body Telescope is
     procedure Adjust_First (The_Speed : Angle.Signed) is
       use type Angle.Signed;
     begin
-      Mount.Adjust (Device.D1, The_Speed * First_Adjust_Factor);
+      Mount.Adjust (Mount.D1, The_Speed * First_Adjust_Factor);
       The_Adjusting_Kind := First_Adjusting;
     end Adjust_First;
 
@@ -327,7 +329,7 @@ package body Telescope is
     procedure Adjust_Second (The_Speed : Angle.Signed) is
       use type Angle.Signed;
     begin
-      Mount.Adjust (Device.D2, The_Speed * Second_Adjust_Factor);
+      Mount.Adjust (Mount.D2, The_Speed * Second_Adjust_Factor);
       The_Adjusting_Kind := Second_Adjusting;
     end Adjust_Second;
 
@@ -336,9 +338,9 @@ package body Telescope is
     begin
       case The_Adjusting_Kind is
       when First_Adjusting =>
-        Mount.Adjust (Device.D1, Adjusting_Stopped);
+        Mount.Adjust (Mount.D1, Adjusting_Stopped);
       when Second_Adjusting =>
-        Mount.Adjust (Device.D2, Adjusting_Stopped);
+        Mount.Adjust (Mount.D2, Adjusting_Stopped);
       end case;
     end End_Adjust;
 
@@ -417,6 +419,7 @@ package body Telescope is
     begin
       case The_Event is
       when Startup =>
+        Fans.Turn_On_Or_Off;
         Mount.Connect;
         The_State := Connecting;
       when others =>
@@ -607,7 +610,6 @@ package body Telescope is
     -------------
     procedure Stopped_State is
     begin
-      Fans.Turn_On_Or_Off;
       case The_Event is
       when Mount_Startup =>
         The_State := Mount_Startup_State (The_Event);
@@ -703,8 +705,8 @@ package body Telescope is
 
   begin -- Control_Task
     accept Start do
-      Mount.Start (Mount_State_Handler'access,
-                   Parameter.Pointing_Model);
+      Device.Start (Mount_State_Handler'access,
+                    Parameter.Pointing_Model);
     end Start;
     Log.Write ("Started");
     The_State := Disconnected;
@@ -838,7 +840,7 @@ package body Telescope is
         Log.Termination (Item);
       end;
     end loop;
-    Mount.Finish;
+    Device.Finalize;
     Log.Write ("Control end");
   exception
   when Item: others =>
