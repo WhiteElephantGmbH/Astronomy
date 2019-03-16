@@ -17,7 +17,10 @@ pragma Style_White_Elephant;
 
 with Parameter;
 with PWI.Fans;
+with PWI.Focuser;
 with PWI.Mount;
+with PWI.M3;
+with PWI.Rotator;
 with Traces;
 
 package body Device is
@@ -36,6 +39,17 @@ package body Device is
                         Set_Pointing_Model,
                         Goto_Target,
                         Goto_Mark);
+
+  type M3_Action is (No_Action,
+                     Turn_To_Camera,
+                     Turn_To_Ocular);
+
+  type Rotator_Action is (No_Action,
+                          Connect,
+                          Disconnect,
+                          Find_Home,
+                          Start,
+                          Stop);
 
   type Parameters is record
     Ra         : PWI.Mount.Hours   := 0.0;
@@ -59,19 +73,27 @@ package body Device is
     procedure Move (Alt : PWI.Mount.Degrees;
                     Azm : PWI.Mount.Degrees);
 
+    procedure Put (Item : M3_Action);
+
+    procedure Put (Item : Rotator_Action);
+
     procedure Finish;
 
-    entry Get (New_Fan_Action   : out Fan_Action;
-               New_Mount_Action : out Mount_Action;
-               Is_Termination   : out Boolean;
-               New_Parameter    : out Parameters);
+    entry Get (New_Fan_Action     : out Fan_Action;
+               New_Mount_Action   : out Mount_Action;
+               New_M3_Action      : out M3_Action;
+               New_Rotator_Action : out Rotator_Action;
+               Is_Termination     : out Boolean;
+               New_Parameter      : out Parameters);
 
   private
-    The_Fan_Action   : Fan_Action   := No_Action;
-    The_Mount_Action : Mount_Action := No_Action;
-    Is_Finishing     : Boolean      := False;
-    Is_Pending       : Boolean      := False;
-    The_Parameter    : Parameters;
+    The_Fan_Action     : Fan_Action     := No_Action;
+    The_Mount_Action   : Mount_Action   := No_Action;
+    The_M3_Action      : M3_Action      := No_Action;
+    The_Rotator_Action : Rotator_Action := No_Action;
+    Is_Finishing       : Boolean        := False;
+    Is_Pending         : Boolean        := False;
+    The_Parameter      : Parameters;
   end Action;
 
 
@@ -113,6 +135,20 @@ package body Device is
     end Move;
 
 
+    procedure Put (Item : M3_Action) is
+    begin
+      The_M3_Action := Item;
+      Is_Pending := True;
+    end Put;
+
+
+    procedure Put (Item : Rotator_Action) is
+    begin
+      The_Rotator_Action := Item;
+      Is_Pending := True;
+    end Put;
+
+
     procedure Finish is
     begin
       Is_Finishing := True;
@@ -120,15 +156,21 @@ package body Device is
     end Finish;
 
 
-    entry Get (New_Fan_Action   : out Fan_Action;
-               New_Mount_Action : out Mount_Action;
-               Is_Termination   : out Boolean;
-               New_Parameter    : out Parameters) when Is_Pending is
+    entry Get (New_Fan_Action     : out Fan_Action;
+               New_Mount_Action   : out Mount_Action;
+               New_M3_Action      : out M3_Action;
+               New_Rotator_Action : out Rotator_Action;
+               Is_Termination     : out Boolean;
+               New_Parameter      : out Parameters) when Is_Pending is
     begin
       New_Fan_Action := The_Fan_Action;
       New_Mount_Action := The_Mount_Action;
+      New_M3_Action := The_M3_Action;
+      New_Rotator_Action := The_Rotator_Action;
       The_Fan_Action := No_Action;
       The_Mount_Action := No_Action;
+      The_M3_Action := No_Action;
+      The_Rotator_Action := No_Action;
       Is_Termination  := Is_Finishing;
       New_Parameter := The_Parameter;
       Is_Pending := False;
@@ -139,7 +181,8 @@ package body Device is
 
   task type Control is
 
-    entry Start (Item : Mount.State_Handler_Access);
+    entry Start (Mount_State_Handler   : Mount.State_Handler_Access;
+                 Rotator_State_Handler : Rotator.State_Handler_Access);
 
   end Control;
 
@@ -148,34 +191,48 @@ package body Device is
 
   task body Control is
 
-    The_Mount_State_Handler : Mount.State_Handler_Access;
-    Is_Simulating           : constant Boolean := Parameter.Is_Simulation_Mode;
+    The_Mount_State_Handler   : Mount.State_Handler_Access;
+    The_Rotator_State_Handler : Rotator.State_Handler_Access;
+    Is_Simulating             : constant Boolean := Parameter.Is_Simulation_Mode;
 
-    Is_Finishing     : Boolean := False;
-    The_Fan_Action   : Fan_Action := No_Action;
-    The_Mount_Action : Mount_Action := No_Action;
-    The_Mount_State  : Mount.State := Mount.Unknown;
-    The_Parameter    : Parameters;
+    Is_Finishing       : Boolean := False;
+    The_Fan_Action     : Fan_Action := No_Action;
+    The_Mount_Action   : Mount_Action := No_Action;
+    The_M3_Action      : M3_Action := No_Action;
+    The_Rotator_Action : Rotator_Action := No_Action;
+    The_Mount_State    : Mount.State := Mount.Unknown;
+    Last_Mount_State   : Mount.State := Mount.Unknown;
+    The_Rotator_State  : Rotator.State := Rotator.Unknown;
+    Last_Rotator_State : Rotator.State := Rotator.Unknown;
+    The_Parameter      : Parameters;
 
     use type Mount.State;
-
-    use type PWI.Mount.State;
+    use type Rotator.State;
 
   begin
-    accept Start (Item : Mount.State_Handler_Access)
+    accept Start (Mount_State_Handler   : Mount.State_Handler_Access;
+                  Rotator_State_Handler : Rotator.State_Handler_Access)
     do
-      The_Mount_State_Handler := Item;
+      The_Mount_State_Handler := Mount_State_Handler;
+      The_Rotator_State_Handler := Rotator_State_Handler;
     end Start;
     Log.Write ("Control started" & (if Is_Simulating then " Simulation" else ""));
+    if Is_Simulating then
+      PWI.Mount.Set_Simulation_Mode;
+    end if;
     loop
       begin
         select
-          Action.Get (New_Fan_Action   => The_Fan_Action,
-                      New_Mount_Action => The_Mount_Action,
-                      Is_Termination   => Is_Finishing,
-                      New_Parameter    => The_Parameter);
-          Log.Write ("Handle - Fan " & The_Fan_Action'img & " - Mount " & The_Mount_Action'img);
-
+          Action.Get (New_Fan_Action     => The_Fan_Action,
+                      New_Mount_Action   => The_Mount_Action,
+                      New_M3_Action      => The_M3_Action,
+                      New_Rotator_Action => The_Rotator_Action,
+                      Is_Termination     => Is_Finishing,
+                      New_Parameter      => The_Parameter);
+          Log.Write ("Handle - Fan " & The_Fan_Action'img
+                         & " - Mount " & The_Mount_Action'img
+                         & " - M3 " & The_M3_Action'img
+                         & " - Rotator " & The_Rotator_Action'img);
           begin
             case The_Fan_Action is
             when No_Action =>
@@ -252,9 +309,54 @@ package body Device is
             PWI.Mount.Move (Ra         => The_Parameter.Ra,
                             Dec        => The_Parameter.Dec,
                             From_J2000 => The_Parameter.From_J2000);
+            The_Mount_State := Mount.Approaching;
           when Goto_Mark =>
             PWI.Mount.Move (Alt => The_Parameter.Alt,
                             Azm => The_Parameter.Azm);
+          end case;
+
+          case The_M3_Action is
+          when No_Action =>
+            null;
+          when Turn_To_Ocular =>
+            PWI.M3.Turn (To => PWI.M3.Port_1);
+          when Turn_To_Camera =>
+            PWI.M3.Turn (To => PWI.M3.Port_2);
+          end case;
+
+          case The_Rotator_Action is
+          when No_Action =>
+            null;
+          when Connect =>
+            if Is_Simulating then
+              The_Rotator_State := Rotator.Connected;
+            else
+              PWI.Focuser.Connect; -- use focuser/rotator port
+            end if;
+          when Disconnect => -- use focuser/rotator port
+            if Is_Simulating then
+              The_Rotator_State := Rotator.Disconnected;
+            else
+              PWI.Focuser.Disconnect;
+            end if;
+          when Find_Home =>
+            if Is_Simulating then
+              The_Rotator_State := Rotator.Connected;
+            else
+              PWI.Rotator.Find_Home;
+            end if;
+          when Start =>
+            if Is_Simulating then
+              The_Rotator_State := Rotator.Started;
+            else
+              PWI.Rotator.Start;
+            end if;
+          when Stop =>
+            if Is_Simulating then
+              The_Rotator_State := Rotator.Connected;
+            else
+              PWI.Rotator.Stop;
+            end if;
           end case;
         or
           delay 1.0;
@@ -271,6 +373,9 @@ package body Device is
               The_Mount_State := Mount.Disconnected;
             end if;
           end case;
+          if The_Rotator_State = Rotator.Unknown then
+            The_Rotator_State := Rotator.Disconnected;
+          end if;
         else
           case PWI.Mount.Status is
           when PWI.Mount.Disconnected =>
@@ -290,12 +395,30 @@ package body Device is
           when PWI.Mount.Tracking =>
             The_Mount_State := Mount.Tracking;
           end case;
+          case PWI.Rotator.Status is
+          when PWI.Rotator.Disconnected =>
+            The_Rotator_State := Rotator.Disconnected;
+          when PWI.Rotator.Connected =>
+            The_Rotator_State := Rotator.Connected;
+          when PWI.Rotator.Homing =>
+            The_Rotator_State := Rotator.Homing;
+          when PWI.Rotator.Started =>
+            The_Rotator_State := Rotator.Started;
+          end case;
         end if;
       exception
       when PWI.No_Server =>
         The_Mount_State := Mount.Unknown;
+        The_Rotator_State := Rotator.Unknown;
       end;
-      The_Mount_State_Handler (The_Mount_State);
+      if The_Mount_State /= Last_Mount_State then
+        The_Mount_State_Handler (The_Mount_State);
+        Last_Mount_State := The_Mount_State;
+      end if;
+      if The_Rotator_State /= Last_Rotator_State then
+        The_Rotator_State_Handler (The_Rotator_State);
+        Last_Rotator_State := The_Rotator_State;
+      end if;
     end loop;
     Log.Write ("Control end");
   exception
@@ -304,12 +427,14 @@ package body Device is
   end Control;
 
 
-  procedure Start (Mount_State_Handler  : Mount.State_Handler_Access;
-                   Pointing_Model       : String) is
+  procedure Start (Mount_State_Handler   : Mount.State_Handler_Access;
+                   Rotator_State_Handler : Rotator.State_Handler_Access;
+                   Pointing_Model        : String) is
   begin
     PWI.Mount.Define_Pointing_Model (Pointing_Model);
     The_Control := new Control;
-    The_Control.Start (Mount_State_Handler);
+    The_Control.Start (Mount_State_Handler   => Mount_State_Handler,
+                       Rotator_State_Handler => Rotator_State_Handler);
   end Start;
 
 
@@ -477,5 +602,66 @@ package body Device is
     end Actual_Direction;
 
   end Mount;
+
+
+  package body M3 is
+
+    procedure Turn (To : Place) is
+    begin
+      case To is
+      when Ocular =>
+        Log.Write ("M3.Turn_To_Ocular");
+        Action.Put (M3_Action'(Turn_To_Ocular));
+      when Camera =>
+        Log.Write ("M3.Turn_To_Camera");
+        Action.Put (M3_Action'(Turn_To_Camera));
+      end case;
+    end Turn;
+
+    function Actual_Position return Position is
+    begin
+      return Position'val(PWI.M3.Position'pos(PWI.M3.Actual_Position));
+    end Actual_Position;
+
+  end M3;
+
+
+  package body Rotator is
+
+    procedure Connect is
+    begin
+      Log.Write ("Rotator.Connect");
+      Action.Put (Rotator_Action'(Connect));
+    end Connect;
+
+
+    procedure Disconnect is
+    begin
+      Log.Write ("Rotator.Disconnect");
+      Action.Put (Rotator_Action'(Disconnect));
+    end Disconnect;
+
+
+    procedure Find_Home is
+    begin
+      Log.Write ("Rotator.Find_Home");
+      Action.Put (Rotator_Action'(Find_Home));
+    end Find_Home;
+
+
+    procedure Start is
+    begin
+      Log.Write ("Rotator.Start");
+      Action.Put (Rotator_Action'(Start));
+    end Start;
+
+
+    procedure Stop is
+    begin
+      Log.Write ("Rotator.Stop");
+      Action.Put (Rotator_Action'(Stop));
+    end Stop;
+
+  end Rotator;
 
 end Device;

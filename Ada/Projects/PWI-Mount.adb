@@ -5,7 +5,6 @@
 pragma Style_White_Elephant;
 
 with Ada.Numerics;
-with Parameter;
 with PWI.XML;
 with Strings;
 
@@ -20,9 +19,11 @@ package body PWI.Mount is
   end Execute;
 
 
+  Is_Simulation : Boolean := False;
+
   function Status_Of (Flags : XML.Mount_Flag) return State is
   begin
-    if Parameter.Is_Simulation_Mode then
+    if Is_Simulation then
       if Flags.On_Target then
         return Tracking;
       elsif Flags.Tracking then
@@ -100,6 +101,12 @@ package body PWI.Mount is
   begin
     return XML.Mount.Defined_Pointing_Model;
   end Defined_Pointing_Model;
+
+
+  procedure Set_Simulation_Mode is
+  begin
+    Is_Simulation := True;
+  end Set_Simulation_Mode;
 
 
   function Status return State is

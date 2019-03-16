@@ -283,6 +283,12 @@ package body PWI.XML is
 
     function Mount_Data return XML.Mount_Info;
 
+    function M3_Data return XML.M3_Info;
+
+    function Rotator_Data return XML.Rotator_Info;
+
+    function Rotator1_Data return XML.Rotator_Info;
+
   private
     The_Data : XML.Response;
   end System;
@@ -824,13 +830,13 @@ package body PWI.XML is
     end Defined_Pointing_Model;
 
 
-    function Flags return XML.Mount_Flag is
+    function Flags return Mount_Flag is
     begin
       return System.Mount_Flags;
     end Flags;
 
 
-    function Info return XML.Mount_Info is
+    function Info return Mount_Info is
     begin
       return System.Mount_Data;
     end Info;
@@ -838,9 +844,34 @@ package body PWI.XML is
   end Mount;
 
 
+  package body M3 is
+
+    function Port return Port_Number is
+    begin
+      return System.M3_Data.Port;
+    end Port;
+
+  end M3;
+
+
+  package body Rotator is
+
+    function Info return Rotator_Info is
+    begin
+      return System.Rotator_Data;
+    end Info;
+
+    function Info1 return Rotator_Info is
+    begin
+      return System.Rotator1_Data;
+    end Info1;
+
+  end Rotator;
+
+
   protected body System is
 
-    procedure Set (Data : XML.Response) is
+    procedure Set (Data : Response) is
     begin
       The_Data := Data;
       if Log.Is_Enabled then
@@ -938,16 +969,34 @@ package body PWI.XML is
     end Fans_Turned_On;
 
 
-    function Mount_Flags return XML.Mount_Flag is
+    function Mount_Flags return Mount_Flag is
     begin
       return The_Data.Mount.Flags;
     end Mount_Flags;
 
 
-    function Mount_Data return XML.Mount_Info is
+    function Mount_Data return Mount_Info is
     begin
       return The_Data.Mount;
     end Mount_Data;
+
+
+    function M3_Data return M3_Info is
+    begin
+      return The_Data.M3;
+    end M3_Data;
+
+
+    function Rotator_Data return Rotator_Info is
+    begin
+      return The_Data.Rotator;
+    end Rotator_Data;
+
+
+    function Rotator1_Data return Rotator_Info is
+    begin
+      return The_Data.Rotator1;
+    end Rotator1_Data;
 
   end System;
 

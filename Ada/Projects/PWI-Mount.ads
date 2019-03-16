@@ -33,6 +33,8 @@ package PWI.Mount is
 
   function Defined_Pointing_Model return String;
 
+  procedure Set_Simulation_Mode;
+
   function Info return Information;
 
   function Status return State;

@@ -99,8 +99,43 @@ package Device is
 
   end Mount;
 
-  procedure Start (Mount_State_Handler  : Mount.State_Handler_Access;
-                   Pointing_Model       : String);
+  package M3 is
+
+    type Position is (Unknown, Ocular, Camera);
+
+    subtype Place is Position range Ocular .. Camera;
+
+    procedure Turn (To : Place);
+
+    function Actual_Position return Position;
+
+  end M3;
+
+  package Rotator is
+
+    type State is (Unknown,
+                   Disconnected,
+                   Connected,
+                   Homing,
+                   Started);
+
+    type State_Handler_Access is access procedure (The_State : State);
+
+    procedure Connect;
+
+    procedure Disconnect;
+
+    procedure Find_Home;
+
+    procedure Start;
+
+    procedure Stop;
+
+  end Rotator;
+
+  procedure Start (Mount_State_Handler   : Mount.State_Handler_Access;
+                   Rotator_State_Handler : Rotator.State_Handler_Access;
+                   Pointing_Model        : String);
 
   procedure Finalize;
 
