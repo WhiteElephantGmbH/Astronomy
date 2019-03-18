@@ -846,10 +846,10 @@ package body PWI.XML is
 
   package body M3 is
 
-    function Port return Port_Number is
+    function Info return M3_Info is
     begin
-      return System.M3_Data.Port;
-    end Port;
+      return System.M3_Data;
+    end Info;
 
   end M3;
 

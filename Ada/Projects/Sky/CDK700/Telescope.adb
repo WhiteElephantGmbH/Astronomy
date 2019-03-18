@@ -16,7 +16,6 @@
 pragma Style_White_Elephant;
 
 with Angle;
-with Device;
 with Parameter;
 with System;
 with Traces;
@@ -28,10 +27,6 @@ package body Telescope is
   package Fans renames Device.Fans;
 
   package Mount renames Device.Mount;
-
-  package M3 renames Device.M3;
-
-  package Rotator renames Device.Rotator;
 
   task type Control_Task with Priority => System.Max_Priority is
 
@@ -53,6 +48,8 @@ package body Telescope is
 
     entry New_Mount_State (New_State : Mount.State);
 
+    entry New_M3_Position (New_Position : M3.Position);
+
     entry New_Rotator_State (New_State : Rotator.State);
 
     entry Get (The_Data : out Data);
@@ -72,6 +69,14 @@ package body Telescope is
       Control.New_Mount_State (New_State);
     end if;
   end Mount_State_Handler;
+
+
+  procedure M3_Position_Handler (New_Position : M3.Position) is
+  begin
+    if not Control'terminated then
+      Control.New_M3_Position (New_Position);
+    end if;
+  end M3_Position_Handler;
 
 
   procedure Rotator_State_Handler (New_State : Rotator.State) is
@@ -192,6 +197,8 @@ package body Telescope is
 
     The_State  : State := Disconnected;
     The_Event  : Event := No_Event;
+
+    The_M3_Position : M3.Position := M3.Unknown;
 
     The_Rotator_State : Rotator.State := Rotator.Unknown;
 
@@ -579,11 +586,12 @@ package body Telescope is
     -- Homing --
     ------------
     procedure Homing_State is
+      use type M3.Position;
       use type Rotator.State;
     begin
       case The_Event is
       when Mount_Synchronised =>
-        if The_Rotator_State /= Rotator.Homing then
+        if The_Rotator_State /= Rotator.Homing and The_M3_Position = M3.Ocular then
           Mount.Set_Pointing_Model;
           Rotator.Start;
           The_State := Initializing;
@@ -737,6 +745,7 @@ package body Telescope is
   begin -- Control_Task
     accept Start do
       Device.Start (Mount_State_Handler'access,
+                    M3_Position_Handler'access,
                     Rotator_State_Handler'access,
                     Parameter.Pointing_Model);
     end Start;
@@ -816,6 +825,12 @@ package body Telescope is
             Has_New_Data := True;
           end New_Mount_State;
         or
+          accept New_M3_Position (New_Position : M3.Position) do
+            Log.Write ("M3 Position " & New_Position'img);
+            The_M3_Position := New_Position;
+            Has_New_Data := True;
+          end New_M3_Position;
+        or
           accept New_Rotator_State (New_State : Rotator.State) do
             Log.Write ("Rotator State " & New_State'img);
             The_Rotator_State := New_State;
@@ -824,6 +839,8 @@ package body Telescope is
         or
           accept Get (The_Data : out Data) do
             The_Data.Status := The_State;
+            The_Data.M3_Position := The_M3_Position;
+            The_Data.Rotator_State := The_Rotator_State;
             The_Data.Universal_Time := Time.Universal;
             case The_State is
             when Approaching | Homing =>

@@ -182,6 +182,7 @@ package body Device is
   task type Control is
 
     entry Start (Mount_State_Handler   : Mount.State_Handler_Access;
+                 M3_Position_Handler   : M3.Position_Handler_Access;
                  Rotator_State_Handler : Rotator.State_Handler_Access);
 
   end Control;
@@ -192,6 +193,7 @@ package body Device is
   task body Control is
 
     The_Mount_State_Handler   : Mount.State_Handler_Access;
+    The_M3_Position_Handler   : M3.Position_Handler_Access;
     The_Rotator_State_Handler : Rotator.State_Handler_Access;
     Is_Simulating             : constant Boolean := Parameter.Is_Simulation_Mode;
 
@@ -202,18 +204,23 @@ package body Device is
     The_Rotator_Action : Rotator_Action := No_Action;
     The_Mount_State    : Mount.State := Mount.Unknown;
     Last_Mount_State   : Mount.State := Mount.Unknown;
+    The_M3_Position    : M3.Position := M3.Unknown;
+    Last_M3_Position   : M3.Position := M3.Unknown;
     The_Rotator_State  : Rotator.State := Rotator.Unknown;
     Last_Rotator_State : Rotator.State := Rotator.Unknown;
     The_Parameter      : Parameters;
 
     use type Mount.State;
+    use type M3.Position;
     use type Rotator.State;
 
   begin
     accept Start (Mount_State_Handler   : Mount.State_Handler_Access;
+                  M3_Position_Handler   : M3.Position_Handler_Access;
                   Rotator_State_Handler : Rotator.State_Handler_Access)
     do
       The_Mount_State_Handler := Mount_State_Handler;
+      The_M3_Position_Handler := M3_Position_Handler;
       The_Rotator_State_Handler := Rotator_State_Handler;
     end Start;
     Log.Write ("Control started" & (if Is_Simulating then " Simulation" else ""));
@@ -319,9 +326,17 @@ package body Device is
           when No_Action =>
             null;
           when Turn_To_Ocular =>
-            PWI.M3.Turn (To => PWI.M3.Port_1);
+            if Is_Simulating then
+              The_M3_Position := M3.Ocular;
+            else
+              PWI.M3.Turn (To => PWI.M3.Port_1);
+            end if;
           when Turn_To_Camera =>
-            PWI.M3.Turn (To => PWI.M3.Port_2);
+            if Is_Simulating then
+              The_M3_Position := M3.Camera;
+            else
+              PWI.M3.Turn (To => PWI.M3.Port_2);
+            end if;
           end case;
 
           case The_Rotator_Action is
@@ -405,15 +420,21 @@ package body Device is
           when PWI.Rotator.Started =>
             The_Rotator_State := Rotator.Started;
           end case;
+          The_M3_Position := M3.Position'val(PWI.M3.Position'pos(PWI.M3.Actual_Position));
         end if;
       exception
       when PWI.No_Server =>
         The_Mount_State := Mount.Unknown;
+        The_M3_Position := M3.Unknown;
         The_Rotator_State := Rotator.Unknown;
       end;
       if The_Mount_State /= Last_Mount_State then
         The_Mount_State_Handler (The_Mount_State);
         Last_Mount_State := The_Mount_State;
+      end if;
+      if The_M3_Position /= Last_M3_Position then
+        The_M3_Position_Handler (The_M3_Position);
+        Last_M3_Position := The_M3_Position;
       end if;
       if The_Rotator_State /= Last_Rotator_State then
         The_Rotator_State_Handler (The_Rotator_State);
@@ -428,12 +449,14 @@ package body Device is
 
 
   procedure Start (Mount_State_Handler   : Mount.State_Handler_Access;
+                   M3_Position_Handler   : M3.Position_Handler_Access;
                    Rotator_State_Handler : Rotator.State_Handler_Access;
                    Pointing_Model        : String) is
   begin
     PWI.Mount.Define_Pointing_Model (Pointing_Model);
     The_Control := new Control;
     The_Control.Start (Mount_State_Handler   => Mount_State_Handler,
+                       M3_Position_Handler   => M3_Position_Handler,
                        Rotator_State_Handler => Rotator_State_Handler);
   end Start;
 
@@ -617,11 +640,6 @@ package body Device is
         Action.Put (M3_Action'(Turn_To_Camera));
       end case;
     end Turn;
-
-    function Actual_Position return Position is
-    begin
-      return Position'val(PWI.M3.Position'pos(PWI.M3.Actual_Position));
-    end Actual_Position;
 
   end M3;
 

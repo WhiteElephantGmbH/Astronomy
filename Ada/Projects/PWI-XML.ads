@@ -175,7 +175,7 @@ private package PWI.XML is
   function Image_Of (Item : M3_Position) return String;
 
   type M3_Info is record
-    Connected       : Boolean;
+    Connected       : Boolean := False;
     Port            : Port_Number;
     Position_Rotate : M3_Position;
     Position_Tilt   : M3_Position;
@@ -239,7 +239,7 @@ private package PWI.XML is
 
   package M3 is
 
-    function Port return Port_Number;
+    function Info return M3_Info;
 
   end M3;
 

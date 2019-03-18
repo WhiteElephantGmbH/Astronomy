@@ -6,7 +6,7 @@ pragma Style_White_Elephant;
 
 package PWI.M3 is
 
-  type Position is (Between, Port_1, Port_2);
+  type Position is (Unknown, Between, Port_1, Port_2);
 
   subtype Port is Position range Port_1 .. Port_2;
 

@@ -15,12 +15,17 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with Device;
 with Earth;
 with Name;
 with Space;
 with Time;
 
 package Telescope is
+
+  package M3 renames Device.M3;
+
+  package Rotator renames Device.Rotator;
 
   type Command is (Move_Left,
                    Move_Right,
@@ -60,6 +65,8 @@ package Telescope is
     Actual_J2000_Direction : Space.Direction;
     Actual_Direction       : Space.Direction;
     Local_Direction        : Earth.Direction;
+    M3_Position            : M3.Position;
+    Rotator_State          : Rotator.State;
     Completion_Time        : Time.Ut;
     Universal_Time         : Time.Ut;
   end record;

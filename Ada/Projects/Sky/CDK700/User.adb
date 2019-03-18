@@ -19,6 +19,7 @@ with Ada.Real_Time;
 with Ada.Unchecked_Conversion;
 with Application;
 with Data;
+with Device;
 with Earth;
 with Gui.Enumeration_Menu_Of;
 with Gui.Registered;
@@ -35,6 +36,8 @@ with User.Input;
 package body User is
 
   package Log is new Traces ("User");
+
+  package M3 renames Device.M3;
 
   Application_Name : constant String := Application.Name;
   Version          : constant String := Application.Version;
@@ -58,6 +61,8 @@ package body User is
   Actual_Dec         : Gui.Plain_Edit_Box;
   Actual_Az          : Gui.Plain_Edit_Box;
   Actual_Alt         : Gui.Plain_Edit_Box;
+  M3_Position        : Gui.Plain_Edit_Box;
+  Rotator_State      : Gui.Plain_Edit_Box;
   Lmst               : Gui.Plain_Edit_Box;
   Local_Time         : Gui.Plain_Edit_Box;
 
@@ -196,6 +201,29 @@ package body User is
   when others =>
     Log.Error ("Catalog_Handler");
   end Catalog_Handler;
+
+
+  function Image_Of (The_Selection : M3.Place) return String is
+    use all type Data.Kind;
+  begin
+    case The_Selection is
+    when M3.Camera =>
+      return Lexicon.Image_Of (Lexicon.Camera);
+    when M3.Ocular =>
+      return Lexicon.Image_Of (Lexicon.Ocular);
+    end case;
+  end Image_Of;
+
+  package M3_Menu is new Gui.Enumeration_Menu_Of (M3.Place, Gui.Radio, Image_Of);
+
+  procedure M3_Handler (The_Place : M3.Place) is
+  begin
+    Log.Write ("M3: " & The_Place'img);
+    M3.Turn (To => The_Place);
+  exception
+  when others =>
+    Log.Error ("M3_Handler");
+  end M3_Handler;
 
 
   procedure Show_Error (The_Text : String := Error.Message) is
@@ -342,27 +370,35 @@ package body User is
       when Telescope.Unknown =>
         Disable_Startup_Button;
         Disable_Stop_Button;
+        M3_Menu.Disable;
       when Telescope.Disconnected =>
         Enable_Startup_Button;
         Disable_Shutdown_Button;
+        M3_Menu.Disable;
       when Telescope.Connected | Telescope.Enabled | Telescope.Synchronised =>
         Enable_Startup_Button;
         Enable_Shutdown_Button;
+        M3_Menu.Disable;
       when Telescope.Disconnecting | Telescope.Disabling =>
         Disable_Startup_Button;
         Enable_Stop_Button;
+        M3_Menu.Disable;
       when Telescope.Connecting | Telescope.Enabling | Telescope.Homing | Telescope.Initializing =>
         Disable_Startup_Button;
         Enable_Stop_Button;
+        M3_Menu.Disable;
       when Telescope.Stopped =>
         Enable_Goto_Button;
         Enable_Shutdown_Button;
+        M3_Menu.Enable;
       when Telescope.Approaching | Telescope.Tracking=>
         Enable_Goto_Button;
         Enable_Stop_Button;
+        M3_Menu.Disable;
       when Telescope.Stopping =>
         Disable_Goto_Button;
         Disable_Stop_Button;
+        M3_Menu.Disable;
       end case;
     end if;
     Gui.Set_Status_Line (Information.Status'img);
@@ -398,6 +434,8 @@ package body User is
         Gui.Set_Text (Actual_Alt, "");
         Gui.Set_Text (Actual_Az, "");
       end if;
+      Gui.Set_Text (M3_Position, Strings.Legible_Of (Information.M3_Position'img));
+      Gui.Set_Text (Rotator_State, Strings.Legible_Of (Information.Rotator_State'img));
       if Information.Universal_Time = Time.In_The_Past then
         Gui.Set_Text (Lmst, "");
         Gui.Set_Text (Local_Time, "");
@@ -738,6 +776,16 @@ package body User is
                                   The_Size       => Text_Size,
                                   The_Title_Size => Title_Size);
 
+        M3_Position := Gui.Create (Display_Page, "M3 Position", "",
+                                   Is_Modifiable  => False,
+                                   The_Size       => Text_Size,
+                                   The_Title_Size => Title_Size);
+
+        Rotator_State := Gui.Create (Display_Page, "Rotator State", "",
+                                     Is_Modifiable  => False,
+                                     The_Size       => Text_Size,
+                                     The_Title_Size => Title_Size);
+
         Lmst := Gui.Create (Display_Page, "LMST", "",
                             Is_Modifiable  => False,
                             The_Size       => Text_Size,
@@ -785,6 +833,8 @@ package body User is
       Actual_Selection := All_Objects;
       Catalog_Menu.Create (Lexicon.Image_Of (Lexicon.Catalog), Catalog_Handler'access);
       Catalog_Handler (Data.Favorites);
+      M3_Menu.Create ("M3", M3_Handler'access);
+      M3_Menu.Disable;
       Define_Control_Page;
       if Persistent_Setup.Storage_Is_Empty then
         The_Image_Orientation := Telescope.Correct;

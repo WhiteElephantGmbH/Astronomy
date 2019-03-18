@@ -101,13 +101,16 @@ package Device is
 
   package M3 is
 
-    type Position is (Unknown, Ocular, Camera);
+    type Position is (Unknown,
+                      Between,
+                      Ocular,
+                      Camera);
 
     subtype Place is Position range Ocular .. Camera;
 
-    procedure Turn (To : Place);
+    type Position_Handler_Access is access procedure (The_Position : Position);
 
-    function Actual_Position return Position;
+    procedure Turn (To : Place);
 
   end M3;
 
@@ -134,6 +137,7 @@ package Device is
   end Rotator;
 
   procedure Start (Mount_State_Handler   : Mount.State_Handler_Access;
+                   M3_Position_Handler   : M3.Position_Handler_Access;
                    Rotator_State_Handler : Rotator.State_Handler_Access;
                    Pointing_Model        : String);
 
