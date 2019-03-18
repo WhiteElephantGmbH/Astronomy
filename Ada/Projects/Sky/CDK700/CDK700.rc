@@ -1,0 +1,31 @@
+CDK700 ICON CDK700.Ico
+
+1 VERSIONINFO
+  FILEVERSION 1,1
+  FILEFLAGSMASK 0X3FL
+  FILEFLAGS 0X0L
+  FILEOS 0X4L
+  FILETYPE 0X1L
+  FILESUBTYPE 0X0L
+BEGIN
+  BLOCK "StringFileInfo"
+  BEGIN
+    BLOCK "040904E4"
+    BEGIN
+      VALUE "LegalCopyright", "Copyright \251 White Elephant GmbH 2019\0"
+      VALUE "FileDescription", "CDK700 Control Program\0"
+      VALUE "OriginalFilename", "CDK700.exe\0"
+      VALUE "InternalName", "CDK700\0"
+      VALUE "ProductName", "GPL\0"
+      VALUE "ProductVersion", "2017\0"
+   END
+  END
+  BLOCK "VarFileInfo"
+  BEGIN
+    VALUE "Translation", 0x409, 1252
+  END
+END
+
+
+
+

@@ -35,9 +35,15 @@ package body PWI.XML is
 
   function Time_Of (Image : String) return Universal_Time is
   begin
-    return Universal_Time'(Hours   =>   Hour'value(Image(Image'first .. Image'first + 1)),
-                           Minutes => Minute'value(Image(Image'first + 3 .. Image'first + 4)),
-                           Seconds => Second'value(Image(Image'first + 6 .. Image'first + 7)));
+    if Image = "" then
+      return Universal_Time'(Hours   => 0,
+                             Minutes => 0,
+                             Seconds => 0);
+    else
+      return Universal_Time'(Hours   =>   Hour'value(Image(Image'first .. Image'first + 1)),
+                             Minutes => Minute'value(Image(Image'first + 3 .. Image'first + 4)),
+                             Seconds => Second'value(Image(Image'first + 6 .. Image'first + 7)));
+    end if;
   exception
   when others =>
     raise Parsing_Error;
@@ -57,11 +63,18 @@ package body PWI.XML is
 
   function Time_Of (Image : String) return Time is
   begin
-    return Time'(Hours         =>         Hour'value(Image(Image'first .. Image'last - 10)),
-                 Minutes       =>       Minute'value(Image(Image'last - 8 .. Image'last - 7)),
-                 Seconds       =>       Second'value(Image(Image'last - 5 .. Image'last - 4)),
-                 Milli_Seconds => Milli_Second'value(Image(Image'last - 2 .. Image'last)));
-  exception
+    if Image = "" then
+      return Time'(Hours         => 0,
+                   Minutes       => 0,
+                   Seconds       => 0,
+                   Milli_Seconds => 0);
+    else
+      return Time'(Hours         =>         Hour'value(Image(Image'first .. Image'last - 10)),
+                   Minutes       =>       Minute'value(Image(Image'last - 8 .. Image'last - 7)),
+                   Seconds       =>       Second'value(Image(Image'last - 5 .. Image'last - 4)),
+                   Milli_Seconds => Milli_Second'value(Image(Image'last - 2 .. Image'last)));
+    end if;
+    exception
   when others =>
     raise Parsing_Error;
   end Time_Of;
@@ -84,7 +97,12 @@ package body PWI.XML is
     return Julian_Day'value(Image);
   exception
   when others =>
-    raise Parsing_Error;
+    begin
+      return Julian_Day'value(Image & ".0");
+    exception
+    when others =>
+      raise Parsing_Error;
+    end;
   end Jd_Of;
 
 
@@ -259,9 +277,17 @@ package body PWI.XML is
 
     procedure Set (Data : XML.Response);
 
+    function Fans_Turned_On return Boolean;
+
     function Mount_Flags return XML.Mount_Flag;
 
     function Mount_Data return XML.Mount_Info;
+
+    function M3_Data return XML.M3_Info;
+
+    function Rotator_Data return XML.Rotator_Info;
+
+    function Rotator1_Data return XML.Rotator_Info;
 
   private
     The_Data : XML.Response;
@@ -779,6 +805,15 @@ package body PWI.XML is
   end Parse;
 
 
+  package body Fans is
+
+    function Turned_On return Boolean is
+    begin
+      return System.Fans_Turned_On;
+    end Turned_On;
+
+  end Fans;
+
   package body Mount is
 
     The_Pointing_Model : Text.String;
@@ -795,13 +830,13 @@ package body PWI.XML is
     end Defined_Pointing_Model;
 
 
-    function Flags return XML.Mount_Flag is
+    function Flags return Mount_Flag is
     begin
       return System.Mount_Flags;
     end Flags;
 
 
-    function Info return XML.Mount_Info is
+    function Info return Mount_Info is
     begin
       return System.Mount_Data;
     end Info;
@@ -809,9 +844,34 @@ package body PWI.XML is
   end Mount;
 
 
+  package body M3 is
+
+    function Info return M3_Info is
+    begin
+      return System.M3_Data;
+    end Info;
+
+  end M3;
+
+
+  package body Rotator is
+
+    function Info return Rotator_Info is
+    begin
+      return System.Rotator_Data;
+    end Info;
+
+    function Info1 return Rotator_Info is
+    begin
+      return System.Rotator1_Data;
+    end Info1;
+
+  end Rotator;
+
+
   protected body System is
 
-    procedure Set (Data : XML.Response) is
+    procedure Set (Data : Response) is
     begin
       The_Data := Data;
       if Log.Is_Enabled then
@@ -903,16 +963,40 @@ package body PWI.XML is
     end Set;
 
 
-    function Mount_Flags return XML.Mount_Flag is
+    function Fans_Turned_On return Boolean is
+    begin
+      return The_Data.Fans.On;
+    end Fans_Turned_On;
+
+
+    function Mount_Flags return Mount_Flag is
     begin
       return The_Data.Mount.Flags;
     end Mount_Flags;
 
 
-    function Mount_Data return XML.Mount_Info is
+    function Mount_Data return Mount_Info is
     begin
       return The_Data.Mount;
     end Mount_Data;
+
+
+    function M3_Data return M3_Info is
+    begin
+      return The_Data.M3;
+    end M3_Data;
+
+
+    function Rotator_Data return Rotator_Info is
+    begin
+      return The_Data.Rotator;
+    end Rotator_Data;
+
+
+    function Rotator1_Data return Rotator_Info is
+    begin
+      return The_Data.Rotator1;
+    end Rotator1_Data;
 
   end System;
 

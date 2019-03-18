@@ -4,6 +4,7 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with Ada.Numerics;
 with PWI.XML;
 with Strings;
 
@@ -18,9 +19,18 @@ package body PWI.Mount is
   end Execute;
 
 
+  Is_Simulation : Boolean := False;
+
   function Status_Of (Flags : XML.Mount_Flag) return State is
   begin
-    if not Flags.Connected then
+    if Is_Simulation then
+      if Flags.On_Target then
+        return Tracking;
+      elsif Flags.Tracking then
+        return Approaching;
+      end if;
+      return Disconnected;
+    elsif not Flags.Connected then
       return Disconnected;
     elsif not (Flags.Azm_Enabled and Flags.Alt_Enabled) then
       return Connected;
@@ -62,6 +72,12 @@ package body PWI.Mount is
   end Value_Of;
 
 
+  function Value_Of (Item : XML.Radian) return Degrees is
+  begin
+    return Degrees(Long_Float(Item) * 360.0 / (Ada.Numerics.Pi * 2.0));
+  end Value_Of;
+
+
   function Info return Information is
     Data : constant XML.Mount_Info := XML.Mount.Info;
   begin
@@ -69,7 +85,9 @@ package body PWI.Mount is
             Ra       => Value_Of (Data.Ra),
             Dec      => Value_Of (Data.Dec),
             Ra_2000  => Value_Of (Data.Ra_2000),
-            Dec_2000 => Value_Of (Data.Dec_2000));
+            Dec_2000 => Value_Of (Data.Dec_2000),
+            Azm      => Value_Of (Data.Azm_Radian),
+            Alt      => Value_Of (Data.Alt_Radian));
   end Info;
 
 
@@ -83,6 +101,12 @@ package body PWI.Mount is
   begin
     return XML.Mount.Defined_Pointing_Model;
   end Defined_Pointing_Model;
+
+
+  procedure Set_Simulation_Mode is
+  begin
+    Is_Simulation := True;
+  end Set_Simulation_Mode;
 
 
   function Status return State is
@@ -139,6 +163,18 @@ package body PWI.Mount is
   begin
     Execute (Command_Name   => "move",
              Parameters     => "ra" & Kind & "=" & Ra_Image & "&dec" & Kind & "=" & Dec_Image);
+  end Move;
+
+
+  procedure Move (Alt : Degrees;
+                  Azm : Degrees) is
+
+    Alt_Image : constant String := Strings.Trimmed (Alt'img);
+    Azm_Image : constant String := Strings.Trimmed (Azm'img);
+
+  begin
+    Execute (Command_Name   => "move",
+             Parameters     => "alt=" & Alt_Image & "&azm=" & Azm_Image & "&rarate=15.041&decrate=0");
   end Move;
 
 

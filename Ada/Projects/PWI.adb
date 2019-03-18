@@ -4,13 +4,19 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Network.Tcp;
 with PWI.XML;
 with Traces;
 
 package body PWI is
 
   package Log is new Traces ("Pwi");
+
+  New_Socket : Open_Socket_Handler;
+
+  procedure Install (Handler : Open_Socket_Handler) is
+  begin
+    New_Socket := Handler;
+  end Install;
 
 
   procedure Execute (Item : String) is
@@ -21,32 +27,61 @@ package body PWI is
 
     The_Socket : Network.Tcp.Socket;
 
-  begin
-    The_Socket := Network.Tcp.Socket_For (Server_Address, Server_Port, Socket_Protocol);
-    Log.Write ("Execute " & Item);
+    procedure Open_Socket is
     begin
-      Network.Tcp.Send ("GET /?" & Item & Ascii.Cr & Ascii.Lf & Ascii.Cr & Ascii.Lf, The_Socket);
-      for Unused_Count in 1 .. 2 loop
-        declare
-          Unused : constant String := Network.Tcp.Raw_String_From (The_Socket, Terminator => Ascii.Lf);
-        begin
-          null;
-        end;
-      end loop;
-      XML.Parse (Network.Tcp.Raw_String_From (The_Socket, Terminator => Ascii.Lf));
+      if New_Socket = null then
+        The_Socket := Network.Tcp.Socket_For (Server_Address, Server_Port, Socket_Protocol);
+      else
+        The_Socket := New_Socket.all;
+      end if;
+    exception
+    when others =>
+      raise No_Server;
+    end Open_Socket;
+
+    procedure Close_Socket is
+    begin
       Network.Tcp.Close (The_Socket);
     exception
-    when Occurrence: others =>
-      Network.Tcp.Close (The_Socket);
-      Log.Termination (Occurrence);
-      raise Command_Failed;
-    end;
+    when others =>
+      null;
+    end Close_Socket;
+
+    function String_From_Socket return String is
+    begin
+      return Network.Tcp.Raw_String_From (The_Socket, Terminator => Ascii.Lf);
+    exception
+    when others =>
+      Close_Socket;
+      raise No_Server;
+    end String_From_Socket;
+
+    procedure Send_Item is
+    begin
+      Network.Tcp.Send ("GET /?" & Item & Ascii.Cr & Ascii.Lf & Ascii.Cr & Ascii.Lf, The_Socket);
+    exception
+    when others =>
+      Close_Socket;
+      raise No_Server;
+    end Send_Item;
+
+  begin -- Execute
+    Log.Write ("Execute " & Item);
+    Open_Socket;
+    Send_Item;
+    for Unused_Count in 1 .. 2 loop
+      declare
+        Unused : constant String := String_From_Socket;
+      begin
+        null;
+      end;
+    end loop;
+    XML.Parse (String_From_Socket);
+    Close_Socket;
   exception
-  when Command_Failed =>
-    raise;
-  when others =>
+  when No_Server =>
     Log.Error ("no server");
-    raise No_Server;
+    raise;
   end Execute;
 
 

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2017 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2017 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -24,6 +24,7 @@ package Lexicon is
                 Andromeda_Galaxie,
                 Arkturus,
                 Betelgeuse,
+                Camera,
                 Catalog,
                 Clusters,
                 Deneb,
@@ -42,6 +43,7 @@ package Lexicon is
                 Nebulas,
                 Neptune,
                 North,
+                Ocular,
                 Open_Clusters,
                 Orion_Nebula,
                 Park_Position,

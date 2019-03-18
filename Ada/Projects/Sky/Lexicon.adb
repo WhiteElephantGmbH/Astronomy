@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2017 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2017 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -41,6 +41,7 @@ package body Lexicon is
   pragma Style_Checks ("M300");
 
   Names : constant Name_Table := (
+  --                         English             French                      German                Greek                      Italian                        Spanish
     Albireo           => E ("Albireo",           "Albireo",                  "Albireo",            "Αλμπίρεο",                "Albireo",                     "Albireo"),
     Aldebaran         => E ("Aldebaran",         "Aldébaran",                "Aldebaran",          "Αλδεβαράν",               "Aldebaran",                   "Aldebarán"),
     All_Objects       => E ("All",               "Tous",                     "Alle",               "όλα",                     "Tutti",                       "Todos"),
@@ -48,6 +49,7 @@ package body Lexicon is
     Andromeda_Galaxie => E ("Andromeda galaxy",  "Galaxie d'Andromède",      "Andromeda-Galaxie",  "Γαλαξίας της Ανδρομέδας", "Galassia di Andromeda",       "Galaxia de Andrómeda"),
     Arkturus          => E ("Arkturus",          "Arcturus",                 "Arktur",             "Αρκτούρος",               "Arturo",                      "Arturo"),
     Betelgeuse        => E ("Betelgeuse",        "Bételgeuse",               "Betelgeuze",         "Βετελγέζης",              "Betelgeuse",                  "Betelgeuse"),
+    Camera            => E ("Camera",            "Caméra",                   "Kamera",             "κάμερα",                  "Telecamera",                  "Cámara"),
     Catalog           => E ("Catalog",           "Catalogue",                "Katalog",            "Κατάλογος",               "Catalogo",                    "Catálogo"),
     Clusters          => E ("Clusters",          "Amas globulaires",         "Sternhaufen",        "Αστρικά Σμήνη",           "Ammasso stellare",            "Cúmulos"),
     Deneb             => E ("Deneb",             "Deneb",                    "Deneb",              "Ντένεμπ",                 "Deneb",                       "Deneb"),
@@ -66,6 +68,7 @@ package body Lexicon is
     Neos              => E ("NEOs",              "Géocroiseurs",             "NEOs",               "Νέος",                    "Πλησίον της γής αντικείμενα", "Objetos próximos a La Tierra"),
     Neptune           => E ("Neptune",           "Neptune",                  "Neptun",             "Ποσειδώνας",              "Nettuno",                     "Neptuno"),
     North             => E ("N",                 "N",                        "N",                  "Β",                       "N",                           "N"),
+    Ocular            => E ("Ocular",            "Oculaire",                 "Okular",             "οφθαλμικός",              "Oculare",                     "Ocular"),
     Open_Clusters     => E ("Open clusters",     "Amas ouverts",             "Offene Sternhaufen", "Ανοιχτά αστρικά σμήνη",   "Ammassi aperti",              "Cúmulos abiertos"),
     Orion_Nebula      => E ("Orion nebula",      "Nébuleuse d'Orion",        "Orionnebel",         "Νεφέλωμα του Ορίωνα",     "Nebulosa di Orione",          "Nebulosa de Orión"),
     Park_Position     => E ("Park position",     "Position de repos",        "Parkposition",       "θέση ανάπαυσης",          "Posizione riposo",            "Posición de reposo"),

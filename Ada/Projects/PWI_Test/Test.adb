@@ -8,6 +8,9 @@ with Ada.Command_Line;
 with Ada.Text_IO;
 with Exceptions;
 with PWI.Mount;
+with PWI.M3;
+with PWI.Focuser;
+with PWI.Rotator;
 with Strings;
 
 package body Test is
@@ -16,6 +19,33 @@ package body Test is
   begin
     Ada.Text_IO.Put_Line (Image);
   end Put;
+
+
+  procedure Error (Message : String) is
+  begin
+    Put ("*** " & Message & " ***");
+  end Error;
+
+
+  procedure Input_Error (Message : String) is
+  begin
+    Error (Message);
+    Put ("allowed:");
+    Put ("  Connect");
+    Put ("  Enable");
+    Put ("  Home");
+    Put ("  SetModel");
+    Put ("  ConnectRotator");
+    Put ("  HomeRotator");
+    Put ("  StartRotator");
+    Put ("  TurnTo1");
+    Put ("  TurnTo2");
+    Put ("  Startup");
+    Put ("  MoveM13");
+    Put ("  MoveM110");
+    Put ("  Stop");
+    Put ("  Shutdown");
+  end Input_Error;
 
 
   procedure Execute (Command : String) is
@@ -48,6 +78,36 @@ package body Test is
         Put ("mount connected");
       end if;
     end Connect_Mount;
+
+
+    Rotator_Not_Connected : exception;
+
+    procedure Connect_Rotator is
+
+      use type PWI.Rotator.State;
+
+      procedure Wait_For_Rotator_Connected is
+        Connect_Timeout : constant := 5; -- seconds
+      begin
+        for Unused_Count in 1 .. Connect_Timeout loop
+          delay 1.0;
+          PWI.Get_System;
+          if PWI.Rotator.Status = PWI.Rotator.Connected then
+            return;
+          end if;
+        end loop;
+        raise Rotator_Not_Connected;
+      end Wait_For_Rotator_Connected;
+
+    begin -- Connect_Rotator
+      PWI.Get_System;
+      if PWI.Rotator.Status = PWI.Rotator.Disconnected then
+        PWI.Focuser.Connect;
+        Put ("connecting rotator/focuser");
+        Wait_For_Rotator_Connected;
+        Put ("rotator connected/focuser");
+      end if;
+    end Connect_Rotator;
 
 
     Mount_Not_Enabled       : exception;
@@ -119,6 +179,58 @@ package body Test is
         Put ("homing mount completed succsessfully");
       end if;
     end Home_Mount;
+
+
+    Rotator_Must_Be_Connected : exception;
+
+    procedure Home_Rotator is
+
+      use type PWI.Rotator.State;
+
+      procedure Wait_For_Rotator_At_Home is
+      begin
+        loop
+          delay 1.0;
+          PWI.Get_System;
+          case PWI.Rotator.Status is
+          when PWI.Rotator.Homing =>
+            null;
+          when others =>
+            exit;
+          end case;
+        end loop;
+      end Wait_For_Rotator_At_Home;
+
+    begin -- Home_Rotator
+      PWI.Get_System;
+      if PWI.Rotator.Status < PWI.Rotator.Connected then
+        raise Rotator_Must_Be_Connected;
+      elsif PWI.Rotator.Status = PWI.Rotator.Connected then
+        PWI.Rotator.Find_Home;
+        Put ("homing rotator");
+        Wait_For_Rotator_At_Home;
+        Put ("homing rotator completed succsessfully");
+      end if;
+    end Home_Rotator;
+
+
+    procedure Start_Rotator is
+      use type PWI.Rotator.State;
+    begin
+      PWI.Get_System;
+      if PWI.Rotator.Status < PWI.Rotator.Connected then
+        raise Rotator_Must_Be_Connected;
+      elsif PWI.Rotator.Status = PWI.Rotator.Connected then
+        PWI.Rotator.Start;
+        Put ("Start rotator");
+      end if;
+    end Start_Rotator;
+
+
+    procedure Turn_M3 (To : PWI.M3.Port) is
+    begin
+      PWI.M3.Turn (To);
+    end Turn_M3;
 
 
     Pointing_Model_Not_Set     : exception;
@@ -222,6 +334,16 @@ package body Test is
       Home_Mount;
     elsif Id = "setmodel" then
       Set_Pointing_Model;
+    elsif Id = "connectrotator" then
+      Connect_Rotator;
+    elsif Id = "homerotator" then
+      Home_Rotator;
+    elsif Id = "startrotator" then
+      Start_Rotator;
+    elsif Id = "turnto1" then
+      Turn_M3 (To => PWI.M3.Port_1);
+    elsif Id = "turnto2" then
+      Turn_M3 (To => PWI.M3.Port_2);
     elsif Id = "startup" then
       Startup;
     elsif Id = "movem13" then
@@ -235,23 +357,27 @@ package body Test is
     elsif Id = "shutdown" then
       Shutdown;
     else
-      Put ("*** unknown command ***");
+      Input_Error ("unknown command");
     end if;
   exception
   when Mount_Must_Be_Connected =>
-    Put ("*** mount must be connected ***");
+    Error ("mount must be connected");
   when Mount_Must_Be_Enabled =>
-    Put ("*** mount must be enabled ***");
+    Error ("mount must be enabled");
   when Mount_Must_Be_Synchronised =>
-    Put ("*** mount must be synchronised ***");
+    Error ("mount must be synchronised");
   when Mount_Not_Connected =>
-    Put ("*** failed to connect to mount ***");
+    Error ("failed to connect to mount");
   when Mount_Not_Enabled =>
-    Put ("*** failed to energize the motors ***");
+    Error ("failed to energize the motors");
   when Mount_Not_At_Home =>
-    Put ("*** failed to home the mount ***");
+    Error ("failed to home the mount");
   when Pointing_Model_Not_Set =>
-    Put ("*** failed to set pointing model ***");
+    Error ("failed to set pointing model");
+  when Rotator_Not_Connected =>
+    Error ("failed to connect to rotator");
+  when Rotator_Must_Be_Connected =>
+    Error ("rotator must be connected");
   end Execute;
 
 
@@ -259,15 +385,15 @@ package body Test is
     Nr_Of_Arguments : constant Natural := Ada.Command_Line.Argument_Count;
   begin
     if Nr_Of_Arguments = 0 then
-      Put ("*** command missing ***");
+      Input_Error ("command missing");
     elsif Nr_Of_Arguments > 1 then
-      Put ("*** incorrect number of parameters ***");
+      Input_Error ("incorrect number of parameters");
     else
       Execute (Ada.Command_Line.Argument(1));
     end if;
   exception
   when PWI.No_Server =>
-    Put ("*** server not available ***");
+    Error ("server not available");
   when Occurrence: others =>
     Put (Exceptions.Information_Of (Occurrence));
   end Work;

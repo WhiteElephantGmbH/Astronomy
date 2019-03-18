@@ -175,7 +175,7 @@ private package PWI.XML is
   function Image_Of (Item : M3_Position) return String;
 
   type M3_Info is record
-    Connected       : Boolean;
+    Connected       : Boolean := False;
     Port            : Port_Number;
     Position_Rotate : M3_Position;
     Position_Tilt   : M3_Position;
@@ -219,16 +219,36 @@ private package PWI.XML is
 
   procedure Parse (Data : String);
 
+  package Fans is
+
+    function Turned_On return Boolean;
+
+  end Fans;
+
   package Mount is
 
     procedure Define_Pointing_Model (Filename : String);
-    
+
     function Defined_Pointing_Model return String;
 
-    function Flags return XML.Mount_Flag;
+    function Flags return Mount_Flag;
 
-    function Info return XML.Mount_Info;
+    function Info return Mount_Info;
 
   end Mount;
+
+  package M3 is
+
+    function Info return M3_Info;
+
+  end M3;
+
+  package Rotator is
+
+    function Info return Rotator_Info;
+
+    function Info1 return Rotator_Info;
+
+  end Rotator;
 
 end PWI.XML;
