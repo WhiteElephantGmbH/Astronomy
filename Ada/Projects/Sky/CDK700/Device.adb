@@ -240,33 +240,22 @@ package body Device is
                          & " - Mount " & The_Mount_Action'img
                          & " - M3 " & The_M3_Action'img
                          & " - Rotator " & The_Rotator_Action'img);
-          begin
-            case The_Fan_Action is
-            when No_Action =>
-              null;
-            when Turn_On =>
-              if not Is_Simulating then
-                PWI.Fans.Turn_On;
-              end if;
-            when Turn_Off =>
-              if not Is_Simulating then
-                PWI.Fans.Turn_Off;
-              end if;
-            end case;
-          exception
-          when others =>
-            null; -- PWI server could have been terminated
-          end;
-
           if Is_Finishing then
-            begin
-              PWI.Mount.Stop;
-            exception
-            when others =>
-              null; -- PWI server could have been terminated
-            end;
             exit;
           end if;
+
+          case The_Fan_Action is
+          when No_Action =>
+            null;
+          when Turn_On =>
+            if not Is_Simulating then
+              PWI.Fans.Turn_On;
+            end if;
+          when Turn_Off =>
+            if not Is_Simulating then
+              PWI.Fans.Turn_Off;
+            end if;
+          end case;
 
           case The_Mount_Action is
           when No_Action =>
@@ -383,6 +372,10 @@ package body Device is
             The_Mount_State := Mount.Approaching;
           when PWI.Mount.Tracking =>
             The_Mount_State := Mount.Tracking;
+          when PWI.Mount.Stopped =>
+            if The_Mount_State in Mount.Approaching | Mount.Tracking  then
+              The_Mount_State := Mount.Stopped;
+            end if;
           when others =>
             if The_Mount_State = Mount.Unknown then
               The_Mount_State := Mount.Disconnected;
@@ -463,7 +456,6 @@ package body Device is
 
   procedure Finalize is
   begin
-    Fans.Turn_On_Or_Off;
     Action.Finish;
   end Finalize;
 

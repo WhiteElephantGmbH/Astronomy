@@ -429,6 +429,14 @@ package body Telescope is
       case The_Event is
       when Mount_Unknown =>
         null;
+      when Mount_Startup =>
+        The_State := Mount_Startup_State (The_Event);
+      when Mount_Stopped =>
+        The_State := Stopped;
+      when Mount_Approaching =>
+        The_State := Approaching;
+      when Mount_Tracking =>
+        The_State := Tracking;
       when others =>
         Mount.Stop;
         The_State := Disconnected;
@@ -445,8 +453,16 @@ package body Telescope is
         Mount.Connect;
         Rotator.Connect;
         The_State := Connecting;
+      when Mount_Startup =>
+        The_State := Mount_Startup_State (The_Event);
+      when Mount_Stopped =>
+        The_State := Stopped;
+      when Mount_Approaching =>
+        The_State := Approaching;
+      when Mount_Tracking =>
+        The_State := Tracking;
       when others =>
-        null;
+        Mount.Stop;
       end case;
     end Disconnected_State;
 
@@ -575,6 +591,7 @@ package body Telescope is
         Rotator.Find_Home;
         The_State := Homing;
       when Shutdown =>
+        Fans.Turn_On_Or_Off;
         Mount.Disable;
         The_State := Disabling;
       when others =>
@@ -622,6 +639,7 @@ package body Telescope is
         Rotator.Start;
         The_State := Initializing;
       when Shutdown =>
+        Fans.Turn_On_Or_Off;
         Mount.Disable;
         The_State := Disabling;
       when others =>
@@ -661,6 +679,7 @@ package body Telescope is
       when Position =>
         Do_Position;
       when Shutdown =>
+        Fans.Turn_On_Or_Off;
         Mount.Disable;
         The_State := Disabling;
       when Follow =>
