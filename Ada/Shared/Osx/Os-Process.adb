@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2002 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2002 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -17,14 +17,15 @@ pragma Style_White_Elephant;
 
 package body Os.Process is
 
-  procedure Create (Executable     : String;
-                    Parameters     : String := "";
-                    Environment    : String := "";
-                    Current_Folder : String := "";
-                    Std_Input      : Handle := No_Handle;
-                    Std_Output     : Handle := No_Handle;
-                    Std_Error      : Handle := No_Handle;
-                    Console        : Console_Type := Normal) is
+  procedure Create (Executable     :     String;
+                    Process_Id     : out Id;
+                    Parameters     :     String := "";
+                    Environment    :     String := "";
+                    Current_Folder :     String := "";
+                    Std_Input      :     Handle := No_Handle;
+                    Std_Output     :     Handle := No_Handle;
+                    Std_Error      :     Handle := No_Handle;
+                    Console        :     Console_Type := Normal) is
   begin
     raise Program_Error; -- not implemented
   end Create;

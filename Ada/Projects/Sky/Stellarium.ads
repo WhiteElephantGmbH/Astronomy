@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2013 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2013 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -29,6 +29,11 @@ package Stellarium is
 
   type Goto_Handler is access procedure (Direction : Space.Direction);
 
+  function Startup (Filename : String;
+                    The_Port : Network.Port_Number) return Boolean;
+
+  procedure Shutdown;
+
   function Altitude return Integer;
 
   function Latitude return Angle.Degrees;
@@ -40,7 +45,7 @@ package Stellarium is
   function Language return Language.Kind;
 
   function Satellites_Filename return String;
-  
+
   procedure Start (Used_Port : Port_Number);
 
   procedure Define_Handler (The_Handler : Goto_Handler);

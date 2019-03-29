@@ -583,6 +583,7 @@ package body Control is
     User.Execute (Startup'access,
                   User_Action_Handler'access,
                   Termination'access);
+    Parameter.Shutdown;
   exception
   when Error.Occurred =>
     User.Show_Error;

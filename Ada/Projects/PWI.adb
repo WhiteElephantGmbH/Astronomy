@@ -4,12 +4,34 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with Os.Process;
 with PWI.XML;
 with Traces;
 
 package body PWI is
 
   package Log is new Traces ("Pwi");
+
+  The_Process_Id : Os.Process.Id;
+
+  function Startup (Filename : String) return Boolean is
+  begin
+    Os.Process.Create (Filename, The_Process_Id);
+    return True;
+  exception
+  when others =>
+    return False;
+  end Startup;
+
+
+  procedure Shutdown is
+  begin
+    Os.Process.Terminate_With (The_Process_Id);
+  exception
+  when others =>
+    Log.Write ("already terminated");
+  end Shutdown;
+
 
   New_Socket : Open_Socket_Handler;
 

@@ -23,6 +23,8 @@ package Parameter is
   Speed_Unit : constant String := "/s";
 
   procedure Read;
+  
+  procedure Shutdown;
 
 
   ----------

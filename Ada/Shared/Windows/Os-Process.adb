@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2002 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2002 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -17,6 +17,7 @@ pragma Style_White_Elephant;
 
 with Log;
 with Text;
+with Win32;
 with Win32.Winbase;
 with Win32.Winerror;
 with Win32.Winnt;
@@ -26,14 +27,15 @@ package body Os.Process is
   package Base renames Win32.Winbase;
   package Nt   renames Win32.Winnt;
 
-  procedure Create (Executable     : String;
-                    Parameters     : String := "";
-                    Environment    : String := "";
-                    Current_Folder : String := "";
-                    Std_Input      : Handle := No_Handle;
-                    Std_Output     : Handle := No_Handle;
-                    Std_Error      : Handle := No_Handle;
-                    Console        : Console_Type := Normal) is
+  procedure Create (Executable     :     String;
+                    Process_Id     : out Id;
+                    Parameters     :     String := "";
+                    Environment    :     String := "";
+                    Current_Folder :     String := "";
+                    Std_Input      :     Handle := No_Handle;
+                    Std_Output     :     Handle := No_Handle;
+                    Std_Error      :     Handle := No_Handle;
+                    Console        :     Console_Type := Normal) is
 
     Startup_Info        : aliased Win32.Winbase.STARTUPINFOA;
     Process_Information : aliased Win32.Winbase.PROCESS_INFORMATION;
@@ -53,6 +55,7 @@ package body Os.Process is
     use type Win32.DWORD;
     use type System.Address;
   begin
+    Process_Id := (0, False);
     Startup_Info.cb             := Win32.DWORD (Win32.Winbase.STARTUPINFOA'size / 8);
     Startup_Info.lpReserved     := null;
     Startup_Info.lpDesktop      := null;
@@ -141,9 +144,28 @@ package body Os.Process is
         end if;
       end;
     end if;
+    Process_Id := (Id_Value(Process_Information.dwProcessId), True);
     Unused := Base.CloseHandle (Process_Information.hProcess);
     Unused := Base.CloseHandle (Process_Information.hThread);
   end Create;
+
+
+  procedure Terminate_With (Process_Id : Id) is
+    SYNCHRONIZE       : constant := 16#00100000#;
+    PROCESS_TERMINATE : constant := 1;
+    The_Handle        : Win32.Winnt.HANDLE;
+    use type Win32.BOOL;
+    use type Win32.DWORD;
+  begin
+    if Process_Id.Is_Defined then
+      The_Handle := Win32.Winbase.OpenProcess (dwDesiredAccess => SYNCHRONIZE + PROCESS_TERMINATE,
+                                               bInheritHandle  => Win32.TRUE,
+                                               dwProcessId     => Win32.DWORD(Process_Id.Value));
+      if Win32.Winbase.TerminateProcess (The_Handle, 0) /= Win32.TRUE then
+        raise Termination_Failure;
+      end if;
+    end if;
+  end Terminate_With;
 
 
   function Execution_Of (Executable     : String;
@@ -184,6 +206,8 @@ package body Os.Process is
       end if;
     end Standard_Output;
 
+    Unused_Id : Id;
+
   begin
     Security.nLength             := Win32.DWORD (Base.SECURITY_ATTRIBUTES'size / 8);
     Security.lpSecurityDescriptor:= System.Null_Address;
@@ -216,7 +240,8 @@ package body Os.Process is
             Current_Folder => Current_Folder,
             Std_Error      => Handle(Error_Output),
             Std_Output     => Handle(Standard_Output),
-            Console        => Invisible);
+            Console        => Invisible,
+            Process_Id     => Unused_Id);
     Unused := Base.CloseHandle (Outbound); -- No longer used, child has a copy
     loop
       if Base.ReadFile (Inbound,

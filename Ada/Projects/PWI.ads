@@ -12,6 +12,10 @@ package PWI is
 
   type Open_Socket_Handler is access function return Network.Tcp.Socket;
 
+  function Startup (Filename : String) return Boolean;
+
+  procedure Shutdown;
+
   procedure Install (Handler : Open_Socket_Handler);
 
   procedure Get_System;

@@ -22,9 +22,9 @@ with Definite_Doubly_Linked_Lists;
 with Error;
 with File;
 with Language;
-with Os.Process;
 with Network.Tcp;
 with PWI;
+with Stellarium;
 with Strings;
 with Text;
 with Traces;
@@ -45,6 +45,7 @@ package body Parameter is
   PWI_Id                : constant String := "PWI";
   Name_Key              : constant String := "Name";
   Program_Key           : constant String := "Program";
+  Shutdown_Key          : constant String := "Shutdown";
   Simulation_Mode_Key   : constant String := "Simulation Mode";
   Expert_Mode_Key       : constant String := "Expert Mode";
   Fans_Key              : constant String := "Fans";
@@ -64,6 +65,7 @@ package body Parameter is
   The_Section : Configuration.Section_Handle;
 
   The_Telescope_Name    : Text.String;
+  Is_In_Shutdown_Mode   : Boolean := False;
   Is_In_Expert_Mode     : Boolean;
   Is_In_Simulation_Mode : Boolean;
   Fans_On               : Boolean;
@@ -229,6 +231,7 @@ package body Parameter is
       Put ("[" & PWI_Id & "]");
       Put (Name_Key & "              = CDK Ost");
       Put (Program_Key & "           = C:\Program Files (x86)\PlaneWave Instruments\PlaneWave interface\PWI.exe");
+      Put (Shutdown_Key & "          = True");
       Put (Expert_Mode_Key & "       = False");
       Put (Simulation_Mode_Key & "   = False");
       Put (Fans_Key & "              = On");
@@ -266,7 +269,7 @@ package body Parameter is
       Site_Handle         : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Site_Id);
       Localization_Handle : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Localization_Id);
 
-      procedure Connect_PWI is
+      procedure Startup_PWI is
 
         procedure Prepare_Tcp is
           Server : constant String := String_Of (Ip_Address_Key);
@@ -285,7 +288,7 @@ package body Parameter is
 
         PWI_Program_Filename : constant String := String_Value_Of (Program_Key);
 
-      begin -- Connect_PWI
+      begin -- Startup_PWI
         if PWI_Program_Filename = "" then
           Error.Raise_With ("No PWI program file specified");
         end if;
@@ -307,29 +310,27 @@ package body Parameter is
           declare
             The_Number_Of_Retries : Natural := 5;
           begin
-            Os.Process.Create (PWI_Program_Filename);
-            loop
-              begin
-                Prepare_Tcp;
-                exit;
-              exception
-              when others =>
-                if The_Number_Of_Retries = 0 then
-                  Error.Raise_With ("PlaneWave interface server not enabled");
-                end if;
-                delay 1.0;
-                The_Number_Of_Retries := The_Number_Of_Retries - 1;
-                Log.Write ("retry to connect to PWI server");
-              end;
-            end loop;
-          exception
-          when Error.Occurred =>
-            raise;
-          when others =>
-            Error.Raise_With ("PlaneWave interface server not available");
+            if PWI.Startup (PWI_Program_Filename) then
+              loop
+                begin
+                  Prepare_Tcp;
+                  exit;
+                exception
+                when others =>
+                  if The_Number_Of_Retries = 0 then
+                    Error.Raise_With ("PlaneWave interface server not enabled");
+                  end if;
+                  delay 1.0;
+                  The_Number_Of_Retries := The_Number_Of_Retries - 1;
+                  Log.Write ("retry to connect to PWI server");
+                end;
+              end loop;
+            else
+              Error.Raise_With ("PlaneWave interface not started");
+            end if;
           end;
         end;
-      end Connect_PWI;
+      end Startup_PWI;
 
       procedure Startup_Stellarium is
         Stellarium_Filename : constant String := String_Value_Of (Program_Key);
@@ -341,12 +342,9 @@ package body Parameter is
         if not File.Exists (Stellarium_Filename) then
           Error.Raise_With ("Stellarium program file """ & Stellarium_Filename & """ not found");
         end if;
-        begin
-          Os.Process.Create (Stellarium_Filename);
-        exception
-        when others =>
+        if not Stellarium.Startup (Stellarium_Filename, Stellarium_Port) then
           Error.Raise_With ("Stellarium not started");
-        end;
+        end if;
       end Startup_Stellarium;
 
       procedure Define_Fans_State is
@@ -374,12 +372,13 @@ package body Parameter is
       Set (PWI_Handle);
       The_Telescope_Name := Text.String_Of (String_Value_Of (Name_Key));
       Log.Write ("Name: " & Telescope_Name);
+      Is_In_Shutdown_Mode := Strings.Is_Equal (String_Value_Of (Shutdown_Key), "True");
       Is_In_Expert_Mode := Strings.Is_Equal (String_Value_Of (Expert_Mode_Key), "True");
       Is_In_Simulation_Mode := Strings.Is_Equal (String_Value_Of (Simulation_Mode_Key), "True");
       Define_Fans_State;
       The_Pointing_Model := Text.String_Of (String_Value_Of (Pointing_Model_Key));
       Log.Write ("Pointing_Model: " & Pointing_Model);
-      Connect_PWI;
+      Startup_PWI;
       PWI.Install (PWI_Socket'access);
       The_Moving_Speeds := Angles_Of (Moving_Speed_List_Key, Speed_Unit);
       if Natural(Angle_List.Length (The_Moving_Speeds)) < 2 then
@@ -394,7 +393,6 @@ package body Parameter is
         Error.Raise_With ("Lx200 port number out of range");
       end;
       Set (Stellarium_Handle);
-      Startup_Stellarium;
       begin
         The_Stellarium_Port := Network.Port_Number (Value_Of (Port_Key));
         Log.Write ("Stellarium Port:" & The_Stellarium_Port'img);
@@ -402,6 +400,13 @@ package body Parameter is
       when others =>
         Error.Raise_With ("Stellarium port number out of range");
       end;
+      Startup_Stellarium;
+    exception
+    when others =>
+      if Is_In_Shutdown_Mode then
+        PWI.Shutdown;
+      end if;
+      raise;
     end Read_Values;
 
   begin -- Read
@@ -410,6 +415,15 @@ package body Parameter is
     end if;
     Read_Values;
   end Read;
+
+
+  procedure Shutdown is
+  begin
+    if Is_In_Shutdown_Mode then
+      PWI.Shutdown;
+    end if;
+    Stellarium.Shutdown;
+  end Shutdown;
 
 
   ----------

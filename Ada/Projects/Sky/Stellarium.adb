@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2013 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2013 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -19,6 +19,7 @@ with Ada.Text_IO;
 with Configuration;
 with File;
 with Network.Tcp.Servers;
+with Os.Process;
 with Strings;
 with Traces;
 with Unsigned;
@@ -164,6 +165,52 @@ package body Stellarium is
   end Read_Location;
 
   The_Location : constant Location_Kind := Read_Location;
+
+
+  The_Process_Id : Os.Process.Id;
+
+  function Startup (Filename : String;
+                    The_Port : Network.Port_Number) return Boolean is
+
+    The_Listener : Network.Tcp.Listener_Socket;
+    The_Client   : Network.Tcp.Socket;
+    The_Address  : Network.Ip_Address;
+
+  begin
+    begin
+      Network.Tcp.Create_Socket_For (The_Port, Network.Tcp.Raw, The_Listener);
+      begin
+        Network.Tcp.Accept_Client_From (The_Listener   => The_Listener,
+                                        The_Client     => The_Client,
+                                        Client_Address => The_Address,
+                                        The_Timeout    => 1.0);
+      exception
+      when others =>
+        Network.Tcp.Close (The_Listener);
+        raise; -- not started
+      end;
+      Network.Tcp.Close (The_Client);
+      Network.Tcp.Close (The_Listener);
+      return True; -- already started
+    exception
+    when others =>
+      null; -- not started
+    end;
+    Os.Process.Create (Filename, The_Process_Id);
+    return True;
+  exception
+  when others =>
+    return False;
+  end Startup;
+
+
+  procedure Shutdown is
+  begin
+    Os.Process.Terminate_With (The_Process_Id);
+  exception
+  when others =>
+    Log.Write ("already terminated");
+  end Shutdown;
 
 
   function Altitude return Integer is
