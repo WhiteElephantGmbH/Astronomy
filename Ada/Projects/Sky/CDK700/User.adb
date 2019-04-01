@@ -391,7 +391,7 @@ package body User is
         Enable_Goto_Button;
         Enable_Shutdown_Button;
         M3_Menu.Enable;
-      when Telescope.Approaching | Telescope.Tracking=>
+      when Telescope.Positioning | Telescope.Approaching | Telescope.Tracking =>
         Enable_Goto_Button;
         Enable_Stop_Button;
         M3_Menu.Disable;

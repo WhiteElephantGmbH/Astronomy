@@ -356,7 +356,7 @@ package body Control is
     begin
       Define_External_Target;
       case The_Data.Status is
-      when Telescope.Stopped | Telescope.Approaching | Telescope.Tracking =>
+      when Telescope.Stopped | Telescope.Positioning | Telescope.Approaching | Telescope.Tracking =>
         User.Perform_Goto;
       when others =>
         Log.Error ("goto not executed");
@@ -376,7 +376,7 @@ package body Control is
         User.Clear_Target;
       end if;
       case The_Data.Status is
-      when Telescope.Homing | Telescope.Approaching =>
+      when Telescope.Homing | Telescope.Positioning | Telescope.Approaching =>
         declare
           Actual_Duration : Time.Ut := The_Data.Completion_Time - Time.Universal;
         begin
@@ -394,7 +394,7 @@ package body Control is
         User.Show (The_Progress => 0);
       end case;
       case The_Data.Status is
-      when Telescope.Stopped | Telescope.Approaching | Telescope.Tracking =>
+      when Telescope.Stopped | Telescope.Positioning | Telescope.Approaching | Telescope.Tracking =>
         Lx200.Set (The_Data.Actual_Direction);
         Stellarium.Set (The_Data.Actual_Direction);
       when others =>

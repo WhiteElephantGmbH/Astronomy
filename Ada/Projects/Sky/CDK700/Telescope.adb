@@ -167,6 +167,7 @@ package body Telescope is
   task body Control_Task is
 
     The_Completion_Time : Time.Ut := Time.In_The_Future;
+    The_Start_Time      : Time.Ut := Time.In_The_Future;
 
     The_Landmark : Name.Id;
 
@@ -228,6 +229,7 @@ package body Telescope is
       if Get_Direction = null then
         raise Program_Error; -- unknown target;
       end if;
+      The_Start_Time := Time.Universal;
       Mount.Goto_Target (Target_Direction, The_Completion_Time);
     exception
     when Target_Lost =>
@@ -299,8 +301,10 @@ package body Telescope is
 
     procedure Do_Position is
     begin
+      The_Start_Time := Time.Universal;
       Mount.Goto_Mark (Name.Direction_Of (The_Landmark), The_Completion_Time);
       Log.Write ("position to Landmark");
+      The_State := Positioning;
     end Do_Position;
 
 
@@ -710,6 +714,29 @@ package body Telescope is
     end Stopping_State;
 
     -----------------
+    -- Positioning --
+    -----------------
+    procedure Positioning_State is
+    begin
+      case The_Event is
+      when Mount_Startup =>
+        The_State := Mount_Startup_State (The_Event);
+      when Mount_Stopped =>
+        The_State := Stopped;
+      when Mount_Tracking =>
+        Stop_Target;
+      when Halt =>
+        Stop_Target;
+      when Follow =>
+        Follow_New_Target;
+      when Position =>
+        Do_Position;
+      when others =>
+        null;
+      end case;
+    end Positioning_State;
+
+    -----------------
     -- Approaching --
     -----------------
     procedure Approaching_State is
@@ -839,7 +866,14 @@ package body Telescope is
             when Mount.Approaching =>
               The_Event := Mount_Approaching;
             when Mount.Tracking =>
-              The_Event := Mount_Tracking;
+              if The_Start_Time = Time.In_The_Future then
+                The_Event := Mount_Tracking;
+              elsif (Time.Universal - The_Start_Time) > 1.0 then
+                The_Event := Mount_Tracking;
+                The_Start_Time := Time.In_The_Future;
+              else
+                The_Event := Mount_Approaching;
+              end if;
             end case;
             Has_New_Data := True;
           end New_Mount_State;
@@ -862,7 +896,7 @@ package body Telescope is
             The_Data.Rotator_State := The_Rotator_State;
             The_Data.Universal_Time := Time.Universal;
             case The_State is
-            when Approaching | Homing =>
+            when Approaching | Positioning | Homing =>
               The_Data.Completion_Time := The_Completion_Time;
             when others =>
               The_Data.Completion_Time := 0.0;
@@ -900,6 +934,7 @@ package body Telescope is
           when Initializing  => Initializing_State;
           when Stopped       => Stopped_State;
           when Stopping      => Stopping_State;
+          when Positioning   => Positioning_State;
           when Approaching   => Approaching_State;
           when Tracking      => Tracking_State;
           end case;

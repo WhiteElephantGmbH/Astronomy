@@ -53,6 +53,7 @@ package Telescope is
                  Initializing,
                  Stopped,
                  Stopping,
+                 Positioning,
                  Approaching,
                  Tracking);
 
