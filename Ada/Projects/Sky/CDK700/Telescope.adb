@@ -310,16 +310,17 @@ package body Telescope is
       use type Angle.Signed;
     begin
       if Space.Direction_Is_Known (Last_Target_Direction) then
-        Log.Write ("XXX update position Ra: " & Space.Ra_Image_Of (The_Direction));
         The_Time_Delta := The_Time - Last_Update_Time;
         The_Position_Delta := The_Direction - Last_Target_Direction;
         Ra_Speed := +Space.Ra_Of (The_Position_Delta);
         Dec_Speed := +Space.Dec_Of (The_Position_Delta);
         Ra_Speed := Angle.Signed(Angle.Degrees(Ra_Speed) / Angle.Degrees(The_Time_Delta));
         Dec_Speed := Angle.Signed(Angle.Degrees(Dec_Speed) / Angle.Degrees(The_Time_Delta));
-        Mount.Update_Target (Direction => Target_Direction,
-                             With_Speed => (Mount.D1 => Ra_Speed,
-                                            Mount.D2 => Dec_Speed));
+        if Ra_Speed /= 0 or Dec_Speed /= 0 then
+          Mount.Update_Target (Direction => Target_Direction,
+                               With_Speed => (Mount.D1 => Ra_Speed,
+                                              Mount.D2 => Dec_Speed));
+        end if;
       end if;
       Last_Target_Direction := The_Direction;
       Last_Update_Time := The_Time;
