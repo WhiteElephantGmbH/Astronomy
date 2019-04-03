@@ -46,6 +46,8 @@ package Device is
 
     type Drive is (D1, D2);
 
+    type Speed is array (Drive) of Angle.Signed;
+
     type State is (Unknown,
                    Disconnected,
                    Connected,
@@ -80,6 +82,9 @@ package Device is
 
     procedure Goto_Target (Direction       :     Space.Direction;
                            Completion_Time : out Time.Ut);
+
+    procedure Update_Target (Direction  : Space.Direction;
+                             With_Speed : Speed);
 
     procedure Goto_Mark (Direction       :     Earth.Direction;
                          Completion_Time : out Time.Ut);

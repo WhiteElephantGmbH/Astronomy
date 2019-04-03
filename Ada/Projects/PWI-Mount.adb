@@ -147,8 +147,8 @@ package body PWI.Mount is
 
   procedure Set_Pointing_Model is
   begin
-    Execute (Command_Name   => "setmodel",
-             Parameters     => "filename=" & PWI.Mount.Defined_Pointing_Model);
+    Execute (Command_Name => "setmodel",
+             Parameters   => "filename=" & PWI.Mount.Defined_Pointing_Model);
   end Set_Pointing_Model;
 
 
@@ -161,8 +161,27 @@ package body PWI.Mount is
     Dec_Image : constant String := Strings.Trimmed (Dec'img);
 
   begin
-    Execute (Command_Name   => "move",
-             Parameters     => "ra" & Kind & "=" & Ra_Image & "&dec" & Kind & "=" & Dec_Image);
+    Execute (Command_Name => "move",
+             Parameters   => "ra" & Kind & "=" & Ra_Image & "&dec" & Kind & "=" & Dec_Image);
+  end Move;
+
+
+  procedure Move (Ra         : Hours;
+                  Dec        : Degrees;
+                  Ra_Rate    : Speed;
+                  Dec_Rate   : Speed;
+                  From_J2000 : Boolean := False) is
+
+    Kind           : constant String := (if From_J2000 then "2000" else "");
+    Ra_Image       : constant String := Strings.Trimmed (Ra'img);
+    Dec_Image      : constant String := Strings.Trimmed (Dec'img);
+    Ra_Rate_Image  : constant String := Strings.Trimmed (Ra_Rate'img);
+    Dec_Rate_Image : constant String := Strings.Trimmed (Dec_Rate'img);
+
+  begin
+    Execute (Command_Name => "move",
+             Parameters   => "ra" & Kind & "=" & Ra_Image & "&dec" & Kind & "=" & Dec_Image &
+                             "&rarate=" & Ra_Rate_Image & "&decrate=" & Dec_Rate_Image);
   end Move;
 
 
@@ -173,8 +192,8 @@ package body PWI.Mount is
     Azm_Image : constant String := Strings.Trimmed (Azm'img);
 
   begin
-    Execute (Command_Name   => "move",
-             Parameters     => "alt=" & Alt_Image & "&azm=" & Azm_Image & "&rarate=15.041&decrate=0");
+    Execute (Command_Name => "move",
+             Parameters   => "alt=" & Alt_Image & "&azm=" & Azm_Image & "&rarate=15.041&decrate=0");
   end Move;
 
 

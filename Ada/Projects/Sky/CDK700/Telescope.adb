@@ -15,6 +15,7 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with Ada.Real_Time;
 with Angle;
 with Parameter;
 with System;
@@ -192,7 +193,8 @@ package body Telescope is
                    Mount_Synchronised,
                    Mount_Stopped,
                    Mount_Approaching,
-                   Mount_Tracking);
+                   Mount_Tracking,
+                   Time_Increment);
 
     subtype Mount_Startup is Event range Mount_Disconnected .. Mount_Synchronised;
 
@@ -210,6 +212,9 @@ package body Telescope is
 
     Target_Lost    : exception;
     Target_Is_Lost : Boolean := False;
+
+    Last_Target_Direction : Space.Direction;
+    Last_Update_Time      : Time.Ut;
 
 
     function Target_Direction return Space.Direction is
@@ -230,6 +235,7 @@ package body Telescope is
         raise Program_Error; -- unknown target;
       end if;
       The_Start_Time := Time.Universal;
+      Last_Target_Direction := Space.Unknown_Direction;
       Mount.Goto_Target (Target_Direction, The_Completion_Time);
     exception
     when Target_Lost =>
@@ -290,6 +296,34 @@ package body Telescope is
       Log.Write ("follow from " & The_State'img);
       Goto_Target;
     end Follow_New_Target;
+
+
+    procedure Update_Target_Position is
+      The_Direction      : constant Space.Direction := Target_Direction;
+      The_Time           : constant Time.Ut := Time.Universal;
+      The_Position_Delta : Space.Direction;
+      The_Time_Delta     : Time.Ut;
+      Ra_Speed           : Angle.Signed;
+      Dec_Speed          : Angle.Signed;
+      use type Space.Direction;
+      use type Angle.Degrees;
+      use type Angle.Signed;
+    begin
+      if Space.Direction_Is_Known (Last_Target_Direction) then
+        Log.Write ("XXX update position Ra: " & Space.Ra_Image_Of (The_Direction));
+        The_Time_Delta := The_Time - Last_Update_Time;
+        The_Position_Delta := The_Direction - Last_Target_Direction;
+        Ra_Speed := +Space.Ra_Of (The_Position_Delta);
+        Dec_Speed := +Space.Dec_Of (The_Position_Delta);
+        Ra_Speed := Angle.Signed(Angle.Degrees(Ra_Speed) / Angle.Degrees(The_Time_Delta));
+        Dec_Speed := Angle.Signed(Angle.Degrees(Dec_Speed) / Angle.Degrees(The_Time_Delta));
+        Mount.Update_Target (Direction => Target_Direction,
+                             With_Speed => (Mount.D1 => Ra_Speed,
+                                            Mount.D2 => Dec_Speed));
+      end if;
+      Last_Target_Direction := The_Direction;
+      Last_Update_Time := The_Time;
+    end Update_Target_Position;
 
 
     procedure Stop_Target is
@@ -775,6 +809,8 @@ package body Telescope is
         Stop_Target;
       when Follow =>
         Follow_New_Target;
+      when Time_Increment =>
+        Update_Target_Position;
       when Position =>
         Do_Position;
       when User_Command =>
@@ -788,6 +824,10 @@ package body Telescope is
 
     Has_New_Data : Boolean := True;
 
+    The_Next_Time : Ada.Real_Time.Time;
+
+    use type Ada.Real_Time.Time;
+
   begin -- Control_Task
     accept Start do
       Device.Start (Mount_State_Handler'access,
@@ -797,8 +837,10 @@ package body Telescope is
     end Start;
     Log.Write ("Started");
     The_State := Disconnected;
+    The_Next_Time := Ada.Real_Time.Clock;
     loop
       begin
+        The_Event := No_Event;
         select
           accept Close;
           exit;
@@ -915,8 +957,13 @@ package body Telescope is
             end if;
             The_Data.Target_Lost := Target_Is_Lost;
             Target_Is_Lost := False;
-            The_Event := No_Event;
           end Get;
+        or
+          delay until The_Next_Time;
+          The_Next_Time := The_Next_Time + Ada.Real_Time.To_Time_Span(1.0);
+          if The_State = Tracking then
+            The_Event := Time_Increment;
+          end if;
         end select;
         if The_Event /= No_Event then
           Log.Write ("State => " & The_State'img & " - Event => " & The_Event'img);

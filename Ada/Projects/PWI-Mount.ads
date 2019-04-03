@@ -10,6 +10,8 @@ package PWI.Mount is
 
   type Degrees is delta 0.0000001 range -360.0 .. 360.0;
 
+  type Speed is delta 0.001 range -1_000_000.0 .. 1_000_000.0; -- arcsec / sec
+
   type State is (Disconnected, -- not Connected
                  Connected,    -- Connected and not (Azm_Enabled and Alt_Enabled)
                  Enabled,      -- Azm_Enabled and Alt_Enabled and not Encoders_Have_Been_Set and not Is_Finding_Home
@@ -53,6 +55,12 @@ package PWI.Mount is
 
   procedure Move (Ra         : Hours;
                   Dec        : Degrees;
+                  From_J2000 : Boolean := False);
+
+  procedure Move (Ra         : Hours;
+                  Dec        : Degrees;
+                  Ra_Rate    : Speed;
+                  Dec_Rate   : Speed;
                   From_J2000 : Boolean := False);
 
   procedure Move (Alt : Degrees;
