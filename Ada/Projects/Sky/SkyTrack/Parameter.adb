@@ -26,8 +26,6 @@ with File;
 with Language;
 with Motor;
 with Os;
-with Os.Process;
-with Stellarium;
 with Strings;
 with Text;
 with Traces;
@@ -69,6 +67,7 @@ package body Parameter is
   Port_Key       : constant String := "Port";
   Program_Key    : constant String := "Program";
   Satellites_Key : constant String := "Satellites";
+  Magnitude_Key  : constant String := "Magnitude";
 
   Site_Id       : constant String := "Site";
   Longitude_Key : constant String := "Longitude";
@@ -97,10 +96,13 @@ package body Parameter is
   The_Second_Upper_Limit   : Angle.Degrees;
   The_Telescope_Connection : Connection;
 
-  --Servers
+  --Lx200
   The_Lx200_Port          : Network.Port_Number;
+
+  --Stellarium
   The_Stellarium_Port     : Network.Port_Number;
   The_Satellites_Filename : Text.String;
+  The_Magnitude_Maximum   : Stellarium.Magnitude;
 
   -- Site
   The_Latitude  : Angle.Value;
@@ -349,9 +351,10 @@ package body Parameter is
       Put (Port_Key & " = 4030");
       Put ("");
       Put ("[" & Stellarium_Id & "]");
+      Put (Port_Key & "       = 10001");
       Put (Program_Key & "    = C:\Program Files\Stellarium\Stellarium.exe");
       Put (Satellites_Key & " = " & Stellarium.Satellites_Filename);
-      Put (Port_Key & "       = 10001");
+      Put (Magnitude_Key & "  = 8.0");
       Put ("");
       Put ("[" & Site_Id & "]");
       Put (Longitude_Key & " = " & Angle.Image_Of (+Stellarium.Longitude, Decimals => 2, Show_Signed => True));
@@ -471,12 +474,9 @@ package body Parameter is
         if not File.Exists (Stellarium_Filename) then
           Error.Raise_With ("Stellarium program file """ & Stellarium_Filename & """ not found");
         end if;
-        begin
-          Os.Process.Create (Stellarium_Filename);
-        exception
-        when others =>
+        if not Stellarium.Startup (Stellarium_Filename, Stellarium_Port) then
           Error.Raise_With ("Stellarium not started");
-        end;
+        end if;
       end Startup_Stellarium;
 
       procedure Define_Satellites_Filename is
@@ -558,6 +558,19 @@ package body Parameter is
       exception
       when others =>
         Error.Raise_With ("Stellarium port number out of range");
+      end;
+      declare
+        Image : constant String := String_Value_Of (Magnitude_Key);
+      begin
+        if Image = "" then
+          The_Magnitude_Maximum := Stellarium.Magnitude'last;
+        else
+          The_Magnitude_Maximum := Stellarium.Magnitude'value(Image);
+        end if;
+        Log.Write ("Magnitude Maximum:" & The_Magnitude_Maximum'img);
+      exception
+      when others =>
+        Error.Raise_With ("Magnitude out of range");
       end;
       Startup_Stellarium;
     end Read_Values;
@@ -729,15 +742,19 @@ package body Parameter is
   end Second_Upper_Limit;
 
 
-  -------------
-  -- Servers --
-  -------------
+  -----------
+  -- Lx200 --
+  -----------
 
   function Lx200_Port return Network.Port_Number is
   begin
     return The_Lx200_Port;
   end Lx200_Port;
 
+
+  ----------------
+  -- Stellarium --
+  ----------------
 
   function Stellarium_Port return Network.Port_Number is
   begin
@@ -749,5 +766,11 @@ package body Parameter is
   begin
     return Text.String_Of (The_Satellites_Filename);
   end Satellites_Filename;
+
+
+  function Magnitude_Maximum return Stellarium.Magnitude is
+  begin
+    return The_Magnitude_Maximum;
+  end Magnitude_Maximum;
 
 end Parameter;

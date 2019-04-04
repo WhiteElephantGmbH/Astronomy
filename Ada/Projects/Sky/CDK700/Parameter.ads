@@ -16,6 +16,7 @@
 pragma Style_White_Elephant;
 
 with Angle;
+with Stellarium;
 with Network;
 
 package Parameter is
@@ -59,12 +60,21 @@ package Parameter is
   function Moving_Speeds return Angle.Values; -- in angle / s
 
 
-  -------------
-  -- Servers --
-  -------------
+  -----------
+  -- Lx200 --
+  -----------
 
   function Lx200_Port return Network.Port_Number;
 
+
+  ----------------
+  -- Stellarium --
+  ----------------
+  
   function Stellarium_Port return Network.Port_Number;
+
+  function Satellites_Filename return String;
+
+  function Magnitude_Maximum return Stellarium.Magnitude;
 
 end Parameter;

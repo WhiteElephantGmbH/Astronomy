@@ -10,6 +10,8 @@ package PWI is
 
   No_Server : exception;
 
+  type Arc_Second is delta 0.0000001 range -9999999.9999999 .. 9999999.9999999;
+
   type Open_Socket_Handler is access function return Network.Tcp.Socket;
 
   function Startup (Filename : String) return Boolean;

@@ -54,10 +54,14 @@ package Telescope is
                  Stopped,
                  Stopping,
                  Positioning,
+                 Preparing,
+                 Waiting,
                  Approaching,
                  Tracking);
 
   type Orientation is (Correct, Upside_Down, Backwards, Rotated);
+
+  type Time_Delta is delta 0.00001 range -100.0 .. 100.0;
 
   type Data is record
     Status                 : State;
@@ -70,6 +74,7 @@ package Telescope is
     Rotator_State          : Rotator.State;
     Completion_Time        : Time.Ut;
     Universal_Time         : Time.Ut;
+    Time_Adjustment        : Time_Delta;
   end record;
 
   type Get_Space_Access is access function (Id : Name.Id;
@@ -92,7 +97,7 @@ package Telescope is
 
   procedure Halt;
 
-  procedure Follow;
+  procedure Follow (Arriving_Time : Time.Ut);
 
   procedure Position_To (Landmark : Name.Id);
 

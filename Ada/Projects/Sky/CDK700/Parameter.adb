@@ -24,7 +24,6 @@ with File;
 with Language;
 with Network.Tcp;
 with PWI;
-with Stellarium;
 with Strings;
 with Text;
 with Traces;
@@ -53,9 +52,11 @@ package body Parameter is
   Ip_Address_Key        : constant String := "IP Address";
   Moving_Speed_List_Key : constant String := "Moving Speed List";
 
-  Stellarium_Id : constant String := "Stellarium";
-  Lx200_Id      : constant String := "Lx200";
-  Port_Key      : constant String := "Port";
+  Lx200_Id       : constant String := "Lx200";
+  Stellarium_Id  : constant String := "Stellarium";
+  Port_Key       : constant String := "Port";
+  Satellites_Key : constant String := "Satellites";
+  Magnitude_Key  : constant String := "Magnitude";
 
   Site_Id       : constant String := "Site";
   Longitude_Key : constant String := "Longitude";
@@ -75,9 +76,13 @@ package body Parameter is
   The_PWI_Address    : Network.Ip_Address;
   The_PWI_Port       : Network.Port_Number;
 
-  --Servers
-  The_Lx200_Port      : Network.Port_Number;
-  The_Stellarium_Port : Network.Port_Number;
+  --Lx200
+  The_Lx200_Port          : Network.Port_Number;
+
+  --Stellarium
+  The_Stellarium_Port     : Network.Port_Number;
+  The_Satellites_Filename : Text.String;
+  The_Magnitude_Maximum   : Stellarium.Magnitude;
 
   -- Site
   The_Latitude  : Angle.Value;
@@ -244,8 +249,10 @@ package body Parameter is
       Put (Port_Key & " = 4030");
       Put ("");
       Put ("[" & Stellarium_Id & "]");
-      Put (Program_Key & " = C:\Program Files\Stellarium\Stellarium.exe");
-      Put (Port_Key & "    = 10001");
+      Put (Port_Key & "       = 10001");
+      Put (Program_Key & "    = C:\Program Files\Stellarium\Stellarium.exe");
+      Put (Satellites_Key & " = " & Stellarium.Satellites_Filename);
+      Put (Magnitude_Key & "  = 8.0");
       Put ("");
       Put ("[" & Site_Id & "]");
       Put (Longitude_Key & " = " & Angle.Image_Of (+CDK700_Longitude, Decimals => 2, Show_Signed => True));
@@ -347,6 +354,21 @@ package body Parameter is
         end if;
       end Startup_Stellarium;
 
+      procedure Define_Satellites_Filename is
+        Json_Filename : constant String := String_Value_Of (Satellites_Key);
+      begin
+        if Json_Filename = "" or Strings.Is_Equal (Json_Filename, "None") then
+          Log.Write ("No Satellites");
+          Text.Clear (The_Satellites_Filename);
+        else
+          Log.Write ("Stellarium satellites file: """ & Json_Filename & """");
+          if not File.Exists (Json_Filename) then
+            Error.Raise_With ("Stellarium satellites file """ & Json_Filename & """ not found");
+          end if;
+          The_Satellites_Filename := Text.String_Of (Json_Filename);
+        end if;
+      end Define_Satellites_Filename;
+
       procedure Define_Fans_State is
         Fans_State : constant String := String_Value_Of (Fans_Key);
       begin
@@ -393,12 +415,26 @@ package body Parameter is
         Error.Raise_With ("Lx200 port number out of range");
       end;
       Set (Stellarium_Handle);
+      Define_Satellites_Filename;
       begin
         The_Stellarium_Port := Network.Port_Number (Value_Of (Port_Key));
         Log.Write ("Stellarium Port:" & The_Stellarium_Port'img);
       exception
       when others =>
         Error.Raise_With ("Stellarium port number out of range");
+      end;
+      declare
+        Image : constant String := String_Value_Of (Magnitude_Key);
+      begin
+        if Image = "" then
+          The_Magnitude_Maximum := Stellarium.Magnitude'last;
+        else
+          The_Magnitude_Maximum := Stellarium.Magnitude'value(Image);
+        end if;
+        Log.Write ("Magnitude Maximum:" & The_Magnitude_Maximum'img);
+      exception
+      when others =>
+        Error.Raise_With ("Magnitude out of range");
       end;
       Startup_Stellarium;
     exception
@@ -500,9 +536,9 @@ package body Parameter is
   end Moving_Speeds;
 
 
-  -------------
-  -- Servers --
-  -------------
+  -----------
+  -- Lx200 --
+  -----------
 
   function Lx200_Port return Network.Port_Number is
   begin
@@ -510,9 +546,25 @@ package body Parameter is
   end Lx200_Port;
 
 
+  ----------------
+  -- Stellarium --
+  ----------------
+
   function Stellarium_Port return Network.Port_Number is
   begin
     return The_Stellarium_Port;
   end Stellarium_Port;
+
+
+  function Satellites_Filename return String is
+  begin
+    return Text.String_Of (The_Satellites_Filename);
+  end Satellites_Filename;
+
+
+  function Magnitude_Maximum return Stellarium.Magnitude is
+  begin
+    return The_Magnitude_Maximum;
+  end Magnitude_Maximum;
 
 end Parameter;

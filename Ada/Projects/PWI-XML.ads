@@ -121,8 +121,6 @@ private package PWI.XML is
 
   function Image_Of (Item : Radian) return String;
 
-  type Arc_Second is delta 0.0000001 range -9999999.9999999 .. 9999999.9999999;
-
   function Arc_Second_Of (Image : String) return Arc_Second;
 
   function Image_Of (Item : Arc_Second) return String;

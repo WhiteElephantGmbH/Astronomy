@@ -17,6 +17,7 @@ pragma Style_White_Elephant;
 
 with Ada.Real_Time;
 with Angle;
+with Numerics;
 with Parameter;
 with System;
 with Traces;
@@ -43,7 +44,7 @@ package body Telescope is
 
     entry Shutdown;
 
-    entry Follow;
+    entry Follow (Arriving_Time : Time.Ut);
 
     entry Position_To (Landmark : Name.Id);
 
@@ -128,9 +129,9 @@ package body Telescope is
   end Halt;
 
 
-  procedure Follow is
+  procedure Follow (Arriving_Time : Time.Ut) is
   begin
-    Control.Follow;
+    Control.Follow (Arriving_Time);
   end Follow;
 
 
@@ -167,16 +168,24 @@ package body Telescope is
 
   task body Control_Task is
 
-    The_Completion_Time : Time.Ut := Time.In_The_Future;
-    The_Start_Time      : Time.Ut := Time.In_The_Future;
+    The_Arriving_Time      : Time.Ut := Time.In_The_Future;
+    The_Next_Arriving_Time : Time.Ut := Time.In_The_Past;
+    The_Completion_Time    : Time.Ut := Time.In_The_Past;
+    The_Start_Time         : Time.Ut := Time.In_The_Past;
+
+    Is_Fast_Tracking : Boolean := False;
 
     The_Landmark : Name.Id;
 
-    type Adjusting_Kind is (First_Adjusting, Second_Adjusting);
+    type Adjusting_Kind is (First_Adjusting, Second_Adjusting, Time_Adjusting);
 
     Adjusting_Stopped : constant Angle.Signed := 0;
 
-    The_Adjusting_Kind : Adjusting_Kind;
+    The_Adjusting_Kind        : Adjusting_Kind;
+    The_Adjusting_Start_Time  : Time.Ut := Time.In_The_Future;
+    The_Adjusting_End_Time    : Time.Ut := Time.In_The_Future;
+    The_Time_Adjusting_Factor : Duration;
+    The_Time_Adjustment       : Duration := 0.0;
 
     type Event is (No_Event,
                    Startup,
@@ -201,6 +210,8 @@ package body Telescope is
     The_State  : State := Disconnected;
     The_Event  : Event := No_Event;
 
+    Mount_Is_Stopped : Boolean := True;
+
     The_M3_Position : M3.Position := M3.Unknown;
 
     The_Rotator_State : Rotator.State := Rotator.Unknown;
@@ -213,12 +224,9 @@ package body Telescope is
     Target_Lost    : exception;
     Target_Is_Lost : Boolean := False;
 
-    Last_Target_Direction : Space.Direction;
-    Last_Update_Time      : Time.Ut;
 
-
-    function Target_Direction return Space.Direction is
-      Direction : constant Space.Direction := Get_Direction (Id, Time.Universal);
+    function Target_Direction (At_Time : Time.Ut := Time.Universal) return Space.Direction is
+      Direction : constant Space.Direction := Get_Direction (Id, At_Time + The_Time_Adjustment);
       use type Space.Direction;
     begin
       if Direction = Space.Unknown_Direction then
@@ -229,18 +237,52 @@ package body Telescope is
     end Target_Direction;
 
 
+    function Target_Speed (At_Time : Time.Ut := Time.Universal) return Mount.Speed is
+      Direction_Before : constant Space.Direction := Get_Direction (Id, At_Time - 0.5);
+      Direction_After  : constant Space.Direction := Get_Direction (Id, At_Time + 0.5);
+      Direction_Delta  : Space.Direction;
+      Ra_Speed         : Angle.Signed;
+      Dec_Speed        : Angle.Signed;
+      use type Space.Direction;
+      use type Angle.Degrees;
+      use type Angle.Signed;
+    begin
+      if Space.Direction_Is_Known (Direction_Before) and Space.Direction_Is_Known (Direction_After) then
+        Direction_Delta := Direction_After - Direction_Before;
+        Ra_Speed := +Space.Ra_Of (Direction_Delta);
+        Dec_Speed := +Space.Dec_Of (Direction_Delta);
+        return (Mount.D1 => Ra_Speed, Mount.D2 => Dec_Speed);
+      else
+        Target_Is_Lost := True;
+        raise Target_Lost;
+      end if;
+    end Target_Speed;
+
+
     procedure Goto_Target is
     begin
       if Get_Direction = null then
         raise Program_Error; -- unknown target;
       end if;
       The_Start_Time := Time.Universal;
-      Last_Target_Direction := Space.Unknown_Direction;
-      Mount.Goto_Target (Target_Direction, The_Completion_Time);
+      Mount.Goto_Target (Target_Direction (The_Start_Time), Target_Speed (The_Start_Time), The_Completion_Time);
+      The_State := Approaching;
     exception
     when Target_Lost =>
       null;
     end Goto_Target;
+
+
+    procedure Goto_Waiting_Position is
+      Waiting_Position : constant Earth.Direction := Numerics.Direction_Of (Get_Direction (Id, The_Arriving_Time),
+                                                                            Time.Lmst_Of (The_Arriving_Time));
+    begin
+      if Earth.Direction_Is_Known (Waiting_Position) then
+        The_Start_Time := Time.Universal;
+        Mount.Goto_Mark (Waiting_Position, The_Completion_Time);
+        The_State := Preparing;
+      end if;
+    end Goto_Waiting_Position;
 
 
     Moving_Speeds   : constant Angle.Values := Parameter.Moving_Speeds;
@@ -293,45 +335,73 @@ package body Telescope is
     begin
       Id := Next_Id;
       Get_Direction := Next_Get_Direction;
-      Log.Write ("follow from " & The_State'img);
-      Goto_Target;
-    end Follow_New_Target;
-
-
-    procedure Update_Target_Position is
-      The_Direction      : constant Space.Direction := Target_Direction;
-      The_Time           : constant Time.Ut := Time.Universal;
-      The_Position_Delta : Space.Direction;
-      The_Time_Delta     : Time.Ut;
-      Ra_Speed           : Angle.Signed;
-      Dec_Speed          : Angle.Signed;
-      use type Space.Direction;
-      use type Angle.Degrees;
-      use type Angle.Signed;
-    begin
-      if Space.Direction_Is_Known (Last_Target_Direction) then
-        The_Time_Delta := The_Time - Last_Update_Time;
-        The_Position_Delta := The_Direction - Last_Target_Direction;
-        Ra_Speed := +Space.Ra_Of (The_Position_Delta);
-        Dec_Speed := +Space.Dec_Of (The_Position_Delta);
-        Ra_Speed := Angle.Signed(Angle.Degrees(Ra_Speed) / Angle.Degrees(The_Time_Delta));
-        Dec_Speed := Angle.Signed(Angle.Degrees(Dec_Speed) / Angle.Degrees(The_Time_Delta));
-        if Ra_Speed /= 0 or Dec_Speed /= 0 then
-          Mount.Update_Target (Direction => Target_Direction,
-                               With_Speed => (Mount.D1 => Ra_Speed,
-                                              Mount.D2 => Dec_Speed));
+      Is_Fast_Tracking := The_Next_Arriving_Time /= Time.In_The_Past;
+      if Is_Fast_Tracking then
+        Log.Write ("follow from " & The_State'img & " after " & Time.Image_Of (The_Next_Arriving_Time));
+        The_Arriving_Time := The_Next_Arriving_Time;
+        if The_Arriving_Time > Time.Universal then -- arriving in future
+          Goto_Waiting_Position;
+        else
+          Goto_Target;
         end if;
+      else
+        Log.Write ("follow from " & The_State'img);
+        Goto_Target;
       end if;
-      Last_Target_Direction := The_Direction;
-      Last_Update_Time := The_Time;
-    end Update_Target_Position;
+    end Follow_New_Target;
 
 
     procedure Stop_Target is
     begin
       Mount.Stop;
-      The_State := Stopping;
+      if Mount_Is_Stopped then
+        The_State := Stopped;
+      else
+        The_State := Stopping;
+      end if;
     end Stop_Target;
+
+
+    Time_Adjusting_Factor : constant Duration := 0.05;
+
+    procedure Increment_Offset is
+      The_Adjusting_Time : Time.Ut;
+      The_Time_Increment : Duration;
+    begin
+      if The_Adjusting_Start_Time /= Time.In_The_Future then
+        if The_Adjusting_End_Time = Time.In_The_Future then
+          The_Adjusting_Time := Time.Universal - The_Adjusting_Start_Time;
+          The_Adjusting_Start_Time := The_Adjusting_Start_Time + The_Adjusting_Time;
+        else
+          The_Adjusting_Time := The_Adjusting_End_Time - The_Adjusting_Start_Time;
+          The_Adjusting_Start_Time := Time.In_The_Future;
+          The_Adjusting_End_Time := Time.In_The_Future;
+        end if;
+        The_Time_Increment := The_Adjusting_Time * The_Time_Adjusting_Factor;
+        The_Time_Adjustment := The_Time_Adjustment + The_Time_Increment;
+      end if;
+    end Increment_Offset;
+
+
+    procedure Time_Control_End is
+    begin
+      The_Time_Adjustment := 0.0;
+    end Time_Control_End;
+
+
+    procedure Update_Target_Position is
+      Now    : constant Time.Ut := Time.Universal;
+      Unused : Time.Ut;
+    begin
+      Increment_Offset;
+      Mount.Goto_Target (Direction       => Target_Direction (At_Time => Now),
+                         With_Speed      => Target_Speed (At_Time => Now),
+                         Completion_Time => Unused);
+      The_Completion_Time := Time.In_The_Past;
+    exception
+    when Target_Lost =>
+      Stop_Target;
+    end Update_Target_Position;
 
 
     procedure Do_Position is
@@ -396,6 +466,15 @@ package body Telescope is
     end Adjust_Second;
 
 
+    procedure Adjust_Time (Factor : Duration) is
+    begin
+      The_Time_Adjusting_Factor := Factor;
+      The_Adjusting_Start_Time := Time.Universal;
+      The_Adjusting_End_Time := Time.In_The_Future;
+      The_Adjusting_Kind := Time_Adjusting;
+    end Adjust_Time;
+
+
     procedure End_Adjust is
     begin
       case The_Adjusting_Kind is
@@ -403,6 +482,8 @@ package body Telescope is
         Mount.Adjust (Mount.D1, Adjusting_Stopped);
       when Second_Adjusting =>
         Mount.Adjust (Mount.D2, Adjusting_Stopped);
+      when Time_Adjusting =>
+        The_Adjusting_End_Time := Time.Universal;
       end case;
     end End_Adjust;
 
@@ -423,9 +504,17 @@ package body Telescope is
       when End_Move =>
         End_Adjust;
       when Increase =>
-        Change_Adjusting_Speed (+1);
+        if Is_Fast_Tracking then
+          Adjust_Time (+Time_Adjusting_Factor);
+        else
+          Change_Adjusting_Speed (+1);
+        end if;
       when Decrease =>
-        Change_Adjusting_Speed (-1);
+        if Is_Fast_Tracking then
+          Adjust_Time (-Time_Adjusting_Factor);
+        else
+          Change_Adjusting_Speed (-1);
+        end if;
       when End_Change =>
         End_Adjust;
       when Set_Guiding_Rate =>
@@ -723,7 +812,6 @@ package body Telescope is
         The_State := Disabling;
       when Follow =>
         Follow_New_Target;
-        The_State := Approaching;
       when others =>
         null;
       end case;
@@ -771,6 +859,55 @@ package body Telescope is
       end case;
     end Positioning_State;
 
+    ---------------
+    -- Preparing --
+    ---------------
+    procedure Preparing_State is
+    begin
+      case The_Event is
+      when Mount_Startup =>
+        The_State := Mount_Startup_State (The_Event);
+      when Mount_Stopped =>
+        The_State := Waiting;
+      when Mount_Tracking =>
+        Mount.Stop;
+      when Halt =>
+        Stop_Target;
+      when Follow =>
+        Follow_New_Target;
+      when Position =>
+        Do_Position;
+      when others =>
+        null;
+      end case;
+    end Preparing_State;
+
+    --------------
+    -- Waiting --
+    --------------
+    procedure Waiting_State is
+    begin
+      case The_Event is
+      when Mount_Startup =>
+        The_State := Mount_Startup_State (The_Event);
+      when Mount_Approaching =>
+        The_State := Approaching;
+      when Mount_Tracking =>
+        The_State := Tracking;
+      when Halt =>
+        The_State := Stopped;
+      when Follow =>
+        Follow_New_Target;
+      when Position =>
+        Do_Position;
+      when others =>
+        if Time.Universal > The_Arriving_Time then
+          Update_Target_Position;
+          The_State := Approaching;
+        end if;
+      end case;
+    end Waiting_State;
+
     -----------------
     -- Approaching --
     -----------------
@@ -787,8 +924,14 @@ package body Telescope is
         Stop_Target;
       when Follow =>
         Follow_New_Target;
+      when Time_Increment =>
+        if Is_Fast_Tracking then
+          Update_Target_Position;
+        end if;
       when Position =>
         Do_Position;
+      when User_Command =>
+        Adjust_Handling;
       when others =>
         null;
       end case;
@@ -811,7 +954,9 @@ package body Telescope is
       when Follow =>
         Follow_New_Target;
       when Time_Increment =>
-        Update_Target_Position;
+        if Is_Fast_Tracking then
+          Update_Target_Position;
+        end if;
       when Position =>
         Do_Position;
       when User_Command =>
@@ -849,7 +994,9 @@ package body Telescope is
           accept Halt;
           The_Event := Halt;
         or
-          accept Follow;
+          accept Follow (Arriving_Time : Time.Ut) do
+            The_Next_Arriving_Time := Arriving_Time;
+          end Follow;
           The_Event := Follow;
         or
           accept Startup;
@@ -890,6 +1037,7 @@ package body Telescope is
         or
           accept New_Mount_State (New_State : Mount.State) do
             Log.Write ("Mount State " & New_State'img);
+            Mount_Is_Stopped := True;
             case New_State is
             when Mount.Unknown =>
               The_State := Unknown;
@@ -902,21 +1050,24 @@ package body Telescope is
               The_Event := Mount_Enabled;
             when Mount.Homing =>
               The_Event := Mount_Homing;
+              Mount_Is_Stopped := False;
             when Mount.Synchronised =>
               The_Event := Mount_Synchronised;
             when Mount.Stopped =>
               The_Event := Mount_Stopped;
             when Mount.Approaching =>
               The_Event := Mount_Approaching;
+              Mount_Is_Stopped := False;
             when Mount.Tracking =>
-              if The_Start_Time = Time.In_The_Future then
+              if The_Start_Time = Time.In_The_Past then
                 The_Event := Mount_Tracking;
               elsif (Time.Universal - The_Start_Time) > 1.0 then
                 The_Event := Mount_Tracking;
-                The_Start_Time := Time.In_The_Future;
+                The_Start_Time := Time.In_The_Past;
               else
                 The_Event := Mount_Approaching;
               end if;
+              Mount_Is_Stopped := False;
             end case;
             Has_New_Data := True;
           end New_Mount_State;
@@ -935,6 +1086,7 @@ package body Telescope is
         or
           accept Get (The_Data : out Data) do
             The_Data.Status := The_State;
+            The_Data.Time_Adjustment := Time_Delta(The_Time_Adjustment);
             The_Data.M3_Position := The_M3_Position;
             The_Data.Rotator_State := The_Rotator_State;
             The_Data.Universal_Time := Time.Universal;
@@ -942,7 +1094,7 @@ package body Telescope is
             when Approaching | Positioning | Homing =>
               The_Data.Completion_Time := The_Completion_Time;
             when others =>
-              The_Data.Completion_Time := 0.0;
+              The_Data.Completion_Time := Time.In_The_Past;
             end case;
             declare
               Info : constant Mount.Information := Mount.Actual_Info;
@@ -961,9 +1113,11 @@ package body Telescope is
           end Get;
         or
           delay until The_Next_Time;
-          The_Next_Time := The_Next_Time + Ada.Real_Time.To_Time_Span(1.0);
-          if The_State = Tracking then
+          The_Next_Time := The_Next_Time + Ada.Real_Time.To_Time_Span(0.3);
+          if The_State in Tracking | Approaching | Waiting then
             The_Event := Time_Increment;
+          else
+            Time_Control_End;
           end if;
         end select;
         if The_Event /= No_Event then
@@ -983,6 +1137,8 @@ package body Telescope is
           when Stopped       => Stopped_State;
           when Stopping      => Stopping_State;
           when Positioning   => Positioning_State;
+          when Preparing     => Preparing_State;
+          when Waiting       => Waiting_State;
           when Approaching   => Approaching_State;
           when Tracking      => Tracking_State;
           end case;

@@ -22,6 +22,7 @@ with Data;
 with Device;
 with Earth;
 with Gui.Enumeration_Menu_Of;
+with Gui.Key_Codes;
 with Gui.Registered;
 with Lexicon;
 with Parameter;
@@ -52,19 +53,20 @@ package body User is
   Description  : Gui.Plain_Edit_Box;
   Display      : Gui.List_View;
 
-  Display_Page       : Gui.Page;
-  Target_Ra          : Gui.Plain_Edit_Box;
-  Target_Dec         : Gui.Plain_Edit_Box;
-  Actual_J2000_Ra    : Gui.Plain_Edit_Box;
-  Actual_J2000_Dec   : Gui.Plain_Edit_Box;
-  Actual_Ra          : Gui.Plain_Edit_Box;
-  Actual_Dec         : Gui.Plain_Edit_Box;
-  Actual_Az          : Gui.Plain_Edit_Box;
-  Actual_Alt         : Gui.Plain_Edit_Box;
-  M3_Position        : Gui.Plain_Edit_Box;
-  Rotator_State      : Gui.Plain_Edit_Box;
-  Lmst               : Gui.Plain_Edit_Box;
-  Local_Time         : Gui.Plain_Edit_Box;
+  Display_Page     : Gui.Page;
+  Target_Ra        : Gui.Plain_Edit_Box;
+  Target_Dec       : Gui.Plain_Edit_Box;
+  Actual_J2000_Ra  : Gui.Plain_Edit_Box;
+  Actual_J2000_Dec : Gui.Plain_Edit_Box;
+  Actual_Ra        : Gui.Plain_Edit_Box;
+  Actual_Dec       : Gui.Plain_Edit_Box;
+  Actual_Az        : Gui.Plain_Edit_Box;
+  Actual_Alt       : Gui.Plain_Edit_Box;
+  M3_Position      : Gui.Plain_Edit_Box;
+  Rotator_State    : Gui.Plain_Edit_Box;
+  Lmst             : Gui.Plain_Edit_Box;
+  Local_Time       : Gui.Plain_Edit_Box;
+  Time_Offset      : Gui.Plain_Edit_Box;
 
   Setup_Page      : Gui.Page;
   Orientation_Box : Gui.Plain_Combo_Box;
@@ -180,6 +182,8 @@ package body User is
       return "HR";
     when Messier =>
       null;
+    when Neo =>
+      return "NEO";
     when Ngc =>
       return "NGC";
     when Ocl =>
@@ -236,6 +240,46 @@ package body User is
   procedure Show (The_Progress : Percent) is
   begin
     Gui.Report_Progress (Progress_Bar, Natural(The_Progress));
+  end Show;
+
+
+  procedure Show (Visible_In : Duration) is
+
+    function Image_Of (Value : Natural;
+                       Unit  : String) return String is
+      Image : constant String := Value'img & " " & Unit;
+    begin
+      if Value = 0 then
+        return "";
+      elsif Value = 1 then
+        return Image;
+      else
+        return Image & "s";
+      end if;
+    end Image_Of;
+
+    Header : constant String := "Visible in";
+    Second : constant String := "second";
+    Minute : constant String := "minute";
+    Hour   : constant String := "hour";
+
+    procedure Show_Duration (Value      : Natural;
+                             Upper_Unit : String;
+                             Lower_Unit : String) is
+    begin
+      Show_Description (Header & Image_Of (Value / 60, Upper_Unit) & Image_Of (Value mod 60, Lower_Unit));
+    end Show_Duration;
+
+    Delta_Time : constant Natural := Natural(Visible_In);
+
+  begin -- Show
+    if Delta_Time = 0 then
+      Show_Description ("");
+    elsif Delta_Time < 3600 then
+      Show_Duration (Delta_Time, Minute, Second);
+    else
+      Show_Duration ((Delta_Time + 59) / 60, Hour, Minute);
+    end if;
   end Show;
 
 
@@ -362,6 +406,7 @@ package body User is
 
   procedure Show (Information : Telescope.Data) is
     use type Telescope.State;
+    use type Telescope.Time_Delta;
   begin
     if (The_Status /= Information.Status) or (Last_Target_Selection /= The_Target_Selection) then
       The_Status := Information.Status;
@@ -391,7 +436,9 @@ package body User is
         Enable_Goto_Button;
         Enable_Shutdown_Button;
         M3_Menu.Enable;
-      when Telescope.Positioning | Telescope.Approaching | Telescope.Tracking =>
+      when Telescope.Waiting =>
+        Enable_Goto_Button;
+      when Telescope.Positioning | Telescope.Preparing | Telescope.Approaching | Telescope.Tracking =>
         Enable_Goto_Button;
         Enable_Stop_Button;
         M3_Menu.Disable;
@@ -442,6 +489,11 @@ package body User is
       else
         Gui.Set_Text (Lmst, Time.Image_Of (Time.Lmst_Of (Information.Universal_Time)));
         Gui.Set_Text (Local_Time, Time.Image_Of (Information.Universal_Time, Time_Only => True));
+      end if;
+      if Information.Time_Adjustment = 0.0 then
+        Gui.Set_Text (Time_Offset, "");
+      else
+        Gui.Set_Text (Time_Offset, Information.Time_Adjustment'img & "s");
       end if;
     when Is_Setup =>
       null;
@@ -593,6 +645,7 @@ package body User is
     The_Page := Is_Control;
     Catalog_Menu.Enable;
     Selection_Menu.Enable;
+    Gui.Enable_Key_Handler;
     Gui.Clear_Focus;
   end Enter_Control_Page;
 
@@ -602,6 +655,7 @@ package body User is
     The_Page := Is_Display;
     Catalog_Menu.Disable;
     Selection_Menu.Disable;
+    Gui.Enable_Key_Handler;
     Gui.Clear_Focus;
   exception
   when others =>
@@ -614,6 +668,7 @@ package body User is
     The_Page := Is_Setup;
     Catalog_Menu.Disable;
     Selection_Menu.Disable;
+    Gui.Disable_Key_Handler;
   exception
   when others =>
     Log.Error ("Enter_Setup_Page");
@@ -626,6 +681,73 @@ package body User is
       Signal_Action (Go_To);
     end if;
   end Enter_Handling;
+
+
+  procedure Put (The_Command : Device.Command) is
+  begin
+    Input.Put (The_Command, From => Input.Keypad);
+  end Put;
+
+
+  Ignore_Next      : Boolean := False;
+  Space_Is_Pressed : Boolean := False;
+
+  procedure Key_Handler (The_Event    : Gui.Key_Event;
+                         The_Key_Code : Gui.Key_Code) is
+  begin
+    case The_Page is
+    when Is_Setup =>
+      return;
+    when Is_Control | Is_Display =>
+      null;
+    end case;
+    case The_Event is
+    when Gui.Key_Pressed =>
+      if Ignore_Next then
+        return;
+      end if;
+      Log.Write ("Key pressed: " & The_Key_Code'img);
+      case The_Key_Code is
+      when Gui.Key_Codes.KP_8 | Gui.Key_Codes.KP_Up | Gui.Key_Codes.K_Up =>
+        Put (Device.Move_Up);
+      when Gui.Key_Codes.KP_2 | Gui.Key_Codes.KP_Down | Gui.Key_Codes.K_Down =>
+        Put (Device.Move_Down);
+      when Gui.Key_Codes.KP_4 | Gui.Key_Codes.KP_Left | Gui.Key_Codes.K_Left =>
+        if Space_Is_Pressed then
+          Put (Device.Decrease);
+        else
+          Put (Device.Move_Left);
+        end if;
+      when Gui.Key_Codes.KP_6 | Gui.Key_Codes.KP_Right | Gui.Key_Codes.K_Right =>
+        if Space_Is_Pressed then
+          Put (Device.Increase);
+        else
+          Put (Device.Move_Right);
+        end if;
+      when Gui.Key_Codes.K_Space =>
+        Space_Is_Pressed := True;
+      when Gui.Key_Codes.KP_Enter | Gui.Key_Codes.K_Return =>
+        Input.Put (Device.Enter, From => Input.Keypad);
+      when Gui.Key_Codes.K_Menu =>
+        Ignore_Next := True;
+      when others =>
+        null;
+      end case;
+    when  Gui.Key_Released =>
+      Log.Write ("Key released: " & The_Key_Code'img);
+      case The_Key_Code is
+      when Gui.Key_Codes.K_Menu =>
+        Ignore_Next := False;
+      when Gui.Key_Codes.K_Space =>
+        Space_Is_Pressed := False;
+      when others =>
+        Put (Device.No_Command);
+      end case;
+    end case;
+  exception
+  when others =>
+    Log.Error ("Key_Handler failed");
+  end Key_Handler;
 
 
   function Convertion is new Ada.Unchecked_Conversion (Gui.Information, Name.Id_Access);
@@ -724,14 +846,15 @@ package body User is
                                               The_Title         => "",
                                               The_Width         => The_Display_Data.Width,
                                               The_Justification => Gui.Left);
+        Gui.Install_Key_Handler (Key_Handler'access);
       end Define_Control_Page;
 
 
       procedure Define_Display_Page is
 
-        Target_Declination_Text : constant String := "Target DEC"; -- largest text
+        Rotator_State_Text : constant String := "Rotator State"; -- largest text
 
-        Title_Size : constant Natural := Gui.Text_Size_Of (Target_Declination_Text) + Separation;
+        Title_Size : constant Natural := Gui.Text_Size_Of (Rotator_State_Text) + Separation;
         Text_Size  : constant Natural := Gui.Text_Size_Of ("+360d00'00.0""") + Separation;
 
       begin
@@ -744,7 +867,7 @@ package body User is
                                  Is_Modifiable  => False,
                                  The_Size       => Text_Size,
                                  The_Title_Size => Title_Size);
-        Target_Dec := Gui.Create (Display_Page, Target_Declination_Text, "",
+        Target_Dec := Gui.Create (Display_Page, "Target DEC", "",
                                   Is_Modifiable  => False,
                                   The_Size       => Text_Size,
                                   The_Title_Size => Title_Size);
@@ -781,7 +904,7 @@ package body User is
                                    The_Size       => Text_Size,
                                    The_Title_Size => Title_Size);
 
-        Rotator_State := Gui.Create (Display_Page, "Rotator State", "",
+        Rotator_State := Gui.Create (Display_Page, Rotator_State_Text, "",
                                      Is_Modifiable  => False,
                                      The_Size       => Text_Size,
                                      The_Title_Size => Title_Size);
@@ -795,6 +918,10 @@ package body User is
                                   Is_Modifiable  => False,
                                   The_Size       => Text_Size,
                                   The_Title_Size => Title_Size);
+        Time_Offset := Gui.Create (Display_Page, "Time Offset", "",
+                                   Is_Modifiable  => False,
+                                   The_Size       => Text_Size,
+                                   The_Title_Size => Title_Size);
       end Define_Display_Page;
 
 

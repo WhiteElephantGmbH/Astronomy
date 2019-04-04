@@ -19,6 +19,7 @@ with Angle;
 with Device;
 with Network.Udp;
 with Serial_Io;
+with Stellarium;
 
 package Parameter is
 
@@ -100,14 +101,21 @@ package Parameter is
   function Second_Lower_Limit return Angle.Degrees;
 
 
-  -------------
-  -- Servers --
-  -------------
+  -----------
+  -- Lx200 --
+  -----------
 
   function Lx200_Port return Network.Port_Number;
 
+
+  ----------------
+  -- Stellarium --
+  ----------------
+  
   function Stellarium_Port return Network.Port_Number;
 
   function Satellites_Filename return String;
+
+  function Magnitude_Maximum return Stellarium.Magnitude;
 
 end Parameter;

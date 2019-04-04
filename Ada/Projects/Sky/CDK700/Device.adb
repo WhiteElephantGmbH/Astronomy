@@ -22,6 +22,7 @@ with PWI.Mount;
 with PWI.M3;
 with PWI.Rotator;
 with Traces;
+with System;
 
 package body Device is
 
@@ -204,7 +205,7 @@ package body Device is
   end Action;
 
 
-  task type Control is
+  task type Control with Priority => System.Max_Priority is
 
     entry Start (Mount_State_Handler   : Mount.State_Handler_Access;
                  M3_Position_Handler   : M3.Position_Handler_Access;
@@ -530,6 +531,12 @@ package body Device is
     end Image_Of;
 
 
+    function Image_Of (The_Speed : Speed) return String is
+    begin
+      return " - RA_Rate:" & The_Speed(D1)'img & " - DEC_Rate: " & The_Speed(D2)'img;
+    end Image_Of;
+
+
     function Actual_Info return Information is
       Mount_Info : constant PWI.Mount.Information := PWI.Mount.Info;
       use type Angle.Value;
@@ -594,31 +601,27 @@ package body Device is
 
 
     procedure Goto_Target (Direction       :     Space.Direction;
+                           With_Speed      :     Speed;
                            Completion_Time : out Time.Ut) is
+      use type Angle.Degrees;
       use type Angle.Signed;
       use type Angle.Value;
     begin
-      Log.Write ("Mount.Goto_Target " & Image_Of (Direction));
-      Action.Move (Ra         => PWI.Mount.Hours(Angle.Hours'(+Space.Ra_Of (Direction))),
-                   Dec        => PWI.Mount.Degrees(Angle.Degrees'(+Angle.Signed'(+Space.Dec_Of (Direction)))),
-                   From_J2000 => False);
+      if With_Speed = (0, 0) then
+        Log.Write ("Mount.Goto_Target " & Image_Of (Direction));
+        Action.Move (Ra         => PWI.Mount.Hours(Angle.Hours'(+Space.Ra_Of (Direction))),
+                     Dec        => PWI.Mount.Degrees(Angle.Degrees'(+Angle.Signed'(+Space.Dec_Of (Direction)))),
+                     From_J2000 => False);
+      else
+        Log.Write ("Mount.Goto_Target " & Image_Of (Direction) & " " & Image_Of (With_Speed));
+        Action.Move (Ra         => PWI.Mount.Hours(Angle.Hours'(+Space.Ra_Of (Direction))),
+                     Dec        => PWI.Mount.Degrees(Angle.Degrees'(+Angle.Signed'(+Space.Dec_Of (Direction)))),
+                     Ra_Rate    => PWI.Mount.Speed(Angle.Degrees'(+With_Speed(D1)) * 3600.0),
+                     Dec_Rate   => PWI.Mount.Speed(Angle.Degrees'(+With_Speed(D2)) * 3600.0),
+                     From_J2000 => False);
+      end if;
       Completion_Time := Time.Universal + 22.0;
     end Goto_Target;
-
-
-    procedure Update_Target (Direction  : Space.Direction;
-                             With_Speed : Speed) is
-      use type Angle.Signed;
-      use type Angle.Value;
-      use type Angle.Degrees;
-    begin
-      Log.Write ("Mount.Goto_Target " & Image_Of (Direction));
-      Action.Move (Ra         => PWI.Mount.Hours(Angle.Hours'(+Space.Ra_Of (Direction))),
-                   Dec        => PWI.Mount.Degrees(Angle.Degrees'(+Angle.Signed'(+Space.Dec_Of (Direction)))),
-                   Ra_Rate    => PWI.Mount.Speed(Angle.Degrees'(+With_Speed(D1)) * 3600.0),
-                   Dec_Rate   => PWI.Mount.Speed(Angle.Degrees'(+With_Speed(D2)) * 3600.0),
-                   From_J2000 => False);
-    end Update_Target;
 
 
     procedure Goto_Mark (Direction       :     Earth.Direction;

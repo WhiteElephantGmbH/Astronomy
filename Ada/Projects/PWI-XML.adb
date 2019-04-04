@@ -23,6 +23,7 @@ package body PWI.XML is
     return Boolean'value(Strings.Uppercase_Of (Image));
   exception
   when others =>
+    Log.Error ("Boolean_Of (Image -> """ & Image & """)");
     raise Parsing_Error;
   end Boolean_Of;
 
@@ -46,6 +47,7 @@ package body PWI.XML is
     end if;
   exception
   when others =>
+    Log.Error ("Time_Of (Image -> """ & Image & """)");
     raise Parsing_Error;
   end Time_Of;
 
@@ -76,6 +78,7 @@ package body PWI.XML is
     end if;
     exception
   when others =>
+    Log.Error ("Time_Of (Image -> """ & Image & """)");
     raise Parsing_Error;
   end Time_Of;
 
@@ -101,6 +104,7 @@ package body PWI.XML is
       return Julian_Day'value(Image & ".0");
     exception
     when others =>
+      Log.Error ("Jd_Of (Image -> """ & Image & """)");
       raise Parsing_Error;
     end;
   end Jd_Of;
@@ -117,6 +121,7 @@ package body PWI.XML is
     return Focuser_Position'value(Image);
   exception
   when others =>
+    Log.Error ("Focuser_Position_Of (Image -> """ & Image & """)");
     raise Parsing_Error;
   end Focuser_Position_Of;
 
@@ -132,6 +137,7 @@ package body PWI.XML is
     return Rotator_Position'value(Image);
   exception
   when others =>
+    Log.Error ("Rotator_Position_Of (Image -> """ & Image & """)");
     raise Parsing_Error;
   end Rotator_Position_Of;
 
@@ -160,6 +166,7 @@ package body PWI.XML is
                         Centi_Seconds => Centi_Second'value(Image(Image'last - 1 .. Image'last)));
   exception
   when others =>
+    Log.Error ("Declination_Of (Image -> """ & Image & """)");
     raise Parsing_Error;
   end Declination_Of;
 
@@ -181,6 +188,7 @@ package body PWI.XML is
     return Radian'value(Image);
   exception
   when others =>
+    Log.Error ("Radian_Of (Image -> """ & Image & """)");
     raise Parsing_Error;
   end Radian_Of;
 
@@ -196,6 +204,7 @@ package body PWI.XML is
     return Arc_Second'value(Image);
   exception
   when others =>
+    Log.Error ("Arc_Second_Of (Image -> """ & Image & """)");
     raise Parsing_Error;
   end Arc_Second_Of;
 
@@ -211,6 +220,7 @@ package body PWI.XML is
     return Error_Code'value(Image);
   exception
   when others =>
+    Log.Error ("Error_Code_Of (Image -> """ & Image & """)");
     raise Parsing_Error;
   end Error_Code_Of;
 
@@ -226,6 +236,7 @@ package body PWI.XML is
     return Port_Number'value(Image);
   exception
   when others =>
+    Log.Error ("Port_Number_Of (Image -> """ & Image & """)");
     raise Parsing_Error;
   end Port_Number_Of;
 
@@ -241,6 +252,7 @@ package body PWI.XML is
     return M3_Position'value(Image);
   exception
   when others =>
+    Log.Error ("M3_Position_Of (Image -> """ & Image & """)");
     raise Parsing_Error;
   end M3_Position_Of;
 
@@ -260,6 +272,7 @@ package body PWI.XML is
     end if;
   exception
   when others =>
+    Log.Error ("Degrees_Of (Image -> """ & Image & """)");
     raise Parsing_Error;
   end Degrees_Of;
 

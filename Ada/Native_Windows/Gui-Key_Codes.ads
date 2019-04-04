@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2015 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2015 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -47,6 +47,7 @@ package Gui.Key_Codes is
   K_Delete : constant Key_Code := Win32.Winuser.VK_DELETE;
   K_Menu   : constant Key_Code := Win32.Winuser.VK_MENU;
   K_Return : constant Key_Code := -1; -- not used
+  K_Space  : constant Key_Code := Win32.Winuser.VK_SPACE;
   K_Tab    : constant Key_Code := Win32.Winuser.VK_TAB;
 
   K_Page_Down : constant Key_Code := Win32.Winuser.VK_NEXT;

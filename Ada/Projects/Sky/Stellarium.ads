@@ -27,6 +27,8 @@ package Stellarium is
 
   subtype Port_Number is Network.Port_Number;
 
+  type Magnitude is delta 0.1 range -30.0 .. 30.0;
+
   type Goto_Handler is access procedure (Direction : Space.Direction);
 
   function Startup (Filename : String;

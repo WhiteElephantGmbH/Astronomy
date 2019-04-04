@@ -21,7 +21,7 @@ package User.Input is
 
   procedure Open;
 
-  type Source is (Ascom, Button, Lx200);
+  type Source is (Ascom, Keypad, Lx200);
 
   procedure Put (The_Command : Device.Command;
                  From        : Source);

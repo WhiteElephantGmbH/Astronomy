@@ -23,6 +23,7 @@ with Gui;
 with Lx200;
 with Moon;
 with Name;
+with Neo;
 with Network.Tcp;
 with Os.Application;
 with Parameter;
@@ -92,6 +93,8 @@ package body Control is
               return Is_To_Add (User.Solar_System, Solar_System.Direction_Of (Item, Ut));
             when Name.Small_Solar_System_Body =>
               return Is_To_Add (User.Solar_System, Sssb.Direction_Of (Item, Ut));
+            when Name.Near_Earth_Object =>
+              return User.Is_Selected (User.Near_Earth_Objects) and then Neo.Is_Arriving (Item);
             when Name.Landmark =>
               return True;
             when Name.Sky_Object =>
@@ -338,9 +341,20 @@ package body Control is
 
     The_Data : Telescope.Data;
 
-    The_Landmark : Name.Id;
+    The_Neo_Target : Name.Id;
+    The_Landmark   : Name.Id;
 
-    The_Completion_Time : Time.Ut := 0.0;
+    The_Completion_Time : Time.Ut := Time.In_The_Past;
+
+
+    function Arrival_Time return Time.Ut is
+    begin
+      if Name.Is_Known (The_Neo_Target) then
+        return Neo.Arrival_Time_Of (The_Neo_Target);
+      else
+        return Time.In_The_Past;
+      end if;
+    end Arrival_Time;
 
 
     procedure Define_External_Target is
@@ -349,6 +363,7 @@ package body Control is
       New_Target_Direction := Action_Handler.New_Direction;
       Telescope.Define_Space_Access (Target_Direction_Of'access, Name.No_Id);
       The_Landmark := Name.No_Id;
+      The_Neo_Target := Name.No_Id;
     end Define_External_Target;
 
 
@@ -373,24 +388,39 @@ package body Control is
       User.Show (The_Data);
       if The_Data.Target_Lost then
         The_Landmark := Name.No_Id;
+        The_Neo_Target := Name.No_Id;
         User.Clear_Target;
+      end if;
+      if Name.Is_Known (The_Neo_Target) then
+        declare
+          Arriving_In : Time.Ut := Neo.Arrival_Time_Of (The_Neo_Target);
+        begin
+          if Arriving_In /= Time.In_The_Past then
+            Arriving_In := Arriving_In - Time.Universal;
+            if Arriving_In >= 0.0 then
+              User.Show (Arriving_In);
+            end if;
+          end if;
+        end;
       end if;
       case The_Data.Status is
       when Telescope.Homing | Telescope.Positioning | Telescope.Approaching =>
         declare
           Actual_Duration : Time.Ut := The_Data.Completion_Time - Time.Universal;
         begin
-          if Actual_Duration < 0.0 then
-            Actual_Duration := 0.0;
+          if Actual_Duration < Time.In_The_Past then
+            Actual_Duration := Time.In_The_Past;
           end if;
           if The_Completion_Time <= Actual_Duration then
             The_Completion_Time := Actual_Duration;
-          elsif Actual_Duration /= 0.0 then
+          elsif Actual_Duration /= Time.In_The_Past then
             User.Show (User.Percent(Float(Actual_Duration) * Float(User.Percent'last) / Float(The_Completion_Time)));
+          else
+            User.Show (The_Progress => 0);
           end if;
         end;
       when others =>
-        The_Completion_Time := 0.0;
+        The_Completion_Time := Time.In_The_Past;
         User.Show (The_Progress => 0);
       end case;
       case The_Data.Status is
@@ -433,6 +463,7 @@ package body Control is
           begin
             User.Show_Description ("");
             The_Landmark := Name.No_Id;
+            The_Neo_Target := Name.No_Id;
             Targets.Get_For (User.Target_Name, The_Item);
             if Name.Is_Known (The_Item)  then
               case Name.Kind_Of (The_Item) is
@@ -452,6 +483,9 @@ package body Control is
                 end if;
               when Name.Small_Solar_System_Body =>
                 Telescope.Define_Space_Access (Sssb.Direction_Of'access, The_Item);
+              when Name.Near_Earth_Object =>
+                Telescope.Define_Space_Access (Neo.Direction_Of'access, The_Item);
+                The_Neo_Target := The_Item;
               when Name.Landmark =>
                 The_Landmark := The_Item;
               end case;
@@ -465,7 +499,7 @@ package body Control is
           Telescope.Halt;
         when Go_To =>
           if The_Landmark = Name.No_Id then
-            Telescope.Follow;
+            Telescope.Follow (Arrival_Time);
           else
             Telescope.Position_To (The_Landmark);
           end if;
@@ -509,6 +543,7 @@ package body Control is
   procedure Read_Data is
   begin
     Sky_Line.Read;
+    Neo.Add_Objects;
     Name.Read_Favorites;
   end Read_Data;
 

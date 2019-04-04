@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2013 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2013 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -20,6 +20,7 @@ with Ada.Text_IO;
 with File;
 with Norad;
 with Parameter;
+with Stellarium;
 with String_List;
 with Strings;
 with Text;
@@ -226,10 +227,12 @@ package body Satellite is
 
 
     Handle_String : access procedure := null;
+    Handle_Number : access procedure := null;
     Handle_True   : access procedure := null;
 
     Is_Satellites : Boolean := False;
     The_Name      : Text.String;
+    The_Magnitude : Stellarium.Magnitude;
     The_Data      : Norad.Two_Line;
     The_Names     : String_List.Item;
     Neo_File      : Ada.Text_IO.File_Type;
@@ -258,6 +261,15 @@ package body Satellite is
     end Add_Name;
 
 
+    procedure Add_Magnitude is
+    begin
+      The_Magnitude := Stellarium.Magnitude'value(Token_Image);
+    exception
+    when others =>
+      Log.Error ("incorrect magnitude");
+    end Add_Magnitude;
+
+
     procedure Add_Tle1 is
     begin
       The_Data(1) := Token_Image;
@@ -274,8 +286,11 @@ package body Satellite is
       Filename  : constant String := Text.String_Of (The_Name);
       Full_Name : constant String := File.Composure (Directory, Filename, Extension);
       use type String_List.Item;
+      use type Stellarium.Magnitude;
     begin
-      if not The_Names.Contains (Filename) and then not Norad.Is_In_Deep_Space (The_Data) then
+      if The_Magnitude <= Parameter.Magnitude_Maximum and then not The_Names.Contains (Filename) and then
+        not Norad.Is_In_Deep_Space (The_Data)
+      then
         The_Names := The_Names + Filename;
         Ada.Text_IO.Create (Neo_File, Name => Full_Name);
         Ada.Text_IO.Put_Line (Neo_File, The_Data(1));
@@ -314,7 +329,10 @@ package body Satellite is
               when 3 =>
                 if Is_Satellites then
                   if Name = "name" then
+                    The_Magnitude := Stellarium.Magnitude'last;
                     Handle_String := Add_Name'access;
+                  elsif Name = "stdMag" then
+                    Handle_Number := Add_Magnitude'access;
                   elsif Name = "tle1" then
                     Handle_String := Add_Tle1'access;
                   elsif Name = "tle2" then
@@ -358,7 +376,10 @@ package body Satellite is
         end if;
       when Number =>
         --Log.Write ("Number: " & Token_Image);
-        null;
+        if Handle_Number /= null then
+          Handle_Number.all;
+          Handle_Number := null;
+        end if;
       when Start_Object =>
         Get_Object;
       when Start_Array =>

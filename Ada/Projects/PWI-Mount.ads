@@ -10,7 +10,7 @@ package PWI.Mount is
 
   type Degrees is delta 0.0000001 range -360.0 .. 360.0;
 
-  type Speed is delta 0.001 range -1_000_000.0 .. 1_000_000.0; -- arcsec / sec
+  subtype Speed is Arc_Second;
 
   type State is (Disconnected, -- not Connected
                  Connected,    -- Connected and not (Azm_Enabled and Alt_Enabled)
