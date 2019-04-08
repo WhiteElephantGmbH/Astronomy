@@ -555,7 +555,7 @@ package body Name is
         Put (Image_Of (Lexicon.Neptune));
         Put (Image_Of (Lexicon.Pluto));
         Put ("");
-        Put ("LM " & Image_Of (Lexicon.Road_Sign) & " | 265°36'24"" | -2°00'54""");
+        Put ("LM " & Image_Of (Lexicon.Road_Sign) & " | 259°43' | 2°38'");
         Put ("");
         Put ("LM " & Image_Of (Lexicon.North) & " |   0° | 0°");
         Put ("LM " & Image_Of (Lexicon.South) & " | 180° | 0°");

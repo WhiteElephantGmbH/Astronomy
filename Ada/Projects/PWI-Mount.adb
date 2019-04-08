@@ -197,6 +197,18 @@ package body PWI.Mount is
   end Move;
 
 
+  procedure Jog (Alt_Rate : Axis_Rate;
+                 Azm_Rate : Axis_Rate) is
+
+    Alt_Image : constant String := Strings.Trimmed (Alt_Rate'img);
+    Azm_Image : constant String := Strings.Trimmed (Azm_Rate'img);
+
+  begin
+    Execute (Command_Name => "jog",
+             Parameters   => "axis1rate=" & Azm_Image & "&axis2rate=" & Alt_Image);
+  end Jog;
+
+
   procedure Stop is
   begin
     Execute ("stop");

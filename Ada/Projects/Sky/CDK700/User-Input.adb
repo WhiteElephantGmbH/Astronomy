@@ -27,8 +27,10 @@ package body User.Input is
                    Move_Left,
                    Move_Right,
                    End_Move,
-                   Increase,
-                   Decrease,
+                   Decrease_Time,
+                   Increase_Time,
+                   Decrease_Speed,
+                   Increase_Speed,
                    End_Change,
                    Set_Guiding_Rate,
                    Set_Centering_Rate,
@@ -39,7 +41,7 @@ package body User.Input is
 
   subtype Move is Command range Move_Up .. Move_Right;
 
-  subtype Change is Command range Increase .. Decrease;
+  subtype Change is Command range Decrease_Time .. Increase_Speed;
 
   subtype Set_Rate is Command range Set_Guiding_Rate .. Set_Slewing_Rate;
 
@@ -104,10 +106,14 @@ package body User.Input is
           Active_Command := Move_Left;
         when Device.Move_Right =>
           Active_Command := Move_Right;
-        when Device.Increase =>
-          Active_Command := Increase;
-        when Device.Decrease =>
-          Active_Command := Decrease;
+        when Device.Decrease_Time =>
+          Active_Command := Decrease_Time;
+        when Device.Increase_Time =>
+          Active_Command := Increase_Time;
+        when Device.Decrease_Speed =>
+          Active_Command := Decrease_Speed;
+        when Device.Increase_Speed =>
+          Active_Command := Increase_Speed;
         when Device.Set_Guiding_Rate =>
           Active_Command := Set_Guiding_Rate;
         when Device.Set_Centering_Rate =>
@@ -201,10 +207,14 @@ package body User.Input is
         Telescope.Execute (Telescope.Move_Right);
       when End_Move =>
         Telescope.Execute (Telescope.End_Move);
-      when Increase =>
-        Telescope.Execute (Telescope.Increase);
-      when Decrease =>
-        Telescope.Execute (Telescope.Decrease);
+      when Decrease_Speed =>
+        Telescope.Execute (Telescope.Decrease_Speed);
+      when Increase_Speed =>
+        Telescope.Execute (Telescope.Increase_Speed);
+      when Decrease_Time =>
+        Telescope.Execute (Telescope.Decrease_Time);
+      when Increase_Time =>
+        Telescope.Execute (Telescope.Increase_Time);
       when End_Change =>
         Telescope.Execute (Telescope.End_Change);
       when Set_Guiding_Rate =>

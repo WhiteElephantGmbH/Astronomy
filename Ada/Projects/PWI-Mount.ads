@@ -12,6 +12,8 @@ package PWI.Mount is
 
   subtype Speed is Arc_Second;
 
+  subtype Axis_Rate is Degrees; -- per second
+
   type State is (Disconnected, -- not Connected
                  Connected,    -- Connected and not (Azm_Enabled and Alt_Enabled)
                  Enabled,      -- Azm_Enabled and Alt_Enabled and not Encoders_Have_Been_Set and not Is_Finding_Home
@@ -65,6 +67,9 @@ package PWI.Mount is
 
   procedure Move (Alt : Degrees;
                   Azm : Degrees);
+
+  procedure Jog (Alt_Rate : Axis_Rate;
+                 Azm_Rate : Axis_Rate);
 
   procedure Stop;
 

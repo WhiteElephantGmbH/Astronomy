@@ -40,7 +40,8 @@ package body Device is
                         Set_Pointing_Model,
                         Goto_Target,
                         Update_Target,
-                        Goto_Mark);
+                        Goto_Mark,
+                        Jog);
 
   type M3_Action is (No_Action,
                      Turn_To_Camera,
@@ -82,6 +83,9 @@ package body Device is
 
     procedure Move (Alt : PWI.Mount.Degrees;
                     Azm : PWI.Mount.Degrees);
+
+    procedure Jog (Alt_Rate : PWI.Mount.Axis_Rate;
+                   Azm_Rate : PWI.Mount.Axis_Rate);
 
     procedure Put (Item : M3_Action);
 
@@ -159,6 +163,16 @@ package body Device is
       The_Parameter.Azm := Azm;
       Is_Pending := True;
     end Move;
+
+
+    procedure Jog (Alt_Rate : PWI.Mount.Axis_Rate;
+                   Azm_Rate : PWI.Mount.Axis_Rate) is
+    begin
+      The_Mount_Action := Jog;
+      The_Parameter.Alt := Alt_Rate;
+      The_Parameter.Azm := Azm_Rate;
+      Is_Pending := True;
+    end Jog;
 
 
     procedure Put (Item : M3_Action) is
@@ -341,6 +355,9 @@ package body Device is
           when Goto_Mark =>
             PWI.Mount.Move (Alt => The_Parameter.Alt,
                             Azm => The_Parameter.Azm);
+          when Jog =>
+            PWI.Mount.Jog (Alt_Rate => The_Parameter.Alt,
+                           Azm_Rate => The_Parameter.Azm);
           end case;
 
           case The_M3_Action is
@@ -636,20 +653,15 @@ package body Device is
     end Goto_Mark;
 
 
-    procedure Direct (The_Drive  : Drive;
-                      With_Speed : Angle.Signed) is
-      pragma Unreferenced (With_Speed);
+    procedure Jog (Rate : Speed) is
+      use type Angle.Signed;
+      Alt_Rate : constant PWI.Mount.Axis_Rate := PWI.Mount.Axis_Rate(Angle.Degrees'(+Rate(D2)));
+      Azm_Rate : constant PWI.Mount.Axis_Rate := PWI.Mount.Axis_Rate(Angle.Degrees'(+Rate(D1)));
     begin
-      Log.Write ("Mount.Direct " & The_Drive'img);
-    end Direct;
-
-
-    procedure Adjust (The_Drive  : Drive;
-                      With_Speed : Angle.Signed) is
-      pragma Unreferenced (With_Speed);
-    begin
-      Log.Write ("Mount.Adjust " & The_Drive'img);
-    end Adjust;
+      Log.Write ("Mount.Jog - Alt_Rate:" & Alt_Rate'img & " - Azm_Rate:" & Azm_Rate'img);
+      Action.Jog (Alt_Rate => Alt_Rate,
+                  Azm_Rate => Azm_Rate);
+    end Jog;
 
 
     procedure Stop is

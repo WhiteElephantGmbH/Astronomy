@@ -92,7 +92,7 @@ package body Telescope is
   Signal_Information_Update : Information_Update_Handler;
 
   procedure Start (Update_Handler : Information_Update_Handler) is
-  begin -- Start
+  begin
     Signal_Information_Update := Update_Handler;
     Control := new Control_Task;
     Control.Start;
@@ -178,8 +178,6 @@ package body Telescope is
     The_Landmark : Name.Id;
 
     type Adjusting_Kind is (First_Adjusting, Second_Adjusting, Time_Adjusting);
-
-    Adjusting_Stopped : constant Angle.Signed := 0;
 
     The_Adjusting_Kind        : Adjusting_Kind;
     The_Adjusting_Start_Time  : Time.Ut := Time.In_The_Future;
@@ -414,24 +412,28 @@ package body Telescope is
 
 
     procedure Direct_Handling is
-      Speed : constant Angle.Value := Moving_Speeds(Directing_Index);
       use type Angle.Signed;
+      Speed : constant Angle.Signed := +Moving_Speeds(Directing_Index);
     begin
       case The_User_Command is
       when Move_Left =>
-        Mount.Direct (Mount.D1, -Speed);
+        Mount.Jog ((Mount.D1 => -Speed, Mount.D2 => 0));
       when Move_Right =>
-        Mount.Direct (Mount.D1, +Speed);
+        Mount.Jog ((Mount.D1 => +Speed, Mount.D2 => 0));
       when Move_Up =>
-        Mount.Direct (Mount.D2, +Speed);
+        Mount.Jog ((Mount.D1 => 0, Mount.D2 => +Speed));
       when Move_Down =>
-        Mount.Direct (Mount.D2, -Speed);
+        Mount.Jog ((Mount.D1 => 0, Mount.D2 => -Speed));
       when End_Move =>
-        Mount.Stop;
-      when Increase =>
-        Change_Directing_Speed (+1);
-      when Decrease =>
+        Mount.Jog ((0, 0));
+      when Decrease_Speed =>
         Change_Directing_Speed (-1);
+      when Increase_Speed =>
+        Change_Directing_Speed (+1);
+      when Decrease_Time =>
+        null;
+      when Increase_Time =>
+        null;
       when End_Change =>
         null;
       when Set_Guiding_Rate =>
@@ -446,23 +448,33 @@ package body Telescope is
     end Direct_Handling;
 
 
-    First_Adjust_Factor : Angle.Signed := 1;
+    First_Adjust_Factor     : Angle.Signed := 1;
+    Second_Adjust_Factor    : Angle.Signed := 1;
+    The_First_Adjust_Speed  : Angle.Signed := 0;
+    The_Second_Adjust_Speed : Angle.Signed := 0;
 
-    procedure Adjust_First (The_Speed : Angle.Signed) is
+    procedure Adjust is
       use type Angle.Signed;
     begin
-      Mount.Adjust (Mount.D1, The_Speed * First_Adjust_Factor);
+      Mount.Jog ((Mount.D1 => The_First_Adjust_Speed * First_Adjust_Factor,
+                  Mount.D2 => The_Second_Adjust_Speed * Second_Adjust_Factor));
+    end Adjust;
+
+
+    procedure Adjust_First (The_Speed : Angle.Signed) is
+    begin
       The_Adjusting_Kind := First_Adjusting;
+      The_First_Adjust_Speed := The_Speed;
+      Adjust;
     end Adjust_First;
 
-
-    Second_Adjust_Factor : Angle.Signed := 1;
 
     procedure Adjust_Second (The_Speed : Angle.Signed) is
       use type Angle.Signed;
     begin
-      Mount.Adjust (Mount.D2, The_Speed * Second_Adjust_Factor);
       The_Adjusting_Kind := Second_Adjusting;
+      The_Second_Adjust_Speed := The_Speed;
+      Adjust;
     end Adjust_Second;
 
 
@@ -479,9 +491,11 @@ package body Telescope is
     begin
       case The_Adjusting_Kind is
       when First_Adjusting =>
-        Mount.Adjust (Mount.D1, Adjusting_Stopped);
+        The_First_Adjust_Speed := 0;
+        Adjust;
       when Second_Adjusting =>
-        Mount.Adjust (Mount.D2, Adjusting_Stopped);
+        The_Second_Adjust_Speed := 0;
+        Adjust;
       when Time_Adjusting =>
         The_Adjusting_End_Time := Time.Universal;
       end case;
@@ -503,18 +517,14 @@ package body Telescope is
         Adjust_Second (-Speed);
       when End_Move =>
         End_Adjust;
-      when Increase =>
-        if Is_Fast_Tracking then
-          Adjust_Time (+Time_Adjusting_Factor);
-        else
-          Change_Adjusting_Speed (+1);
-        end if;
-      when Decrease =>
-        if Is_Fast_Tracking then
-          Adjust_Time (-Time_Adjusting_Factor);
-        else
-          Change_Adjusting_Speed (-1);
-        end if;
+      when Decrease_Speed =>
+        Change_Adjusting_Speed (-1);
+      when Increase_Speed =>
+        Change_Adjusting_Speed (+1);
+      when Decrease_Time =>
+        Adjust_Time (-Time_Adjusting_Factor);
+      when Increase_Time =>
+        Adjust_Time (+Time_Adjusting_Factor);
       when End_Change =>
         End_Adjust;
       when Set_Guiding_Rate =>

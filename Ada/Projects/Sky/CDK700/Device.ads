@@ -27,8 +27,10 @@ package Device is
                    Move_Right,
                    Move_Up,
                    Move_Down,
-                   Increase,
-                   Decrease,
+                   Increase_Speed,
+                   Decrease_Speed,
+                   Increase_Time,
+                   Decrease_Time,
                    Enter,
                    Stop,
                    Set_Guiding_Rate,
@@ -87,13 +89,7 @@ package Device is
     procedure Goto_Mark (Direction       :     Earth.Direction;
                          Completion_Time : out Time.Ut);
 
-    procedure Direct (The_Drive  : Drive;
-                      With_Speed : Angle.Signed);
-    -- move drive
-
-    procedure Adjust (The_Drive  : Drive;
-                      With_Speed : Angle.Signed);
-    -- adjust drive
+    procedure Jog (Rate : Speed);
 
     procedure Stop;
     -- stoppes the motors
