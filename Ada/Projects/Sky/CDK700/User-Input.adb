@@ -29,9 +29,9 @@ package body User.Input is
                    End_Move,
                    Decrease_Time,
                    Increase_Time,
+                   End_Change,
                    Decrease_Speed,
                    Increase_Speed,
-                   End_Change,
                    Set_Guiding_Rate,
                    Set_Centering_Rate,
                    Set_Finding_Rate,
@@ -41,7 +41,9 @@ package body User.Input is
 
   subtype Move is Command range Move_Up .. Move_Right;
 
-  subtype Change is Command range Decrease_Time .. Increase_Speed;
+  subtype Change_Speed is Command range Decrease_Speed .. Increase_Speed;
+
+  subtype Change_Time is Command range Decrease_Time .. Increase_Time;
 
   subtype Set_Rate is Command range Set_Guiding_Rate .. Set_Slewing_Rate;
 
@@ -79,12 +81,12 @@ package body User.Input is
             Active_Command := End_Move;
             New_Command := True;
           end if;
-        when Change =>
+        when Change_Time =>
           if From_Source = From and The_Command = Device.No_Command then
             Active_Command := End_Change;
             New_Command := True;
           end if;
-        when End_Move | End_Change | Enter | Set_Rate =>
+        when End_Move | End_Change | Enter | Change_Speed | Set_Rate =>
           null;
         end case;
         if The_Command = Device.Stop then
@@ -134,7 +136,7 @@ package body User.Input is
 
     function In_Action return Boolean is
     begin
-      return Active_Command in Move | Change;
+      return Active_Command in Move | Change_Time;
     end In_Action;
 
 
@@ -150,7 +152,7 @@ package body User.Input is
     begin
       The_Command := Active_Command;
       case The_Command is
-      when Move | Change =>
+      when Move | Change_Time =>
         null;
       when others =>
         Is_Active := False;

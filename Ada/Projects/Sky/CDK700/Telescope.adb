@@ -16,7 +16,6 @@
 pragma Style_White_Elephant;
 
 with Ada.Real_Time;
-with Angle;
 with Numerics;
 with Parameter;
 with System;
@@ -191,7 +190,8 @@ package body Telescope is
                    Halt,
                    Follow,
                    Position,
-                   User_Command,
+                   User_Adjust,
+                   User_Setup,
                    Mount_Unknown,
                    Mount_Disconnected,
                    Mount_Connected,
@@ -214,7 +214,8 @@ package body Telescope is
 
     The_Rotator_State : Rotator.State := Rotator.Unknown;
 
-    The_User_Command : Command;
+    The_User_Adjust : Adjust;
+    The_User_Setup  : Setup;
 
     Id            : Name.Id;
     Get_Direction : Get_Space_Access;
@@ -283,50 +284,26 @@ package body Telescope is
     end Goto_Waiting_Position;
 
 
-    Moving_Speeds   : constant Angle.Values := Parameter.Moving_Speeds;
-    Adjusting_Index : Integer := Moving_Speeds'first + 1;
-    Directing_Index : Integer := Moving_Speeds'last - 1;
+    Moving_Speeds : constant Angle.Values := Parameter.Moving_Speeds;
+    Moving_Index  : Integer := Moving_Speeds'first + 1;
 
-    procedure Set_Directing_Speed (Index : Integer) is
+    procedure Set_Moving_Speed (Index : Integer) is
     begin
-      Directing_Index := Index;
-      if Directing_Index < Moving_Speeds'first then
-        Directing_Index := Moving_Speeds'first;
-      elsif Directing_Index > Moving_Speeds'last then
-        Directing_Index := Moving_Speeds'last;
+      Moving_Index := Index;
+      if Moving_Index < Moving_Speeds'first then
+        Moving_Index := Moving_Speeds'first;
+      elsif Moving_Index > Moving_Speeds'last then
+        Moving_Index := Moving_Speeds'last;
       else
-        Log.Write ("set directing speed => " & Angle.Image_Of (Moving_Speeds(Directing_Index),
-                                                               Decimals => 3,
-                                                               Show_Signed => True));
+        Log.Write ("set moving speed => " & Angle.Image_Of (Moving_Speeds(Moving_Index), Decimals => 3));
       end if;
-    end Set_Directing_Speed;
+    end Set_Moving_Speed;
 
 
-    procedure Change_Directing_Speed (Increment : Integer) is
+    procedure Change_Moving_Speed (Increment : Integer) is
     begin
-      Set_Directing_Speed (Directing_Index + Increment);
-    end Change_Directing_Speed;
-
-
-    procedure Set_Adjusting_Speed (Index : Integer) is
-    begin
-      Adjusting_Index := Index;
-      if Adjusting_Index < Moving_Speeds'first then
-        Adjusting_Index := Moving_Speeds'first;
-      elsif Adjusting_Index > Moving_Speeds'last - 1 then
-        Adjusting_Index := Moving_Speeds'last - 1;
-      else
-        Log.Write ("set adjusting speed => " & Angle.Image_Of (Moving_Speeds(Adjusting_Index),
-                                                               Decimals => 3,
-                                                               Show_Signed => True));
-      end if;
-    end Set_Adjusting_Speed;
-
-
-    procedure Change_Adjusting_Speed (Increment : Integer) is
-    begin
-      Set_Adjusting_Speed (Adjusting_Index + Increment);
-    end Change_Adjusting_Speed;
+      Set_Moving_Speed (Moving_Index + Increment);
+    end Change_Moving_Speed;
 
 
     procedure Follow_New_Target is
@@ -411,61 +388,24 @@ package body Telescope is
     end Do_Position;
 
 
-    procedure Direct_Handling is
-      use type Angle.Signed;
-      Speed : constant Angle.Signed := +Moving_Speeds(Directing_Index);
-    begin
-      case The_User_Command is
-      when Move_Left =>
-        Mount.Jog ((Mount.D1 => -Speed, Mount.D2 => 0));
-      when Move_Right =>
-        Mount.Jog ((Mount.D1 => +Speed, Mount.D2 => 0));
-      when Move_Up =>
-        Mount.Jog ((Mount.D1 => 0, Mount.D2 => +Speed));
-      when Move_Down =>
-        Mount.Jog ((Mount.D1 => 0, Mount.D2 => -Speed));
-      when End_Move =>
-        Mount.Jog ((0, 0));
-      when Decrease_Speed =>
-        Change_Directing_Speed (-1);
-      when Increase_Speed =>
-        Change_Directing_Speed (+1);
-      when Decrease_Time =>
-        null;
-      when Increase_Time =>
-        null;
-      when End_Change =>
-        null;
-      when Set_Guiding_Rate =>
-        Set_Directing_Speed (Moving_Speeds'first);
-      when Set_Centering_Rate =>
-        Set_Directing_Speed (Moving_Speeds'first + 1);
-      when Set_Finding_Rate =>
-        Set_Directing_Speed (Moving_Speeds'last - 1);
-      when Set_Slewing_Rate =>
-        Set_Directing_Speed (Moving_Speeds'last);
-      end case;
-    end Direct_Handling;
-
-
     First_Adjust_Factor     : Angle.Signed := 1;
     Second_Adjust_Factor    : Angle.Signed := 1;
     The_First_Adjust_Speed  : Angle.Signed := 0;
     The_Second_Adjust_Speed : Angle.Signed := 0;
 
-    procedure Adjust is
+    procedure Jog is
       use type Angle.Signed;
     begin
       Mount.Jog ((Mount.D1 => The_First_Adjust_Speed * First_Adjust_Factor,
                   Mount.D2 => The_Second_Adjust_Speed * Second_Adjust_Factor));
-    end Adjust;
+    end Jog;
 
 
     procedure Adjust_First (The_Speed : Angle.Signed) is
     begin
       The_Adjusting_Kind := First_Adjusting;
       The_First_Adjust_Speed := The_Speed;
-      Adjust;
+      Jog;
     end Adjust_First;
 
 
@@ -474,7 +414,7 @@ package body Telescope is
     begin
       The_Adjusting_Kind := Second_Adjusting;
       The_Second_Adjust_Speed := The_Speed;
-      Adjust;
+      Jog;
     end Adjust_Second;
 
 
@@ -492,10 +432,10 @@ package body Telescope is
       case The_Adjusting_Kind is
       when First_Adjusting =>
         The_First_Adjust_Speed := 0;
-        Adjust;
+        Jog;
       when Second_Adjusting =>
         The_Second_Adjust_Speed := 0;
-        Adjust;
+        Jog;
       when Time_Adjusting =>
         The_Adjusting_End_Time := Time.Universal;
       end case;
@@ -503,10 +443,10 @@ package body Telescope is
 
 
     procedure Adjust_Handling is
-      Speed : constant Angle.Value := Moving_Speeds(Adjusting_Index);
+      Speed : constant Angle.Value := Moving_Speeds(Moving_Index);
       use type Angle.Signed;
     begin
-      case The_User_Command is
+      case The_User_Adjust is
       when Move_Left =>
         Adjust_First (-Speed);
       when Move_Right =>
@@ -517,26 +457,33 @@ package body Telescope is
         Adjust_Second (-Speed);
       when End_Move =>
         End_Adjust;
-      when Decrease_Speed =>
-        Change_Adjusting_Speed (-1);
-      when Increase_Speed =>
-        Change_Adjusting_Speed (+1);
       when Decrease_Time =>
         Adjust_Time (-Time_Adjusting_Factor);
       when Increase_Time =>
         Adjust_Time (+Time_Adjusting_Factor);
       when End_Change =>
         End_Adjust;
-      when Set_Guiding_Rate =>
-        Set_Adjusting_Speed (Moving_Speeds'first);
-      when Set_Centering_Rate =>
-        Set_Adjusting_Speed (Moving_Speeds'first + 1);
-      when Set_Finding_Rate =>
-        Set_Adjusting_Speed (Moving_Speeds'last - 1);
-      when Set_Slewing_Rate =>
-        Set_Adjusting_Speed (Moving_Speeds'last);
       end case;
     end Adjust_Handling;
+
+
+    procedure Setup_Handling is
+    begin
+      case The_User_Setup is
+      when Decrease_Speed =>
+        Change_Moving_Speed (-1);
+      when Increase_Speed =>
+        Change_Moving_Speed (+1);
+      when Set_Guiding_Rate =>
+        Set_Moving_Speed (Moving_Speeds'first);
+      when Set_Centering_Rate =>
+        Set_Moving_Speed (Moving_Speeds'first + 1);
+      when Set_Finding_Rate =>
+        Set_Moving_Speed (Moving_Speeds'last - 1);
+      when Set_Slewing_Rate =>
+        Set_Moving_Speed (Moving_Speeds'last);
+      end case;
+    end Setup_Handling;
 
 
   --=============
@@ -812,14 +759,14 @@ package body Telescope is
         The_State := Approaching;
       when Mount_Tracking =>
         The_State := Tracking;
-      when User_Command =>
-        Direct_Handling;
       when Position =>
         Do_Position;
       when Shutdown =>
         Fans.Turn_On_Or_Off;
         Mount.Disable;
         The_State := Disabling;
+      when User_Setup =>
+        Setup_Handling;
       when Follow =>
         Follow_New_Target;
       when others =>
@@ -855,11 +802,15 @@ package body Telescope is
       when Mount_Startup =>
         The_State := Mount_Startup_State (The_Event);
       when Mount_Stopped =>
-        The_State := Stopped;
+        The_State := Positioned;
       when Mount_Tracking =>
-        Stop_Target;
+        Mount.Stop;
       when Halt =>
         Stop_Target;
+      when User_Adjust =>
+        Adjust_Handling;
+      when User_Setup =>
+        Setup_Handling;
       when Follow =>
         Follow_New_Target;
       when Position =>
@@ -868,6 +819,31 @@ package body Telescope is
         null;
       end case;
     end Positioning_State;
+
+    ----------------
+    -- Positioned --
+    ----------------
+    procedure Positioned_State is
+    begin
+      case The_Event is
+      when Mount_Startup =>
+        The_State := Mount_Startup_State (The_Event);
+      when Mount_Tracking =>
+        The_State := Tracking;
+      when Halt =>
+        The_State := Stopped;
+      when User_Adjust =>
+        Adjust_Handling;
+      when User_Setup =>
+        Setup_Handling;
+      when Follow =>
+        Follow_New_Target;
+      when Position =>
+        Do_Position;
+      when others =>
+        null;
+      end case;
+    end Positioned_State;
 
     ---------------
     -- Preparing --
@@ -940,8 +916,10 @@ package body Telescope is
         end if;
       when Position =>
         Do_Position;
-      when User_Command =>
+      when User_Adjust =>
         Adjust_Handling;
+      when User_Setup =>
+        Setup_Handling;
       when others =>
         null;
       end case;
@@ -969,8 +947,10 @@ package body Telescope is
         end if;
       when Position =>
         Do_Position;
-      when User_Command =>
+      when User_Adjust =>
         Adjust_Handling;
+      when User_Setup =>
+        Setup_Handling;
       when others =>
         null;
       end case;
@@ -1040,8 +1020,14 @@ package body Telescope is
         or
           accept Execute (The_Command : Command) do
             if The_State >= Stopped then
-              The_Event := User_Command;
-              The_User_Command := The_Command;
+              case The_Command is
+              when Adjust =>
+                The_Event := User_Adjust;
+                The_User_Adjust := The_Command;
+              when Setup =>
+                The_Event := User_Setup;
+                The_User_Setup := The_Command;
+              end case;
             end if;
           end Execute;
         or
@@ -1120,6 +1106,7 @@ package body Telescope is
             end if;
             The_Data.Target_Lost := Target_Is_Lost;
             Target_Is_Lost := False;
+            The_Data.Moving_Speed := Moving_Speeds(Moving_Index);
           end Get;
         or
           delay until The_Next_Time;
@@ -1147,6 +1134,7 @@ package body Telescope is
           when Stopped       => Stopped_State;
           when Stopping      => Stopping_State;
           when Positioning   => Positioning_State;
+          when Positioned    => Positioned_State;
           when Preparing     => Preparing_State;
           when Waiting       => Waiting_State;
           when Approaching   => Approaching_State;

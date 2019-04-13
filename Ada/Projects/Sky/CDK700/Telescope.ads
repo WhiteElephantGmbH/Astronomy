@@ -15,6 +15,7 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with Angle;
 with Device;
 with Earth;
 with Name;
@@ -32,15 +33,19 @@ package Telescope is
                    Move_Up,
                    Move_Down,
                    End_Move,
-                   Decrease_Speed,
-                   Increase_Speed,
                    Decrease_Time,
                    Increase_Time,
                    End_Change,
+                   Decrease_Speed,
+                   Increase_Speed,
                    Set_Guiding_Rate,
                    Set_Centering_Rate,
                    Set_Finding_Rate,
                    Set_Slewing_Rate);
+
+  subtype Adjust is Command range Move_Left .. End_Change;
+
+  subtype Setup is Command range Decrease_Speed .. Set_Slewing_Rate;
 
   type State is (Unknown, -- PWI server not available
                  Disconnected,
@@ -56,6 +61,7 @@ package Telescope is
                  Stopped,
                  Stopping,
                  Positioning,
+                 Positioned,
                  Preparing,
                  Waiting,
                  Approaching,
@@ -72,6 +78,7 @@ package Telescope is
     Actual_J2000_Direction : Space.Direction;
     Actual_Direction       : Space.Direction;
     Local_Direction        : Earth.Direction;
+    Moving_Speed           : Angle.Value;
     M3_Position            : M3.Position;
     Rotator_State          : Rotator.State;
     Completion_Time        : Time.Ut;

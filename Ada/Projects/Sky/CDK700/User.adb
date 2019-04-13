@@ -17,6 +17,7 @@ pragma Style_White_Elephant;
 
 with Ada.Real_Time;
 with Ada.Unchecked_Conversion;
+with Angle;
 with Application;
 with Data;
 with Device;
@@ -62,6 +63,7 @@ package body User is
   Actual_Dec       : Gui.Plain_Edit_Box;
   Actual_Az        : Gui.Plain_Edit_Box;
   Actual_Alt       : Gui.Plain_Edit_Box;
+  Moving_Speed     : Gui.Plain_Edit_Box;
   M3_Position      : Gui.Plain_Edit_Box;
   Rotator_State    : Gui.Plain_Edit_Box;
   Lmst             : Gui.Plain_Edit_Box;
@@ -436,7 +438,8 @@ package body User is
         Enable_Goto_Button;
         Enable_Shutdown_Button;
         M3_Menu.Enable;
-      when Telescope.Waiting =>
+      when Telescope.Positioned | Telescope.Waiting =>
+        Enable_Stop_Button;
         Enable_Goto_Button;
       when Telescope.Positioning | Telescope.Preparing | Telescope.Approaching | Telescope.Tracking =>
         Enable_Goto_Button;
@@ -481,6 +484,7 @@ package body User is
         Gui.Set_Text (Actual_Alt, "");
         Gui.Set_Text (Actual_Az, "");
       end if;
+      Gui.Set_Text (Moving_Speed, Angle.Image_Of (Information.Moving_Speed, Decimals => 3));
       Gui.Set_Text (M3_Position, Strings.Legible_Of (Information.M3_Position'img));
       Gui.Set_Text (Rotator_State, Strings.Legible_Of (Information.Rotator_State'img));
       if Information.Universal_Time = Time.In_The_Past then
@@ -689,9 +693,10 @@ package body User is
   end Put;
 
 
-  Ignore_Next      : Boolean := False;
-  Space_Is_Pressed : Boolean := False;
-  Arrow_Is_Pressed : Boolean := False;
+  Ignore_Next       : Boolean := False;
+  Arrow_Was_Pressed : Boolean := False; -- whilst space is pressed
+  Is_Changing       : Boolean := False;
+  Space_Is_Pressed  : Boolean := False;
 
   procedure Key_Handler (The_Event    : Gui.Key_Event;
                          The_Key_Code : Gui.Key_Code) is
@@ -704,41 +709,46 @@ package body User is
     end case;
     case The_Event is
     when Gui.Key_Pressed =>
+      Log.Write ("Key pressed: " & The_Key_Code'img);
       if Ignore_Next then
         return;
       end if;
-      Log.Write ("Key pressed: " & The_Key_Code'img);
       case The_Key_Code is
       when Gui.Key_Codes.KP_2 | Gui.Key_Codes.KP_Down | Gui.Key_Codes.K_Down =>
         if Space_Is_Pressed then
           Put (Device.Decrease_Speed);
+          Arrow_Was_Pressed := True;
         else
+          Is_Changing := True;
           Put (Device.Move_Down);
         end if;
-        Arrow_Is_Pressed := True;
       when Gui.Key_Codes.KP_8 | Gui.Key_Codes.KP_Up | Gui.Key_Codes.K_Up =>
         if Space_Is_Pressed then
           Put (Device.Increase_Speed);
+          Arrow_Was_Pressed := True;
         else
+          Is_Changing := True;
           Put (Device.Move_Up);
         end if;
-        Arrow_Is_Pressed := True;
       when Gui.Key_Codes.KP_4 | Gui.Key_Codes.KP_Left | Gui.Key_Codes.K_Left =>
+        Is_Changing := True;
         if Space_Is_Pressed then
           Put (Device.Decrease_Time);
+          Arrow_Was_Pressed := True;
         else
           Put (Device.Move_Left);
         end if;
-        Arrow_Is_Pressed := True;
       when Gui.Key_Codes.KP_6 | Gui.Key_Codes.KP_Right | Gui.Key_Codes.K_Right =>
+        Is_Changing := True;
         if Space_Is_Pressed then
           Put (Device.Increase_Time);
+          Arrow_Was_Pressed := True;
         else
           Put (Device.Move_Right);
         end if;
-        Arrow_Is_Pressed := True;
       when Gui.Key_Codes.K_Space =>
         Space_Is_Pressed := True;
+        Arrow_Was_Pressed := False;
       when Gui.Key_Codes.KP_Enter | Gui.Key_Codes.K_Return =>
         Input.Put (Device.Enter, From => Input.Keypad);
       when Gui.Key_Codes.K_Menu =>
@@ -746,7 +756,7 @@ package body User is
       when others =>
         null;
       end case;
-    when  Gui.Key_Released =>
+    when Gui.Key_Released =>
       Log.Write ("Key released: " & The_Key_Code'img);
       case The_Key_Code is
       when Gui.Key_Codes.K_Menu =>
@@ -756,11 +766,13 @@ package body User is
       | Gui.Key_Codes.KP_8 | Gui.Key_Codes.KP_Up    | Gui.Key_Codes.K_Up
       | Gui.Key_Codes.KP_4 | Gui.Key_Codes.KP_Left  | Gui.Key_Codes.K_Left
       | Gui.Key_Codes.KP_6 | Gui.Key_Codes.KP_Right | Gui.Key_Codes.K_Right =>
-        Arrow_Is_Pressed := False;
-        Put (Device.No_Command);
+        if Is_Changing then
+          Is_Changing := False;
+          Put (Device.No_Command);
+        end if;
       when Gui.Key_Codes.K_Space =>
         Space_Is_Pressed := False;
-        if not Arrow_Is_Pressed then
+        if not Arrow_Was_Pressed then
           Input.Put (Device.Enter, From => Input.Keypad);
         end if;
       when others =>
@@ -921,6 +933,11 @@ package body User is
                                   Is_Modifiable  => False,
                                   The_Size       => Text_Size,
                                   The_Title_Size => Title_Size);
+
+        Moving_Speed := Gui.Create (Display_Page, "Moving Speed", "",
+                                    Is_Modifiable  => False,
+                                    The_Size       => Text_Size,
+                                    The_Title_Size => Title_Size);
 
         M3_Position := Gui.Create (Display_Page, "M3 Position", "",
                                    Is_Modifiable  => False,
