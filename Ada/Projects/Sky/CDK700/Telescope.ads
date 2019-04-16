@@ -78,6 +78,7 @@ package Telescope is
     Actual_J2000_Direction : Space.Direction;
     Actual_Direction       : Space.Direction;
     Local_Direction        : Earth.Direction;
+    Local_Offset           : Earth.Direction;
     Moving_Speed           : Angle.Value;
     M3_Position            : M3.Position;
     Rotator_State          : Rotator.State;

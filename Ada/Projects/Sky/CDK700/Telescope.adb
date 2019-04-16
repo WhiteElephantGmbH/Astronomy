@@ -183,6 +183,12 @@ package body Telescope is
     The_Adjusting_End_Time    : Time.Ut := Time.In_The_Future;
     The_Time_Adjusting_Factor : Duration;
     The_Time_Adjustment       : Duration := 0.0;
+    First_Adjust_Factor       : Angle.Signed := 1;
+    The_First_Offset          : Angle.Degrees := 0.0;
+    The_First_Moving_Speed    : Angle.Degrees := 0.0;
+    Second_Adjust_Factor      : Angle.Signed := 1;
+    The_Second_Offset         : Angle.Degrees := 0.0;
+    The_Second_Moving_Speed   : Angle.Degrees := 0.0;
 
     type Event is (No_Event,
                    Startup,
@@ -200,8 +206,7 @@ package body Telescope is
                    Mount_Synchronised,
                    Mount_Stopped,
                    Mount_Approaching,
-                   Mount_Tracking,
-                   Time_Increment);
+                   Mount_Tracking);
 
     subtype Mount_Startup is Event range Mount_Disconnected .. Mount_Synchronised;
 
@@ -341,7 +346,7 @@ package body Telescope is
 
     procedure Increment_Offset is
       The_Adjusting_Time : Time.Ut;
-      The_Time_Increment : Duration;
+      use type Angle.Degrees;
     begin
       if The_Adjusting_Start_Time /= Time.In_The_Future then
         if The_Adjusting_End_Time = Time.In_The_Future then
@@ -352,16 +357,24 @@ package body Telescope is
           The_Adjusting_Start_Time := Time.In_The_Future;
           The_Adjusting_End_Time := Time.In_The_Future;
         end if;
-        The_Time_Increment := The_Adjusting_Time * The_Time_Adjusting_Factor;
-        The_Time_Adjustment := The_Time_Adjustment + The_Time_Increment;
+        case The_Adjusting_Kind is
+        when First_Adjusting =>
+          The_First_Offset := The_First_Offset + (The_First_Moving_Speed * Angle.Degrees(The_Adjusting_Time));
+        when Second_Adjusting =>
+          The_Second_Offset := The_Second_Offset + (The_Second_Moving_Speed * Angle.Degrees(The_Adjusting_Time));
+        when Time_Adjusting =>
+          The_Time_Adjustment := The_Time_Adjustment + (The_Adjusting_Time * The_Time_Adjusting_Factor);
+        end case;
       end if;
     end Increment_Offset;
 
 
-    procedure Time_Control_End is
+    procedure Reset_Adjustments is
     begin
+      The_First_Offset := 0.0;
+      The_Second_Offset := 0.0;
       The_Time_Adjustment := 0.0;
-    end Time_Control_End;
+    end Reset_Adjustments;
 
 
     procedure Update_Target_Position is
@@ -372,11 +385,18 @@ package body Telescope is
       Mount.Goto_Target (Direction       => Target_Direction (At_Time => Now),
                          With_Speed      => Target_Speed (At_Time => Now),
                          Completion_Time => Unused);
-      The_Completion_Time := Time.In_The_Past;
     exception
     when Target_Lost =>
       Stop_Target;
     end Update_Target_Position;
+
+
+    procedure Update_Mark_Position is
+      Unused : Time.Ut;
+    begin
+      Increment_Offset;
+      Mount.Goto_Mark (Name.Direction_Of (The_Landmark), Unused);
+    end Update_Mark_Position;
 
 
     procedure Do_Position is
@@ -388,57 +408,40 @@ package body Telescope is
     end Do_Position;
 
 
-    First_Adjust_Factor     : Angle.Signed := 1;
-    Second_Adjust_Factor    : Angle.Signed := 1;
-    The_First_Adjust_Speed  : Angle.Signed := 0;
-    The_Second_Adjust_Speed : Angle.Signed := 0;
-
-    procedure Jog is
-      use type Angle.Signed;
+    procedure Start_Adjusting (Kind : Adjusting_Kind) is
     begin
-      Mount.Jog ((Mount.D1 => The_First_Adjust_Speed * First_Adjust_Factor,
-                  Mount.D2 => The_Second_Adjust_Speed * Second_Adjust_Factor));
-    end Jog;
+      The_Adjusting_Kind := Kind;
+      The_Adjusting_Start_Time := Time.Universal;
+      The_Adjusting_End_Time := Time.In_The_Future;
+    end Start_Adjusting;
 
 
     procedure Adjust_First (The_Speed : Angle.Signed) is
+      use type Angle.Signed;
     begin
-      The_Adjusting_Kind := First_Adjusting;
-      The_First_Adjust_Speed := The_Speed;
-      Jog;
+      The_First_Moving_Speed := +(The_Speed * First_Adjust_Factor);
+      Start_Adjusting (First_Adjusting);
     end Adjust_First;
 
 
     procedure Adjust_Second (The_Speed : Angle.Signed) is
       use type Angle.Signed;
     begin
-      The_Adjusting_Kind := Second_Adjusting;
-      The_Second_Adjust_Speed := The_Speed;
-      Jog;
+      The_Second_Moving_Speed := +(The_Speed * Second_Adjust_Factor);
+      Start_Adjusting (Second_Adjusting);
     end Adjust_Second;
 
 
     procedure Adjust_Time (Factor : Duration) is
     begin
       The_Time_Adjusting_Factor := Factor;
-      The_Adjusting_Start_Time := Time.Universal;
-      The_Adjusting_End_Time := Time.In_The_Future;
-      The_Adjusting_Kind := Time_Adjusting;
+      Start_Adjusting (Time_Adjusting);
     end Adjust_Time;
 
 
     procedure End_Adjust is
     begin
-      case The_Adjusting_Kind is
-      when First_Adjusting =>
-        The_First_Adjust_Speed := 0;
-        Jog;
-      when Second_Adjusting =>
-        The_Second_Adjust_Speed := 0;
-        Jog;
-      when Time_Adjusting =>
-        The_Adjusting_End_Time := Time.Universal;
-      end case;
+      The_Adjusting_End_Time := Time.Universal;
     end End_Adjust;
 
 
@@ -828,8 +831,6 @@ package body Telescope is
       case The_Event is
       when Mount_Startup =>
         The_State := Mount_Startup_State (The_Event);
-      when Mount_Tracking =>
-        The_State := Tracking;
       when Halt =>
         The_State := Stopped;
       when User_Adjust =>
@@ -910,10 +911,6 @@ package body Telescope is
         Stop_Target;
       when Follow =>
         Follow_New_Target;
-      when Time_Increment =>
-        if Is_Fast_Tracking then
-          Update_Target_Position;
-        end if;
       when Position =>
         Do_Position;
       when User_Adjust =>
@@ -941,10 +938,6 @@ package body Telescope is
         Stop_Target;
       when Follow =>
         Follow_New_Target;
-      when Time_Increment =>
-        if Is_Fast_Tracking then
-          Update_Target_Position;
-        end if;
       when Position =>
         Do_Position;
       when User_Adjust =>
@@ -963,6 +956,7 @@ package body Telescope is
     The_Next_Time : Ada.Real_Time.Time;
 
     use type Ada.Real_Time.Time;
+    use type Angle.Value;
 
   begin -- Control_Task
     accept Start do
@@ -987,6 +981,7 @@ package body Telescope is
           accept Follow (Arriving_Time : Time.Ut) do
             The_Next_Arriving_Time := Arriving_Time;
           end Follow;
+          Reset_Adjustments;
           The_Event := Follow;
         or
           accept Startup;
@@ -998,6 +993,7 @@ package body Telescope is
           accept Position_To (Landmark : Name.Id) do
             The_Landmark := Landmark;
           end Position_To;
+          Reset_Adjustments;
           The_Event := Position;
         or
           accept Set (The_Orientation : Orientation) do
@@ -1106,16 +1102,31 @@ package body Telescope is
             end if;
             The_Data.Target_Lost := Target_Is_Lost;
             Target_Is_Lost := False;
+            The_Data.Local_Offset := Earth.Direction_Of (Az  => +The_First_Offset,
+                                                         Alt => +The_Second_Offset);
             The_Data.Moving_Speed := Moving_Speeds(Moving_Index);
           end Get;
         or
           delay until The_Next_Time;
           The_Next_Time := The_Next_Time + Ada.Real_Time.To_Time_Span(0.3);
-          if The_State in Tracking | Approaching | Waiting then
-            The_Event := Time_Increment;
-          else
-            Time_Control_End;
-          end if;
+          case The_State is
+          when Approaching =>
+            if The_Completion_Time < Time.Universal then
+              The_State := Tracking;
+            end if;
+            Update_Target_Position;
+          when Positioning =>
+            if The_Completion_Time < Time.Universal then
+              The_State := Positioned;
+            end if;
+            Update_Mark_Position;
+          when Tracking =>
+            Update_Target_Position;
+          when Positioned =>
+            Update_Mark_Position;
+          when others =>
+            null;
+          end case;
         end select;
         if The_Event /= No_Event then
           Log.Write ("State => " & The_State'img & " - Event => " & The_Event'img);

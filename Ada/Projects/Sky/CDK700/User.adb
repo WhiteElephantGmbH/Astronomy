@@ -63,6 +63,8 @@ package body User is
   Actual_Dec       : Gui.Plain_Edit_Box;
   Actual_Az        : Gui.Plain_Edit_Box;
   Actual_Alt       : Gui.Plain_Edit_Box;
+  Az_Offset        : Gui.Plain_Edit_Box;
+  Alt_Offset       : Gui.Plain_Edit_Box;
   Moving_Speed     : Gui.Plain_Edit_Box;
   M3_Position      : Gui.Plain_Edit_Box;
   Rotator_State    : Gui.Plain_Edit_Box;
@@ -480,9 +482,13 @@ package body User is
       if Earth.Direction_Is_Known (Information.Local_Direction) then
         Gui.Set_Text (Actual_Alt, Earth.Alt_Image_Of (Information.Local_Direction));
         Gui.Set_Text (Actual_Az, Earth.Az_Image_Of (Information.Local_Direction));
+        Gui.Set_Text (Alt_Offset, Earth.Alt_Offset_Image_Of (Information.Local_Offset));
+        Gui.Set_Text (Az_Offset, Earth.Az_Offset_Image_Of (Information.Local_Offset));
       else
         Gui.Set_Text (Actual_Alt, "");
         Gui.Set_Text (Actual_Az, "");
+        Gui.Set_Text (Alt_Offset, "");
+        Gui.Set_Text (Az_Offset, "");
       end if;
       Gui.Set_Text (Moving_Speed, Angle.Image_Of (Information.Moving_Speed, Decimals => 3));
       Gui.Set_Text (M3_Position, Strings.Legible_Of (Information.M3_Position'img));
@@ -925,11 +931,20 @@ package body User is
                                   The_Size       => Text_Size,
                                   The_Title_Size => Title_Size);
 
-        Actual_Az := Gui.Create (Display_Page, "Azimuth", "",
+        Actual_Az := Gui.Create (Display_Page, "Actual AZM", "",
                                  Is_Modifiable  => False,
                                  The_Size       => Text_Size,
                                  The_Title_Size => Title_Size);
-        Actual_Alt := Gui.Create (Display_Page, "Altitude", "",
+        Actual_Alt := Gui.Create (Display_Page, "Actual ALT", "",
+                                  Is_Modifiable  => False,
+                                  The_Size       => Text_Size,
+                                  The_Title_Size => Title_Size);
+
+        Az_Offset := Gui.Create (Display_Page, "AZM Offset", "",
+                                 Is_Modifiable  => False,
+                                 The_Size       => Text_Size,
+                                 The_Title_Size => Title_Size);
+        Alt_Offset := Gui.Create (Display_Page, "ALT Offset", "",
                                   Is_Modifiable  => False,
                                   The_Size       => Text_Size,
                                   The_Title_Size => Title_Size);

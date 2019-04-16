@@ -54,13 +54,13 @@ package body Earth is
 
   function Alt_Offset_Image_Of (The_Direction : Direction) return String is
   begin
-    return Angle.Image_Of (The_Direction.Alt, Show_Signed => True, Decimals => 3);
+    return Angle.Image_Of (The_Direction.Alt, Show_Signed => True);
   end Alt_Offset_Image_Of;
 
 
   function Az_Offset_Image_Of (The_Direction : Direction) return String  is
   begin
-    return Angle.Image_Of (The_Direction.Az, Show_Signed => True, Decimals => 3);
+    return Angle.Image_Of (The_Direction.Az, Show_Signed => True);
   end Az_Offset_Image_Of;
 
 
