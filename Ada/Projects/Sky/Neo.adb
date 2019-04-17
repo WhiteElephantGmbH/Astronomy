@@ -262,7 +262,7 @@ package body Neo is
         --Write ("Speed   ", The_Geozentric_Velocity);
         declare
           use all type Angle.Value;
-          Er   : constant REAL := Earth_Equatorial_Radius + (REAL(Parameter.Altitude) / 1000.0);
+          Er   : constant REAL := Earth_Equatorial_Radius + (REAL(Parameter.Elevation) / 1000.0);
           Lmst : constant REAL := +The_Lmst;
         begin
           The_Location_Vector := (X => Er * Rcphi * CS (Lmst),

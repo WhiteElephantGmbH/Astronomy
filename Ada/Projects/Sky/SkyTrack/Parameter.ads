@@ -57,7 +57,7 @@ package Parameter is
 
   function Longitude return Angle.Value;
 
-  function Altitude return Integer; -- in meters above see level
+  function Elevation return Integer; -- in meters
 
   function Sky_Line return String;
 

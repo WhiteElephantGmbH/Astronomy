@@ -624,10 +624,10 @@ package body Parameter is
   end Longitude;
 
 
-  function Altitude return Integer is
+  function Elevation return Integer is
   begin
     return The_Altitude;
-  end Altitude;
+  end Elevation;
 
 
   function Sky_Line return String is

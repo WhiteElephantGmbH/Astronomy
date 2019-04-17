@@ -68,6 +68,9 @@ package body User is
   Moving_Speed     : Gui.Plain_Edit_Box;
   M3_Position      : Gui.Plain_Edit_Box;
   Rotator_State    : Gui.Plain_Edit_Box;
+  Longitude        : Gui.Plain_Edit_Box;
+  Latitude         : Gui.Plain_Edit_Box;
+  Elevation        : Gui.Plain_Edit_Box;
   Lmst             : Gui.Plain_Edit_Box;
   Local_Time       : Gui.Plain_Edit_Box;
   Time_Offset      : Gui.Plain_Edit_Box;
@@ -493,9 +496,12 @@ package body User is
         Gui.Set_Text (Alt_Offset, "");
         Gui.Set_Text (Az_Offset, "");
       end if;
-      Gui.Set_Text (Moving_Speed, Angle.Image_Of (Information.Moving_Speed, Decimals => 3));
+      Gui.Set_Text (Moving_Speed, Angle.Image_Of (Information.Moving_Speed, Decimals => 2) & "/s");
       Gui.Set_Text (M3_Position, Strings.Legible_Of (Information.M3_Position'img));
       Gui.Set_Text (Rotator_State, Strings.Legible_Of (Information.Rotator_State'img));
+      Gui.Set_Text (Longitude, Angle.Image_Of (Parameter.Longitude, Decimals => 2));
+      Gui.Set_Text (Latitude, Angle.Image_Of (Parameter.Latitude, Decimals => 2, Show_Signed => True));
+      Gui.Set_Text (Elevation, Strings.Trimmed (Parameter.Elevation'img) & 'm');
       if Information.Universal_Time = Time.In_The_Past then
         Gui.Set_Text (Lmst, "");
         Gui.Set_Text (Local_Time, "");
@@ -899,7 +905,7 @@ package body User is
         Rotator_State_Text : constant String := "Rotator State"; -- largest text
 
         Title_Size : constant Natural := Gui.Text_Size_Of (Rotator_State_Text) + Separation;
-        Text_Size  : constant Natural := Gui.Text_Size_Of ("+360d00'00.0""") + Separation;
+        Text_Size  : constant Natural := Gui.Text_Size_Of ("90d00'00.00""/s") + Separation;
 
       begin
         Display_Page := Gui.Add_Page (The_Title  => "Display",
@@ -966,6 +972,21 @@ package body User is
                                      Is_Modifiable  => False,
                                      The_Size       => Text_Size,
                                      The_Title_Size => Title_Size);
+
+        Longitude := Gui.Create (Display_Page, "Longitude", "",
+                                 Is_Modifiable  => False,
+                                 The_Size       => Text_Size,
+                                 The_Title_Size => Title_Size);
+
+        Latitude := Gui.Create (Display_Page, "Latitude", "",
+                                Is_Modifiable  => False,
+                                The_Size       => Text_Size,
+                                The_Title_Size => Title_Size);
+
+        Elevation := Gui.Create (Display_Page, "Elevation", "",
+                                 Is_Modifiable  => False,
+                                 The_Size       => Text_Size,
+                                 The_Title_Size => Title_Size);
 
         Lmst := Gui.Create (Display_Page, "LMST", "",
                             Is_Modifiable  => False,

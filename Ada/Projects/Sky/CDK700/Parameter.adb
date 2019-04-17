@@ -15,6 +15,7 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with Ada.Environment_Variables;
 with Ada.Text_IO;
 with Application;
 with Configuration;
@@ -23,7 +24,7 @@ with Error;
 with File;
 with Language;
 with Network.Tcp;
-with PWI;
+with PWI.Settings;
 with Strings;
 with Text;
 with Traces;
@@ -44,6 +45,7 @@ package body Parameter is
   PWI_Id                : constant String := "PWI";
   Name_Key              : constant String := "Name";
   Program_Key           : constant String := "Program";
+  Settings_Key          : constant String := "Settings";
   Shutdown_Key          : constant String := "Shutdown";
   Simulation_Mode_Key   : constant String := "Simulation Mode";
   Expert_Mode_Key       : constant String := "Expert Mode";
@@ -57,11 +59,6 @@ package body Parameter is
   Port_Key       : constant String := "Port";
   Satellites_Key : constant String := "Satellites";
   Magnitude_Key  : constant String := "Magnitude";
-
-  Site_Id       : constant String := "Site";
-  Longitude_Key : constant String := "Longitude";
-  Latitude_Key  : constant String := "Latitude";
-  Altitude_Key  : constant String := "Altitude";
 
   The_Section : Configuration.Section_Handle;
 
@@ -83,16 +80,6 @@ package body Parameter is
   The_Stellarium_Port     : Network.Port_Number;
   The_Satellites_Filename : Text.String;
   The_Magnitude_Maximum   : Stellarium.Magnitude;
-
-  -- Site
-  The_Latitude  : Angle.Value;
-  The_Longitude : Angle.Value;
-  The_Altitude  : Integer; -- in meters above see level
-
-  CDK700_Latitude  : constant Angle.Degrees := 47.705500;
-  CDK700_Longitude : constant Angle.Degrees :=  8.609865;
-  CDK700_Altitude  : constant Integer       :=  540;
-
 
 
   procedure Set (Section : Configuration.Section_Handle) is
@@ -145,22 +132,6 @@ package body Parameter is
       Error.Raise_With ("Incorrect " & Language_Key & ": <" & Image & ">");
     end;
   end Language;
-
-
-  function Angle_Of (Key  : String;
-                     Unit : String := "") return Angle.Value is
-    Item : constant String := String_Of (Key);
-  begin
-    declare
-      Image : constant String := Image_Of (Item, Unit);
-    begin
-      Log.Write (Key & ": " & Item);
-      return Angle.Value_Of (Image);
-    end;
-  exception
-  when others =>
-    Error.Raise_With ("Incorrect " & Key & ": <" & Item & ">");
-  end Angle_Of;
 
 
   function Angles_Of (Key  : String;
@@ -216,6 +187,18 @@ package body Parameter is
 
     procedure Create_Default_Parameters is
 
+      function Value (Item : String) return String is
+      begin
+        return Ada.Environment_Variables.Value (Item);
+      exception
+      when others =>
+        Error.Raise_With ("Environment Variable " & Item & " not found");
+      end Value;
+
+      Company_Name      : constant String := "PlaneWave Instruments";
+      PWI_Program_Files : constant String := Value ("ProgramFiles(x86)") & "\" & Company_Name;
+      PWI_Documents     : constant String := Value ("HomeDrive") & Value ("HomePath") & "\Documents\" & Company_Name;
+
       The_File : Ada.Text_IO.File_Type;
 
       procedure Put (Line : String) is
@@ -235,7 +218,8 @@ package body Parameter is
       Put ("");
       Put ("[" & PWI_Id & "]");
       Put (Name_Key & "              = CDK Ost");
-      Put (Program_Key & "           = C:\Program Files (x86)\PlaneWave Instruments\PlaneWave interface\PWI.exe");
+      Put (Program_Key & "           = " & PWI_Program_Files & "\PlaneWave interface\PWI.exe");
+      Put (Settings_Key & "          = " & PWI_Documents & "\PWI2\Mount\settingsMount.xml");
       Put (Shutdown_Key & "          = True");
       Put (Expert_Mode_Key & "       = False");
       Put (Simulation_Mode_Key & "   = False");
@@ -253,11 +237,6 @@ package body Parameter is
       Put (Program_Key & "    = C:\Program Files\Stellarium\Stellarium.exe");
       Put (Satellites_Key & " = " & Stellarium.Satellites_Filename);
       Put (Magnitude_Key & "  = 8.0");
-      Put ("");
-      Put ("[" & Site_Id & "]");
-      Put (Longitude_Key & " = " & Angle.Image_Of (+CDK700_Longitude, Decimals => 2, Show_Signed => True));
-      Put (Latitude_Key & "  = " & Angle.Image_Of (+CDK700_Latitude, Decimals => 2, Show_Signed => True));
-      Put (Altitude_Key & "  ="  & CDK700_Altitude'img & "m");
       Ada.Text_IO.Close (The_File);
     exception
     when Item: others =>
@@ -273,8 +252,27 @@ package body Parameter is
       PWI_Handle          : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, PWI_Id);
       Lx200_Handle        : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Lx200_Id);
       Stellarium_Handle   : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Stellarium_Id);
-      Site_Handle         : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Site_Id);
       Localization_Handle : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Localization_Id);
+
+      procedure Define_Site_Parameters is
+        Settings_Filename : constant String := String_Value_Of (Settings_Key);
+      begin
+        if Settings_Filename = "" then
+          Error.Raise_With ("PWI settings filename not defined");
+        end if;
+        Log.Write ("PWI settings file: """ & Settings_Filename & """");
+        PWI.Settings.Read (Settings_Filename);
+      exception
+      when PWI.Settings.File_Not_Found =>
+        Error.Raise_With ("PWI settings file " & Settings_Filename & " not found");
+      when PWI.Settings.Missing_Longitude =>
+        Error.Raise_With ("PWI settings missing longitude");
+      when PWI.Settings.Missing_Latitude =>
+        Error.Raise_With ("PWI settings missing latitude");
+      when PWI.Settings.Missing_Elevation =>
+        Error.Raise_With ("PWI settings missing elevation");
+      end Define_Site_Parameters;
+
 
       procedure Startup_PWI is
 
@@ -339,6 +337,7 @@ package body Parameter is
         end;
       end Startup_PWI;
 
+
       procedure Startup_Stellarium is
         Stellarium_Filename : constant String := String_Value_Of (Program_Key);
       begin
@@ -354,6 +353,7 @@ package body Parameter is
         end if;
       end Startup_Stellarium;
 
+
       procedure Define_Satellites_Filename is
         Json_Filename : constant String := String_Value_Of (Satellites_Key);
       begin
@@ -368,6 +368,7 @@ package body Parameter is
           The_Satellites_Filename := Text.String_Of (Json_Filename);
         end if;
       end Define_Satellites_Filename;
+
 
       procedure Define_Fans_State is
         Fans_State : constant String := String_Value_Of (Fans_Key);
@@ -386,14 +387,12 @@ package body Parameter is
       Set (Localization_Handle);
       Standard.Language.Define (Language);
 
-      Set (Site_Handle);
-      The_Latitude := Angle_Of (Latitude_Key);
-      The_Longitude := Angle_Of (Longitude_Key);
-      The_Altitude := Value_Of (Altitude_Key, "m");
-
       Set (PWI_Handle);
       The_Telescope_Name := Text.String_Of (String_Value_Of (Name_Key));
       Log.Write ("Name: " & Telescope_Name);
+
+      Define_Site_Parameters;
+
       Is_In_Shutdown_Mode := Strings.Is_Equal (String_Value_Of (Shutdown_Key), "True");
       Is_In_Expert_Mode := Strings.Is_Equal (String_Value_Of (Expert_Mode_Key), "True");
       Is_In_Simulation_Mode := Strings.Is_Equal (String_Value_Of (Simulation_Mode_Key), "True");
@@ -468,20 +467,20 @@ package body Parameter is
 
   function Latitude return Angle.Value is
   begin
-    return The_Latitude;
+    return PWI.Settings.Latitude;
   end Latitude;
 
 
   function Longitude return Angle.Value is
   begin
-    return The_Longitude;
+    return PWI.Settings.Longitude;
   end Longitude;
 
 
-  function Altitude return Integer is
+  function Elevation return Integer is
   begin
-    return The_Altitude;
-  end Altitude;
+    return PWI.Settings.Elevation;
+  end Elevation;
 
 
   ---------------
