@@ -184,11 +184,12 @@ package body Telescope is
     The_Time_Adjusting_Factor : Duration;
     The_Time_Adjustment       : Duration := 0.0;
     First_Adjust_Factor       : Angle.Signed := 1;
-    The_First_Offset          : Angle.Degrees := 0.0;
     The_First_Moving_Speed    : Angle.Degrees := 0.0;
     Second_Adjust_Factor      : Angle.Signed := 1;
-    The_Second_Offset         : Angle.Degrees := 0.0;
     The_Second_Moving_Speed   : Angle.Degrees := 0.0;
+    The_First_Offset          : Angle.Degrees := 0.0;
+    The_Second_Offset         : Angle.Degrees := 0.0;
+    The_Adjusted_Offset       : Earth.Direction;
 
     type Event is (No_Event,
                    Startup,
@@ -230,14 +231,22 @@ package body Telescope is
 
 
     function Target_Direction (At_Time : Time.Ut := Time.Universal) return Space.Direction is
-      Direction : constant Space.Direction := Get_Direction (Id, At_Time + The_Time_Adjustment);
-      use type Space.Direction;
+      Adjusted_Time : constant Time.Ut := At_Time + The_Time_Adjustment;
+      Direction     : constant Space.Direction := Get_Direction (Id, Adjusted_Time);
+      The_Direction : Earth.Direction;
+      use type Earth.Direction;
     begin
-      if Direction = Space.Unknown_Direction then
+      if not Space.Direction_Is_Known (Direction) then
         Target_Is_Lost := True;
         raise Target_Lost;
       end if;
-      return Direction;
+      if Earth.Direction_Is_Known (The_Adjusted_Offset) then
+        The_Direction := Numerics.Direction_Of (Direction, Time.Lmst_Of (Adjusted_Time));
+        The_Direction := The_Direction + The_Adjusted_Offset;
+        return Numerics.Direction_Of (The_Direction, Adjusted_Time);
+      else
+        return Direction;
+      end if;
     end Target_Direction;
 
 
@@ -347,6 +356,7 @@ package body Telescope is
     procedure Increment_Offset is
       The_Adjusting_Time : Time.Ut;
       use type Angle.Degrees;
+      use type Angle.Value;
     begin
       if The_Adjusting_Start_Time /= Time.In_The_Future then
         if The_Adjusting_End_Time = Time.In_The_Future then
@@ -365,12 +375,15 @@ package body Telescope is
         when Time_Adjusting =>
           The_Time_Adjustment := The_Time_Adjustment + (The_Adjusting_Time * The_Time_Adjusting_Factor);
         end case;
+        The_Adjusted_Offset := Earth.Direction_Of (Az  => +The_First_Offset,
+                                                   Alt => +The_Second_Offset);
       end if;
     end Increment_Offset;
 
 
     procedure Reset_Adjustments is
     begin
+      The_Adjusted_Offset := Earth.Unknown_Direction;
       The_First_Offset := 0.0;
       The_Second_Offset := 0.0;
       The_Time_Adjustment := 0.0;
@@ -389,14 +402,6 @@ package body Telescope is
     when Target_Lost =>
       Stop_Target;
     end Update_Target_Position;
-
-
-    procedure Update_Mark_Position is
-      Unused : Time.Ut;
-    begin
-      Increment_Offset;
-      Mount.Goto_Mark (Name.Direction_Of (The_Landmark), Unused);
-    end Update_Mark_Position;
 
 
     procedure Do_Position is
@@ -468,6 +473,31 @@ package body Telescope is
         End_Adjust;
       end case;
     end Adjust_Handling;
+
+
+    procedure Jog_Handling is
+      use type Angle.Signed;
+      Speed : constant Angle.Signed := +Moving_Speeds(Moving_Index);
+    begin
+      case The_User_Adjust is
+      when Move_Left =>
+        Mount.Jog ((Mount.D1 => -Speed, Mount.D2 => 0));
+      when Move_Right =>
+        Mount.Jog ((Mount.D1 => +Speed, Mount.D2 => 0));
+      when Move_Up =>
+        Mount.Jog ((Mount.D1 => 0, Mount.D2 => +Speed));
+      when Move_Down =>
+        Mount.Jog ((Mount.D1 => 0, Mount.D2 => -Speed));
+      when End_Move =>
+        Mount.Jog ((0, 0));
+      when Decrease_Time =>
+        null;
+      when Increase_Time =>
+        null;
+      when End_Change =>
+        null;
+      end case;
+    end Jog_Handling;
 
 
     procedure Setup_Handling is
@@ -811,7 +841,7 @@ package body Telescope is
       when Halt =>
         Stop_Target;
       when User_Adjust =>
-        Adjust_Handling;
+        Jog_Handling;
       when User_Setup =>
         Setup_Handling;
       when Follow =>
@@ -834,7 +864,7 @@ package body Telescope is
       when Halt =>
         The_State := Stopped;
       when User_Adjust =>
-        Adjust_Handling;
+        Jog_Handling;
       when User_Setup =>
         Setup_Handling;
       when Follow =>
@@ -956,7 +986,6 @@ package body Telescope is
     The_Next_Time : Ada.Real_Time.Time;
 
     use type Ada.Real_Time.Time;
-    use type Angle.Value;
 
   begin -- Control_Task
     accept Start do
@@ -1102,8 +1131,7 @@ package body Telescope is
             end if;
             The_Data.Target_Lost := Target_Is_Lost;
             Target_Is_Lost := False;
-            The_Data.Local_Offset := Earth.Direction_Of (Az  => +The_First_Offset,
-                                                         Alt => +The_Second_Offset);
+            The_Data.Local_Offset := The_Adjusted_Offset;
             The_Data.Moving_Speed := Moving_Speeds(Moving_Index);
           end Get;
         or
@@ -1115,15 +1143,8 @@ package body Telescope is
               The_State := Tracking;
             end if;
             Update_Target_Position;
-          when Positioning =>
-            if The_Completion_Time < Time.Universal then
-              The_State := Positioned;
-            end if;
-            Update_Mark_Position;
           when Tracking =>
             Update_Target_Position;
-          when Positioned =>
-            Update_Mark_Position;
           when others =>
             null;
           end case;

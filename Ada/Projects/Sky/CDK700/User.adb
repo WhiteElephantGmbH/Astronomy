@@ -482,11 +482,14 @@ package body User is
       if Earth.Direction_Is_Known (Information.Local_Direction) then
         Gui.Set_Text (Actual_Alt, Earth.Alt_Image_Of (Information.Local_Direction));
         Gui.Set_Text (Actual_Az, Earth.Az_Image_Of (Information.Local_Direction));
-        Gui.Set_Text (Alt_Offset, Earth.Alt_Offset_Image_Of (Information.Local_Offset));
-        Gui.Set_Text (Az_Offset, Earth.Az_Offset_Image_Of (Information.Local_Offset));
       else
         Gui.Set_Text (Actual_Alt, "");
         Gui.Set_Text (Actual_Az, "");
+      end if;
+      if Earth.Direction_Is_Known (Information.Local_Offset) then
+        Gui.Set_Text (Alt_Offset, Earth.Alt_Offset_Image_Of (Information.Local_Offset));
+        Gui.Set_Text (Az_Offset, Earth.Az_Offset_Image_Of (Information.Local_Offset));
+      else
         Gui.Set_Text (Alt_Offset, "");
         Gui.Set_Text (Az_Offset, "");
       end if;
