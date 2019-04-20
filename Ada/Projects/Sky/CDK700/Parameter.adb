@@ -227,7 +227,7 @@ package body Parameter is
       Put (Pointing_Model_Key & "    = First.PXP");
       Put (Ip_Address_Key & "        = 127.0.0.1");
       Put (Port_Key & "              = 8080");
-      Put (Moving_Speed_List_Key & " = 6""/s, 1'/s, 10'/s, 3°00'/s");
+      Put (Moving_Speed_List_Key & " = 10""/s, 1'/s, 6'/s, 1°/s");
       Put ("");
       Put ("[" & Lx200_Id & "]");
       Put (Port_Key & " = 4030");

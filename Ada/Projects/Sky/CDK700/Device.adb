@@ -433,6 +433,9 @@ package body Device is
           if The_Rotator_State = Rotator.Unknown then
             The_Rotator_State := Rotator.Disconnected;
           end if;
+          if The_M3_Position = M3.Unknown then
+            The_M3_Position := M3.Ocular;
+          end if;
         else
           case PWI.Mount.Status is
           when PWI.Mount.Disconnected =>

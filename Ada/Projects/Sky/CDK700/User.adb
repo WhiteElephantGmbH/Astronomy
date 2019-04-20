@@ -711,7 +711,7 @@ package body User is
   Ignore_Next       : Boolean := False;
   Arrow_Was_Pressed : Boolean := False; -- whilst space is pressed
   Is_Changing       : Boolean := False;
-  Space_Is_Pressed  : Boolean := False;
+  Enter_Is_Pressed  : Boolean := False;
 
   procedure Key_Handler (The_Event    : Gui.Key_Event;
                          The_Key_Code : Gui.Key_Code) is
@@ -730,7 +730,7 @@ package body User is
       end if;
       case The_Key_Code is
       when Gui.Key_Codes.KP_2 | Gui.Key_Codes.KP_Down | Gui.Key_Codes.K_Down =>
-        if Space_Is_Pressed then
+        if Enter_Is_Pressed then
           Put (Device.Decrease_Speed);
           Arrow_Was_Pressed := True;
         else
@@ -738,7 +738,7 @@ package body User is
           Put (Device.Move_Down);
         end if;
       when Gui.Key_Codes.KP_8 | Gui.Key_Codes.KP_Up | Gui.Key_Codes.K_Up =>
-        if Space_Is_Pressed then
+        if Enter_Is_Pressed then
           Put (Device.Increase_Speed);
           Arrow_Was_Pressed := True;
         else
@@ -747,7 +747,7 @@ package body User is
         end if;
       when Gui.Key_Codes.KP_4 | Gui.Key_Codes.KP_Left | Gui.Key_Codes.K_Left =>
         Is_Changing := True;
-        if Space_Is_Pressed then
+        if Enter_Is_Pressed then
           Put (Device.Decrease_Time);
           Arrow_Was_Pressed := True;
         else
@@ -755,17 +755,15 @@ package body User is
         end if;
       when Gui.Key_Codes.KP_6 | Gui.Key_Codes.KP_Right | Gui.Key_Codes.K_Right =>
         Is_Changing := True;
-        if Space_Is_Pressed then
+        if Enter_Is_Pressed then
           Put (Device.Increase_Time);
           Arrow_Was_Pressed := True;
         else
           Put (Device.Move_Right);
         end if;
-      when Gui.Key_Codes.K_Space =>
-        Space_Is_Pressed := True;
+      when Gui.Key_Codes.KP_Enter | Gui.Key_Codes.K_Return | Gui.Key_Codes.K_Space =>
+        Enter_Is_Pressed := True;
         Arrow_Was_Pressed := False;
-      when Gui.Key_Codes.KP_Enter | Gui.Key_Codes.K_Return =>
-        Input.Put (Device.Enter, From => Input.Keypad);
       when Gui.Key_Codes.K_Menu =>
         Ignore_Next := True;
       when others =>
@@ -785,8 +783,8 @@ package body User is
           Is_Changing := False;
           Put (Device.No_Command);
         end if;
-      when Gui.Key_Codes.K_Space =>
-        Space_Is_Pressed := False;
+      when Gui.Key_Codes.KP_Enter | Gui.Key_Codes.K_Return | Gui.Key_Codes.K_Space =>
+        Enter_Is_Pressed := False;
         if not Arrow_Was_Pressed then
           Input.Put (Device.Enter, From => Input.Keypad);
         end if;

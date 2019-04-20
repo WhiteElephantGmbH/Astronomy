@@ -907,6 +907,11 @@ package body Telescope is
       case The_Event is
       when Mount_Startup =>
         The_State := Mount_Startup_State (The_Event);
+      when Mount_Stopped =>
+        if Time.Universal > The_Arriving_Time then
+          Update_Target_Position;
+          The_State := Approaching;
+        end if;
       when Mount_Approaching =>
         The_State := Approaching;
       when Mount_Tracking =>
@@ -918,10 +923,7 @@ package body Telescope is
       when Position =>
         Do_Position;
       when others =>
-        if Time.Universal > The_Arriving_Time then
-          Update_Target_Position;
-          The_State := Approaching;
-        end if;
+        null;
       end case;
     end Waiting_State;
 
@@ -1112,7 +1114,7 @@ package body Telescope is
             The_Data.Rotator_State := The_Rotator_State;
             The_Data.Universal_Time := Time.Universal;
             case The_State is
-            when Approaching | Positioning | Homing =>
+            when Approaching | Preparing | Positioning | Homing =>
               The_Data.Completion_Time := The_Completion_Time;
             when others =>
               The_Data.Completion_Time := Time.In_The_Past;
@@ -1145,6 +1147,8 @@ package body Telescope is
             Update_Target_Position;
           when Tracking =>
             Update_Target_Position;
+          when Waiting =>
+            The_Event := Mount_Stopped;
           when others =>
             null;
           end case;
