@@ -4,14 +4,20 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with Ada.Characters.Handling;
 with Ada.Command_Line;
 with Ada.Text_IO;
 with Exceptions;
+with Interfaces.C;
 with PWI.Mount;
 with PWI.M3;
 with PWI.Focuser;
 with PWI.Rotator;
 with Strings;
+with System;
+with Win32.Bluetooth;
+with Win32.Winbase;
+with Win32.Winerror;
 
 package body Test is
 
@@ -385,7 +391,46 @@ package body Test is
     Nr_Of_Arguments : constant Natural := Ada.Command_Line.Argument_Count;
   begin
     if Nr_Of_Arguments = 0 then
-      Input_Error ("command missing");
+      declare
+        use Win32;
+        Ok     : BOOL := Bluetooth.Is_Discoverable (System.Null_Address);
+        Result : DWORD;
+      begin
+        Put ("Is_Discoverable Result:" & Result'img);
+        declare
+          Parameters   : aliased Bluetooth.Find_Radio_Params := (Size => DWORD(Bluetooth.Find_Radio_Params'size / 8));
+          Radio_Handle : aliased Bluetooth.Radio_Handle;
+          Find_Handle  : aliased Bluetooth.Radio_Find_Handle;
+          Radio_Info   : aliased Bluetooth.Radio_Info;
+          use type Bluetooth.Radio_Find_Handle;
+        begin
+          Put ("Find_First_Radio");
+          Find_Handle := Bluetooth.Find_First_Radio (Arg1 => Parameters'access,
+                                                     Arg2 => Radio_Handle'access);
+          if Find_Handle /= System.Null_Address then
+            loop
+              Result := Bluetooth.Get_Radio_Info (Arg1 => Radio_Handle,
+                                                  Arg2 => Radio_Info'access);
+              case Result is
+              when Win32.Winerror.NO_ERROR =>
+                Put ("Get_Radio_Info Name:" &
+                  Ada.Characters.Handling.To_String (Interfaces.C.To_Ada (Interfaces.C.wchar_array(Radio_Info.Name))));
+              when others =>
+                Put ("Get_Radio_Info Result:" & Result'img);
+              end case;
+              Ok := Winbase.CloseHandle(Radio_Handle);
+              Put ("CloseHandle Ok:" & Ok'img);
+
+              Ok := Bluetooth.Find_Next_Radio (Arg1 => Find_Handle,
+                                               Arg2 => Radio_Handle'access);
+              Put ("Find_Next_Radio Ok:" & Ok'img);
+              exit when Ok = Win32.FALSE;
+            end loop;
+            Ok := Bluetooth.Find_Radio_Close (Find_Handle);
+            Put ("Find_Radio_Close Ok:" & Ok'img);
+          end if;
+        end;
+      end;
     elsif Nr_Of_Arguments > 1 then
       Input_Error ("incorrect number of parameters");
     else
