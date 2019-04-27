@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2019 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2012 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -20,7 +20,6 @@ with Ada.Text_IO;
 with Angle;
 with Application;
 with Definite_Doubly_Linked_Lists;
-with Parameter;
 with Error;
 with File;
 with Numerics;
@@ -79,10 +78,22 @@ package body Sky_Line is
   Extension : constant String := "csv";
 
 
+  function Filename_With (Name : String) return String is
+  begin
+    return File.Composure (Directory, Name, Extension);
+  end Filename_With;
+
+
   function Actual_Filename return String is
   begin
-    return File.Composure (Directory, Parameter.Telescope_Name, Extension);
+    return Filename_With ("Horizon");
   end Actual_Filename;
+
+
+  function New_Filename return String is
+  begin
+    return Filename_With ("New_Horizon");
+  end New_Filename;
 
 
   The_File : Ada.Text_IO.File_Type;
@@ -111,96 +122,11 @@ package body Sky_Line is
 
     Filename : constant String := Actual_Filename;
 
-
     procedure Create_Default_Sky_Line is
     begin
-      if Parameter.Telescope_Name = "CDK Ost" then
         Create_File (Filename);
-        Put (Strings.Bom_8 & "000°00', +14°40'");
-        Put ("007°00', +13°50'");
-        Put ("007°01', +5°40'");
-        Put ("008°50', +5°40'");
-        Put ("009°00', +2°20'");
-        Put ("011°00', +2°20'");
-        Put ("012°00', +2°40'");
-        Put ("015°00', +2°40'");
-        Put ("015°20', +3°40'");
-        Put ("017°00', +5°00'");
-        Put ("018°00', +5°00'");
-        Put ("018°20', +4°20'");
-        Put ("020°40', +4°20'");
-        Put ("021°40', +4°50'");
-        Put ("024°00', +4°40'");
-        Put ("024°20', +3°00'");
-        Put ("030°00', +4°00'");
-        Put ("035°00', +4°50'");
-        Put ("040°00', +5°40'");
-        Put ("045°00', +6°20'");
-        Put ("050°00', +7°00'");
-        Put ("055°00', +7°30'");
-        Put ("060°00', +8°00'");
-        Put ("065°40', +8°20'");
-        Put ("066°00', +2°00'");
-        Put ("069°20', +2°00'");
-        Put ("071°30', +2°40'");
-        Put ("073°20', +2°00'");
-        Put ("096°30', +2°00'");
-        Put ("096°40', +7°40'");
-        Put ("111°40', +6°20'");
-        Put ("115°00', +7°00'");
-        Put ("120°00', +8°10'");
-        Put ("125°00', +9°10'");
-        Put ("130°00', +10°10'");
-        Put ("135°00', +11°00'");
-        Put ("140°00', +11°40'");
-        Put ("145°00', +12°10'");
-        Put ("150°00', +12°50'");
-        Put ("155°00', +13°10'");
-        Put ("160°00', +13°20'");
-        Put ("165°00', +13°20'");
-        Put ("170°00', +13°10'");
-        Put ("175°00', +13°00'");
-        Put ("180°00', +13°40'");
-        Put ("185°00', +12°20'");
-        Put ("190°00', +11°40'");
-        Put ("195°00', +11°00'");
-        Put ("200°00', +10°00'");
-        Put ("205°00', +9°00'");
-        Put ("210°00', +8°00'");
-        Put ("215°00', +6°50'");
-        Put ("220°00', +5°20'");
-        Put ("225°00', +4°00'");
-        Put ("227°40', +3°00'");
-        Put ("227°41', +4°00'");
-        Put ("237°20', +4°40'");
-        Put ("240°40', +2°20'");
-        Put ("240°41', +2°00'");
-        Put ("256°00', +2°00'");
-        Put ("256°10', +2°40'");
-        Put ("277°40', +2°40'");
-        Put ("279°20', +2°00'");
-        Put ("281°20', +2°40'");
-        Put ("282°40', +2°20'");
-        Put ("282°50', +2°00'");
-        Put ("289°40', +2°40'");
-        Put ("290°00', +2°20'");
-        Put ("295°00', +2°10'");
-        Put ("296°20', +2°20'");
-        Put ("296°21', +2°00'");
-        Put ("300°00', +10°40'");
-        Put ("305°00', +11°50'");
-        Put ("310°00', +12°50'");
-        Put ("315°00', +13°40'");
-        Put ("320°00', +14°20'");
-        Put ("325°00', +15°00'");
-        Put ("330°00', +15°20'");
-        Put ("335°00', +15°30'");
-        Put ("340°00', +15°40'");
-        Put ("345°00', +15°30'");
-        Put ("350°00', +15°20'");
-        Put ("355°00', +15°00'");
-      end if;
-      Close_File;
+        Put (Strings.Bom_8 & "0°00', 2°00'");
+        Close_File;
     exception
     when others =>
       Error.Raise_With ("Can't create " & Filename);
@@ -308,6 +234,37 @@ package body Sky_Line is
     Sort (The_Element_List);
     Create_Horizon;
   end Read;
+
+
+  procedure Clear is
+  begin
+    File.Delete (New_Filename);
+  end Clear;
+
+
+  procedure Add (Direction : Earth.Direction) is
+    Filename : constant String := New_Filename;
+  begin
+    if Earth.Direction_Is_Known (Direction) then
+      declare
+        Line : constant String := Earth.Az_Image_Of (Direction) & ", " & Earth.Alt_Image_Of (Direction);
+      begin
+        if File.Exists (Filename) then
+          Ada.Text_IO.Open (The_File, Ada.Text_IO.Append_File, Filename);
+          Put (Line);
+        else
+          Create_File (Filename);
+          Put (Strings.Bom_8 & Line);
+        end if;
+        Log.Write ("Added " & Line);
+      end;
+      Close_File;
+    end if;
+  exception
+  when others =>
+    Log.Error ("Add failed");
+    Clear;
+  end Add;
 
 
   function Is_Defined return Boolean is

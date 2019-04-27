@@ -561,19 +561,12 @@ package body Device is
       Mount_Info : constant PWI.Mount.Information := PWI.Mount.Info;
       use type Angle.Value;
     begin
-      case Mount_Info.Status is
-      when PWI.Mount.Stopped | PWI.Mount.Approaching | PWI.Mount.Tracking =>
-        return (J2000_Direction  => Space.Direction_Of (Ra  => Angle.Value'(+Angle.Hours(Mount_Info.Ra_2000)),
-                                                        Dec => Angle.Value'(+Angle.Degrees(Mount_Info.Dec_2000))),
-                Actual_Direction => Space.Direction_Of (Ra  => Angle.Value'(+Angle.Hours(Mount_Info.Ra)),
-                                                        Dec => Angle.Value'(+Angle.Degrees(Mount_Info.Dec))),
-                Local_Direction  => Earth.Direction_Of (Az  => Angle.Value'(+Angle.Degrees(Mount_Info.Azm)),
-                                                        Alt => Angle.Value'(+Angle.Degrees(Mount_Info.Alt))));
-      when others =>
-        return (J2000_Direction  => Space.Unknown_Direction,
-                Actual_Direction => Space.Unknown_Direction,
-                Local_Direction  => Earth.Unknown_Direction);
-      end case;
+      return (J2000_Direction  => Space.Direction_Of (Ra  => Angle.Value'(+Angle.Hours(Mount_Info.Ra_2000)),
+                                                      Dec => Angle.Value'(+Angle.Degrees(Mount_Info.Dec_2000))),
+              Actual_Direction => Space.Direction_Of (Ra  => Angle.Value'(+Angle.Hours(Mount_Info.Ra)),
+                                                      Dec => Angle.Value'(+Angle.Degrees(Mount_Info.Dec))),
+              Local_Direction  => Earth.Direction_Of (Az  => Angle.Value'(+Angle.Degrees(Mount_Info.Azm)),
+                                                      Alt => Angle.Value'(+Angle.Degrees(Mount_Info.Alt))));
     end Actual_Info;
 
 

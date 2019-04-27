@@ -66,6 +66,8 @@ package Telescope is
                  Waiting,
                  Approaching,
                  Tracking);
+                 
+  subtype Startup_State is State range Unknown .. Initializing;
 
   type Orientation is (Correct, Upside_Down, Backwards, Rotated);
 

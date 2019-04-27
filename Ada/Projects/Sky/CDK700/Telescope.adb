@@ -394,10 +394,12 @@ package body Telescope is
       Now    : constant Time.Ut := Time.Universal;
       Unused : Time.Ut;
     begin
-      Increment_Offset;
-      Mount.Goto_Target (Direction       => Target_Direction (At_Time => Now),
-                         With_Speed      => Target_Speed (At_Time => Now),
-                         Completion_Time => Unused);
+      if Get_Direction /= null then
+        Increment_Offset;
+        Mount.Goto_Target (Direction       => Target_Direction (At_Time => Now),
+                           With_Speed      => Target_Speed (At_Time => Now),
+                           Completion_Time => Unused);
+      end if;
     exception
     when Target_Lost =>
       Stop_Target;
@@ -798,6 +800,8 @@ package body Telescope is
         Fans.Turn_On_Or_Off;
         Mount.Disable;
         The_State := Disabling;
+      when User_Adjust =>
+        Jog_Handling;
       when User_Setup =>
         Setup_Handling;
       when Follow =>
@@ -1119,13 +1123,20 @@ package body Telescope is
             when others =>
               The_Data.Completion_Time := Time.In_The_Past;
             end case;
-            declare
-              Info : constant Mount.Information := Mount.Actual_Info;
-            begin
-              The_Data.Actual_J2000_Direction := Info.J2000_Direction;
-              The_Data.Actual_Direction := Info.Actual_Direction;
-              The_Data.Local_Direction := Info.Local_Direction;
-            end;
+            case The_State is
+            when Startup_State =>
+              The_Data.Actual_J2000_Direction := Space.Unknown_Direction;
+              The_Data.Actual_Direction := Space.Unknown_Direction;
+              The_Data.Local_Direction := Earth.Unknown_Direction;
+            when others =>
+              declare
+                Info : constant Mount.Information := Mount.Actual_Info;
+              begin
+                The_Data.Actual_J2000_Direction := Info.J2000_Direction;
+                The_Data.Actual_Direction := Info.Actual_Direction;
+                The_Data.Local_Direction := Info.Local_Direction;
+              end;
+            end case;
             if Get_Direction = null then
               The_Data.Target_Direction := Space.Unknown_Direction;
             else

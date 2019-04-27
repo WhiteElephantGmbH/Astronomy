@@ -272,12 +272,13 @@ package body Control is
     end Signal_New_Telescope_Data;
 
     entry Get (The_Command : out Command)
-      when Has_New_Goto_Direction
-        or Command_Is_Pending
-        or Define_Catalog_Pending
-        or Update_Pending
-        or Define_Target_Pending
-        or Has_New_Telescope_Data
+      when not Termination_Is_Enabled and then
+        (Has_New_Goto_Direction or
+         Command_Is_Pending or
+         Define_Catalog_Pending or
+         Update_Pending or
+         Define_Target_Pending or
+         Has_New_Telescope_Data)
     is
     begin
       if Next_Command = Close then
@@ -371,7 +372,11 @@ package body Control is
     begin
       Define_External_Target;
       case The_Data.Status is
-      when Telescope.Stopped | Telescope.Positioning | Telescope.Approaching | Telescope.Tracking =>
+      when Telescope.Stopped
+      | Telescope.Positioned
+      | Telescope.Positioning
+      | Telescope.Approaching
+      | Telescope.Tracking =>
         User.Perform_Goto;
       when others =>
         Log.Error ("goto not executed");

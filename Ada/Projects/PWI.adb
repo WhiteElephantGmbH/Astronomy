@@ -102,7 +102,7 @@ package body PWI is
     Close_Socket;
   exception
   when No_Server =>
-    Log.Error ("no server");
+    Log.Write ("no server");
     raise;
   end Execute;
 

@@ -29,6 +29,7 @@ with Lexicon;
 with Parameter;
 with Persistent;
 with Refraction;
+with Sky_Line;
 with Space;
 with Strings;
 with Time;
@@ -411,6 +412,33 @@ package body User is
   end Disable_Shutdown_Button;
 
 
+  protected Local_Direction is
+
+    procedure Set (Item : Earth.Direction);
+
+    function Value return Earth.Direction;
+
+  private
+    The_Item : Earth.Direction;
+  end Local_Direction;
+
+
+  protected body Local_Direction is
+
+    procedure Set (Item : Earth.Direction) is
+    begin
+      The_Item := Item;
+    end Set;
+
+
+    function Value return Earth.Direction is
+    begin
+      return The_Item;
+    end Value;
+
+  end Local_Direction;
+
+
   procedure Show (Information : Telescope.Data) is
     use type Telescope.State;
     use type Telescope.Time_Delta;
@@ -461,6 +489,7 @@ package body User is
     when Is_Control =>
       null;
     when Is_Display =>
+      Local_Direction.Set (Information.Local_Direction);
       if Space.Direction_Is_Known (Information.Target_Direction) then
         Gui.Set_Text (Target_Dec, Space.Dec_Image_Of (Information.Target_Direction));
         Gui.Set_Text (Target_Ra, Space.Ra_Image_Of (Information.Target_Direction));
@@ -698,6 +727,8 @@ package body User is
   begin
     if Perform_Left_Handler = Perform_Goto'access then
       Signal_Action (Go_To);
+    elsif Perform_Left_Handler = null then
+      Sky_Line.Add (Local_Direction.Value);
     end if;
   end Enter_Handling;
 
