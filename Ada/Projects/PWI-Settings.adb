@@ -72,13 +72,16 @@ package body PWI.Settings is
       begin
         if Item = Longitude_Id then
           The_Longitude := Angle.Degrees'value(Next_Token ("value"));
-          Log.Write ("Longitude" & The_Longitude'img);
+          The_Longitude := 8.609986389; --!!! corrected wrong value from PWI
+          Log.Warning ("Longitude (overwritten)" & The_Longitude'img);
         elsif Item = Latitude_Id then
           The_Latitude := Angle.Degrees'value(Next_Token ("value"));
-          Log.Write ("Latitude" & The_Latitude'img);
+          The_Latitude := 47.7055000; --!!! corrected wrong value from PWI
+          Log.Warning ("Latitude (overwritten)" & The_Latitude'img);
         elsif Item = Elevation_Id then
           The_Elevation := Integer'value(Next_Token ("value"));
-          Log.Write ("Elevation" & The_Elevation'img);
+          The_Elevation := 540; --!!! corrected wrong value from PWI
+          Log.Warning ("Elevation (overwritten)" & The_Elevation'img);
           exit;
         end if;
       end;
