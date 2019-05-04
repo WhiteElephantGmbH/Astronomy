@@ -79,7 +79,7 @@ private package PWI.XML is
     end case;
   end record;
 
-  type Rotator_Position is delta 0.001 range 0.0 .. 360.000; -- in degrees
+  type Rotator_Position is delta 0.001 range -360.0 .. 360.000; -- in degrees
 
   function Rotator_Position_Of (Image : String) return Rotator_Position;
 
