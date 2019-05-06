@@ -1,4 +1,5 @@
 with Win32.Bthdef;
+with Win32.Winbase;
 with Win32.Winnt;
 
 package Win32.Bluetooth is
@@ -14,9 +15,11 @@ package Win32.Bluetooth is
   with
     Convention => C_Pass_By_Copy;
 
-  subtype Radio_Find_Handle is LPVOID;
+  type Radio_Find_Handle is new LPVOID;
 
-  subtype Radio_Handle is HANDLE;
+  No_Radio_Found : constant Radio_Find_Handle := Radio_Find_Handle(System.Null_Address);
+
+  type Radio_Handle is new HANDLE;
 
   subtype Anon1529_Rg_Bytes_Array is Interfaces.C.char_array (0 .. 5);
 
@@ -47,8 +50,41 @@ package Win32.Bluetooth is
     Class_Of_Device : aliased ULONG;
     Lmp_Subversion  : aliased USHORT;
     Manufacturer    : aliased USHORT;
-   end record
-   with
+  end record
+  with
+    Convention => C_Pass_By_Copy;
+
+  type Device_Search_Params is record
+    Size                 : aliased DWORD := DWORD(Device_Search_Params'size / 8);
+    Return_Authenticated : aliased BOOL  := TRUE;
+    Return_Remembered    : aliased BOOL  := TRUE;
+    Return_Unknown       : aliased BOOL  := TRUE;
+    Return_Connected     : aliased BOOL  := TRUE;
+    Issue_Inquiry        : aliased BOOL  := TRUE;
+    Timeout_Multiplier   : aliased UCHAR := 10;
+    Radio                : Radio_Handle;
+  end record
+  with
+    Convention => C_Pass_By_Copy;
+
+  type Device_Find_Handle is new LPVOID;
+
+  No_Device_Found : constant Device_Find_Handle := Device_Find_Handle(System.Null_Address);
+
+  type Anon1273_szName_array is array (0 .. 247) of aliased WCHAR;
+
+  type Device_Info is record
+    Size            : aliased DWORD := DWORD(Device_Info'size / 8);
+    Address         : aliased Bth_Address;
+    Class_Of_Device : aliased ULONG;
+    Connected       : aliased BOOL;
+    Remembered      : aliased BOOL;
+    Authenticated   : aliased BOOL;
+    stLastSeen      : aliased Winbase.SYSTEMTIME;
+    stLastUsed      : aliased Winbase.SYSTEMTIME;
+    Name            : aliased Anon1273_szName_array;
+  end record
+  with
      Convention => C_Pass_By_Copy;
 
 
@@ -84,5 +120,25 @@ package Win32.Bluetooth is
     Import        => Standard.True,
     Convention    => Stdcall,
     External_Name => "BluetoothFindRadioClose";
+
+  function Find_First_Device (Arg1 : access Device_Search_Params;
+                              Arg2 : access Device_Info) return Device_Find_Handle
+  with
+    Import        => Standard.True,
+    Convention    => Stdcall,
+    External_Name => "BluetoothFindFirstDevice";
+
+  function Find_Next_Device (Arg1 : Device_Find_Handle;
+                             Arg2 : access Device_Info) return BOOL
+  with
+    Import        => Standard.True,
+    Convention    => Stdcall,
+    External_Name => "BluetoothFindNextDevice";
+
+  function Find_Device_Close (Arg1 : Device_Find_Handle) return BOOL
+  with
+    Import        => Standard.True,
+    Convention    => Stdcall,
+    External_Name => "BluetoothFindDeviceClose";
 
 end Win32.Bluetooth;

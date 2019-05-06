@@ -18,11 +18,15 @@ with System;
 with Win32.Bluetooth;
 with Win32.Winbase;
 with Win32.Winerror;
+with Win32.Winnt;
+
+with Log;
 
 package body Test is
 
   procedure Put (Image : String) is
   begin
+    Log.Write (Image);
     Ada.Text_IO.Put_Line (Image);
   end Put;
 
@@ -390,6 +394,7 @@ package body Test is
   procedure Work is
     Nr_Of_Arguments : constant Natural := Ada.Command_Line.Argument_Count;
   begin
+    Put ("PWI_TEST");
     if Nr_Of_Arguments = 0 then
       declare
         use Win32;
@@ -398,16 +403,16 @@ package body Test is
       begin
         Put ("Is_Discoverable Result:" & Result'img);
         declare
-          Parameters   : aliased Bluetooth.Find_Radio_Params := (Size => DWORD(Bluetooth.Find_Radio_Params'size / 8));
-          Radio_Handle : aliased Bluetooth.Radio_Handle;
-          Find_Handle  : aliased Bluetooth.Radio_Find_Handle;
-          Radio_Info   : aliased Bluetooth.Radio_Info;
+          Parameters        : aliased Bluetooth.Find_Radio_Params;
+          Radio_Handle      : aliased Bluetooth.Radio_Handle;
+          Find_Radio_Handle : aliased Bluetooth.Radio_Find_Handle;
+          Radio_Info        : aliased Bluetooth.Radio_Info;
           use type Bluetooth.Radio_Find_Handle;
         begin
           Put ("Find_First_Radio");
-          Find_Handle := Bluetooth.Find_First_Radio (Arg1 => Parameters'access,
-                                                     Arg2 => Radio_Handle'access);
-          if Find_Handle /= System.Null_Address then
+          Find_Radio_Handle := Bluetooth.Find_First_Radio (Arg1 => Parameters'access,
+                                                           Arg2 => Radio_Handle'access);
+          if Find_Radio_Handle /= Bluetooth.No_Radio_Found then
             loop
               Result := Bluetooth.Get_Radio_Info (Arg1 => Radio_Handle,
                                                   Arg2 => Radio_Info'access);
@@ -415,18 +420,49 @@ package body Test is
               when Win32.Winerror.NO_ERROR =>
                 Put ("Get_Radio_Info Name:" &
                   Ada.Characters.Handling.To_String (Interfaces.C.To_Ada (Interfaces.C.wchar_array(Radio_Info.Name))));
+                declare
+                  Parameters         : aliased Bluetooth.Device_Search_Params;
+                  Find_Device_Handle : aliased Bluetooth.Device_Find_Handle;
+                  Device_Info        : aliased Bluetooth.Device_Info;
+                  use type Bluetooth.Device_Find_Handle;
+                begin
+                  Put ("Lookup Devices");
+                  Parameters.Radio := Radio_Handle;
+                  Find_Device_Handle := Bluetooth.Find_First_Device (Arg1 => Parameters'access,
+                                                                     Arg2 => Device_Info'access);
+                  if Find_Device_Handle /= Bluetooth.No_Device_Found then
+                    loop
+                      Put ("Found_Device:" &
+                        Ada.Characters.Handling.To_String (Interfaces.C.To_Ada (Interfaces.C.wchar_array(
+                          Device_Info.Name))));
+
+                      Put ("  Class_Of_Device:" & Device_Info.Class_Of_Device'img);
+                      Put ("  Address        :" & Device_Info.Address.Anon2422.Ull_Long'img);
+                      Put ("  Connected      :" & Device_Info.Connected'img);
+                      Put ("  Remembered     :" & Device_Info.Remembered'img);
+                      Put ("  Authenticated  :" & Device_Info.Authenticated'img);
+
+                      Ok := Bluetooth.Find_Next_Device (Arg1 => Find_Device_Handle,
+                                                        Arg2 => Device_Info'access);
+                      Put ("Find_Next_Next Ok:" & Ok'img);
+                      exit when Ok = Win32.FALSE;
+                    end loop;
+                    Ok := Bluetooth.Find_Device_Close (Find_Device_Handle);
+                    Put ("Find_Device_Close Ok:" & Ok'img);
+                  end if;
+                end;
               when others =>
                 Put ("Get_Radio_Info Result:" & Result'img);
               end case;
-              Ok := Winbase.CloseHandle(Radio_Handle);
-              Put ("CloseHandle Ok:" & Ok'img);
+              Ok := Winbase.CloseHandle(Win32.Winnt.HANDLE(Radio_Handle));
+              Put ("Close Radio_Handle Ok:" & Ok'img);
 
-              Ok := Bluetooth.Find_Next_Radio (Arg1 => Find_Handle,
+              Ok := Bluetooth.Find_Next_Radio (Arg1 => Find_Radio_Handle,
                                                Arg2 => Radio_Handle'access);
               Put ("Find_Next_Radio Ok:" & Ok'img);
               exit when Ok = Win32.FALSE;
             end loop;
-            Ok := Bluetooth.Find_Radio_Close (Find_Handle);
+            Ok := Bluetooth.Find_Radio_Close (Find_Radio_Handle);
             Put ("Find_Radio_Close Ok:" & Ok'img);
           end if;
         end;
