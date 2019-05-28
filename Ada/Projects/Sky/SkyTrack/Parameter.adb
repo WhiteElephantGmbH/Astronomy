@@ -61,6 +61,7 @@ package body Parameter is
   First_Upper_Limit_Key           : constant String := "First Upper Limit";
   Second_Lower_Limit_Key          : constant String := "Second Lower Limit";
   Second_Upper_Limit_Key          : constant String := "Second Upper Limit";
+  Synch_On_Targets_Key            : constant String := "Synch On Targets";
 
   Stellarium_Id  : constant String := "Stellarium";
   Lx200_Id       : constant String := "Lx200";
@@ -82,6 +83,7 @@ package body Parameter is
 
   The_Telescope_Name       : Text.String;
   Is_In_Setup_Mode         : Boolean;
+  Is_Synch_On_Targets      : Boolean;
   The_Steps_Per_Revolution : Device.Steps_Per_Revolution;
   The_Clocks_Per_Second    : Natural;
   The_Park_Azimuth         : Angle.Value;
@@ -305,6 +307,7 @@ package body Parameter is
         Put (First_Upper_Limit_Key & "    = 185°");
         Put (Second_Lower_Limit_Key & "   = 0°");
         Put (Second_Upper_Limit_Key & "   = 0°");
+        Put (Synch_On_Targets_Key & "     = True");
       when Sternwarte_Schaffhausen =>
         Put ("[" & Telescope_Id & "]");
         Put (Name_Key & "                        = Newton");
@@ -325,6 +328,7 @@ package body Parameter is
         Put (First_Upper_Limit_Key & "           = +1874°");
         Put (Second_Lower_Limit_Key & "          = -10°");
         Put (Second_Upper_Limit_Key & "          = +90°");
+        Put (Synch_On_Targets_Key & "            = False");
       when Unknown =>
         Put ("[" & Telescope_Id & "]");
         Put (Name_Key & "                        = ");
@@ -343,8 +347,9 @@ package body Parameter is
         Put (Second_Acceleration_Key & "         = 3°/s²");
         Put (First_Lower_Limit_Key & "           = -360°");
         Put (First_Upper_Limit_Key & "           = +360°");
-        Put (Second_Lower_Limit_Key & "          = -30°");
-        Put (Second_Upper_Limit_Key & "          = +210°");
+        Put (Second_Lower_Limit_Key & "          = -43°");
+        Put (Second_Upper_Limit_Key & "          = +223°");
+        Put (Synch_On_Targets_Key & "            = True");
       end case;
       Put ("");
       Put ("[" & Lx200_Id & "]");
@@ -542,6 +547,7 @@ package body Parameter is
           Error.Raise_With ("Incorrect second limit range");
         end if;
       end if;
+      Is_Synch_On_Targets := Strings.Lowercase_Of (String_Of (Synch_On_Targets_Key)) = "true";
       Set (Lx200_Handle);
       begin
         The_Lx200_Port := Network.Port_Number (Value_Of (Port_Key));
@@ -740,6 +746,12 @@ package body Parameter is
   begin
     return The_Second_Upper_Limit;
   end Second_Upper_Limit;
+
+
+  function Synch_On_Targets return Boolean is
+  begin
+    return Is_Synch_On_Targets;
+  end Synch_On_Targets;
 
 
   -----------

@@ -100,6 +100,8 @@ package Parameter is
 
   function Second_Lower_Limit return Angle.Degrees;
 
+  function Synch_On_Targets return Boolean;
+
 
   -----------
   -- Lx200 --

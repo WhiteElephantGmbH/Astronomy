@@ -309,12 +309,6 @@ package body User is
   end Show;
 
 
-  function Is_Autoguiding return Boolean is
-  begin
-    return The_Autoguiding_Rate /= 0;
-  end Is_Autoguiding;
-
-
   function Next_Operation_Enabled return Boolean is
   begin
     case The_Operation is
@@ -455,7 +449,7 @@ package body User is
         end case;
       when Target_Object =>
         Gui.Set_Text (Goto_Or_Park_Button, "Goto");
-        if Is_Autoguiding then
+        if Parameter.Synch_On_Targets then
           case The_Status is
           when Telescope.Ready | Telescope.Stopped | Telescope.Parked =>
             Gui.Set_Text (Stop_Or_Synch_Button, "Synch");
