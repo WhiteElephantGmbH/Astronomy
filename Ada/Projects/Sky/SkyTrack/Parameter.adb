@@ -357,7 +357,9 @@ package body Parameter is
       Put ("");
       Put ("[" & Stellarium_Id & "]");
       Put (Port_Key & "       = 10001");
-      Put (Program_Key & "    = C:\Program Files\Stellarium\Stellarium.exe");
+      if Os.Is_Windows then
+        Put (Program_Key & "    = C:\Program Files\Stellarium\Stellarium.exe");
+      end if;
       Put (Satellites_Key & " = " & Stellarium.Satellites_Filename);
       Put (Magnitude_Key & "  = 8.0");
       Put ("");
