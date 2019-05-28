@@ -31,6 +31,12 @@ package body Os.Process is
   end Create;
 
 
+  procedure Terminate_With (Process_Id : Id) is
+  begin
+    raise Program_Error; -- not implemented
+  end Terminate_With;
+
+
   function Execution_Of (Executable     : String;
                          Parameters     : String;
                          Environment    : String  := "";
