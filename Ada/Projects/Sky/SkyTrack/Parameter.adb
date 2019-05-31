@@ -62,6 +62,7 @@ package body Parameter is
   Second_Lower_Limit_Key          : constant String := "Second Lower Limit";
   Second_Upper_Limit_Key          : constant String := "Second Upper Limit";
   Synch_On_Targets_Key            : constant String := "Synch On Targets";
+  Expert_Mode_Key                 : constant String := "Expert Mode";
 
   Stellarium_Id  : constant String := "Stellarium";
   Lx200_Id       : constant String := "Lx200";
@@ -74,7 +75,6 @@ package body Parameter is
   Longitude_Key : constant String := "Longitude";
   Latitude_Key  : constant String := "Latitude";
   Altitude_Key  : constant String := "Altitude";
-  Sky_Line_Key  : constant String := "Sky Line";
 
   The_Section : Configuration.Section_Handle;
 
@@ -82,8 +82,8 @@ package body Parameter is
   Datagram_Port : constant := 44422;
 
   The_Telescope_Name       : Text.String;
-  Is_In_Setup_Mode         : Boolean;
   Is_Synch_On_Targets      : Boolean;
+  Is_Expert_Mode           : Boolean;
   The_Steps_Per_Revolution : Device.Steps_Per_Revolution;
   The_Clocks_Per_Second    : Natural;
   The_Park_Azimuth         : Angle.Value;
@@ -110,7 +110,6 @@ package body Parameter is
   The_Latitude  : Angle.Value;
   The_Longitude : Angle.Value;
   The_Altitude  : Integer; -- in meters above see level
-  The_Sky_Line  : Text.String;
 
 
   procedure Set (Section : Configuration.Section_Handle) is
@@ -269,11 +268,16 @@ package body Parameter is
         Ada.Text_IO.Put_Line (The_File, Line);
       end Put;
 
-      procedure Put_Steps_Per_Revolution (Steps : Positive) is
+      procedure Put_Steps_Per_Revolution (Steps            : Positive;
+                                          Single_Parameter : Boolean := False) is
         Steps_Image : constant String := Positive'image(Steps);
       begin
-        Put (First_Steps_Per_Revolution_Key & "  =" & Steps_Image);
-        Put (Second_Steps_Per_Revolution_Key & " =" & Steps_Image);
+        if Single_Parameter then
+          Put (Steps_Per_Revolution_Key & " =" & Steps_Image);
+        else
+          Put (First_Steps_Per_Revolution_Key & "  =" & Steps_Image);
+          Put (Second_Steps_Per_Revolution_Key & " =" & Steps_Image);
+        end if;
       end Put_Steps_Per_Revolution;
 
     begin -- Create_Default_Parameters
@@ -289,10 +293,10 @@ package body Parameter is
       case Default_Location is
       when Home =>
         Put ("[" & Telescope_Id & "]");
-        Put (Name_Key & "                 = Setup");
+        Put (Name_Key & "                 = EQ6");
         if Is_Stepper_Driver then
           Put (Ip_Address_Key & "           = SkyTracker" & (if Os.Is_Windows then "" else ".local"));
-          Put_Steps_Per_Revolution (141 * 5 * 200 * 16); -- EQU-6
+          Put_Steps_Per_Revolution (141 * 5 * 200 * 16, Single_Parameter => True); -- EQU-6
           Put (Clocks_Per_Second_Key & "    = 5000000");
         else
           Put (Ip_Address_Key & "           = 127.0.0.1");
@@ -308,33 +312,13 @@ package body Parameter is
         Put (Second_Lower_Limit_Key & "   = 0°");
         Put (Second_Upper_Limit_Key & "   = 0°");
         Put (Synch_On_Targets_Key & "     = True");
-      when Sternwarte_Schaffhausen =>
-        Put ("[" & Telescope_Id & "]");
-        Put (Name_Key & "                        = Newton");
-        if Is_Stepper_Driver then
-          Put (Serial_Port_Key & "                 = None");
-          Put_Steps_Per_Revolution (240 * 8 * 200 * 16);
-          Put (Clocks_Per_Second_Key & "           = 5000228");
-        else
-          Put (Ip_Address_Key & "                  = 127.0.0.1");
-        end if;
-        Put (Park_Azimuth_Key & "                = +74°");
-        Put (Park_Altitude_Key & "               = -5°");
-        Put (Pole_Height_Key & "                 = 90°");
-        Put (Moving_Speed_List_Key & "           = 6""/s, 1'/s, 10'/s, 3°00'/s");
-        Put (First_Acceleration_Key & "          = 30'/s²");
-        Put (Second_Acceleration_Key & "         = 30'/s²");
-        Put (First_Lower_Limit_Key & "           = -1726°");
-        Put (First_Upper_Limit_Key & "           = +1874°");
-        Put (Second_Lower_Limit_Key & "          = -10°");
-        Put (Second_Upper_Limit_Key & "          = +90°");
-        Put (Synch_On_Targets_Key & "            = False");
+        Put (Expert_Mode_Key & "          = True");
       when Unknown =>
         Put ("[" & Telescope_Id & "]");
-        Put (Name_Key & "                        = ");
+        Put (Name_Key & "                        = M-Zero");
         if Is_Stepper_Driver then
           Put (Ip_Address_Key & "                  = None");
-          Put_Steps_Per_Revolution (1232086); -- M-Zero
+          Put_Steps_Per_Revolution (1232086);
           Put (Clocks_Per_Second_Key & "           = 5000000");
         else
           Put (Ip_Address_Key & "                  = 127.0.0.1");
@@ -350,6 +334,7 @@ package body Parameter is
         Put (Second_Lower_Limit_Key & "          = -43°");
         Put (Second_Upper_Limit_Key & "          = +223°");
         Put (Synch_On_Targets_Key & "            = True");
+        Put (Expert_Mode_Key & "                 = False");
       end case;
       Put ("");
       Put ("[" & Lx200_Id & "]");
@@ -367,7 +352,6 @@ package body Parameter is
       Put (Longitude_Key & " = " & Angle.Image_Of (+Stellarium.Longitude, Decimals => 2, Show_Signed => True));
       Put (Latitude_Key & "  = " & Angle.Image_Of (+Stellarium.Latitude, Decimals => 2, Show_Signed => True));
       Put (Altitude_Key & "  ="  & Stellarium.Altitude'img & "m");
-      Put (Sky_Line_Key & "  = " & Stellarium.Landscape);
       Ada.Text_IO.Close (The_File);
     exception
     when Item: others =>
@@ -509,13 +493,11 @@ package body Parameter is
       The_Latitude := Angle_Of (Latitude_Key);
       The_Longitude := Angle_Of (Longitude_Key);
       The_Altitude := Value_Of (Altitude_Key, "m");
-      The_Sky_Line := Text.String_Of (String_Value_Of (Sky_Line_Key));
-      Log.Write (Sky_Line_Key & ": " & Sky_Line);
 
       Set (Telescope_Handle);
       The_Telescope_Name := Text.String_Of (String_Value_Of ("Name"));
       Log.Write ("Name: " & Telescope_Name);
-      Is_In_Setup_Mode := Telescope_Name = "Setup";
+      Is_Expert_Mode := Strings.Lowercase_Of (String_Of (Expert_Mode_Key)) = "true";
       Connect_Telescope;
       The_Park_Azimuth := Angle_Of (Park_Azimuth_Key);
       The_Park_Altitude := Angle_Of (Park_Altitude_Key);
@@ -598,9 +580,6 @@ package body Parameter is
   Home_Latitude    : constant Angle.Degrees := 47.695009;
   Home_Longitude   : constant Angle.Degrees :=  8.627870;
 
-  Newton_Latitude  : constant Angle.Degrees := 47.705500;
-  Newton_Longitude : constant Angle.Degrees :=  8.609865;
-
   function Default_Location return Location is
 
     function "=" (Left, Right : Angle.Degrees) return Boolean is
@@ -613,8 +592,6 @@ package body Parameter is
   begin
     if Stellarium.Latitude = Home_Latitude and then Stellarium.Longitude = Home_Longitude then
       return Home;
-    elsif Stellarium.Latitude = Newton_Latitude and then Stellarium.Longitude = Newton_Longitude then
-      return Sternwarte_Schaffhausen;
     end if;
     return Unknown;
   end Default_Location;
@@ -638,12 +615,6 @@ package body Parameter is
   end Elevation;
 
 
-  function Sky_Line return String is
-  begin
-    return Text.String_Of (The_Sky_Line);
-  end Sky_Line;
-
-
   ---------------
   -- Telescope --
   ---------------
@@ -652,12 +623,6 @@ package body Parameter is
   begin
     return Text.String_Of (The_Telescope_Name);
   end Telescope_Name;
-
-
-  function Is_Setup_Mode return Boolean is
-  begin
-    return Is_In_Setup_Mode;
-  end Is_Setup_Mode;
 
 
   function Telescope_Connection return Connection is
@@ -754,6 +719,12 @@ package body Parameter is
   begin
     return Is_Synch_On_Targets;
   end Synch_On_Targets;
+
+
+  function Expert_Mode return Boolean is
+  begin
+    return Is_Expert_Mode;
+  end Expert_Mode;
 
 
   -----------

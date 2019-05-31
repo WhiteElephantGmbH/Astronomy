@@ -42,8 +42,6 @@ package Stellarium is
 
   function Longitude return Angle.Degrees;
 
-  function Landscape return String;
-
   function Language return Language.Kind;
 
   function Satellites_Filename return String;

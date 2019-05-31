@@ -49,7 +49,7 @@ package Parameter is
   -- Site --
   ----------
 
-  type Location is (Home, Sternwarte_Schaffhausen, Unknown);
+  type Location is (Home, Unknown);
 
   function Default_Location return Location;
 
@@ -59,16 +59,12 @@ package Parameter is
 
   function Elevation return Integer; -- in meters
 
-  function Sky_Line return String;
-
 
   ------------
   -- Device --
   ------------
 
   function Telescope_Name return String;
-
-  function Is_Setup_Mode return Boolean;
 
   function Telescope_Connection return Connection;
 
@@ -102,6 +98,8 @@ package Parameter is
 
   function Synch_On_Targets return Boolean;
 
+  function Expert_Mode return Boolean;
+
 
   -----------
   -- Lx200 --
@@ -113,7 +111,7 @@ package Parameter is
   ----------------
   -- Stellarium --
   ----------------
-  
+
   function Stellarium_Port return Network.Port_Number;
 
   function Satellites_Filename return String;

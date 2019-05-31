@@ -38,7 +38,6 @@ package body Stellarium is
 
   Location       : constant String := Configuration.Value_Of (Init_Location, "location");
   Last_Location  : constant String := Configuration.Value_Of (Init_Location, "last_location");
-  Landscape_Name : constant String := Configuration.Value_Of (Init_Location, "landscape_name");
 
   Sky_Locale : constant String := Configuration.Value_Of (Localization, "sky_locale");
 
@@ -64,8 +63,6 @@ package body Stellarium is
   The_Latitude  : Angle.Degrees := Paris_Latitude;
   The_Longitude : Angle.Degrees := Paris_Longitude;
 
-  type Location_Kind is (Automatic, Paris, User_Defined);
-
 
   function Satellites_Filename return String is
   begin
@@ -73,7 +70,7 @@ package body Stellarium is
   end Satellites_Filename;
 
 
-  function Read_Location return Location_Kind is
+  procedure Read_Location is
 
     function Value_Of (Image        : String;
                        Is_Positive  : Boolean := True) return Angle.Degrees is
@@ -156,15 +153,12 @@ package body Stellarium is
 
    begin -- Read_Location
     if Is_Automatic_Defined_Location then
-      return Automatic;
+      return;
     elsif Is_User_Defined_Location then
-      return User_Defined;
+      return;
     end if;
     Log.Write ("location Paris => " & Last_Location);
-    return Paris;
   end Read_Location;
-
-  The_Location : constant Location_Kind := Read_Location;
 
 
   The_Process_Id : Os.Process.Id;
@@ -229,19 +223,6 @@ package body Stellarium is
   begin
     return The_Longitude;
   end Longitude;
-
-
-  function Landscape return String is
-  begin
-    case The_Location is
-    when Automatic =>
-      return Last_Location;
-    when User_Defined =>
-      return Strings.Legible_Of (Landscape_Name);
-    when Paris =>
-      return "Paris";
-    end case;
-  end Landscape;
 
 
   function Language return Standard.Language.Kind is
@@ -348,4 +329,6 @@ package body Stellarium is
     Log.Write ("end");
   end Close;
 
+begin
+  Read_Location;
 end Stellarium;

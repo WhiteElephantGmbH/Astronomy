@@ -116,7 +116,7 @@ package body User is
 
   type Page is (Is_Control, Is_Display, Is_Setup);
 
-  Is_Setup_Mode : Boolean := False;
+  Is_Expert_Mode : Boolean := False;
   The_Page      : Page := Is_Control;
 
   type Target_Selection is (No_Target, Park_Position, Target_Object);
@@ -327,7 +327,7 @@ package body User is
   begin
     Align_Is_Enabled  := False;
     Is_Ready_For_Alignment_Calculations := False;
-    if Is_Setup_Mode then
+    if Is_Expert_Mode then
       case The_Operation is
       when Set_Sky_Line =>
         if Is_Stopped then
@@ -390,7 +390,7 @@ package body User is
 
   procedure Enable_Operation_Buttons is
   begin
-    if Is_Setup_Mode then
+    if Is_Expert_Mode then
       case The_Operation is
       when Set_Sky_Line =>
         Set_Add_Button_Text;
@@ -1206,7 +1206,7 @@ package body User is
 
   procedure Enter_Handling is
   begin
-    if Is_Setup_Mode and then Gui.Is_Enabled (Add_Or_Adjust_Button) then
+    if Is_Expert_Mode and then Gui.Is_Enabled (Add_Or_Adjust_Button) then
       Handle_Add_Or_Adjust;
     else
       Enter_Number;
@@ -1291,7 +1291,7 @@ package body User is
       when Gui.Key_Codes.KP_Subtract | Gui.Key_Codes.K_Page_Down =>
         Put (Device.No_Command);
       when Gui.Key_Codes.KP_Decimal =>
-        if Is_Setup_Mode and then Gui.Is_Enabled (Next_Or_Clear_Button) then
+        if Is_Expert_Mode and then Gui.Is_Enabled (Next_Or_Clear_Button) then
           Handle_Next_Or_Clear;
         else
           Not_A_Number;
@@ -1606,8 +1606,8 @@ package body User is
       Motor.Set (The_Autoguiding_Rate);
       Refraction.Set (The_Air_Pressure);
       Refraction.Set (The_Temperature);
-      Is_Setup_Mode := Parameter.Is_Setup_Mode;
-      if Is_Setup_Mode then
+      Is_Expert_Mode := Parameter.Expert_Mode;
+      if Is_Expert_Mode then
         Define_Display_Page;
         Define_Setup_Page;
       end if;
