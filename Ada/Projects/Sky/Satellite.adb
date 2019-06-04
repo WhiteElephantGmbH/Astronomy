@@ -30,8 +30,6 @@ package body Satellite is
 
   package Log is new Traces ("Satellite");
 
-  use type File.Folder;
-
   procedure Read_Stellarium_Data is
 
     End_Of_File         : exception;
