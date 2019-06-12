@@ -13,6 +13,7 @@ with PWI.Mount;
 with PWI.M3;
 with PWI.Focuser;
 with PWI.Rotator;
+with Serial_Io;
 with Strings;
 with System;
 with Win32.Bluetooth;
@@ -59,6 +60,52 @@ package body Test is
 
 
   procedure Execute (Command : String) is
+
+    procedure Serial_Input is
+
+      Port : constant Serial_Io.Port := Serial_Io.Com3;
+
+      task type Reader is
+        entry Start;
+      end Reader;
+
+      The_Reader : access Reader;
+
+      task body Reader is
+        Input         : Serial_Io.Channel(Port);
+        The_Character : Character;
+      begin
+        accept Start;
+        Serial_Io.Set (The_Baudrate => 115200,
+                       On           => Input);
+        Ada.Text_IO.Put ("Reader started ('x' to abort )");
+        loop
+          Ada.Text_IO.Put ("- from Serial:");
+          The_Character := Serial_Io.Character_Of (Input);
+          Ada.Text_IO.Put_Line (' ' & The_Character);
+        end loop;
+      exception
+      when Serial_Io.Aborted =>
+        Ada.Text_IO.Put_Line ("<aborted>");
+      end Reader;
+
+      The_Character : Character;
+
+    begin
+      Put ("Serial Input");
+      if Serial_Io.Is_Available (Port) then
+        Put ("Port is available");
+        The_Reader := new Reader;
+        The_Reader.Start;
+        loop
+          Ada.Text_IO.Get (The_Character);
+          exit when The_Character = 'x';
+        end loop;
+        Serial_Io.Free (Port);
+      else
+        Put ("Port not available");
+      end if;
+    end Serial_Input;
 
     Mount_Not_Connected : exception;
 
@@ -335,6 +382,10 @@ package body Test is
     use type PWI.Mount.Hours;
 
   begin -- execute
+    if Id = "input" then
+      Serial_Input;
+      return;
+    end if;
     PWI.Mount.Define_Pointing_Model ("First.pxp");
     if Id = "connect" then
       Connect_Mount;
