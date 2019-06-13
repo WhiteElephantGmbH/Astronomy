@@ -16,6 +16,7 @@
 pragma Style_White_Elephant;
 
 with Angle;
+with Serial_Io;
 with Stellarium;
 with Network;
 
@@ -58,6 +59,15 @@ package Parameter is
   function Is_Azimuthal_Mount return Boolean;
 
   function Moving_Speeds return Angle.Values; -- in angle / s
+
+
+  -------------
+  -- Handbox --
+  -------------
+
+  function Handbox_Is_Available return Boolean;
+
+  function Handbox_Port return Serial_Io.Port;
 
 
   -----------

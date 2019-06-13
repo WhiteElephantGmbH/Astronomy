@@ -20,6 +20,7 @@ with Application;
 with Data;
 with Error;
 with Gui;
+with Handbox;
 with Lx200;
 with Moon;
 with Name;
@@ -455,6 +456,7 @@ package body Control is
   begin -- Manager
     Log.Write ("manager start");
     Telescope.Set (User.Image_Orientation);
+    Handbox.Start;
     loop
       select Action_Handler.Get (The_Command);
         case The_Command is
@@ -516,6 +518,7 @@ package body Control is
           Handle_Telescope_Information;
           Telescope_Information_Is_Handled := True;
         when Close =>
+          Handbox.Close;    
           Targets.Stop;
           Telescope.Close;
           Stellarium.Close;
@@ -536,6 +539,7 @@ package body Control is
   exception
   when Occurrence: others =>
     Log.Termination (Occurrence);
+    Handbox.Close;
     Targets.Stop;
     Gui.Close;
     Telescope.Close;

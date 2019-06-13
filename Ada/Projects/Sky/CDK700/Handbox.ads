@@ -15,19 +15,10 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Device;
+package Handbox is
 
-package User.Input is
-
-  procedure Open;
-
-  type Source is (Ascom, Handbox, Keypad, Lx200);
-
-  procedure Put (The_Command : Device.Command;
-                 From        : Source);
-
-  function Is_Active return Boolean;
+  procedure Start;
 
   procedure Close;
 
-end User.Input;
+end Handbox;

@@ -54,6 +54,7 @@ package body Parameter is
   Ip_Address_Key        : constant String := "IP Address";
   Moving_Speed_List_Key : constant String := "Moving Speed List";
 
+  Handbox_Id     : constant String := "Handbox";
   Lx200_Id       : constant String := "Lx200";
   Stellarium_Id  : constant String := "Stellarium";
   Port_Key       : constant String := "Port";
@@ -73,8 +74,12 @@ package body Parameter is
   The_PWI_Address    : Network.Ip_Address;
   The_PWI_Port       : Network.Port_Number;
 
+  --Handbox
+  The_Handbox_Is_Available : Boolean;
+  The_Handbox_Port         : Serial_Io.Port;
+
   --Lx200
-  The_Lx200_Port          : Network.Port_Number;
+  The_Lx200_Port : Network.Port_Number;
 
   --Stellarium
   The_Stellarium_Port     : Network.Port_Number;
@@ -97,11 +102,12 @@ package body Parameter is
   end String_Value_Of;
 
 
-  function String_Of (Key : String) return String is
+  function String_Of (Key     : String;
+                      Section : String := "") return String is
     Image : constant String := String_Value_Of (Key);
   begin
     if Image = "" then
-      Error.Raise_With ("Parameter <" & Key & "> not defined");
+      Error.Raise_With ("Parameter <" & Key & (if Section = "" then "" else "> for <") & Section & "> not defined");
     end if;
     return Image;
   end String_Of;
@@ -163,11 +169,10 @@ package body Parameter is
   end Angles_Of;
 
 
-  function Value_Of (Key  : String;
-                     Unit : String := "") return Integer is
+  function Value_Of (Key : String) return Integer is
     Item : constant String := String_Of (Key);
   begin
-    return Integer'value(Image_Of(Item, Unit));
+    return Integer'value(Image_Of(Item));
   exception
   when others =>
     Error.Raise_With ("Incorrect " & Key & ": <" & Item & ">");
@@ -229,6 +234,9 @@ package body Parameter is
       Put (Port_Key & "              = 8080");
       Put (Moving_Speed_List_Key & " = 10""/s, 1'/s, 6'/s, 1°/s");
       Put ("");
+      Put ("[" & Handbox_Id & "]");
+      Put (Port_Key & " = Com3");
+      Put ("");
       Put ("[" & Lx200_Id & "]");
       Put (Port_Key & " = 4030");
       Put ("");
@@ -250,6 +258,7 @@ package body Parameter is
 
       Handle              : constant Configuration.File_Handle    := Configuration.Handle_For (Filename);
       PWI_Handle          : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, PWI_Id);
+      Handbox_Handle      : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Handbox_Id);
       Lx200_Handle        : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Lx200_Id);
       Stellarium_Handle   : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Stellarium_Id);
       Localization_Handle : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Localization_Id);
@@ -405,6 +414,29 @@ package body Parameter is
       if Natural(Angle_List.Length (The_Moving_Speeds)) < 2 then
         Error.Raise_With ("The speed list must contain at least two values");
       end if;
+
+      Set (Handbox_Handle);
+      declare
+        Port_Name : constant String := Strings.Legible_Of (String_Of (Port_Key, "Handbox"));
+      begin
+        if Port_Name /= "None" then
+          begin
+            The_Handbox_Port := Serial_Io.Port'value(Port_Name);
+          exception
+          when others =>
+            Error.Raise_With ("Handbox port " & Port_Name & " is not in range Com1 .. Com8");
+          end;
+          if not Serial_Io.Is_Available (The_Handbox_Port) then
+            Error.Raise_With ("Handbox port " & Port_Name & " is not available");
+          end if;
+          The_Handbox_Is_Available := True;
+          Log.Write ("Handbox on Port: " & The_Handbox_Port'img);
+        else
+          The_Handbox_Is_Available := False;
+          Log.Write ("No Handbox");
+        end if;
+      end;
+
       Set (Lx200_Handle);
       begin
         The_Lx200_Port := Network.Port_Number (Value_Of (Port_Key));
@@ -533,6 +565,22 @@ package body Parameter is
   begin
     return Angle.Values(Angle_List.Elements (The_Moving_Speeds));
   end Moving_Speeds;
+
+
+  -------------
+  -- Handbox --
+  -------------
+
+  function Handbox_Is_Available return Boolean is
+  begin
+    return The_Handbox_Is_Available;
+  end Handbox_Is_Available;
+
+
+  function Handbox_Port return Serial_Io.Port is
+  begin
+    return The_Handbox_Port;
+  end Handbox_Port;
 
 
   -----------

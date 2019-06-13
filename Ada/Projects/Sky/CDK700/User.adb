@@ -242,6 +242,7 @@ package body User is
   begin
     Gui.Beep;
     Gui.Message_Box (The_Text);
+    Log.Warning ("Show Error: " & The_Text);
   end Show_Error;
 
 
