@@ -38,9 +38,10 @@ package body Serial_Io is
 
 
   function Is_Not_Valid (The_Item : Win32.Winnt.HANDLE) return Boolean is
-    function UC is new Ada.Unchecked_Conversion (Win32.Winnt.HANDLE, Integer);
+    function UC is new Ada.Unchecked_Conversion (Win32.Winnt.HANDLE, Win32.PVOID);
+    use type Win32.PVOID;
   begin
-    return UC(The_Item) = UC(Win32.Winbase.INVALID_HANDLE_VALUE);
+    return UC(The_Item) = Win32.Winbase.INVALID_HANDLE_VALUE;
   end Is_Not_Valid;
 
 
@@ -87,16 +88,28 @@ package body Serial_Io is
 
   function New_Device (The_Port : Port) return Win32.Winnt.HANDLE is
 
-    type Ports is array (Port) of String(1..5);
+    type Ports is array (Port) of String(1..6);
 
-    Port_Names : aliased constant Ports := (Com1 => "Com1" & Ascii.Nul,
-                                            Com2 => "Com2" & Ascii.Nul,
-                                            Com3 => "Com3" & Ascii.Nul,
-                                            Com4 => "Com4" & Ascii.Nul,
-                                            Com5 => "Com5" & Ascii.Nul,
-                                            Com6 => "Com6" & Ascii.Nul,
-                                            Com7 => "Com7" & Ascii.Nul,
-                                            Com8 => "Com8" & Ascii.Nul);
+    Port_Names : aliased constant Ports := (Com1  => "Com1"  & Ascii.Nul & Ascii.Nul,
+                                            Com2  => "Com2"  & Ascii.Nul & Ascii.Nul,
+                                            Com3  => "Com3"  & Ascii.Nul & Ascii.Nul,
+                                            Com4  => "Com4"  & Ascii.Nul & Ascii.Nul,
+                                            Com5  => "Com5"  & Ascii.Nul & Ascii.Nul,
+                                            Com6  => "Com6"  & Ascii.Nul & Ascii.Nul,
+                                            Com7  => "Com7"  & Ascii.Nul & Ascii.Nul,
+                                            Com8  => "Com8"  & Ascii.Nul & Ascii.Nul,
+                                            Com9  => "Com9"  & Ascii.Nul & Ascii.Nul,
+                                            Com10 => "Com10" & Ascii.Nul,
+                                            Com11 => "Com11" & Ascii.Nul,
+                                            Com12 => "Com12" & Ascii.Nul,
+                                            Com13 => "Com13" & Ascii.Nul,
+                                            Com14 => "Com14" & Ascii.Nul,
+                                            Com15 => "Com15" & Ascii.Nul,
+                                            Com16 => "Com16" & Ascii.Nul,
+                                            Com17 => "Com17" & Ascii.Nul,
+                                            Com18 => "Com18" & Ascii.Nul,
+                                            Com19 => "Com19" & Ascii.Nul,
+                                            Com20 => "Com20" & Ascii.Nul);
     use type Unsigned.Longword;
 
     GENERIC_READ       : constant Unsigned.Longword := Win32.Winnt.GENERIC_READ;
@@ -167,7 +180,6 @@ package body Serial_Io is
     end Control_Block;
 
     function Comm_Properties return Win32.Winbase.COMMPROP is
-      use type Win32.DWORD;
       subtype Any_Char is Win32.WCHAR_Array (0..Win32.ANYSIZE_ARRAY);
     begin
       return Win32.Winbase.COMMPROP'(wPacketLength       => 0,

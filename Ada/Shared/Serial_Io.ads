@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2002 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2002 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -19,7 +19,8 @@ with Ada.Finalization;
 with Unsigned;
 package Serial_Io is
 
-  type Port is (Com1, Com2, Com3, Com4, Com5, Com6, Com7, Com8);
+  type Port is (Com1,  Com2,  Com3,  Com4,  Com5,  Com6,  Com7,  Com8,  Com9,  Com10,
+                Com11, Com12, Com13, Com14, Com15, Com16, Com17, Com18, Com19, Com20);
 
   type Channel (The_Port : Port) is tagged limited private;
 
