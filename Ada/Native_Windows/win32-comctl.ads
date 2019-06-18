@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2002 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2002 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
@@ -71,13 +71,7 @@ package Win32.Comctl is
     Hwndfrom : Win32.Windef.HWND;
     Idfrom   : Win32.UINT;
     Code     : Integer;
-  end record;
-  for Nm_Hdr use record
-    Hwndfrom at 0 range 0 .. 31;
-    Idfrom   at 4 range 0 .. 31;
-    Code     at 8 range 0 .. 31;
-  end record;
-  for Nm_Hdr'size use 96;
+  end record with Convention => C;
 
   type Nm_Hdr_Ptr is access Nm_Hdr;
 
@@ -87,15 +81,8 @@ package Win32.Comctl is
     Itemdata : Win32.DWORD;
     Point    : Win32.Windef.POINT;
     Hitinfo  : Win32.DWORD;
-  end record;
-  for Nm_Mouse use record
-    Hdr      at  0 range 0 .. 95;
-    Itemspec at 12 range 0 .. 31;
-    Itemdata at 16 range 0 .. 31;
-    Point    at 20 range 0 .. 63;
-    Hitinfo  at 28 range 0 .. 31;
-  end record;
-  for Nm_Mouse'size use 256;
+  end record with Convention => C;
+
   type Nm_Mouse_Ptr is access Nm_Mouse;
 
   type Nm_Listview is record
@@ -107,18 +94,8 @@ package Win32.Comctl is
     Changed  : Win32.UINT;
     Ptaction : Win32.Windef.POINT;
     Lparam   : Win32.LPARAM;
-  end record;
-  for Nm_Listview use record
-    Hdr      at  0 range 0 .. 95;
-    Item     at 12 range 0 .. 31;
-    Subitem  at 16 range 0 .. 31;
-    Newstate at 20 range 0 .. 31;
-    Oldstate at 24 range 0 .. 31;
-    Changed  at 28 range 0 .. 31;
-    Ptaction at 32 range 0 .. 63;
-    Lparam   at 40 range 0 .. 31;
-  end record;
-  for Nm_Listview'size use 352;
+  end record with Convention => C;
+
   type Nm_Listview_Ptr is access all Nm_Listview;
 
   type Nm_Custom_Draw is record
@@ -129,34 +106,19 @@ package Win32.Comctl is
     Itemspec  : Win32.DWORD;
     Itemstate : Win32.UINT;
     Itemparam : Win32.LPARAM;
-  end record;
-  for Nm_Custom_Draw use record
-    Hdr       at  0 range 0 .. 95;
-    Drawstage at 12 range 0 .. 31;
-    Hdc       at 16 range 0 .. 31;
-    Rc        at 20 range 0 .. 127;
-    Itemspec  at 36 range 0 .. 31;
-    Itemstate at 40 range 0 .. 31;
-    Itemparam at 44 range 0 .. 31;
-  end record;
-  for Nm_Custom_Draw'size use 384;
+  end record with Convention => C;
 
   type Nmlv_Customdraw is record
     Nmcd       : Nm_Custom_Draw;
     Textcolor  : Win32.Windef.COLORREF;
     Bkgndcolor : Win32.Windef.COLORREF;
     Subitem    : Win32.INT;
-  end record;
-  for Nmlv_Customdraw use record
-    Nmcd       at  0 range 0 .. 383;
-    Textcolor  at 48 range 0 .. 31;
-    Bkgndcolor at 52 range 0 .. 31;
-    Subitem    at 56 range 0 .. 31;
-  end record;
-  for Nmlv_Customdraw'size use 480;
+  end record with Convention => C;
+
   type Customdraw_Info_Ptr is access all Nmlv_Customdraw;
 
   -- Common control shared messages
+
   Ccm_First            : constant := 16#2000#;
   Ccm_Setcolorscheme   : constant := Ccm_First + 2;
   Ccm_Getcolorscheme   : constant := Ccm_First + 3;
@@ -167,6 +129,7 @@ package Win32.Comctl is
   -- Custom Draw - Return flags
   -- values under 0x00010000 are reserved for global custom draw values.
   -- above that are for specific controls
+
   Cdrf_Dodefault         : constant := 16#00000000#;
   Cdrf_Newfont           : constant := 16#00000002#;
   Cdrf_Skipdefault       : constant := 16#00000004#;
@@ -191,8 +154,8 @@ package Win32.Comctl is
   Cdds_Itemposterase : constant := Cdds_Item + Cdds_Posterase;
   Cdds_Subitem       : constant := 16#00020000#;
 
-
   -- itemState flags
+
   Cdis_Selected       : constant := 16#0001#;
   Cdis_Grayed         : constant := 16#0002#;
   Cdis_Disabled       : constant := 16#0004#;
@@ -202,7 +165,6 @@ package Win32.Comctl is
   Cdis_Hot            : constant := 16#0040#;
   Cdis_Marked         : constant := 16#0080#;
   Cdis_Indeterminate  : constant := 16#0100#;
-
 
   -- Listview constants
 
@@ -279,7 +241,6 @@ package Win32.Comctl is
   Lvs_Nocolumnheader  : constant := 16#4000#;
   Lvs_Nosortheader    : constant := 16#8000#;
 
-
   Lvs_Ex_Gridlines        : constant := 16#1#;
   Lvs_Ex_Subitemimages    : constant := 16#2#;
   Lvs_Ex_Checkboxes       : constant := 16#4#;
@@ -325,121 +286,64 @@ package Win32.Comctl is
   Lvn_Getdisplayinfo_Wide : constant := Lvn_First - 77;
   Lvn_Setdisplayinfo_Wide : constant := Lvn_First - 78;
 
+  type Lv_Column_Ansi is record
+    Mask    : Win32.UINT;
+    Fmt     : Win32.INT;
+    Width   : Win32.INT;
+    Text    : Win32.LPSTR;
+    Maxtext : Win32.INT;
+    Subitem : Win32.INT;
+  end record with Convention => C;
 
-  type Lv_Column_Ansi is
-    record
-      Mask    : Win32.UINT;
-      Fmt     : Win32.INT;
-      Width   : Win32.INT;
-      Text    : Win32.LPSTR;
-      Maxtext : Win32.INT;
-      Subitem : Win32.INT;
-    end record;
-  for Lv_Column_Ansi use record
-    Mask    at  0 range 0 .. 31;
-    Fmt     at  4 range 0 .. 31;
-    Width   at  8 range 0 .. 31;
-    Text    at 12 range 0 .. 31;
-    Maxtext at 16 range 0 .. 31;
-    Subitem at 20 range 0 .. 31;
-  end record;
-  for Lv_Column_Ansi'size use 192;
+  type Lv_Column_Wide is record
+    Mask    : Win32.UINT;
+    Fmt     : Win32.INT;
+    Width   : Win32.INT;
+    Text    : Win32.LPWSTR;
+    Maxtext : Win32.INT;
+    Subitem : Win32.INT;
+  end record with Convention => C;
 
+  type Lv_Item_Ansi is record
+    Mask        : Win32.UINT;
+    Item        : Win32.INT;
+    Subitem     : Win32.INT;
+    State       : Win32.UINT;
+    Statemask   : Win32.UINT;
+    Text        : Win32.LPSTR;
+    Maxtextsize : Win32.INT;
+    Image       : Win32.INT;
+    Lparam      : Win32.LPARAM;
+  end record with Convention => C;
 
-  type Lv_Column_Wide is
-    record
-      Mask    : Win32.UINT;
-      Fmt     : Win32.INT;
-      Width   : Win32.INT;
-      Text    : Win32.LPWSTR;
-      Maxtext : Win32.INT;
-      Subitem : Win32.INT;
-    end record;
-  for Lv_Column_Wide use record
-    Mask    at  0 range 0 .. 31;
-    Fmt     at  4 range 0 .. 31;
-    Width   at  8 range 0 .. 31;
-    Text    at 12 range 0 .. 31;
-    Maxtext at 16 range 0 .. 31;
-    Subitem at 20 range 0 .. 31;
-  end record;
-  for Lv_Column_Wide'size use 192;
-
-
-  type Lv_Item_Ansi is
-    record
-      Mask        : Win32.UINT;
-      Item        : Win32.INT;
-      Subitem     : Win32.INT;
-      State       : Win32.UINT;
-      Statemask   : Win32.UINT;
-      Text        : Win32.LPSTR;
-      Maxtextsize : Win32.INT;
-      Image       : Win32.INT;
-      Lparam      : Win32.LPARAM;
-    end record;
-  for Lv_Item_Ansi use record
-    Mask          at  0 range 0 .. 31;
-    Item          at  4 range 0 .. 31;
-    Subitem       at  8 range 0 .. 31;
-    State         at 12 range 0 .. 31;
-    Statemask     at 16 range 0 .. 31;
-    Text          at 20 range 0 .. 31;
-    Maxtextsize   at 24 range 0 .. 31;
-    Image         at 28 range 0 .. 31;
-    Lparam        at 32 range 0 .. 31;
-  end record;
-  for Lv_Item_Ansi'size use 288;
   type Lv_Item_Ansi_Ptr is access Lv_Item_Ansi;
 
-  type Lv_Item_Wide is
-    record
-      Mask        : Win32.UINT;
-      Item        : Win32.INT;
-      Subitem     : Win32.INT;
-      State       : Win32.UINT;
-      Statemask   : Win32.UINT;
-      Text        : Win32.LPWSTR;
-      Maxtextsize : Win32.INT;
-      Image       : Win32.INT;
-      Lparam      : Win32.LPARAM;
-    end record;
-  for Lv_Item_Wide use record
-    Mask          at  0 range 0 .. 31;
-    Item          at  4 range 0 .. 31;
-    Subitem       at  8 range 0 .. 31;
-    State         at 12 range 0 .. 31;
-    Statemask     at 16 range 0 .. 31;
-    Text          at 20 range 0 .. 31;
-    Maxtextsize   at 24 range 0 .. 31;
-    Image         at 28 range 0 .. 31;
-    Lparam        at 32 range 0 .. 31;
-  end record;
-  for Lv_Item_Wide'size use 288;
-   type Lv_Item_Wide_Ptr is access Lv_Item_Wide;
+  type Lv_Item_Wide is record
+    Mask        : Win32.UINT;
+    Item        : Win32.INT;
+    Subitem     : Win32.INT;
+    State       : Win32.UINT;
+    Statemask   : Win32.UINT;
+    Text        : Win32.LPWSTR;
+    Maxtextsize : Win32.INT;
+    Image       : Win32.INT;
+    Lparam      : Win32.LPARAM;
+  end record with Convention => C;
 
+  type Lv_Item_Wide_Ptr is access Lv_Item_Wide;
 
   type Lv_Dispinfo_Ansi is record
     Hdr  : Nm_Hdr;
     Item : Lv_Item_Ansi;
-  end record;
-  for Lv_Dispinfo_Ansi use record
-    Hdr  at  0 range 0 .. 95;
-    Item at 12 range 0 .. 287;
-  end record;
-  for Lv_Dispinfo_Ansi'size use 384;
-  type Lv_Dispinfo_Ansi_Ptr is access Lv_Dispinfo_Ansi;
+  end record with Convention => C;
 
+  type Lv_Dispinfo_Ansi_Ptr is access Lv_Dispinfo_Ansi;
 
   type Lv_Dispinfo_Wide is record
     Hdr  : Nm_Hdr;
     Item : Lv_Item_Wide;
-  end record;
-  for Lv_Dispinfo_Wide use record
-    Hdr  at  0 range 0 .. 95;
-    Item at 12 range 0 .. 287;
-  end record;
-  for Lv_Dispinfo_Wide'size use 384;
+  end record with Convention => C;
+
   type Lv_Dispinfo_Wide_Ptr is access all Lv_Dispinfo_Wide;
 
   -- Progress Bars
@@ -516,28 +420,17 @@ package Win32.Comctl is
 
 -- Tabs
 
-  type Tc_Item is
-    record
-      Mask        : Win32.UINT;
-      State       : Win32.DWORD;
-      Statemask   : Win32.DWORD;
-      Text        : Win32.LPSTR;
-      Maxtextsize : Win32.INT;
-      Image       : Win32.INT;
-      Lparam      : Win32.LPARAM;
-    end record;
-  for Tc_Item use record
-    Mask        at  0 range 0 .. 31;
-    State       at  4 range 0 .. 31;
-    Statemask   at  8 range 0 .. 31;
-    Text        at 12 range 0 .. 31;
-    Maxtextsize at 16 range 0 .. 31;
-    Image       at 20 range 0 .. 31;
-    Lparam      at 24 range 0 .. 31;
-  end record;
-  for Tc_Item'size use 224;
-  type Tc_Itemptr is access Tc_Item;
+  type Tc_Item is record
+    Mask        : Win32.UINT;
+    State       : Win32.DWORD;
+    Statemask   : Win32.DWORD;
+    Text        : Win32.LPSTR;
+    Maxtextsize : Win32.INT;
+    Image       : Win32.INT;
+    Lparam      : Win32.LPARAM;
+  end record with Convention => C;
 
+  type Tc_Itemptr is access Tc_Item;
 
   Tcif_Text       : constant := 16#1#;
   Tcif_Image      : constant := 16#2#;
@@ -561,6 +454,7 @@ package Win32.Comctl is
   Tcn_Getobject   : constant := Tcn_First - 3;
 
 -- Treeview
+
   type Htreeitem is new Win32.UINT;
 
   Tvs_Hasbuttons      : constant := 16#01#;
@@ -608,20 +502,7 @@ package Win32.Comctl is
     Selectedimage : Win32.INT;
     Children      : Win32.INT;
     Lparam        : Win32.LPARAM;
-  end record;
-  for Tv_Item_Ansi use record
-    Mask          at  0 range 0 .. 31;
-    Hitem         at  4 range 0 .. 31;
-    State         at  8 range 0 .. 31;
-    Statemask     at 12 range 0 .. 31;
-    Text          at 16 range 0 .. 31;
-    Maxtextsize   at 20 range 0 .. 31;
-    Image         at 24 range 0 .. 31;
-    Selectedimage at 28 range 0 .. 31;
-    Children      at 32 range 0 .. 31;
-    Lparam        at 36 range 0 .. 31;
-  end record;
-  for Tv_Item_Ansi'size use 320;
+  end record with Convention => C;
 
   type Tv_Item_Wide is record
     Mask          : Win32.UINT;
@@ -634,46 +515,19 @@ package Win32.Comctl is
     Selectedimage : Win32.INT;
     Children      : Win32.INT;
     Lparam        : Win32.LPARAM;
-  end record;
-  for Tv_Item_Wide use record
-    Mask          at  0 range 0 .. 31;
-    Hitem         at  4 range 0 .. 31;
-    State         at  8 range 0 .. 31;
-    Statemask     at 12 range 0 .. 31;
-    Text          at 16 range 0 .. 31;
-    Maxtextsize   at 20 range 0 .. 31;
-    Image         at 24 range 0 .. 31;
-    Selectedimage at 28 range 0 .. 31;
-    Children      at 32 range 0 .. 31;
-    Lparam        at 36 range 0 .. 31;
-  end record;
-  for Tv_Item_Wide'size use 320;
+  end record with Convention => C;
 
   type Tv_Insertstruct_Ansi is record
     Parent      : Htreeitem;
     Insertafter : Htreeitem;
     Item        : Tv_Item_Ansi;
-  end record;
-  for Tv_Insertstruct_Ansi use record
-    Parent      at  0 range 0 .. 31;
-    Insertafter at  4 range 0 .. 31;
-    Item        at  8 range 0 .. 319;
-  end record;
-  for Tv_Insertstruct_Ansi'size use 384;
-
+  end record with Convention => C;
 
   type Tv_Insertstruct_Wide is record
     Parent      : Htreeitem;
     Insertafter : Htreeitem;
     Item        : Tv_Item_Wide;
-  end record;
-  for Tv_Insertstruct_Wide use record
-    Parent      at  0 range 0 .. 31;
-    Insertafter at  4 range 0 .. 31;
-    Item        at  8 range 0 .. 319;
-  end record;
-  for Tv_Insertstruct_Wide'size use 384;
-
+  end record with Convention => C;
 
   Tv_First                  : constant := 16#1100#;
   Tvm_Insertitem_Ansi       : constant := Tv_First + 0;
@@ -729,7 +583,7 @@ package Win32.Comctl is
     Pt    : Win32.Windef.POINT;
     Flags : Win32.UINT;
     Item  : Htreeitem;
-  end record;
+  end record with Convention => C;
 
   Tvht_Nowhere         : constant := 16#0001#;
   Tvht_Onitemicon      : constant := 16#0002#;
@@ -749,19 +603,11 @@ package Win32.Comctl is
                                                Parameter_2 : Win32.LPARAM;
                                                Sort        : Win32.LPARAM)
                                                return Win32.INT;
-
   type Tv_Sortcb is record
     Parent  : Htreeitem;
     Compare : Comparison_Function;
     Param   : Win32.LPARAM;
-  end record;
-  for Tv_Sortcb use record
-    Parent  at  0 range 0 .. 31;
-    Compare at  4 range 0 .. 31;
-    Param   at  8 range 0 .. 31;
-  end record;
-  for Tv_Sortcb'size use 96;
-
+  end record with Convention => C;
 
   type Nm_Treeview_Ansi is record
     Hdr        : Nm_Hdr;
@@ -769,15 +615,8 @@ package Win32.Comctl is
     Old_Item   : Tv_Item_Ansi;
     New_Item   : Tv_Item_Ansi;
     Drag_Point : Win32.Windef.POINT;
-  end record;
-  for Nm_Treeview_Ansi use record
-    Hdr        at  0 range 0 .. 95;
-    Action     at 12 range 0 .. 31;
-    Old_Item   at 16 range 0 .. 319;
-    New_Item   at 56 range 0 .. 319;
-    Drag_Point at 96 range 0 .. 63;
-  end record;
-  for Nm_Treeview_Ansi'size use 832;
+  end record with Convention => C;
+
   type Nm_Treeview_Ansi_Ptr is access Nm_Treeview_Ansi;
 
   type Nm_Treeview_Wide is record
@@ -786,52 +625,29 @@ package Win32.Comctl is
     Old_Item   : Tv_Item_Wide;
     New_Item   : Tv_Item_Wide;
     Drag_Point : Win32.Windef.POINT;
-  end record;
-  for Nm_Treeview_Wide use record
-    Hdr        at  0 range 0 .. 95;
-    Action     at 12 range 0 .. 31;
-    Old_Item   at 16 range 0 .. 319;
-    New_Item   at 56 range 0 .. 319;
-    Drag_Point at 96 range 0 .. 63;
-  end record;
-  for Nm_Treeview_Wide'size use 832;
+  end record with Convention => C;
+
   type Nm_Treeview_Wide_Ptr is access Nm_Treeview_Wide;
 
   type Tv_Dispinfo_Ansi is record
     Hdr  : Nm_Hdr;
     Item : Tv_Item_Ansi;
-  end record;
-  for Tv_Dispinfo_Ansi use record
-    Hdr  at  0 range 0 .. 95;
-    Item at 12 range 0 .. 319;
-  end record;
-  for Tv_Dispinfo_Ansi'size use 416;
+  end record with Convention => C;
+
   type Tv_Dispinfo_Ansi_Ptr is access Tv_Dispinfo_Ansi;
 
   type Tv_Dispinfo_Wide is record
     Hdr  : Nm_Hdr;
     Item : Tv_Item_Wide;
-  end record;
-  for Tv_Dispinfo_Wide use record
-    Hdr  at  0 range 0 .. 95;
-    Item at 12 range 0 .. 319;
-  end record;
-  for Tv_Dispinfo_Wide'size use 416;
-  type Tv_Dispinfo_Wide_Ptr is access Tv_Dispinfo_Wide;
+  end record with Convention => C;
 
+  type Tv_Dispinfo_Wide_Ptr is access Tv_Dispinfo_Wide;
 
   type Tv_Keydown is record
     Hdr   : Nm_Hdr;
     Vkey  : Win32.WORD;
     Flags : Win32.UINT;
-  end record;
-  for Tv_Keydown use record
-    Hdr   at  0 range 0..95;
-    Vkey  at 12 range 0..15;
-    Flags at 14 range 0..31;
-  end record;
-  for Tv_Keydown'size use 144;
-
+  end record with Convention => C;
 
   Tvc_Unknown    : constant := 16#0000#;
   Tvc_Bymouse    : constant := 16#0001#;
@@ -893,7 +709,6 @@ package Win32.Comctl is
   Em_Findtext_Wide      : constant := Winuser.WM_USER + 123;
   Em_Findtextex_Wide    : constant := Winuser.WM_USER + 124;
 
-
 -- Richedit v2.0 messages
 
   Em_Setundolimit       : constant := Winuser.WM_USER + 82;
@@ -917,20 +732,7 @@ package Win32.Comctl is
     Pitchandfamily : Win32.BYTE;
     Facename       : Win32.CHAR_Array (0..Win32.Wingdi.LF_FACESIZE -1);
     Padding        : Win32.WORD;
-  end record;
-  for Charformat use record
-    Size           at  0 range 0 .. 31;
-    Mask           at  4 range 0 .. 31;
-    Effects        at  8 range 0 .. 31;
-    Height         at 12 range 0 .. 31;
-    Offset         at 16 range 0 .. 31;
-    Textcolor      at 20 range 0 .. 31;
-    Charset        at 24 range 0 .. 7;
-    Pitchandfamily at 25 range 0 .. 7;
-    Facename       at 26 range 0 .. Win32.Wingdi.LF_FACESIZE * 8 - 1;
-    Padding        at 58 range 0 .. 15;
-  end record;
-  for Charformat'size use Charformat_Size * Win32.BYTE'size;
+  end record with Convention => C;
 
   -- EM_SETCHARFORMAT wParam masks */
 
@@ -943,17 +745,10 @@ package Win32.Comctl is
                                             -- therefore UI formatting rules should be
                                             -- used instead of strictly formatting the
                                             -- selection.
-
   type Charrange is record
     Min : Win32.LONG;
     Max : Win32.LONG;
-  end record;
-  for Charrange use record
-    Min at 0 range 0 .. 31;
-    Max at 4 range 0 .. 31;
-  end record;
-  for Charrange'size use 64;
-
+  end record with Convention => C;
 
   -- CHARFORMAT masks
 
