@@ -4,24 +4,16 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Ada.Characters.Handling;
 with Ada.Command_Line;
 with Ada.Text_IO;
 with Exceptions;
-with Interfaces.C;
+with Log;
 with PWI.Mount;
 with PWI.M3;
 with PWI.Focuser;
 with PWI.Rotator;
 with Serial_Io;
 with Strings;
-with System;
-with Win32.Bluetooth;
-with Win32.Winbase;
-with Win32.Winerror;
-with Win32.Winnt;
-
-with Log;
 
 package body Test is
 
@@ -42,6 +34,7 @@ package body Test is
   begin
     Error (Message);
     Put ("allowed:");
+    Put ("  Input {Com1 .. Com20}");
     Put ("  Connect");
     Put ("  Enable");
     Put ("  Home");
@@ -60,52 +53,6 @@ package body Test is
 
 
   procedure Execute (Command : String) is
-
-    procedure Serial_Input is
-
-      Port : constant Serial_Io.Port := Serial_Io.Com3;
-
-      task type Reader is
-        entry Start;
-      end Reader;
-
-      The_Reader : access Reader;
-
-      task body Reader is
-        Input         : Serial_Io.Channel(Port);
-        The_Character : Character;
-      begin
-        accept Start;
-        Serial_Io.Set (The_Baudrate => 115200,
-                       On           => Input);
-        Ada.Text_IO.Put ("Reader started ('x' to abort )");
-        loop
-          Ada.Text_IO.Put ("- from Serial:");
-          The_Character := Serial_Io.Character_Of (Input);
-          Ada.Text_IO.Put_Line (' ' & The_Character);
-        end loop;
-      exception
-      when Serial_Io.Aborted =>
-        Ada.Text_IO.Put_Line ("<aborted>");
-      end Reader;
-
-      The_Character : Character;
-
-    begin
-      Put ("Serial Input");
-      if Serial_Io.Is_Available (Port) then
-        Put ("Port is available");
-        The_Reader := new Reader;
-        The_Reader.Start;
-        loop
-          Ada.Text_IO.Get (The_Character);
-          exit when The_Character = 'x';
-        end loop;
-        Serial_Io.Free (Port);
-      else
-        Put ("Port not available");
-      end if;
-    end Serial_Input;
 
     Mount_Not_Connected : exception;
 
@@ -382,10 +329,6 @@ package body Test is
     use type PWI.Mount.Hours;
 
   begin -- execute
-    if Id = "input" then
-      Serial_Input;
-      return;
-    end if;
     PWI.Mount.Define_Pointing_Model ("First.pxp");
     if Id = "connect" then
       Connect_Mount;
@@ -442,87 +385,77 @@ package body Test is
   end Execute;
 
 
+  procedure Serial_Input (Port_Image : String) is
+
+    Incorrect_Port : exception;
+
+    function Port return Serial_Io.Port is
+    begin
+      return Serial_Io.Port'value(Port_Image);
+    exception
+    when others =>
+      raise Incorrect_Port;
+    end Port;
+
+    task type Reader is
+      entry Start;
+    end Reader;
+
+    The_Reader : access Reader;
+
+    task body Reader is
+      Input         : Serial_Io.Channel(Port);
+      The_Character : Character;
+    begin
+      accept Start;
+      Serial_Io.Set (The_Baudrate => 115200,
+                     On           => Input);
+      Ada.Text_IO.Put ("Reader started ('x' to abort )");
+      loop
+        Ada.Text_IO.Put ("- from Serial:");
+        The_Character := Serial_Io.Character_Of (Input);
+        Ada.Text_IO.Put_Line (' ' & The_Character);
+      end loop;
+    exception
+    when Serial_Io.Aborted =>
+      Ada.Text_IO.Put_Line ("<aborted>");
+    end Reader;
+
+    The_Character : Character;
+
+  begin -- Serial_Input
+    Put ("Serial Input");
+    if Serial_Io.Is_Available (Port) then
+      The_Reader := new Reader;
+      The_Reader.Start;
+      loop
+        Ada.Text_IO.Get (The_Character);
+        exit when The_Character = 'x';
+      end loop;
+      Serial_Io.Free (Port);
+    else
+      Put ("Port " & Port'img & " not available");
+    end if;
+  exception
+  when Incorrect_Port =>
+    Input_Error ("incorrect port");
+  end Serial_Input;
+
+
   procedure Work is
     Nr_Of_Arguments : constant Natural := Ada.Command_Line.Argument_Count;
   begin
     Put ("PWI_TEST");
-    if Nr_Of_Arguments = 0 then
-      declare
-        use Win32;
-        Ok     : BOOL := Bluetooth.Is_Discoverable (System.Null_Address);
-        Result : DWORD;
-      begin
-        Put ("Is_Discoverable Result:" & Result'img);
-        declare
-          Parameters        : aliased Bluetooth.Find_Radio_Params;
-          Radio_Handle      : aliased Bluetooth.Radio_Handle;
-          Find_Radio_Handle : aliased Bluetooth.Radio_Find_Handle;
-          Radio_Info        : aliased Bluetooth.Radio_Info;
-          use type Bluetooth.Radio_Find_Handle;
-        begin
-          Put ("Find_First_Radio");
-          Find_Radio_Handle := Bluetooth.Find_First_Radio (Arg1 => Parameters'access,
-                                                           Arg2 => Radio_Handle'access);
-          if Find_Radio_Handle /= Bluetooth.No_Radio_Found then
-            loop
-              Result := Bluetooth.Get_Radio_Info (Arg1 => Radio_Handle,
-                                                  Arg2 => Radio_Info'access);
-              case Result is
-              when Win32.Winerror.NO_ERROR =>
-                Put ("Get_Radio_Info Name:" &
-                  Ada.Characters.Handling.To_String (Interfaces.C.To_Ada (Interfaces.C.wchar_array(Radio_Info.Name))));
-                declare
-                  Parameters         : aliased Bluetooth.Device_Search_Params;
-                  Find_Device_Handle : aliased Bluetooth.Device_Find_Handle;
-                  Device_Info        : aliased Bluetooth.Device_Info;
-                  use type Bluetooth.Device_Find_Handle;
-                begin
-                  Put ("Lookup Devices");
-                  Parameters.Radio := Radio_Handle;
-                  Find_Device_Handle := Bluetooth.Find_First_Device (Arg1 => Parameters'access,
-                                                                     Arg2 => Device_Info'access);
-                  if Find_Device_Handle /= Bluetooth.No_Device_Found then
-                    loop
-                      Put ("Found_Device:" &
-                        Ada.Characters.Handling.To_String (Interfaces.C.To_Ada (Interfaces.C.wchar_array(
-                          Device_Info.Name))));
-
-                      Put ("  Class_Of_Device:" & Device_Info.Class_Of_Device'img);
-                      Put ("  Address        :" & Device_Info.Address.Anon2422.Ull_Long'img);
-                      Put ("  Connected      :" & Device_Info.Connected'img);
-                      Put ("  Remembered     :" & Device_Info.Remembered'img);
-                      Put ("  Authenticated  :" & Device_Info.Authenticated'img);
-
-                      Ok := Bluetooth.Find_Next_Device (Arg1 => Find_Device_Handle,
-                                                        Arg2 => Device_Info'access);
-                      Put ("Find_Next_Next Ok:" & Ok'img);
-                      exit when Ok = Win32.FALSE;
-                    end loop;
-                    Ok := Bluetooth.Find_Device_Close (Find_Device_Handle);
-                    Put ("Find_Device_Close Ok:" & Ok'img);
-                  end if;
-                end;
-              when others =>
-                Put ("Get_Radio_Info Result:" & Result'img);
-              end case;
-              Ok := Winbase.CloseHandle(Win32.Winnt.HANDLE(Radio_Handle));
-              Put ("Close Radio_Handle Ok:" & Ok'img);
-
-              Ok := Bluetooth.Find_Next_Radio (Arg1 => Find_Radio_Handle,
-                                               Arg2 => Radio_Handle'access);
-              Put ("Find_Next_Radio Ok:" & Ok'img);
-              exit when Ok = Win32.FALSE;
-            end loop;
-            Ok := Bluetooth.Find_Radio_Close (Find_Radio_Handle);
-            Put ("Find_Radio_Close Ok:" & Ok'img);
-          end if;
-        end;
-      end;
-    elsif Nr_Of_Arguments > 1 then
-      Input_Error ("incorrect number of parameters");
-    else
+    case Nr_Of_Arguments is
+    when 0 =>
+      Input_Error ("command missing");
+    when 1 =>
       Execute (Ada.Command_Line.Argument(1));
-    end if;
+    when 2 =>
+      Serial_Input (Ada.Command_Line.Argument(2));
+    when others =>
+      Input_Error ("incorrect number of parameters");
+    end case;
   exception
   when PWI.No_Server =>
     Error ("server not available");

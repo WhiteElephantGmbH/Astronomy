@@ -16,8 +16,8 @@
 pragma Style_White_Elephant;
 
 with Ada.Unchecked_Conversion;
-with Interfaces.C.Strings;
 with Program;
+with Strings;
 with System;
 with Win32;
 with Win32.Winbase;
@@ -30,47 +30,31 @@ package body Os.Application is
   pragma Linker_Options ("-lversion");
 
   package Base renames Win32.Winbase;
-  package C    renames Interfaces.C;
   package Nt   renames Win32.Winnt;
 
   No_Module_Information    : exception;
 
-  subtype Process_Id is Win32.DWORD;
   subtype Hmodule is Nt.HANDLE;
 
-  type Module_Entry is record
-    Entry_Size         : Win32.DWORD;
-    The_Module_Id      : Win32.DWORD;
-    The_Process_Id     : Process_Id;
-    Global_Usage_Count : Win32.DWORD;
-    Usage_This_Process : Win32.DWORD;
+  use type Win32.DWORD;
+
+  Hmodule_Length : constant Win32.DWORD := Hmodule'size / 8;
+
+
+  type Hmodule_Array is array (Positive range <>) of Hmodule;
+
+  type Module_Information is record
     Base_Address       : Win32.LPVOID;
     Module_Size        : Win32.DWORD;
-    The_Handle         : Hmodule;
-    Module_Name        : Win32.CHAR_Array (0..255);
-    Module_Filename    : Win32.CHAR_Array (0..Win32.Windef.MAX_PATH);
-  end record;
-  for Module_Entry use record
-    Entry_Size         at   0 range 0 .. 31;
-    The_Module_Id      at   4 range 0 .. 31;
-    The_Process_Id     at   8 range 0 .. 31;
-    Global_Usage_Count at  12 range 0 .. 31;
-    Usage_This_Process at  16 range 0 .. 31;
-    Base_Address       at  20 range 0 .. 31;
-    Module_Size        at  24 range 0 .. 31;
-    The_Handle         at  28 range 0 .. 31;
-    Module_Name        at  32 range 0 .. 2047;
-    Module_Filename    at 288 range 0 .. (Win32.Windef.MAX_PATH + 1) * 8 - 1;
-  end record;
-  for Module_Entry'size use 4392;
-  type Module_Entry_Ptr is access all Module_Entry;
+    Entry_Point        : Win32.LPVOID with Unreferenced;
+  end record
+  with Convention => C;
 
 
   pragma Linker_Options ("-lntdll");
 
   function Is_First_Instance_Of (The_Name : String) return Boolean is
     Unused : Win32.Windef.HWND;
-    use type Win32.DWORD;
   begin
     Unused := Base.CreateMutex (null, Win32.FALSE, Win32.Addr(The_Name));
     return Base.GetLastError = 0; -- We succeeded in creating the first occurrence of the mutex
@@ -95,70 +79,114 @@ package body Os.Application is
   end Is_First_Instance;
 
 
-  function Create_Tool_Help32_Snapshot (Flags : Win32.DWORD;
-                                        Id    : Process_Id)
-           return Nt.HANDLE
+  function Current_Process return Nt.HANDLE
   with
     Import        => True,
     Convention    => Stdcall,
-    External_Name => "CreateToolhelp32Snapshot";
+    External_Name => "GetCurrentProcess";
 
 
-  function Module32_First (Handle      : Nt.HANDLE;
-                           Information : Module_Entry_Ptr)
-           return Win32.BOOL with
+  pragma Linker_Options ("-lpsapi");
+
+  function Get_Module_Information (Handle      :        Nt.HANDLE;
+                                   Module      :        Hmodule;
+                                   Module_Info : access Module_Information;
+                                   Cb          :        Win32.DWORD)
+    return Win32.BOOL
+  with
     Import        => True,
     Convention    => Stdcall,
-    External_Name => "Module32First";
+    External_Name => "GetModuleInformation";
 
 
-  function Module32_Next (Handle      : Nt.HANDLE;
-                          Information : Module_Entry_Ptr)
-           return Win32.BOOL with
+  function Get_Module_Base_Name (Handle   : Nt.HANDLE;
+                                 Module   : Hmodule;
+                                 Filename : System.Address;
+                                 Size     : Win32.DWORD)
+    return Win32.BOOL
+  with
     Import        => True,
     Convention    => Stdcall,
-    External_Name => "Module32Next";
+    External_Name => "GetModuleBaseNameA";
 
 
-  function Module_From_Address (The_Address : System.Address) return Module_Entry is
-    The_Handle          : Nt.HANDLE;
-    Th32cs_Snap_Module : constant Win32.DWORD := 16#08#;
-    The_Information    : aliased Module_Entry;
-    Unused             : Win32.BOOL;
-    Have_Data          : Boolean := False;
+  function Module_From_Address (The_Address : System.Address) return Hmodule is
+    The_Count          : aliased Win32.DWORD;
+    Unused             :         Win32.BOOL;
     use type Nt.HANDLE;
     use type Win32.BOOL;
-    function Convert is new Ada.Unchecked_Conversion (System.Address, Win32.DWORD);
-    use type Win32.DWORD;
+    Max_Int_Bit : constant := Standard'address_size - 1;
+    type Int is range -2 ** (Max_Int_Bit) .. 2 ** Max_Int_Bit - 1;
+    function Convert is new Ada.Unchecked_Conversion (System.Address, Int);
+    function Get_Modules_Count (Handle    :        Nt.HANDLE;
+                                Hmodules  : access Nt.HANDLE; -- dummy
+                                Cb        :        Win32.DWORD;
+                                Cb_Needed : access Win32.DWORD)
+      return Win32.BOOL
+    with
+      Import        => True,
+      Convention    => Stdcall,
+      External_Name => "EnumProcessModules";
   begin
-    The_Handle := Create_Tool_Help32_Snapshot (Th32cs_Snap_Module, 0);
-    if The_Handle /= Base.INVALID_HANDLE_VALUE then
-      The_Information.Entry_Size := Win32.DWORD(Module_Entry'size / 8); -- size in bytes.
-      if Module32_First (The_Handle, The_Information'unchecked_access) /= Win32.FALSE then
-        loop
-          Have_Data := (The_Address >= The_Information.Base_Address) and then
-                       (Convert(The_Address) <= Convert(The_Information.Base_Address) + The_Information.Module_Size);
-          exit when Have_Data or else Module32_Next (The_Handle, The_Information'unchecked_access) = Win32.FALSE;
-        end loop;
-      end if;
-      Unused := Base.CloseHandle (The_Handle);
+    if Get_Modules_Count (Current_Process,
+                          null,
+                          0,
+                          The_Count'access) /= Win32.FALSE
+    then
+      declare
+        type Modules is new Hmodule_Array(1 .. Positive(The_Count / Hmodule_Length));
+
+        function Enum_Process_Modules (Handle    :        Nt.HANDLE;
+                                       Hmodules  : access Modules;
+                                       Cb        :        Win32.DWORD;
+                                       Cb_Needed : access Win32.DWORD)
+          return Win32.BOOL
+        with
+          Import        => True,
+          Convention    => Stdcall,
+          External_Name => "EnumProcessModules";
+
+        The_Modules     : aliased Modules;
+        Actual_Count    : aliased Win32.DWORD;
+        The_Information : aliased Module_Information;
+        Info_Size       : constant Win32.DWORD := Module_Information'size / 8;
+      begin
+        if Enum_Process_Modules (Current_Process,
+                                 The_Modules'access,
+                                 The_Count,
+                                 Actual_Count'access) /= Win32.FALSE
+        then
+          if Actual_Count /= The_Count then
+            raise No_Module_Information;
+          end if;
+          for The_Module of The_Modules loop
+            if Get_Module_Information (Current_Process,
+                                       The_Module,
+                                       The_Information'access,
+                                       Info_Size) /= Win32.FALSE
+            then
+              if (The_Address >= The_Information.Base_Address) and then
+                (Convert(The_Address) <= Convert(The_Information.Base_Address) + Int(The_Information.Module_Size))
+              then
+                return The_Module;
+              end if;
+            end if;
+          end loop;
+        end if;
+      end;
     end if;
-    if Have_Data then
-      return The_Information;
-    else
-      raise No_Module_Information;
-    end if;
+    raise No_Module_Information;
   end Module_From_Address;
 
 
   function Origin_Folder return String is
-    Module        : constant Module_Entry
+    Module        : constant Hmodule
                   := Module_From_Address (Origin_Folder'address);
     Size          : Natural;
     Return_String : aliased String (1..300);
     function Convert is new Ada.Unchecked_Conversion (System.Address, Win32.PSTR);
   begin
-    Size := Natural (Base.GetModuleFileName (Module.The_Handle,
+    Size := Natural (Base.GetModuleFileName (Module,
                                              Convert(Return_String(Return_String'first)'address),
                                              Return_String'length));
     while (Size > 0) and then Return_String (Size) /= '\' loop
@@ -177,14 +205,28 @@ package body Os.Application is
   end Set_Language_Id;
 
 
-  function Filename_Of (The_Module : Module_Entry) return String is
+  function Base_Name_Of (The_Module : Hmodule) return String is
+
+    The_Name  : aliased String(1..512); -- name.extension and terminator
+    The_Index : Natural;
+
+    use type Win32.BOOL;
+
   begin
-    return C.Strings.Value (Win32.To_Chars_Ptr (Win32.PSTR'(Win32.Addr (The_Module.Module_Filename))));
-  end Filename_Of;
+    if Get_Module_Base_Name (Current_Process,
+                             The_Module,
+                             The_Name'address,
+                             The_Name'length) /= Win32.FALSE
+    then
+      The_Index := Strings.Location_Of (Ascii.Nul, The_Name);
+      return The_Name (The_Name'first .. The_Index - 1);
+    end if;
+    return "";
+  end Base_Name_Of;
 
 
-  The_Module  : constant Module_Entry := Module_From_Address (Set_Language_Id'address);
-  Module_Name : constant String := Filename_Of (The_Module);
+  The_Module  : constant Hmodule := Module_From_Address (Set_Language_Id'address);
+  Module_Name : constant String  := Base_Name_Of (The_Module);
 
 
   procedure Get_Value_For (The_Key       : String;
@@ -199,7 +241,6 @@ package body Os.Application is
     The_Length    : aliased Win32.UINT;
     The_Info_Size : Win32.DWORD;
 
-    use type Win32.DWORD;
     use type Win32.BOOL;
 
   begin
@@ -248,16 +289,15 @@ package body Os.Application is
   end Product_Name;
 
 
-  function Name_Of (The_Entry : Module_Entry) return String is
-    The_String : constant String
-               := C.Strings.Value (Win32.To_Chars_Ptr (Win32.PSTR'(Win32.Addr (The_Entry.Module_Name))));
+  function Name_Of (The_Entry : Hmodule) return String is
+    Name : constant String := Base_Name_Of (The_Entry);
   begin
-    for Index in reverse The_String'range loop
-      if The_String(Index) = '.' then
-        return The_String (The_String'first..Index - 1);
+    for Index in reverse Name'range loop
+      if Name(Index) = '.' then
+        return Name (Name'first..Index - 1);
       end if;
     end loop;
-    return  The_String;
+    return  Name;
   end Name_Of;
 
 
@@ -267,7 +307,7 @@ package body Os.Application is
   exception
   when others =>
     declare
-      Module : constant Module_Entry := Module_From_Address (Name'address);
+      Module : constant Hmodule := Module_From_Address (Name'address);
     begin
       return Name_Of (Module);
     end;

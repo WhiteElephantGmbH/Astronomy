@@ -49,10 +49,8 @@ package Win32.Comctl is
   Wm_Notify       : constant := 78;
   Wm_Notifyformat : constant := 85;
 
-
   Nfr_Ansi    : constant := 1;
   Nfr_Unicode : constant := 2;
-
 
   Sbs_Sizegrip : constant := 16#10#;
 
@@ -69,18 +67,18 @@ package Win32.Comctl is
 
   type Nm_Hdr is record
     Hwndfrom : Win32.Windef.HWND;
-    Idfrom   : Win32.UINT;
-    Code     : Integer;
+    Idfrom   : Win32.INT_PTR;
+    Code     : Win32.INT;
   end record with Convention => C;
 
   type Nm_Hdr_Ptr is access Nm_Hdr;
 
   type Nm_Mouse is record
     Hdr      : Nm_Hdr;
-    Itemspec : Win32.DWORD;
-    Itemdata : Win32.DWORD;
+    Itemspec : Win32.DWORD_PTR;
+    Itemdata : Win32.DWORD_PTR;
     Point    : Win32.Windef.POINT;
-    Hitinfo  : Win32.DWORD;
+    Hitinfo  : Win32.LPARAM;
   end record with Convention => C;
 
   type Nm_Mouse_Ptr is access Nm_Mouse;
@@ -293,6 +291,11 @@ package Win32.Comctl is
     Text    : Win32.LPSTR;
     Maxtext : Win32.INT;
     Subitem : Win32.INT;
+    A       : Win32.INT;
+    B       : Win32.INT;
+    C       : Win32.INT;
+    D       : Win32.INT;
+    E       : Win32.INT;
   end record with Convention => C;
 
   type Lv_Column_Wide is record
@@ -302,6 +305,11 @@ package Win32.Comctl is
     Text    : Win32.LPWSTR;
     Maxtext : Win32.INT;
     Subitem : Win32.INT;
+    A       : Win32.INT;
+    B       : Win32.INT;
+    C       : Win32.INT;
+    D       : Win32.INT;
+    E       : Win32.INT;
   end record with Convention => C;
 
   type Lv_Item_Ansi is record
@@ -314,6 +322,12 @@ package Win32.Comctl is
     Maxtextsize : Win32.INT;
     Image       : Win32.INT;
     Lparam      : Win32.LPARAM;
+    A           : Win32.INT;
+    B           : Win32.INT;
+    C           : Win32.UINT;
+    D           : Win32.PUINT;
+    E           : Win32.PINT;
+    F           : Win32.INT;
   end record with Convention => C;
 
   type Lv_Item_Ansi_Ptr is access Lv_Item_Ansi;
@@ -328,6 +342,12 @@ package Win32.Comctl is
     Maxtextsize : Win32.INT;
     Image       : Win32.INT;
     Lparam      : Win32.LPARAM;
+    A           : Win32.INT;
+    B           : Win32.INT;
+    C           : Win32.UINT;
+    D           : Win32.PUINT;
+    E           : Win32.PINT;
+    F           : Win32.INT;
   end record with Convention => C;
 
   type Lv_Item_Wide_Ptr is access Lv_Item_Wide;
@@ -455,8 +475,6 @@ package Win32.Comctl is
 
 -- Treeview
 
-  type Htreeitem is new Win32.UINT;
-
   Tvs_Hasbuttons      : constant := 16#01#;
   Tvs_Haslines        : constant := 16#02#;
   Tvs_Linesatroot     : constant := 16#04#;
@@ -484,10 +502,12 @@ package Win32.Comctl is
   Tvis_Stateimagemask : constant := 16#F000#;
   Tvis_Usermask       : constant := 16#F000#;
 
-  Tvi_Root  : constant Htreeitem := 16#FFFF0000#;
-  Tvi_First : constant Htreeitem := 16#FFFF0001#;
-  Tvi_Last  : constant Htreeitem := 16#FFFF0002#;
-  Tvi_Sort  : constant Htreeitem := 16#FFFF0003#;
+  type Htreeitem is new Win32.INT_PTR;
+
+  Tvi_Root  : constant Htreeitem := -16#10000#;
+  Tvi_First : constant Htreeitem := -16#FFFF#;
+  Tvi_Last  : constant Htreeitem := -16#FFFE#;
+  Tvi_Sort  : constant Htreeitem := -16#FFFD#;
 
   I_Childrencallback : constant := -1;
 

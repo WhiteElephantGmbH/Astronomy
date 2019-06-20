@@ -15,6 +15,7 @@
 --
 --  Copyright (C) 2000-2012, AdaCore
 --
+--  Modified 2019 by White Elephant GmbH, Schaffhausen, Switzerland
 -------------------------------------------------------------------------------
 
 with Win32.Windef;
@@ -23,10 +24,8 @@ with Win32.Winnt;
 package Win32.Commctrl is
 
    use Interfaces;
-   use type Interfaces.C.char_array;
 
-   TOOLBARCLASSNAMEW  : constant WCHAR_Array :=
-      To_Win (C.To_C ("ToolbarWindow32")) & Wide_Nul;
+   TOOLBARCLASSNAMEW  : constant WCHAR_Array := To_Win (C.To_C ("ToolbarWindow32")) & Wide_Nul;
    TOOLBARCLASSNAMEA  : constant CHAR_Array  := "ToolbarWindow32" & Nul;
    TOOLBARCLASSNAME   : CHAR_Array renames TOOLBARCLASSNAMEA;
    TBSTATE_CHECKED    : constant := 16#1#;
@@ -59,12 +58,10 @@ package Win32.Commctrl is
    TB_CUSTOMIZE       : constant := 16#41b#;
    TB_SETBUTTON       : constant := 16#427#;
    TB_GETBUTTONRECT   : constant := 16#428#;
-   STATUSCLASSNAMEW   : constant WCHAR_Array :=
-      To_Win (C.To_C ("msctls_statusbar32")) & Wide_Nul;
+   STATUSCLASSNAMEW   : constant WCHAR_Array := To_Win (C.To_C ("msctls_statusbar32")) & Wide_Nul;
    STATUSCLASSNAMEA   : constant CHAR_Array  := "msctls_statusbar32" & Nul;
    STATUSCLASSNAME    : CHAR_Array renames STATUSCLASSNAMEA;
-   HEADERCLASSNAMEW   : constant WCHAR_Array :=
-      To_Win (C.To_C ("msctls_headerbar")) & Wide_Nul;
+   HEADERCLASSNAMEW   : constant WCHAR_Array := To_Win (C.To_C ("msctls_headerbar")) & Wide_Nul;
    HEADERCLASSNAMEA   : constant CHAR_Array  := "msctls_headerbar" & Nul;
    HEADERCLASSNAME    : CHAR_Array renames HEADERCLASSNAMEA;
    SB_SETTEXTA        : constant := 16#401#;
@@ -91,8 +88,7 @@ package Win32.Commctrl is
    SBT_POPOUT         : constant := 16#200#;
    HBT_SPRING         : constant := 16#400#;
    MINSYSCOMMAND      : constant := 16#f000#;
-   BUTTONLISTBOX      : constant WCHAR_Array :=
-      To_Win (C.To_C ("ButtonListBox")) & Wide_Nul;
+   BUTTONLISTBOX      : constant WCHAR_Array := To_Win (C.To_C ("ButtonListBox")) & Wide_Nul;
    BLS_NUMBUTTONS     : constant := 16#ff#;
    BLS_VERTICAL       : constant := 16#100#;
    BLS_NOSCROLL       : constant := 16#200#;
@@ -155,8 +151,7 @@ package Win32.Commctrl is
    BL_ERR             : constant := -1;
    BL_ERRSPACE        : constant := -2;
    TRACKBAR_CLASSA    : constant CHAR_Array  := "msctls_trackbar32" & Nul;
-   TRACKBAR_CLASSW    : constant WCHAR_Array :=
-      To_Win (C.To_C ("msctls_trackbar32")) & Wide_Nul;
+   TRACKBAR_CLASSW    : constant WCHAR_Array := To_Win (C.To_C ("msctls_trackbar32")) & Wide_Nul;
    TRACKBAR_CLASS     : CHAR_Array renames TRACKBAR_CLASSA;
    TBS_AUTOTICKS      : constant := 16#1#;
    TBM_GETPOS         : constant := 16#400#;
@@ -195,8 +190,7 @@ package Win32.Commctrl is
    DL_STOPCURSOR      : constant := 1;
    DL_COPYCURSOR      : constant := 2;
    DL_MOVECURSOR      : constant := 3;
-   DRAGLISTMSGSTRING  : constant WCHAR_Array :=
-      To_Win (C.To_C ("commctrl_DragListMsg")) & Wide_Nul;
+   DRAGLISTMSGSTRING  : constant WCHAR_Array := To_Win (C.To_C ("commctrl_DragListMsg")) & Wide_Nul;
    UDS_WRAP           : constant := 16#1#;
    UDS_SETBUDDYINT    : constant := 16#2#;
    UDS_ALIGNRIGHT     : constant := 16#4#;
@@ -213,8 +207,7 @@ package Win32.Commctrl is
    UDM_GETACCEL       : constant := 16#46c#;
    UDM_SETBASE        : constant := 16#46d#;
    UDM_GETBASE        : constant := 16#46e#;
-   UPDOWN_CLASS       : constant WCHAR_Array :=
-      To_Win (C.To_C ("msctls_updown")) & Wide_Nul;
+   UPDOWN_CLASS       : constant WCHAR_Array := To_Win (C.To_C ("msctls_updown")) & Wide_Nul;
    HBN_BEGINDRAG      : constant := 16#101#;
    HBN_DRAGGING       : constant := 16#102#;
    HBN_ENDDRAG        : constant := 16#103#;
@@ -264,11 +257,7 @@ package Win32.Commctrl is
       idCommand : Win32.INT;
       fsState   : Win32.BYTE;
       fsStyle   : Win32.BYTE;
-
       bReserved : Win32.BYTE_Array (1 .. 2);
-
-
-
       dwData    : Win32.DWORD_PTR;
       iString   : Win32.INT_PTR;
    end record;

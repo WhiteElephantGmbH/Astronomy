@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2002 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2002 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -151,7 +151,7 @@ package body Gui is
   Id_Tabs           : constant Natural := 51;
   The_Next_Child_Id : Natural := 100;
 
-  function Convert is new Ada.Unchecked_Conversion (Integer, Win32.Winnt.HANDLE);
+  function Convert is new Ada.Unchecked_Conversion (Information, Win32.Winnt.HANDLE);
 
   type Child_Kind is (Button_Child, Progress_Bar_Child, Track_Bar_Child, Edit_Box_Child,
                       Check_Box_Child, Combo_Box_Child, Static_Child, List_View_Child,
@@ -190,7 +190,7 @@ package body Gui is
     The_Sort_Column          : Natural;
     The_Sort_Direction       : Sort_Direction := Forward;
     The_Click_Routine        : Click_Routine;
-    The_Click_Kind           : Integer := Win32.Comctl.Nm_Dblclk;
+    The_Click_Kind           : Win32.INT := Win32.Comctl.Nm_Dblclk;
     For_Completion           : Semaphore.Binary;
     Is_Password              : Boolean := False;
     Use_Proportional_Font    : Boolean := False;
@@ -665,7 +665,6 @@ package body Gui is
   procedure Redraw_Main_Window is
 
     use type Win32.INT;
-    use type Win32.LONG;
 
     Unused_Bool           : Win32.BOOL;
     Unused_Hwnd           : Win32.Windef.HWND;
@@ -998,7 +997,6 @@ package body Gui is
     Tab_Info  : aliased Win32.Comctl.Tc_Item;
     function Convert is new Ada.Unchecked_Conversion (System.Address, Win32.LPARAM);
     function Convert is new Ada.Unchecked_Conversion (Win32.LPARAM, System.Address);
-    use type Page_Conversion.Object_Pointer;
   begin
     Tab_Info.Mask := Win32.Comctl.Tcif_Param;
     for Index in 0 .. Nr_Of_Pages - 1 loop
@@ -1143,17 +1141,17 @@ package body Gui is
     function Convert is new Ada.Unchecked_Conversion (Win32.LPARAM, System.Address);
     function Convert is new Ada.Unchecked_Conversion (System.Address, Win32.LPARAM);
     function Convert is new Ada.Unchecked_Conversion (Child_Information_Ptr, Win32.WPARAM);
-    use type Win32.UINT;
     use type Win32.INT;
     use type Win32.Comctl.Lv_Dispinfo_Wide_Ptr;
     use type Win32.Comctl.Customdraw_Info_Ptr;
     use type Win32.Comctl.Nm_Listview_Ptr;
+    use type Win32.INT_PTR;
 
   begin
     The_Notification := Win32.Comctl.Lv_Dispinfo_Wide_Ptr(Lv_Dispinfo_Wide_Conversion.To_Pointer (Convert (Lparam)));
     if The_Notification = null then
       return 0;
-    elsif The_Notification.Hdr.Idfrom = Win32.UINT(Id_Tabs) then
+    elsif The_Notification.Hdr.Idfrom = Win32.INT_PTR(Id_Tabs) then
       if The_Notification.Hdr.Code = Win32.Comctl.Tcn_Selchange then
         Page_Change;
       end if;
@@ -1161,7 +1159,7 @@ package body Gui is
       The_Child := Current_Page.First_Child;
       loop -- check if a list view in current page
         exit when The_Child = null;
-        if The_Notification.Hdr.Idfrom = Win32.UINT(The_Child.The_Window_Id) then
+        if The_Notification.Hdr.Idfrom = Win32.INT_PTR(The_Child.The_Window_Id) then
           -- Notification from a child in the current page
           Active_Child := The_Child;
           if The_Child.The_Kind = List_View_Child then -- we can process it further
@@ -1357,7 +1355,7 @@ package body Gui is
                                                            Window_Style,
                                                            0,0,0,0,
                                                            Private_Window,
-                                                           Convert(The_Child.The_Window_Id),
+                                                           Convert(Information(The_Child.The_Window_Id)),
                                                            Our_Instance,
                                                            System.Null_Address);
     end if;
@@ -1633,7 +1631,7 @@ package body Gui is
                                 Window_Style,
                                 0,0,0,0,
                                 The_Parent,
-                                Convert(Id_Status_Bar),
+                                Convert(Information(Id_Status_Bar)),
                                 Our_Instance,
                                 System.Null_Address));
   end Create_Status_Line;
@@ -1649,7 +1647,7 @@ package body Gui is
                                                      Window_Style,
                                                      0,0,0,0,
                                                      The_Parent,
-                                                     Convert(Id_Tabs),
+                                                     Convert(Information(Id_Tabs)),
                                                      Our_Instance,
                                                      System.Null_Address));
   end Create_Tabs;
@@ -1667,7 +1665,6 @@ package body Gui is
     Unused_Bool : Win32.BOOL;
     Unused_Long : Win32.LRESULT;
     use type Win32.BOOL;
-    use type Win32.UINT;
   begin
     while Win32.Winuser.GetMessage (The_Message'unchecked_access, System.Null_Address, 0, 0) = Win32.TRUE loop
       Unused_Bool := Win32.Winuser.TranslateMessage (The_Message'unchecked_access);
@@ -1855,16 +1852,16 @@ package body Gui is
                              Lparam : Win32.LPARAM) return Win32.LRESULT is
     Prev_Key_State   : constant Win32.UINT := 16#4000_0000#;
     Transition_State : constant Win32.UINT := 16#8000_0000#;
-    function Convert is new Ada.Unchecked_Conversion (Win32.LPARAM, Win32.UINT);
+    function Convert is new Ada.Unchecked_Conversion (Win32.LPARAM, Information);
     use type Win32.UINT;
     use type Win32.INT;
   begin
     if The_Key_Handling_Is_Enabled then
       if Code >= 0 then
         if (The_Key_Handling_Rountine /= null) then
-          if ((Convert(Lparam) and Transition_State) /= 0) then
+          if ((Win32.UINT(Convert(Lparam)) and Transition_State) /= 0) then
             The_Key_Handling_Rountine.all (Key_Released, Key_Code(Wparam));
-          elsif ((Convert(Lparam) and Prev_Key_State) = 0) then
+          elsif ((Win32.UINT(Convert(Lparam)) and Prev_Key_State) = 0) then
             The_Key_Handling_Rountine.all (Key_Pressed, Key_Code(Wparam));
           end if;
         end if;
@@ -2106,14 +2103,14 @@ package body Gui is
   procedure Set_Menubar (The_Menu  : Menu;
                          The_Flags : Win32.UINT) is
 
-    function Convert is new Ada.Unchecked_Conversion (Win32.Windef.HMENU, Win32.UINT);
+    function Convert is new Ada.Unchecked_Conversion (Win32.Windef.HMENU, Information);
 
     Unused : Win32.BOOL;
     use type Win32.UINT;
   begin
     Unused := Win32.Winuser.EnableMenuItem (The_Menu_Bar,
-                                            Convert (The_Menu.The_Handle),
-                                            Win32.UINT (Win32.Winuser.MF_BYCOMMAND + The_Flags));
+                                            Win32.UINT(Convert (The_Menu.The_Handle)),
+                                            Win32.UINT(Win32.Winuser.MF_BYCOMMAND + The_Flags));
     Unused := Win32.Winuser.DrawMenuBar (Private_Window);
   end Set_Menubar;
 
@@ -2665,7 +2662,7 @@ package body Gui is
   end Parent_Page_Of;
 
 
-  function Click_Kind_Of (The_Click_Kind : Click_Kind) return Integer is
+  function Click_Kind_Of (The_Click_Kind : Click_Kind) return Win32.INT is
   begin
     case The_Click_Kind is
     when Single_Click =>
@@ -2753,7 +2750,7 @@ package body Gui is
                        The_Justification : Justification := Left) return Column is
 
     Title        : aliased constant Wide_String := To_Wide (The_Title) & Wide_Nul;
-    Column_Index : constant Win32.WPARAM := Win32.WPARAM (The_List_View.Ptr.Number_Of_Columns);
+    Column_Index : constant Win32.WPARAM := Win32.WPARAM(The_List_View.Ptr.Number_Of_Columns);
     Column_Info  : aliased Win32.Comctl.Lv_Column_Wide;
     function Convert is new Ada.Unchecked_Conversion(System.Address, Win32.LPARAM);
     use type Win32.UINT;
@@ -2843,25 +2840,24 @@ package body Gui is
   procedure Add_To (The_List_View   : List_View;
                     Item_Ordinal    : Positive := 1;
                     The_Information : Information) is
-    function Convert is new Ada.Unchecked_Conversion (Integer, Win32.LPWSTR);
+    function Convert is new Ada.Unchecked_Conversion (Information, Win32.LPWSTR);
     The_Info_Item : Win32.Comctl.Lv_Item_Wide;
     Text_Callback : constant Win32.LPWSTR := Convert(-1);
     function Convert is new Ada.Unchecked_Conversion (System.Address, Win32.LPARAM);
     function Convert is new Ada.Unchecked_Conversion (Information, Win32.LPARAM);
-    use type Win32.LONG;
     use type Win32.UINT;
   begin
-      The_Info_Item.Mask := Win32.Comctl.Lvif_Text + Win32.Comctl.Lvif_Param;
-      The_Info_Item.Item := Win32.INT(Item_Ordinal - 1);
-      The_Info_Item.Subitem := 0;
-      The_Info_Item.Text := Text_Callback;
-      The_Info_Item.Lparam := Convert(The_Information);
-      Send_Message_Wide (The_List_View.Ptr.The_Handle,
-                         Win32.Comctl.Lvm_Insertitem_Wide,
-                         0,
-                         Convert(The_Info_Item'address));
-      -- Note there is no need to Set the text items to callback as this is the default
-      The_List_View.Ptr.Number_Of_Rows := The_List_View.Ptr.Number_Of_Rows + 1;
+    The_Info_Item.Mask := Win32.Comctl.Lvif_Text + Win32.Comctl.Lvif_Param;
+    The_Info_Item.Item := Win32.INT(Item_Ordinal - 1);
+    The_Info_Item.Subitem := 0;
+    The_Info_Item.Text := Text_Callback;
+    The_Info_Item.Lparam := Convert(The_Information);
+    Send_Message_Wide (The_List_View.Ptr.The_Handle,
+                       Win32.Comctl.Lvm_Insertitem_Wide,
+                       0,
+                       Convert(The_Info_Item'address));
+    -- Note there is no need to Set the text items to callback as this is the default
+    The_List_View.Ptr.Number_Of_Rows := The_List_View.Ptr.Number_Of_Rows + 1;
   end Add_To;
 
 
@@ -3463,10 +3459,8 @@ package body Gui is
 
   procedure Mark_Has_Children (The_Tree_View : Tree_View;
                                The_Tree_Item : Tree_Item) is
-    The_Item   : aliased Win32.Comctl.Tv_Item_Ansi;
+    The_Item : aliased Win32.Comctl.Tv_Item_Ansi;
     function Convert is new Ada.Unchecked_Conversion (System.Address, Win32.LPARAM);
-    use type Win32.INT;
-    use type Win32.LONG;
   begin
     The_Item.Mask := Win32.Comctl.Tvif_Children;
     The_Item.Hitem := The_Tree_Item;
@@ -3479,10 +3473,8 @@ package body Gui is
 
   procedure Mark_Has_No_Children (The_Tree_View : Tree_View;
                                        The_Tree_Item : Tree_Item) is
-    The_Item   : aliased Win32.Comctl.Tv_Item_Ansi;
+    The_Item : aliased Win32.Comctl.Tv_Item_Ansi;
     function Convert is new Ada.Unchecked_Conversion (System.Address, Win32.LPARAM);
-    use type Win32.INT;
-    use type Win32.LONG;
   begin
     The_Item.Mask := Win32.Comctl.Tvif_Children;
     The_Item.Hitem := The_Tree_Item;

@@ -52,7 +52,6 @@ package body Os.Pipe is
   procedure Dispose is new Ada.Unchecked_Deallocation (String, Item_Access);
 
   procedure Handle_Error (Error : Win32.DWORD) is
-    use type Win32.DWORD;
   begin
     case Error is
     when Win32.Winerror.NO_ERROR =>
@@ -84,7 +83,6 @@ package body Os.Pipe is
 
 
   procedure Check (The_Pipe : Handle) is
-    use type Win32.BOOL;
   begin
     if The_Pipe = null then
       raise No_Handle;

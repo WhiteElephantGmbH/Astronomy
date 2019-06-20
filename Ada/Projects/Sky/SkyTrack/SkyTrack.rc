@@ -16,9 +16,9 @@ BEGIN
       VALUE "FileDescription", "Telescope Control Program\0"
       VALUE "OriginalFilename", "SkyTrack.exe\0"
       VALUE "InternalName", "SkyTrack\0"
-      VALUE "ProductName", "GPL\0"
-      VALUE "ProductVersion", "2017\0"
-   END
+      VALUE "ProductName", "GPL 2019\0"
+      VALUE "ProductVersion", "8.3.1\0"
+    END
   END
   BLOCK "VarFileInfo"
   BEGIN

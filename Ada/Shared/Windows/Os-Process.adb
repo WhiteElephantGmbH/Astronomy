@@ -53,7 +53,6 @@ package body Os.Process is
 
     use type Win32.BOOL;
     use type Win32.DWORD;
-    use type System.Address;
   begin
     Process_Id := (0, False);
     Startup_Info.cb             := Win32.DWORD (Win32.Winbase.STARTUPINFOA'size / 8);

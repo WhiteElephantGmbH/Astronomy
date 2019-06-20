@@ -15,11 +15,10 @@
 --
 --  Copyright (C) 2000-2010, AdaCore
 --
---  Modified 2016 by White Elephant GmbH, Schaffhausen, Switzerland
+--  Modified 2019 by White Elephant GmbH, Schaffhausen, Switzerland
 -------------------------------------------------------------------------------
 
 with Ada.Unchecked_Conversion;
-with Interfaces;
 with System.Storage_Elements;  use System.Storage_Elements;
 
 package body Win32.Winnt is
@@ -108,7 +107,6 @@ package body Win32.Winnt is
    end ISARY;
 
    function ISTAG (X : BYTE) return Standard.Boolean is
-      use Interfaces;
    begin
       return X = IMAGE_SYM_CLASS_STRUCT_TAG or
              X = IMAGE_SYM_CLASS_UNION_TAG or

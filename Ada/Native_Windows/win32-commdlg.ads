@@ -15,6 +15,7 @@
 --
 --  Copyright (C) 2000-2011, AdaCore
 --
+--  Modified 2019 by White Elephant GmbH, Schaffhausen, Switzerland
 -------------------------------------------------------------------------------
 
 with Win32.Windef;
@@ -23,7 +24,6 @@ with Win32.Wingdi;
 package Win32.Commdlg is
 
    use Interfaces;
-   use type Interfaces.C.char_array;
 
    OFN_READONLY                 : constant := 16#1#;
    OFN_OVERWRITEPROMPT          : constant := 16#2#;

@@ -257,7 +257,6 @@ package body Telescope is
       Ra_Speed         : Angle.Signed;
       Dec_Speed        : Angle.Signed;
       use type Space.Direction;
-      use type Angle.Degrees;
       use type Angle.Signed;
     begin
       if Space.Direction_Is_Known (Direction_Before) and Space.Direction_Is_Known (Direction_After) then

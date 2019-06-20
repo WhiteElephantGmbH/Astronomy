@@ -15,7 +15,6 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Interfaces.C;
 with Win32.Comctl;
 with Win32.Windef;
 with Win32.Wingdi; pragma Elaborate (Win32.Wingdi);
@@ -50,7 +49,7 @@ package Gui is
   Magenta : constant Color := Win32.Wingdi.RGB (192, 0,   192);
   White   : constant Color := Win32.Wingdi.RGB (255, 255, 255);
 
-  type Information is new Interfaces.C.long; -- Large enough to hold an address
+  type Information is new Win32.INT_PTR; -- Large enough to hold an address
 
   No_Information : constant Information := 0;
 
@@ -80,8 +79,6 @@ package Gui is
 
   type Checked_Menu_Item is new Selection_Menu_Item with private;
   type Radio_Menu_Item is new Selection_Menu_Item with private;
-
-  subtype Tree_Item is Win32.Comctl.Htreeitem;
 
   type Page is private;
   type Child is abstract tagged private;
@@ -496,7 +493,9 @@ package Gui is
   -- Tree View functions
   --
   ----------------------
-  Root_Item      : constant Tree_Item   := 16#FFFF0000#;
+  subtype Tree_Item is Win32.Comctl.Htreeitem;
+
+  Root_Item : constant Tree_Item := Win32.Comctl.Tvi_First;
 
   type Item_Position is (First, Last, Sorted);
 

@@ -216,7 +216,6 @@ package body User is
 
 
   function Image_Of (The_Place : M3.Place) return String is
-    use all type Data.Kind;
   begin
     case The_Place is
     when M3.Camera =>
@@ -837,6 +836,7 @@ package body User is
     Name_Id : constant Name.Id_Access := Convertion (With_Information);
     use type Name.Id_Access;
   begin
+    Log.Write ("Display_Text_Handler - Column:" & For_Column'img);
     if For_Column = 0 then
       if Name_Id = null then
         return "";

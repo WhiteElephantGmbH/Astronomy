@@ -15,6 +15,7 @@
 --
 --  Copyright (C) 2000-2012, AdaCore
 --
+--  Modified 2019 by White Elephant GmbH, Schaffhausen, Switzerland
 -------------------------------------------------------------------------------
 
 with Ada.Unchecked_Conversion;
@@ -4957,7 +4958,6 @@ private
    RT_RCDATA       : constant LPSTR := L (10);
    RT_MESSAGETABLE : constant LPSTR := L (11);
    DIFFERENCE      : constant := 11;
-   use type Win32.WORD;
    RT_GROUP_CURSOR : constant LPSTR := L (RT_CURSOR_NB + DIFFERENCE);
    RT_GROUP_ICON   : constant LPSTR := L (RT_ICON_NB + DIFFERENCE);
    RT_VERSION      : constant LPSTR := L (20);
@@ -4990,7 +4990,6 @@ private
    HWND_DESKTOP    : constant Win32.Windef.HWND := To_Hwnd (8#0#);
    HWND_TOP        : constant Win32.Windef.HWND := To_Hwnd (8#0#);
    HWND_BOTTOM     : constant Win32.Windef.HWND := To_Hwnd (1);
-   use type Win32.LONG;
    HWND_TOPMOST    : constant Win32.Windef.HWND := To_Hwnd (-1);
    HWND_NOTOPMOST  : constant Win32.Windef.HWND := To_Hwnd (-2);
 
@@ -5403,11 +5402,6 @@ private
    pragma Import (Stdcall, SetWindowLongPtrA, "SetWindowLongA");
    pragma Import (Stdcall, SetWindowLongPtrW, "SetWindowLongW");
 
-
-
-
-
-
    pragma Import (Stdcall, GetClassWord, "GetClassWord");
    pragma Import (Stdcall, SetClassWord, "SetClassWord");
    pragma Import (Stdcall, GetClassLongA, "GetClassLongA");
@@ -5419,11 +5413,6 @@ private
    pragma Import (Stdcall, GetClassLongPtrW, "GetClassLongW");
    pragma Import (Stdcall, SetClassLongPtrA, "SetClassLongA");
    pragma Import (Stdcall, SetClassLongPtrW, "SetClassLongW");
-
-
-
-
-
 
    pragma Import (Stdcall, GetDesktopWindow, "GetDesktopWindow");
    pragma Import (Stdcall, GetParent, "GetParent");
