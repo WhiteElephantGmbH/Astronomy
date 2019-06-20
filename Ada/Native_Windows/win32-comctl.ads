@@ -291,11 +291,6 @@ package Win32.Comctl is
     Text    : Win32.LPSTR;
     Maxtext : Win32.INT;
     Subitem : Win32.INT;
-    A       : Win32.INT;
-    B       : Win32.INT;
-    C       : Win32.INT;
-    D       : Win32.INT;
-    E       : Win32.INT;
   end record with Convention => C;
 
   type Lv_Column_Wide is record
@@ -305,11 +300,6 @@ package Win32.Comctl is
     Text    : Win32.LPWSTR;
     Maxtext : Win32.INT;
     Subitem : Win32.INT;
-    A       : Win32.INT;
-    B       : Win32.INT;
-    C       : Win32.INT;
-    D       : Win32.INT;
-    E       : Win32.INT;
   end record with Convention => C;
 
   type Lv_Item_Ansi is record
@@ -322,12 +312,6 @@ package Win32.Comctl is
     Maxtextsize : Win32.INT;
     Image       : Win32.INT;
     Lparam      : Win32.LPARAM;
-    A           : Win32.INT;
-    B           : Win32.INT;
-    C           : Win32.UINT;
-    D           : Win32.PUINT;
-    E           : Win32.PINT;
-    F           : Win32.INT;
   end record with Convention => C;
 
   type Lv_Item_Ansi_Ptr is access Lv_Item_Ansi;
@@ -342,12 +326,6 @@ package Win32.Comctl is
     Maxtextsize : Win32.INT;
     Image       : Win32.INT;
     Lparam      : Win32.LPARAM;
-    A           : Win32.INT;
-    B           : Win32.INT;
-    C           : Win32.UINT;
-    D           : Win32.PUINT;
-    E           : Win32.PINT;
-    F           : Win32.INT;
   end record with Convention => C;
 
   type Lv_Item_Wide_Ptr is access Lv_Item_Wide;
