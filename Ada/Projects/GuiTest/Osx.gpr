@@ -1,0 +1,49 @@
+with "Gtkada";
+with "Aicwl";
+
+project Osx is
+
+   package Naming is
+      for Casing use "mixedcase"; 
+   end Naming;
+
+   for Source_Dirs use ("../../../Tools/Tests/GuiTest",
+                        "../../../Tools/Tests",
+                        "../../../Tools",
+                        "../../../Shared",
+                        "../../../Open/Shared",
+                        "../../../Open/Shared/Osx");
+
+   for Main use ("GuiTest.adb");
+
+   for Exec_Dir use external ("HOME") & "/Product/Soudronic/Osx";
+
+   for Object_Dir use external ("HOME") & "/Objects/GuiTest";
+
+
+   package Pretty_Printer is
+      for Default_Switches ("ada") use ("-i2", "-M120", "-aL", "-A1", "-A4");
+   end Pretty_Printer;
+
+   package Builder is
+      for Default_Switches ("ada") use ("-s", "-g");
+      for Executable ("GuiTest.adb") use "GuiTest";
+   end Builder;
+
+   package Compiler is
+      for Default_Switches ("ada") use
+         ("-O1", "-gnatQ", "-gnata", "-gnato", "-g", "-gnat12",
+          "-gnatwceGhijkmopruvz.c.n.p.t.w.x", "-gnatykmpM120");
+   end Compiler;
+
+   package Binder is
+      for Default_Switches ("ada") use ("-E");
+   end Binder;
+
+   package Linker is
+      for Linker_Options use ();
+      for Default_Switches ("ada") use ("-g",
+                                        "-Wl,-macosx_version_min,10.11");
+   end Linker;
+
+end Osx;

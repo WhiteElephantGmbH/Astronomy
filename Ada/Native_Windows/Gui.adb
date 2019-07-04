@@ -155,7 +155,7 @@ package body Gui is
 
   type Child_Kind is (Button_Child, Progress_Bar_Child, Track_Bar_Child, Edit_Box_Child,
                       Check_Box_Child, Combo_Box_Child, Static_Child, List_View_Child,
-                      Tree_View_Child, Rich_Edit_Child);
+                      Tree_View_Child, Text_View_Child);
 
   Display_Priority : constant array (Child_Kind) of Positive := (Button_Child       => 10,
                                                                  Progress_Bar_Child => 20,
@@ -166,7 +166,7 @@ package body Gui is
                                                                  Static_Child       => 60,
                                                                  List_View_Child    => 70,
                                                                  Tree_View_Child    => 70,
-                                                                 Rich_Edit_Child    => 70);
+                                                                 Text_View_Child    => 70);
 
   type Child_Information is record
     The_Handle               : Win32.Windef.HWND := System.Null_Address;
@@ -746,7 +746,7 @@ package body Gui is
                          Status_Line_Height; -- Available space;
         if Current_Page.Population (List_View_Child) +
            Current_Page.Population (Tree_View_Child) +
-           Current_Page.Population (Rich_Edit_Child) > 0
+           Current_Page.Population (Text_View_Child) > 0
         then
           Button_Height := Button_Height / 2;  -- Reserve half for lists and trees
         end if;
@@ -827,14 +827,14 @@ package body Gui is
               Object_Height := Third_Raster;
               Vertical_Position := Vertical_Position + Third_Raster;
               Vertical_Increment := Vertical_Increment - Third_Raster;
-            when List_View_Child | Tree_View_Child | Rich_Edit_Child =>
+            when List_View_Child | Tree_View_Child | Text_View_Child =>
               if Large_Object_Position = 0 then -- Not yet known
                 Large_Object_Position := Vertical_Position;  -- Start of large objects
               end if;
               Object_Height := (Win32.INT(Client_Rectangle.bottom) - Large_Object_Position) /
                                (Current_Page.Population (List_View_Child) +
                                 Current_Page.Population (Tree_View_Child) +
-                                Current_Page.Population (Rich_Edit_Child));
+                                Current_Page.Population (Text_View_Child));
               Vertical_Increment := Object_Height;
             when Edit_Box_Child | Combo_Box_Child =>
               if The_Child.The_Kind = Combo_Box_Child then
@@ -1292,7 +1292,7 @@ package body Gui is
                                        Win32.Comctl.Tvs_Haslines +
                                        Win32.Comctl.Tvs_Hasbuttons +
                                        Win32.Comctl.Tvs_Linesatroot;
-      when Rich_Edit_Child =>
+      when Text_View_Child =>
         Class_Name := Wide_Text_Address_Of ("RichEdit20W");
         Window_Style := Window_Style + Win32.Winuser.ES_MULTILINE +
                                        Win32.Winuser.ES_READONLY +
@@ -1350,7 +1350,7 @@ package body Gui is
       Window_Style := Window_Style + Win32.Winuser.WS_VISIBLE;
     end if;
     if The_Child.The_Handle = System.Null_Address then
-      The_Child.The_Handle := Win32.Winuser.CreateWindowW (Class_Name,
+      The_Child.The_Handle := Win32.Winuser.CreateWindowExW (0, Class_Name,
                                                            The_Child.Initial_Title,
                                                            Window_Style,
                                                            0,0,0,0,
@@ -3012,27 +3012,27 @@ package body Gui is
 
 
   function Create (Parent_Page   : Page;
-                   Word_Wrapping : Boolean := False) return Rich_Edit is
-    The_Rich_Edit : constant Rich_Edit := Rich_Edit'(Ptr => new Child_Information);
+                   Word_Wrapping : Boolean := False) return Text_View is
+    The_Text_View : constant Text_View := Text_View'(Ptr => new Child_Information);
   begin
-    The_Rich_Edit.Ptr.The_Window_Id := Next_Child_Id;
-    The_Rich_Edit.Ptr.The_Kind := Rich_Edit_Child;
-    Create (The_Rich_Edit.Ptr, Parent_Page);
-    Send_Message (The_Rich_Edit.Ptr.The_Handle,
+    The_Text_View.Ptr.The_Window_Id := Next_Child_Id;
+    The_Text_View.Ptr.The_Kind := Text_View_Child;
+    Create (The_Text_View.Ptr, Parent_Page);
+    Send_Message (The_Text_View.Ptr.The_Handle,
                   Win32.Comctl.Em_Exlimittext, -- Set the maximum amount of text
                   Win32.WPARAM(0),
                   Win32.LPARAM(10_000_000));   -- Default 32K
     if not Word_Wrapping then
-      Send_Message (The_Rich_Edit.Ptr.The_Handle,
+      Send_Message (The_Text_View.Ptr.The_Handle,
                     Win32.Comctl.Em_Settargetdevice,
                     Win32.WPARAM(0),
                     Win32.LPARAM(1)); -- Set word wapping off
     end if;
-    return The_Rich_Edit;
+    return The_Text_View;
   end Create;
 
 
-  procedure Append_Wide_To (The_Rich_Edit  : Rich_Edit;
+  procedure Append_Wide_To (The_Rich_Edit  : Text_View;
                             The_Text       : Wide_String;
                             The_Color      : Color := Gui.Black;
                             Ensure_Visible : Boolean := True) is
@@ -3066,7 +3066,7 @@ package body Gui is
   end Append_Wide_To;
 
 
-  procedure Append_To (The_Rich_Edit  : Rich_Edit;
+  procedure Append_To (The_Rich_Edit  : Text_View;
                        The_Text       : String;
                        The_Color      : Color := Gui.Black;
                        Ensure_Visible : Boolean := True) is
@@ -3075,7 +3075,7 @@ package body Gui is
   end Append_To;
 
 
-  procedure Append_Line_To (The_Rich_Edit  : Rich_Edit;
+  procedure Append_Line_To (The_Rich_Edit  : Text_View;
                             The_Text       : String;
                             The_Color      : Color := Gui.Black;
                             Ensure_Visible : Boolean := True) is
@@ -3084,7 +3084,7 @@ package body Gui is
   end Append_Line_To;
 
 
-  procedure Clear (The_Rich_Edit : Rich_Edit) is
+  procedure Clear (The_Rich_Edit : Text_View) is
   begin
     Send_Message (The_Rich_Edit.Ptr.The_Handle,
                   Win32.Winuser.WM_SETTEXT,

@@ -86,7 +86,7 @@ package Gui is
   type Progress_Bar is new Child with private;
   type List_View is new Child with private;
   type Tree_View is new Child with private;
-  type Rich_Edit is new Child with private;
+  type Text_View is new Child with private;
   type Track_Bar is new Child with private;
   type Edit_Box is abstract new Child with private;
   type Check_Box is new Child with private;
@@ -545,25 +545,25 @@ package Gui is
   -- Expands all ancestor nodes and scrolls Tree_view so that the item is visible
   --
 
-  ---------------------
+  ----------------------
   --
-  -- Rich Edit functions
+  -- Text View functions
   --
-  ---------------------
+  ----------------------
   function Create (Parent_Page   : Page;
-                   Word_Wrapping : Boolean := False) return Rich_Edit;
+                   Word_Wrapping : Boolean := False) return Text_View;
 
-  procedure Append_To (The_Rich_Edit  : Rich_Edit;
+  procedure Append_To (The_Rich_Edit  : Text_View;
                        The_Text       : String;
                        The_Color      : Color := Gui.Black;
                        Ensure_Visible : Boolean := True);
 
-  procedure Append_Line_To (The_Rich_Edit  : Rich_Edit;
+  procedure Append_Line_To (The_Rich_Edit  : Text_View;
                             The_Text       : String;
                             The_Color      : Color := Gui.Black;
                             Ensure_Visible : Boolean := True);
 
-  procedure Clear (The_Rich_Edit : Rich_Edit);
+  procedure Clear (The_Rich_Edit : Text_View);
 
   ----------------------
   --
@@ -722,7 +722,7 @@ private
   type Progress_Bar is new Child with null record;
   type List_View is new Child with null record;
   type Tree_View is new Child with null record;
-  type Rich_Edit is new Child with null record;
+  type Text_View is new Child with null record;
   type Track_Bar is new Child with null record;
   type Edit_Box is abstract new Child with null record;
   type Check_Box is new Child with null record;
