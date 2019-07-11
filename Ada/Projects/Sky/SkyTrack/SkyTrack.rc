@@ -18,6 +18,7 @@ BEGIN
       VALUE "InternalName", "SkyTrack\0"
       VALUE "ProductName", "GPL 2019\0"
       VALUE "ProductVersion", "8.3.1\0"
+      VALUE "Libraries", "\0"
     END
   END
   BLOCK "VarFileInfo"

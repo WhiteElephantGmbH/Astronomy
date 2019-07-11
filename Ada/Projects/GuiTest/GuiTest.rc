@@ -15,8 +15,8 @@ BEGIN
       VALUE "FileVersion", "1.1\0"
       VALUE "OriginalFilename", "GuiTest.exe\0"
       VALUE "InternalName", "GuiTest\0"
-      VALUE "ProductName", "GNATPRO\0"
-      VALUE "ProductVersion", "7.3.1\0"
+      VALUE "ProductName", "GPL 2019\0"
+      VALUE "ProductVersion", "8.3.1\0"
     END
   END
   BLOCK "VarFileInfo"

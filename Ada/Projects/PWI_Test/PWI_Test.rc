@@ -14,8 +14,9 @@ BEGIN
       VALUE "FileDescription", "PWI test program\0"
       VALUE "OriginalFilename", "PWI_Test.exe\0"
       VALUE "InternalName", "PWI_Test\0"
-      VALUE "ProductName", "GPL\0"
-      VALUE "ProductVersion", "2017\0"
+      VALUE "ProductName", "GPL 2019\0"
+      VALUE "ProductVersion", "8.3.1\0"
+      VALUE "Libraries", "\0"
     END
   END
   BLOCK "VarFileInfo"
