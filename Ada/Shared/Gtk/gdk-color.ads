@@ -205,7 +205,7 @@ private
       Blue  : Guint16;
    end record;
    pragma Convention (C, Gdk_Color);
-   --  The fields are to be chosen between 0 and 65535, not 0 and 255!!!
+   --  The fields are to be chosen between 0 and 65535, not 0 and 255
 
    Null_Color : constant Gdk_Color := (Guint32'Last, 1, 0, 0);
    --  Note: in the implementation of GtkAda, everytime a color is used, it

@@ -253,7 +253,7 @@ package body Os.Ascom is
                                                           Ra  => Angle.Value'(+The_Ra)));
                 case Command (Command'first + 1) is
                 when 'e' => -- Set
-                  Log.Write ("!!!Set - Command: " & Command);
+                  Log.Error ("Set - Command: " & Command);
                 when 'l' => -- Slew
                   if Goto_Location /= null then
                     begin
@@ -263,7 +263,7 @@ package body Os.Ascom is
                       end if;
                     exception
                     when Not_Set =>
-                      Log.Write ("!!!Unknown Target");
+                      Log.Error ("Unknown Target");
                     end;
                   end if;
                 when 'y' => -- Sync
@@ -275,7 +275,7 @@ package body Os.Ascom is
                       end if;
                     exception
                     when Not_Set =>
-                      Log.Write ("!!!Unknown Target");
+                      Log.Error ("Unknown Target");
                     end;
                   end if;
                 when others =>

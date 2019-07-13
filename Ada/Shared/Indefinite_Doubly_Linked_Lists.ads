@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2002 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2002 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -47,7 +47,6 @@ package Indefinite_Doubly_Linked_Lists is
 
   function Count (List : Item) return Natural with Inline;
 
-  pragma Warnings (Off); --!!! GPL 2015 allow hiding of "<"
   generic
       with function "<" (Left, Right : Element) return Boolean is <>;
   package Generic_Sorting is
@@ -59,7 +58,6 @@ package Indefinite_Doubly_Linked_Lists is
     procedure Merge (Target, Source : in out Item);
 
   end Generic_Sorting;
-  pragma Warnings (On); --!!! GPL 2015
 
 private
 

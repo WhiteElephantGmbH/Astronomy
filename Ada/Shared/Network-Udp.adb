@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2016 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2016 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -115,7 +115,7 @@ package body Network.Udp is
   begin
     case Error is
     when others =>
-      Log.Write ("!!! Network.Udp.Send: " & Error'img, Occurrence);
+      Log.Write ("Network.Udp.Send: " & Error'img, Occurrence);
       raise Transmission_Error;
     end case;
   end Handle_Send_Error;
@@ -243,7 +243,7 @@ package body Network.Udp is
       -- The socket is no longer open.
       raise Receive_Error;
     when others =>
-      Log.Write ("!!! Network.Udp.Receive: " & Error'img);
+      Log.Write ("Network.Udp.Receive: " & Error'img);
       raise Receive_Error;
     end case;
   end Handle_Receive_Error;

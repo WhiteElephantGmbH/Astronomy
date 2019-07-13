@@ -408,7 +408,7 @@ package body Test is
       The_Character : Character;
     begin
       accept Start;
-      Serial_Io.Set (The_Baudrate => 115200,
+      Serial_Io.Set (The_Baudrate => 19200,
                      On           => Input);
       Ada.Text_IO.Put ("Reader started ('x' to abort )");
       loop

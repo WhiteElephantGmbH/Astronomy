@@ -216,7 +216,7 @@ package body Os.Process is
                         lpPipeAttributes => Security'unchecked_access,
                         nSize            => Default_Size) /= Win32.TRUE
     then
-      Log.Write ("!!! Process.Createpipe failed");
+      Log.Write ("Process.Createpipe failed");
       raise Execution_Failed;
     end if;
     --
@@ -228,7 +228,7 @@ package body Os.Process is
                              Win32.FALSE, -- Non inheritable
                              Nt.DUPLICATE_SAME_ACCESS) /= Win32.TRUE
     then
-      Log.Write ("!!! Process.Duplicatehandle failed");
+      Log.Write ("Process.Duplicatehandle failed");
       raise Execution_Failed;
     end if;
     Unused := Base.CloseHandle (In_Temp); -- No longer used
@@ -250,7 +250,7 @@ package body Os.Process is
                         null) /= Win32.TRUE
       then
         exit when Base.GetLastError = Win32.Winerror.ERROR_BROKEN_PIPE;
-        Log.Write ("!!! Process.Readfile Error =" & Win32.DWORD'image(Base.GetLastError));
+        Log.Write ("Process.Readfile Error =" & Win32.DWORD'image(Base.GetLastError));
         raise Execution_Failed;
       else
         Text.Append_To (The_Result, The_Data (The_Data'first .. The_Data'first + Natural(The_Length) - 1));
@@ -263,8 +263,8 @@ package body Os.Process is
   when Execution_Failed =>
     raise;
   when Item: others =>
-    Log.Write ("!!! Process.Execution_Of", Item);
-    Log.Write ("    Last Error =" & Win32.DWORD'image(Base.GetLastError));
+    Log.Write ("Process.Execution_Of", Item);
+    Log.Write ("Last Error =" & Win32.DWORD'image(Base.GetLastError));
     raise Execution_Failed;
   end Execution_Of;
 

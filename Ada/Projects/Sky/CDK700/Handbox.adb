@@ -68,7 +68,7 @@ package body Handbox is
         Channel       : Serial_Io.Channel(Parameter.Handbox_Port);
         The_Character : Character;
       begin
-        Serial_Io.Set (The_Baudrate => 115200,
+        Serial_Io.Set (The_Baudrate => 19200,
                        On           => Channel);
         loop
           begin

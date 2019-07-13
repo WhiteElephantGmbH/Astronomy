@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2002 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2002 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -25,6 +25,7 @@ with Exceptions;
 with File;
 with Strings;
 with String_List;
+with System;
 
 package body Log is
 
@@ -208,6 +209,11 @@ package body Log is
         end if;
       end Filename;
 
+      function Address_Size return String is
+      begin
+        return Strings.Trimmed (System.Address'size'img) & " bit ";
+      end Address_Size;
+
     begin -- Open
       Multiple_Files := Configuration.Value_Of (File_Section, Multiple_Item);
       Flush_After_Write := Configuration.Value_Of (File_Section, Flush_Item);
@@ -238,7 +244,7 @@ package body Log is
           Categories := 2 ** Enabled_Categories - 1;
         end if;
       end;
-      Io.Put_Line (The_File, Strings.Bom_8 & Application.Name &" version " & Application.Version);
+      Io.Put_Line (The_File, Strings.Bom_8 & Address_Size & Application.Name &" version " & Application.Version);
       Io.Put_Line (The_File, "Log created " & Date_And_Time);
       if Categories = All_Categories then
         Io.Put_Line (The_File, "Logging all categories");
