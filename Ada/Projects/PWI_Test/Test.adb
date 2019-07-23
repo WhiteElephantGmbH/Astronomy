@@ -404,17 +404,30 @@ package body Test is
     The_Reader : access Reader;
 
     task body Reader is
-      Input         : Serial_Io.Channel(Port);
+      Channel       : Serial_Io.Channel(Port);
       The_Character : Character;
+      The_Version   : String := "x.xx";
     begin
       accept Start;
-      Serial_Io.Set (The_Baudrate => 19200,
-                     On           => Input);
-      Ada.Text_IO.Put ("Reader started ('x' to abort )");
+      begin
+        Serial_Io.Set (The_Baudrate => 19200,
+                       On           => Channel);
+        Serial_Io.Set_For_Read (The_Timeout => 1.0,
+                                On          => Channel);
+        Serial_Io.Send (The_Item => 'v',
+                        To       => Channel);
+        Serial_Io.Receive (The_Item => The_Version,
+                           From     => Channel);
+        Ada.Text_IO.Put_Line ("Reader started for handbox version " & The_Version & " (Esc to abort)");
+      exception
+      when Serial_Io.Timeout =>
+        Ada.Text_IO.Put_Line ("Reader started for handbox with no version (Esc to abort)");
+      end;
+      Serial_Io.Set_For_Read (The_Timeout => Serial_Io.Infinite,
+                              On          => Channel);
       loop
-        Ada.Text_IO.Put ("- from Serial:");
-        The_Character := Serial_Io.Character_Of (Input);
-        Ada.Text_IO.Put_Line (' ' & The_Character);
+        The_Character := Serial_Io.Character_Of (Channel);
+        Ada.Text_IO.Put_Line ("- from Serial: " & The_Character);
       end loop;
     exception
     when Serial_Io.Aborted =>
@@ -429,8 +442,8 @@ package body Test is
       The_Reader := new Reader;
       The_Reader.Start;
       loop
-        Ada.Text_IO.Get (The_Character);
-        exit when The_Character = 'x';
+        Ada.Text_IO.Get_Immediate (The_Character);
+        exit when The_Character = Ascii.Esc;
       end loop;
       Serial_Io.Free (Port);
     else

@@ -418,21 +418,45 @@ package body Parameter is
       Set (Handbox_Handle);
       declare
         Port_Name : constant String := Strings.Legible_Of (String_Of (Port_Key, "Handbox"));
+        Version   : constant String := "0.01";
       begin
+        The_Handbox_Is_Available := False;
         if Port_Name /= "None" then
           begin
             The_Handbox_Port := Serial_Io.Port'value(Port_Name);
           exception
           when others =>
-            Error.Raise_With ("Handbox port " & Port_Name & " is not in range Com1 .. Com8");
+            Error.Raise_With ("Handbox port " & Port_Name & " is not in range Com1 .. Com20");
           end;
-          if not Serial_Io.Is_Available (The_Handbox_Port) then
+          begin
+            declare
+              The_Version : String := "x.xx";
+              Channel     : Serial_Io.Channel(The_Handbox_Port);
+            begin
+              Serial_Io.Set (The_Baudrate => 19200,
+                             On           => Channel);
+              Serial_Io.Set_For_Read (The_Timeout => 1.0,
+                                      On          => Channel);
+              Serial_Io.Send (The_Item => 'v',
+                              To       => Channel);
+              Serial_Io.Receive (The_Item => The_Version,
+                                 From     => Channel);
+              if The_Version /= Version then
+                Error.Raise_With ("Incorrect version (" & The_Version & ") for Handbox on port " & Port_Name);
+              end if;
+            end;
+            Log.Write ("Handbox on Port: " & The_Handbox_Port'img);
+            The_Handbox_Is_Available := True;
+          exception
+          when
+            Error.Occurred =>
+            raise;
+          when Serial_Io.Timeout =>
+            Error.Raise_With ("No Handbox on port " & Port_Name);
+          when others =>
             Error.Raise_With ("Handbox port " & Port_Name & " is not available");
-          end if;
-          The_Handbox_Is_Available := True;
-          Log.Write ("Handbox on Port: " & The_Handbox_Port'img);
+          end;
         else
-          The_Handbox_Is_Available := False;
           Log.Write ("No Handbox");
         end if;
       end;

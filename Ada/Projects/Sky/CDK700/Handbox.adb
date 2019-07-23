@@ -60,7 +60,11 @@ package body Handbox is
       User.Input.Put (Command, User.Input.Handbox);
     end Execute;
 
-  begin
+    Arrow_Was_Pressed : Boolean := False;
+    Center_Is_Pressed : Boolean := False;
+    Is_Changing       : Boolean := False;
+
+  begin -- Reader
     accept Start;
     Log.Write ("started");
     Main: loop
@@ -76,17 +80,54 @@ package body Handbox is
             Log.Write ("Input: " & The_Character);
             case The_Character is
             when 'u' =>
-              Execute (Device.Move_Up);
+              if Center_Is_Pressed then
+                if Parameter.Is_Expert_Mode then
+                  Execute (Device.Increase_Speed);
+                end if;
+                Arrow_Was_Pressed := True;
+              else
+                Is_Changing := True;
+                Execute (Device.Move_Up);
+              end if;
             when 'd' =>
-              Execute (Device.Move_Down);
+              if Center_Is_Pressed then
+                if Parameter.Is_Expert_Mode then
+                  Execute (Device.Decrease_Speed);
+                end if;
+                Arrow_Was_Pressed := True;
+              else
+                Is_Changing := True;
+                Execute (Device.Move_Down);
+              end if;
             when 'l' =>
-              Execute (Device.Move_Left);
+              Is_Changing := True;
+              if Center_Is_Pressed then
+                Execute (Device.Decrease_Time);
+                Arrow_Was_Pressed := True;
+              else
+                Execute (Device.Move_Left);
+              end if;
             when 'r' =>
-              Execute (Device.Move_Right);
+              Is_Changing := True;
+              if Center_Is_Pressed then
+                Execute (Device.Increase_Time);
+                Arrow_Was_Pressed := True;
+              else
+                Execute (Device.Move_Right);
+              end if;
             when 'c' =>
-              Execute (Device.Enter);
-            when 'U' | 'D' | 'L' | 'R' | 'C' =>
-              Execute (Device.No_Command);
+              Center_Is_Pressed := True;
+              Arrow_Was_Pressed := False;
+            when 'U' | 'D' | 'L' | 'R' =>
+              if Is_Changing then
+                Is_Changing := False;
+                Execute (Device.No_Command);
+              end if;
+            when 'C' =>
+              Center_Is_Pressed := False;
+              if not Arrow_Was_Pressed then
+                Execute (Device.Enter);
+              end if;
             when others =>
               Log.Error ("Unknown Input: " & The_Character);
             end case;
