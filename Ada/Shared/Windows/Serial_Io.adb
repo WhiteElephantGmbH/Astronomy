@@ -88,28 +88,34 @@ package body Serial_Io is
 
   function New_Device (The_Port : Port) return Win32.Winnt.HANDLE is
 
-    type Ports is array (Port) of String(1..6);
+    Prefix  : constant String := "\\.\";
+    Postfix : constant String := "" & Ascii.Nul;
+    Filler  : constant String := " ";
 
-    Port_Names : aliased constant Ports := (Com1  => "Com1"  & Ascii.Nul & Ascii.Nul,
-                                            Com2  => "Com2"  & Ascii.Nul & Ascii.Nul,
-                                            Com3  => "Com3"  & Ascii.Nul & Ascii.Nul,
-                                            Com4  => "Com4"  & Ascii.Nul & Ascii.Nul,
-                                            Com5  => "Com5"  & Ascii.Nul & Ascii.Nul,
-                                            Com6  => "Com6"  & Ascii.Nul & Ascii.Nul,
-                                            Com7  => "Com7"  & Ascii.Nul & Ascii.Nul,
-                                            Com8  => "Com8"  & Ascii.Nul & Ascii.Nul,
-                                            Com9  => "Com9"  & Ascii.Nul & Ascii.Nul,
-                                            Com10 => "Com10" & Ascii.Nul,
-                                            Com11 => "Com11" & Ascii.Nul,
-                                            Com12 => "Com12" & Ascii.Nul,
-                                            Com13 => "Com13" & Ascii.Nul,
-                                            Com14 => "Com14" & Ascii.Nul,
-                                            Com15 => "Com15" & Ascii.Nul,
-                                            Com16 => "Com16" & Ascii.Nul,
-                                            Com17 => "Com17" & Ascii.Nul,
-                                            Com18 => "Com18" & Ascii.Nul,
-                                            Com19 => "Com19" & Ascii.Nul,
-                                            Com20 => "Com20" & Ascii.Nul);
+    Name : constant String := Prefix & "Com??" & Postfix;
+
+    type Ports is array (Port) of String(1..Name'length);
+
+    Port_Names : aliased constant Ports := (Com1  => Prefix & "Com1"  & Postfix & Filler,
+                                            Com2  => Prefix & "Com2"  & Postfix & Filler,
+                                            Com3  => Prefix & "Com3"  & Postfix & Filler,
+                                            Com4  => Prefix & "Com4"  & Postfix & Filler,
+                                            Com5  => Prefix & "Com5"  & Postfix & Filler,
+                                            Com6  => Prefix & "Com6"  & Postfix & Filler,
+                                            Com7  => Prefix & "Com7"  & Postfix & Filler,
+                                            Com8  => Prefix & "Com8"  & Postfix & Filler,
+                                            Com9  => Prefix & "Com9"  & Postfix & Filler,
+                                            Com10 => Prefix & "Com10" & Postfix,
+                                            Com11 => Prefix & "Com11" & Postfix,
+                                            Com12 => Prefix & "Com12" & Postfix,
+                                            Com13 => Prefix & "Com13" & Postfix,
+                                            Com14 => Prefix & "Com14" & Postfix,
+                                            Com15 => Prefix & "Com15" & Postfix,
+                                            Com16 => Prefix & "Com16" & Postfix,
+                                            Com17 => Prefix & "Com17" & Postfix,
+                                            Com18 => Prefix & "Com18" & Postfix,
+                                            Com19 => Prefix & "Com19" & Postfix,
+                                            Com20 => Prefix & "Com20" & Postfix);
     use type Unsigned.Longword;
 
     GENERIC_READ       : constant Unsigned.Longword := Win32.Winnt.GENERIC_READ;
