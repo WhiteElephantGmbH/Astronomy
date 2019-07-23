@@ -817,7 +817,7 @@ package body User is
       when Gui.Key_Codes.KP_Enter | Gui.Key_Codes.K_Return | Gui.Key_Codes.K_Space =>
         Enter_Is_Pressed := False;
         if not Arrow_Was_Pressed then
-          Input.Put (Device.Enter, From => Input.Keypad);
+          Put (Device.Enter);
         end if;
       when others =>
         null;
