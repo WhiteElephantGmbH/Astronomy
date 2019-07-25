@@ -50,6 +50,8 @@ package body Parameter is
   Simulation_Mode_Key   : constant String := "Simulation Mode";
   Expert_Mode_Key       : constant String := "Expert Mode";
   Fans_Key              : constant String := "Fans";
+  M3_Default_Place_Key  : constant String := "M3 Default Place";
+  M3_Ocular_Port_Key    : constant String := "M3 Ocular Port";
   Pointing_Model_Key    : constant String := "Pointing Model";
   Ip_Address_Key        : constant String := "IP Address";
   Moving_Speed_List_Key : constant String := "Moving Speed List";
@@ -67,6 +69,8 @@ package body Parameter is
   Is_In_Shutdown_Mode   : Boolean := False;
   Is_In_Expert_Mode     : Boolean;
   Is_In_Simulation_Mode : Boolean;
+  The_M3_Default_Place  : Device.M3.Place;
+  The_M3_Ocular_Port    : PWI.M3.Port;
   Fans_On               : Boolean;
   The_Pointing_Model    : Text.String;
 
@@ -190,19 +194,20 @@ package body Parameter is
 
   procedure Read is
 
+    function Value (Item : String) return String is
+    begin
+      return Ada.Environment_Variables.Value (Item);
+    exception
+    when others =>
+      Error.Raise_With ("Environment Variable " & Item & " not found");
+    end Value;
+
+    Company_Name      : constant String := "PlaneWave Instruments";
+    PWI_Program_Files : constant String := Value ("ProgramFiles(x86)") & "\" & Company_Name;
+    PWI_Documents     : constant String := Value ("HomeDrive") & Value ("HomePath") & "\Documents\" & Company_Name;
+    PWI_Mount_Folder  : constant String := PWI_Documents & "\PWI2\Mount\";
+
     procedure Create_Default_Parameters is
-
-      function Value (Item : String) return String is
-      begin
-        return Ada.Environment_Variables.Value (Item);
-      exception
-      when others =>
-        Error.Raise_With ("Environment Variable " & Item & " not found");
-      end Value;
-
-      Company_Name      : constant String := "PlaneWave Instruments";
-      PWI_Program_Files : constant String := Value ("ProgramFiles(x86)") & "\" & Company_Name;
-      PWI_Documents     : constant String := Value ("HomeDrive") & Value ("HomePath") & "\Documents\" & Company_Name;
 
       The_File : Ada.Text_IO.File_Type;
 
@@ -224,18 +229,20 @@ package body Parameter is
       Put ("[" & PWI_Id & "]");
       Put (Name_Key & "              = CDK Ost");
       Put (Program_Key & "           = " & PWI_Program_Files & "\PlaneWave interface\PWI.exe");
-      Put (Settings_Key & "          = " & PWI_Documents & "\PWI2\Mount\settingsMount.xml");
+      Put (Settings_Key & "          = " & PWI_Mount_Folder & "settingsMount.xml");
       Put (Shutdown_Key & "          = True");
       Put (Expert_Mode_Key & "       = False");
       Put (Simulation_Mode_Key & "   = False");
-      Put (Fans_Key & "              = On");
-      Put (Pointing_Model_Key & "    = First.PXP");
+      Put (M3_Default_Place_Key & "  = Ocular");
+      Put (M3_Ocular_Port_Key & "    = 2");
+      Put (Fans_Key & "              = Off");
+      Put (Pointing_Model_Key & "    = Default_Mount_Model.PXP");
       Put (Ip_Address_Key & "        = 127.0.0.1");
       Put (Port_Key & "              = 8080");
-      Put (Moving_Speed_List_Key & " = 10""/s, 1'/s, 6'/s, 1°/s");
+      Put (Moving_Speed_List_Key & " = 10""/s, 1'/s, 6'/s, 6°/s");
       Put ("");
       Put ("[" & Handbox_Id & "]");
-      Put (Port_Key & " = Com3");
+      Put (Port_Key & " = None");
       Put ("");
       Put ("[" & Lx200_Id & "]");
       Put (Port_Key & " = 4030");
@@ -379,6 +386,34 @@ package body Parameter is
       end Define_Satellites_Filename;
 
 
+      procedure Define_M3_Default_Place is
+        Place : constant String := String_Value_Of (M3_Default_Place_Key);
+      begin
+        Log.Write (M3_Default_Place_Key & ": " & Place);
+        if Strings.Is_Equal (Place, "Camera") then
+          The_M3_Default_Place := Device.M3.Camera;
+        elsif Strings.Is_Equal (Place, "Ocular") then
+          The_M3_Default_Place := Device.M3.Ocular;
+        else
+          Error.Raise_With (M3_Default_Place_Key & " must be either Camera or Ocular");
+        end if;
+      end Define_M3_Default_Place;
+
+
+      procedure Define_M3_Ocular_Port is
+        Port : constant String := String_Value_Of (M3_Ocular_Port_Key);
+      begin
+        Log.Write (M3_Ocular_Port_Key & ": " & Port);
+        if Strings.Is_Equal (Port, "1") then
+          The_M3_Ocular_Port := PWI.M3.Port_1;
+        elsif Strings.Is_Equal (Port, "2") then
+          The_M3_Ocular_Port := PWI.M3.Port_2;
+        else
+          Error.Raise_With (M3_Ocular_Port_Key & " must be either 1 or 2");
+        end if;
+      end Define_M3_Ocular_Port;
+
+
       procedure Define_Fans_State is
         Fans_State : constant String := String_Value_Of (Fans_Key);
       begin
@@ -391,6 +426,18 @@ package body Parameter is
           Error.Raise_With ("Fans must be either On or Off");
         end if;
       end Define_Fans_State;
+
+
+      procedure Define_Pointing_Model is
+        Model_Name : constant String := String_Value_Of (Pointing_Model_Key);
+        Model_File : constant String := PWI_Mount_Folder & Model_Name;
+      begin
+        if not File.Exists (Model_File) then
+          Error.Raise_With ("Pointing Model """ & Model_File & """ not found");
+        end if;
+        The_Pointing_Model := Text.String_Of (Model_Name);
+        Log.Write ("Pointing_Model: " & Model_Name);
+      end Define_Pointing_Model;
 
     begin -- Read_Values
       Set (Localization_Handle);
@@ -405,9 +452,10 @@ package body Parameter is
       Is_In_Shutdown_Mode := Strings.Is_Equal (String_Value_Of (Shutdown_Key), "True");
       Is_In_Expert_Mode := Strings.Is_Equal (String_Value_Of (Expert_Mode_Key), "True");
       Is_In_Simulation_Mode := Strings.Is_Equal (String_Value_Of (Simulation_Mode_Key), "True");
+      Define_M3_Default_Place;
+      Define_M3_Ocular_Port;
       Define_Fans_State;
-      The_Pointing_Model := Text.String_Of (String_Value_Of (Pointing_Model_Key));
-      Log.Write ("Pointing_Model: " & Pointing_Model);
+      Define_Pointing_Model;
       Startup_PWI;
       PWI.Install (PWI_Socket'access);
       The_Moving_Speeds := Angles_Of (Moving_Speed_List_Key, Speed_Unit);
@@ -559,6 +607,29 @@ package body Parameter is
   begin
     return Is_In_Simulation_Mode;
   end Is_Simulation_Mode;
+
+
+  function M3_Ocular_Port return PWI.M3.Port is
+  begin
+    return The_M3_Ocular_Port;
+  end M3_Ocular_Port;
+
+
+  function M3_Camera_Port return PWI.M3.Port is
+  begin
+    case The_M3_Ocular_Port is
+    when PWI.M3.Port_1 =>
+      return PWI.M3.Port_2;
+    when PWI.M3.Port_2 =>
+      return PWI.M3.Port_1;
+    end case;
+  end M3_Camera_Port;
+
+
+  function M3_Default_Place return Device.M3.Place is
+  begin
+    return The_M3_Default_Place;
+  end M3_Default_Place;
 
 
   function Turn_Fans_On return Boolean is

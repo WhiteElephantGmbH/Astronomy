@@ -16,6 +16,8 @@
 pragma Style_White_Elephant;
 
 with Angle;
+with Device;
+with PWI.M3;
 with Serial_Io;
 with Stellarium;
 with Network;
@@ -25,7 +27,7 @@ package Parameter is
   Speed_Unit : constant String := "/s";
 
   procedure Read;
-  
+
   procedure Shutdown;
 
 
@@ -49,6 +51,12 @@ package Parameter is
   function Is_Expert_Mode return Boolean;
 
   function Is_Simulation_Mode return Boolean;
+
+  function M3_Ocular_Port return PWI.M3.Port;
+
+  function M3_Camera_Port return PWI.M3.Port;
+
+  function M3_Default_Place return Device.M3.Place;
 
   function Turn_Fans_On return Boolean;
 
@@ -80,7 +88,7 @@ package Parameter is
   ----------------
   -- Stellarium --
   ----------------
-  
+
   function Stellarium_Port return Network.Port_Number;
 
   function Satellites_Filename return String;

@@ -613,7 +613,7 @@ package body Telescope is
         Mount.Enable;
         The_State := Enabling;
       when Mount_Enabled =>
-        M3.Turn (To => M3.Ocular);
+        M3.Turn (To => Parameter.M3_Default_Place);
         Mount.Find_Home (The_Completion_Time);
         Rotator.Find_Home;
         The_State := Homing;
@@ -675,7 +675,7 @@ package body Telescope is
     begin
       case The_Event is
       when Mount_Enabled =>
-        M3.Turn (To => M3.Ocular);
+        M3.Turn (To => Parameter.M3_Default_Place);
         Mount.Find_Home (The_Completion_Time);
         Rotator.Find_Home;
         The_State := Homing;
@@ -705,7 +705,7 @@ package body Telescope is
       when Mount_Connected =>
         The_State := Connected;
       when Startup =>
-        M3.Turn (To => M3.Ocular);
+        M3.Turn (To => Parameter.M3_Default_Place);
         Mount.Find_Home (The_Completion_Time);
         Rotator.Find_Home;
         The_State := Homing;
@@ -727,7 +727,7 @@ package body Telescope is
     begin
       case The_Event is
       when Mount_Synchronised =>
-        if The_Rotator_State /= Rotator.Homing and The_M3_Position = M3.Ocular then
+        if The_Rotator_State /= Rotator.Homing and The_M3_Position = Parameter.M3_Default_Place then
           Mount.Set_Pointing_Model;
           Rotator.Start;
           The_State := Initializing;

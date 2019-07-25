@@ -367,13 +367,13 @@ package body Device is
             if Is_Simulating then
               The_M3_Position := M3.Ocular;
             else
-              PWI.M3.Turn (To => PWI.M3.Port_1);
+              PWI.M3.Turn (To => Parameter.M3_Ocular_Port);
             end if;
           when Turn_To_Camera =>
             if Is_Simulating then
               The_M3_Position := M3.Camera;
             else
-              PWI.M3.Turn (To => PWI.M3.Port_2);
+              PWI.M3.Turn (To => Parameter.M3_Camera_Port);
             end if;
           end case;
 
@@ -434,7 +434,7 @@ package body Device is
             The_Rotator_State := Rotator.Disconnected;
           end if;
           if The_M3_Position = M3.Unknown then
-            The_M3_Position := M3.Ocular;
+            The_M3_Position := Parameter.M3_Default_Place;
           end if;
         else
           case PWI.Mount.Status is
