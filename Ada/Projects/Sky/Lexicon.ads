@@ -44,6 +44,8 @@ package Lexicon is
                 Neptune,
                 North,
                 Ocular,
+                Off,
+                On,
                 Open_Clusters,
                 Orion_Nebula,
                 Park_Position,

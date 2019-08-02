@@ -16,6 +16,7 @@
 pragma Style_White_Elephant;
 
 with Ada.Real_Time;
+with Cwe;
 with Numerics;
 with Parameter;
 with System;
@@ -381,10 +382,16 @@ package body Telescope is
 
 
     procedure Reset_Adjustments is
+      use type Angle.Value;
     begin
-      The_Adjusted_Offset := Earth.Unknown_Direction;
-      The_First_Offset := 0.0;
-      The_Second_Offset := 0.0;
+      The_Adjusted_Offset := Cwe.Adjustment;
+      if Earth.Direction_Is_Known (The_Adjusted_Offset) then
+        The_First_Offset := +Earth.Az_Of (The_Adjusted_Offset);
+        The_Second_Offset := +Earth.Alt_Of (The_Adjusted_Offset);
+      else
+        The_First_Offset := 0.0;
+        The_Second_Offset := 0.0;
+      end if;
       The_Time_Adjustment := 0.0;
     end Reset_Adjustments;
 

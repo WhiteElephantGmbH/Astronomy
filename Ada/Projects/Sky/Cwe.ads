@@ -15,86 +15,16 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Angle;
-with Device;
-with PWI.M3;
-with Serial_Io;
-with Stellarium;
-with Network;
+with Earth;
 
-package Parameter is
+package Cwe is
 
-  Speed_Unit : constant String := "/s";
+  type Mode is (Off, On);
 
-  procedure Read;
+  procedure Set (To : Mode);
+  
+  procedure New_Offset;
+  
+  function Adjustment return Earth.Direction;
 
-  procedure Shutdown;
-
-
-  ----------
-  -- Site --
-  ----------
-
-  function Latitude return Angle.Value;
-
-  function Longitude return Angle.Value;
-
-  function Elevation return Integer; -- in meters
-
-
-  ------------
-  -- Device --
-  ------------
-
-  function Telescope_Name return String;
-
-  function Is_Expert_Mode return Boolean;
-
-  function Is_Simulation_Mode return Boolean;
-
-  function M3_Ocular_Port return PWI.M3.Port;
-
-  function M3_Camera_Port return PWI.M3.Port;
-
-  function M3_Default_Place return Device.M3.Place;
-
-  function Turn_Fans_On return Boolean;
-
-  function Pointing_Model return String;
-
-  function Pole_Height return Angle.Value;
-
-  function Is_Azimuthal_Mount return Boolean;
-
-  function Moving_Speeds return Angle.Values; -- in angle / s
-
-  function Cwe_Distance return Angle.Degrees;
-
-
-  -------------
-  -- Handbox --
-  -------------
-
-  function Handbox_Is_Available return Boolean;
-
-  function Handbox_Port return Serial_Io.Port;
-
-
-  -----------
-  -- Lx200 --
-  -----------
-
-  function Lx200_Port return Network.Port_Number;
-
-
-  ----------------
-  -- Stellarium --
-  ----------------
-
-  function Stellarium_Port return Network.Port_Number;
-
-  function Satellites_Filename return String;
-
-  function Magnitude_Maximum return Stellarium.Magnitude;
-
-end Parameter;
+end Cwe;

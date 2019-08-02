@@ -15,86 +15,57 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with Ada.Numerics.Discrete_Random;
 with Angle;
-with Device;
-with PWI.M3;
-with Serial_Io;
-with Stellarium;
-with Network;
+with Astro;
+with Parameter;
+with Traces;
 
-package Parameter is
+package body Cwe is
 
-  Speed_Unit : constant String := "/s";
+  package Log is new Traces ("Cwe");
 
-  procedure Read;
+  The_Mode : Mode;
 
-  procedure Shutdown;
+  procedure Set (To : Mode) is
+  begin
+    The_Mode := To;
+  end Set;
 
+  type Degrees is range 0 .. 359;
 
-  ----------
-  -- Site --
-  ----------
+  package Angle_Values is new Ada.Numerics.Discrete_Random (Degrees);
 
-  function Latitude return Angle.Value;
-
-  function Longitude return Angle.Value;
-
-  function Elevation return Integer; -- in meters
+  Angle_Generator : Angle_Values.Generator;
 
 
-  ------------
-  -- Device --
-  ------------
+  The_Random_Angle : Degrees := 0;
 
-  function Telescope_Name return String;
-
-  function Is_Expert_Mode return Boolean;
-
-  function Is_Simulation_Mode return Boolean;
-
-  function M3_Ocular_Port return PWI.M3.Port;
-
-  function M3_Camera_Port return PWI.M3.Port;
-
-  function M3_Default_Place return Device.M3.Place;
-
-  function Turn_Fans_On return Boolean;
-
-  function Pointing_Model return String;
-
-  function Pole_Height return Angle.Value;
-
-  function Is_Azimuthal_Mount return Boolean;
-
-  function Moving_Speeds return Angle.Values; -- in angle / s
-
-  function Cwe_Distance return Angle.Degrees;
+  procedure New_Offset is
+  begin
+    case The_Mode is
+    when Off =>
+      The_Random_Angle := 0;
+    when On =>
+      The_Random_Angle := Angle_Values.Random (Angle_Generator);
+      Log.Write ("Random Angle:" & The_Random_Angle'img);
+    end case;
+  end New_Offset;
 
 
-  -------------
-  -- Handbox --
-  -------------
+  function Adjustment return Earth.Direction is
+    use Astro.MATLIB;
+    Distance     : constant Angle.Degrees := Parameter.Cwe_Distance;
+    use type Angle.Value;
+    use type Angle.Degrees;
+  begin
+    case The_Mode is
+    when Off =>
+      return Earth.Unknown_Direction;
+    when On =>
+      return Earth.Direction_Of (Alt => +Distance * CS(Angle.Degrees(The_Random_Angle)),
+                                 Az  => +Distance * SN(Angle.Degrees(The_Random_Angle)));
+    end case;
+  end Adjustment;
 
-  function Handbox_Is_Available return Boolean;
-
-  function Handbox_Port return Serial_Io.Port;
-
-
-  -----------
-  -- Lx200 --
-  -----------
-
-  function Lx200_Port return Network.Port_Number;
-
-
-  ----------------
-  -- Stellarium --
-  ----------------
-
-  function Stellarium_Port return Network.Port_Number;
-
-  function Satellites_Filename return String;
-
-  function Magnitude_Maximum return Stellarium.Magnitude;
-
-end Parameter;
+end Cwe;

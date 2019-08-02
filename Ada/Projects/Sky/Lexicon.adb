@@ -69,6 +69,8 @@ package body Lexicon is
     Neptune           => E ("Neptune",           "Neptune",                  "Neptun",             "Ποσειδώνας",              "Nettuno",                     "Neptuno"),
     North             => E ("N",                 "N",                        "N",                  "Β",                       "N",                           "N"),
     Ocular            => E ("Ocular",            "Oculaire",                 "Okular",             "οφθαλμικός",              "Oculare",                     "Ocular"),
+    Off               => E ("Off",               "Off",                      "Aus",                "Off",                     "Off",                         "Off"),
+    On                => E ("On",                "On",                       "Ein",                "On",                      "On",                          "On"),
     Open_Clusters     => E ("Open clusters",     "Amas ouverts",             "Offene Sternhaufen", "Ανοιχτά αστρικά σμήνη",   "Ammassi aperti",              "Cúmulos abiertos"),
     Orion_Nebula      => E ("Orion nebula",      "Nébuleuse d'Orion",        "Orionnebel",         "Νεφέλωμα του Ορίωνα",     "Nebulosa di Orione",          "Nebulosa de Orión"),
     Park_Position     => E ("Park position",     "Position de repos",        "Parkposition",       "θέση ανάπαυσης",          "Posizione riposo",            "Posición de reposo"),

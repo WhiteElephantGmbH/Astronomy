@@ -55,6 +55,7 @@ package body Parameter is
   Pointing_Model_Key    : constant String := "Pointing Model";
   Ip_Address_Key        : constant String := "IP Address";
   Moving_Speed_List_Key : constant String := "Moving Speed List";
+  Cwe_Distance_Key      : constant String := "CWE Distance";
 
   Handbox_Id     : constant String := "Handbox";
   Lx200_Id       : constant String := "Lx200";
@@ -75,6 +76,7 @@ package body Parameter is
   The_Pointing_Model    : Text.String;
 
   The_Moving_Speeds  : Angle_List.Item;
+  The_Cwe_Distance   : Angle.Degrees;
   The_PWI_Address    : Network.Ip_Address;
   The_PWI_Port       : Network.Port_Number;
 
@@ -173,6 +175,30 @@ package body Parameter is
   end Angles_Of;
 
 
+  function Angle_Of (Key  : String;
+                     Unit : String := "") return Angle.Degrees is
+    Item : constant String := String_Of (Key);
+  begin
+    Log.Write (Key & ": " & Item);
+    begin
+      declare
+        Image : constant String := Image_Of (Item, Unit);
+        Value : constant Angle.Degrees := +Angle.Value_Of (Image);
+        use type Angle.Degrees;
+      begin
+        if Value <= 2.0 then
+          return Value;
+        else
+          Error.Raise_With ("value > 2 degrees");
+        end if;
+      end;
+    exception
+    when others =>
+      Error.Raise_With ("Incorrect value of " & Key & ": <" & Item & ">");
+    end;
+  end Angle_Of;
+
+
   function Value_Of (Key : String) return Integer is
     Item : constant String := String_Of (Key);
   begin
@@ -240,6 +266,7 @@ package body Parameter is
       Put (Ip_Address_Key & "        = 127.0.0.1");
       Put (Port_Key & "              = 8080");
       Put (Moving_Speed_List_Key & " = 10""/s, 1'/s, 6'/s, 6°/s");
+      Put (Cwe_Distance_Key & "      = 30'");
       Put ("");
       Put ("[" & Handbox_Id & "]");
       Put (Port_Key & " = None");
@@ -462,11 +489,12 @@ package body Parameter is
       if Natural(Angle_List.Length (The_Moving_Speeds)) < 2 then
         Error.Raise_With ("The speed list must contain at least two values");
       end if;
+      The_Cwe_Distance := Angle_Of (Cwe_Distance_Key);
 
       Set (Handbox_Handle);
       declare
         Port_Name : constant String := Strings.Legible_Of (String_Of (Port_Key, "Handbox"));
-        Version   : constant String := "0.01";
+        Version   : constant String := "1.00";
       begin
         The_Handbox_Is_Available := False;
         if Port_Name /= "None" then
@@ -660,6 +688,12 @@ package body Parameter is
   begin
     return Angle.Values(Angle_List.Elements (The_Moving_Speeds));
   end Moving_Speeds;
+
+
+  function Cwe_Distance return Angle.Degrees is
+  begin
+    return The_Cwe_Distance;
+  end Cwe_Distance;
 
 
   -------------

@@ -19,6 +19,7 @@ with Ada.Real_Time;
 with Ada.Unchecked_Conversion;
 with Angle;
 with Application;
+with Cwe;
 with Data;
 with Device;
 with Earth;
@@ -237,6 +238,28 @@ package body User is
   end M3_Handler;
 
 
+  function Image_Of (The_Mode : Cwe.Mode) return String is
+  begin
+    case The_Mode is
+    when Cwe.Off =>
+      return Lexicon.Image_Of (Lexicon.Off);
+    when Cwe.On =>
+      return Lexicon.Image_Of (Lexicon.On);
+    end case;
+  end Image_Of;
+
+  package Cwe_Menu is new Gui.Enumeration_Menu_Of (Cwe.Mode, Gui.Radio, Image_Of);
+
+  procedure Cwe_Handler (The_Mode : Cwe.Mode) is
+  begin
+    Log.Write ("CWE: " & The_Mode'img);
+    Cwe.Set (To => The_Mode);
+  exception
+  when others =>
+    Log.Error ("Cwe_Handler");
+  end Cwe_Handler;
+
+
   procedure Show_Error (The_Text : String := Error.Message) is
   begin
     Gui.Beep;
@@ -295,6 +318,7 @@ package body User is
 
   procedure Perform_Left is
   begin
+    Cwe.New_Offset;
     Perform_Left_Handler.all;
   end Perform_Left;
 
@@ -836,7 +860,6 @@ package body User is
     Name_Id : constant Name.Id_Access := Convertion (With_Information);
     use type Name.Id_Access;
   begin
-    Log.Write ("Display_Text_Handler - Column:" & For_Column'img);
     if For_Column = 0 then
       if Name_Id = null then
         return "";
@@ -1071,6 +1094,7 @@ package body User is
       Catalog_Handler (Data.Favorites);
       M3_Menu.Create ("M3", M3_Handler'access);
       M3_Menu.Disable;
+      Cwe_Menu.Create ("CWE", Cwe_Handler'access);
       Define_Control_Page;
       if Persistent_Setup.Storage_Is_Empty then
         The_Image_Orientation := Telescope.Correct;
