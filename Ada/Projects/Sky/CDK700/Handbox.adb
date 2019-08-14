@@ -81,9 +81,7 @@ package body Handbox is
             case The_Character is
             when 'u' =>
               if Center_Is_Pressed then
-                if Parameter.Is_Expert_Mode then
-                  Execute (Device.Increase_Speed);
-                end if;
+                Execute (Device.Increase_Speed);
                 Arrow_Was_Pressed := True;
               else
                 Is_Changing := True;
@@ -91,9 +89,7 @@ package body Handbox is
               end if;
             when 'd' =>
               if Center_Is_Pressed then
-                if Parameter.Is_Expert_Mode then
-                  Execute (Device.Decrease_Speed);
-                end if;
+               Execute (Device.Decrease_Speed);
                 Arrow_Was_Pressed := True;
               else
                 Is_Changing := True;

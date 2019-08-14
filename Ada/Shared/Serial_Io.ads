@@ -20,7 +20,15 @@ with Unsigned;
 package Serial_Io is
 
   type Port is (Com1,  Com2,  Com3,  Com4,  Com5,  Com6,  Com7,  Com8,  Com9,  Com10,
-                Com11, Com12, Com13, Com14, Com15, Com16, Com17, Com18, Com19, Com20);
+                Com11, Com12, Com13, Com14, Com15, Com16, Com17, Com18, Com19, Com20,
+                Com21, Com22, Com23, Com24, Com25, Com26, Com27, Com28, Com29, Com30,
+                Com31, Com32, Com33, Com34, Com35, Com36, Com37, Com38, Com39, Com40,
+                Com41, Com42, Com43, Com44, Com45, Com46, Com47, Com48, Com49, Com50,
+                Com51, Com52, Com53, Com54, Com55, Com56, Com57, Com58, Com59, Com60,
+                Com61, Com62, Com63, Com64, Com65, Com66, Com67, Com68, Com69, Com70,
+                Com71, Com72, Com73, Com74, Com75, Com76, Com77, Com78, Com79, Com80,
+                Com81, Com82, Com83, Com84, Com85, Com86, Com87, Com88, Com89, Com90,
+                Com91, Com92, Com93, Com94, Com95, Com96, Com97, Com98, Com99);
 
   type Channel (The_Port : Port) is tagged limited private;
 

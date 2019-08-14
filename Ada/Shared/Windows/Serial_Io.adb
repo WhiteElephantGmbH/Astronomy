@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2002 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2002 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -88,34 +88,8 @@ package body Serial_Io is
 
   function New_Device (The_Port : Port) return Win32.Winnt.HANDLE is
 
-    Prefix  : constant String := "\\.\";
-    Postfix : constant String := "" & Ascii.Nul;
-    Filler  : constant String := " ";
+    Port_Name : aliased constant String := "\\.\" & The_Port'img & Ascii.Nul;
 
-    Name : constant String := Prefix & "Com??" & Postfix;
-
-    type Ports is array (Port) of String(1..Name'length);
-
-    Port_Names : aliased constant Ports := (Com1  => Prefix & "Com1"  & Postfix & Filler,
-                                            Com2  => Prefix & "Com2"  & Postfix & Filler,
-                                            Com3  => Prefix & "Com3"  & Postfix & Filler,
-                                            Com4  => Prefix & "Com4"  & Postfix & Filler,
-                                            Com5  => Prefix & "Com5"  & Postfix & Filler,
-                                            Com6  => Prefix & "Com6"  & Postfix & Filler,
-                                            Com7  => Prefix & "Com7"  & Postfix & Filler,
-                                            Com8  => Prefix & "Com8"  & Postfix & Filler,
-                                            Com9  => Prefix & "Com9"  & Postfix & Filler,
-                                            Com10 => Prefix & "Com10" & Postfix,
-                                            Com11 => Prefix & "Com11" & Postfix,
-                                            Com12 => Prefix & "Com12" & Postfix,
-                                            Com13 => Prefix & "Com13" & Postfix,
-                                            Com14 => Prefix & "Com14" & Postfix,
-                                            Com15 => Prefix & "Com15" & Postfix,
-                                            Com16 => Prefix & "Com16" & Postfix,
-                                            Com17 => Prefix & "Com17" & Postfix,
-                                            Com18 => Prefix & "Com18" & Postfix,
-                                            Com19 => Prefix & "Com19" & Postfix,
-                                            Com20 => Prefix & "Com20" & Postfix);
     use type Unsigned.Longword;
 
     GENERIC_READ       : constant Unsigned.Longword := Win32.Winnt.GENERIC_READ;
@@ -127,7 +101,7 @@ package body Serial_Io is
     The_Device : Win32.Winnt.HANDLE;
 
   begin
-    The_Device := Win32.Winbase.CreateFile (Win32.Addr(Port_Names(The_Port)),
+    The_Device := Win32.Winbase.CreateFile (Win32.Addr(Port_Name),
                                             GENERIC_READ_WRITE,
                                             0, null,
                                             Win32.Winbase.OPEN_EXISTING,

@@ -253,14 +253,14 @@ package body Parameter is
       Put (Language_Key & " = " & Strings.Legible_Of (Standard.Language.German'img));
       Put ("");
       Put ("[" & PWI_Id & "]");
-      Put (Name_Key & "              = CDK Ost");
+      Put (Name_Key & "              = CDK 1");
       Put (Program_Key & "           = " & PWI_Program_Files & "\PlaneWave interface\PWI.exe");
       Put (Settings_Key & "          = " & PWI_Mount_Folder & "settingsMount.xml");
       Put (Shutdown_Key & "          = True");
       Put (Expert_Mode_Key & "       = False");
       Put (Simulation_Mode_Key & "   = False");
       Put (M3_Default_Place_Key & "  = Ocular");
-      Put (M3_Ocular_Port_Key & "    = 2");
+      Put (M3_Ocular_Port_Key & "    = 1");
       Put (Fans_Key & "              = Off");
       Put (Pointing_Model_Key & "    = Default_Mount_Model.PXP");
       Put (Ip_Address_Key & "        = 127.0.0.1");
@@ -276,7 +276,7 @@ package body Parameter is
       Put ("");
       Put ("[" & Stellarium_Id & "]");
       Put (Port_Key & "       = 10001");
-      Put (Program_Key & "    = C:\Program Files\Stellarium\Stellarium.exe");
+      Put (Program_Key & "    = " & Value ("ProgramFiles") & "\Stellarium\Stellarium.exe");
       Put (Satellites_Key & " = " & Stellarium.Satellites_Filename);
       Put (Magnitude_Key & "  = 8.0");
       Ada.Text_IO.Close (The_File);
