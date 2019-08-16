@@ -8,14 +8,13 @@ with PWI.XML;
 
 package body PWI.Rotator is
 
-  function Status_Of (Info  : XML.Rotator_Info;
-                      Info1 : XML.Rotator_Info) return State is
+  function Status_Of (Info  : XML.Rotator_Info) return State is
   begin
-    if not Info1.Connected then
+    if not Info.Connected then
       return Disconnected;
     elsif Info.Alt_Az_Derotate then
       return Started;
-    elsif Info1.Finding_Home or Info1.Goto_Complete then
+    elsif Info.Finding_Home or Info.Goto_Complete then
       return Homing;
     else
       return Connected;
@@ -25,14 +24,13 @@ package body PWI.Rotator is
 
   function Status return State is
   begin
-    return Status_Of (XML.Rotator.Info,
-                      XML.Rotator.Info1);
+    return Status_Of (XML.Rotator.Info);
   end Status;
 
 
-  procedure Find_Home is
+  procedure Find_Home (On : Port) is
   begin
-    Execute (Device  => "rotator1",
+    Execute (Device  => "rotator" & Image_Of (On),
              Command => "findhome");
   end Find_Home;
 

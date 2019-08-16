@@ -13,7 +13,7 @@ package PWI.Rotator is
 
   function Status return State;
 
-  procedure Find_Home;
+  procedure Find_Home (On : Port);
 
   procedure Start;
 

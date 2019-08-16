@@ -23,7 +23,7 @@ package body PWI.M3 is
   end Turn;
 
 
-  function Actual_Position return Position is
+  function Actual_Port return M3_Port is
     Data : constant XML.M3_Info := XML.M3.Info;
   begin
     if Data.Connected then
@@ -39,6 +39,6 @@ package body PWI.M3 is
       end case;
     end if;
     return Unknown;
-  end Actual_Position;
+  end Actual_Port;
 
 end PWI.M3;

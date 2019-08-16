@@ -6,12 +6,8 @@ pragma Style_White_Elephant;
 
 package PWI.M3 is
 
-  type Position is (Unknown, Between, Port_1, Port_2);
-
-  subtype Port is Position range Port_1 .. Port_2;
-
   procedure Turn (To : Port);
 
-  function Actual_Position return Position;
+  function Actual_Port return M3_Port;
 
 end PWI.M3;

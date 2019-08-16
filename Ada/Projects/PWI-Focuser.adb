@@ -7,23 +7,24 @@ pragma Style_White_Elephant;
 package body PWI.Focuser is
 
   procedure Execute (Command_Name : String;
+                     The_Port     : Port;
                      Parameters   : String := "") is
   begin
-    Execute (Device     => "focuser1",
+    Execute (Device     => "focuser" & Image_Of (The_Port),
              Command    => Command_Name,
              Parameters => Parameters);
   end Execute;
 
 
-  procedure Connect is
+  procedure Connect (To : Port) is
   begin
-    Execute ("connect");
+    Execute ("connect", To);
   end Connect;
 
 
-  procedure Disconnect is
+  procedure Disconnect (From : Port) is
   begin
-    Execute ("disconnect");
+    Execute ("disconnect", From);
   end Disconnect;
 
 end PWI.Focuser;

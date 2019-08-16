@@ -12,6 +12,10 @@ package PWI is
 
   type Arc_Second is delta 0.0000001 range -9999999.9999999 .. 9999999.9999999;
 
+  type M3_Port is (Unknown, Between, Port_1, Port_2);
+
+  subtype Port is M3_Port range Port_1 .. Port_2;
+
   type Open_Socket_Handler is access function return Network.Tcp.Socket;
 
   function Startup (Filename : String) return Boolean;
@@ -26,5 +30,7 @@ private
   procedure Execute (Device     : String;
                      Command    : String;
                      Parameters : String := "");
+
+  function Image_Of (The_Port : Port) return Character;
 
 end PWI;

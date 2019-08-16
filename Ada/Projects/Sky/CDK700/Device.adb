@@ -384,19 +384,19 @@ package body Device is
             if Is_Simulating then
               The_Rotator_State := Rotator.Connected;
             else
-              PWI.Focuser.Connect; -- use focuser/rotator port
+              PWI.Focuser.Connect (Parameter.M3_Camera_Port);
             end if;
-          when Disconnect => -- use focuser/rotator port
+          when Disconnect =>
             if Is_Simulating then
               The_Rotator_State := Rotator.Disconnected;
             else
-              PWI.Focuser.Disconnect;
+              PWI.Focuser.Disconnect (Parameter.M3_Camera_Port);
             end if;
           when Find_Home =>
             if Is_Simulating then
               The_Rotator_State := Rotator.Connected;
             else
-              PWI.Rotator.Find_Home;
+              PWI.Rotator.Find_Home (Parameter.M3_Camera_Port);
             end if;
           when Start =>
             if Is_Simulating then
@@ -465,7 +465,7 @@ package body Device is
           when PWI.Rotator.Started =>
             The_Rotator_State := Rotator.Started;
           end case;
-          The_M3_Position := M3.Position'val(PWI.M3.Position'pos(PWI.M3.Actual_Position));
+          The_M3_Position := M3.Position'val(PWI.M3_Port'pos(PWI.M3.Actual_Port));
         end if;
       exception
       when PWI.No_Server =>
@@ -602,7 +602,7 @@ package body Device is
     begin
       Log.Write ("Mount.Find_Home");
       Action.Put (Mount_Action'(Find_Home));
-      Completion_Time := Time.Universal + 125.0;
+      Completion_Time := Time.Universal + 140.0;
     end Find_Home;
 
 

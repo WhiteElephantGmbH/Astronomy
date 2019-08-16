@@ -17,7 +17,7 @@ pragma Style_White_Elephant;
 
 with Angle;
 with Device;
-with PWI.M3;
+with PWI;
 with Serial_Io;
 with Stellarium;
 with Network;
@@ -52,9 +52,9 @@ package Parameter is
 
   function Is_Simulation_Mode return Boolean;
 
-  function M3_Ocular_Port return PWI.M3.Port;
+  function M3_Ocular_Port return PWI.Port;
 
-  function M3_Camera_Port return PWI.M3.Port;
+  function M3_Camera_Port return PWI.Port;
 
   function M3_Default_Place return Device.M3.Place;
 

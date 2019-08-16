@@ -34,13 +34,17 @@ package body Test is
   begin
     Error (Message);
     Put ("allowed:");
-    Put ("  Input {Com1 .. Com20}");
+    Put ("  Input {Com1 .. Com99}");
     Put ("  Connect");
     Put ("  Enable");
     Put ("  Home");
     Put ("  SetModel");
-    Put ("  ConnectRotator");
-    Put ("  HomeRotator");
+    Put ("  ConnectRotator1");
+    Put ("  ConnectRotator2");
+    Put ("  DisconnectRotator1");
+    Put ("  DisconnectRotator2");
+    Put ("  HomeRotator1");
+    Put ("  HomeRotator2");
     Put ("  StartRotator");
     Put ("  TurnTo1");
     Put ("  TurnTo2");
@@ -86,7 +90,7 @@ package body Test is
 
     Rotator_Not_Connected : exception;
 
-    procedure Connect_Rotator is
+    procedure Connect_Rotator (The_Port : PWI.Port) is
 
       use type PWI.Rotator.State;
 
@@ -96,7 +100,7 @@ package body Test is
         for Unused_Count in 1 .. Connect_Timeout loop
           delay 1.0;
           PWI.Get_System;
-          if PWI.Rotator.Status = PWI.Rotator.Connected then
+          if PWI.Rotator.Status /= PWI.Rotator.Disconnected then
             return;
           end if;
         end loop;
@@ -106,12 +110,42 @@ package body Test is
     begin -- Connect_Rotator
       PWI.Get_System;
       if PWI.Rotator.Status = PWI.Rotator.Disconnected then
-        PWI.Focuser.Connect;
+        PWI.Focuser.Connect (The_Port);
         Put ("connecting rotator/focuser");
         Wait_For_Rotator_Connected;
         Put ("rotator connected/focuser");
       end if;
     end Connect_Rotator;
+
+
+    Rotator_Not_Disconnected : exception;
+
+    procedure Disconnect_Rotator (The_Port : PWI.Port) is
+
+      use type PWI.Rotator.State;
+
+      procedure Wait_For_Rotator_Disconnected is
+        Disconnect_Timeout : constant := 5; -- seconds
+      begin
+        for Unused_Count in 1 .. Disconnect_Timeout loop
+          delay 1.0;
+          PWI.Get_System;
+          if PWI.Rotator.Status = PWI.Rotator.Disconnected then
+            return;
+          end if;
+        end loop;
+        raise Rotator_Not_Disconnected;
+      end Wait_For_Rotator_Disconnected;
+
+    begin -- Disconnect_Rotator
+      PWI.Get_System;
+      if PWI.Rotator.Status = PWI.Rotator.Connected then
+        PWI.Focuser.Disconnect (The_Port);
+        Put ("disconnecting rotator/focuser");
+        Wait_For_Rotator_Disconnected;
+        Put ("rotator/focuser disconnected");
+      end if;
+    end Disconnect_Rotator;
 
 
     Mount_Not_Enabled       : exception;
@@ -187,7 +221,7 @@ package body Test is
 
     Rotator_Must_Be_Connected : exception;
 
-    procedure Home_Rotator is
+    procedure Home_Rotator (The_Port : PWI.Port) is
 
       use type PWI.Rotator.State;
 
@@ -210,7 +244,7 @@ package body Test is
       if PWI.Rotator.Status < PWI.Rotator.Connected then
         raise Rotator_Must_Be_Connected;
       elsif PWI.Rotator.Status = PWI.Rotator.Connected then
-        PWI.Rotator.Find_Home;
+        PWI.Rotator.Find_Home (The_Port);
         Put ("homing rotator");
         Wait_For_Rotator_At_Home;
         Put ("homing rotator completed succsessfully");
@@ -231,7 +265,7 @@ package body Test is
     end Start_Rotator;
 
 
-    procedure Turn_M3 (To : PWI.M3.Port) is
+    procedure Turn_M3 (To : PWI.Port) is
     begin
       PWI.M3.Turn (To);
     end Turn_M3;
@@ -338,16 +372,24 @@ package body Test is
       Home_Mount;
     elsif Id = "setmodel" then
       Set_Pointing_Model;
-    elsif Id = "connectrotator" then
-      Connect_Rotator;
-    elsif Id = "homerotator" then
-      Home_Rotator;
+    elsif Id = "connectrotator1" then
+      Connect_Rotator (PWI.Port_1);
+    elsif Id = "connectrotator2" then
+      Connect_Rotator (PWI.Port_2);
+    elsif Id = "disconnectrotator1" then
+      Disconnect_Rotator (PWI.Port_1);
+    elsif Id = "disconnectrotator2" then
+      Disconnect_Rotator (PWI.Port_2);
+    elsif Id = "homerotator1" then
+      Home_Rotator (PWI.Port_1);
+    elsif Id = "homerotator2" then
+      Home_Rotator (PWI.Port_2);
     elsif Id = "startrotator" then
       Start_Rotator;
     elsif Id = "turnto1" then
-      Turn_M3 (To => PWI.M3.Port_1);
+      Turn_M3 (To => PWI.Port_1);
     elsif Id = "turnto2" then
-      Turn_M3 (To => PWI.M3.Port_2);
+      Turn_M3 (To => PWI.Port_2);
     elsif Id = "startup" then
       Startup;
     elsif Id = "movem13" then
@@ -380,6 +422,8 @@ package body Test is
     Error ("failed to set pointing model");
   when Rotator_Not_Connected =>
     Error ("failed to connect to rotator");
+  when Rotator_Not_Disconnected =>
+    Error ("failed to disconnect the rotator");
   when Rotator_Must_Be_Connected =>
     Error ("rotator must be connected");
   end Execute;

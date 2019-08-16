@@ -71,7 +71,7 @@ package body Parameter is
   Is_In_Expert_Mode     : Boolean;
   Is_In_Simulation_Mode : Boolean;
   The_M3_Default_Place  : Device.M3.Place;
-  The_M3_Ocular_Port    : PWI.M3.Port;
+  The_M3_Ocular_Port    : PWI.Port;
   Fans_On               : Boolean;
   The_Pointing_Model    : Text.String;
 
@@ -432,9 +432,9 @@ package body Parameter is
       begin
         Log.Write (M3_Ocular_Port_Key & ": " & Port);
         if Strings.Is_Equal (Port, "1") then
-          The_M3_Ocular_Port := PWI.M3.Port_1;
+          The_M3_Ocular_Port := PWI.Port_1;
         elsif Strings.Is_Equal (Port, "2") then
-          The_M3_Ocular_Port := PWI.M3.Port_2;
+          The_M3_Ocular_Port := PWI.Port_2;
         else
           Error.Raise_With (M3_Ocular_Port_Key & " must be either 1 or 2");
         end if;
@@ -637,19 +637,19 @@ package body Parameter is
   end Is_Simulation_Mode;
 
 
-  function M3_Ocular_Port return PWI.M3.Port is
+  function M3_Ocular_Port return PWI.Port is
   begin
     return The_M3_Ocular_Port;
   end M3_Ocular_Port;
 
 
-  function M3_Camera_Port return PWI.M3.Port is
+  function M3_Camera_Port return PWI.Port is
   begin
     case The_M3_Ocular_Port is
-    when PWI.M3.Port_1 =>
-      return PWI.M3.Port_2;
-    when PWI.M3.Port_2 =>
-      return PWI.M3.Port_1;
+    when PWI.Port_1 =>
+      return PWI.Port_2;
+    when PWI.Port_2 =>
+      return PWI.Port_1;
     end case;
   end M3_Camera_Port;
 

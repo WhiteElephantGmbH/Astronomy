@@ -120,4 +120,15 @@ package body PWI is
     Execute ("device=" & Device & "&cmd=" & Command & (if Parameters /= "" then "&" & Parameters else ""));
   end Execute;
 
+
+  function Image_Of (The_Port : Port) return Character is
+  begin
+    case The_Port is
+    when Port_1 =>
+      return '1';
+    when Port_2 =>
+      return '2';
+    end case;
+  end Image_Of;
+
 end PWI;

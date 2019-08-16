@@ -6,8 +6,8 @@ pragma Style_White_Elephant;
 
 package PWI.Focuser is
 
-  procedure Connect;
+  procedure Connect (To : Port);
 
-  procedure Disconnect;
+  procedure Disconnect (From : Port);
 
 end PWI.Focuser;
