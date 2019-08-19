@@ -730,11 +730,10 @@ package body Telescope is
     ------------
     procedure Homing_State is
       use type M3.Position;
-      use type Rotator.State;
     begin
       case The_Event is
       when Mount_Synchronised =>
-        if The_Rotator_State /= Rotator.Homing and The_M3_Position = Parameter.M3_Default_Place then
+        if The_M3_Position = Parameter.M3_Default_Place then
           Mount.Set_Pointing_Model;
           Rotator.Start;
           The_State := Initializing;
