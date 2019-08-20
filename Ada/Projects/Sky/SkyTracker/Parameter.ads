@@ -15,57 +15,84 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Error;
-with Name;
-with Telescope;
+with Angle;
+with Device;
+with PWI;
+with Serial_Io;
+with Stellarium;
+with Network;
 
-package User is
+package Parameter is
 
-  type Action is (Define_Catalog, Define_Target, Startup, Shutdown, Stop, Go_To, Set_Orientation, Update, Close);
+  Speed_Unit : constant String := "/s";
 
-  subtype Button_Action is Action range Startup .. Go_To;
+  procedure Read;
 
-  type Action_Handler is access procedure (The_Action : Action);
+  procedure Shutdown;
 
-  type Percent is new Natural range 0 .. 100;
 
-  type Selection is (All_Objects, Solar_System, Clusters, Open_Clusters, Nebulas, Galaxies,
-                     Stars, Multiple_Stars, Near_Earth_Objects);
+  ----------
+  -- Site --
+  ----------
 
-  subtype Object is Selection range Selection'succ(Selection'first) .. Selection'last;
+  function Latitude return Angle.Value;
 
-  procedure Show_Error (The_Text : String := Error.Message);
+  function Longitude return Angle.Value;
 
-  procedure Show (The_Progress : Percent);
+  function Elevation return Integer; -- in meters
 
-  procedure Show (Visible_In : Duration);
 
-  procedure Show (Information : Telescope.Data);
+  ------------
+  -- Device --
+  ------------
 
-  procedure Clear_Target;
+  function Is_Expert_Mode return Boolean;
 
-  procedure Execute (The_Startup_Handler     : not null access procedure;
-                     The_Action_Handler      : Action_Handler;
-                     The_Termination_Handler : not null access procedure);
+  function Is_Simulation_Mode return Boolean;
 
-  procedure Enter_Handling;
+  function M3_Ocular_Port return PWI.Port;
 
-  procedure Perform_Goto;
+  function M3_Camera_Port return PWI.Port;
 
-  procedure Perform_Stop;
+  function M3_Default_Place return Device.M3.Place;
 
-  procedure Clear_Targets;
+  function Turn_Fans_On return Boolean;
 
-  procedure Define (Targets : Name.Id_List_Access);
+  function Pointing_Model return String;
 
-  procedure Update_Targets;
+  function Pole_Height return Angle.Value;
 
-  function Target_Name return String;
+  function Is_Azimuthal_Mount return Boolean;
 
-  procedure Show_Description (Image : String);
+  function Moving_Speeds return Angle.Values; -- in angle / s
 
-  function Is_Selected (The_Object : Object) return Boolean;
+  function Cwe_Distance return Angle.Degrees;
 
-  function Image_Orientation return Telescope.Orientation;
 
-end User;
+  -------------
+  -- Handbox --
+  -------------
+
+  function Handbox_Is_Available return Boolean;
+
+  function Handbox_Port return Serial_Io.Port;
+
+
+  -----------
+  -- Lx200 --
+  -----------
+
+  function Lx200_Port return Network.Port_Number;
+
+
+  ----------------
+  -- Stellarium --
+  ----------------
+
+  function Stellarium_Port return Network.Port_Number;
+
+  function Satellites_Filename return String;
+
+  function Magnitude_Maximum return Stellarium.Magnitude;
+
+end Parameter;

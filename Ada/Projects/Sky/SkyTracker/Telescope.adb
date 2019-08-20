@@ -46,6 +46,8 @@ package body Telescope is
 
     entry Follow (Arriving_Time : Time.Ut);
 
+    entry Back;
+
     entry Position_To (Landmark : Name.Id);
 
     entry New_Mount_State (New_State : Mount.State);
@@ -129,6 +131,12 @@ package body Telescope is
   end Halt;
 
 
+  procedure Back is
+  begin
+    Control.Back;
+  end Back;
+
+
   procedure Follow (Arriving_Time : Time.Ut) is
   begin
     Control.Follow (Arriving_Time);
@@ -172,6 +180,7 @@ package body Telescope is
     The_Next_Arriving_Time : Time.Ut := Time.In_The_Past;
     The_Completion_Time    : Time.Ut := Time.In_The_Past;
     The_Start_Time         : Time.Ut := Time.In_The_Past;
+    The_Home_Direction     : Space.Direction;
 
     Is_Fast_Tracking : Boolean := False;
 
@@ -197,6 +206,7 @@ package body Telescope is
                    Shutdown,
                    Halt,
                    Follow,
+                   Back,
                    Position,
                    User_Adjust,
                    User_Setup,
@@ -273,17 +283,45 @@ package body Telescope is
 
 
     procedure Goto_Target is
-    begin
+
+      function Home_Direction return Space.Direction is
+        The_Direction : Earth.Direction := Numerics.Direction_Of (Target_Direction (The_Start_Time),
+                                                                  Time.Lmst_Of (The_Start_Time));
+      begin
+        The_Direction := Earth.Direction_Of (Az  => Angle.Semi_Circle,
+                                             Alt => Earth.Alt_Of (The_Direction));
+        return Numerics.Direction_Of (The_Direction, The_Start_Time);
+      end Home_Direction;
+
+    begin -- Goto_Target
       if Get_Direction = null then
         raise Program_Error; -- unknown target;
       end if;
       The_Start_Time := Time.Universal;
-      Mount.Goto_Target (Target_Direction (The_Start_Time), Target_Speed (The_Start_Time), The_Completion_Time);
+      The_Home_Direction := Home_Direction;
+      Mount.Goto_Target (The_Home_Direction, (0, 0), The_Completion_Time);
       The_State := Approaching;
     exception
     when Target_Lost =>
       null;
     end Goto_Target;
+
+
+    procedure Back_To_Target is
+      Unused : Time.Ut;
+    begin
+      if Get_Direction = null then
+        raise Program_Error; -- unknown target;
+      end if;
+      The_Start_Time := Time.Universal;
+      The_Home_Direction := Space.Unknown_Direction;
+      Mount.Goto_Target (Direction       => Target_Direction (At_Time => The_Start_Time),
+                         With_Speed      => Target_Speed (At_Time => The_Start_Time),
+                         Completion_Time => Unused);
+    exception
+    when Target_Lost =>
+      null;
+    end Back_To_Target;
 
 
     procedure Goto_Waiting_Position is
@@ -402,6 +440,16 @@ package body Telescope is
     begin
       if Get_Direction /= null then
         Increment_Offset;
+        if Space.Direction_Is_Known (The_Home_Direction) then
+          Mount.Goto_Target (Direction       => The_Home_Direction,
+                             With_Speed      => (0, 0),
+                             Completion_Time => The_Completion_Time);
+          if Now - The_Start_Time < 12.0 then
+            return;
+          else
+            The_Home_Direction := Space.Unknown_Direction;
+          end if;
+        end if;
         Mount.Goto_Target (Direction       => Target_Direction (At_Time => Now),
                            With_Speed      => Target_Speed (At_Time => Now),
                            Completion_Time => Unused);
@@ -947,7 +995,14 @@ package body Telescope is
       when Mount_Stopped =>
         The_State := Stopped;
       when Mount_Tracking =>
-        The_State := Tracking;
+        if Space.Direction_Is_Known (The_Home_Direction) then
+          Mount.Goto_Target (Direction       => Target_Direction,
+                             With_Speed      => Target_Speed,
+                             Completion_Time => The_Completion_Time);
+          The_Home_Direction := Space.Unknown_Direction;
+        else
+          The_State := Tracking;
+        end if;
       when Halt =>
         Stop_Target;
       when Follow =>
@@ -979,6 +1034,8 @@ package body Telescope is
         Stop_Target;
       when Follow =>
         Follow_New_Target;
+      when Back =>
+        Back_To_Target;
       when Position =>
         Do_Position;
       when User_Adjust =>
@@ -1023,6 +1080,10 @@ package body Telescope is
           end Follow;
           Reset_Adjustments;
           The_Event := Follow;
+        or
+          accept Back;
+          Reset_Adjustments;
+          The_Event := Back;
         or
           accept Startup;
           The_Event := Startup;

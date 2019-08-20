@@ -17,8 +17,8 @@ pragma Style_White_Elephant;
 
 with Control;
 
-procedure CDK700 is
+procedure SkyTracker is
 begin
   Control.Start;
-end CDK700;
+end SkyTracker;
 

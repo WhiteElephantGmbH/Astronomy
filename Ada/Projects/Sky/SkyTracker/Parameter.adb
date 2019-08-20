@@ -43,7 +43,6 @@ package body Parameter is
   Language_Key    : constant String := "Language";
 
   PWI_Id                : constant String := "PWI";
-  Name_Key              : constant String := "Name";
   Program_Key           : constant String := "Program";
   Settings_Key          : constant String := "Settings";
   Shutdown_Key          : constant String := "Shutdown";
@@ -66,7 +65,6 @@ package body Parameter is
 
   The_Section : Configuration.Section_Handle;
 
-  The_Telescope_Name    : Text.String;
   Is_In_Shutdown_Mode   : Boolean := False;
   Is_In_Expert_Mode     : Boolean;
   Is_In_Simulation_Mode : Boolean;
@@ -253,7 +251,6 @@ package body Parameter is
       Put (Language_Key & " = " & Strings.Legible_Of (Standard.Language.German'img));
       Put ("");
       Put ("[" & PWI_Id & "]");
-      Put (Name_Key & "              = CDK 1");
       Put (Program_Key & "           = " & PWI_Program_Files & "\PlaneWave interface\PWI.exe");
       Put (Settings_Key & "          = " & PWI_Mount_Folder & "settingsMount.xml");
       Put (Shutdown_Key & "          = True");
@@ -471,9 +468,6 @@ package body Parameter is
       Standard.Language.Define (Language);
 
       Set (PWI_Handle);
-      The_Telescope_Name := Text.String_Of (String_Value_Of (Name_Key));
-      Log.Write ("Name: " & Telescope_Name);
-
       Define_Site_Parameters;
 
       Is_In_Shutdown_Mode := Strings.Is_Equal (String_Value_Of (Shutdown_Key), "True");
@@ -618,12 +612,6 @@ package body Parameter is
   ---------------
   -- Telescope --
   ---------------
-
-  function Telescope_Name return String is
-  begin
-    return Text.String_Of (The_Telescope_Name);
-  end Telescope_Name;
-
 
   function Is_Expert_Mode return Boolean is
   begin

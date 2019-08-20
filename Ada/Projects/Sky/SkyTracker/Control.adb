@@ -183,6 +183,7 @@ package body Control is
                    Shutdown,
                    Stop,
                    Go_To,
+                   Back,
                    Set_Orientation,
                    New_Goto_Direction,
                    Update,
@@ -242,6 +243,9 @@ package body Control is
         Command_Is_Pending := True;
       when User.Go_To =>
         Next_Command := Go_To;
+        Command_Is_Pending := True;
+      when User.Back =>
+        Next_Command := Back;
         Command_Is_Pending := True;
       when User.Stop =>
         Next_Command := Stop;
@@ -510,6 +514,8 @@ package body Control is
           else
             Telescope.Position_To (The_Landmark);
           end if;
+        when Back =>
+          Telescope.Back;
         when Set_Orientation =>
           Telescope.Set (User.Image_Orientation);
         when New_Goto_Direction =>

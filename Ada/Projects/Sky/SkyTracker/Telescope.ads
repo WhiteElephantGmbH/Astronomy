@@ -66,7 +66,7 @@ package Telescope is
                  Waiting,
                  Approaching,
                  Tracking);
-                 
+
   subtype Startup_State is State range Unknown .. Initializing;
 
   type Orientation is (Correct, Upside_Down, Backwards, Rotated);
@@ -108,6 +108,8 @@ package Telescope is
   procedure Shutdown;
 
   procedure Halt;
+
+  procedure Back;
 
   procedure Follow (Arriving_Time : Time.Ut);
 

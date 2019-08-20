@@ -749,11 +749,14 @@ package body User is
 
   procedure Enter_Handling is
   begin
-    if Perform_Left_Handler = Perform_Goto'access then
-      Signal_Action (Go_To);
-    elsif Perform_Left_Handler = null then
+    case The_Page is
+    when Is_Control =>
+      Signal_Action (Back);
+    when Is_Display =>
       Sky_Line.Add (Local_Direction.Value);
-    end if;
+    when Is_Setup =>
+      null;
+    end case;
   end Enter_Handling;
 
 
@@ -1119,13 +1122,8 @@ package body User is
 
 
     function Title return String is
-      Titel_Name : constant String := Parameter.Telescope_Name;
     begin
-      if Titel_Name = "" then
-        return Application_Name;
-      else
-        return Titel_Name;
-      end if;
+      return Application_Name;
     end Title;
 
 
