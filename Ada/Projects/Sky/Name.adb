@@ -26,8 +26,11 @@ with Lexicon;
 with Neo;
 with Sssb;
 with Strings;
+with Traces;
 
 package body Name is
+
+  package Log is new Traces ("Name");
 
   type Text is new Ada.Strings.Unbounded.Unbounded_String;
 
@@ -360,6 +363,14 @@ package body Name is
           Part_1       : constant String := Part_For (Strings.First_Index);
           Part_1_Parts : constant Strings.Item := Strings.Purge_Of (Strings.Item_Of (Part_1, ' '));
 
+          function Pixels_Of (The_Value : Angle.Value) return Integer is
+            use type Angle.Value;
+            Value : constant Angle.Degrees := +The_Value;
+            use type Angle.Degrees;
+          begin
+            return Integer(Value * 8192.0 / 360.0);
+          end Pixels_Of;
+
           procedure Add_Landmark is
           begin
             if Parts.Count = 3 then
@@ -375,8 +386,16 @@ package body Name is
                 The_Element.Number_Id := Enumerated;
                 The_Element.Kind := Landmark;
                 The_Element.Name := To_Unbounded_String (Mark_Name);
-                The_Element.Direction := Earth.Direction_Of (Az  => Angle.Value_Of (Az_Image),
-                                                             Alt => Angle.Value_Of (Alt_Image));
+                declare
+                  Az  : constant Angle.Value := Angle.Value_Of (Az_Image);
+                  Alt : constant Angle.Value := Angle.Value_Of (Alt_Image);
+                begin
+                  The_Element.Direction := Earth.Direction_Of (Az  => Az,
+                                                               Alt => Alt);
+                  Log.Write ("Pixels of LM " & Mark_Name);
+                  Log.Write ("  AZ :" & Integer'(4096 + Pixels_Of (Az))'img);
+                  Log.Write ("  ALT:" & Integer'(2048 - Pixels_Of (Alt))'img);
+                end;
                 return;
               exception
               when others =>

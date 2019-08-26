@@ -187,47 +187,61 @@ package body User.Input is
 
   task body Handler is
     The_Command : Command;
+    Is_Moving   : Boolean := False;
   begin
     Log.Write ("Started");
     loop
-      Manager.Take (The_Command);
-      Log.Write ("Manager.Execute " & The_Command'img);
-      case The_Command is
-      when Close =>
-        exit;
-      when Stop =>
-        User.Perform_Stop;
-      when Enter =>
-        User.Enter_Handling;
-      when Move_Up =>
-        Telescope.Execute (Telescope.Move_Up);
-      when Move_Down =>
-        Telescope.Execute (Telescope.Move_Down);
-      when Move_Left =>
-        Telescope.Execute (Telescope.Move_Left);
-      when Move_Right =>
-        Telescope.Execute (Telescope.Move_Right);
-      when End_Move =>
-        Telescope.Execute (Telescope.End_Move);
-      when Decrease_Speed =>
-        Telescope.Execute (Telescope.Decrease_Speed);
-      when Increase_Speed =>
-        Telescope.Execute (Telescope.Increase_Speed);
-      when Decrease_Time =>
-        Telescope.Execute (Telescope.Decrease_Time);
-      when Increase_Time =>
-        Telescope.Execute (Telescope.Increase_Time);
-      when End_Change =>
-        Telescope.Execute (Telescope.End_Change);
-      when Set_Guiding_Rate =>
-        Telescope.Execute (Telescope.Set_Guiding_Rate);
-      when Set_Centering_Rate =>
-        Telescope.Execute (Telescope.Set_Centering_Rate);
-      when Set_Finding_Rate =>
-        Telescope.Execute (Telescope.Set_Finding_Rate);
-      when Set_Slewing_Rate =>
-        Telescope.Execute (Telescope.Set_Slewing_Rate);
-      end case;
+      select
+        Manager.Take (The_Command);
+        Log.Write ("Manager.Execute " & The_Command'img);
+        case The_Command is
+        when Close =>
+          exit;
+        when Stop =>
+          User.Perform_Stop;
+        when Enter =>
+          User.Enter_Handling;
+        when Move_Up =>
+          Telescope.Execute (Telescope.Move_Up);
+          Is_Moving := True;
+        when Move_Down =>
+          Telescope.Execute (Telescope.Move_Down);
+          Is_Moving := True;
+        when Move_Left =>
+          Telescope.Execute (Telescope.Move_Left);
+          Is_Moving := True;
+        when Move_Right =>
+          Telescope.Execute (Telescope.Move_Right);
+          Is_Moving := True;
+        when End_Move =>
+          Telescope.Execute (Telescope.End_Move);
+          Is_Moving := False;
+        when Decrease_Speed =>
+          Telescope.Execute (Telescope.Decrease_Speed);
+        when Increase_Speed =>
+          Telescope.Execute (Telescope.Increase_Speed);
+        when Decrease_Time =>
+          Telescope.Execute (Telescope.Decrease_Time);
+        when Increase_Time =>
+          Telescope.Execute (Telescope.Increase_Time);
+        when End_Change =>
+          Telescope.Execute (Telescope.End_Change);
+        when Set_Guiding_Rate =>
+          Telescope.Execute (Telescope.Set_Guiding_Rate);
+        when Set_Centering_Rate =>
+          Telescope.Execute (Telescope.Set_Centering_Rate);
+        when Set_Finding_Rate =>
+          Telescope.Execute (Telescope.Set_Finding_Rate);
+        when Set_Slewing_Rate =>
+          Telescope.Execute (Telescope.Set_Slewing_Rate);
+        end case;
+      or
+        delay 20.0;
+        if Is_Moving then
+          Telescope.Execute (Telescope.End_Move);
+          Is_Moving := False;
+        end if;
+      end select;
     end loop;
     Log.Write ("Terminated");
   end Handler;
