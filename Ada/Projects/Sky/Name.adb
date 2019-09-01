@@ -393,7 +393,7 @@ package body Name is
                   The_Element.Direction := Earth.Direction_Of (Az  => Az,
                                                                Alt => Alt);
                   Log.Write ("Pixels of LM " & Mark_Name);
-                  Log.Write ("  AZ :" & Integer'(4096 + Pixels_Of (Az))'img);
+                  Log.Write ("  AZ :" & Integer'((6144 + Pixels_Of (Az)) mod 8192)'img);
                   Log.Write ("  ALT:" & Integer'(2048 - Pixels_Of (Alt))'img);
                 end;
                 return;

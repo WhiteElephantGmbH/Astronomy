@@ -176,6 +176,8 @@ package body Telescope is
 
   task body Control_Task is
 
+    Homing_Time : constant Duration := 18.0;
+
     The_Arriving_Time      : Time.Ut := Time.In_The_Future;
     The_Next_Arriving_Time : Time.Ut := Time.In_The_Past;
     The_Completion_Time    : Time.Ut := Time.In_The_Past;
@@ -444,7 +446,7 @@ package body Telescope is
           Mount.Goto_Target (Direction       => The_Home_Direction,
                              With_Speed      => (0, 0),
                              Completion_Time => The_Completion_Time);
-          if Now - The_Start_Time < 12.0 then
+          if Now - The_Start_Time < Homing_Time then
             return;
           else
             The_Home_Direction := Space.Unknown_Direction;
