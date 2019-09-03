@@ -111,7 +111,7 @@ package Telescope is
 
   procedure Back;
 
-  procedure Follow (Arriving_Time : Time.Ut);
+  procedure Follow (Tracking_Period : Time.Period);
 
   procedure Position_To (Landmark : Name.Id);
 

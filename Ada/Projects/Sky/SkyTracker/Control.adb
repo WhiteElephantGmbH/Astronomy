@@ -353,14 +353,14 @@ package body Control is
     The_Completion_Time : Time.Ut := Time.In_The_Past;
 
 
-    function Arrival_Time return Time.Ut is
+    function Tracking_Period return Time.Period is
     begin
       if Name.Is_Known (The_Neo_Target) then
-        return Neo.Arrival_Time_Of (The_Neo_Target);
+        return Neo.Tracking_Period_Of (The_Neo_Target);
       else
-        return Time.In_The_Past;
+        return Time.Undefined;
       end if;
-    end Arrival_Time;
+    end Tracking_Period;
 
 
     procedure Define_External_Target is
@@ -403,10 +403,12 @@ package body Control is
       end if;
       if Name.Is_Known (The_Neo_Target) then
         declare
-          Arriving_In : Time.Ut := Neo.Arrival_Time_Of (The_Neo_Target);
+          Tracking_Period : constant Time.Period := Neo.Tracking_Period_Of (The_Neo_Target);
+          Arriving_In     : Duration;
+          use type Time.Period;
         begin
-          if Arriving_In /= Time.In_The_Past then
-            Arriving_In := Arriving_In - Time.Universal;
+          if Tracking_Period /= Time.Undefined then
+            Arriving_In := Tracking_Period.Arrival_Time - Time.Universal;
             if Arriving_In >= 0.0 then
               User.Show (Arriving_In);
             end if;
@@ -434,7 +436,11 @@ package body Control is
         User.Show (The_Progress => 0);
       end case;
       case The_Data.Status is
-      when Telescope.Stopped | Telescope.Positioning | Telescope.Approaching | Telescope.Tracking =>
+      when Telescope.Stopped
+      | Telescope.Positioning
+      | Telescope.Preparing
+      | Telescope.Approaching
+      | Telescope.Tracking =>
         Lx200.Set (The_Data.Actual_Direction);
         Stellarium.Set (The_Data.Actual_Direction);
       when others =>
@@ -510,7 +516,7 @@ package body Control is
           Telescope.Halt;
         when Go_To =>
           if The_Landmark = Name.No_Id then
-            Telescope.Follow (Arrival_Time);
+            Telescope.Follow (Tracking_Period);
           else
             Telescope.Position_To (The_Landmark);
           end if;
@@ -524,7 +530,7 @@ package body Control is
           Handle_Telescope_Information;
           Telescope_Information_Is_Handled := True;
         when Close =>
-          Handbox.Close;    
+          Handbox.Close;
           Targets.Stop;
           Telescope.Close;
           Stellarium.Close;

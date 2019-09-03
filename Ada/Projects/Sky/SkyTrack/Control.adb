@@ -383,7 +383,7 @@ package body Control is
     function Arrival_Time return Time.Ut is
     begin
       if Name.Is_Known (The_Neo_Target) then
-        return Neo.Arrival_Time_Of (The_Neo_Target);
+        return Neo.Tracking_Period_Of (The_Neo_Target).Arrival_Time;
       else
         return Time.In_The_Past;
       end if;
@@ -439,10 +439,12 @@ package body Control is
       end if;
       if Name.Is_Known (The_Neo_Target) then
         declare
-          Arriving_In : Time.Ut := Neo.Arrival_Time_Of (The_Neo_Target);
+          Tracking_Period : constant Time.Period := Neo.Tracking_Period_Of (The_Neo_Target);
+          Arriving_In     : Time.Ut;
+          use type Time.Period;
         begin
-          if Arriving_In /= Time.In_The_Past then
-            Arriving_In := Arriving_In - Time.Universal;
+          if Tracking_Period /= Time.Undefined then
+            Arriving_In := Tracking_Period.Arrival_Time - Time.Universal;
             if Arriving_In >= 0.0 then
               User.Show (Arriving_In);
             end if;

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2013 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2013 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -30,6 +30,6 @@ package Neo is
 
   function Is_Arriving (Item : Name.Id) return Boolean;
 
-  function Arrival_Time_Of (Item : Name.Id) return Time.Ut;
+  function Tracking_Period_Of (Item : Name.Id) return Time.Period;
 
 end Neo;

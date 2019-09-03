@@ -460,15 +460,16 @@ package body Neo is
   end Is_Arriving;
 
 
-  function Arrival_Time_Of (Item : Name.Id) return Time.Ut is
+  function Tracking_Period_Of (Item : Name.Id) return Time.Period is
     Index : constant Positive := Data.Neo_Index_Of (Name.Object_Of (Item));
     Data  : List_Access renames The_Lists(Index);
   begin
     if Data = null then
-      return Time.In_The_Past;
+      return Time.Undefined;
     else
-      return Data(Data'first).Ut;
+      return (Arrival_Time => Data(Data'first).Ut,
+              Leaving_Time  => Data(Data'last).Ut);
     end if;
-  end Arrival_Time_Of;
+  end Tracking_Period_Of;
 
 end Neo;

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2012 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2012 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -65,6 +65,13 @@ package Time is
 
   In_The_Past   : constant Ut := 0.0;
   In_The_Future : constant Ut := Ut'last;
+
+  type Period is record
+    Arrival_Time : Ut := In_The_Future;
+    Leaving_Time : Ut := In_The_Past;
+  end record;
+
+  Undefined : constant Period := (others => <>);
 
   function Universal return Ut;
 
