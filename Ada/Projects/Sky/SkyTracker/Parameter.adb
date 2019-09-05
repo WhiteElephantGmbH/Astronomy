@@ -262,7 +262,7 @@ package body Parameter is
       Put (Pointing_Model_Key & "    = Default_Mount_Model.PXP");
       Put (Ip_Address_Key & "        = 127.0.0.1");
       Put (Port_Key & "              = 8080");
-      Put (Moving_Speed_List_Key & " = 10""/s, 1'/s, 6'/s, 6°/s");
+      Put (Moving_Speed_List_Key & " = 30""/s, 3'/s, 20'/s, 2°/s");
       Put (Cwe_Distance_Key & "      = 30'");
       Put ("");
       Put ("[" & Handbox_Id & "]");
