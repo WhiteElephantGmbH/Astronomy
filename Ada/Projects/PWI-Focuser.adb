@@ -27,4 +27,11 @@ package body PWI.Focuser is
     Execute ("disconnect", From);
   end Disconnect;
 
+
+  procedure Move (On          : Port;
+                  To_Position : Microns) is
+  begin
+    Execute ("move", On, Parameters => "position=" & To_Position'img);
+  end Move;
+
 end PWI.Focuser;

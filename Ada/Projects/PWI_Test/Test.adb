@@ -35,6 +35,7 @@ package body Test is
     Error (Message);
     Put ("allowed:");
     Put ("  Input {Com1 .. Com99}");
+    Put ("  Move {0 .. 1000000}");
     Put ("  Connect");
     Put ("  Enable");
     Put ("  Home");
@@ -265,6 +266,26 @@ package body Test is
     end Start_Rotator;
 
 
+    Focuser_Incorrect_Position : exception;
+    Focuser_Not_Connected      : exception;
+
+    procedure Move_Focuser (On          : PWI.Port;
+                            To_Position : String) is
+    begin
+      declare
+        Position : constant PWI.Microns := PWI.Microns'value(To_Position);
+      begin
+        Put ("move focuser to " & To_Position);
+        PWI.Focuser.Move (On, To_Position => Position);
+      end;
+    exception
+    when PWI.No_Server =>
+      raise Focuser_Not_Connected;
+    when others =>
+      raise Focuser_Incorrect_Position;
+    end Move_Focuser;
+
+
     procedure Turn_M3 (To : PWI.Port) is
     begin
       PWI.M3.Turn (To);
@@ -402,6 +423,10 @@ package body Test is
       Stop;
     elsif Id = "shutdown" then
       Shutdown;
+    elsif Id'length > 6 and then Id(Id'first..Id'first+5) = "move1=" then
+      Move_Focuser (PWI.Port_1, Id(Id'first+6..Id'last));
+    elsif Id'length > 6 and then Id(Id'first..Id'first+5) = "move2=" then
+      Move_Focuser (PWI.Port_2, Id(Id'first+6..Id'last));
     else
       Input_Error ("unknown command");
     end if;
@@ -426,6 +451,10 @@ package body Test is
     Error ("failed to disconnect the rotator");
   when Rotator_Must_Be_Connected =>
     Error ("rotator must be connected");
+  when Focuser_Not_Connected =>
+    Error ("focuser not connected");
+  when Focuser_Incorrect_Position =>
+    Error ("focuser position incorrect");
   end Execute;
 
 

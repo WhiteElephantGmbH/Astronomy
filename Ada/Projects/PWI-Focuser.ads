@@ -10,4 +10,7 @@ package PWI.Focuser is
 
   procedure Disconnect (From : Port);
 
+  procedure Move (On          : Port;
+                  To_Position : Microns);
+
 end PWI.Focuser;
