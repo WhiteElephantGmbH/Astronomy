@@ -574,14 +574,7 @@ package body Name is
         Put (Image_Of (Lexicon.Neptune));
         Put (Image_Of (Lexicon.Pluto));
         Put ("");
-        Put ("LM " & Image_Of (Lexicon.Road_Sign) & " | 259°43' | 2°38'");
-        Put ("");
-        Put ("LM " & Image_Of (Lexicon.North) & " |   0° | 0°");
-        Put ("LM " & Image_Of (Lexicon.South) & " | 180° | 0°");
-        Put ("LM " & Image_Of (Lexicon.West)  & " | 270° | 0°");
-        Put ("LM " & Image_Of (Lexicon.East)  & " |  90° | 0°");
-        Put ("");
-        Put ("Nova del 2013 | PNV J20233073+2046041 | 20h23m30.7s | +20°46'04""");
+        Put ("LM " & Image_Of (Lexicon.Road_Sign) & " | 259° 49' 13"" | 2° 56' 15""");
         Put ("");
         Put ("HIP 95947  | " & Image_Of (Lexicon.Albireo));
         Put ("HIP 21421  | " & Image_Of (Lexicon.Aldebaran));

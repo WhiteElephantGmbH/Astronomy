@@ -248,7 +248,7 @@ package body Parameter is
         Error.Raise_With ("Can't create " & Filename);
       end;
       Put (Strings.Bom_8 & "[" & Localization_Id & "]");
-      Put (Language_Key & " = " & Strings.Legible_Of (Standard.Language.German'img));
+      Put (Language_Key & " = " & Strings.Legible_Of (Stellarium.Language'img));
       Put ("");
       Put ("[" & PWI_Id & "]");
       Put (Program_Key & "           = " & PWI_Program_Files & "\PlaneWave interface\PWI.exe");
