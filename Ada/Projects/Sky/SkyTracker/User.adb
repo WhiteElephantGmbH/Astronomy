@@ -77,15 +77,17 @@ package body User is
   Local_Time       : Gui.Plain_Edit_Box;
   Time_Offset      : Gui.Plain_Edit_Box;
 
-  Setup_Page      : Gui.Page;
-  Orientation_Box : Gui.Plain_Combo_Box;
-  Air_Pressure    : Gui.Plain_Edit_Box;
-  Temperature     : Gui.Plain_Edit_Box;
+  Setup_Page       : Gui.Page;
+  Orientation_Box  : Gui.Plain_Combo_Box;
+  Air_Pressure     : Gui.Plain_Edit_Box;
+  Temperature      : Gui.Plain_Edit_Box;
+  Focuser_Position : Gui.Plain_Edit_Box;
 
   type Setup_Data_Storage is record
     Image_Orientation : Telescope.Orientation;
     Air_Pressure      : Refraction.Hectopascal;
     Temperature       : Refraction.Celsius;
+    Focuser_Position  : Device.Microns;
   end record;
 
   package Persistent_Setup is new Persistent (Setup_Data_Storage, "Setup");
@@ -95,6 +97,7 @@ package body User is
   The_Image_Orientation : Telescope.Orientation   renames The_Setup_Data.Storage.Image_Orientation;
   The_Air_Pressure      : Refraction.Hectopascal  renames The_Setup_Data.Storage.Air_Pressure;
   The_Temperature       : Refraction.Celsius      renames The_Setup_Data.Storage.Temperature;
+  The_Focuser_Position  : Device.Microns          renames The_Setup_Data.Storage.Focuser_Position;
 
   type Page is (Is_Control, Is_Display, Is_Setup);
 
@@ -692,6 +695,12 @@ package body User is
   end Image_Of;
 
 
+  function Image_Of (The_Value : Device.Microns) return String is
+  begin
+    return Strings.Trimmed (The_Value'img) & "μm";
+  end Image_Of;
+
+
   procedure Define_Temperature is
   begin
     declare
@@ -710,6 +719,26 @@ package body User is
     end;
     Gui.Set_Text (Temperature, Image_Of (The_Temperature));
   end Define_Temperature;
+
+
+  procedure Define_Focuser_Position is
+  begin
+    declare
+      Value : constant String := Strings.Trimmed (Gui.Contents_Of (Focuser_Position));
+      Last  : Natural := Value'last;
+    begin
+      loop
+        exit when Value(Last) in '0'..'9';
+        Last := Last - 1;
+      end loop;
+      The_Focuser_Position := Device.Microns'value(Value(Value'first .. Last));
+      Device.Focuser.Move (To_Position => The_Focuser_Position);
+    exception
+    when others =>
+      Show_Error ("Incorrect Focuser Position: " & Value);
+    end;
+    Gui.Set_Text (Focuser_Position, Image_Of (The_Focuser_Position));
+  end Define_Focuser_Position;
 
 
   procedure Enter_Control_Page is
@@ -1087,7 +1116,10 @@ package body User is
                                    The_Action_Routine => Define_Temperature'access,
                                    The_Size           => Text_Size,
                                    The_Title_Size     => Title_Size);
-
+        Focuser_Position := Gui.Create (Setup_Page, "Focuser", Image_Of (The_Focuser_Position),
+                                        The_Action_Routine => Define_Focuser_Position'access,
+                                        The_Size           => Text_Size,
+                                        The_Title_Size     => Title_Size);
       end Define_Setup_Page;
 
     begin -- Create_Interface

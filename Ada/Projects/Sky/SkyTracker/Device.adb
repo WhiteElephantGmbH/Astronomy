@@ -693,6 +693,16 @@ package body Device is
   end M3;
 
 
+  package body Focuser is
+
+    procedure Move (To_Position : Microns) is
+    begin
+      PWI.Focuser.Move (Parameter.M3_Camera_Port, To_Position);
+    end Move;
+
+  end Focuser;
+
+
   package body Rotator is
 
     procedure Connect is
@@ -730,5 +740,6 @@ package body Device is
     end Stop;
 
   end Rotator;
+
 
 end Device;

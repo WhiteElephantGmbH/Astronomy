@@ -17,6 +17,7 @@ pragma Style_White_Elephant;
 
 with Angle;
 with Earth;
+with PWI;
 with Space;
 with Time;
 
@@ -37,6 +38,8 @@ package Device is
                    Set_Centering_Rate,
                    Set_Finding_Rate,
                    Set_Slewing_Rate);
+
+  subtype Microns is PWI.Microns;
 
   package Fans is
 
@@ -112,6 +115,12 @@ package Device is
     procedure Turn (To : Place);
 
   end M3;
+
+  package Focuser is
+
+    procedure Move (To_Position : Microns);
+
+  end Focuser;
 
   package Rotator is
 
