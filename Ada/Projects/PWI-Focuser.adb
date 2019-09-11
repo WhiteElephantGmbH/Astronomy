@@ -4,6 +4,8 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with Strings;
+
 package body PWI.Focuser is
 
   procedure Execute (Command_Name : String;
@@ -31,7 +33,7 @@ package body PWI.Focuser is
   procedure Move (On          : Port;
                   To_Position : Microns) is
   begin
-    Execute ("move", On, Parameters => "position=" & To_Position'img);
+    Execute ("move", On, Parameters => "position=" & Strings.Trimmed (To_Position'img));
   end Move;
 
 end PWI.Focuser;

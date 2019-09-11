@@ -35,7 +35,8 @@ package body Test is
     Error (Message);
     Put ("allowed:");
     Put ("  Input {Com1 .. Com99}");
-    Put ("  Move {0 .. 1000000}");
+    Put ("  Move1={0..1000000}");
+    Put ("  Move2={0..1000000}");
     Put ("  Connect");
     Put ("  Enable");
     Put ("  Home");
