@@ -127,7 +127,7 @@ package body Gui is
 
   subtype Thread_Id is Win32.DWORD;
 
-  The_Application_Name       : String_Ptr := new String'("" & Nul);
+  The_Application_Name       : Wide_String_Ptr := new Wide_String'("" & Wide_Nul);
   The_Application_Class_Name : String_Ptr := new String'("" & Nul);
 
   Our_Instance  : constant Win32.Windef.HINSTANCE := Win32.Winmain.Get_hInstance;
@@ -400,7 +400,7 @@ package body Gui is
 
   procedure Message_Box (The_Message    : String;
                          Is_Exclamation : Boolean := True) is
-    Message   : aliased constant String := The_Message & Nul;
+    Message   : aliased constant Wide_String := To_Wide (The_Message) & Wide_Nul;
     Unused    : Win32.INT;
     Box_Style : Win32.UINT := Win32.Winuser.MB_OK;
     use type Win32.UINT;
@@ -410,7 +410,7 @@ package body Gui is
     else
       Box_Style := Box_Style + Win32.Winuser.MB_ICONASTERISK;
     end if;
-    Unused := Win32.Winuser.MessageBoxA (Private_Window,
+    Unused := Win32.Winuser.MessageBoxW (Private_Window,
                                          Win32.Addr(Message),
                                          Win32.Addr(The_Application_Name.all),
                                          Box_Style);
@@ -457,7 +457,7 @@ package body Gui is
 
   procedure Change_Application_Name (Name : String) is
     Unused : Win32.BOOL;
-    procedure Dispose is new Ada.Unchecked_Deallocation (String, String_Ptr);
+    procedure Dispose is new Ada.Unchecked_Deallocation (Wide_String, Wide_String_Ptr);
     use type Win32.Windef.HWND;
   begin
     if Private_Window /= System.Null_Address then
@@ -465,8 +465,8 @@ package body Gui is
         Dispose (The_Application_Name);
       end if;
       if Is_Active then
-        The_Application_Name := new String'(Name & Nul);
-        Unused := Win32.Winuser.SetWindowTextA (Private_Window, Win32.Addr(The_Application_Name.all));
+        The_Application_Name := new Wide_String'(To_Wide(Name) & Wide_Nul);
+        Unused := Win32.Winuser.SetWindowTextW (Private_Window, Win32.Addr(The_Application_Name.all));
       end if;
     end if;
   end Change_Application_Name;
@@ -487,17 +487,17 @@ package body Gui is
     if The_Application_Name = null then
       return "";
     else
-      return String_Of (The_Application_Name.all);
+      return String_Of (To_Utf8(The_Application_Name.all));
     end if;
   end Name_Of_Application;
 
 
   function Is_Confirmed (The_Question : String) return Boolean is
-    With_Question : aliased constant String := The_Question & Nul;
+    With_Question : aliased constant Wide_String := To_Wide(The_Question) & Wide_Nul;
     Box_Style     : constant := Win32.Winuser.MB_ICONQUESTION + Win32.Winuser.MB_YESNO;
     use type Win32.INT;
   begin
-    return Win32.Winuser.MessageBoxA (Private_Window,
+    return Win32.Winuser.MessageBoxW (Private_Window,
                                       Win32.Addr(With_Question),
                                       Win32.Addr(The_Application_Name.all),
                                       Box_Style) = Win32.Winuser.IDYES;
@@ -1595,7 +1595,7 @@ package body Gui is
   end Register_Class;
 
 
-  function Create_Window (The_Name          : String;
+  function Create_Window (The_Name          : Wide_String;
                           Window_Width      : Win32.INT;
                           Window_Height     : Win32.INT;
                           Window_X_Position : Win32.INT;
@@ -1606,14 +1606,14 @@ package body Gui is
     if Always_Topmost then
       The_Extended_Style := Win32.Winuser.WS_EX_TOPMOST;
     end if;
-    return Win32.Winuser.CreateWindowEx (The_Extended_Style,
-                                         Win32.Addr(The_Name), -- Class
-                                         Win32.Addr(The_Name), -- Window title
-                                         Win32.Winuser.WS_OVERLAPPEDWINDOW,
-                                         Window_X_Position,  Window_Y_Position,
-                                         Window_Width, Window_Height,
-                                         System.Null_Address, The_Menu_Bar, Our_Instance,
-                                         System.Null_Address);
+    return Win32.Winuser.CreateWindowExW (The_Extended_Style,
+                                          Win32.Addr(The_Name), -- Class
+                                          Win32.Addr(The_Name), -- Window title
+                                          Win32.Winuser.WS_OVERLAPPEDWINDOW,
+                                          Window_X_Position,  Window_Y_Position,
+                                          Window_Width, Window_Height,
+                                          System.Null_Address, The_Menu_Bar, Our_Instance,
+                                          System.Null_Address);
   end Create_Window;
 
 
@@ -1684,7 +1684,7 @@ package body Gui is
                    Window_X_Position : Win32.INT;
                    Window_Y_Position : Win32.INT;
                    Always_Topmost    : Boolean) do
-      The_Application_Name := new String'(Application_Name & Nul);
+      The_Application_Name := new Wide_String'(To_Wide(Application_Name) & Wide_Nul);
       declare
         Icon : aliased constant String := Os.Application.Name & Nul;
       begin
