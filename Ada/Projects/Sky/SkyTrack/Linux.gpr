@@ -1,5 +1,4 @@
 with "gtkada";
-with "skydataada";
 
 project Linux is
 
@@ -18,7 +17,7 @@ project Linux is
 
    for Exec_Dir use "../../../../../../Product/Astronomy/Linux";
 
-   for Object_Dir use external ("HOME") & "/Objects";
+   for Object_Dir use external ("HOME") & "/Objects/Astronomy/SkyTrack";
 
    package Pretty_Printer is
       for Default_Switches ("ada") use ("-i2", "-M120", "-aL", "-A1", "-A4");
