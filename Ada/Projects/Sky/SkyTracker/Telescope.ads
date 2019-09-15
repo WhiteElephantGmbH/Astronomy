@@ -24,7 +24,11 @@ with Time;
 
 package Telescope is
 
+  package Fans renames Device.Fans;
+
   package M3 renames Device.M3;
+
+  package Focuser renames Device.Focuser;
 
   package Rotator renames Device.Rotator;
 
@@ -82,8 +86,9 @@ package Telescope is
     Local_Direction        : Earth.Direction;
     Local_Offset           : Earth.Direction;
     Moving_Speed           : Angle.Value;
+    Fans_State             : Fans.State;
     M3_Position            : M3.Position;
-    Rotator_State          : Rotator.State;
+    Focuser_Position       : Device.Microns;
     Completion_Time        : Time.Ut;
     Universal_Time         : Time.Ut;
     Time_Adjustment        : Time_Delta;

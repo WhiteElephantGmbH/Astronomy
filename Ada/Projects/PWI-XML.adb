@@ -116,9 +116,9 @@ package body PWI.XML is
   end Image_Of;
 
 
-  function Focuser_Position_Of (Image : String) return Focuser_Position is
+  function Focuser_Position_Of (Image : String) return Microns is
   begin
-    return Focuser_Position'value(Image);
+    return Microns'value(Image);
   exception
   when others =>
     Log.Error ("Focuser_Position_Of (Image -> """ & Image & """)");
@@ -126,7 +126,7 @@ package body PWI.XML is
   end Focuser_Position_Of;
 
 
-  function Image_Of (Item : Focuser_Position) return String is
+  function Image_Of (Item : Microns) return String is
   begin
     return Strings.Trimmed (Item'img);
   end Image_Of;
@@ -301,6 +301,14 @@ package body PWI.XML is
     function Rotator_Data return XML.Rotator_Info;
 
     function Rotator1_Data return XML.Rotator_Info;
+
+    function Rotator2_Data return XML.Rotator_Info;
+
+    function Focuser_Data return XML.Focuser_Info;
+
+    function Focuser1_Data return XML.Focuser_Info;
+
+    function Focuser2_Data return XML.Focuser_Info;
 
   private
     The_Data : XML.Response;
@@ -867,6 +875,26 @@ package body PWI.XML is
   end M3;
 
 
+  package body Focuser is
+
+    function Info return Focuser_Info is
+    begin
+      return System.Focuser_Data;
+    end Info;
+
+    function Info1 return Focuser_Info is
+    begin
+      return System.Focuser1_Data;
+    end Info1;
+
+    function Info2 return Focuser_Info is
+    begin
+      return System.Focuser2_Data;
+    end Info2;
+
+  end Focuser;
+
+
   package body Rotator is
 
     function Info return Rotator_Info is
@@ -878,6 +906,11 @@ package body PWI.XML is
     begin
       return System.Rotator1_Data;
     end Info1;
+
+    function Info2 return Rotator_Info is
+    begin
+      return System.Rotator2_Data;
+    end Info2;
 
   end Rotator;
 
@@ -1000,6 +1033,24 @@ package body PWI.XML is
     end M3_Data;
 
 
+    function Focuser_Data return Focuser_Info is
+    begin
+      return The_Data.Focuser;
+    end Focuser_Data;
+
+
+    function Focuser1_Data return Focuser_Info is
+    begin
+      return The_Data.Focuser1;
+    end Focuser1_Data;
+
+
+    function Focuser2_Data return Focuser_Info is
+    begin
+      return The_Data.Focuser2;
+    end Focuser2_Data;
+
+
     function Rotator_Data return Rotator_Info is
     begin
       return The_Data.Rotator;
@@ -1010,6 +1061,12 @@ package body PWI.XML is
     begin
       return The_Data.Rotator1;
     end Rotator1_Data;
+
+
+    function Rotator2_Data return Rotator_Info is
+    begin
+      return The_Data.Rotator2;
+    end Rotator2_Data;
 
   end System;
 

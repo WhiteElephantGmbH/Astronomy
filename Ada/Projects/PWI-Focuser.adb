@@ -4,6 +4,7 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with PWI.XML;
 with Strings;
 
 package body PWI.Focuser is
@@ -35,5 +36,16 @@ package body PWI.Focuser is
   begin
     Execute ("move", On, Parameters => "position=" & Strings.Trimmed (To_Position'img));
   end Move;
+
+
+  function Position (On : Port) return Microns is
+  begin
+    case On is
+    when Port_1 =>
+      return XML.Focuser.Info1.Position;
+    when Port_2 =>
+      return XML.Focuser.Info2.Position;
+    end case;
+  end Position;
 
 end PWI.Focuser;

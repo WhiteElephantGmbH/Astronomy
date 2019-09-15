@@ -29,6 +29,7 @@ with Gui.Registered;
 with Lexicon;
 with Parameter;
 with Persistent;
+with Program;
 with Refraction;
 with Sky_Line;
 with Space;
@@ -41,12 +42,14 @@ package body User is
 
   package Log is new Traces ("User");
 
-  package M3 renames Device.M3;
+  package Fans    renames Device.Fans;
+  package Focuser renames Device.Focuser;
+  package M3      renames Device.M3;
 
   Application_Name : constant String := Application.Name;
-  Version          : constant String := Application.Version;
+  Version          : constant String := Program.Version;
 
-  Orientation_Key : constant String := "Orientation";
+  Focuser_Actual_Key : constant String := "Focuser Actual";
 
   Control_Page : Gui.Page;
   Left_Button  : Gui.Button;
@@ -68,8 +71,8 @@ package body User is
   Az_Offset        : Gui.Plain_Edit_Box;
   Alt_Offset       : Gui.Plain_Edit_Box;
   Moving_Speed     : Gui.Plain_Edit_Box;
+  Fans_State       : Gui.Plain_Edit_Box;
   M3_Position      : Gui.Plain_Edit_Box;
-  Rotator_State    : Gui.Plain_Edit_Box;
   Longitude        : Gui.Plain_Edit_Box;
   Latitude         : Gui.Plain_Edit_Box;
   Elevation        : Gui.Plain_Edit_Box;
@@ -77,17 +80,20 @@ package body User is
   Local_Time       : Gui.Plain_Edit_Box;
   Time_Offset      : Gui.Plain_Edit_Box;
 
-  Setup_Page       : Gui.Page;
-  Orientation_Box  : Gui.Plain_Combo_Box;
-  Air_Pressure     : Gui.Plain_Edit_Box;
-  Temperature      : Gui.Plain_Edit_Box;
-  Focuser_Position : Gui.Plain_Edit_Box;
+  Setup_Page      : Gui.Page;
+  Goto_Button     : Gui.Button;
+  Focuser_Actual  : Gui.Plain_Edit_Box;
+  Focuser_Goto    : Gui.Plain_Edit_Box;
+  Orientation_Box : Gui.Plain_Combo_Box;
+  Air_Pressure    : Gui.Plain_Edit_Box;
+  Temperature     : Gui.Plain_Edit_Box;
 
   type Setup_Data_Storage is record
     Image_Orientation : Telescope.Orientation;
     Air_Pressure      : Refraction.Hectopascal;
     Temperature       : Refraction.Celsius;
     Focuser_Position  : Device.Microns;
+    Focuser_In_Use    : Boolean := False;
   end record;
 
   package Persistent_Setup is new Persistent (Setup_Data_Storage, "Setup");
@@ -98,6 +104,7 @@ package body User is
   The_Air_Pressure      : Refraction.Hectopascal  renames The_Setup_Data.Storage.Air_Pressure;
   The_Temperature       : Refraction.Celsius      renames The_Setup_Data.Storage.Temperature;
   The_Focuser_Position  : Device.Microns          renames The_Setup_Data.Storage.Focuser_Position;
+  Focuser_In_Use        : Boolean                 renames The_Setup_Data.Storage.Focuser_In_Use;
 
   type Page is (Is_Control, Is_Display, Is_Setup);
 
@@ -239,6 +246,28 @@ package body User is
   when others =>
     Log.Error ("M3_Handler");
   end M3_Handler;
+
+
+  function Image_Of (The_State : Fans.State) return String is
+  begin
+    case The_State is
+    when Fans.Off =>
+      return Lexicon.Image_Of (Lexicon.Off);
+    when Fans.On =>
+      return Lexicon.Image_Of (Lexicon.On);
+    end case;
+  end Image_Of;
+
+  package Fans_Menu is new Gui.Enumeration_Menu_Of (Fans.State, Gui.Radio, Image_Of);
+
+  procedure Fans_Handler (The_State : Fans.State) is
+  begin
+    Log.Write ("Fans: " & The_State'img);
+    Fans.Turn (To => The_State);
+  exception
+  when others =>
+    Log.Error ("Fans_Handler");
+  end Fans_Handler;
 
 
   function Image_Of (The_Mode : Cwe.Mode) return String is
@@ -466,9 +495,28 @@ package body User is
   end Local_Direction;
 
 
+  function Image_Of (The_Position : Device.Microns) return String is
+  begin
+    return Strings.Trimmed (The_Position'img) & "μm";
+  end Image_Of;
+
+
   procedure Show (Information : Telescope.Data) is
     use type Telescope.State;
     use type Telescope.Time_Delta;
+
+    procedure Menu_Disable is
+    begin
+      Fans_Menu.Disable;
+      M3_Menu.Disable;
+    end Menu_Disable;
+
+    procedure Menu_Enable is
+    begin
+      Fans_Menu.Enable;
+      M3_Menu.Enable;
+    end Menu_Enable;
+
   begin
     if (The_Status /= Information.Status) or (Last_Target_Selection /= The_Target_Selection) then
       The_Status := Information.Status;
@@ -477,38 +525,38 @@ package body User is
       when Telescope.Unknown =>
         Disable_Startup_Button;
         Disable_Stop_Button;
-        M3_Menu.Disable;
+        Menu_Disable;
       when Telescope.Disconnected =>
         Enable_Startup_Button;
         Disable_Shutdown_Button;
-        M3_Menu.Disable;
+        Menu_Disable;
       when Telescope.Connected | Telescope.Enabled | Telescope.Synchronised =>
         Enable_Startup_Button;
         Enable_Shutdown_Button;
-        M3_Menu.Disable;
+        Menu_Disable;
       when Telescope.Disconnecting | Telescope.Disabling =>
         Disable_Startup_Button;
         Enable_Stop_Button;
-        M3_Menu.Disable;
+        Menu_Disable;
       when Telescope.Connecting | Telescope.Enabling | Telescope.Homing | Telescope.Initializing =>
         Disable_Startup_Button;
         Enable_Stop_Button;
-        M3_Menu.Disable;
+        Menu_Disable;
       when Telescope.Stopped =>
         Enable_Goto_Button;
         Enable_Shutdown_Button;
-        M3_Menu.Enable;
+        Menu_Enable;
       when Telescope.Positioned | Telescope.Waiting =>
         Enable_Stop_Button;
         Enable_Goto_Button;
       when Telescope.Positioning | Telescope.Preparing | Telescope.Approaching | Telescope.Tracking =>
         Enable_Goto_Button;
         Enable_Stop_Button;
-        M3_Menu.Disable;
+        Menu_Disable;
       when Telescope.Stopping =>
         Disable_Goto_Button;
         Disable_Stop_Button;
-        M3_Menu.Disable;
+        Menu_Disable;
       end case;
     end if;
     Gui.Set_Status_Line (Information.Status'img);
@@ -553,8 +601,8 @@ package body User is
         Gui.Set_Text (Az_Offset, "");
       end if;
       Gui.Set_Text (Moving_Speed, Angle.Image_Of (Information.Moving_Speed, Decimals => 2) & "/s");
+      Gui.Set_Text (Fans_State, Strings.Legible_Of (Information.Fans_State'img));
       Gui.Set_Text (M3_Position, Strings.Legible_Of (Information.M3_Position'img));
-      Gui.Set_Text (Rotator_State, Strings.Legible_Of (Information.Rotator_State'img));
       Gui.Set_Text (Longitude, Angle.Image_Of (Parameter.Longitude, Decimals => 2));
       Gui.Set_Text (Latitude, Angle.Image_Of (Parameter.Latitude, Decimals => 2, Show_Signed => True));
       Gui.Set_Text (Elevation, Strings.Trimmed (Parameter.Elevation'img) & 'm');
@@ -571,7 +619,13 @@ package body User is
         Gui.Set_Text (Time_Offset, Information.Time_Adjustment'img & "s");
       end if;
     when Is_Setup =>
-      null;
+      Gui.Set_Text (Focuser_Actual, Image_Of (Information.Focuser_Position));
+      case Information.M3_Position is
+      when M3.Camera =>
+        Gui.Enable (Goto_Button);
+      when others =>
+        Gui.Disable (Goto_Button);
+      end case;
     end case;
   end Show;
 
@@ -695,10 +749,14 @@ package body User is
   end Image_Of;
 
 
-  function Image_Of (The_Value : Device.Microns) return String is
+  function Focuser_Position_Image return String is
   begin
-    return Strings.Trimmed (The_Value'img) & "μm";
-  end Image_Of;
+    if Focuser_In_Use then
+      return Image_Of (The_Focuser_Position);
+    else
+      return "";
+    end if;
+  end Focuser_Position_Image;
 
 
   procedure Define_Temperature is
@@ -721,23 +779,34 @@ package body User is
   end Define_Temperature;
 
 
+  procedure Focuser_Move is
+  begin
+    Focuser.Move;
+  end Focuser_Move;
+
+
   procedure Define_Focuser_Position is
   begin
     declare
-      Value : constant String := Strings.Trimmed (Gui.Contents_Of (Focuser_Position));
+      Value : constant String := Strings.Trimmed (Gui.Contents_Of (Focuser_Goto));
       Last  : Natural := Value'last;
     begin
-      loop
-        exit when Value(Last) in '0'..'9';
-        Last := Last - 1;
-      end loop;
-      The_Focuser_Position := Device.Microns'value(Value(Value'first .. Last));
-      Device.Focuser.Move (To_Position => The_Focuser_Position);
+      if Value = "" then
+        Focuser_In_Use := False;
+      else
+        loop
+          exit when Value(Last) in '0'..'9';
+          Last := Last - 1;
+        end loop;
+        The_Focuser_Position := Device.Microns'value(Value(Value'first .. Last));
+        Focuser.Set (The_Focuser_Position);
+        Focuser_In_Use := True;
+      end if;
     exception
     when others =>
-      Show_Error ("Incorrect Focuser Position: " & Value);
+      Show_Error ("Incorrect Focuser Goto Position: " & Value);
     end;
-    Gui.Set_Text (Focuser_Position, Image_Of (The_Focuser_Position));
+    Gui.Set_Text (Focuser_Goto, Focuser_Position_Image);
   end Define_Focuser_Position;
 
 
@@ -1048,15 +1117,15 @@ package body User is
                                     The_Size       => Text_Size,
                                     The_Title_Size => Title_Size);
 
+        Fans_State := Gui.Create (Display_Page, "Fans State", "",
+                                  Is_Modifiable  => False,
+                                  The_Size       => Text_Size,
+                                  The_Title_Size => Title_Size);
+
         M3_Position := Gui.Create (Display_Page, "M3 Position", "",
                                    Is_Modifiable  => False,
                                    The_Size       => Text_Size,
                                    The_Title_Size => Title_Size);
-
-        Rotator_State := Gui.Create (Display_Page, Rotator_State_Text, "",
-                                     Is_Modifiable  => False,
-                                     The_Size       => Text_Size,
-                                     The_Title_Size => Title_Size);
 
         Longitude := Gui.Create (Display_Page, "Longitude", "",
                                  Is_Modifiable  => False,
@@ -1092,15 +1161,24 @@ package body User is
       procedure Define_Setup_Page is
 
         -- largest texts
-        Title_Size : constant Natural := Gui.Text_Size_Of (Orientation_Key) + Separation;
+        Title_Size : constant Natural := Gui.Text_Size_Of (Focuser_Actual_Key) + Separation;
         Text_Size  : constant Natural := Gui.Text_Size_Of ("Upside Down sb") + Separation;
       begin
         Setup_Page := Gui.Add_Page (The_Title  => "Setup",
                                     The_Action => Enter_Setup_Page'access,
                                     The_Style  => (Gui.Buttons_Fill_Horizontally => True,
                                                    Gui.Buttons_Fill_Vertically   => False));
-
-        Orientation_Box := Gui.Create (Setup_Page, Orientation_Key,
+        Goto_Button := Gui.Create (Setup_Page, "Goto", Focuser_Move'access);
+        Gui.Disable (Goto_Button);
+        Focuser_Goto := Gui.Create (Setup_Page, "Focuser Goto", Focuser_Position_Image,
+                                    The_Action_Routine => Define_Focuser_Position'access,
+                                    The_Size           => Text_Size,
+                                    The_Title_Size     => Title_Size);
+        Focuser_Actual := Gui.Create (Setup_Page, Focuser_Actual_Key, "",
+                                      Is_Modifiable  => False,
+                                      The_Size       => Text_Size,
+                                      The_Title_Size => Title_Size);
+        Orientation_Box := Gui.Create (Setup_Page, "Orientation",
                                        The_Action_Routine => Set_Orientation'access,
                                        The_Size           => Text_Size,
                                        The_Title_Size     => Title_Size);
@@ -1116,10 +1194,6 @@ package body User is
                                    The_Action_Routine => Define_Temperature'access,
                                    The_Size           => Text_Size,
                                    The_Title_Size     => Title_Size);
-        Focuser_Position := Gui.Create (Setup_Page, "Focuser", Image_Of (The_Focuser_Position),
-                                        The_Action_Routine => Define_Focuser_Position'access,
-                                        The_Size           => Text_Size,
-                                        The_Title_Size     => Title_Size);
       end Define_Setup_Page;
 
     begin -- Create_Interface
@@ -1127,6 +1201,8 @@ package body User is
       Actual_Selection := All_Objects;
       Catalog_Menu.Create (Lexicon.Image_Of (Lexicon.Catalog), Catalog_Handler'access);
       Catalog_Handler (Data.Favorites);
+      Fans_Menu.Create ("Fans", Fans_Handler'access);
+      Fans_Menu.Disable;
       M3_Menu.Create ("M3", M3_Handler'access);
       M3_Menu.Disable;
       Cwe_Menu.Create ("CWE", Cwe_Handler'access);
@@ -1146,6 +1222,9 @@ package body User is
       end if;
       Gui.Enable_Key_Handler;
       Gui.Show;
+      if Focuser_In_Use then
+        Focuser.Set (The_Focuser_Position);
+      end if;
       The_Startup_Handler.all;
     exception
     when others =>

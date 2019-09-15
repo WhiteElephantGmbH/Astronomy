@@ -8,7 +8,7 @@ with PWI.XML;
 
 package body PWI.Rotator is
 
-  function Status_Of (Info  : XML.Rotator_Info) return State is
+  function Status_Of (Info : XML.Rotator_Info) return State is
   begin
     if not Info.Connected then
       return Disconnected;

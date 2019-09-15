@@ -56,15 +56,13 @@ private package PWI.XML is
     Jd  : Julian_Day;
   end record;
 
-  type Focuser_Position is new Natural; -- in microns
+  function Focuser_Position_Of (Image : String) return Microns;
 
-  function Focuser_Position_Of (Image : String) return Focuser_Position;
-
-  function Image_Of (Item : Focuser_Position) return String;
+  function Image_Of (Item : Microns) return String;
 
   type Focuser_Info (Has_Auto_Focus : Boolean) is record
     Connected     : Boolean;
-    Position      : Focuser_Position;
+    Position      : Microns;
     Moving        : Boolean;
     Goto_Complete : Boolean;
     Finding_Home  : Boolean;
@@ -72,8 +70,8 @@ private package PWI.XML is
     when True =>
       Auto_Focus_Busy                  : Boolean;
       Auto_Focus_Last_Result_Success   : Boolean;
-      Auto_Focus_Last_Result_Position  : Focuser_Position;
-      Auto_Focus_Last_Result_Tolerance : Focuser_Position;
+      Auto_Focus_Last_Result_Position  : Microns;
+      Auto_Focus_Last_Result_Tolerance : Microns;
     when False =>
       null;
     end case;
@@ -241,11 +239,23 @@ private package PWI.XML is
 
   end M3;
 
+  package Focuser is
+
+    function Info return Focuser_Info;
+
+    function Info1 return Focuser_Info;
+
+    function Info2 return Focuser_Info;
+
+  end Focuser;
+
   package Rotator is
 
     function Info return Rotator_Info;
 
     function Info1 return Rotator_Info;
+
+    function Info2 return Rotator_Info;
 
   end Rotator;
 

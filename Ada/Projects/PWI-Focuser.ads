@@ -13,4 +13,6 @@ package PWI.Focuser is
   procedure Move (On          : Port;
                   To_Position : Microns);
 
+  function Position (On : Port) return Microns;
+
 end PWI.Focuser;

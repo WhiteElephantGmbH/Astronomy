@@ -16,7 +16,6 @@
 pragma Style_White_Elephant;
 
 with Ada.Unchecked_Conversion;
-with Program;
 with Strings;
 with System;
 with Win32;
@@ -316,13 +315,35 @@ package body Os.Application is
 
   function Version return String is
   begin
-    return Program.Version;
+    return Value_Of ("FileVersion", Module_Name);
+  exception
+  when others =>
+    declare
+      Version_Numbers : constant Unsigned.Word_String := Unsigned.String_Of (Version);
+      Major_Id        : constant String := Strings.Trimmed (Version_Numbers(Version_Numbers'first + 3)'img);
+      Minor_Id        : constant String := Strings.Trimmed (Version_Numbers(Version_Numbers'first + 2)'img);
+      Variant         : constant String := Strings.Trimmed (Version_Numbers(Version_Numbers'first + 1)'img);
+      Revision        : constant String := Strings.Trimmed (Version_Numbers(Version_Numbers'first)'img);
+    begin
+      return Major_Id & '.' & Minor_Id & '/' & Variant & '-' & Revision;
+    end;
   end Version;
 
 
   function Version return Unsigned.Quadword is
-  begin
-   return Program.Version;
+
+    Root_Block : constant String := "\";
+    The_Buffer : System.Address;
+    The_Size   : Natural;
+
+    type Fixedfileinfoaccess is access Win32.Winver.VS_FIXEDFILEINFO;
+
+    function Convert is new Ada.Unchecked_Conversion (System.Address, Fixedfileinfoaccess);
+
+  begin -- Version
+    Get_Value_For (Root_Block, Module_Name, The_Buffer, The_Size);
+    return Unsigned.Quadword_Of (Unsigned.Longword(Convert(The_Buffer).dwFileVersionMS),
+                                 Unsigned.Longword(Convert(The_Buffer).dwFileVersionLS));
   end Version;
 
 end Os.Application;

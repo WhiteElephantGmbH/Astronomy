@@ -26,8 +26,6 @@ package body Telescope is
 
   package Log is new Traces ("Telescope");
 
-  package Fans renames Device.Fans;
-
   package Mount renames Device.Mount;
 
   task type Control_Task with Priority => System.Max_Priority is
@@ -50,11 +48,11 @@ package body Telescope is
 
     entry Position_To (Landmark : Name.Id);
 
+    entry New_Fans_State (New_State : Fans.State);
+
     entry New_Mount_State (New_State : Mount.State);
 
     entry New_M3_Position (New_Position : M3.Position);
-
-    entry New_Rotator_State (New_State : Rotator.State);
 
     entry Get (The_Data : out Data);
 
@@ -65,6 +63,14 @@ package body Telescope is
   type Control_Access is access Control_Task;
 
   Control : Control_Access;
+
+
+  procedure Fans_State_Handler (New_State : Fans.State) is
+  begin
+    if not Control'terminated then
+      Control.New_Fans_State (New_State);
+    end if;
+  end Fans_State_Handler;
 
 
   procedure Mount_State_Handler (New_State : Mount.State) is
@@ -81,14 +87,6 @@ package body Telescope is
       Control.New_M3_Position (New_Position);
     end if;
   end M3_Position_Handler;
-
-
-  procedure Rotator_State_Handler (New_State : Rotator.State) is
-  begin
-    if not Control'terminated then
-      Control.New_Rotator_State (New_State);
-    end if;
-  end Rotator_State_Handler;
 
 
   Signal_Information_Update : Information_Update_Handler;
@@ -229,9 +227,9 @@ package body Telescope is
 
     Mount_Is_Stopped : Boolean := True;
 
-    The_M3_Position : M3.Position := M3.Unknown;
+    The_Fans_State : Fans.State := Fans.Initial_State;
 
-    The_Rotator_State : Rotator.State := Rotator.Unknown;
+    The_M3_Position : M3.Position := M3.Unknown;
 
     The_User_Adjust : Adjust;
     The_User_Setup  : Setup;
@@ -634,7 +632,7 @@ package body Telescope is
       case The_Event is
       when Startup =>
         Mount.Connect;
-        Rotator.Connect;
+        Focuser.Connect;
         The_State := Connecting;
       when Mount_Startup =>
         The_State := Mount_Startup_State (The_Event);
@@ -673,7 +671,6 @@ package body Telescope is
     begin
       case The_Event is
       when Mount_Connected =>
-        Fans.Turn_On_Or_Off;
         Mount.Enable;
         The_State := Enabling;
       when Mount_Enabled =>
@@ -683,7 +680,6 @@ package body Telescope is
         The_State := Homing;
       when Mount_Synchronised =>
         Mount.Set_Pointing_Model;
-        Rotator.Start;
         The_State := Initializing;
       when Mount_Stopped =>
         The_State := Stopped;
@@ -703,7 +699,6 @@ package body Telescope is
       when Mount_Disconnected =>
         The_State := Disconnected;
       when Startup =>
-        Fans.Turn_On_Or_Off;
         Mount.Enable;
         The_State := Enabling;
       when Shutdown =>
@@ -739,6 +734,7 @@ package body Telescope is
     begin
       case The_Event is
       when Mount_Enabled =>
+        Fans.Turn (To => Fans.Off);
         M3.Turn (To => Parameter.M3_Default_Place);
         Mount.Find_Home (The_Completion_Time);
         Rotator.Find_Home;
@@ -747,7 +743,6 @@ package body Telescope is
         The_State := Homing;
       when Mount_Synchronised =>
         Mount.Set_Pointing_Model;
-        Rotator.Start;
         The_State := Initializing;
       when Mount_Stopped =>
         The_State := Stopped;
@@ -792,7 +787,6 @@ package body Telescope is
       when Mount_Synchronised =>
         if The_M3_Position = Parameter.M3_Default_Place then
           Mount.Set_Pointing_Model;
-          Rotator.Start;
           The_State := Initializing;
         end if;
       when Mount_Stopped =>
@@ -818,7 +812,6 @@ package body Telescope is
         The_State := Enabled;
       when Startup =>
         Mount.Set_Pointing_Model;
-        Rotator.Start;
         The_State := Initializing;
       when Shutdown =>
         Fans.Turn_On_Or_Off;
@@ -1073,9 +1066,9 @@ package body Telescope is
 
   begin -- Control_Task
     accept Start do
-      Device.Start (Mount_State_Handler'access,
+      Device.Start (Fans_State_Handler'access,
+                    Mount_State_Handler'access,
                     M3_Position_Handler'access,
-                    Rotator_State_Handler'access,
                     Parameter.Pointing_Model);
     end Start;
     Log.Write ("Started");
@@ -1144,6 +1137,12 @@ package body Telescope is
             end if;
           end Execute;
         or
+          accept New_Fans_State (New_State : Fans.State) do
+            Log.Write ("Fans State " & New_State'img);
+            The_Fans_State := New_State;
+            Has_New_Data := True;
+          end New_Fans_State;
+        or
           accept New_Mount_State (New_State : Mount.State) do
             Log.Write ("Mount State " & New_State'img);
             Mount_Is_Stopped := True;
@@ -1186,18 +1185,22 @@ package body Telescope is
             The_M3_Position := New_Position;
             Has_New_Data := True;
           end New_M3_Position;
-        or
-          accept New_Rotator_State (New_State : Rotator.State) do
-            Log.Write ("Rotator State " & New_State'img);
-            The_Rotator_State := New_State;
-            Has_New_Data := True;
-          end New_Rotator_State;
+          case The_M3_Position is
+          when M3.Camera =>
+            if The_State > Homing then
+              Rotator.Start;
+              Focuser.Move;
+            end if;
+          when others =>
+            null;
+          end case;
         or
           accept Get (The_Data : out Data) do
             The_Data.Status := The_State;
             The_Data.Time_Adjustment := Time_Delta(The_Time_Adjustment);
+            The_Data.Fans_State := The_Fans_State;
             The_Data.M3_Position := The_M3_Position;
-            The_Data.Rotator_State := The_Rotator_State;
+            The_Data.Focuser_Position := Focuser.Position;
             The_Data.Universal_Time := Time.Universal;
             case The_State is
             when Approaching | Preparing | Positioning | Homing =>

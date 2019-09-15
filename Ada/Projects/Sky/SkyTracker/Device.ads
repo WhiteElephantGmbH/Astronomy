@@ -42,9 +42,17 @@ package Device is
   subtype Microns is PWI.Microns;
 
   package Fans is
+  
+    type State is (Off, On);
+
+    Initial_State : constant State := Off;   
+
+    procedure Turn (To : State);
 
     procedure Turn_On_Or_Off;
 
+    type State_Handler_Access is access procedure (The_State : State);
+    
   end Fans;
 
   package Mount is
@@ -118,23 +126,19 @@ package Device is
 
   package Focuser is
 
-    procedure Move (To_Position : Microns);
+    procedure Connect;
+
+    procedure Disconnect;
+
+    procedure Set (The_Position : Microns);
+
+    procedure Move;
+
+    function Position return Microns;
 
   end Focuser;
 
   package Rotator is
-
-    type State is (Unknown,
-                   Disconnected,
-                   Connected,
-                   Homing,
-                   Started);
-
-    type State_Handler_Access is access procedure (The_State : State);
-
-    procedure Connect;
-
-    procedure Disconnect;
 
     procedure Find_Home;
 
@@ -144,10 +148,10 @@ package Device is
 
   end Rotator;
 
-  procedure Start (Mount_State_Handler   : Mount.State_Handler_Access;
-                   M3_Position_Handler   : M3.Position_Handler_Access;
-                   Rotator_State_Handler : Rotator.State_Handler_Access;
-                   Pointing_Model        : String);
+  procedure Start (Fans_State_Handler  : Fans.State_Handler_Access;
+                   Mount_State_Handler : Mount.State_Handler_Access;
+                   M3_Position_Handler : M3.Position_Handler_Access;
+                   Pointing_Model      : String);
 
   procedure Finalize;
 
