@@ -226,6 +226,32 @@ package body User is
   end Catalog_Handler;
 
 
+  function Image_Of (The_State : Fans.State) return String is
+  begin
+    case The_State is
+    when Fans.Off =>
+      return Lexicon.Image_Of (Lexicon.Off);
+    when Fans.On =>
+      return Lexicon.Image_Of (Lexicon.On);
+    end case;
+  end Image_Of;
+
+  Is_From_Set : Boolean := False;
+
+  package Fans_Menu is new Gui.Enumeration_Menu_Of (Fans.State, Gui.Radio, Image_Of);
+
+  procedure Fans_Handler (The_State : Fans.State) is
+  begin
+    if not Is_From_Set then
+      Log.Write ("Fans: " & The_State'img);
+      Fans.Turn (To => The_State);
+    end if;
+  exception
+  when others =>
+    Log.Error ("Fans_Handler");
+  end Fans_Handler;
+
+
   function Image_Of (The_Place : M3.Place) return String is
   begin
     case The_Place is
@@ -240,34 +266,14 @@ package body User is
 
   procedure M3_Handler (The_Place : M3.Place) is
   begin
-    Log.Write ("M3: " & The_Place'img);
-    M3.Turn (To => The_Place);
+    if not Is_From_Set then
+      Log.Write ("M3: " & The_Place'img);
+      M3.Turn (To => The_Place);
+    end if;
   exception
   when others =>
     Log.Error ("M3_Handler");
   end M3_Handler;
-
-
-  function Image_Of (The_State : Fans.State) return String is
-  begin
-    case The_State is
-    when Fans.Off =>
-      return Lexicon.Image_Of (Lexicon.Off);
-    when Fans.On =>
-      return Lexicon.Image_Of (Lexicon.On);
-    end case;
-  end Image_Of;
-
-  package Fans_Menu is new Gui.Enumeration_Menu_Of (Fans.State, Gui.Radio, Image_Of);
-
-  procedure Fans_Handler (The_State : Fans.State) is
-  begin
-    Log.Write ("Fans: " & The_State'img);
-    Fans.Turn (To => The_State);
-  exception
-  when others =>
-    Log.Error ("Fans_Handler");
-  end Fans_Handler;
 
 
   function Image_Of (The_Mode : Cwe.Mode) return String is
@@ -501,22 +507,24 @@ package body User is
   end Image_Of;
 
 
+
+  procedure Menu_Disable is
+  begin
+    Fans_Menu.Disable;
+    M3_Menu.Disable;
+  end Menu_Disable;
+
+
+  procedure Menu_Enable is
+  begin
+    Fans_Menu.Enable;
+    M3_Menu.Enable;
+  end Menu_Enable;
+
+
   procedure Show (Information : Telescope.Data) is
     use type Telescope.State;
     use type Telescope.Time_Delta;
-
-    procedure Menu_Disable is
-    begin
-      Fans_Menu.Disable;
-      M3_Menu.Disable;
-    end Menu_Disable;
-
-    procedure Menu_Enable is
-    begin
-      Fans_Menu.Enable;
-      M3_Menu.Enable;
-    end Menu_Enable;
-
   begin
     if (The_Status /= Information.Status) or (Last_Target_Selection /= The_Target_Selection) then
       The_Status := Information.Status;
@@ -627,6 +635,12 @@ package body User is
         Gui.Disable (Goto_Button);
       end case;
     end case;
+    Is_From_Set := True;
+    Fans_Menu.Set (Information.Fans_State);
+    if Information.M3_Position in M3.Place then
+      M3_Menu.Set (Information.M3_Position);
+    end if;
+    Is_From_Set := False;
   end Show;
 
 
@@ -1201,10 +1215,9 @@ package body User is
       Actual_Selection := All_Objects;
       Catalog_Menu.Create (Lexicon.Image_Of (Lexicon.Catalog), Catalog_Handler'access);
       Catalog_Handler (Data.Favorites);
-      Fans_Menu.Create ("Fans", Fans_Handler'access);
-      Fans_Menu.Disable;
+      Fans_Menu.Create (Lexicon.Image_Of (Lexicon.Fans), Fans_Handler'access);
       M3_Menu.Create ("M3", M3_Handler'access);
-      M3_Menu.Disable;
+      Menu_Disable;
       Cwe_Menu.Create ("CWE", Cwe_Handler'access);
       Define_Control_Page;
       if Persistent_Setup.Storage_Is_Empty then

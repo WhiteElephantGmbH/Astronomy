@@ -310,6 +310,7 @@ package body Device is
     use type Fans.State;
     use type Mount.State;
     use type M3.Position;
+    use type PWI.M3_Port;
 
   begin
     accept Start (Fans_State_Handler  : Fans.State_Handler_Access;
@@ -503,7 +504,18 @@ package body Device is
           when PWI.Mount.Tracking =>
             The_Mount_State := Mount.Tracking;
           end case;
-          The_M3_Position := M3.Position'val(PWI.M3_Port'pos(PWI.M3.Actual_Port));
+          case PWI.M3.Actual_Port is
+          when PWI.Unknown =>
+            The_M3_Position := M3.Unknown;
+          when PWI.Between =>
+            The_M3_Position := M3.Between;
+          when others =>
+            if PWI.M3.Actual_Port = Parameter.M3_Camera_Port then
+              The_M3_Position := M3.Camera;
+            else
+              The_M3_Position := M3.Ocular;
+            end if;
+          end case;
         end if;
       exception
       when PWI.No_Server =>

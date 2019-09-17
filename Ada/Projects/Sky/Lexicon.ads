@@ -30,6 +30,7 @@ package Lexicon is
                 Deneb,
                 East,
                 Eskimo_Nebula,
+                Fans,
                 Favorites,
                 Galaxies,
                 Hubbles_Nebula,

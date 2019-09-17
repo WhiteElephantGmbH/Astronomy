@@ -16,7 +16,7 @@ package PWI is
 
   subtype Port is M3_Port range Port_1 .. Port_2;
 
-  type Microns is range 0..1000_000;
+  type Microns is range -999_999 .. 999_999;
 
   type Open_Socket_Handler is access function return Network.Tcp.Socket;
 

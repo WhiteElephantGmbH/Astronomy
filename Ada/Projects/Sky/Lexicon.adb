@@ -55,6 +55,7 @@ package body Lexicon is
     Deneb             => E ("Deneb",             "Deneb",                    "Deneb",              "Ντένεμπ",                 "Deneb",                       "Deneb"),
     East              => E ("E",                 "E",                        "O",                  "Α",                       "E",                           "E"),
     Eskimo_Nebula     => E ("Eskimo nebula",     "Nébuleuse Eskimo",         "Eskimonebel",        "Νεφέλωμα Εσκιμώος",       "Nebulosa Eskimo",             "Nebulosa del Esquimal"),
+    Fans              => E ("Fans",              "Ventilateurs",             "Ventilatoren",       "Ανεμιστήρες",             "Fan",                         "Ventiladores"),
     Favorites         => E ("Favorites",         "Favoris",                  "Favoriten",          "Αγαπημένα",               "Preferiti",                   "Favoritos"),
     Galaxies          => E ("Galaxies",          "Galaxies",                 "Galaxien",           "Γαλαξίες",                "Galassie",                    "Galaxias"),
     Hubbles_Nebula    => E ("Hubble's nebula",   "Nébuleuse de Hubble",      "Hubbles Nebel",      "Νεφέλωμα του Hubble",     "Nebulosa di Hubble",          "Nebulosa Hubble"),
