@@ -4,6 +4,7 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with Ada.Numerics;
 with Ada.Text_IO;
 with Strings;
 
@@ -15,13 +16,24 @@ package body PWI.Settings is
   Latitude_Id  : constant String := "latitudeDegrees";
   Elevation_Id : constant String := "elevationMeters";
 
-
   Undefined_Degrees : constant Angle.Degrees := Angle.Degrees'last;
   Undefined_Meters  : constant Integer := Integer'last;
 
   The_Longitude : Angle.Degrees := Undefined_Degrees;
   The_Latitude  : Angle.Degrees := Undefined_Degrees;
   The_Elevation : Integer       := Undefined_Meters;
+
+  Lower_Azm_Goto_Limit_Id : constant String := "azmEncCcwGotoLimitRad";
+  Upper_Azm_Goto_Limit_Id : constant String := "azmEncCwGotoLimitRad";
+  Lower_Alt_Goto_Limit_Id : constant String := "altEncLowerGotoLimitRad";
+  Upper_Alt_Goto_Limit_Id : constant String := "altEncUpperGotoLimitRad";
+
+  Undefined_Limit : constant Encoder_Degrees := 0.0;
+
+  The_Lower_Azm_Goto_Limit : Encoder_Degrees := Undefined_Limit;
+  The_Upper_Azm_Goto_Limit : Encoder_Degrees := Undefined_Limit;
+  The_Lower_Alt_Goto_Limit : Encoder_Degrees := Undefined_Limit;
+  The_Upper_Alt_Goto_Limit : Encoder_Degrees := Undefined_Limit;
 
 
   procedure Read (Filename : String) is
@@ -52,6 +64,19 @@ package body PWI.Settings is
       return "";
     end Next_Token;
 
+    function Next_Limit return Encoder_Degrees is
+      type Radian is delta 0.000_000_000_000_01 range -6.0 * Ada.Numerics.Pi .. 6.0 * Ada.Numerics.Pi;
+    begin
+      declare
+        Item : constant Radian := Radian'value(Next_Token ("value"));
+      begin
+        return Encoder_Degrees(Long_Float(Item) * 360.0 / (Ada.Numerics.Pi * 2.0));
+      end;
+    exception
+    when others =>
+      return Undefined_Limit;
+    end Next_Limit;
+
     use type Angle.Degrees;
 
   begin -- Read
@@ -73,7 +98,14 @@ package body PWI.Settings is
           The_Latitude := Angle.Degrees'value(Next_Token ("value"));
         elsif Item = Elevation_Id then
           The_Elevation := Integer'value(Next_Token ("value"));
-          exit;
+        elsif Item = Lower_Azm_Goto_Limit_Id then
+          The_Lower_Azm_Goto_Limit := Next_Limit;
+        elsif Item = Upper_Azm_Goto_Limit_Id then
+          The_Upper_Azm_Goto_Limit := Next_Limit;
+        elsif Item = Lower_Alt_Goto_Limit_Id then
+          The_Lower_Alt_Goto_Limit := Next_Limit;
+        elsif Item = Upper_Alt_Goto_Limit_Id then
+          The_Upper_Alt_Goto_Limit := Next_Limit;
         end if;
       end;
     end loop;
@@ -84,6 +116,14 @@ package body PWI.Settings is
       raise Missing_Latitude;
     elsif The_Elevation = Undefined_Meters then
       raise Missing_Elevation;
+    elsif The_Lower_Azm_Goto_Limit = Undefined_Limit then
+      raise Missing_Lower_Azm_Goto_Limit;
+    elsif The_Upper_Azm_Goto_Limit = Undefined_Limit then
+      raise Missing_Upper_Azm_Goto_Limit;
+    elsif The_Lower_Alt_Goto_Limit = Undefined_Limit then
+      raise Missing_Lower_Alt_Goto_Limit;
+    elsif The_Upper_Alt_Goto_Limit = Undefined_Limit then
+      raise Missing_Upper_Alt_Goto_Limit;
     end if;
   end Read;
 
@@ -106,5 +146,29 @@ package body PWI.Settings is
   begin
     return The_Elevation;
   end Elevation;
+
+
+  function Lower_Azm_Goto_Limit return Encoder_Degrees is
+  begin
+    return The_Lower_Azm_Goto_Limit;
+  end Lower_Azm_Goto_Limit;
+
+
+  function Upper_Azm_Goto_Limit return Encoder_Degrees is
+  begin
+    return The_Upper_Azm_Goto_Limit;
+  end Upper_Azm_Goto_Limit;
+
+
+  function Lower_Alt_Goto_Limit return Encoder_Degrees is
+  begin
+    return The_Lower_Alt_Goto_Limit;
+  end Lower_Alt_Goto_Limit;
+
+
+  function Upper_Alt_Goto_Limit return Encoder_Degrees is
+  begin
+    return The_Upper_Alt_Goto_Limit;
+  end Upper_Alt_Goto_Limit;
 
 end PWI.Settings;

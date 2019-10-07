@@ -39,20 +39,35 @@ package Device is
                    Set_Finding_Rate,
                    Set_Slewing_Rate);
 
+  use type PWI.Encoder_Degrees;
+
+  subtype Encoder_Degrees is PWI.Encoder_Degrees delta 0.000_000_1 range -999.999_999_9 .. 999.999_999_9;
+
+  function Image_Of (Item : Encoder_Degrees) return String;
+
   subtype Microns is PWI.Microns;
 
+  type Encoder_Limits is record
+    Azm_Lower_Goto : Encoder_Degrees;
+    Azm_Upper_Goto : Encoder_Degrees;
+    Alt_Lower_Goto : Encoder_Degrees;
+    Alt_Upper_Goto : Encoder_Degrees;
+  end record;
+
+  function Limits return Encoder_Limits;
+
   package Fans is
-  
+
     type State is (Off, On);
 
-    Initial_State : constant State := Off;   
+    Initial_State : constant State := Off;
 
     procedure Turn (To : State);
 
     procedure Turn_On_Or_Off;
 
     type State_Handler_Access is access procedure (The_State : State);
-    
+
   end Fans;
 
   package Mount is
@@ -75,6 +90,8 @@ package Device is
       J2000_Direction  : Space.Direction;
       Actual_Direction : Space.Direction;
       Local_Direction  : Earth.Direction;
+      Azm_Encoder      : Encoder_Degrees;
+      Alt_Encoder      : Encoder_Degrees;
     end record;
 
     type State_Handler_Access is access procedure (The_State : State);

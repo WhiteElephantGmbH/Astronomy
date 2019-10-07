@@ -311,6 +311,14 @@ package body Parameter is
         Error.Raise_With ("PWI settings missing latitude");
       when PWI.Settings.Missing_Elevation =>
         Error.Raise_With ("PWI settings missing elevation");
+      when PWI.Settings.Missing_Lower_Azm_Goto_Limit =>
+        Error.Raise_With ("PWI settings missing lower azm goto limit");
+      when PWI.Settings.Missing_Upper_Azm_Goto_Limit =>
+        Error.Raise_With ("PWI settings missing upper azm goto limit");
+      when PWI.Settings.Missing_Lower_Alt_Goto_Limit =>
+        Error.Raise_With ("PWI settings missing lower alt goto limit");
+      when PWI.Settings.Missing_Upper_Alt_Goto_Limit =>
+        Error.Raise_With ("PWI settings missing upper alt goto limit");
       end Define_Site_Parameters;
 
 

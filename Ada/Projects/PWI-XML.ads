@@ -119,6 +119,10 @@ private package PWI.XML is
 
   function Image_Of (Item : Radian) return String;
 
+  function Degrees_Of (Image : String) return Encoder_Degrees;
+
+  function Image_Of (Item : Encoder_Degrees) return String;
+
   function Arc_Second_Of (Image : String) return Arc_Second;
 
   function Image_Of (Item : Arc_Second) return String;
@@ -152,6 +156,9 @@ private package PWI.XML is
     Dec_Radian           : Radian;
     Azm_Radian           : Radian;
     Alt_Radian           : Radian;
+    Field_Rotation       : Encoder_Degrees;
+    Azm_Encoder          : Encoder_Degrees;
+    Alt_Encoder          : Encoder_Degrees;
     Azm_Rms_Error        : Arc_Second;
     Alt_Rms_Error        : Arc_Second;
     Azm_Motor_Error_Code : Error_Code;
@@ -183,7 +190,7 @@ private package PWI.XML is
 
   Undefined : constant Celsius := Celsius'first;
 
-  function Degrees_Of (Image : String) return Celsius;
+  function Celsius_Of (Image : String) return Celsius;
 
   function Image_Of (Item : Celsius) return String;
 

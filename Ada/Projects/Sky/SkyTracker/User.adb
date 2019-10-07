@@ -66,10 +66,16 @@ package body User is
   Actual_J2000_Dec : Gui.Plain_Edit_Box;
   Actual_Ra        : Gui.Plain_Edit_Box;
   Actual_Dec       : Gui.Plain_Edit_Box;
-  Actual_Az        : Gui.Plain_Edit_Box;
+  Actual_Azm       : Gui.Plain_Edit_Box;
   Actual_Alt       : Gui.Plain_Edit_Box;
-  Az_Offset        : Gui.Plain_Edit_Box;
+  Azm_Offset       : Gui.Plain_Edit_Box;
   Alt_Offset       : Gui.Plain_Edit_Box;
+  Azm_Encoder      : Gui.Plain_Edit_Box;
+  Azm_Lower_Limit  : Gui.Plain_Edit_Box;
+  Azm_Upper_Limit  : Gui.Plain_Edit_Box;
+  Alt_Encoder      : Gui.Plain_Edit_Box;
+  Alt_Lower_Limit  : Gui.Plain_Edit_Box;
+  Alt_Upper_Limit  : Gui.Plain_Edit_Box;
   Moving_Speed     : Gui.Plain_Edit_Box;
   Fans_State       : Gui.Plain_Edit_Box;
   M3_Position      : Gui.Plain_Edit_Box;
@@ -596,18 +602,26 @@ package body User is
       end if;
       if Earth.Direction_Is_Known (Information.Local_Direction) then
         Gui.Set_Text (Actual_Alt, Earth.Alt_Image_Of (Information.Local_Direction));
-        Gui.Set_Text (Actual_Az, Earth.Az_Image_Of (Information.Local_Direction));
+        Gui.Set_Text (Actual_Azm, Earth.Az_Image_Of (Information.Local_Direction));
+        Gui.Set_Text (Azm_Encoder, Device.Image_Of (Information.Azm_Encoder));
+        Gui.Set_Text (Alt_Encoder, Device.Image_Of (Information.Alt_Encoder));
       else
         Gui.Set_Text (Actual_Alt, "");
-        Gui.Set_Text (Actual_Az, "");
+        Gui.Set_Text (Actual_Azm, "");
+        Gui.Set_Text (Azm_Encoder, "");
+        Gui.Set_Text (Alt_Encoder, "");
       end if;
       if Earth.Direction_Is_Known (Information.Local_Offset) then
         Gui.Set_Text (Alt_Offset, Earth.Alt_Offset_Image_Of (Information.Local_Offset));
-        Gui.Set_Text (Az_Offset, Earth.Az_Offset_Image_Of (Information.Local_Offset));
+        Gui.Set_Text (Azm_Offset, Earth.Az_Offset_Image_Of (Information.Local_Offset));
       else
         Gui.Set_Text (Alt_Offset, "");
-        Gui.Set_Text (Az_Offset, "");
+        Gui.Set_Text (Azm_Offset, "");
       end if;
+      Gui.Set_Text (Azm_Lower_Limit, Device.Image_Of (Device.Limits.Azm_Lower_Goto));
+      Gui.Set_Text (Azm_Upper_Limit, Device.Image_Of (Device.Limits.Azm_Upper_Goto));
+      Gui.Set_Text (Alt_Lower_Limit, Device.Image_Of (Device.Limits.Alt_Lower_Goto));
+      Gui.Set_Text (Alt_Upper_Limit, Device.Image_Of (Device.Limits.Alt_Upper_Goto));
       Gui.Set_Text (Moving_Speed, Angle.Image_Of (Information.Moving_Speed, Decimals => 2) & "/s");
       Gui.Set_Text (Fans_State, Strings.Legible_Of (Information.Fans_State'img));
       Gui.Set_Text (M3_Position, Strings.Legible_Of (Information.M3_Position'img));
@@ -1108,23 +1122,53 @@ package body User is
                                   The_Size       => Text_Size,
                                   The_Title_Size => Title_Size);
 
-        Actual_Az := Gui.Create (Display_Page, "Actual AZM", "",
-                                 Is_Modifiable  => False,
-                                 The_Size       => Text_Size,
-                                 The_Title_Size => Title_Size);
+        Actual_Azm := Gui.Create (Display_Page, "Actual AZM", "",
+                                  Is_Modifiable  => False,
+                                  The_Size       => Text_Size,
+                                  The_Title_Size => Title_Size);
         Actual_Alt := Gui.Create (Display_Page, "Actual ALT", "",
                                   Is_Modifiable  => False,
                                   The_Size       => Text_Size,
                                   The_Title_Size => Title_Size);
 
-        Az_Offset := Gui.Create (Display_Page, "AZM Offset", "",
-                                 Is_Modifiable  => False,
-                                 The_Size       => Text_Size,
-                                 The_Title_Size => Title_Size);
+        Azm_Offset := Gui.Create (Display_Page, "AZM Offset", "",
+                                  Is_Modifiable  => False,
+                                  The_Size       => Text_Size,
+                                  The_Title_Size => Title_Size);
         Alt_Offset := Gui.Create (Display_Page, "ALT Offset", "",
                                   Is_Modifiable  => False,
                                   The_Size       => Text_Size,
                                   The_Title_Size => Title_Size);
+
+        Azm_Encoder := Gui.Create (Display_Page, "AZM Encoder", "",
+                                   Is_Modifiable  => False,
+                                   The_Size       => Text_Size,
+                                   The_Title_Size => Title_Size);
+
+        Alt_Encoder := Gui.Create (Display_Page, "ALT Encoder", "",
+                                   Is_Modifiable  => False,
+                                   The_Size       => Text_Size,
+                                   The_Title_Size => Title_Size);
+
+        Azm_Lower_Limit := Gui.Create (Display_Page, "AZM Lower End", "",
+                                       Is_Modifiable  => False,
+                                       The_Size       => Text_Size,
+                                       The_Title_Size => Title_Size);
+
+        Azm_Upper_Limit := Gui.Create (Display_Page, "AZM Upper End", "",
+                                       Is_Modifiable  => False,
+                                       The_Size       => Text_Size,
+                                       The_Title_Size => Title_Size);
+
+        Alt_Lower_Limit := Gui.Create (Display_Page, "ALT Lower End", "",
+                                       Is_Modifiable  => False,
+                                       The_Size       => Text_Size,
+                                       The_Title_Size => Title_Size);
+
+        Alt_Upper_Limit := Gui.Create (Display_Page, "ALT Upper End", "",
+                                       Is_Modifiable  => False,
+                                       The_Size       => Text_Size,
+                                       The_Title_Size => Title_Size);
 
         Moving_Speed := Gui.Create (Display_Page, "Moving Speed", "",
                                     Is_Modifiable  => False,

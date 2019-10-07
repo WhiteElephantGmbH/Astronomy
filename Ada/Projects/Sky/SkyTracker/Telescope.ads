@@ -85,6 +85,8 @@ package Telescope is
     Actual_Direction       : Space.Direction;
     Local_Direction        : Earth.Direction;
     Local_Offset           : Earth.Direction;
+    Azm_Encoder            : Device.Encoder_Degrees;
+    Alt_Encoder            : Device.Encoder_Degrees;
     Moving_Speed           : Angle.Value;
     Fans_State             : Fans.State;
     M3_Position            : M3.Position;

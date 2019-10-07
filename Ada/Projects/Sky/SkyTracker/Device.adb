@@ -21,6 +21,7 @@ with PWI.Focuser;
 with PWI.Mount;
 with PWI.M3;
 with PWI.Rotator;
+with PWI.Settings;
 with Traces;
 with System;
 
@@ -562,6 +563,25 @@ package body Device is
   end Finalize;
 
 
+  function Image_Of (Item : Encoder_Degrees) return String is
+    Image : String := Item'img;
+  begin
+    if Image(Image'first) = ' ' then
+      Image(Image'first) := '+';
+    end if;
+    return Image & "°";
+  end Image_Of;
+
+
+  function Limits return Encoder_Limits is
+  begin
+    return (Azm_Lower_Goto => PWI.Settings.Lower_Azm_Goto_Limit,
+            Azm_Upper_Goto => PWI.Settings.Upper_Azm_Goto_Limit,
+            Alt_Lower_Goto => PWI.Settings.Lower_Alt_Goto_Limit,
+            Alt_Upper_Goto => PWI.Settings.Upper_Alt_Goto_Limit);
+  end Limits;
+
+
   package body Fans is
 
     procedure Turn (To : State) is
@@ -623,7 +643,9 @@ package body Device is
               Actual_Direction => Space.Direction_Of (Ra  => Angle.Value'(+Angle.Hours(Mount_Info.Ra)),
                                                       Dec => Angle.Value'(+Angle.Degrees(Mount_Info.Dec))),
               Local_Direction  => Earth.Direction_Of (Az  => Angle.Value'(+Angle.Degrees(Mount_Info.Azm)),
-                                                      Alt => Angle.Value'(+Angle.Degrees(Mount_Info.Alt))));
+                                                      Alt => Angle.Value'(+Angle.Degrees(Mount_Info.Alt))),
+              Alt_Encoder      => Mount_Info.Alt_Encoder,
+              Azm_Encoder      => Mount_Info.Azm_Encoder);
     end Actual_Info;
 
 

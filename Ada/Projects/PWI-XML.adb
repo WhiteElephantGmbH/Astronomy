@@ -199,6 +199,22 @@ package body PWI.XML is
   end Image_Of;
 
 
+  function Degrees_Of (Image : String) return Encoder_Degrees is
+  begin
+    return Encoder_Degrees'value(Image);
+  exception
+  when others =>
+    Log.Error ("Degrees_Of (Image -> """ & Image & """)");
+    raise Parsing_Error;
+  end Degrees_Of;
+
+
+  function Image_Of (Item : Encoder_Degrees) return String is
+  begin
+    return Strings.Trimmed (Item'img);
+  end Image_Of;
+
+
   function Arc_Second_Of (Image : String) return Arc_Second is
   begin
     return Arc_Second'value(Image);
@@ -263,7 +279,7 @@ package body PWI.XML is
   end Image_Of;
 
 
-  function Degrees_Of (Image : String) return Celsius is
+  function Celsius_Of (Image : String) return Celsius is
   begin
     if Strings.Found ('.', Image) then
       return Celsius'value(Image);
@@ -274,7 +290,7 @@ package body PWI.XML is
   when others =>
     Log.Error ("Degrees_Of (Image -> """ & Image & """)");
     raise Parsing_Error;
-  end Degrees_Of;
+  end Celsius_Of;
 
 
   function Image_Of (Item : Celsius) return String is
@@ -339,11 +355,13 @@ package body PWI.XML is
                   T_Auto_Focus_Last_Result_Position_Microns,
                   T_Auto_Focus_Last_Result_Tolerance_Microns,
                   T_Alt_Enabled,
+                  T_Alt_Encoder_Degs,
                   T_Alt_Motor_Error_Code,
                   T_Alt_Motor_Error_Message,
                   T_Alt_Radian,
                   T_Alt_Rms_Error_Arcsec,
                   T_Azm_Enabled,
+                  T_Azm_Encoder_Degs,
                   T_Azm_Motor_Error_Code,
                   T_Azm_Motor_Error_Message,
                   T_Azm_Radian,
@@ -356,6 +374,7 @@ package body PWI.XML is
                   T_Dec_2000,
                   T_Encoders_Have_Been_Set,
                   T_Fans,
+                  T_Field_Rotation_Degs,
                   T_Finding_Home,
                   T_Focuser,
                   T_Focuser1,
@@ -658,6 +677,12 @@ package body PWI.XML is
             The_Response.Mount.Azm_Radian := Radian_Of (Parsed_Text);
           when T_Alt_Radian =>
             The_Response.Mount.Alt_Radian := Radian_Of (Parsed_Text);
+          when T_Field_Rotation_Degs =>
+            The_Response.Mount.Field_Rotation := Degrees_Of (Parsed_Text);
+          when T_Azm_Encoder_Degs =>
+            The_Response.Mount.Azm_Encoder := Degrees_Of (Parsed_Text);
+          when T_Alt_Encoder_Degs =>
+            The_Response.Mount.Alt_Encoder := Degrees_Of (Parsed_Text);
           when T_Azm_Rms_Error_Arcsec =>
             The_Response.Mount.Azm_Rms_Error := Arc_Second_Of (Parsed_Text);
           when T_Alt_Rms_Error_Arcsec =>
@@ -735,15 +760,15 @@ package body PWI.XML is
         when Tag =>
           case The_Tag is
           when T_Primary =>
-            The_Response.Temperature.Primary := Degrees_Of (Parsed_Text);
+            The_Response.Temperature.Primary := Celsius_Of (Parsed_Text);
           when T_Ambient =>
-            The_Response.Temperature.Ambient := Degrees_Of (Parsed_Text);
+            The_Response.Temperature.Ambient := Celsius_Of (Parsed_Text);
           when T_Secondary =>
-            The_Response.Temperature.Secondary := Degrees_Of (Parsed_Text);
+            The_Response.Temperature.Secondary := Celsius_Of (Parsed_Text);
           when T_Backplate =>
-            The_Response.Temperature.Backplate := Degrees_Of (Parsed_Text);
+            The_Response.Temperature.Backplate := Celsius_Of (Parsed_Text);
           when T_M3 =>
-            The_Response.Temperature.M3 := Degrees_Of (Parsed_Text);
+            The_Response.Temperature.M3 := Celsius_Of (Parsed_Text);
           when others =>
             raise Parsing_Error;
           end case;
@@ -980,6 +1005,9 @@ package body PWI.XML is
         Log.Write ("  Dec_Radian              : " & Image_Of (Data.Mount.Dec_Radian));
         Log.Write ("  Azm_Radian              : " & Image_Of (Data.Mount.Azm_Radian));
         Log.Write ("  Alt_Radian              : " & Image_Of (Data.Mount.Alt_Radian));
+        Log.Write ("  Field_Rotation          : " & Image_Of (Data.Mount.Field_Rotation));
+        Log.Write ("  Azm_Encoder             : " & Image_Of (Data.Mount.Azm_Encoder));
+        Log.Write ("  Alt_Encoder             : " & Image_Of (Data.Mount.Alt_Encoder));
         Log.Write ("  Azm_Rms_Error           : " & Image_Of (Data.Mount.Azm_Rms_Error));
         Log.Write ("  Alt_Rms_Error           : " & Image_Of (Data.Mount.Alt_Rms_Error));
         Log.Write ("  Azm_Motor_Error_Code    : " & Image_Of (Data.Mount.Azm_Motor_Error_Code));

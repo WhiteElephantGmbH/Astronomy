@@ -24,13 +24,16 @@ package PWI.Mount is
                  Tracking);    -- not yet decoded
 
   type Information is record
-    Status   : State;
-    Ra       : Hours;
-    Dec      : Degrees;
-    Ra_2000  : Hours;
-    Dec_2000 : Degrees;
-    Azm      : Degrees;
-    Alt      : Degrees;
+    Status         : State;
+    Ra             : Hours;
+    Dec            : Degrees;
+    Ra_2000        : Hours;
+    Dec_2000       : Degrees;
+    Azm            : Degrees;
+    Alt            : Degrees;
+    Field_Rotation : Encoder_Degrees;
+    Azm_Encoder    : Encoder_Degrees;
+    Alt_Encoder    : Encoder_Degrees;
   end   record;
 
   procedure Define_Pointing_Model (Filename : String);

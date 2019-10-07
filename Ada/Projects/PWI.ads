@@ -10,7 +10,9 @@ package PWI is
 
   No_Server : exception;
 
-  type Arc_Second is delta 0.0000001 range -9999999.9999999 .. 9999999.9999999;
+  type Arc_Second is delta 0.000_000_1 range -9_999_999.999_999_9 .. 9_999_999.999_999_9;
+
+  type Encoder_Degrees is delta 0.000_000_000_000_1 range -999.999_999_999_999_9 .. 999.999_999_999_999_9;
 
   type M3_Port is (Unknown, Between, Port_1, Port_2);
 
