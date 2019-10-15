@@ -86,15 +86,21 @@ package Device is
                    Approaching,
                    Tracking);
 
+    type Encoder_Data is record
+      Azm : Encoder_Degrees;
+      Alt : Encoder_Degrees;
+    end record;
+
     type Information is record
       J2000_Direction  : Space.Direction;
       Actual_Direction : Space.Direction;
       Local_Direction  : Earth.Direction;
-      Azm_Encoder      : Encoder_Degrees;
-      Alt_Encoder      : Encoder_Degrees;
+      Encoder          : Encoder_Data;
     end record;
 
     type State_Handler_Access is access procedure (The_State : State);
+
+    function Actual_Encoder return Encoder_Data;
 
     function Actual_Info return Information;
 

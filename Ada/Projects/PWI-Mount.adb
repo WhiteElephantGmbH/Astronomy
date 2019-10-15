@@ -78,6 +78,9 @@ package body PWI.Mount is
   end Value_Of;
 
 
+  function Encoder return Encoder_Data renames XML.Mount.Encoder;
+
+
   function Info return Information is
     Data : constant XML.Mount_Info := XML.Mount.Info;
   begin
@@ -88,9 +91,8 @@ package body PWI.Mount is
             Dec_2000       => Value_Of (Data.Dec_2000),
             Azm            => Value_Of (Data.Azm_Radian),
             Alt            => Value_Of (Data.Alt_Radian),
-            Field_Rotation => Data.Field_Rotation,
-            Azm_Encoder    => Data.Azm_Encoder,
-            Alt_Encoder    => Data.Alt_Encoder);
+            Encoder        => Data.Encoder,
+            Field_Rotation => Data.Field_Rotation);
   end Info;
 
 

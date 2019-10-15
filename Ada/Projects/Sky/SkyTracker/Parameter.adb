@@ -144,8 +144,28 @@ package body Parameter is
   end Language;
 
 
-  function Angles_Of (Key  : String;
-                      Unit : String := "") return Angle_List.Item is
+  function Image_Of (The_Ordinal : Positive) return String is
+    Image : constant String := Strings.Trimmed (The_Ordinal'img);
+  begin
+    if not (The_Ordinal in 4 .. 20) then
+      case The_Ordinal mod 10 is
+      when 1 =>
+        return Image & "st";
+      when 2 =>
+        return Image & "nd";
+      when 3 =>
+        return Image & "rd";
+      when others =>
+        null;
+      end case;
+    end if;
+    return Image & "th";
+  end Image_Of;
+
+
+  function Angles_Of (Key     : String;
+                      Maximum : Natural; -- in degrees
+                      Unit    : String := "") return Angle_List.Item is
     Item     : constant String := String_Of (Key);
     Images   : constant Strings.Item := Strings.Item_Of (Item, ',');
     The_List : Angle_List.Item;
@@ -158,15 +178,15 @@ package body Parameter is
           Value : constant Angle.Value := Angle.Value_Of (Image);
           use type Angle_List.Item;
         begin
-          if Value < Angle.Semi_Circle then
+          if Value < (Angle.Value'(+Angle.Degrees(Maximum)) + Angle.Epsilon) then
             The_List := The_List + Value;
           else
-            Error.Raise_With ("value too large");
+            Error.Raise_With ("value greater than" & Maximum'img & "°" & Unit);
           end if;
         end;
       exception
       when others =>
-        Error.Raise_With ("Incorrect" & Index'img & ". value of " & Key & ": <" & Item & ">");
+        Error.Raise_With ("Incorrect " & Image_Of (Index) & " value of " & Key & ": <" & Item & ">");
       end;
     end loop;
     return The_List;
@@ -471,6 +491,8 @@ package body Parameter is
         Log.Write ("Pointing_Model: " & Model_Name);
       end Define_Pointing_Model;
 
+      Maximum_Speed : constant := 5; -- degrees per second
+
     begin -- Read_Values
       Set (Localization_Handle);
       Standard.Language.Define (Language);
@@ -487,7 +509,7 @@ package body Parameter is
       Define_Pointing_Model;
       Startup_PWI;
       PWI.Install (PWI_Socket'access);
-      The_Moving_Speeds := Angles_Of (Moving_Speed_List_Key, Speed_Unit);
+      The_Moving_Speeds := Angles_Of (Moving_Speed_List_Key, Maximum_Speed, Speed_Unit);
       if Natural(Angle_List.Length (The_Moving_Speeds)) < 2 then
         Error.Raise_With ("The speed list must contain at least two values");
       end if;

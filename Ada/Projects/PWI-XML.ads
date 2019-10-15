@@ -145,6 +145,7 @@ private package PWI.XML is
   end record with Pack;
 
   type Mount_Info is record
+    Encoder              : Encoder_Data;
     Flags                : Mount_Flag;
     Ra                   : Right_Ascension;
     Dec                  : Declination;
@@ -157,8 +158,6 @@ private package PWI.XML is
     Azm_Radian           : Radian;
     Alt_Radian           : Radian;
     Field_Rotation       : Encoder_Degrees;
-    Azm_Encoder          : Encoder_Degrees;
-    Alt_Encoder          : Encoder_Degrees;
     Azm_Rms_Error        : Arc_Second;
     Alt_Rms_Error        : Arc_Second;
     Azm_Motor_Error_Code : Error_Code;
@@ -233,6 +232,8 @@ private package PWI.XML is
     procedure Define_Pointing_Model (Filename : String);
 
     function Defined_Pointing_Model return String;
+
+    function Encoder return Encoder_Data;
 
     function Flags return Mount_Flag;
 

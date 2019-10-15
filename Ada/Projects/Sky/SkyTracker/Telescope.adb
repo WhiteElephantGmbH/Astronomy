@@ -174,7 +174,12 @@ package body Telescope is
 
   task body Control_Task is
 
-    Homing_Time : constant Duration := 18.0;
+    use type Device.Encoder_Degrees;
+
+    Azm_Goto_Limit : constant Device.Encoder_Degrees := 10.0;
+    Azm_Wrap_Limit : constant Device.Encoder_Degrees := Azm_Goto_Limit + 10.0;
+    Homing_Limit   : constant Device.Encoder_Degrees := 180.0 + Azm_Goto_Limit;
+    Homing_Time    : constant Duration := 18.0;
 
     The_Next_Tracking_Period : Time.Period := Time.Undefined;
     The_Completion_Time      : Time.Ut := Time.In_The_Past;
@@ -197,8 +202,6 @@ package body Telescope is
     The_First_Moving_Speed    : Angle.Degrees := 0.0;
     Second_Adjust_Factor      : Angle.Signed := 1;
     The_Second_Moving_Speed   : Angle.Degrees := 0.0;
-    The_First_Offset          : Angle.Degrees := 0.0;
-    The_Second_Offset         : Angle.Degrees := 0.0;
     The_Adjusted_Offset       : Earth.Direction;
 
     type Event is (No_Event,
@@ -237,41 +240,31 @@ package body Telescope is
     Id            : Name.Id;
     Get_Direction : Get_Space_Access;
 
-    Last_Azm_Encoder_Position : Device.Encoder_Degrees;
-    Last_Alt_Encoder_Position : Device.Encoder_Degrees;
-
     The_Azm_Offset : Device.Encoder_Degrees;
-    The_Alt_Offset : Device.Encoder_Degrees;
 
     Target_Lost    : exception;
     Target_Is_Lost : Boolean := False;
 
 
-    procedure Calculate_Offsets is
+    procedure Calculate_Azm_Offset is
       Info : constant Mount.Information := Mount.Actual_Info;
       use type Angle.Value;
       Azm  : constant Angle.Degrees := +Earth.Az_Of (Info.Local_Direction);
-      Alt  : constant Angle.Degrees := +Earth.Alt_Of (Info.Local_Direction);
-      use type Device.Encoder_Degrees;
     begin
-      The_Azm_Offset := Device.Encoder_Degrees(Azm) - Info.Azm_Encoder;
+      The_Azm_Offset := Device.Encoder_Degrees(Azm) - Info.Encoder.Azm;
       while The_Azm_Offset > 180.0 loop
         The_Azm_Offset := The_Azm_Offset - 360.0;
       end loop;
       while The_Azm_Offset < -180.0 loop
         The_Azm_Offset := The_Azm_Offset + 360.0;
       end loop;
-      Log.Write ("XXX The_Azm_Offset" & The_Azm_Offset'img);
-      The_Alt_Offset := Device.Encoder_Degrees(Alt) - Info.Alt_Encoder;
-      Log.Write ("XXX The_Alt_Offset" & The_Alt_Offset'img);
-    end Calculate_Offsets;
+    end Calculate_Azm_Offset;
 
 
     function Target_Direction (At_Time : Time.Ut := Time.Universal) return Space.Direction is
       Adjusted_Time : constant Time.Ut := At_Time + The_Time_Adjustment;
       Direction     : constant Space.Direction := Get_Direction (Id, Adjusted_Time);
       The_Direction : Earth.Direction;
-      use type Earth.Direction;
     begin
       if not Space.Direction_Is_Known (Direction) then
         Target_Is_Lost := True;
@@ -279,7 +272,7 @@ package body Telescope is
       end if;
       if Earth.Direction_Is_Known (The_Adjusted_Offset) then
         The_Direction := Numerics.Direction_Of (Direction, Time.Lmst_Of (Adjusted_Time));
-        The_Direction := The_Direction + The_Adjusted_Offset;
+        Earth.Add_To (The_Direction, The_Adjusted_Offset);
         return Numerics.Direction_Of (The_Direction, Adjusted_Time);
       else
         return Direction;
@@ -309,14 +302,13 @@ package body Telescope is
 
 
     function Encoder_Within_Goto_Limits return Boolean is
-      Limits         : constant Device.Encoder_Limits := Device.Limits;
-      Azm_Tollerance : constant Device.Encoder_Degrees := 3.0;
-      use type Device.Encoder_Degrees;
+      Encoder : constant Mount.Encoder_Data := Mount.Actual_Encoder;
+      Limits  : constant Device.Encoder_Limits := Device.Limits;
     begin
-     if Last_Azm_Encoder_Position > (Limits.Azm_Upper_Goto - Azm_Tollerance) or else
-        Last_Azm_Encoder_Position < (Limits.Azm_Lower_Goto + Azm_Tollerance) or else
-        Last_Alt_Encoder_Position > Limits.Alt_Upper_Goto or else
-        Last_Alt_Encoder_Position < Limits.Alt_Lower_Goto
+     if Encoder.Azm > (Limits.Azm_Upper_Goto - Azm_Goto_Limit) or else
+        Encoder.Azm < (Limits.Azm_Lower_Goto + Azm_Goto_Limit) or else
+        Encoder.Alt > Limits.Alt_Upper_Goto or else
+        Encoder.Alt < Limits.Alt_Lower_Goto
      then
        return False;
      end if;
@@ -326,7 +318,8 @@ package body Telescope is
 
     procedure Goto_Target is
 
-      Limits : constant Device.Encoder_Limits := Device.Limits;
+      Encoder : constant Mount.Encoder_Data := Mount.Actual_Encoder;
+      Limits  : constant Device.Encoder_Limits := Device.Limits;
 
       function Azm_Encoder_Goto_Position return Device.Encoder_Degrees is
         The_Direction : constant Earth.Direction := Numerics.Direction_Of (Target_Direction (The_Start_Time),
@@ -335,10 +328,9 @@ package body Telescope is
         Azm_Goto_Position : Device.Encoder_Degrees
           := Device.Encoder_Degrees(Angle.Degrees'(+Earth.Az_Of (The_Direction)));
         The_Delta : Device.Encoder_Degrees;
-        use type Device.Encoder_Degrees;
       begin
         Azm_Goto_Position := Azm_Goto_Position - The_Azm_Offset;
-        The_Delta := Last_Azm_Encoder_Position - Azm_Goto_Position;
+        The_Delta := Encoder.Azm - Azm_Goto_Position;
         if The_Delta > 180.0 then
           Azm_Goto_Position := Azm_Goto_Position + 360.0;
           if Azm_Goto_Position > Limits.Azm_Upper_Goto then
@@ -356,28 +348,28 @@ package body Telescope is
       function Home_Direction return Space.Direction is
         The_Direction : Earth.Direction := Numerics.Direction_Of (Target_Direction (The_Start_Time),
                                                                   Time.Lmst_Of (The_Start_Time));
+        use type Angle.Value;
       begin
-        The_Direction := Earth.Direction_Of (Az  => Angle.Semi_Circle,
+        The_Direction := Earth.Direction_Of (Az  => Angle.Semi_Circle + Angle.Degrees(The_Azm_Offset),
                                              Alt => Earth.Alt_Of (The_Direction));
         return Numerics.Direction_Of (The_Direction, The_Start_Time);
       end Home_Direction;
-
-      use type Device.Encoder_Degrees;
 
     begin -- Goto_Target
       if Get_Direction = null then
         raise Program_Error; -- unknown target;
       end if;
       The_Start_Time := Time.Universal;
-      if Last_Azm_Encoder_Position > (Limits.Azm_Upper_Goto - 180.0) or else
-         Last_Azm_Encoder_Position < (Limits.Azm_Lower_Goto + 180.0)
+      if Encoder.Azm > (Limits.Azm_Upper_Goto - Homing_Limit) or else
+         Encoder.Azm < (Limits.Azm_Lower_Goto + Homing_Limit)
       then
         declare
-          Goto_Tollerance       : constant Device.Encoder_Degrees := 10.0;
           Encoder_Goto_Position : constant Device.Encoder_Degrees := Azm_Encoder_Goto_Position;
         begin
-          if Encoder_Goto_Position > (Limits.Azm_Upper_Goto - Goto_Tollerance) or else
-             Encoder_Goto_Position < (Limits.Azm_Lower_Goto + Goto_Tollerance)
+          if Encoder_Goto_Position > (Limits.Azm_Upper_Goto - Azm_Wrap_Limit) or else
+             Encoder_Goto_Position < (Limits.Azm_Lower_Goto + Azm_Wrap_Limit) or else
+             Encoder.Azm > (Limits.Azm_Upper_Goto - Azm_Wrap_Limit) or else
+             Encoder.Azm < (Limits.Azm_Lower_Goto + Azm_Wrap_Limit)
           then
             The_Home_Direction := Home_Direction;
             Mount.Goto_Target (The_Home_Direction, (0, 0), The_Completion_Time);
@@ -398,16 +390,8 @@ package body Telescope is
 
 
     procedure Reset_Adjustments is
-      use type Angle.Value;
     begin
       The_Adjusted_Offset := Cwe.Adjustment;
-      if Earth.Direction_Is_Known (The_Adjusted_Offset) then
-        The_First_Offset := +Earth.Az_Of (The_Adjusted_Offset);
-        The_Second_Offset := +Earth.Alt_Of (The_Adjusted_Offset);
-      else
-        The_First_Offset := 0.0;
-        The_Second_Offset := 0.0;
-      end if;
       The_Time_Adjustment := 0.0;
       The_Adjusting_Start_Time := Time.In_The_Future;
       The_Adjusting_End_Time := Time.In_The_Future;
@@ -416,6 +400,7 @@ package body Telescope is
 
     procedure Stop_Target is
     begin
+      The_Home_Direction := Space.Unknown_Direction;
       Mount.Stop;
       if Mount_Is_Stopped then
         The_State := Stopped;
@@ -432,8 +417,8 @@ package body Telescope is
       if Get_Direction = null then
         raise Program_Error; -- unknown target;
       end if;
-      The_Start_Time := Time.Universal;
       if Encoder_Within_Goto_Limits then
+        The_Start_Time := Time.Universal;
         Mount.Goto_Target (Direction       => Target_Direction (At_Time => The_Start_Time),
                            With_Speed      => Target_Speed (At_Time => The_Start_Time),
                            Completion_Time => Unused);
@@ -512,7 +497,6 @@ package body Telescope is
     procedure Increment_Offset is
       The_Adjusting_Time : Time.Ut;
       use type Angle.Degrees;
-      use type Angle.Value;
     begin
       if The_Adjusting_Start_Time /= Time.In_The_Future then
         if The_Adjusting_End_Time = Time.In_The_Future then
@@ -525,14 +509,12 @@ package body Telescope is
         end if;
         case The_Adjusting_Kind is
         when First_Adjusting =>
-          The_First_Offset := The_First_Offset + (The_First_Moving_Speed * Angle.Degrees(The_Adjusting_Time));
+          Earth.Add_Az_To (The_Adjusted_Offset, The_First_Moving_Speed * Angle.Degrees(The_Adjusting_Time));
         when Second_Adjusting =>
-          The_Second_Offset := The_Second_Offset + (The_Second_Moving_Speed * Angle.Degrees(The_Adjusting_Time));
+          Earth.Add_Alt_To (The_Adjusted_Offset, The_Second_Moving_Speed * Angle.Degrees(The_Adjusting_Time));
         when Time_Adjusting =>
           The_Time_Adjustment := The_Time_Adjustment + (The_Adjusting_Time * The_Time_Adjusting_Factor);
         end case;
-        The_Adjusted_Offset := Earth.Direction_Of (Az  => +The_First_Offset,
-                                                   Alt => +The_Second_Offset);
       end if;
     end Increment_Offset;
 
@@ -1102,10 +1084,24 @@ package body Telescope is
         The_State := Stopped;
       when Mount_Tracking =>
         if Space.Direction_Is_Known (The_Home_Direction) then
-          Mount.Goto_Target (Direction       => Target_Direction,
-                             With_Speed      => Target_Speed,
-                             Completion_Time => The_Completion_Time);
-          The_Home_Direction := Space.Unknown_Direction;
+          declare
+            Encoder : constant Mount.Encoder_Data := Mount.Actual_Encoder;
+            Limits  : constant Device.Encoder_Limits := Device.Limits;
+            Unused  : Time.Ut;
+          begin
+            if Encoder.Azm > (Limits.Azm_Upper_Goto - Azm_Wrap_Limit) or else
+               Encoder.Azm < (Limits.Azm_Lower_Goto + Azm_Wrap_Limit)
+            then
+              Log.Warning ("goto home direction again (simulation only?)");
+              The_Start_Time := Time.Universal;
+              Mount.Goto_Target (The_Home_Direction, (0, 0), Unused);
+            else
+              Mount.Goto_Target (Direction       => Target_Direction,
+                                 With_Speed      => Target_Speed,
+                                 Completion_Time => The_Completion_Time);
+              The_Home_Direction := Space.Unknown_Direction;
+            end if;
+          end;
         else
           The_State := Tracking;
         end if;
@@ -1259,7 +1255,7 @@ package body Telescope is
             when Mount.Synchronised =>
               The_Event := Mount_Synchronised;
             when Mount.Stopped =>
-              Calculate_Offsets;
+              Calculate_Azm_Offset;
               The_Event := Mount_Stopped;
             when Mount.Approaching =>
               The_Event := Mount_Approaching;
@@ -1318,10 +1314,7 @@ package body Telescope is
                 The_Data.Actual_J2000_Direction := Info.J2000_Direction;
                 The_Data.Actual_Direction := Info.Actual_Direction;
                 The_Data.Local_Direction := Info.Local_Direction;
-                The_Data.Azm_Encoder := Info.Azm_Encoder;
-                The_Data.Alt_Encoder := Info.Alt_Encoder;
-                Last_Azm_Encoder_Position := The_Data.Azm_Encoder;
-                Last_Alt_Encoder_Position := The_Data.Alt_Encoder;
+                The_Data.Encoder := Info.Encoder;
               end;
             end case;
             if Get_Direction = null then

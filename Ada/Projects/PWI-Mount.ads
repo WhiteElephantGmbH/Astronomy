@@ -31,16 +31,17 @@ package PWI.Mount is
     Dec_2000       : Degrees;
     Azm            : Degrees;
     Alt            : Degrees;
+    Encoder        : Encoder_Data;
     Field_Rotation : Encoder_Degrees;
-    Azm_Encoder    : Encoder_Degrees;
-    Alt_Encoder    : Encoder_Degrees;
-  end   record;
+  end record;
 
   procedure Define_Pointing_Model (Filename : String);
 
   function Defined_Pointing_Model return String;
 
   procedure Set_Simulation_Mode;
+
+  function Encoder return Encoder_Data;
 
   function Info return Information;
 

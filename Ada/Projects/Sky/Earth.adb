@@ -110,4 +110,50 @@ package body Earth is
     end if;
   end "-";
 
+
+  procedure Add_Az_To (The_Direction : in out Direction;
+                       The_Offset    :        Angle.Degrees) is
+    use type Angle.Value;
+  begin
+    The_Direction.Az := The_Direction.Az + The_Offset;
+    The_Direction.Is_Known := True;
+  end Add_Az_To;
+
+
+  procedure Add_Alt_To (The_Direction : in out Direction;
+                        The_Offset    :        Angle.Degrees) is
+    use type Angle.Value;
+  begin
+    The_Direction.Alt := The_Direction.Alt + The_Offset;
+    The_Direction.Is_Known := True;
+  end Add_Alt_To;
+
+
+  procedure Add_To (The_Direction : in out Direction;
+                    The_Offset    : in out Direction) is
+    use type Angle.Degrees;
+    use type Angle.Signed;
+    use type Angle.Value;
+  begin
+    if The_Direction.Is_Known and The_Offset.Is_Known then
+      declare
+        The_Altitude : Angle.Degrees := +Angle.Signed'(+Angle.Value'(The_Direction.Alt + The_Offset.Alt));
+      begin
+        if The_Altitude > 90.0 then
+          The_Offset.Alt := Angle.Quadrant - The_Direction.Alt;
+          The_Altitude := 90.0;
+        elsif The_Altitude < 0.0 then
+          The_Offset.Alt := Angle.Zero - The_Direction.Alt;
+          The_Altitude := 0.0;
+        end if;
+        The_Direction := (Az         => The_Direction.Az + The_Offset.Az,
+                          Alt        => +The_Altitude,
+                          Is_Known   => True,
+                          Is_Inverse => The_Direction.Is_Inverse);
+      end;
+    else
+      The_Direction := Unknown_Direction;
+    end if;
+  end Add_To;
+
 end Earth;

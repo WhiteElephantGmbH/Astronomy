@@ -603,8 +603,8 @@ package body User is
       if Earth.Direction_Is_Known (Information.Local_Direction) then
         Gui.Set_Text (Actual_Alt, Earth.Alt_Image_Of (Information.Local_Direction));
         Gui.Set_Text (Actual_Azm, Earth.Az_Image_Of (Information.Local_Direction));
-        Gui.Set_Text (Azm_Encoder, Device.Image_Of (Information.Azm_Encoder));
-        Gui.Set_Text (Alt_Encoder, Device.Image_Of (Information.Alt_Encoder));
+        Gui.Set_Text (Azm_Encoder, Device.Image_Of (Information.Encoder.Azm));
+        Gui.Set_Text (Alt_Encoder, Device.Image_Of (Information.Encoder.Alt));
       else
         Gui.Set_Text (Actual_Alt, "");
         Gui.Set_Text (Actual_Azm, "");

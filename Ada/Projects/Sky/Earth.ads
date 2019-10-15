@@ -51,6 +51,15 @@ package Earth is
 
   function "-" (Left, Right : Direction) return Direction with Inline; -- uses Inv from Left
 
+  procedure Add_Az_To (The_Direction : in out Direction;
+                       The_Offset    :        Angle.Degrees) with Inline;
+
+  procedure Add_Alt_To (The_Direction : in out Direction;
+                        The_Offset    :        Angle.Degrees) with Inline;
+
+  procedure Add_To (The_Direction : in out Direction;
+                    The_Offset    : in out Direction) with Inline; -- altitude limited and offset corrected
+
 private
 
   type Direction is record

@@ -634,6 +634,14 @@ package body Device is
     end Image_Of;
 
 
+    function Actual_Encoder return Encoder_Data is
+      Mount_Encoder : constant PWI.Encoder_Data := PWI.Mount.Encoder;
+    begin
+      return (Azm => Mount_Encoder.Azm,
+              Alt => Mount_Encoder.Alt);
+    end Actual_Encoder;
+
+
     function Actual_Info return Information is
       Mount_Info : constant PWI.Mount.Information := PWI.Mount.Info;
       use type Angle.Value;
@@ -644,8 +652,8 @@ package body Device is
                                                       Dec => Angle.Value'(+Angle.Degrees(Mount_Info.Dec))),
               Local_Direction  => Earth.Direction_Of (Az  => Angle.Value'(+Angle.Degrees(Mount_Info.Azm)),
                                                       Alt => Angle.Value'(+Angle.Degrees(Mount_Info.Alt))),
-              Alt_Encoder      => Mount_Info.Alt_Encoder,
-              Azm_Encoder      => Mount_Info.Azm_Encoder);
+              Encoder          => (Azm => Mount_Info.Encoder.Azm,
+                                   Alt => Mount_Info.Encoder.Alt));
     end Actual_Info;
 
 

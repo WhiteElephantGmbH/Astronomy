@@ -14,6 +14,11 @@ package PWI is
 
   type Encoder_Degrees is delta 0.000_000_000_000_1 range -999.999_999_999_999_9 .. 999.999_999_999_999_9;
 
+  type Encoder_Data is record
+    Azm : Encoder_Degrees;
+    Alt : Encoder_Degrees;
+  end record;
+
   type M3_Port is (Unknown, Between, Port_1, Port_2);
 
   subtype Port is M3_Port range Port_1 .. Port_2;

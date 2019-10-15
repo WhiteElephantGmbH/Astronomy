@@ -308,6 +308,8 @@ package body PWI.XML is
 
     function Fans_Turned_On return Boolean;
 
+    function Mount_Encoder_Data return Encoder_Data;
+
     function Mount_Flags return XML.Mount_Flag;
 
     function Mount_Data return XML.Mount_Info;
@@ -680,9 +682,9 @@ package body PWI.XML is
           when T_Field_Rotation_Degs =>
             The_Response.Mount.Field_Rotation := Degrees_Of (Parsed_Text);
           when T_Azm_Encoder_Degs =>
-            The_Response.Mount.Azm_Encoder := Degrees_Of (Parsed_Text);
+            The_Response.Mount.Encoder.Azm := Degrees_Of (Parsed_Text);
           when T_Alt_Encoder_Degs =>
-            The_Response.Mount.Alt_Encoder := Degrees_Of (Parsed_Text);
+            The_Response.Mount.Encoder.Alt := Degrees_Of (Parsed_Text);
           when T_Azm_Rms_Error_Arcsec =>
             The_Response.Mount.Azm_Rms_Error := Arc_Second_Of (Parsed_Text);
           when T_Alt_Rms_Error_Arcsec =>
@@ -876,6 +878,12 @@ package body PWI.XML is
     end Defined_Pointing_Model;
 
 
+    function Encoder return Encoder_Data is
+    begin
+      return System.Mount_Encoder_Data;
+    end Encoder;
+
+
     function Flags return Mount_Flag is
     begin
       return System.Mount_Flags;
@@ -1006,8 +1014,8 @@ package body PWI.XML is
         Log.Write ("  Azm_Radian              : " & Image_Of (Data.Mount.Azm_Radian));
         Log.Write ("  Alt_Radian              : " & Image_Of (Data.Mount.Alt_Radian));
         Log.Write ("  Field_Rotation          : " & Image_Of (Data.Mount.Field_Rotation));
-        Log.Write ("  Azm_Encoder             : " & Image_Of (Data.Mount.Azm_Encoder));
-        Log.Write ("  Alt_Encoder             : " & Image_Of (Data.Mount.Alt_Encoder));
+        Log.Write ("  Azm_Encoder             : " & Image_Of (Data.Mount.Encoder.Azm));
+        Log.Write ("  Alt_Encoder             : " & Image_Of (Data.Mount.Encoder.Alt));
         Log.Write ("  Azm_Rms_Error           : " & Image_Of (Data.Mount.Azm_Rms_Error));
         Log.Write ("  Alt_Rms_Error           : " & Image_Of (Data.Mount.Alt_Rms_Error));
         Log.Write ("  Azm_Motor_Error_Code    : " & Image_Of (Data.Mount.Azm_Motor_Error_Code));
@@ -1041,6 +1049,12 @@ package body PWI.XML is
     begin
       return The_Data.Fans.On;
     end Fans_Turned_On;
+
+
+    function Mount_Encoder_Data return Encoder_Data is
+    begin
+      return The_Data.Mount.Encoder;
+    end Mount_Encoder_Data;
 
 
     function Mount_Flags return Mount_Flag is
