@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2017 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2017 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,64 +15,15 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Ada.Task_Identification;
-with Ada.Task_Termination;
-with Ada.Exceptions;
-with GNAT.Lock_Files;
 with File;
 with Program;
 with System;
 
 package body Os.Application is
 
-  function Lock_Name return String is
-  begin
-    return "/tmp/" & Name;
-  end Lock_Name;
-
-
-  protected Controlled is
-
-    procedure Lock;
-
-    procedure Termination_Handler (Unused_Cause                : Ada.Task_Termination.Cause_Of_Termination;
-                                   Unused_Task_Id              : Ada.Task_Identification.Task_Id;
-                                   Unused_Exception_Occurrence : Ada.Exceptions.Exception_Occurrence);
-  private
-    Is_Locked : Boolean := False;
-  end Controlled;
-
-
-  protected body Controlled is
-
-    procedure Lock is
-    begin
-      GNAT.Lock_Files.Lock_File (Lock_File_Name => Lock_Name,
-                                 Wait           => 1.0,
-                                 Retries        => 1);
-      Is_Locked := True;
-    end Lock;
-
-
-    procedure Termination_Handler (Unused_Cause                : Ada.Task_Termination.Cause_Of_Termination;
-                                   Unused_Task_Id              : Ada.Task_Identification.Task_Id;
-                                   Unused_Exception_Occurrence : Ada.Exceptions.Exception_Occurrence) is
-    begin
-      if Is_Locked then
-        GNAT.Lock_Files.Unlock_File (Lock_Name);
-      end if;
-    end Termination_Handler;
-
-  end Controlled;
-
-
   function Is_First_Instance return Boolean is
   begin
-    Controlled.Lock;
     return True;
-  exception
-  when others =>
-    return False;
   end Is_First_Instance;
 
 
@@ -151,7 +102,4 @@ package body Os.Application is
    return Program.Version;
   end Version;
 
-begin
-  Ada.Task_Termination.Set_Specific_Handler (T       => Ada.Task_Identification.Current_Task,
-                                             Handler => Controlled.Termination_Handler'access);
 end Os.Application;
