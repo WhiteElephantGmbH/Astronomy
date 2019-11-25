@@ -316,6 +316,13 @@ package body Telescope is
     end Encoder_Within_Goto_Limits;
 
 
+    function Azm_Encoder_Position_Of (Item : Earth.Direction) return Device.Encoder_Degrees is
+      use type Angle.Value;
+    begin
+      return Device.Encoder_Degrees(Angle.Degrees'(+Earth.Az_Of (Item))) - The_Azm_Offset;
+    end Azm_Encoder_Position_Of;
+
+
     procedure Goto_Target is
 
       Encoder : constant Mount.Encoder_Data := Mount.Actual_Encoder;
@@ -324,12 +331,9 @@ package body Telescope is
       function Azm_Encoder_Goto_Position return Device.Encoder_Degrees is
         The_Direction : constant Earth.Direction := Numerics.Direction_Of (Target_Direction (The_Start_Time),
                                                                            Time.Lmst_Of (The_Start_Time));
-        use type Angle.Value;
-        Azm_Goto_Position : Device.Encoder_Degrees
-          := Device.Encoder_Degrees(Angle.Degrees'(+Earth.Az_Of (The_Direction)));
-        The_Delta : Device.Encoder_Degrees;
+        Azm_Goto_Position : Device.Encoder_Degrees := Azm_Encoder_Position_Of (The_Direction);
+        The_Delta         : Device.Encoder_Degrees;
       begin
-        Azm_Goto_Position := Azm_Goto_Position - The_Azm_Offset;
         The_Delta := Encoder.Azm - Azm_Goto_Position;
         if The_Delta > 180.0 then
           Azm_Goto_Position := Azm_Goto_Position + 360.0;
@@ -432,22 +436,78 @@ package body Telescope is
 
 
     function Goto_Waiting_Position return Boolean is
-      Leaving_Time     : constant Time.Ut := The_Next_Tracking_Period.Leaving_Time;
-      Leaving_Position : constant Earth.Direction := Numerics.Direction_Of (Get_Direction (Id, Leaving_Time),
-                                                                            Time.Lmst_Of (Leaving_Time));
-    begin
-      The_Arrival_Time := The_Next_Tracking_Period.Arrival_Time;
-      if (The_Arrival_Time - Time.Universal) > Homing_Time then
-        if Earth.Direction_Is_Known (Leaving_Position) then
-          The_Waiting_Position := Numerics.Direction_Of (Get_Direction (Id, The_Arrival_Time),
-                                                         Time.Lmst_Of (The_Arrival_Time));
-          The_Start_Time := Time.Universal;
-          Mount.Goto_Mark (Leaving_Position, The_Completion_Time);
-          The_State := Preparing;
-          return True;
+
+      use type Angle.Value;
+
+      procedure Goto_Home_Or_Waiting is
+
+        Limits      : constant Device.Encoder_Limits := Device.Limits;
+        Lower_Limit : constant Device.Encoder_Degrees := Limits.Azm_Lower_Goto + Azm_Goto_Limit;
+        Upper_Limit : constant Device.Encoder_Degrees := Limits.Azm_Upper_Goto - Azm_Goto_Limit;
+
+        Arrival_Position : constant Earth.Direction := Numerics.Direction_Of (Get_Direction (Id, The_Arrival_Time),
+                                                                              Time.Lmst_Of (The_Arrival_Time));
+        Leaving_Time     : constant Time.Ut := The_Next_Tracking_Period.Leaving_Time;
+        Leaving_Position : constant Earth.Direction := Numerics.Direction_Of (Get_Direction (Id, Leaving_Time),
+                                                                              Time.Lmst_Of (Leaving_Time));
+        Current_Azm_Encoder_Position : constant Device.Encoder_Degrees := Mount.Actual_Encoder.Azm;
+        Arrival_Azm_Encoder_Position : Device.Encoder_Degrees := Azm_Encoder_Position_Of (Arrival_Position);
+        Leaving_Azm_Encoder_Position : Device.Encoder_Degrees := Azm_Encoder_Position_Of (Leaving_Position);
+        Travel_Distance : Device.Encoder_Degrees := Leaving_Azm_Encoder_Position - Arrival_Azm_Encoder_Position;
+
+        Home_Position : Earth.Direction;
+
+      begin -- Goto_Home_Or_Waiting
+        if Travel_Distance < -180.0 then
+          Travel_Distance := Travel_Distance + 360.0;
+        elsif Travel_Distance > 180.0 then
+          Travel_Distance := Travel_Distance - 360.0;
         end if;
+        Leaving_Azm_Encoder_Position := Arrival_Azm_Encoder_Position + Travel_Distance;
+        if Leaving_Azm_Encoder_Position > Upper_Limit then
+          Arrival_Azm_Encoder_Position := Arrival_Azm_Encoder_Position - 360.0;
+          Leaving_Azm_Encoder_Position := Leaving_Azm_Encoder_Position - 360.0;
+        elsif Leaving_Azm_Encoder_Position < Lower_Limit then
+          Arrival_Azm_Encoder_Position := Arrival_Azm_Encoder_Position + 360.0;
+          Leaving_Azm_Encoder_Position := Leaving_Azm_Encoder_Position + 360.0;
+        elsif abs (Arrival_Azm_Encoder_Position - Current_Azm_Encoder_Position) > 180.0 then
+          if Arrival_Azm_Encoder_Position > Current_Azm_Encoder_Position then
+            if (Leaving_Azm_Encoder_Position > Lower_Limit + 360.0) and
+               (Arrival_Azm_Encoder_Position > Lower_Limit + 360.0)
+            then
+              Arrival_Azm_Encoder_Position := Arrival_Azm_Encoder_Position - 360.0;
+              Leaving_Azm_Encoder_Position := Leaving_Azm_Encoder_Position - 360.0;
+            end if;
+          else
+            if (Arrival_Azm_Encoder_Position < Upper_Limit - 360.0) and
+               (Leaving_Azm_Encoder_Position < Upper_Limit - 360.0)
+            then
+              Arrival_Azm_Encoder_Position := Arrival_Azm_Encoder_Position + 360.0;
+              Leaving_Azm_Encoder_Position := Leaving_Azm_Encoder_Position + 360.0;
+            end if;
+          end if;
+        end if;
+        The_Start_Time := Time.Universal;
+        if abs (Arrival_Azm_Encoder_Position - Current_Azm_Encoder_Position) > 180.0 then
+          Home_Position := Earth.Direction_Of (Az  => Angle.Semi_Circle + Angle.Degrees(The_Azm_Offset),
+                                               Alt => Earth.Alt_Of (Arrival_Position));
+          The_Waiting_Position := Arrival_Position;
+          Mount.Goto_Mark (Home_Position, The_Completion_Time);
+          The_Completion_Time := The_Completion_Time + Homing_Time;
+        else
+          The_Waiting_Position := Earth.Unknown_Direction;
+          Mount.Goto_Mark (Arrival_Position, The_Completion_Time);
+        end if;
+      end Goto_Home_Or_Waiting;
+
+    begin -- Goto_Waiting_Position
+      The_Arrival_Time := The_Next_Tracking_Period.Arrival_Time;
+      if (The_Arrival_Time - Time.Universal) < Homing_Time then
+        return False;
       end if;
-      return False;
+      Goto_Home_Or_Waiting;
+      The_State := Preparing;
+      return True;
     end Goto_Waiting_Position;
 
 
@@ -544,6 +604,25 @@ package body Telescope is
     when Target_Lost =>
       Stop_Target;
     end Update_Target_Position;
+
+
+    procedure Update_Preparing_Position is
+      Now    : constant Time.Ut := Time.Universal;
+      Unused : Time.Ut;
+    begin
+      if Earth.Direction_Is_Known (The_Waiting_Position) then
+        if Now - The_Start_Time < Homing_Time then
+          return;
+        else
+          The_Start_Time := Time.Universal;
+          Mount.Goto_Mark (The_Waiting_Position, The_Completion_Time);
+          The_Waiting_Position := Earth.Unknown_Direction;
+        end if;
+      end if;
+    exception
+    when Target_Lost =>
+      Stop_Target;
+    end Update_Preparing_Position;
 
 
     procedure Do_Position is
@@ -1338,6 +1417,8 @@ package body Telescope is
             Update_Target_Position;
           when Tracking =>
             Update_Target_Position;
+          when Preparing =>
+            Update_Preparing_Position;
           when Waiting =>
             The_Event := Mount_Stopped;
           when others =>

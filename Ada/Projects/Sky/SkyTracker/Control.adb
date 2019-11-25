@@ -378,13 +378,15 @@ package body Control is
       Define_External_Target;
       case The_Data.Status is
       when Telescope.Stopped
+      | Telescope.Approaching
       | Telescope.Positioned
       | Telescope.Positioning
-      | Telescope.Approaching
-      | Telescope.Tracking =>
+      | Telescope.Preparing
+      | Telescope.Tracking
+      | Telescope.Waiting =>
         User.Perform_Goto;
       when others =>
-        Log.Error ("goto not executed");
+        Log.Error ("goto not executed from " & The_Data.Status'img);
       end case;
     end Handle_Goto;
 
