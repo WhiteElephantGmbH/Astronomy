@@ -16,12 +16,15 @@
 pragma Style_White_Elephant;
 
 with Device;
-with Parameter;
-with Serial_Io;
+with Serial_Io.Usb;
 with Traces;
 with User.Input;
 
 package body Handbox is
+
+  Vendor_Id  : constant Serial_Io.Usb.Vendor_Id := 3368;
+  Product_Id : constant Serial_Io.Usb.Product_Id := 516;
+  Version    : constant String := "1.00";
 
   package Log is new Traces ("Handbox");
 
@@ -32,21 +35,56 @@ package body Handbox is
 
   The_Reader : access Reader;
 
+  The_Handbox_Port         : Serial_Io.Port;
+  The_Handbox_Is_Available : Boolean := False;
+
+
+  procedure Check_Handbox_Version is
+  begin
+    declare
+      The_Version : String := "x.xx";
+      Channel     : Serial_Io.Channel(The_Handbox_Port);
+    begin
+      Serial_Io.Set (The_Baudrate => 19200,
+                     On           => Channel);
+      Serial_Io.Set_For_Read (The_Timeout => 1.0,
+                              On          => Channel);
+      Serial_Io.Send (The_Item => 'v',
+                      To       => Channel);
+      Serial_Io.Receive (The_Item => The_Version,
+                         From     => Channel);
+      if The_Version /= Version then
+        Log.Error ("Incorrect version (" & The_Version & ") for Handbox on port " & The_Handbox_Port'img);
+        return;
+      end if;
+    end;
+    Log.Write ("Handbox on Port: " & The_Handbox_Port'img);
+    The_Handbox_Is_Available := True;
+  exception
+  when others =>
+    Log.Error ("Handbox port " & The_Handbox_Port'img & " is not available");
+  end Check_Handbox_Version;
+
 
   procedure Start is
+    Ports : constant Serial_Io.Usb.Ports := Serial_Io.Usb.Ports_For (Vid => Vendor_Id, Pid => Product_Id);
   begin
-    if Parameter.Handbox_Is_Available then
-      Log.Write ("start");
-      The_Reader := new Reader;
-      The_Reader.Start;
+    if Ports'length = 1 then
+      The_Handbox_Port := Ports(Ports'first);
+      Check_Handbox_Version;
+      if The_Handbox_Is_Available then
+        Log.Write ("start with " & The_Handbox_Port'img);
+        The_Reader := new Reader;
+        The_Reader.Start;
+      end if;
     end if;
   end Start;
 
 
   procedure Close is
   begin
-    if Parameter.Handbox_Is_Available then
-      Serial_Io.Free (Parameter.Handbox_Port);
+    if The_Handbox_Is_Available then
+      Serial_Io.Free (The_Handbox_Port);
       The_Reader.Stopped;
       Log.Write ("end");
     end if;
@@ -69,7 +107,7 @@ package body Handbox is
     Log.Write ("started");
     Main: loop
       declare
-        Channel       : Serial_Io.Channel(Parameter.Handbox_Port);
+        Channel       : Serial_Io.Channel(The_Handbox_Port);
         The_Character : Character;
       begin
         Serial_Io.Set (The_Baudrate => 19200,

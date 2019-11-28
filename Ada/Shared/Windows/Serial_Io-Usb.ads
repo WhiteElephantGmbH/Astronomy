@@ -15,74 +15,19 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Angle;
-with Device;
-with PWI;
-with Stellarium;
-with Network;
+package Serial_Io.Usb is
 
-package Parameter is
+  type Vendor_Id is new Unsigned.Word;
 
-  Speed_Unit : constant String := "/s";
+  type Product_Id is new Unsigned.Word;
 
-  procedure Read;
+  type Port_Count is range 0 .. Port'pos(Port'last) - Port'pos(Port'first) + 1;
 
-  procedure Shutdown;
+  subtype Port_Index is Port_Count range 1 .. Port_Count'last;
 
+  type Ports is array (Port_Index range <>) of Port;
 
-  ----------
-  -- Site --
-  ----------
+  function Ports_For (Vid : Vendor_Id;
+                      Pid : Product_Id) return Ports;
 
-  function Latitude return Angle.Value;
-
-  function Longitude return Angle.Value;
-
-  function Elevation return Integer; -- in meters
-
-
-  ------------
-  -- Device --
-  ------------
-
-  function Is_Expert_Mode return Boolean;
-
-  function Is_Simulation_Mode return Boolean;
-
-  function M3_Ocular_Port return PWI.Port;
-
-  function M3_Camera_Port return PWI.Port;
-
-  function M3_Default_Place return Device.M3.Place;
-
-  function Turn_Fans_On return Boolean;
-
-  function Pointing_Model return String;
-
-  function Pole_Height return Angle.Value;
-
-  function Is_Azimuthal_Mount return Boolean;
-
-  function Moving_Speeds return Angle.Values; -- in angle / s
-
-  function Cwe_Distance return Angle.Degrees;
-
-
-  -----------
-  -- Lx200 --
-  -----------
-
-  function Lx200_Port return Network.Port_Number;
-
-
-  ----------------
-  -- Stellarium --
-  ----------------
-
-  function Stellarium_Port return Network.Port_Number;
-
-  function Satellites_Filename return String;
-
-  function Magnitude_Maximum return Stellarium.Magnitude;
-
-end Parameter;
+end Serial_Io.Usb;

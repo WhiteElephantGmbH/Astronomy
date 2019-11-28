@@ -56,7 +56,6 @@ package body Parameter is
   Moving_Speed_List_Key : constant String := "Moving Speed List";
   Cwe_Distance_Key      : constant String := "CWE Distance";
 
-  Handbox_Id     : constant String := "Handbox";
   Lx200_Id       : constant String := "Lx200";
   Stellarium_Id  : constant String := "Stellarium";
   Port_Key       : constant String := "Port";
@@ -77,10 +76,6 @@ package body Parameter is
   The_Cwe_Distance   : Angle.Degrees;
   The_PWI_Address    : Network.Ip_Address;
   The_PWI_Port       : Network.Port_Number;
-
-  --Handbox
-  The_Handbox_Is_Available : Boolean;
-  The_Handbox_Port         : Serial_Io.Port;
 
   --Lx200
   The_Lx200_Port : Network.Port_Number;
@@ -285,9 +280,6 @@ package body Parameter is
       Put (Moving_Speed_List_Key & " = 30""/s, 3'/s, 20'/s, 2°/s");
       Put (Cwe_Distance_Key & "      = 30'");
       Put ("");
-      Put ("[" & Handbox_Id & "]");
-      Put (Port_Key & " = None");
-      Put ("");
       Put ("[" & Lx200_Id & "]");
       Put (Port_Key & " = 4030");
       Put ("");
@@ -309,7 +301,6 @@ package body Parameter is
 
       Handle              : constant Configuration.File_Handle    := Configuration.Handle_For (Filename);
       PWI_Handle          : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, PWI_Id);
-      Handbox_Handle      : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Handbox_Id);
       Lx200_Handle        : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Lx200_Id);
       Stellarium_Handle   : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Stellarium_Id);
       Localization_Handle : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Localization_Id);
@@ -515,52 +506,6 @@ package body Parameter is
       end if;
       The_Cwe_Distance := Angle_Of (Cwe_Distance_Key);
 
-      Set (Handbox_Handle);
-      declare
-        Port_Name : constant String := Strings.Legible_Of (String_Of (Port_Key, "Handbox"));
-        Version   : constant String := "1.00";
-      begin
-        The_Handbox_Is_Available := False;
-        if Port_Name /= "None" then
-          begin
-            The_Handbox_Port := Serial_Io.Port'value(Port_Name);
-          exception
-          when others =>
-            Error.Raise_With ("Handbox port " & Port_Name & " is not in range Com1 .. Com20");
-          end;
-          begin
-            declare
-              The_Version : String := "x.xx";
-              Channel     : Serial_Io.Channel(The_Handbox_Port);
-            begin
-              Serial_Io.Set (The_Baudrate => 19200,
-                             On           => Channel);
-              Serial_Io.Set_For_Read (The_Timeout => 1.0,
-                                      On          => Channel);
-              Serial_Io.Send (The_Item => 'v',
-                              To       => Channel);
-              Serial_Io.Receive (The_Item => The_Version,
-                                 From     => Channel);
-              if The_Version /= Version then
-                Error.Raise_With ("Incorrect version (" & The_Version & ") for Handbox on port " & Port_Name);
-              end if;
-            end;
-            Log.Write ("Handbox on Port: " & The_Handbox_Port'img);
-            The_Handbox_Is_Available := True;
-          exception
-          when
-            Error.Occurred =>
-            raise;
-          when Serial_Io.Timeout =>
-            Error.Raise_With ("No Handbox on port " & Port_Name);
-          when others =>
-            Error.Raise_With ("Handbox port " & Port_Name & " is not available");
-          end;
-        else
-          Log.Write ("No Handbox");
-        end if;
-      end;
-
       Set (Lx200_Handle);
       begin
         The_Lx200_Port := Network.Port_Number (Value_Of (Port_Key));
@@ -712,22 +657,6 @@ package body Parameter is
   begin
     return The_Cwe_Distance;
   end Cwe_Distance;
-
-
-  -------------
-  -- Handbox --
-  -------------
-
-  function Handbox_Is_Available return Boolean is
-  begin
-    return The_Handbox_Is_Available;
-  end Handbox_Is_Available;
-
-
-  function Handbox_Port return Serial_Io.Port is
-  begin
-    return The_Handbox_Port;
-  end Handbox_Port;
 
 
   -----------
