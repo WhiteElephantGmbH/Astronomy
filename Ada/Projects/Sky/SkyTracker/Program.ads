@@ -15,16 +15,12 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Unsigned;
-
 package Program is
 
   Major_Id : constant := 2;
   Minor_Id : constant := 0;
 
   function Version return String;
-
-  function Version return Unsigned.Quadword;
 
 end Program;
 

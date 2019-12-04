@@ -19,11 +19,6 @@ with Strings;
 
 package body Program is
 
-  function Version return Unsigned.Quadword is
-  begin
-    return Unsigned.Quadword_Of (Unsigned.Word_String'(Major_Id, Minor_Id, 0, 0));
-  end Version;
-
   function Version return String is
   begin
     return Strings.Trimmed (Major_Id'img) & '.' & Strings.Trimmed (Minor_Id'img);
