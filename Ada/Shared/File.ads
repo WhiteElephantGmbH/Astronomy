@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2015 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2015 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -42,7 +42,9 @@ package File is
   function Composure (Directory : String;
                       Filename  : String;
                       Extension : String) return String;
-  -- no exception
+
+  function Composure (Directory               : Folder;
+                      Filename_With_Extension : String) return String;
 
   function Base_Name_Of (Name : String) return String renames Ada.Directories.Base_Name;
 

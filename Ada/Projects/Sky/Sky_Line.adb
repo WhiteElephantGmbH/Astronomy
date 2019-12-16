@@ -103,6 +103,7 @@ package body Sky_Line is
     Log.Write ("Create; " & Filename);
     Ada.Directories.Create_Path (Directory);
     Ada.Text_IO.Create (The_File, Name => Filename);
+    Ada.Text_IO.Put (The_File, Strings.Bom_8);
   end Create_File;
 
 
@@ -125,7 +126,7 @@ package body Sky_Line is
     procedure Create_Default_Sky_Line is
     begin
         Create_File (Filename);
-        Put (Strings.Bom_8 & "0°00', 2°00'");
+        Put ("0°00', 2°00'");
         Close_File;
     exception
     when others =>
@@ -236,6 +237,24 @@ package body Sky_Line is
   end Read;
 
 
+  procedure Create is
+  begin
+    Create_File (Actual_Filename);
+  end Create;
+
+
+  procedure Append (Direction : Earth.Direction) is
+  begin
+    Put (Earth.Az_Image_Of (Direction) & ", " & Earth.Alt_Image_Of (Direction));
+  end Append;
+
+
+  procedure Close is
+  begin
+    Close_File;
+  end Close;
+
+
   procedure Clear is
   begin
     File.Delete (New_Filename);
@@ -246,18 +265,12 @@ package body Sky_Line is
     Filename : constant String := New_Filename;
   begin
     if Earth.Direction_Is_Known (Direction) then
-      declare
-        Line : constant String := Earth.Az_Image_Of (Direction) & ", " & Earth.Alt_Image_Of (Direction);
-      begin
-        if File.Exists (Filename) then
-          Ada.Text_IO.Open (The_File, Ada.Text_IO.Append_File, Filename);
-          Put (Line);
-        else
-          Create_File (Filename);
-          Put (Strings.Bom_8 & Line);
-        end if;
-        Log.Write ("Added " & Line);
-      end;
+      if File.Exists (Filename) then
+        Ada.Text_IO.Open (The_File, Ada.Text_IO.Append_File, Filename);
+      else
+        Create_File (Filename);
+      end if;
+      Append (Direction);
       Close_File;
     end if;
   exception

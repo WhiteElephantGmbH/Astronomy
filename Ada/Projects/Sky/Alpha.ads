@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2013 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2012 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,45 +15,22 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Angle;
-with Applications;
-with Language;
-with Network;
+with Earth;
 with Space;
+with Time;
 
-package Stellarium is
+package Sky_Line is
 
-  package Application is new Applications (Product => "stellarium"); -- lower case for Linux
+  procedure Read;
 
-  subtype Port_Number is Network.Port_Number;
+  procedure Clear;
 
-  type Magnitude is delta 0.1 range -30.0 .. 30.0;
+  procedure Add (Direction : Earth.Direction);
 
-  type Goto_Handler is access procedure (Direction : Space.Direction);
+  function Is_Defined return Boolean;
 
-  function Startup (Filename : String;
-                    The_Port : Network.Port_Number) return Boolean;
+  function Is_Above (Direction : Earth.Direction) return Boolean;
 
-  procedure Shutdown;
-
-  function Landscape_Filename return String;
-
-  function Altitude return Integer;
-
-  function Latitude return Angle.Degrees;
-
-  function Longitude return Angle.Degrees;
-
-  function Language return Language.Kind;
-
-  function Satellites_Filename return String;
-
-  procedure Start (Used_Port : Port_Number);
-
-  procedure Define_Handler (The_Handler : Goto_Handler);
-
-  procedure Set (Direction : Space.Direction);
-
-  procedure Close;
-
-end Stellarium;
+  function Is_Above (Direction : Space.Direction;
+                     Lmst      : Time.Value) return Boolean;
+end Sky_Line;

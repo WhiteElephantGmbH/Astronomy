@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2012 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2012 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -22,6 +22,12 @@ with Time;
 package Sky_Line is
 
   procedure Read;
+
+  procedure Create;
+
+  procedure Append (Direction : Earth.Direction);
+
+  procedure Close;
 
   procedure Clear;
 

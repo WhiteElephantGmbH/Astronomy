@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2015 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2015 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -62,6 +62,13 @@ package body File is
                       Extension : String) return String is
   begin
     return Composure (String(Directory), Filename, Extension);
+  end Composure;
+
+
+  function Composure (Directory               : Folder;
+                      Filename_With_Extension : String) return String is
+  begin
+    return String(Directory) & The_Folder_Separator & Filename_With_Extension;
   end Composure;
 
 

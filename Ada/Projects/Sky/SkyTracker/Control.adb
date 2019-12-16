@@ -21,6 +21,7 @@ with Data;
 with Error;
 with Gui;
 with Handbox;
+with Horizon;
 with Lx200;
 with Moon;
 with Name;
@@ -565,6 +566,9 @@ package body Control is
 
   procedure Read_Data is
   begin
+    if not Sky_Line.Is_Defined then
+      Horizon.Generate;
+    end if;
     Sky_Line.Read;
     Neo.Add_Objects;
     Name.Read_Favorites;

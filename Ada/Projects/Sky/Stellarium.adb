@@ -36,6 +36,7 @@ package body Stellarium is
   Init_Location : constant Configuration.Section_Handle := Configuration.Handle_For (Config_Handle, "init_location");
   Localization  : constant Configuration.Section_Handle := Configuration.Handle_For (Config_Handle, "localization");
 
+  Landscape_Name : constant String := Configuration.Value_Of (Init_Location, "landscape_name");
   Location       : constant String := Configuration.Value_Of (Init_Location, "location");
   Last_Location  : constant String := Configuration.Value_Of (Init_Location, "last_location");
 
@@ -46,7 +47,6 @@ package body Stellarium is
   User_Locations_Filename : constant String := File.Composure (Directory => Data_Directory,
                                                                Filename  => "user_locations",
                                                                Extension => "txt");
-
   use type File.Folder;
 
   Satellites_Directory : constant File.Folder := Application.Data_Directory + "modules" + "Satellites";
@@ -54,6 +54,31 @@ package body Stellarium is
   Satellites_Json : constant String := File.Composure (Directory => Satellites_Directory,
                                                        Filename  => "satellites",
                                                        Extension => "json");
+
+  Landscapes_Directory : constant String := Application.Composure ("landscapes");
+  Landscape_Directory  : constant File.Folder := Landscapes_Directory + Landscape_Name;
+
+  function Landscape_Config_Name return String is
+  begin
+    declare
+      Config_Name : constant String := File.Composure (Landscape_Directory, "landscape", "ini");
+    begin
+      if File.Exists (Config_Name) then
+        Log.Write ("Landscape configuration: " & Config_Name);
+        return Config_Name;
+      else
+        Log.Warning ("Landscape configuration " & Config_Name & " not defined by user");
+        return "";
+      end if;
+    end;
+  exception
+  when others =>
+    Log.Warning ("No landsape defined by user in " & Landscapes_Directory);
+    return "";
+  end Landscape_Config_Name;
+
+  Landscape_Config  : constant Configuration.File_Handle := Configuration.Handle_For (Landscape_Config_Name);
+  Landscape_Section : constant Configuration.Section_Handle := Configuration.Handle_For (Landscape_Config, "landscape");
 
   Paris_Altitude  : constant Natural       := 42;
   Paris_Latitude  : constant Angle.Degrees := 48.8534083333;
@@ -205,6 +230,13 @@ package body Stellarium is
   when others =>
     Log.Write ("already terminated");
   end Shutdown;
+
+
+  function Landscape_Filename return String is
+    Name : constant String := Configuration.Value_Of (Landscape_Section, "maptex");
+  begin
+    return File.Composure (Landscape_Directory, Name);
+  end Landscape_Filename;
 
 
   function Altitude return Integer is
