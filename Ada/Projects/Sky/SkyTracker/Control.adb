@@ -443,7 +443,8 @@ package body Control is
       | Telescope.Positioning
       | Telescope.Preparing
       | Telescope.Approaching
-      | Telescope.Tracking =>
+      | Telescope.Tracking
+      | Telescope.Waiting =>
         Lx200.Set (The_Data.Actual_Direction);
         Stellarium.Set (The_Data.Actual_Direction);
       when others =>
