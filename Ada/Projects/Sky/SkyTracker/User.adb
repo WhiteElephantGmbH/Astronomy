@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2019 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2019 .. 2020 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -31,7 +31,6 @@ with Parameter;
 with Persistent;
 with Program;
 with Refraction;
-with Sky_Line;
 with Space;
 with Strings;
 with Time;
@@ -480,38 +479,10 @@ package body User is
   end Disable_Shutdown_Button;
 
 
-  protected Local_Direction is
-
-    procedure Set (Item : Earth.Direction);
-
-    function Value return Earth.Direction;
-
-  private
-    The_Item : Earth.Direction;
-  end Local_Direction;
-
-
-  protected body Local_Direction is
-
-    procedure Set (Item : Earth.Direction) is
-    begin
-      The_Item := Item;
-    end Set;
-
-
-    function Value return Earth.Direction is
-    begin
-      return The_Item;
-    end Value;
-
-  end Local_Direction;
-
-
   function Image_Of (The_Position : Device.Microns) return String is
   begin
     return Strings.Trimmed (The_Position'img) & "μm";
   end Image_Of;
-
 
 
   procedure Menu_Disable is
@@ -578,7 +549,6 @@ package body User is
     when Is_Control =>
       null;
     when Is_Display =>
-      Local_Direction.Set (Information.Local_Direction);
       if Space.Direction_Is_Known (Information.Target_Direction) then
         Gui.Set_Text (Target_Dec, Space.Dec_Image_Of (Information.Target_Direction));
         Gui.Set_Text (Target_Ra, Space.Ra_Image_Of (Information.Target_Direction));
@@ -876,10 +846,8 @@ package body User is
   procedure Enter_Handling is
   begin
     case The_Page is
-    when Is_Control =>
+    when Is_Control | Is_Display =>
       Signal_Action (Back);
-    when Is_Display =>
-      Sky_Line.Add (Local_Direction.Value);
     when Is_Setup =>
       null;
     end case;
