@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2013 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2013 .. 2020 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -68,7 +68,6 @@ package body Parameter is
   Lx200_Id       : constant String := "Lx200";
   Port_Key       : constant String := "Port";
   Program_Key    : constant String := "Program";
-  Satellites_Key : constant String := "Satellites";
   Magnitude_Key  : constant String := "Magnitude";
 
   Site_Id       : constant String := "Site";
@@ -102,9 +101,8 @@ package body Parameter is
   The_Lx200_Port          : Network.Port_Number;
 
   --Stellarium
-  The_Stellarium_Port     : Network.Port_Number;
-  The_Satellites_Filename : Text.String;
-  The_Magnitude_Maximum   : Stellarium.Magnitude;
+  The_Stellarium_Port   : Network.Port_Number;
+  The_Magnitude_Maximum : Stellarium.Magnitude;
 
   -- Site
   The_Latitude  : Angle.Value;
@@ -341,12 +339,11 @@ package body Parameter is
       Put (Port_Key & " = 4030");
       Put ("");
       Put ("[" & Stellarium_Id & "]");
-      Put (Port_Key & "       = 10001");
+      Put (Port_Key & "      = 10001");
       if Os.Is_Windows then
-        Put (Program_Key & "    = C:\Program Files\Stellarium\Stellarium.exe");
+        Put (Program_Key & "   = C:\Program Files\Stellarium\Stellarium.exe");
       end if;
-      Put (Satellites_Key & " = " & Stellarium.Satellites_Filename);
-      Put (Magnitude_Key & "  = 8.0");
+      Put (Magnitude_Key & " = 8.0");
       Put ("");
       Put ("[" & Site_Id & "]");
       Put (Longitude_Key & " = " & Angle.Image_Of (+Stellarium.Longitude, Decimals => 2, Show_Signed => True));
@@ -470,21 +467,6 @@ package body Parameter is
         end if;
       end Startup_Stellarium;
 
-      procedure Define_Satellites_Filename is
-        Json_Filename : constant String := String_Value_Of (Satellites_Key);
-      begin
-        if Json_Filename = "" or Strings.Is_Equal (Json_Filename, "None") then
-          Log.Write ("No Satellites");
-          Text.Clear (The_Satellites_Filename);
-        else
-          Log.Write ("Stellarium satellites file: """ & Json_Filename & """");
-          if not File.Exists (Json_Filename) then
-            Error.Raise_With ("Stellarium satellites file """ & Json_Filename & """ not found");
-          end if;
-          The_Satellites_Filename := Text.String_Of (Json_Filename);
-        end if;
-      end Define_Satellites_Filename;
-
     begin -- Read_Values
       Set (Localization_Handle);
       Standard.Language.Define (Language);
@@ -541,7 +523,6 @@ package body Parameter is
         Error.Raise_With ("Lx200 port number out of range");
       end;
       Set (Stellarium_Handle);
-      Define_Satellites_Filename;
       begin
         The_Stellarium_Port := Network.Port_Number (Value_Of (Port_Key));
         Log.Write ("Stellarium Port:" & The_Stellarium_Port'img);
@@ -745,12 +726,6 @@ package body Parameter is
   begin
     return The_Stellarium_Port;
   end Stellarium_Port;
-
-
-  function Satellites_Filename return String is
-  begin
-    return Text.String_Of (The_Satellites_Filename);
-  end Satellites_Filename;
 
 
   function Magnitude_Maximum return Stellarium.Magnitude is
