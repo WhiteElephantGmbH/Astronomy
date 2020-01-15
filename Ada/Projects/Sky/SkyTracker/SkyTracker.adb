@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                               (c) 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                           (c) 2019 .. 2020 by White Elephant GmbH, Schaffhausen, Switzerland                      *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -21,4 +21,3 @@ procedure SkyTracker is
 begin
   Control.Start;
 end SkyTracker;
-

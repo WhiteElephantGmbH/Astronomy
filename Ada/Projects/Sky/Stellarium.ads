@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2013 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2013 .. 2020 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -16,14 +16,11 @@
 pragma Style_White_Elephant;
 
 with Angle;
-with Applications;
 with Language;
 with Network;
 with Space;
 
 package Stellarium is
-
-  package Application is new Applications (Product => "stellarium"); -- lower case for Linux
 
   subtype Port_Number is Network.Port_Number;
 

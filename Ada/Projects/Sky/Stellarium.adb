@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2013 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2013 .. 2020 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,7 +15,9 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with Ada.Environment_Variables;
 with Ada.Text_IO;
+with Applications;
 with Configuration;
 with File;
 with Network.Tcp.Servers;
@@ -30,7 +32,36 @@ package body Stellarium is
 
   package IO renames Ada.Text_IO;
 
-  Configuration_Filename : constant String := Application.Composure ("config", "ini");
+
+  function Actual_Data_Directory return String is
+
+    package Application is new Applications (Product => "stellarium"); -- lower case for Linux
+
+    Path_Variable : constant String := "STELLARIUM_DATA_PATH";
+
+  begin
+    if Ada.Environment_Variables.Exists (Path_Variable) then
+      declare
+        Data_Directory : constant String := Ada.Environment_Variables.Value (Path_Variable);
+      begin
+        if not File.Directory_Exists (Data_Directory) then
+          Log.Error ("Data Directory " & Data_Directory & " not found");
+          return "";
+        end if;
+        Log.Write ("Data Directory " & Data_Directory & " used from " & Path_Variable);
+        return Data_Directory;
+      end;
+    else
+      return Application.Data_Directory;
+    end if;
+  end Actual_Data_Directory;
+
+
+  Application_Data_Directory : constant String := Actual_Data_Directory;
+
+  Configuration_Filename : constant String := File.Composure (Directory => Application_Data_Directory,
+                                                              Filename  => "config",
+                                                              Extension => "ini");
 
   Config_Handle : constant Configuration.File_Handle    := Configuration.Handle_For (Configuration_Filename);
   Init_Location : constant Configuration.Section_Handle := Configuration.Handle_For (Config_Handle, "init_location");
@@ -42,20 +73,21 @@ package body Stellarium is
 
   Sky_Locale : constant String := Configuration.Value_Of (Localization, "sky_locale");
 
-  Data_Directory : constant String := Application.Composure ("data");
+  use type File.Folder;
+
+  Data_Directory : constant File.Folder := Application_Data_Directory + "data";
 
   User_Locations_Filename : constant String := File.Composure (Directory => Data_Directory,
                                                                Filename  => "user_locations",
                                                                Extension => "txt");
-  use type File.Folder;
 
-  Satellites_Directory : constant File.Folder := Application.Data_Directory + "modules" + "Satellites";
+  Satellites_Directory : constant File.Folder := Application_Data_Directory + "modules" + "Satellites";
 
   Satellites_Json : constant String := File.Composure (Directory => Satellites_Directory,
                                                        Filename  => "satellites",
                                                        Extension => "json");
 
-  Landscapes_Directory : constant String := Application.Composure ("landscapes");
+  Landscapes_Directory : constant String := Application_Data_Directory & File.Folder_Separator & "landscapes";
   Landscape_Directory  : constant File.Folder := Landscapes_Directory + Landscape_Name;
 
   function Landscape_Config_Name return String is
@@ -91,7 +123,13 @@ package body Stellarium is
 
   function Satellites_Filename return String is
   begin
-    return Satellites_Json;
+    if Satellites_Json /= "" and then File.Exists (Satellites_Json) then
+      Log.Write ("Satellites filename: " & Satellites_Json);
+      return Satellites_Json;
+    else
+      Log.Warning ("No satellites defined");
+      return "";
+    end if;
   end Satellites_Filename;
 
 

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2013 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2013 .. 2020 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -425,7 +425,7 @@ package body Satellite is
       end if;
     end Get_Value;
 
-    Json_Filename : constant String := Parameter.Satellites_Filename;
+    Json_Filename : constant String := Stellarium.Satellites_Filename;
 
   begin -- Read_Stellarium_Data
     File.Delete_Directory (Directory);
