@@ -19,21 +19,21 @@ package body GID.Buffering is
     begin
       if is_mapping_possible then
         declare
-          SE_Buffer_mapped: Stream_Element_Array (1 .. buffer'Length);
+          SE_Buffer_mapped: Stream_Element_Array (1 .. buffer'length);
           --  direct mapping: buffer = SE_Buffer_mapped
-          for SE_Buffer_mapped'Address use buffer'Address;
+          for SE_Buffer_mapped'address use buffer'address;
           pragma Import (Ada, SE_Buffer_mapped);
         begin
           Read(b.stream.all, SE_Buffer_mapped, Last_Read);
         end;
       else
         declare
-          SE_Buffer: Stream_Element_Array (1 .. buffer'Length);
+          SE_Buffer: Stream_Element_Array (1 .. buffer'length);
           --  need to copy array (slightly slower)
         begin
           Read(b.stream.all, SE_Buffer, Last_Read);
-          for i in buffer'Range loop
-            buffer(i):= U8(SE_Buffer(Stream_Element_Offset(i-buffer'First)+SE_Buffer'First));
+          for i in buffer'range loop
+            buffer(i):= U8(SE_Buffer(Stream_Element_Offset(i-buffer'first)+SE_Buffer'first));
           end loop;
         end;
       end if;

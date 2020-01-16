@@ -12,12 +12,12 @@ package body GID.Decoding_BMP is
       return 16 * (16 * x) + x;  --  this is 257 * x, = 16#0101# * x
       --  Numbers 8-bit -> no OA warning at instanciation. Returns x if type Primary_color_range is mod 2**8.
     end Times_257;
-    full_opaque: constant Primary_color_range:= Primary_color_range'Last;
+    full_opaque: constant Primary_color_range:= Primary_color_range'last;
     --
     procedure Pixel_with_palette is
     pragma Inline(Pixel_with_palette);
     begin
-      case Primary_color_range'Modulus is
+      case Primary_color_range'modulus is
         when 256 =>
           Put_Pixel(
             Primary_color_range(image.palette(Integer(b)).red),
@@ -42,8 +42,8 @@ package body GID.Decoding_BMP is
     bit: Natural range 0..7;
     --
     line_bits: constant Float:= Float(image.width * Positive_32 (image.bits_per_pixel));
-    padded_line_size: constant Positive:= 4 * Integer(Float'Ceiling(line_bits / 32.0));
-    unpadded_line_size: constant Positive:= Integer(Float'Ceiling(line_bits / 8.0));
+    padded_line_size: constant Positive:= 4 * Integer(Float'ceiling(line_bits / 32.0));
+    unpadded_line_size: constant Positive:= Integer(Float'ceiling(line_bits / 8.0));
     --  (in bytes)
   begin
     Attach_Stream(image.buffer, image.stream);
@@ -96,7 +96,7 @@ package body GID.Decoding_BMP is
             Get_Byte(image.buffer, bb);
             Get_Byte(image.buffer, bg);
             Get_Byte(image.buffer, br);
-            case Primary_color_range'Modulus is
+            case Primary_color_range'modulus is
               when 256 =>
                 Put_Pixel(
                   Primary_color_range(br),

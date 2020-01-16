@@ -8,7 +8,7 @@ package body GID.Decoding_PNG.Huffman is
     code, mask: Unsigned_32;
   begin
     alloc:= root;
-    for i in descr'Range loop
+    for i in descr'range loop
       if descr(i).length > 0 then
         curr:= root;
         code:= Unsigned_32(descr(i).code);
@@ -55,7 +55,7 @@ package body GID.Decoding_PNG.Huffman is
     while tl /= null loop
       if full_trace then
         tcount:= tcount+1;
-        tot_length:= tot_length + tl.table'Length;
+        tot_length:= tot_length + tl.table'length;
       end if;
       Dispose( tl.table ); -- destroy the Huffman table
       current:= tl;
@@ -64,8 +64,8 @@ package body GID.Decoding_PNG.Huffman is
     end loop;
     if full_trace then
       Ada.Text_IO.Put_Line(
-        Integer'Image(tcount)& " tables, of" &
-        Integer'Image(tot_length)& " tot. length]"
+        Integer'image(tcount)& " tables, of" &
+        Integer'image(tot_length)& " tot. length]"
       );
     end if;
   end HufT_free;
@@ -118,7 +118,7 @@ package body GID.Decoding_PNG.Huffman is
     z  : Natural:= 0;                 -- number of entries in current table
     el : Integer;                     -- length of eob code=code 256
 
-    no_copy_length_array: constant Boolean:= d'Length=0 or e'Length=0;
+    no_copy_length_array: constant Boolean:= d'length=0 or e'length=0;
 
   begin
     if full_trace then
@@ -126,7 +126,7 @@ package body GID.Decoding_PNG.Huffman is
     end if;
     tl:= null;
 
-    if b'Length > 256 then -- set length of EOB code, if any
+    if b'length > 256 then -- set length of EOB code, if any
       el := Natural(b(256));
     else
       el := b_max;
@@ -134,7 +134,7 @@ package body GID.Decoding_PNG.Huffman is
 
     --  Generate counts for each bit length
 
-    for k in b'Range loop
+    for k in b'range loop
       if b(k) > b_max then
         --  m := 0; -- GNAT 2005 doesn't like it (warning).
         raise huft_error;
@@ -142,7 +142,7 @@ package body GID.Decoding_PNG.Huffman is
       count( Natural(b(k)) ):= count( Natural(b(k)) ) + 1;
     end loop;
 
-    if count(0) = b'Length then
+    if count(0) = b'length then
       m := 0;
       huft_incomplete:= False; -- spotted by Tucker Taft, 19-Aug-2004
       return; -- complete
@@ -196,10 +196,10 @@ package body GID.Decoding_PNG.Huffman is
 
     --  Make table of values in order of bit length
 
-    for idx in b'Range loop
+    for idx in b'range loop
       j := Natural(b(idx));
       if j /= 0 then
-        v( offset(j) ) := idx-b'First;
+        v( offset(j) ) := idx-b'first;
         offset(j):= offset(j) + 1;
       end if;
     end loop;
@@ -208,7 +208,7 @@ package body GID.Decoding_PNG.Huffman is
 
     code_stack(0) := 0;
     i := 0;
-    v_idx:= v'First;
+    v_idx:= v'first;
     bits(-1) := 0;
 
     --  go through the bit lengths (kcc already is bits in shortest code)
@@ -285,7 +285,7 @@ package body GID.Decoding_PNG.Huffman is
 
             --  Test against bad input!
 
-            if j > u( table_level - 1 )'Last then
+            if j > u( table_level - 1 )'last then
               raise huft_error;
             end if;
             u( table_level - 1 ) (j) := new_entry;
@@ -298,7 +298,7 @@ package body GID.Decoding_PNG.Huffman is
         new_entry.bits      := k - w;
         new_entry.next_table:= null;   -- Unused
 
-        if v_idx >= b'Length then
+        if v_idx >= b'length then
           new_entry.extra_bits := invalid;
         else
           el_v:= v(v_idx);

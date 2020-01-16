@@ -31,7 +31,7 @@ package body GID.Headers is
     FITS_challenge : String(1..5); -- without the initial
     GIF_challenge  : String(1..5); -- without the initial
     PNG_challenge  : String(1..7); -- without the initial
-    PNG_signature  : constant String:= "PNG" & ASCII.CR & ASCII.LF & ASCII.SUB & ASCII.LF;
+    PNG_signature  : constant String:= "PNG" & Ascii.Cr & Ascii.Lf & Ascii.Sub & Ascii.Lf;
     PNM_challenge  : Character;
     TIFF_challenge : String(1..3); -- without the initial
     TIFF_signature : String(1..2);
@@ -43,69 +43,69 @@ package body GID.Headers is
     image.next_frame:= 0.0;
     image.display_orientation:= Unchanged;
     --
-    Character'Read(image.stream, c);
-    image.first_byte:= Character'Pos(c);
+    Character'read(image.stream, c);
+    image.first_byte:= Character'pos(c);
     case c is
       when 'B' =>
-        Character'Read(image.stream, c);
+        Character'read(image.stream, c);
         if c='M' then
           image.detailed_format:= To_Bounded_String("BMP");
           image.format:= BMP;
           return;
         end if;
       when 'S' =>
-        String'Read(image.stream, FITS_challenge);
+        String'read(image.stream, FITS_challenge);
         if FITS_challenge = "IMPLE"  then
           image.detailed_format:= To_Bounded_String("FITS");
           image.format:= FITS;
           return;
         end if;
       when 'G' =>
-        String'Read(image.stream, GIF_challenge);
+        String'read(image.stream, GIF_challenge);
         if GIF_challenge = "IF87a" or GIF_challenge = "IF89a" then
           image.detailed_format:= To_Bounded_String('G' & GIF_challenge & ", ");
           image.format:= GIF;
           return;
         end if;
       when 'I' | 'M' =>
-        String'Read(image.stream, TIFF_challenge);
+        String'read(image.stream, TIFF_challenge);
         if c = TIFF_challenge(1) then
           --  TIFF begins either with II (Intel) or MM (Motorola) - TIFF 6.0 Specification p.13
           if c = 'I' then
             image.detailed_format:= To_Bounded_String("TIFF, little-endian");
             image.endianess:= little;
-            TIFF_signature:= '*' & ASCII.NUL; -- 42 (The Answer) on 16 bits
+            TIFF_signature:= '*' & Ascii.Nul; -- 42 (The Answer) on 16 bits
           else
             image.detailed_format:= To_Bounded_String("TIFF, big-endian");
             image.endianess:= big;
-            TIFF_signature:= ASCII.NUL & '*'; -- 42 (The Answer) on 16 bits
+            TIFF_signature:= Ascii.Nul & '*'; -- 42 (The Answer) on 16 bits
           end if;
           if TIFF_challenge(2..3) = TIFF_signature then
             image.format:= TIFF;
             return;
           end if;
         end if;
-      when Character'Val(16#FF#) =>
-        Character'Read(image.stream, c);
-        if c=Character'Val(16#D8#) then
+      when Character'val(16#FF#) =>
+        Character'read(image.stream, c);
+        if c=Character'val(16#D8#) then
           --  SOI (Start of Image) segment marker (FFD8)
           image.detailed_format:= To_Bounded_String("JPEG");
           image.format:= JPEG;
           return;
         end if;
-      when Character'Val(16#89#) =>
-        String'Read(image.stream, PNG_challenge);
+      when Character'val(16#89#) =>
+        String'read(image.stream, PNG_challenge);
         if PNG_challenge = PNG_signature  then
           image.detailed_format:= To_Bounded_String("PNG");
           image.format:= PNG;
           return;
         end if;
       when 'P' =>
-        Character'Read(image.stream, PNM_challenge);
+        Character'read(image.stream, PNM_challenge);
         if PNM_challenge in '1'..'6' then
           image.detailed_format:= To_Bounded_String("PNM (PBM, PGM or PPM)");
           image.format:= PNM;
-          image.subformat_id:= Integer'Value((1 => PNM_challenge));
+          image.subformat_id:= Integer'value((1 => PNM_challenge));
           return;
         end if;
 
@@ -168,8 +168,8 @@ package body GID.Headers is
     m: Number:= 1;
   begin
     n:= 0;
-    for i in 1..Number'Size/8 loop
-      U8'Read(from, b);
+    for i in 1..Number'size/8 loop
+      U8'read(from, b);
       n:= n + m * Number(b);
       m:= m * 256;
     end loop;
@@ -183,8 +183,8 @@ package body GID.Headers is
     b: U8;
   begin
     n:= 0;
-    for i in 1..Number'Size/8 loop
-      U8'Read(from, b);
+    for i in 1..Number'size/8 loop
+      U8'read(from, b);
       n:= n * 256 + Number(b);
     end loop;
   end Big_endian_number;
@@ -197,7 +197,7 @@ package body GID.Headers is
     b: U8;
   begin
     n:= 0;
-    for i in 1..Number'Size/8 loop
+    for i in 1..Number'size/8 loop
       Buffering.Get_Byte(from, b);
       n:= n * 256 + Number(b);
     end loop;
@@ -264,7 +264,7 @@ package body GID.Headers is
       when 1 | 4 | 8 | 24 =>
         null;
       when others =>
-        raise unsupported_image_subformat with "BMP bit depth =" & U16'Image(w);
+        raise unsupported_image_subformat with "BMP bit depth =" & U16'image(w);
     end case;
     image.bits_per_pixel:= Integer(w);
     --   Pos= 31, read four bytes
@@ -317,7 +317,7 @@ package body GID.Headers is
     image.width:= Positive_32 (screen_width);
     image.height:= Positive_32 (screen_height);
     image.transparency:= True; -- cannot exclude transparency at this level.
-    U8'Read(image.stream, packed);
+    U8'read(image.stream, packed);
     --  Global Color Table Flag       1 Bit
     --  Color Resolution              3 Bits
     --  Sort Flag                     1 Bit
@@ -327,8 +327,8 @@ package body GID.Headers is
     --  Indicative:
     --  iv) [...] This value should be set to indicate the
     --      richness of the original palette
-    U8'Read(image.stream, background);
-    U8'Read(image.stream, aspect_ratio_code);
+    U8'read(image.stream, background);
+    U8'read(image.stream, aspect_ratio_code);
     Buffering.Attach_Stream(image.buffer, image.stream);
     if global_palette then
       image.subformat_id:= 1+(Natural(packed and 16#07#));
@@ -402,16 +402,16 @@ package body GID.Headers is
     if n = 0 then
       raise error_in_image_data with "PNG image with zero width";
     end if;
-    if n > U32 (Positive_32'Last) then
-      raise error_in_image_data with "PNG image: width value too large:" & U32'Image (n);
+    if n > U32 (Positive_32'last) then
+      raise error_in_image_data with "PNG image: width value too large:" & U32'image (n);
     end if;
     image.width:=  Positive_32 (n);
     Big_endian_buffered(image.buffer, n);
     if n = 0 then
       raise error_in_image_data with "PNG image with zero height";
     end if;
-    if n > U32 (Positive_32'Last) then
-      raise error_in_image_data with "PNG image: height value too large:" & U32'Image (n);
+    if n > U32 (Positive_32'last) then
+      raise error_in_image_data with "PNG image: height value too large:" & U32'image (n);
     end if;
     image.height:= Positive_32 (n);
     Get_Byte(image.buffer, b);
@@ -529,14 +529,14 @@ package body GID.Headers is
         depth_val := Get_Integer(image.stream, needs_EOL => True);
         if depth_val /= 255 then
           raise unsupported_image_subformat with
-            "PNM: maximum depth value" & Integer'Image(depth_val) &
+            "PNM: maximum depth value" & Integer'image(depth_val) &
              "; only 255 is supported";
         end if;
         image.greyscale:= image.subformat_id = 2 or image.subformat_id = 5;
         image.bits_per_pixel:= 24;
       when others =>
         raise unsupported_image_subformat with
-          "PNM: P" & Integer'Image(image.subformat_id) & " not supported";
+          "PNM: P" & Integer'image(image.subformat_id) & " not supported";
     end case;
   exception
     when Constraint_Error =>
@@ -570,19 +570,19 @@ package body GID.Headers is
   begin
     --  Read the header
     image_ID_length:= image.first_byte;
-    U8'Read(image.stream, color_map_type);
-    U8'Read(image.stream, image_type);
+    U8'read(image.stream, color_map_type);
+    U8'read(image.stream, image_type);
     --   Color Map Specification - Field 4
     Read_Intel(image.stream, first_entry_index);
     Read_Intel(image.stream, color_map_length);
-    U8'Read(image.stream, color_map_entry_size);
+    U8'read(image.stream, color_map_entry_size);
     --   Image Specification - Field 5
     Read_Intel(image.stream, x_origin);
     Read_Intel(image.stream, y_origin);
     Read_Intel(image.stream, image_width);
     Read_Intel(image.stream, image_height);
-    U8'Read(image.stream, pixel_depth);
-    U8'Read(image.stream, tga_image_descriptor);
+    U8'read(image.stream, pixel_depth);
+    U8'read(image.stream, tga_image_descriptor);
     --  Done.
     --
     --  Image type:
@@ -593,7 +593,7 @@ package body GID.Headers is
     --     10 = RLE version of Type 2
     --     11 = RLE version of Type 3
     --
-    base_image_type:= U8'Pos(image_type and 7);
+    base_image_type:= U8'pos(image_type and 7);
     image.RLE_encoded:= (image_type and 8) /= 0;
     --
     if color_map_type /= 0 then
@@ -616,7 +616,7 @@ package body GID.Headers is
         when others =>
           raise error_in_image_data with
             "TGA color map (palette): wrong bit depth:" &
-            Integer'Image(image.subformat_id);
+            Integer'image(image.subformat_id);
       end case;
     end if;
     --
@@ -630,12 +630,12 @@ package body GID.Headers is
         image.greyscale:= True;
       when others =>
         raise unsupported_image_subformat with
-          "TGA type =" & Integer'Image(base_image_type);
+          "TGA type =" & Integer'image(base_image_type);
     end case;
 
-    image.width  := U16'Pos(image_width);
-    image.height := U16'Pos(image_height);
-    image.bits_per_pixel := U8'Pos(pixel_depth);
+    image.width  := U16'pos(image_width);
+    image.height := U16'pos(image_height);
+    image.bits_per_pixel := U8'pos(pixel_depth);
 
     --  Make sure we are loading a supported TGA_type
     case image.bits_per_pixel is
@@ -645,14 +645,14 @@ package body GID.Headers is
         image.transparency:= True;
       when others =>
         raise unsupported_image_subformat with
-          "TGA bits per pixels =" & Integer'Image(image.bits_per_pixel) &
+          "TGA bits per pixels =" & Integer'image(image.bits_per_pixel) &
           "; supported bpp are: 8, 15, 16, 24, 32";
     end case;
     image.top_first:= (tga_image_descriptor and 32) /= 0;
     --  *** Image and color map data
     --  * Image ID
     for i in 1..image_ID_length loop
-      U8'Read( image.stream, dummy );
+      U8'read( image.stream, dummy );
     end loop;
     --  * Color map data (palette)
     Color_tables.Load_palette(image);
@@ -671,7 +671,7 @@ package body GID.Headers is
     Read_any_endian(image.stream, first_IFD_offset, image.endianess);
     raise known_but_unsupported_image_format with
       "TIFF is not appropriate for streaming. Use PNG, BMP (lossless) or JPEG instead." &
-      "Info: IFD Offset=" & U32'Image(first_IFD_offset);
+      "Info: IFD Offset=" & U32'image(first_IFD_offset);
   end Load_TIFF_header;
 
 end GID.Headers;

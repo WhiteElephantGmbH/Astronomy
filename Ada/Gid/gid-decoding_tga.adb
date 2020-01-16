@@ -40,7 +40,7 @@ package body GID.Decoding_TGA is
       p1, p2, c, d: U8;
     begin
       if pal then
-        if image.palette'Length <= 256 then
+        if image.palette'length <= 256 then
           Get_Byte(image.buffer, p1);
           idx:= Natural(p1);
         else
@@ -48,7 +48,7 @@ package body GID.Decoding_TGA is
           Get_Byte(image.buffer, p2);
           idx:= Natural(p1) + Natural(p2) * 256;
         end if;
-        idx:= idx + image.palette'First;
+        idx:= idx + image.palette'first;
         pix.color:= image.palette(idx);
       else
         case bpp is
@@ -91,7 +91,7 @@ package body GID.Decoding_TGA is
       if RLE_pixels_remaining = 0 then -- load RLE code
         Get_Byte(image.buffer, tmp );
         Get_pixel_for_RLE;
-        RLE_pixels_remaining:= U8'Pos(tmp and 16#7F#);
+        RLE_pixels_remaining:= U8'pos(tmp and 16#7F#);
         is_run_packet:= (tmp and 16#80#) /= 0;
         if is_run_packet then
           pix_mem:= pix;
@@ -122,7 +122,7 @@ package body GID.Decoding_TGA is
         --  Numbers 8-bit -> no OA warning at instanciation. Returns x if type Primary_color_range is mod 2**8.
       end Times_257;
     begin
-      case Primary_color_range'Modulus is
+      case Primary_color_range'modulus is
         when 256 =>
           Put_Pixel(
             Primary_color_range(pix.color.red),

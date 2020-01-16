@@ -54,8 +54,8 @@ package body GID is
     --  -> Palette
     Dispose (Object.palette);
     --  -> JPEG tables
-    for ad in JPEG_defs.VLC_defs_type'Range(1) loop
-      for idx in JPEG_defs.VLC_defs_type'Range(2) loop
+    for ad in JPEG_defs.VLC_defs_type'range(1) loop
+      for idx in JPEG_defs.VLC_defs_type'range(2) loop
         Dispose (Object.JPEG_stuff.vlc_defs (ad, idx));
       end loop;
     end loop;
@@ -67,13 +67,13 @@ package body GID is
 
   procedure Load_image_header (
     image   :    out Image_descriptor;
-    from    : in out Ada.Streams.Root_Stream_Type'Class;
+    from    : in out Ada.Streams.Root_Stream_Type'class;
     try_tga :        Boolean:= False
   )
   is
   begin
     Clear_heap_allocated_memory (image);
-    image.stream:= from'Unchecked_Access;
+    image.stream:= from'unchecked_access;
     --
     --  Load the very first symbols of the header,
     --  this identifies the image format.
@@ -230,8 +230,8 @@ package body GID is
       Object.palette := new Color_table'(Object.palette.all);
     end if;
     --  -> JPEG tables
-    for ad in JPEG_defs.VLC_defs_type'Range(1) loop
-      for idx in JPEG_defs.VLC_defs_type'Range(2) loop
+    for ad in JPEG_defs.VLC_defs_type'range(1) loop
+      for idx in JPEG_defs.VLC_defs_type'range(2) loop
         if Object.JPEG_stuff.vlc_defs (ad, idx) /= null then
           Object.JPEG_stuff.vlc_defs (ad, idx) :=
             new VLC_table'(Object.JPEG_stuff.vlc_defs (ad, idx).all);

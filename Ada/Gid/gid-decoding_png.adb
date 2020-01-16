@@ -36,7 +36,7 @@ package body GID.Decoding_PNG is
     b: U8;
   begin
     n:= 0;
-    for i in 1..Number'Size/8 loop
+    for i in 1..Number'size/8 loop
       Buffering.Get_Byte(from, b);
       n:= n * 256 + Number(b);
     end loop;
@@ -53,26 +53,26 @@ package body GID.Decoding_PNG is
     b: U8;
   begin
     Big_endian(image.buffer, ch.length);
-    for i in str4'Range loop
+    for i in str4'range loop
       Buffering.Get_Byte(image.buffer, b);
-      str4(i):= Character'Val(b);
+      str4(i):= Character'val(b);
     end loop;
     begin
-      ch.kind:= PNG_Chunk_tag'Value(str4);
+      ch.kind:= PNG_Chunk_tag'value(str4);
       if some_trace then
         Ada.Text_IO.Put_Line(
           "Chunk [" & str4 &
-          "], length:" & U32'Image(ch.length)
+          "], length:" & U32'image(ch.length)
         );
       end if;
     exception
       when Constraint_Error =>
         raise error_in_image_data with
           "PNG chunk unknown: " &
-          Integer'Image(Character'Pos(str4(1))) &
-          Integer'Image(Character'Pos(str4(2))) &
-          Integer'Image(Character'Pos(str4(3))) &
-          Integer'Image(Character'Pos(str4(4))) &
+          Integer'image(Character'pos(str4(1))) &
+          Integer'image(Character'pos(str4(2))) &
+          Integer'image(Character'pos(str4(3))) &
+          Integer'image(Character'pos(str4(4))) &
           " (" & str4 & ')';
     end;
   end Read;
@@ -97,7 +97,7 @@ package body GID.Decoding_PNG is
       Seed: constant:= 16#EDB88320#;
       l: Unsigned_32;
     begin
-      for i in CRC32_Table'Range loop
+      for i in CRC32_Table'range loop
         l:= i;
         for bit in 0..7 loop
           if (l and 1) = 0 then
@@ -114,7 +114,7 @@ package body GID.Decoding_PNG is
       local_CRC: Unsigned_32;
     begin
       local_CRC:= CRC ;
-      for i in InBuf'Range loop
+      for i in InBuf'range loop
         local_CRC :=
           CRC32_Table( 16#FF# and ( local_CRC xor Unsigned_32( InBuf(i) ) ) )
           xor
@@ -179,8 +179,8 @@ package body GID.Decoding_PNG is
       subtype Y_range is Integer range  0 .. Integer (image.height) - 1;
       --  X position -1 is for the row's filter methode code
 
-      x: X_range:= X_range'First;
-      y: Y_range:= Y_range'First;
+      x: X_range:= X_range'first;
+      y: Y_range:= Y_range'first;
 
       x_max: X_range; -- for non-interlaced images: = X_range'Last
       y_max: Y_range; -- for non-interlaced images: = Y_range'Last
@@ -214,8 +214,8 @@ package body GID.Decoding_PNG is
             Ada.Text_IO.New_Line;
           end if;
           Ada.Text_IO.Put_Line(
-            "row" & Integer'Image(y) & ": filter= " &
-            Filter_method_0'Image(current_filter)
+            "row" & Integer'image(y) & ": filter= " &
+            Filter_method_0'image(current_filter)
           );
         end if;
         --
@@ -229,8 +229,8 @@ package body GID.Decoding_PNG is
           when Sub     =>
             --  Recon(x) = Filt(x) + Recon(a)
             if x > 0 then
-              for i in f'Range loop
-                u(u'First+j):= f(i) + mem_row_bytes(curr_row)((x-1)*bytes_to_unfilter+j);
+              for i in f'range loop
+                u(u'first+j):= f(i) + mem_row_bytes(curr_row)((x-1)*bytes_to_unfilter+j);
                 j:= j + 1;
               end loop;
             else
@@ -239,8 +239,8 @@ package body GID.Decoding_PNG is
           when Up      =>
             --  Recon(x) = Filt(x) + Recon(b)
             if y > 0 then
-              for i in f'Range loop
-                u(u'First+j):= f(i) + mem_row_bytes(1-curr_row)(x*bytes_to_unfilter+j);
+              for i in f'range loop
+                u(u'first+j):= f(i) + mem_row_bytes(1-curr_row)(x*bytes_to_unfilter+j);
                 j:= j + 1;
               end loop;
             else
@@ -248,7 +248,7 @@ package body GID.Decoding_PNG is
             end if;
           when Average =>
             --  Recon(x) = Filt(x) + floor((Recon(a) + Recon(b)) / 2)
-            for i in f'Range loop
+            for i in f'range loop
               if x > 0 then
                 a:= Integer(mem_row_bytes(curr_row)((x-1)*bytes_to_unfilter+j));
               else
@@ -259,12 +259,12 @@ package body GID.Decoding_PNG is
               else
                 b:= 0;
               end if;
-              u(u'First+j):= U8((Integer(f(i)) + (a+b)/2) mod 256);
+              u(u'first+j):= U8((Integer(f(i)) + (a+b)/2) mod 256);
               j:= j + 1;
             end loop;
           when Paeth   =>
             --  Recon(x) = Filt(x) + PaethPredictor(Recon(a), Recon(b), Recon(c))
-            for i in f'Range loop
+            for i in f'range loop
               if x > 0 then
                 a:= Integer(mem_row_bytes(curr_row)((x-1)*bytes_to_unfilter+j));
               else
@@ -291,12 +291,12 @@ package body GID.Decoding_PNG is
               else
                 pr:= c;
               end if;
-              u(u'First+j):= f(i) + U8(pr);
+              u(u'first+j):= f(i) + U8(pr);
               j:= j + 1;
             end loop;
         end case;
         j:= 0;
-        for i in u'Range loop
+        for i in u'range loop
           mem_row_bytes(curr_row)(x*bytes_to_unfilter+j):= u(i);
           j:= j + 1;
         end loop;
@@ -331,7 +331,7 @@ package body GID.Decoding_PNG is
             --  Numbers 8-bit -> no OA warning at instanciation. Returns x if type Primary_color_range is mod 2**8.
           end Times_257;
         begin
-          case Primary_color_range'Modulus is
+          case Primary_color_range'modulus is
             when 256 =>
               Put_Pixel(
                 Primary_color_range(br),
@@ -368,7 +368,7 @@ package body GID.Decoding_PNG is
         procedure Out_Pixel_16(br, bg, bb, ba: U16) is
         pragma Inline(Out_Pixel_16);
         begin
-          case Primary_color_range'Modulus is
+          case Primary_color_range'modulus is
             when 256 =>
               Put_Pixel(
                 Primary_color_range(br / 256),
@@ -407,23 +407,23 @@ package body GID.Decoding_PNG is
               --   7 7 7 7 7 7 7 7
               case pass is
                 when 1 =>
-                 Set_X_Y(    x*8, Y_range'Last     - y*8);
+                 Set_X_Y(    x*8, Y_range'last     - y*8);
                 when 2 =>
-                 Set_X_Y(4 + x*8, Y_range'Last     - y*8);
+                 Set_X_Y(4 + x*8, Y_range'last     - y*8);
                 when 3 =>
-                 Set_X_Y(    x*4, Y_range'Last - 4 - y*8);
+                 Set_X_Y(    x*4, Y_range'last - 4 - y*8);
                 when 4 =>
-                 Set_X_Y(2 + x*4, Y_range'Last     - y*4);
+                 Set_X_Y(2 + x*4, Y_range'last     - y*4);
                 when 5 =>
-                 Set_X_Y(    x*2, Y_range'Last - 2 - y*4);
+                 Set_X_Y(    x*2, Y_range'last - 2 - y*4);
                 when 6 =>
-                 Set_X_Y(1 + x*2, Y_range'Last     - y*2);
+                 Set_X_Y(1 + x*2, Y_range'last     - y*2);
                 when 7 =>
                   null; -- nothing to to, pixel are contiguous
               end case;
             end if;
           else
-            x:= X_range'First; -- New row
+            x:= X_range'first; -- New row
             if y < y_max then
               y:= y + 1;
               curr_row:= 1-curr_row; -- swap row index for filtering
@@ -456,7 +456,7 @@ package body GID.Decoding_PNG is
                     xm:= Integer (image.width)      - 1;
                     ym:= Integer (image.height) / 2 - 1;
                 end case;
-                if xm >=0 and xm <= X_range'Last and ym in Y_range then
+                if xm >=0 and xm <= X_range'last and ym in Y_range then
                   --  This pass is not empty (otherwise, we will continue
                   --  to the next one, if any).
                   x_max:= xm;
@@ -480,8 +480,8 @@ package body GID.Decoding_PNG is
         --  several rows, or less than one, being displayed
         --  with the present uncompressed data batch.
         --
-        i:= data'First;
-        if i > data'Last then
+        i:= data'first;
+        if i > data'last then
           reject:= 0;
           return; -- data is empty, do nothing
         end if;
@@ -489,10 +489,10 @@ package body GID.Decoding_PNG is
         --  Main loop over data
         --
         loop
-          if x = X_range'First then -- pseudo-column for filter method
-            exit when i > data'Last;
+          if x = X_range'first then -- pseudo-column for filter method
+            exit when i > data'last;
             begin
-              current_filter:= Filter_method_0'Val(data(i));
+              current_filter:= Filter_method_0'val(data(i));
               if some_trace then
                 filter_stat(current_filter):= filter_stat(current_filter) + 1;
               end if;
@@ -500,24 +500,24 @@ package body GID.Decoding_PNG is
               when Constraint_Error =>
                 raise error_in_image_data with
                   "PNG: wrong filter code, row #" &
-                  Integer'Image(y) & " code:" & U8'Image(data(i));
+                  Integer'image(y) & " code:" & U8'image(data(i));
             end;
             if interlaced then
               case pass is
                 when 1..6 =>
                   null; -- Set_X_Y for each pixel
                 when 7 =>
-                  Set_X_Y(0, Y_range'Last - 1 - y*2);
+                  Set_X_Y(0, Y_range'last - 1 - y*2);
               end case;
             else
-              Set_X_Y(0, Y_range'Last - y);
+              Set_X_Y(0, Y_range'last - y);
             end if;
             i:= i + 1;
           else -- normal pixel
             --
             --  We quit the loop if all data has been used (except for an
             --  eventual incomplete pixel)
-            exit when i > data'Last - (bytes_to_unfilter - 1);
+            exit when i > data'last - (bytes_to_unfilter - 1);
             --  NB, for per-channel bpp < 8:
             --  7.2 Scanlines - some low-order bits of the
             --  last byte of a scanline may go unused.
@@ -663,10 +663,10 @@ package body GID.Decoding_PNG is
           Inc_XY;
         end loop;
         --  i is between data'Last-(bytes_to_unfilter-2) and data'Last+1
-        reject:= (data'Last + 1) - i;
+        reject:= (data'last + 1) - i;
         if reject > 0 then
           if some_trace then
-            Ada.Text_IO.Put("[rj" & Integer'Image(reject) & ']');
+            Ada.Text_IO.Put("[rj" & Integer'image(reject) & ']');
           end if;
         end if;
       end Output_uncompressed;
@@ -846,7 +846,7 @@ package body GID.Decoding_PNG is
         procedure Flush ( x: Natural ) is
         begin
           if full_trace then
-            Ada.Text_IO.Put("[Flush..." & Integer'Image(x));
+            Ada.Text_IO.Put("[Flush..." & Integer'image(x));
           end if;
           CRC32.Update( UnZ_Glob.crc32val, UnZ_Glob.slide( 0..x-1 ) );
           if old_bytes > 0 then
@@ -858,7 +858,7 @@ package body GID.Decoding_PNG is
               --  In extreme cases (x very small), we might have some of
               --  the rejected bytes from byte_mem.
               if old_bytes > 0 then
-                byte_mem(1..old_bytes):= app(app'Last-(old_bytes-1)..app'Last);
+                byte_mem(1..old_bytes):= app(app'last-(old_bytes-1)..app'last);
               end if;
             end;
           else
@@ -1128,7 +1128,7 @@ package body GID.Decoding_PNG is
               if full_trace then
                 Ada.Text_IO.Put_Line(
                   "td is incomplete, pointer=null: " &
-                  Boolean'Image(Td=null)
+                  Boolean'image(Td=null)
                 );
               end if;
             end if;
@@ -1254,7 +1254,7 @@ package body GID.Decoding_PNG is
                 if full_trace then
                   Ada.Text_IO.Put_Line(
                     "Illegal length code: " &
-                    Integer'Image(Tl.table(CT_dyn_idx).n)
+                    Integer'image(Tl.table(CT_dyn_idx).n)
                   );
                 end if;
 
@@ -1315,7 +1315,7 @@ package body GID.Decoding_PNG is
 
         procedure Inflate_Block( last_block: out Boolean ) is
         begin
-          last_block:= Boolean'Val(UnZ_IO.Bit_buffer.Read_and_dump(1));
+          last_block:= Boolean'val(UnZ_IO.Bit_buffer.Read_and_dump(1));
           case UnZ_IO.Bit_buffer.Read_and_dump(2) is -- Block type = 0,1,2,3
             when 0 =>      Inflate_stored_block;
             when 1 =>      Inflate_fixed_block;
@@ -1343,7 +1343,7 @@ package body GID.Decoding_PNG is
           UnZ_IO.Flush( UnZ_Glob.slide_index );
           UnZ_Glob.slide_index:= 0;
           if some_trace then
-            Ada.Text_IO.Put("# blocks:" & Integer'Image(blocks));
+            Ada.Text_IO.Put("# blocks:" & Integer'image(blocks));
           end if;
           UnZ_Glob.crc32val := CRC32.Final( UnZ_Glob.crc32val );
         end Inflate;
@@ -1362,15 +1362,15 @@ package body GID.Decoding_PNG is
       --  For optimization reasons, bytes_to_unfilter is passed as a
       --  generic parameter but should be always as below right to "/=" :
       --
-      if bytes_to_unfilter /= Integer'Max(1, bits_per_pixel / 8) then
+      if bytes_to_unfilter /= Integer'max(1, bits_per_pixel / 8) then
         raise Program_Error;
       end if;
       if interlaced then
         x_max:= (Integer (image.width)  + 7)/8 - 1;
         y_max:= (Integer (image.height) + 7)/8 - 1;
       else
-        x_max:= X_range'Last;
-        y_max:= Y_range'Last;
+        x_max:= X_range'last;
+        y_max:= Y_range'last;
       end if;
       main_chunk_loop:
       loop
@@ -1425,7 +1425,7 @@ package body GID.Decoding_PNG is
                 if b=0 then -- separates keyword from message
                   Ada.Text_IO.New_Line;
                 else
-                  Ada.Text_IO.Put(Character'Val(b));
+                  Ada.Text_IO.Put(Character'val(b));
                 end if;
               end if;
             end loop;
@@ -1441,8 +1441,8 @@ package body GID.Decoding_PNG is
         for f in Filter_method_0 loop
           Ada.Text_IO.Put_Line(
             "Filter: " &
-            Filter_method_0'Image(f) &
-            Integer'Image(filter_stat(f))
+            Filter_method_0'image(f) &
+            Integer'image(filter_stat(f))
           );
         end loop;
       end if;
@@ -1477,7 +1477,7 @@ package body GID.Decoding_PNG is
       Load_specialized(
         interlaced        => image.interlaced,
         bits_per_pixel    => image.bits_per_pixel,
-        bytes_to_unfilter => Integer'Max(1, image.bits_per_pixel / 8),
+        bytes_to_unfilter => Integer'max(1, image.bits_per_pixel / 8),
         subformat_id      => image.subformat_id
       );
 

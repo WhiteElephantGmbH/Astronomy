@@ -26,7 +26,7 @@ package body GID.Decoding_GIF is
     m: Number:= 1;
   begin
     n:= 0;
-    for i in 1..Number'Size/8 loop
+    for i in 1..Number'size/8 loop
       GID.Buffering.Get_Byte(from, b);
       n:= n + m * Number(b);
       m:= m * 256;
@@ -140,13 +140,13 @@ package body GID.Decoding_GIF is
           return 16 * (16 * x) + x;  --  this is 257 * x, = 16#0101# * x
           --  Numbers 8-bit -> no OA warning at instanciation. Returns x if type Primary_color_range is mod 2**8.
         end Times_257;
-        full_opaque: constant Primary_color_range:= Primary_color_range'Last;
+        full_opaque: constant Primary_color_range:= Primary_color_range'last;
       begin
         if transparency and then b = Transp_color then
           Put_Pixel(0,0,0, 0);
           return;
         end if;
-        case Primary_color_range'Modulus is
+        case Primary_color_range'modulus is
           when 256 =>
             Put_Pixel(
               Primary_color_range(local.palette(Integer(b)).red),
@@ -360,7 +360,7 @@ package body GID.Decoding_GIF is
       end loop;
       if full_trace and then BadCodeCount > 0 then
         Ada.Text_IO.Put_Line(
-         "Found" & Integer'Image(BadCodeCount) &
+         "Found" & Integer'image(BadCodeCount) &
          " bad codes"
         );
       end if;
@@ -412,11 +412,11 @@ package body GID.Decoding_GIF is
     --  Scan various GIF blocks, until finding an image
     loop
       Get_Byte(image.buffer, temp);
-      separator:= Character'Val(temp);
+      separator:= Character'val(temp);
       if full_trace then
         Ada.Text_IO.Put(
           "GIF separator [" & separator &
-          "][" & U8'Image(temp) & ']'
+          "][" & U8'image(temp) & ']'
         );
       end if;
       case separator is
@@ -469,7 +469,7 @@ package body GID.Decoding_GIF is
                   --  null sub-block = end of sub-block sequence
                   for i in 1..temp loop
                     Get_Byte(image.buffer, temp2);
-                    c:= Character'Val(temp2);
+                    c:= Character'val(temp2);
                     Ada.Text_IO.Put(c);
                   end loop;
                 end loop sub_blocks_sequence;
@@ -489,11 +489,11 @@ package body GID.Decoding_GIF is
               Skip_sub_blocks;
             when others =>
               if full_trace then
-                Ada.Text_IO.Put_Line(" - Unused extension:" & U8'Image(label));
+                Ada.Text_IO.Put_Line(" - Unused extension:" & U8'image(label));
               end if;
               Skip_sub_blocks;
           end case;
-        when ASCII.NUL =>
+        when Ascii.Nul =>
           --  Occurs in some buggy GIFs (2016).
           --  Seems a 2nd zero, the 1st marking the end of sub-block list.
           if full_trace then
@@ -502,7 +502,7 @@ package body GID.Decoding_GIF is
         when others =>
           raise error_in_image_data with
             "GIF: unknown separator: [" & separator &
-            "] code:" & Integer'Image(Character'Pos(separator));
+            "] code:" & Integer'image(Character'pos(separator));
       end case;
     end loop;
 
@@ -551,10 +551,10 @@ package body GID.Decoding_GIF is
 
     if full_trace then
       Ada.Text_IO.Put_Line(
-        " - Image, interlaced: " & Boolean'Image(frame_interlaced) &
-        "; local palette: " & Boolean'Image(local_palette) &
-        "; transparency: " & Boolean'Image(frame_transparency) &
-        "; transparency index:" & Color_type'Image(Transp_color)
+        " - Image, interlaced: " & Boolean'image(frame_interlaced) &
+        "; local palette: " & Boolean'image(local_palette) &
+        "; transparency: " & Boolean'image(frame_transparency) &
+        "; transparency index:" & Color_type'image(Transp_color)
       );
     end if;
 
@@ -563,7 +563,7 @@ package body GID.Decoding_GIF is
     if Natural(temp) not in Code_size_range then
       raise error_in_image_data with
         "GIF: wrong LZW code size (must be in 2..12), is" &
-        U8'Image(temp);
+        U8'image(temp);
     end if;
     CurrSize := Natural(temp);
 

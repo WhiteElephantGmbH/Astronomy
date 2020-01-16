@@ -22,7 +22,7 @@ private
   --  a Byte_Array is equivalemnt to a Ada.Streams.Stream_Element_Array.
   --
   is_mapping_possible: constant Boolean:=
-    Size_test_a'Size = Size_test_b'Size and
-    Size_test_a'Alignment = Size_test_b'Alignment;
+    Size_test_a'size = Size_test_b'size and
+    Size_test_a'alignment = Size_test_b'alignment;
 
 end GID.Buffering;

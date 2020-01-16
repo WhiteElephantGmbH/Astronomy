@@ -31,7 +31,7 @@ package body GID.Decoding_PNM is
         --  Numbers 8-bit -> no OA warning at instanciation. Returns x if type Primary_color_range is mod 2**8.
       end Times_257;
     begin
-      case Primary_color_range'Modulus is
+      case Primary_color_range'modulus is
         when 256 =>
           Put_Pixel(
             Primary_color_range(pix.color.red),
@@ -201,14 +201,14 @@ package body GID.Decoding_PNM is
     begin
       if c = '#' then
         loop
-          Character'Read(stream, c);
-          exit when c = ASCII.LF;
+          Character'read(stream, c);
+          exit when c = Ascii.Lf;
         end loop;
       end if;
     end Skip_comment;
   begin
     loop
-      Character'Read(stream, c);
+      Character'read(stream, c);
       Skip_comment;
       exit when c > ' ';
     end loop;
@@ -219,10 +219,10 @@ package body GID.Decoding_PNM is
       if single_char then
         exit when Length(res) = 1;
       end if;
-      Character'Read(stream, c);
+      Character'read(stream, c);
       Skip_comment;
       if needs_EOL then
-        exit when c = ASCII.LF;
+        exit when c = Ascii.Lf;
       else
         exit when c <= ' ';
       end if;
@@ -238,7 +238,7 @@ package body GID.Decoding_PNM is
   return Integer
   is
   begin
-    return Integer'Value(Get_Token(stream, needs_EOL, single_char));
+    return Integer'value(Get_Token(stream, needs_EOL, single_char));
   end Get_Integer;
 
   function Get_Positive_32(
@@ -249,7 +249,7 @@ package body GID.Decoding_PNM is
   return Positive_32
   is
   begin
-    return Positive_32'Value(Get_Token(stream, needs_EOL, single_char));
+    return Positive_32'value(Get_Token(stream, needs_EOL, single_char));
   end Get_Positive_32;
 
 end GID.Decoding_PNM;
