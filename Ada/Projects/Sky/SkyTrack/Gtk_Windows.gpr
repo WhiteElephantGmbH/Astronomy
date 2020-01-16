@@ -11,7 +11,8 @@ project Gtk_Windows is
                         "..\..\..\Projects",
                         "..\..\..\SkyData",
                         "..\..\..\Shared",
-                        "..\..\..\Shared\Windows");
+                        "..\..\..\Shared\Windows",
+                        "..\..\..\Gid);
 
    for Object_Dir use "D:\Objects\Astronomy\Gtk_Windows";
 

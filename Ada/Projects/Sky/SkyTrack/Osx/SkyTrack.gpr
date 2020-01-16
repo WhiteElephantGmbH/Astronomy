@@ -1,23 +1,25 @@
-with "gtkada";
+with "Gtkada";
 
-project Linux is
+project SkyTrack is
 
    package Naming is
-      for Casing use "mixedcase";
+      for Casing use "mixedcase"; 
    end Naming;
 
-   for Source_Dirs use ("../../../Projects/Sky/SkyTrack",
-                        "../../../Projects/Sky",
-                        "../../../Projects",
-                        "../../../SkyData",
-                        "../../../Shared",
-                        "../../../Shared/Linux");
+   for Source_Dirs use ("../../../../Projects/Sky/SkyTrack",
+                        "../../../../Projects/Sky",
+                        "../../../../Projects",
+                        "../../../../SkyData",
+                        "../../../../Shared",
+                        "../../../../Shared/Osx",
+                        "../../../../Gid");
 
    for Main use ("SkyTrack.adb");
 
-   for Exec_Dir use "../../../../../../Product/Astronomy/Linux";
+   for Exec_Dir use external ("HOME") & "/Product/Astronomy/Osx";
 
    for Object_Dir use external ("HOME") & "/Objects/Astronomy/SkyTrack";
+
 
    package Pretty_Printer is
       for Default_Switches ("ada") use ("-i2", "-M120", "-aL", "-A1", "-A4");
@@ -40,7 +42,8 @@ project Linux is
 
    package Linker is
       for Linker_Options use ();
-      for Default_Switches ("ada") use ("-g");
+      for Default_Switches ("ada") use ("-g",
+                                        "-Wl,-headerpad_max_install_names");
    end Linker;
 
-end Linux;
+end SkyTrack;

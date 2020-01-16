@@ -21,7 +21,7 @@ package Program is
 
   Major_Id : constant := 1;
   Minor_Id : constant := 4;
-  Revision : constant := 22;
+  Revision : constant := 23;
 
   function Version return String;
 

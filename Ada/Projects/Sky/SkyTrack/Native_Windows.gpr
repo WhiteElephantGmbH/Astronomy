@@ -11,7 +11,8 @@ project Native_Windows is
                         "..\..\..\Native_Windows",
                         "..\..\..\SkyData",
                         "..\..\..\Shared",
-                        "..\..\..\Shared\Windows");
+                        "..\..\..\Shared\Windows",
+                        "..\..\..\Gid);
 
    for Object_Dir use "D:\Objects\Astronomy\Native_Windows";
 

@@ -90,7 +90,7 @@ package body Horizon is
     Log.Write ("Generation complete");
   exception
   when Alpha.File_Not_Found =>
-    Error.Raise_With ("File " & Filename & " not found");
+    Log.Warning ("No horizon generated");
   when Alpha.Unknown_File =>
     Error.Raise_With ("Filetype not supported for " & Filename);
   when Occurence: others =>

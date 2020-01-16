@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2011 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2011 .. 2020 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -23,6 +23,7 @@ with Data;
 with Earth;
 with Error;
 with Gui;
+with Horizon;
 with Lx200;
 with Moon;
 with Motor;
@@ -608,6 +609,9 @@ package body Control is
   procedure Read_Data is
   begin
     Alignment.Read;
+    if not Sky_Line.Is_Defined then
+      Horizon.Generate;
+    end if;
     Sky_Line.Read;
     Neo.Add_Objects;
     Name.Read_Favorites;
