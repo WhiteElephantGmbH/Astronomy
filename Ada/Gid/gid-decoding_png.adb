@@ -20,6 +20,8 @@ with Ada.Text_IO;
 
 package body GID.Decoding_PNG is
 
+  pragma Warnings ("H");
+
   generic
     type Number is mod <>;
   procedure Big_endian_number(

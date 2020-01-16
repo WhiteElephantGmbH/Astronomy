@@ -9,6 +9,8 @@ with Ada.Text_IO;
 
 package body GID.Decoding_GIF is
 
+  pragma Warnings ("H");
+
   generic
     type Number is mod <>;
   procedure Read_Intel_x86_number(

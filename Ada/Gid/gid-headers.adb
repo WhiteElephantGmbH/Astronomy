@@ -16,6 +16,8 @@ with Ada.Unchecked_Deallocation;
 
 package body GID.Headers is
 
+  pragma Warnings ("H");
+
   -------------------------------------------------------
   -- The very first: read signature to identify format --
   -------------------------------------------------------
@@ -388,8 +390,8 @@ package body GID.Headers is
   procedure Load_PNG_header (image: in out Image_descriptor) is
     use Decoding_PNG, Buffering;
     ch: Chunk_head;
-    n, dummy: U32;
-    pragma Warnings(off, dummy);
+    n: U32;
+    dummy: U32 with Unreferenced;
     b, color_type: U8;
     palette: Boolean:= False;
   begin

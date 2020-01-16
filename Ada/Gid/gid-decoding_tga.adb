@@ -3,6 +3,8 @@ with GID.Color_tables;
 
 package body GID.Decoding_TGA is
 
+  pragma Warnings ("H");
+
   ----------
   -- Load --
   ----------

@@ -27,6 +27,8 @@ with Ada.Text_IO, Ada.Integer_Text_IO, Ada.IO_Exceptions;
 
 package body GID.Decoding_JPG is
 
+  pragma Warnings ("H");
+
   use GID.Buffering;
   use Ada.Text_IO;
 
@@ -503,8 +505,7 @@ package body GID.Decoding_JPG is
 
     procedure Skip_bits(bits: Natural) is
     pragma Inline(Skip_bits);
-      dummy: Integer;
-      pragma Warnings(off, dummy);
+      dummy: Integer with Unreferenced;
     begin
       if bufbits < bits then
         dummy:= Show_bits(bits);
