@@ -277,6 +277,17 @@ package body Stellarium is
   end Landscape_Filename;
 
 
+  function Landscape_Rotation return Angle.Degrees is
+    Rotation : constant String := Configuration.Value_Of (Landscape_Section, "angle_rotatez");
+  begin
+    return Angle.Degrees'value(Rotation);
+  exception
+  when others =>
+    Log.Error ("Incorrect landscape rotation angle (assumed 0.0)");
+    return 0.0;
+  end Landscape_Rotation;
+
+
   function Altitude return Integer is
   begin
     return The_Altitude;

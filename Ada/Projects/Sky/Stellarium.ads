@@ -35,6 +35,8 @@ package Stellarium is
 
   function Landscape_Filename return String;
 
+  function Landscape_Rotation return Angle.Degrees;
+
   function Altitude return Integer;
 
   function Latitude return Angle.Degrees;

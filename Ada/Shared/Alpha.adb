@@ -55,16 +55,17 @@ package body Alpha is
 
         subtype Actual_Column is Column range 0 .. Column(Width) - 1;
 
-        subtype Actual_Row is Row range 0 .. Row(Height) - 1;
-
-        type Table is array (Actual_Column, Actual_Row) of Boolean with Pack;
+        subtype Actual_Limits is Limits(Actual_Column);
 
         type Color_Range is mod 2**8;
+
+        Row_Offset    : constant Row := Row(Height) / 2;
+        Undefined_Row : constant Row := Row'last;
 
         New_Position : Boolean;
         The_Column   : Column;
         The_Row      : Row;
-        The_Table    : Table;
+        The_Limits   : Actual_Limits := (others => Undefined_Row);
 
         procedure Set_X_Y (X, Y: Natural) is
         begin
@@ -81,7 +82,17 @@ package body Alpha is
           if not New_Position then
             The_Column := The_Column + 1;
           end if;
-          The_Table(The_Column, The_Row) := Alpha_Value = Color_Range'last;
+          if The_Row < Row_Offset then
+            if The_Limits(The_Column) = Undefined_Row then
+              The_Limits(The_Column) := 0; -- not below zero horizon
+            end if;
+          else
+            if Alpha_Value /= Color_Range'last then
+              The_Limits(The_Column) := Undefined_Row;
+            elsif The_Limits(The_Column) = Undefined_Row then
+              The_Limits(The_Column) := The_Row - Row_Offset + 1;
+            end if;
+          end if;
           New_Position := False;
         end Put_Pixel;
 
@@ -97,26 +108,14 @@ package body Alpha is
                                                              mode                => GID.fast);
         Next_Frame : Ada.Calendar.Day_Duration;
 
-        subtype Actual_Limits is Limits(Actual_Column);
-
-        The_Limits : Actual_Limits;
-
       begin
         if Bits /= 32 or else not Has_Alpha then
           raise Unknown_File;
         end if;
         Load_Image (image      => The_Image,
                     next_frame => Next_Frame);
-        for At_Column in Actual_Column loop
-          for At_Row in Actual_Row'last / 2 .. Actual_Row'last loop
-            if not The_Table(At_Column, At_Row) then
-              The_Limits(At_Column) := At_Row;
-              exit;
-            end if;
-          end loop;
-        end loop;
         Ada.Streams.Stream_IO.Close (The_File);
-        The_Last_Row := Actual_Row'last;
+        The_Last_Row := Row_Offset - 1;
         return The_Limits;
       end;
     exception

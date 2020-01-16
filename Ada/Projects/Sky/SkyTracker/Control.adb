@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2019 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2019 .. 2020 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -633,20 +633,26 @@ package body Control is
     Os.Process.Set_Priority_Class (Os.Process.Realtime);
     Parameter.Read;
     Time.Set (Parameter.Longitude);
-    Read_Data;
-    Start_Stellarium_Server;
     begin
-      Start_Lx200_Server;
+      Read_Data;
+      Start_Stellarium_Server;
+      begin
+        Start_Lx200_Server;
+      exception
+      when others =>
+        Stellarium.Close;
+        raise;
+      end;
+      Telescope.Start (Information_Update_Handler'access);
+      User.Execute (Startup'access,
+                    User_Action_Handler'access,
+                    Termination'access);
+      Parameter.Shutdown;
     exception
     when others =>
-      Stellarium.Close;
+      Parameter.Shutdown;
       raise;
     end;
-    Telescope.Start (Information_Update_Handler'access);
-    User.Execute (Startup'access,
-                  User_Action_Handler'access,
-                  Termination'access);
-    Parameter.Shutdown;
   exception
   when Error.Occurred =>
     User.Show_Error;
