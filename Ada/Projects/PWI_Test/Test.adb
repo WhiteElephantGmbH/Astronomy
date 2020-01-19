@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2019 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2019 .. 2020 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
@@ -12,7 +12,7 @@ with PWI.Mount;
 with PWI.M3;
 with PWI.Focuser;
 with PWI.Rotator;
-with Serial_Io;
+with Serial_Io.Usb;
 with Strings;
 
 package body Test is
@@ -34,7 +34,7 @@ package body Test is
   begin
     Error (Message);
     Put ("allowed:");
-    Put ("  Input {Com1 .. Com99}");
+    Put ("  Input [{Com1 .. Com99}]");
     Put ("  Move1={0..1000000}");
     Put ("  Move2={0..1000000}");
     Put ("  Connect");
@@ -56,6 +56,101 @@ package body Test is
     Put ("  Stop");
     Put ("  Shutdown");
   end Input_Error;
+
+
+  procedure Serial_Input (Port_Image : String) is
+
+    Incorrect_Port : exception;
+    Port_Not_Found : exception;
+
+    function Detected_Port return Serial_Io.Port is
+      Vendor_Id  : constant Serial_Io.Usb.Vendor_Id := 3368;
+      Product_Id : constant Serial_Io.Usb.Product_Id := 516;
+    begin
+      if Port_Image = "" then
+        declare
+          Ports : constant Serial_Io.Usb.Ports := Serial_Io.Usb.Ports_For (Vid => Vendor_Id, Pid => Product_Id);
+        begin
+          if Ports'length = 1 then
+            return Ports(Ports'first);
+          else
+            for The_Port of Ports loop
+              Put ("found port " & The_Port'img);
+            end loop;
+            raise Port_Not_Found;
+          end if;
+        end;
+      else
+        begin
+          return Serial_Io.Port'value(Port_Image);
+        exception
+        when others =>
+          raise Incorrect_Port;
+        end;
+      end if;
+    end Detected_Port;
+
+    task type Reader is
+      entry Start;
+    end Reader;
+
+    The_Reader : access Reader;
+    The_Port   : Serial_Io.Port;
+
+    task body Reader is
+      Channel       : Serial_Io.Channel(The_Port);
+      The_Character : Character;
+      The_Version   : String := "x.xx";
+    begin
+      accept Start;
+      begin
+        Serial_Io.Set (The_Baudrate => 19200,
+                       On           => Channel);
+        Serial_Io.Set_For_Read (The_Timeout => 1.0,
+                                On          => Channel);
+        Serial_Io.Send (The_Item => 'v',
+                        To       => Channel);
+        Serial_Io.Receive (The_Item => The_Version,
+                           From     => Channel);
+        Put ("Reader started for handbox version " & The_Version & " (Esc to abort)");
+      exception
+      when Serial_Io.Timeout =>
+        Put ("Reader started for handbox with no version (Esc to abort)");
+      end;
+      Serial_Io.Set_For_Read (The_Timeout => Serial_Io.Infinite,
+                              On          => Channel);
+      loop
+        The_Character := Serial_Io.Character_Of (Channel);
+        Put ("- from Serial: " & The_Character);
+      end loop;
+    exception
+    when Serial_Io.Aborted =>
+      Put ("<aborted>");
+    end Reader;
+
+    The_Character : Character;
+
+  begin -- Serial_Input
+    Put ("Serial Input");
+    The_Port := Detected_Port;
+    if Serial_Io.Is_Available (The_Port) then
+      Put ("Handbox detected on Port " & The_Port'img);
+      The_Reader := new Reader;
+      The_Reader.Start;
+      loop
+        Ada.Text_IO.Get_Immediate (The_Character);
+        exit when The_Character = Ascii.Esc;
+      end loop;
+      Serial_Io.Free (The_Port);
+    else
+      Put ("Port " & The_Port'img & " not available");
+    end if;
+  exception
+  when Incorrect_Port =>
+    Input_Error ("incorrect port " & Port_Image);
+  when Port_Not_Found =>
+    Input_Error ("port not found");
+  end Serial_Input;
 
 
   procedure Execute (Command : String) is
@@ -406,6 +501,8 @@ package body Test is
       Home_Rotator (PWI.Port_1);
     elsif Id = "homerotator2" then
       Home_Rotator (PWI.Port_2);
+    elsif Id = "input" then
+      Serial_Input ("");
     elsif Id = "startrotator" then
       Start_Rotator;
     elsif Id = "turnto1" then
@@ -457,76 +554,6 @@ package body Test is
   when Focuser_Incorrect_Position =>
     Error ("focuser position incorrect");
   end Execute;
-
-
-  procedure Serial_Input (Port_Image : String) is
-
-    Incorrect_Port : exception;
-
-    function Port return Serial_Io.Port is
-    begin
-      return Serial_Io.Port'value(Port_Image);
-    exception
-    when others =>
-      raise Incorrect_Port;
-    end Port;
-
-    task type Reader is
-      entry Start;
-    end Reader;
-
-    The_Reader : access Reader;
-
-    task body Reader is
-      Channel       : Serial_Io.Channel(Port);
-      The_Character : Character;
-      The_Version   : String := "x.xx";
-    begin
-      accept Start;
-      begin
-        Serial_Io.Set (The_Baudrate => 19200,
-                       On           => Channel);
-        Serial_Io.Set_For_Read (The_Timeout => 1.0,
-                                On          => Channel);
-        Serial_Io.Send (The_Item => 'v',
-                        To       => Channel);
-        Serial_Io.Receive (The_Item => The_Version,
-                           From     => Channel);
-        Ada.Text_IO.Put_Line ("Reader started for handbox version " & The_Version & " (Esc to abort)");
-      exception
-      when Serial_Io.Timeout =>
-        Ada.Text_IO.Put_Line ("Reader started for handbox with no version (Esc to abort)");
-      end;
-      Serial_Io.Set_For_Read (The_Timeout => Serial_Io.Infinite,
-                              On          => Channel);
-      loop
-        The_Character := Serial_Io.Character_Of (Channel);
-        Ada.Text_IO.Put_Line ("- from Serial: " & The_Character);
-      end loop;
-    exception
-    when Serial_Io.Aborted =>
-      Ada.Text_IO.Put_Line ("<aborted>");
-    end Reader;
-
-    The_Character : Character;
-
-  begin -- Serial_Input
-    Put ("Serial Input");
-    if Serial_Io.Is_Available (Port) then
-      The_Reader := new Reader;
-      The_Reader.Start;
-      loop
-        Ada.Text_IO.Get_Immediate (The_Character);
-        exit when The_Character = Ascii.Esc;
-      end loop;
-      Serial_Io.Free (Port);
-    else
-      Put ("Port " & Port'img & " not available");
-    end if;
-  exception
-  when Incorrect_Port =>
-    Input_Error ("incorrect port");
-  end Serial_Input;
 
 
   procedure Work is

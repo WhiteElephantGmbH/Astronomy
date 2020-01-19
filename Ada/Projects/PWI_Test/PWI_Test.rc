@@ -1,5 +1,5 @@
 1 VERSIONINFO
-  FILEVERSION 2,0,0,8
+  FILEVERSION 2,0,0,15
   FILEFLAGSMASK 0x3FL
   FILEFLAGS 0x0L
   FILEOS 0x4L
@@ -10,7 +10,7 @@ BEGIN
   BEGIN
     BLOCK "040904E4"
     BEGIN
-      VALUE "LegalCopyright", "Copyright \251 White Elephant GmbH 2019\0"
+      VALUE "LegalCopyright", "Copyright \251 White Elephant GmbH 2020\0"
       VALUE "FileDescription", "PWI test program\0"
       VALUE "OriginalFilename", "PWI_Test.exe\0"
       VALUE "InternalName", "PWI_Test\0"
