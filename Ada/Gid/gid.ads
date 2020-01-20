@@ -25,7 +25,7 @@
 --
 --     More credits in gid_work.xls, sheet "credits".
 --
---  Copyright (c) Gautier de Montmollin 2010 .. 2019
+--  Copyright (c) Gautier de Montmollin 2010 .. 2020
 --
 --  Permission is hereby granted, free of charge, to any person obtaining a copy
 --  of this software and associated documentation files (the "Software"), to deal
@@ -62,7 +62,7 @@ package GID is
 
   procedure Load_image_header (
     image   :    out Image_descriptor;
-    from    : in out Ada.Streams.Root_Stream_Type'Class;
+    from    : in out Ada.Streams.Root_Stream_Type'class;
     try_tga :        Boolean:= False
   );
 
@@ -151,7 +151,7 @@ package GID is
 
   function Bits_per_pixel (image: Image_descriptor) return Positive;
   function RLE_encoded (image: Image_descriptor) return Boolean;
-  function Interlaced (image: Image_descriptor) return Boolean;
+  function Is_Interlaced (image: Image_descriptor) return Boolean;
   function Greyscale (image: Image_descriptor) return Boolean;
   function Has_palette (image: Image_descriptor) return Boolean;
   function Expect_transparency (image: Image_descriptor) return Boolean;
@@ -160,8 +160,8 @@ package GID is
   --  Information about this package - e.g. for an "about" box  --
   ----------------------------------------------------------------
 
-  version   : constant String:= "009";
-  reference : constant String:= "03-Sep-2019";
+  version   : constant String:= "010 Preview 1";
+  reference : constant String:= "17-Jan-2020";
   web: constant String:= "http://gen-img-dec.sf.net/";
   --  Hopefully the latest version is at that URL..^
 
@@ -176,7 +176,7 @@ private
   package Bounded_255 is
     new Ada.Strings.Bounded.Generic_Bounded_Length(255);
 
-  type Stream_Access is access all Ada.Streams.Root_Stream_Type'Class;
+  type Stream_Access is access all Ada.Streams.Root_Stream_Type'class;
 
   type RGB_color is record
     red, green, blue : U8;
@@ -186,7 +186,7 @@ private
 
   type p_Color_table is access Color_table;
 
-  min_bits: constant:= Integer'Max(32, System.Word_Size);
+  min_bits: constant:= Integer'max(32, System.Word_Size);
   --  13.3(8): A word is the largest amount of storage that can be
   --  conveniently and efficiently manipulated by the hardware,
   --  given the implementation's run-time model.
@@ -196,8 +196,8 @@ private
   --  on a native n > 32 bits architecture (no performance hit on 64+
   --  bits architectures).
 
-  subtype Natural_M32 is Integer_M32 range 0..Integer_M32'Last;
-  subtype Positive_M32 is Integer_M32 range 1..Integer_M32'Last;
+  subtype Natural_M32 is Integer_M32 range 0..Integer_M32'last;
+  subtype Positive_M32 is Integer_M32 range 1..Integer_M32'last;
 
   type Byte_array is array(Integer range <>) of U8;
 
@@ -273,7 +273,7 @@ private
 
   type Endianess_type is (little, big); -- for TIFF images
 
-  subtype Positive_32 is Interfaces.Integer_32 range 1 .. Interfaces.Integer_32'Last;
+  subtype Positive_32 is Interfaces.Integer_32 range 1 .. Interfaces.Integer_32'last;
 
   type Image_descriptor is new Ada.Finalization.Controlled with record
     format             : Image_format_type;
