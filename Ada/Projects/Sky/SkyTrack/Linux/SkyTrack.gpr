@@ -12,13 +12,13 @@ project SkyTrack is
                         "../../../../SkyData",
                         "../../../../Shared",
                         "../../../../Shared/Linux",
-                        "../../../../Gid);
+                        "../../../../Gid");
 
    for Main use ("SkyTrack.adb");
 
-   for Exec_Dir use "../../../../../../Product/Astronomy/Linux";
+   for Exec_Dir use "../../../../../../../Product/Astronomy/Linux";
 
-   for Object_Dir use external ("HOME") & "/Objects/Astronomy/SkyTrack";
+   for Object_Dir use "../../../../../../../Objects/Astronomy/SkyTrack";
 
    package Pretty_Printer is
       for Default_Switches ("ada") use ("-i2", "-M120", "-aL", "-A1", "-A4");
