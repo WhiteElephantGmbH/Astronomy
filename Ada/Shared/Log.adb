@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2002 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2002 .. 2020 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -23,6 +23,7 @@ with Configuration;
 with Date_Time;
 with Exceptions;
 with File;
+with GNAT.Exception_Actions;
 with Strings;
 with String_List;
 with System;
@@ -308,10 +309,19 @@ package body Log is
   end Guarded;
 
 
+  procedure Last_Chance_Handler (Occurence : Ada.Exceptions.Exception_Occurrence) is
+  begin
+    Write (Occurence);
+  end Last_Chance_Handler;
+
+
   function Logging_Started return Boolean is
     Is_Started : Boolean;
   begin
     Guarded.Open (Is_Started);
+    if Is_Started then
+      GNAT.Exception_Actions.Register_Global_Action (Last_Chance_Handler'access);
+    end if;
     return Is_Started;
   end Logging_Started;
 
@@ -357,6 +367,7 @@ package body Log is
                    The_Category : Category) is
   begin
     if Logging_Is_Active and then Is_Enabled (The_Category) then
+      GNAT.Exception_Actions.Register_Global_Action (null);
       Guarded.Write_Line (The_String);
     end if;
   exception
