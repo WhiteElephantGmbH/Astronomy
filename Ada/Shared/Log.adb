@@ -23,7 +23,6 @@ with Configuration;
 with Date_Time;
 with Exceptions;
 with File;
-with GNAT.Exception_Actions;
 with Strings;
 with String_List;
 with System;
@@ -309,24 +308,38 @@ package body Log is
   end Guarded;
 
 
-  procedure Last_Chance_Handler (Occurence : Ada.Exceptions.Exception_Occurrence) is
-  begin
-    Write (Occurence);
-  end Last_Chance_Handler;
-
-
   function Logging_Started return Boolean is
     Is_Started : Boolean;
   begin
     Guarded.Open (Is_Started);
-    if Is_Started then
-      GNAT.Exception_Actions.Register_Global_Action (Last_Chance_Handler'access);
-    end if;
     return Is_Started;
   end Logging_Started;
 
 
   Logging_Is_Active : constant Boolean := Logging_Started;
+
+
+  procedure Last_Chance_Handler (Occurence : Ada.Exceptions.Exception_Occurrence)
+  with
+    No_Return, Unreferenced, Export,
+    Convention    => C,
+    External_Name => "__gnat_last_chance_handler";
+
+  procedure Last_Chance_Handler (Occurence : Ada.Exceptions.Exception_Occurrence) is
+
+    procedure Unhandled_Terminate
+    with
+      No_Return, Import,
+      Convention    => C,
+      External_Name => "__gnat_unhandled_terminate";
+
+  begin
+    if Logging_Is_Active then
+      Write ("LAST CHANCE HANDLER", Occurence);
+    end if;
+    Unhandled_Terminate;
+  end Last_Chance_Handler;
+
 
   Debug_Category : constant Category := Guarded.Lookup_Category (Debug_Category_Id);
 
@@ -367,7 +380,6 @@ package body Log is
                    The_Category : Category) is
   begin
     if Logging_Is_Active and then Is_Enabled (The_Category) then
-      GNAT.Exception_Actions.Register_Global_Action (null);
       Guarded.Write_Line (The_String);
     end if;
   exception
