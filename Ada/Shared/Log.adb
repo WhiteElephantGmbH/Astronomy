@@ -319,13 +319,13 @@ package body Log is
   Logging_Is_Active : constant Boolean := Logging_Started;
 
 
-  procedure Last_Chance_Handler (Occurence : Ada.Exceptions.Exception_Occurrence)
+  procedure Last_Chance_Handler (Occurrence : Ada.Exceptions.Exception_Occurrence)
   with
     No_Return, Unreferenced, Export,
     Convention    => C,
     External_Name => "__gnat_last_chance_handler";
 
-  procedure Last_Chance_Handler (Occurence : Ada.Exceptions.Exception_Occurrence) is
+  procedure Last_Chance_Handler (Occurrence : Ada.Exceptions.Exception_Occurrence) is
 
     procedure Unhandled_Terminate
     with
@@ -334,9 +334,17 @@ package body Log is
       External_Name => "__gnat_unhandled_terminate";
 
   begin
-    if Logging_Is_Active then
-      Write ("LAST CHANCE HANDLER", Occurence);
-    end if;
+    begin
+      if Logging_Is_Active then
+        Write ("LAST CHANCE HANDLER", Occurrence);
+      else
+        Io.Put_Line ("Last chance handler called before logging was elaborated");
+        Io.Put_Line (Exceptions.Information_Of (Occurrence));
+      end if;
+    exception
+    when others =>
+      null;
+    end;
     Unhandled_Terminate;
   end Last_Chance_Handler;
 
