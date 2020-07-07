@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2016 .. 2017 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2016 .. 2020 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 -->Style: Soudronic
@@ -18,17 +18,29 @@ package body Network.Tcp is
                        The_Protocol    : Protocol;
                        Receive_Timeout : Positive_Duration := Forever) return Socket is
     The_Socket : Net.Socket_Type;
+    The_Status : Net.Selector_Status;
+    use type Net.Selector_Status;
   begin
     Net.Create_Socket (Socket => The_Socket,
                        Family => Net.Family_Inet,
                        Mode   => Net.Socket_Stream);
-    Net.Connect_Socket (The_Socket, (Family => Net.Family_Inet,
-                                     Addr   => The_Address,
-                                     Port   => The_Port));
-    return (The_Socket, Receive_Timeout, The_Protocol);
-  exception
-  when others =>
-    raise Not_Found;
+    --
+    -- Note: We use Connect_Socket with timeout because the default timeout is otherwise too long
+    --       Under Win10 an attempt to connect to a unopened port on a valid IP address takes 21 seconds to timeout.
+    --
+    Net.Connect_Socket (Socket  => The_Socket,
+                        Server  => (Family => Net.Family_Inet,
+                                    Addr   => The_Address,
+                                    Port   => The_Port),
+                        Timeout => 1.0,
+                        Status  => The_Status);
+    if The_Status = Net.Completed then
+      Net.Set_Socket_Option (The_Socket, Net.Socket_Level, (Net.Receive_Timeout, Net.Forever));
+      return (The_Socket, Receive_Timeout, The_Protocol);
+    else
+      Net.Close_Socket (The_Socket);
+      raise Not_Found;
+    end if;
   end Socket_For;
 
 
@@ -232,11 +244,18 @@ package body Network.Tcp is
     end loop;
     return The_Buffer;
   exception
-  when No_Client | Timeout =>
+  when No_Client =>
+    raise;
+  when Timeout =>
+    if (The_Amount > 1) and (The_Index > The_Buffer'first) then
+      -- A counted protocol that has already received part of the counted data.
+      -- A timeout here effectively breaks the protocol so we need to close the session.
+      Net.Close_Socket (The_Socket);
+    end if;
     raise;
   when Occurrence: Net.Socket_Error =>
     Handle_Receive_Error (Occurrence);
-  when Occurrence: others =>
+  when Occurrence: others => -- Unexpected exception
     Log.Write ("Network.Tcp.Get_Data_From", Occurrence);
     raise;
   end Get_Data_From;
@@ -312,11 +331,20 @@ package body Network.Tcp is
     if The_Timeout <= Net.Immediate then
       raise Timeout;
     end if;
-    declare
-      The_Data : constant Data := Get_Data_From (Used_Socket.The_Socket, The_Message_Size, The_Timeout);
-      function Convert is new Ada.Unchecked_Conversion (Data, Message);
     begin
-      return Convert(The_Data);
+      declare
+        The_Data : constant Data := Get_Data_From (Used_Socket.The_Socket, The_Message_Size, The_Timeout);
+        function Convert is new Ada.Unchecked_Conversion (Data, Message);
+      begin
+        return Convert(The_Data);
+      end;
+    exception
+    when Timeout =>
+      if Used_Socket.The_Protocol /= Raw then -- We have read the header of a counted protocol
+        -- If we timeout on the contents we will break the protocol. Therefore need to close the session
+        Net.Close_Socket (Used_Socket.The_Socket);
+      end if;
+      raise;
     end;
   end Message_From;
 
@@ -368,6 +396,12 @@ package body Network.Tcp is
       end if;
       The_Data := Get_Data_From (Used_Socket.The_Socket, Data_Size, The_Timeout);
       return Convert(The_Data);
+    exception
+    when Timeout =>
+      -- We have read the header of a counted protocol so if we timeout on the contents we will break the protocol
+      -- and therefore need to close the session
+      Net.Close_Socket (Used_Socket.The_Socket);
+      raise;
     end;
   end Elements_From;
 
