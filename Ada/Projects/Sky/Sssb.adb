@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2013 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2013 .. 2020 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -24,8 +24,11 @@ with Error;
 with File;
 with Numerics;
 with Strings;
+with Traces;
 
 package body Sssb is
+
+  package Log is new Traces ("Sssb");
 
   type Place is record
     Ut  : Time.Ut       := 0.0;
@@ -70,6 +73,7 @@ package body Sssb is
     use type Object_List.Item;
 
   begin -- Read_Objects
+    Log.Write ("Read " & Target & " from file " & Filename);
     Ada.Text_IO.Open (The_File, Ada.Text_IO.In_File, Filename);
     while not Ada.Text_IO.End_Of_File (The_File) loop
       declare
@@ -83,7 +87,9 @@ package body Sssb is
         end Image_Of;
 
       begin
-        if Line = "$$SOE" then
+        if Line'length > 1024 then
+          Error.Raise_With ("Incorrect line ending in " & Filename);
+        elsif Line = "$$SOE" then
           In_Data_Part := True;
         elsif Line = "$$EOE" then
           In_Data_Part := False;
