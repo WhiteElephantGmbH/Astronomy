@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2014 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2014 .. 2020 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -66,26 +66,53 @@ package body Motor is
 
   type Stored_Data is record
     Is_Parked       : Boolean := False;
+    Is_Inverted     : Boolean := False;
     Actual_Position : Values; -- actual telescope position
   end record;
 
   package Persistent_Telescope is new Persistent (Stored_Data, "Telescope");
 
-  The_Telesope : Persistent_Telescope.Data;
+  The_Telescope : Persistent_Telescope.Data;
 
   type Movement is (Directing, Parking, Positioning);
 
   The_Movement : Movement := Directing;
 
-  Is_Parked  : Boolean renames The_Telesope.Storage.Is_Parked;
-  Was_Parked : Boolean := False;
+  Is_Inverted : Boolean renames The_Telescope.Storage.Is_Inverted;
+  Is_Parked   : Boolean renames The_Telescope.Storage.Is_Parked;
 
-  AP : Values renames The_Telesope.Storage.Actual_Position;
+  Was_Parked     : Boolean;
+  AP : Values renames The_Telescope.Storage.Actual_Position;
   PP : Values; -- park position
   LL : Values; -- lower limits
   UL : Values; -- upper limits
   VM : Values; -- maximum speed
   AM : Values; -- maximum accelleration
+
+
+  procedure Invert (The_Position : in out Values) is
+    use type Value;
+  begin
+    The_Position(D1) := The_Position(D1) - 180.0;
+    if The_Position(D1) < 0.0 then
+      The_Position(D1) := The_Position(D1) + 360.0;
+    end if;
+    The_Position(D2) := 180.0 - The_Position(D2);
+  end Invert;
+
+
+  function In_Limits (Item : Value;
+                      D    : Drive) return Boolean is
+    use type Value;
+  begin
+    return Item >= LL(D) and Item < UL(D);
+  end In_Limits;
+
+
+  function In_Limits (Item : Values) return Boolean is
+  begin
+    return In_Limits (Item(D1), D1) and In_Limits (Item(D2), D2);
+  end In_Limits;
 
 
   function Is_Stepper return Boolean is
@@ -101,27 +128,33 @@ package body Motor is
 
 
   procedure Define_Parameters is
+    use type Value;
   begin
-    Log.Write ("Is_Parked => " & Is_Parked'img);
-    Was_Parked := Is_Parked;
     if Persistent_Telescope.Storage_Is_Empty then
+      Is_Inverted := PP(D1) >= 180.0;
       AP := PP;
+      if Is_Inverted then
+        Invert (AP);
+      end if;
+      Is_Parked := True;
     end if;
+    Was_Parked := Is_Parked;
   end Define_Parameters;
 
 
-  procedure Define (First_Acceleration  : Angle.Value;
-                    Second_Acceleration : Angle.Value;
-                    First_Lower_Limit   : Angle.Degrees;
-                    First_Upper_Limit   : Angle.Degrees;
-                    Second_Lower_Limit  : Angle.Degrees;
-                    Second_Upper_Limit  : Angle.Degrees;
-                    Maximum_Speed       : Angle.Value;
-                    Park_Position       : Position) is
+  procedure Define (First_Acceleration   : Angle.Value;
+                    Second_Acceleration  : Angle.Value;
+                    Maximum_Speed        : Angle.Value;
+                    Park_Position        : Position;
+                    Pole_Height          : Angle.Value;
+                    Meridian_Flip_Offset : Angle.Value) is
 
     use type Angle.Value;
     use type Angle.Signed;
     use type Value;
+
+    PH  : constant Value := +Pole_Height;
+    MFO : constant Value := +Meridian_Flip_Offset;
 
   begin
     P1 := (Am => +First_Acceleration,
@@ -135,30 +168,24 @@ package body Motor is
                The_Epsilon  => Epsilon);
     Log.Write ("Epsilon_1 =>" & Epsilon(D1)'img);
     Log.Write ("Epsilon_2 =>" & Epsilon(D2)'img);
-
     AM(D1) := +First_Acceleration;
     AM(D2) := +Second_Acceleration;
     VM(D1) := +Maximum_Speed;
     VM(D2) := +Maximum_Speed;
-    LL(D1) := First_Lower_Limit;
-    LL(D2) := Second_Lower_Limit;
-    UL(D1) := First_Upper_Limit;
-    UL(D2) := Second_Upper_Limit;
+    LL(D1) := -MFO;
+    LL(D2) := PH - 90.0 - Epsilon(D2);
+    UL(D1) := 180.0 + MFO;
+    UL(D2) := 270.0 - PH + Epsilon(D2);
     PP(D1) := +Park_Position.First;
     PP(D2) := +Angle.Signed'(+Park_Position.Second);
+    Log.Write ("Lower Limit - M1:" & LL(D1)'img);
+    Log.Write ("            - M2:" & LL(D2)'img);
+    Log.Write ("Upper Limit - M1:" & UL(D1)'img);
+    Log.Write ("            - M2:" & UL(D2)'img);
+    Log.Write ("Park Posit. - M1:" & PP(D1)'img);
+    Log.Write ("            - M2:" & PP(D2)'img);
     Define_Parameters;
   end Define;
-
-
-  procedure Redefine (Park_Position : Position) is
-
-    use type Angle.Value;
-    use type Angle.Signed;
-
-  begin
-    PP(D1) := +Park_Position.First;
-    PP(D2) := +Angle.Signed'(+Park_Position.Second);
-  end Redefine;
 
 
   type Profile is record
@@ -188,13 +215,6 @@ package body Motor is
   Te : Time.Ut;
 
   Inversion_Is_Enabled : Boolean := False;
-  Is_Inverted          : Boolean := False;
-
-
-  function Limits_Enabled (D : Drive) return Boolean is
-  begin
-    return not Is_Equal (LL(D), UL(D), D);
-  end Limits_Enabled;
 
 
   function Distance (From, To: Value;
@@ -210,43 +230,32 @@ package body Motor is
     TPL : Value; -- nearest to position before FP
     TPU : Value; -- nearest to position after FP
 
-    function Nearest_TP return Value is
-    begin
-      if abs (FP - TPL) < abs (FP - TPU) then
-        return TPL;
-      else
-        return TPU;
-      end if;
-    end Nearest_TP;
-
   begin -- Distance
+    Log.Write ("Distance ");
+    Log.Write ("  From:" & From'img);
+    Log.Write ("  To  :" & To'img);
     TPL := Value ((R + 1) * 360) + To;
     while TPL > FP loop
       TPL := TPL - 360.0;
     end loop;
     TPU := TPL + 360.0;
-    if Limits_Enabled (D) then
-      if TPU > UL(D) then
-        if TPL >= LL(D) then
-          TP := TPL;
-        else
-          raise At_Limit;
-        end if;
-      elsif TPL < LL(D) then
-        if TPU <= UL(D) then
-          TP := TPU;
-        else
-          raise At_Limit;
-        end if;
+    if TPU >= UL(D) then
+      if TPL >= LL(D) then
+        TP := TPL;
       else
-        TP := Nearest_TP;
+        raise At_Limit;
+      end if;
+    elsif TPL < LL(D) then
+      if TPU < UL(D) then
+        TP := TPU;
+      else
+        raise At_Limit;
       end if;
     else
-      TP := Nearest_TP;
+      raise At_Limit;
     end if;
     return TP - FP;
   end Distance;
-
 
 
   The_State_Handler : State_Handler_Access;
@@ -286,18 +295,28 @@ package body Motor is
           The_State := Motor.Ready;
         when Stopped =>
           AP := Io.Actual_Data.Positions;
-          if AP = PP then
-            Is_Parked := True;
-            Was_Parked := True;
-            The_State := Motor.Parked;
-          else
-            Is_Parked := False;
-            if Was_Parked then
-              The_State := Motor.Positioned;
-            else
-              The_State := Motor.Ready;
+          Log.Write ("Stopped AP - M1:" & AP(D1)'img);
+          Log.Write ("           - M2:" & AP(D2)'img);
+          Log.Write ("     - Inverted: " & Is_Inverted'img);
+          declare
+            APP : Values := PP;
+          begin
+            if Is_Inverted then
+              Invert (APP);
             end if;
-          end if;
+            if AP = APP then
+              Is_Parked := True;
+              Was_Parked := True;
+              The_State := Motor.Parked;
+            else
+              Is_Parked := False;
+              if Was_Parked then
+                The_State := Motor.Positioned;
+              else
+                The_State := Motor.Ready;
+              end if;
+            end if;
+          end;
         when Moving =>
           AP := Io.Actual_Data.Positions;
           Is_Parked := False;
@@ -371,31 +390,16 @@ package body Motor is
   end Define_Positions;
 
 
-  The_First_Revolutions  : Integer := 0;
-  The_Second_Revolutions : Integer := 0;
-
   procedure Synch_Park_Position is
-    P : Values := PP;
+    APP : Values := PP;
     use type Value;
   begin
-    P(D1) := P(D1) + Value(The_First_Revolutions * 360);
-    P(D2) := P(D2) + Value(The_Second_Revolutions * 360);
-    Io.Set_Positions (P);
+    Is_Inverted := PP(D1) >= 180.0;
+    if Is_Inverted then
+      Invert (APP);
+    end if;
+    Io.Set_Positions (APP);
   end Synch_Park_Position;
-
-
-  function Normalized (The_Value : Value) return Value is
-    V : Value := The_Value;
-    use type Value;
-  begin
-    while V >= 270.0 loop
-      V := V - 360.0;
-    end loop;
-    while V < -90.0 loop
-      V := V + 360.0;
-    end loop;
-    return V;
-  end Normalized;
 
 
   function Assigned (The_Values    : out Values;
@@ -404,28 +408,28 @@ package body Motor is
     use type Angle.Value;
     use type Value;
 
-    Se : Value;
+    Se : Values;
 
   begin
     The_Values(D1) := +The_Position.First;
     The_Values(D2) := +The_Position.Second;
-    if (UL(D2) - LL(D2) = 0.0) or ((UL(D2) - LL(D2)) >= 180.0) then -- allow inversion (D1 ??? not implemented)
-      if Is_Inverted then
-        Se := Normalized (The_Values(D1) - 180.0);
+    if The_Values (D2) > (UL(D2) + Epsilon(D2)) then
+      The_Values(D2) := The_Values(D2) - 360.0;
+    end if;
+    Log.Write ("Assigned - V1:" & The_Values(D1)'img & " - V2:" & The_Values(D2)'img & " - INV: " & Is_Inverted'img);
+    Se := The_Values;
+    if Is_Inverted then
+      Invert (Se);
+    end if;
+    if not In_Limits (Se) then
+      if Inversion_Is_Enabled then
+        Is_Inverted := not Is_Inverted;
       else
-        Se := Normalized (The_Values(D1));
+        return False;
       end if;
-      if Se < LL(D1) or Se > UL(D1) then
-        if Inversion_Is_Enabled then
-          Is_Inverted := not Is_Inverted;
-        else
-          return False;
-        end if;
-      end if;
-      if Is_Inverted then
-        The_Values(D1) := Normalized (The_Values(D1) - 180.0);
-        The_Values(D2) := 180.0 - The_Values(D2);
-      end if;
+    end if;
+    if Is_Inverted then
+      Invert (The_Values);
     end if;
     return True;
   end Assigned;
@@ -436,8 +440,6 @@ package body Motor is
   begin
     Allow_Inversion;
     if Assigned (P, To) then
-      P(D1) := Normalized (P(D1));
-      P(D2) := Normalized (P(D2));
       AP := P;
       Io.Set_Positions (P);
     else
@@ -448,24 +450,7 @@ package body Motor is
 
   function Time_For_Positioning (To : Values) return Time.Ut is
 
-    function Distance_From_Actual (D : Drive) return Value is
-      use type Value;
-      Dist : Value;
-    begin
-      if Limits_Enabled(D) then
-        Dist := To(D) - AP(D);
-      else
-        Dist := Distance (From => AP(D), To => To(D), D => D);
-      end if;
-      return Dist;
-    exception
-    when At_Limit =>
-      Log.Error ("distance at limit");
-      return 0.0;
-    when Item: others =>
-      Log.Termination (Item);
-      return 0.0;
-    end Distance_From_Actual;
+    Pe : Values := To;
 
     The_Distances : Values;
     The_Time_1    : Time.Ut;
@@ -486,12 +471,25 @@ package body Motor is
     end Time_For;
 
   begin -- Time_For_Positioning
-    The_Distances(D1) := Distance_From_Actual (D1);
-    The_Distances(D2) := Distance_From_Actual (D2);
+    Log.Write ("Time_For_Positioning To - M1:" & To(D1)'img & " - M2:" & To(D2)'img);
+    Log.Write ("                     AP - M1:" & AP(D1)'img & " - M2:" & AP(D2)'img);
+    Log.Write ("                 Is_Inverted: " & Is_Inverted'img);
+    if Is_Inverted then
+      if Pe(D1) < 180.0 then
+        Is_Inverted := False;
+      else
+        Invert (Pe);
+      end if;
+    else
+      if Pe(D1) >= 180.0 then
+        Invert (Pe);
+        Is_Inverted := True;
+      end if;
+    end if;
+    The_Distances := Pe - AP;
     if Is_Zero (The_Distances) then
       return Time.In_The_Past;
     end if;
-    Io.Set_Positions (To - The_Distances);
     Io.Move (The_Distances);
     The_Time_1 := Time_For(D1);
     The_Time_2 := Time_For(D2);
@@ -500,6 +498,10 @@ package body Motor is
     else
       return Time.Universal + The_Time_2;
     end if;
+  exception
+  when At_Limit =>
+    Log.Error ("Can't position");
+    return Time.In_The_Past;
   end Time_For_Positioning;
 
 
@@ -1154,30 +1156,6 @@ package body Motor is
   end Synch_State;
 
 
-  procedure Calculate_Revolutions (P : Values) is
-
-    function Revolutions_Of (D : Drive) return Integer is
-      use type Value;
-      The_Distance : Value := P(D) - PP(D);
-    begin
-      if The_Distance > 0.0 then
-        The_Distance := The_Distance + 180.0;
-      else
-        The_Distance := The_Distance - 180.0;
-      end if;
-      return Integer(Value'truncation(The_Distance / 360.0));
-    end Revolutions_Of;
-
-  begin
-    The_First_Revolutions := Revolutions_Of (D1);
-    if Limits_Enabled (D2) then
-      The_Second_Revolutions := Revolutions_Of (D2);
-    else
-      The_Second_Revolutions := 0;
-    end if;
-  end Calculate_Revolutions;
-
-
   function Positions return Position_Data is
     use type Angle.Value;
     use type Value;
@@ -1185,7 +1163,6 @@ package body Motor is
   begin
     if Io.Position_Is_Known then
       I := Io.Actual_Data;
-      Calculate_Revolutions (I.Positions);
     else
       return Position_Data'(others => <>);
     end if;
@@ -1198,7 +1175,8 @@ package body Motor is
                           Is_Defined => True),
             Offsets   => (First      => +I.Offsets(D1),
                           Second     => +I.Offsets(D2),
-                          Is_Defined => True));
+                          Is_Defined => True),
+            Inverted  => Is_Inverted);
   end Positions;
 
 
@@ -1264,18 +1242,6 @@ package body Motor is
     return (First  => Left.First - Right.First,
             Second => Left.Second - Right.Second);
   end "-";
-
-
-  function First_Revolutions return Integer is
-  begin
-    return The_First_Revolutions;
-  end First_Revolutions;
-
-
-  function Second_Revolutions return Integer is
-  begin
-    return The_Second_Revolutions;
-  end Second_Revolutions;
 
 
   function Board_Temperature_Is_Known return Boolean is

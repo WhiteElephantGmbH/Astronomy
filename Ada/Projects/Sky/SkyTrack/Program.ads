@@ -20,8 +20,8 @@ with Unsigned;
 package Program is
 
   Major_Id : constant := 1;
-  Minor_Id : constant := 4;
-  Revision : constant := 23;
+  Minor_Id : constant := 5;
+  Revision : constant := 1;
 
   function Version return String;
 

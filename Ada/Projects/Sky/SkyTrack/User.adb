@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2011 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2011 .. 2020 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -72,8 +72,9 @@ package body User is
   Alt_Adjustment    : Gui.Plain_Edit_Box;
   Az_Offset         : Gui.Plain_Edit_Box;
   Alt_Offset        : Gui.Plain_Edit_Box;
-  First_Motor       : Gui.Plain_Edit_Box;
-  Second_Motor      : Gui.Plain_Edit_Box;
+  Motor_1           : Gui.Plain_Edit_Box;
+  Motor_2           : Gui.Plain_Edit_Box;
+  Flipped           : Gui.Plain_Edit_Box;
   Board_Temperature : Gui.Plain_Edit_Box;
   Synch_State       : Gui.Plain_Edit_Box;
   Lmst              : Gui.Plain_Edit_Box;
@@ -132,7 +133,6 @@ package body User is
 
   type Operation is (Set_Sky_Line, Align_Global, Align_Local, Align_1_Star, Align_Pole_Axis);
 
-  subtype Azimuthal_Operation is Operation range Operation'first .. Align_1_Star;
 
   The_Operation               : Operation := Align_1_Star;
   Alignment_Adding_Is_Enabled : Boolean := False;
@@ -546,6 +546,17 @@ package body User is
         Gui.Set_Text (Alt_Offset, "");
         Gui.Set_Text (Az_Offset, "");
       end if;
+      if Motor.Is_Defined (Information.Motor_Positions.Positions) then
+        Gui.Set_Text (Motor_1,
+                      Angle.Unsigned_Degrees_Image_Of (Motor.First_Of (Information.Motor_Positions.Positions)));
+        Gui.Set_Text (Motor_2,
+                      Angle.Unsigned_Degrees_Image_Of (Motor.Second_Of (Information.Motor_Positions.Positions)));
+        Gui.Set_Text (Flipped, Information.Motor_Positions.Inverted'image);
+      else
+        Gui.Set_Text (Motor_1, "");
+        Gui.Set_Text (Motor_2, "");
+        Gui.Set_Text (Flipped, "");
+      end if;
       if Space.Direction_Is_Known (Information.Target_Direction) then
         Gui.Set_Text (Target_Dec, Space.Dec_Image_Of (Information.Target_Direction));
         Gui.Set_Text (Target_Ra, Space.Ra_Image_Of (Information.Target_Direction));
@@ -563,13 +574,9 @@ package body User is
       if Earth.Direction_Is_Known (Information.Local_Direction) then
         Gui.Set_Text (Actual_Alt, Earth.Alt_Image_Of (Information.Local_Direction));
         Gui.Set_Text (Actual_Az, Earth.Az_Image_Of (Information.Local_Direction));
-        Gui.Set_Text (First_Motor, Integer'image(Motor.First_Revolutions) & " Revolutions");
-        Gui.Set_Text (Second_Motor, Integer'image(Motor.Second_Revolutions) & " Revolutions");
       else
         Gui.Set_Text (Actual_Alt, "");
         Gui.Set_Text (Actual_Az, "");
-        Gui.Set_Text (First_Motor, "");
-        Gui.Set_Text (Second_Motor, "");
       end if;
       if Motor.Board_Temperature_Is_Known then
         Gui.Set_Text (Board_Temperature, Motor.Board_Temperature'img & "°C");
@@ -1469,15 +1476,19 @@ package body User is
                                   The_Size       => Text_Size,
                                   The_Title_Size => Title_Size);
 
-        First_Motor := Gui.Create (Display_Page, "Motor 1", "",
-                                   Is_Modifiable  => False,
-                                   The_Size       => Text_Size,
-                                   The_Title_Size => Title_Size);
+        Motor_1 := Gui.Create (Display_Page, "Motor_1", "",
+                               Is_Modifiable  => False,
+                               The_Size       => Text_Size,
+                               The_Title_Size => Title_Size);
+        Motor_2 := Gui.Create (Display_Page, "Motor_2", "",
+                               Is_Modifiable  => False,
+                               The_Size       => Text_Size,
+                               The_Title_Size => Title_Size);
+        Flipped := Gui.Create (Display_Page, "Flipped Over", "",
+                               Is_Modifiable  => False,
+                               The_Size       => Text_Size,
+                               The_Title_Size => Title_Size);
 
-        Second_Motor := Gui.Create (Display_Page, "Motor 2", "",
-                                    Is_Modifiable  => False,
-                                    The_Size       => Text_Size,
-                                    The_Title_Size => Title_Size);
         Board_Temperature := Gui.Create (Display_Page, "Board Temp.", "",
                                          Is_Modifiable  => False,
                                          The_Size       => Text_Size,
@@ -1530,12 +1541,10 @@ package body User is
           Gui.Add_Text (Orientation_Box, Strings.Legible_Of (Value'img));
         end loop;
         Gui.Select_Text (Orientation_Box, Strings.Legible_Of (The_Image_Orientation'img));
-        if not Parameter.Is_Azimuthal_Mount then
-          Autoguiding_Rate := Gui.Create (Setup_Page, "Autoguiding", Image_Of (The_Autoguiding_Rate),
-                                          The_Action_Routine => Define_Autoguiding'access,
-                                          The_Size           => Text_Size,
-                                          The_Title_Size     => Title_Size);
-        end if;
+        Autoguiding_Rate := Gui.Create (Setup_Page, "Autoguiding", Image_Of (The_Autoguiding_Rate),
+                                        The_Action_Routine => Define_Autoguiding'access,
+                                        The_Size           => Text_Size,
+                                        The_Title_Size     => Title_Size);
         Air_Pressure := Gui.Create (Setup_Page, "Air Pressure", Image_Of (The_Air_Pressure),
                                     The_Action_Routine => Define_Air_Pressure'access,
                                     The_Size           => Text_Size,
@@ -1549,15 +1558,9 @@ package body User is
                                          The_Action_Routine => Define_Operation'access,
                                          The_Size           => Text_Size,
                                          The_Title_Size     => Title_Size);
-        if Parameter.Is_Azimuthal_Mount then
-          for Value in Azimuthal_Operation'range loop
-            Gui.Add_Text (Operation_Control, Strings.Legible_Of (Value'img));
-          end loop;
-        else
-          for Value in Operation'range loop
-            Gui.Add_Text (Operation_Control, Strings.Legible_Of (Value'img));
-          end loop;
-        end if;
+        for Value in Operation'range loop
+          Gui.Add_Text (Operation_Control, Strings.Legible_Of (Value'img));
+        end loop;
         Gui.Select_Text (Operation_Control, Strings.Legible_Of (The_Operation'img));
         Magnitude_Limit := Gui.Create (Setup_Page, Max_Magnitude_Text, Max_Magnitude'img,
                                        The_Action_Routine => Define_Magnitude'access,

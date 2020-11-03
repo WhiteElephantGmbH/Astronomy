@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2012 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2012 .. 2020 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -202,18 +202,13 @@ package body Numerics is
         The_Azimuth := +Az;
       end;
       Refraction.Correct (The_Altitude);
-      if Parameter.Is_Azimuthal_Mount then
-        return Motor.Position_Of (First  => Angle.Semi_Circle + The_Azimuth,
-                                  Second => +The_Altitude);
-      else
-        Astro.SPHLIB.HOREQU (H   => The_Altitude,
-                             AZ  => The_Azimuth,
-                             PHI => +Parameter.Pole_Height,
-                             DEC  => The_Second_Angle,
-                             TAU  => The_First_Angle);
-        return Motor.Position_Of (First  => Angle.Semi_Circle + The_First_Angle,
-                                  Second => +The_Second_Angle);
-      end if;
+      Astro.SPHLIB.HOREQU (H   => The_Altitude,
+                           AZ  => The_Azimuth,
+                           PHI => +Parameter.Pole_Height,
+                           DEC  => The_Second_Angle,
+                           TAU  => The_First_Angle);
+      return Motor.Position_Of (First  => Angle.Semi_Circle + The_First_Angle,
+                                Second => +The_Second_Angle);
     else
       raise Program_Error;
     end if;
@@ -232,18 +227,13 @@ package body Numerics is
     if not Earth.Direction_Is_Known (Direction) then
       raise Program_Error;
     end if;
-    if Parameter.Pole_Height = Angle.Quadrant then
-      return Motor.Position_Of (First  => Earth.Az_Of (Direction),
-                                Second => Earth.Alt_Of (Direction));
-    else
-      HOREQU (A   => Earth.Alt_Of (Direction),
-              AZ  => Earth.Az_Of (Direction),
-              PHI => Parameter.Pole_Height,
-              DEC => The_Second_Angle,
-              TAU => The_First_Angle);
-      return Motor.Position_Of (First  => The_First_Angle + Angle.Semi_Circle,
-                                Second => The_Second_Angle);
-    end if;
+    HOREQU (A   => Earth.Alt_Of (Direction),
+            AZ  => Earth.Az_Of (Direction),
+            PHI => Parameter.Pole_Height,
+            DEC => The_Second_Angle,
+            TAU => The_First_Angle);
+    return Motor.Position_Of (First  => The_First_Angle + Angle.Semi_Circle,
+                              Second => The_Second_Angle);
   end Position_Of;
 
 
@@ -267,25 +257,18 @@ package body Numerics is
 
   begin
     if Motor.Is_Defined (Data.Positions) then
-      if Parameter.Is_Azimuthal_Mount then
-        The_Altitude := Motor.Second_Of (Data.Positions);
-        The_Azimuth := Motor.First_Of (Data.Positions);
-        The_Altitude_Offset := Motor.Second_Of (Data.Offsets);
-        The_Azimuth_Offset := Motor.First_Of (Data.Offsets);
-      else
-        EQUHOR (DEC => Motor.Second_Of (Data.Positions),
-                TAU => Motor.First_Of (Data.Positions) + Angle.Semi_Circle,
-                PHI => Parameter.Pole_Height,
-                A   => The_Altitude,
-                AZ  => The_Azimuth);
-        EQUHOR (DEC => Motor.Second_Of (Original_Positions),
-                TAU => Motor.First_Of (Original_Positions) + Angle.Semi_Circle,
-                PHI => Parameter.Pole_Height,
-                A   => The_Altitude_Offset,
-                AZ  => The_Azimuth_Offset);
-        The_Altitude_Offset := The_Altitude - The_Altitude_Offset;
-        The_Azimuth_Offset := The_Azimuth - The_Azimuth_Offset;
-      end if;
+      EQUHOR (DEC => Motor.Second_Of (Data.Positions),
+              TAU => Motor.First_Of (Data.Positions) + Angle.Semi_Circle,
+              PHI => Parameter.Pole_Height,
+              A   => The_Altitude,
+              AZ  => The_Azimuth);
+      EQUHOR (DEC => Motor.Second_Of (Original_Positions),
+              TAU => Motor.First_Of (Original_Positions) + Angle.Semi_Circle,
+              PHI => Parameter.Pole_Height,
+              A   => The_Altitude_Offset,
+              AZ  => The_Azimuth_Offset);
+      The_Altitude_Offset := The_Altitude - The_Altitude_Offset;
+      The_Azimuth_Offset := The_Azimuth - The_Azimuth_Offset;
       The_Positions := Earth.Direction_Of (Alt => The_Altitude,
                                            Az  => The_Azimuth,
                                            Inv => Motor.Is_Inverse);

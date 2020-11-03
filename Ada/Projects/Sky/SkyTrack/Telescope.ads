@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2011 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2011 .. 2020 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -17,6 +17,7 @@ pragma Style_White_Elephant;
 
 with Angle;
 with Earth;
+with Motor;
 with Name;
 with Space;
 with Time;
@@ -63,6 +64,7 @@ package Telescope is
     Alignment_Offsets : Earth.Direction;
     Pole_Offsets      : Earth.Direction;
     Rotations         : Space.Direction;
+    Motor_Positions   : Motor.Position_Data;
     System_Error      : Angle.Value;
     Arriving_Time     : Time.Ut;
     Universal_Time    : Time.Ut;

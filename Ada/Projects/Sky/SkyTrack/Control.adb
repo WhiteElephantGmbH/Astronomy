@@ -682,15 +682,13 @@ package body Control is
     Parameter.Read (Motor.Is_Stepper);
     Time.Set (Parameter.Longitude);
     Read_Data;
-    Motor.Define (First_Acceleration  => Parameter.First_Acceleration,
-                  Second_Acceleration => Parameter.Second_Acceleration,
-                  First_Lower_Limit   => Parameter.First_Lower_Limit,
-                  First_Upper_Limit   => Parameter.First_Upper_Limit,
-                  Second_Lower_Limit  => Parameter.Second_Lower_Limit,
-                  Second_Upper_Limit  => Parameter.Second_Upper_Limit,
-                  Maximum_Speed       => Parameter.Maximum_Speed,
-                  Park_Position       => Numerics.Position_Of (Earth.Direction_Of (Az  => Parameter.Park_Azimuth,
-                                                                                   Alt => Parameter.Park_Altitude)));
+    Motor.Define (First_Acceleration   => Parameter.First_Acceleration,
+                  Second_Acceleration  => Parameter.Second_Acceleration,
+                  Maximum_Speed        => Parameter.Maximum_Speed,
+                  Park_Position        => Numerics.Position_Of (Earth.Direction_Of (Az  => Parameter.Park_Azimuth,
+                                                                                    Alt => Parameter.Park_Altitude)),
+                  Pole_Height          => Parameter.Pole_Height,
+                  Meridian_Flip_Offset => Parameter.Meridian_Flip_Offset);
     Start_Stellarium_Server;
     Os.Ascom.Start;
     begin

@@ -78,7 +78,7 @@ package Parameter is
 
   function Pole_Height return Angle.Value;
 
-  function Is_Azimuthal_Mount return Boolean;
+  function Meridian_Flip_Offset return Angle.Value;
 
   function Maximum_Speed return Angle.Value; -- in angle / s
 
@@ -87,14 +87,6 @@ package Parameter is
   function First_Acceleration return Angle.Value; -- in angle / s²
 
   function Second_Acceleration return Angle.Value; -- in angle / s²
-
-  function First_Upper_Limit return Angle.Degrees;
-
-  function First_Lower_Limit return Angle.Degrees;
-
-  function Second_Upper_Limit return Angle.Degrees;
-
-  function Second_Lower_Limit return Angle.Degrees;
 
   function Synch_On_Targets return Boolean;
 

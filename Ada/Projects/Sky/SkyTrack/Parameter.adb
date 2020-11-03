@@ -53,14 +53,10 @@ package body Parameter is
   Clocks_Per_Second_Key           : constant String := "Clocks Per Second";
   Park_Azimuth_Key                : constant String := "Park Azimuth";
   Park_Altitude_Key               : constant String := "Park Altitude";
-  Pole_Height_Key                 : constant String := "Pole Height";
+  Meridian_Flip_Offset_Key        : constant String := "Meridian Flip Offset";
   Moving_Speed_List_Key           : constant String := "Moving Speed List";
   First_Acceleration_Key          : constant String := "First Acceleration";
   Second_Acceleration_Key         : constant String := "Second Acceleration";
-  First_Lower_Limit_Key           : constant String := "First Lower Limit";
-  First_Upper_Limit_Key           : constant String := "First Upper Limit";
-  Second_Lower_Limit_Key          : constant String := "Second Lower Limit";
-  Second_Upper_Limit_Key          : constant String := "Second Upper Limit";
   Synch_On_Targets_Key            : constant String := "Synch On Targets";
   Expert_Mode_Key                 : constant String := "Expert Mode";
 
@@ -87,14 +83,10 @@ package body Parameter is
   The_Clocks_Per_Second    : Natural;
   The_Park_Azimuth         : Angle.Value;
   The_Park_Altitude        : Angle.Value;
-  The_Pole_Height          : Angle.Value;
+  The_Meridian_Flip_Offset : Angle.Value;
   The_Moving_Speeds        : Angle_List.Item;
   The_First_Acceleration   : Angle.Value;
   The_Second_Acceleration  : Angle.Value;
-  The_First_Lower_Limit    : Angle.Degrees;
-  The_First_Upper_Limit    : Angle.Degrees;
-  The_Second_Lower_Limit   : Angle.Degrees;
-  The_Second_Upper_Limit   : Angle.Degrees;
   The_Telescope_Connection : Connection;
 
   --Lx200
@@ -207,33 +199,6 @@ package body Parameter is
   end Angles_Of;
 
 
-  function Pole_Heigth return Angle.Value is
-    Key  : constant String := Pole_Height_Key;
-    Item : constant String := String_Value_Of (Key);
-  begin
-    if Item = "Latitude" then
-      return The_Latitude;
-    else
-      return Angle_Of (Key);
-    end if;
-  end Pole_Heigth;
-
-
-  function Degrees_Of (Key : String) return Angle.Degrees is
-    Item  : constant String := String_Of (Key);
-  begin
-    declare
-      Image : constant String := Image_Of (Item, Unit => "°");
-    begin
-      Log.Write (Key & ": " & Item);
-      return Angle.Degrees'value(Image);
-    end;
-  exception
-  when others =>
-    Error.Raise_With ("Incorrect " & Key & ": <" & Item & ">");
-  end Degrees_Of;
-
-
   function Value_Of (Key  : String;
                      Unit : String := "") return Integer is
     Item : constant String := String_Of (Key);
@@ -301,14 +266,10 @@ package body Parameter is
         end if;
         Put (Park_Azimuth_Key & "         = +137°16'00.0""");
         Put (Park_Altitude_Key & "        = +5°35'00.0""");
-        Put (Pole_Height_Key & "          = Latitude");
+        Put (Meridian_Flip_Offset_Key & " = 5°");
         Put (Moving_Speed_List_Key & "    = 6""/s, 1'/s, 10'/s, 6°/s");
         Put (First_Acceleration_Key & "   = 6°/s²");
         Put (Second_Acceleration_Key & "  = 6°/s²");
-        Put (First_Lower_Limit_Key & "    = -5°");
-        Put (First_Upper_Limit_Key & "    = 185°");
-        Put (Second_Lower_Limit_Key & "   = 0°");
-        Put (Second_Upper_Limit_Key & "   = 0°");
         Put (Synch_On_Targets_Key & "     = True");
         Put (Expert_Mode_Key & "          = True");
       when Unknown =>
@@ -323,14 +284,10 @@ package body Parameter is
         end if;
         Put (Park_Azimuth_Key & "                = +180°00'");
         Put (Park_Altitude_Key & "               = +0°00'");
-        Put (Pole_Height_Key & "                 = Latitude");
+        Put (Meridian_Flip_Offset_Key & "        = 30°");
         Put (Moving_Speed_List_Key & "           = 6""/s, 1'/s, 10'/s, 6°/s");
         Put (First_Acceleration_Key & "          = 3°/s²");
         Put (Second_Acceleration_Key & "         = 3°/s²");
-        Put (First_Lower_Limit_Key & "           = -360°");
-        Put (First_Upper_Limit_Key & "           = +360°");
-        Put (Second_Lower_Limit_Key & "          = -43°");
-        Put (Second_Upper_Limit_Key & "          = +223°");
         Put (Synch_On_Targets_Key & "            = True");
         Put (Expert_Mode_Key & "                 = False");
       end case;
@@ -366,8 +323,6 @@ package body Parameter is
       Stellarium_Handle   : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Stellarium_Id);
       Site_Handle         : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Site_Id);
       Localization_Handle : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Localization_Id);
-
-      use type Angle.Degrees;
 
       procedure Connect_Telescope is
 
@@ -483,36 +438,13 @@ package body Parameter is
       Connect_Telescope;
       The_Park_Azimuth := Angle_Of (Park_Azimuth_Key);
       The_Park_Altitude := Angle_Of (Park_Altitude_Key);
-      The_Pole_Height := Pole_Heigth;
+      The_Meridian_Flip_Offset := Angle_Of (Meridian_Flip_Offset_Key);
       The_Moving_Speeds := Angles_Of (Moving_Speed_List_Key, Speed_Unit);
       if Natural(Angle_List.Length (The_Moving_Speeds)) < 2 then
         Error.Raise_With ("The speed list must contain at least two values");
       end if;
       The_First_Acceleration := Angle_Of (First_Acceleration_Key, Acceleration_Unit);
       The_Second_Acceleration := Angle_Of (Second_Acceleration_Key, Acceleration_Unit);
-      The_First_Lower_Limit := Degrees_Of (First_Lower_Limit_Key);
-      The_First_Upper_Limit := Degrees_Of (First_Upper_Limit_Key);
-      The_Second_Lower_Limit := Degrees_Of (Second_Lower_Limit_Key);
-      The_Second_Upper_Limit := Degrees_Of (Second_Upper_Limit_Key);
-      if The_First_Lower_Limit /= 0.0 or The_First_Upper_Limit /= 0.0 then
-        declare
-          The_Minimum_Range : Angle.Degrees;
-        begin
-          if The_Second_Upper_Limit = 0.0 or The_Second_Upper_Limit >= 180.0 then
-            The_Minimum_Range := 180.0;
-          else
-            The_Minimum_Range := 360.0;
-          end if;
-          if (The_First_Upper_Limit - The_First_Lower_Limit) < The_Minimum_Range then
-            Error.Raise_With ("Incorrect first limit range");
-          end if;
-        end;
-      end if;
-      if The_Second_Lower_Limit /= 0.0 or The_Second_Upper_Limit /= 0.0 then
-        if The_Second_Lower_Limit > 0.0 or The_Second_Upper_Limit < 90.0 then
-          Error.Raise_With ("Incorrect second limit range");
-        end if;
-      end if;
       Is_Synch_On_Targets := Strings.Lowercase_Of (String_Of (Synch_On_Targets_Key)) = "true";
       Set (Lx200_Handle);
       begin
@@ -551,6 +483,8 @@ package body Parameter is
       Create_Default_Parameters;
     end if;
     Read_Values;
+    Log.Write ("Home_Longitude = " & Stellarium.Longitude'img);
+    Log.Write ("Home_Latitude  = " & Stellarium.Latitude'img);
   end Read;
 
 
@@ -558,8 +492,9 @@ package body Parameter is
   -- Site --
   ----------
 
-  Home_Latitude    : constant Angle.Degrees := 47.695009;
-  Home_Longitude   : constant Angle.Degrees :=  8.627870;
+  Home_Latitude  : constant Angle.Degrees := 47.666683;
+  Home_Longitude : constant Angle.Degrees :=  8.741743;
+  -- home values from log file
 
   function Default_Location return Location is
 
@@ -638,14 +573,14 @@ package body Parameter is
 
   function Pole_Height return Angle.Value is
   begin
-    return The_Pole_Height;
+    return The_Latitude;
   end Pole_Height;
 
 
-  function Is_Azimuthal_Mount return Boolean is
+  function Meridian_Flip_Offset return Angle.Value is
   begin
-    return The_Pole_Height = Angle.Quadrant;
-  end Is_Azimuthal_Mount;
+    return The_Meridian_Flip_Offset;
+  end Meridian_Flip_Offset;
 
 
   function Maximum_Speed return Angle.Value is
@@ -670,30 +605,6 @@ package body Parameter is
   begin
     return The_Second_Acceleration;
   end Second_Acceleration;
-
-
-  function First_Lower_Limit return Angle.Degrees is
-  begin
-    return The_First_Lower_Limit;
-  end First_Lower_Limit;
-
-
-  function First_Upper_Limit return Angle.Degrees is
-  begin
-    return The_First_Upper_Limit;
-  end First_Upper_Limit;
-
-
-  function Second_Lower_Limit return Angle.Degrees is
-  begin
-    return The_Second_Lower_Limit;
-  end Second_Lower_Limit;
-
-
-  function Second_Upper_Limit return Angle.Degrees is
-  begin
-    return The_Second_Upper_Limit;
-  end Second_Upper_Limit;
 
 
   function Synch_On_Targets return Boolean is

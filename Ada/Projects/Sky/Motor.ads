@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2014 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2014 .. 2020 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -39,6 +39,7 @@ package Motor is
   type Position_Data is record
     Positions : Position;
     Offsets   : Position;
+    Inverted  : Boolean;
   end record;
 
   type Speed is private;
@@ -47,17 +48,13 @@ package Motor is
 
   type State_Handler_Access is access procedure (The_State : State);
 
-  procedure Define (First_Acceleration  : Angle.Value;
-                    Second_Acceleration : Angle.Value;
-                    First_Lower_Limit   : Angle.Degrees;
-                    First_Upper_Limit   : Angle.Degrees;
-                    Second_Lower_Limit  : Angle.Degrees;
-                    Second_Upper_Limit  : Angle.Degrees;
-                    Maximum_Speed       : Angle.Value;
-                    Park_Position       : Position);
+  procedure Define (First_Acceleration   : Angle.Value;
+                    Second_Acceleration  : Angle.Value;
+                    Maximum_Speed        : Angle.Value;
+                    Park_Position        : Position;
+                    Pole_Height          : Angle.Value;
+                    Meridian_Flip_Offset : Angle.Value);
   -- set parameters
-
-  procedure Redefine (Park_Position : Position);
 
   procedure Connect_Communication;
 
@@ -153,10 +150,6 @@ package Motor is
   function "-" (Left, Right : Position) return Position;
 
   function "-" (Left, Right : Position) return Speed;
-
-  function First_Revolutions return Integer;
-
-  function Second_Revolutions return Integer;
 
   function Board_Temperature_Is_Known return Boolean;
 

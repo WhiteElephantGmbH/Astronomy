@@ -87,7 +87,7 @@ package body Alpha is
               The_Limits(The_Column) := 0; -- not below zero horizon
             end if;
           else
-            if Alpha_Value /= Color_Range'last then
+            if Alpha_Value < Color_Range'last - 10 then
               The_Limits(The_Column) := Undefined_Row;
             elsif The_Limits(The_Column) = Undefined_Row then
               The_Limits(The_Column) := The_Row - Row_Offset + 1;

@@ -18,7 +18,6 @@ pragma Style_White_Elephant;
 with Alignment;
 with Device;
 with Matrix;
-with Motor;
 with Numerics;
 with Parameter;
 with System;
@@ -1264,10 +1263,10 @@ package body Telescope is
             when others =>
               The_Data.Arriving_Time := 0.0;
             end case;
-            Numerics.Calculate_Horizontal_Coordinates_For (Motor.Positions,
+            The_Data.Motor_Positions := Motor.Positions;
+            Numerics.Calculate_Horizontal_Coordinates_For (The_Data.Motor_Positions,
                                                            The_Data.Local_Direction,
                                                            The_Data.Adjustment);
-
             case The_State is
             when Preparing | Waiting | Approaching | Tracking | Adjusting =>
               The_Data.Universal_Time := The_Current_Time - Motor.Time_Delta;
