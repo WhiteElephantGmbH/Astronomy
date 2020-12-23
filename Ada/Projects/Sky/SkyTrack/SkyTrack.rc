@@ -1,7 +1,7 @@
 SkyTrack ICON SkyTrack.Ico
 
 1 VERSIONINFO
-  FILEVERSION 1,5,1
+  FILEVERSION 1,5,2
   FILEFLAGSMASK 0X3FL
   FILEFLAGS 0X0L
   FILEOS 0X4L
@@ -16,8 +16,8 @@ BEGIN
       VALUE "FileDescription", "Telescope Control Program\0"
       VALUE "OriginalFilename", "SkyTrack.exe\0"
       VALUE "InternalName", "SkyTrack\0"
-      VALUE "ProductName", "GPL 2019\0"
-      VALUE "ProductVersion", "8.3.1\0"
+      VALUE "ProductName", "GPL 2020\0"
+      VALUE "ProductVersion", "9.3.1\0"
       VALUE "Libraries", "\0"
     END
   END

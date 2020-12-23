@@ -32,7 +32,7 @@ project SkyTrack is
    package Compiler is
       for Default_Switches ("ada") use
          ("-O1", "-gnatQ", "-gnata", "-gnato", "-g", "-gnat12",
-          "-gnatwceGhijkmopruvz.c.n.p.t.w.x", "-gnatykmpM120");
+          "-gnatwceGhijkmopruvz.c.N.p.t.w.x", "-gnatykmpM120");
    end Compiler;
 
    package Binder is
