@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2011 .. 2020 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2011 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -1476,11 +1476,11 @@ package body User is
                                   The_Size       => Text_Size,
                                   The_Title_Size => Title_Size);
 
-        Motor_1 := Gui.Create (Display_Page, "Motor_1", "",
+        Motor_1 := Gui.Create (Display_Page, "Motor 1", "",
                                Is_Modifiable  => False,
                                The_Size       => Text_Size,
                                The_Title_Size => Title_Size);
-        Motor_2 := Gui.Create (Display_Page, "Motor_2", "",
+        Motor_2 := Gui.Create (Display_Page, "Motor 2", "",
                                Is_Modifiable  => False,
                                The_Size       => Text_Size,
                                The_Title_Size => Title_Size);

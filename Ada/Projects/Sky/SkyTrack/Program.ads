@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2017 .. 2020 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2017 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -21,7 +21,7 @@ package Program is
 
   Major_Id : constant := 1;
   Minor_Id : constant := 5;
-  Revision : constant := 2;
+  Revision : constant := 3;
 
   function Version return String;
 
