@@ -260,6 +260,9 @@ package body User is
   begin
     Gui.Beep;
     Gui.Message_Box (The_Text);
+  exception
+  when others =>
+    Log.Error ("Show_Error failed to Show: " & The_Text);
   end Show_Error;
 
 
