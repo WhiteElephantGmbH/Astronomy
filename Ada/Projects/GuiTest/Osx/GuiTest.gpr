@@ -1,22 +1,19 @@
 with "Gtkada";
-with "Aicwl";
 
-project Osx is
+project GuiTest is
 
    package Naming is
       for Casing use "mixedcase"; 
    end Naming;
 
-   for Source_Dirs use ("../../../Tools/Tests/GuiTest",
-                        "../../../Tools/Tests",
-                        "../../../Tools",
+   for Source_Dirs use ("../../../Projects/GuiTest",
+                        "../../../Projects",
                         "../../../Shared",
-                        "../../../Open/Shared",
-                        "../../../Open/Shared/Osx");
-
+                        "../../../Shared/Osx");
+                        
    for Main use ("GuiTest.adb");
 
-   for Exec_Dir use external ("HOME") & "/Product/Soudronic/Osx";
+   for Exec_Dir use external ("HOME") & "/Product/Astronomy/Osx";
 
    for Object_Dir use external ("HOME") & "/Objects/GuiTest";
 
@@ -33,7 +30,7 @@ project Osx is
    package Compiler is
       for Default_Switches ("ada") use
          ("-O1", "-gnatQ", "-gnata", "-gnato", "-g", "-gnat12",
-          "-gnatwceGhijkmopruvz.c.n.p.t.w.x", "-gnatykmpM120");
+          "-gnatwceGhijkmopruvz.c.N.p.t.w.x", "-gnatykmpM120");
    end Compiler;
 
    package Binder is
@@ -43,7 +40,7 @@ project Osx is
    package Linker is
       for Linker_Options use ();
       for Default_Switches ("ada") use ("-g",
-                                        "-Wl,-macosx_version_min,10.11");
+                                        "-Wl,-headerpad_max_install_names");
    end Linker;
 
-end Osx;
+end GuiTest;

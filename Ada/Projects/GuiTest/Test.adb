@@ -47,6 +47,7 @@ package body Test is
 
   procedure Work is
   begin
+    Gui.Message_Box ("Hello World");
     Gui.Registered.Execute (Application_Name,
                             Application_Version,
                             Create_User_Interface'access,
@@ -54,6 +55,9 @@ package body Test is
                             Initial_Metrics => (Width  => 650,
                                                 Height => 400,
                                                 others => <>));
+  exception
+  when Item: others =>
+    Log.Write (Item);
   end Work;
 
 end Test;
