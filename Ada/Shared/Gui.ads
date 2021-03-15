@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2015 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2015 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -71,7 +71,7 @@ package Gui is
 
   Default_Button_Width : constant := 100;
 
-  type Information is new Glib.Gulong; -- Large enough to hold an address
+  type Information is new Glib.Gsize; -- Large enough to hold an address
 
   No_Information : constant Information := 0;
 
