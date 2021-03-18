@@ -28,6 +28,8 @@ with Gtk.Menu;
 with Gtk.Menu_Item;
 with Gtk.Progress_Bar;
 with Gtk.Radio_Menu_Item;
+with Gtk.Scale;
+with Gtk.Separator;
 with Gtk.Text_View;
 with Gtk.Text_Buffer;
 with Gtk.Tree_Model;
@@ -41,6 +43,8 @@ package Gui is
 
   Sequence_Error : exception;
 
+  Is_Gtk_Implementation : constant Boolean := True;
+
   type Color is (Black,  -- Note this list of colours can be extended with any X11 colour.
                  Blue,
                  Brown,
@@ -48,9 +52,12 @@ package Gui is
                  Gray,
                  Green,
                  Gold,
+                 Goldenrod,
+                 Honeydew,
                  Magenta,
                  Olive,
                  Orange,
+                 Pink,
                  Red,
                  White,
                  Yellow);
@@ -136,6 +143,8 @@ package Gui is
   type Checked_Combo_Box is new Combo_Box with private;
   type Plain_Combo_Box is new Combo_Box with private;
 
+  type Scale is new Child with private;
+
   type Menu is private;
   type Menu_Item is abstract tagged private;
 
@@ -151,6 +160,8 @@ package Gui is
   type Menu_Kind is (Plain, Checked, Radio);
 
   type Column is private;
+
+  type Separator is new Child with private;
 
   procedure Message_Box (The_Message    : String;
                          Is_Exclamation : Boolean := True);
@@ -212,7 +223,12 @@ package Gui is
   -- (same effect as if the user had selected the page using the tab control
   --
 
+  function Add_Always_Displayed_Page (The_Style            : Page_Style := Default_Page_Style;
+                                      Minimum_Button_Width : Natural    := Default_Button_Width) return Page;
+
   procedure Set_Status_Line (The_Text : String);
+
+  procedure Set_Main_Window_Background_Color (The_Color : Color);
 
   function Is_Confirmed (The_Question : String) return Boolean;
   --
@@ -350,8 +366,14 @@ package Gui is
   -------------------------
 
   function Create (Parent_Page        : Page;
-                   Place_With_Buttons : Boolean := True) return Progress_Bar;
+                   Place_With_Buttons : Boolean := True;
+                   Progress_Color     : Color := Blue) return Progress_Bar;
   -- Creates a progress bar with a range 0..100 incrementing in steps of 10
+  -- Progress_Color defines the color used to show progress
+
+  procedure Change_Color (The_Progress_Bar : Progress_Bar;
+                          Progress_Color   : Color);
+  -- Change the color used to show progress
 
   procedure Define_Range (The_Progress_Bar : in out Progress_Bar;
                           The_Extent       : Positive;
@@ -599,6 +621,38 @@ package Gui is
   procedure Delete_All_Items (The_Tree_View : Tree_View);
 
 
+  -------------------
+  --
+  -- Scale functions
+  --
+  -------------------
+
+  function Create (Parent_Page        : Page;
+                   The_Title          : String;
+                   The_Initial_Value  : Natural;
+                   The_Minimum_Value  : Natural;
+                   The_Maximum_Value  : Natural;
+                   The_Action_Routine : Action_Routine := null;
+                   The_Size           : Natural := Automatic;
+                   The_Title_Size     : Natural := Automatic;
+                   Show_Marks         : Boolean := False) return Scale;
+
+  procedure Set (The_Scale : Scale;
+                 The_Value : Natural);
+
+  function Get (The_Scale : Scale) return Natural;
+
+
+  ----------------------
+  --
+  -- Separator function
+  --
+  ----------------------
+
+  function Create (Parent_Page : Page;
+                   Padding     : Natural := Automatic) return Separator;
+
+
 private
 
   function Main_Window return Gtk.Window.Gtk_Window;
@@ -677,6 +731,10 @@ private
     The_Box : Gtk.GEntry.Gtk_Entry;
   end record;
 
+  type Scale is new Child with record
+    The_Scale : Gtk.Scale.Gtk_Scale;
+  end record;
+
   type Check_Box is new Child with record
     The_Box : Gtk.Check_Button.Gtk_Check_Button;
   end record;
@@ -699,6 +757,10 @@ private
     The_Column : Gtk.Tree_View_Column.Gtk_Tree_View_Column;
     Column_Nr  : Glib.Gint;
     The_View   : Gtk.Tree_View.Gtk_Tree_View;
+  end record;
+
+  type Separator is new Child with record
+    The_Separator : Gtk.Separator.Gtk_Separator;
   end record;
 
 end Gui;

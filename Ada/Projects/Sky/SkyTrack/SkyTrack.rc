@@ -19,7 +19,7 @@ BEGIN
       VALUE "InternalName", "SkyTrack\0"
       VALUE "ProductName", "GPL 2020\0"
       VALUE "ProductVersion", "9.3.1\0"
-      VALUE "Libraries", "\0"
+      VALUE "Libraries", "GtkAda64\0"
     END
   END
   BLOCK "VarFileInfo"

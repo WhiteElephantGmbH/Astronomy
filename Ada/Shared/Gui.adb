@@ -22,11 +22,13 @@ with Gdk.Rectangle;
 with Gdk.Screen;
 with Gdk.Main;
 with Glib.Values;
+with Gtk.Adjustment;
 with Gtk.Arguments;
 with Gtk.Bin;
 with Gtk.Box;
 with Gtk.Cell_Renderer_Text;
 with Gtk.Enums;
+with Gtk.GRange;
 with Gtk.Handlers;
 with Gtk.Label;
 with Gtk.Main;
@@ -44,6 +46,7 @@ with Gtk.Tree_Sortable;
 with Gtk.Tree_Selection;
 with Gtkada.Dialogs;
 with Gui.Router;
+with Gui.Style;
 with Os;
 with Pango.Font;
 with Pango.Layout;
@@ -90,19 +93,22 @@ package body Gui is
   Color_Text_Tags : array (Color) of Gtk.Text_Tag.Gtk_Text_Tag;
 
   Default_RGB_For : constant array (Color) of String (1..7)
-                  := (Black   => "#000000",
-                      Blue    => "#0000FF",
-                      Brown   => "#A52A2A",
-                      Cyan    => "#00FFFF",
-                      Gray    => "#808080",
-                      Green   => "#008000",
-                      Gold    => "#FFD700",
-                      Magenta => "#FF00FF",
-                      Olive   => "#808000",
-                      Orange  => "#FFA500",
-                      Red     => "#FF0000",
-                      White   => "#FFFFFF",
-                      Yellow  => "#FFFF00");
+                  := (Black       => "#000000",
+                      Blue        => "#0000FF",
+                      Brown       => "#A52A2A",
+                      Cyan        => "#00FFFF",
+                      Gray        => "#808080",
+                      Green       => "#008000",
+                      Gold        => "#FFD700",
+                      Goldenrod   => "#DAA520",
+                      Honeydew    => "#F0FFF0",
+                      Magenta     => "#FF00FF",
+                      Olive       => "#808000",
+                      Orange      => "#FFA500",
+                      Pink        => "#FFC0CB",
+                      Red         => "#FF0000",
+                      White       => "#FFFFFF",
+                      Yellow      => "#FFFF00");
 
 
   procedure Define_Color_Tags is
@@ -110,7 +116,7 @@ package body Gui is
   begin
     for The_Color in Color'range loop
       Gdk.RGBA.Parse (Colors(The_Color), The_Color'img, Success);
-      if not Success then -- Colour unknown by name - use default defin-tion
+      if not Success then -- Colour unknown by name - use default definition
         Gdk.RGBA.Parse (Colors(The_Color), Default_RGB_For (The_Color), Success);
       end if;
       if Success then
@@ -261,6 +267,7 @@ package body Gui is
     The_Screen : Gdk.Screen.Gdk_Screen;
     use type Glib.Gint;
   begin
+    Gui.Style.Load_Css_File;
     Gtk.Box.Gtk_New_Vbox (Main_Box);
     The_Main_Window.Add (Main_Box);
 
@@ -465,6 +472,29 @@ package body Gui is
   end Set_Status_Line;
 
 
+  type Background_Color_Data is new Gui.Router.Message_Data with record
+    The_Color : Color;
+  end record;
+
+  overriding
+  procedure Asynchronous_Service (Data : Background_Color_Data) is
+    Success   : Boolean;
+    The_Color : Gdk.RGBA.Gdk_RGBA;
+  begin
+    Gdk.RGBA.Parse (The_Color, Default_RGB_For (Data.The_Color), Success);
+    Gtk.Widget.Override_Background_Color (Widget => Gtk.Widget.Gtk_Widget(The_Main_Window),
+                                          State  => Gtk.Enums.Gtk_State_Flag_Normal,
+                                          Color  => The_Color);
+  end Asynchronous_Service;
+
+  procedure Set_Main_Window_Background_Color (The_Color : Color) is
+    Data : constant Background_Color_Data := (The_Color => The_Color);
+  begin
+    Gui.Router.Send (Data);
+  end Set_Main_Window_Background_Color;
+
+
+
   ---------------------------------------
   --
   -- Page handling
@@ -547,6 +577,33 @@ package body Gui is
   begin
     Gui.Router.Send (Data);
   end Select_Page;
+
+
+  type Always_Displayed_Page_Data is new Gui.Router.Request_Data with record
+    The_Page : Page;
+  end record;
+
+  overriding
+  procedure Synchronous_Service (Data : in out Always_Displayed_Page_Data) is
+    The_Displayed_Page : Gtk.Notebook.Gtk_Notebook;
+  begin
+    Gtk.Box.Gtk_New_Vbox (Data.The_Page.Page_Box);
+    Gtk.Notebook.Gtk_New (The_Displayed_Page);
+    The_Displayed_Page.Append_Page (Data.The_Page.Page_Box);
+    The_Displayed_Page.Set_Show_Tabs (False);
+    Main_Box.Pack_Start (The_Displayed_Page, False, True, 10);
+  end Synchronous_Service;
+
+  function Add_Always_Displayed_Page (The_Style            : Page_Style := Default_Page_Style;
+                                      Minimum_Button_Width : Natural    := Default_Button_Width) return Page is
+    The_Page : constant Page := new Page_Information;
+    Data     : Always_Displayed_Page_Data := (Gui.Router.Request_Data with The_Page => The_Page);
+  begin
+    Gui.Router.Request (Data);
+    The_Page.The_Style := The_Style;
+    The_Page.Minimum_Button_Width := Minimum_Button_Width;
+    return The_Page;
+  end Add_Always_Displayed_Page;
 
 
 
@@ -840,10 +897,10 @@ package body Gui is
 
   overriding
   procedure Asynchronous_Service (Data : Add_Separator_Data) is
-    Separator : Gtk.Separator_Menu_Item.Gtk_Separator_Menu_Item;
+    Menu_Separator : Gtk.Separator_Menu_Item.Gtk_Separator_Menu_Item;
   begin
-    Gtk.Separator_Menu_Item.Gtk_New (Separator);
-    Data.Menu.Append (Separator);
+    Gtk.Separator_Menu_Item.Gtk_New (Menu_Separator);
+    Data.Menu.Append (Menu_Separator);
   end Asynchronous_Service;
 
   procedure Add_Menu_Separator (To_Menu : Menu) is
@@ -1356,6 +1413,7 @@ package body Gui is
   type Progress_Bar_Data is new Gui.Router.Request_Data with record
     Parent_Page        : Page;
     Place_With_Buttons : Boolean;
+    The_Color          : Color;
     The_Bar            : Gtk.Progress_Bar.Gtk_Progress_Bar;
     The_Widget         : Gtk.Widget.Gtk_Widget;
   end record;
@@ -1364,6 +1422,7 @@ package body Gui is
   procedure Synchronous_Service (Data : in out Progress_Bar_Data) is
   begin
     Gtk.Progress_Bar.Gtk_New (Data.The_Bar);
+    Gui.Style.Change_Color (Data.The_Bar, "#5798DC"); -- Variant of Cornflower Blue?
     Data.The_Widget := Gtk.Widget.Gtk_Widget(Data.The_Bar);
     if Data.Place_With_Buttons and (Data.Parent_Page.Nr_Of_Buttons > 0) then
       Data.Parent_Page.The_Button_Box.Pack_Start (Data.The_Bar, True, True);
@@ -1375,9 +1434,11 @@ package body Gui is
 
 
   function Create (Parent_Page        : Page;
-                   Place_With_Buttons : Boolean := True) return Progress_Bar is
+                   Place_With_Buttons : Boolean := True;
+                   Progress_Color     : Color := Blue) return Progress_Bar is
     Data : Progress_Bar_Data:= (Gui.Router.Request_Data with Parent_Page        => Parent_Page,
                                                              Place_With_Buttons => Place_With_Buttons,
+                                                             The_Color          => Progress_Color,
                                                              The_Bar            => null,
                                                              The_Widget         => null);
   begin
@@ -1391,6 +1452,27 @@ package body Gui is
             The_Step     => 10.0,
             The_Position => 0.0);
   end Create;
+
+
+  type Set_Progress_Bar_Color_Data is new Gui.Router.Message_Data with record
+    The_Bar   : Gtk.Progress_Bar.Gtk_Progress_Bar;
+    The_Color : Color;
+  end record;
+
+  overriding
+  procedure Asynchronous_Service (Data : Set_Progress_Bar_Color_Data) is
+  begin
+    Gui.Style.Change_Color (Data.The_Bar, Default_RGB_For (Data.The_Color));
+  end Asynchronous_Service;
+
+  procedure Change_Color (The_Progress_Bar : Progress_Bar;
+                          Progress_Color   : Color) is
+    Data : constant Set_Progress_Bar_Color_Data
+         := (The_Bar   => The_Progress_Bar.The_Bar,
+             The_Color => Progress_Color);
+  begin
+    Gui.Router.Send (Data);
+  end Change_Color;
 
 
   procedure Define_Range (The_Progress_Bar : in out Progress_Bar;
@@ -1496,7 +1578,7 @@ package body Gui is
         Font_Description : Pango.Font.Pango_Font_Description;
       begin
         Pango.Font.Gdk_New (Font_Description);
-        Pango.Font.Set_Family (Font_Description, (case Os.Family is when Os.Windows => "Fixedsys",
+        Pango.Font.Set_Family (Font_Description, (case Os.Family is when Os.Windows => "Lucida Console",
                                                                     when others     => "Monospace"));
         Data.The_Widget.Override_Font (Font_Description);
       end;
@@ -1952,7 +2034,7 @@ package body Gui is
     use Gtk.List_Store;
     use type Gtk.Tree_Model.Gtk_Tree_Iter;
   begin
-    for Unused_Index in 1 .. Data.The_Amount loop
+    for Unused in 1 .. Data.The_Amount loop
       Iter := Gtk.Tree_Model.Nth_Child (+Data.The_Store, Gtk.Tree_Model.Null_Iter, Data.The_Position);
       exit when Iter = Gtk.Tree_Model.Null_Iter;
       Data.The_Store.Remove (Iter);
@@ -3151,6 +3233,177 @@ package body Gui is
       end;
     end if;
   end Delete_All_Items;
+
+
+  --------------------
+  --
+  --  Scale functions
+  --
+  --------------------
+
+  type Create_Scale_Data (Title_Length : Natural) is new Gui.Router.Request_Data with record
+    Scale         : Gtk.Scale.Gtk_Scale;
+    Parent_Page   : Page;
+    Title         : String (1..Title_Length);
+    Initial_Value : Natural;
+    Minimum_Value : Natural;
+    Maximum_Value : Natural;
+    Action        : Action_Routine;
+    Size          : Natural;
+    Title_Size    : Natural;
+    Add_Marks     : Boolean;
+  end record;
+
+  overriding
+  procedure Synchronous_Service (Data : in out Create_Scale_Data) is
+    The_Box        : Gtk.Box.Gtk_Box;
+    The_Label      : Gtk.Label.Gtk_Label;
+    The_Adjustment : Gtk.Adjustment.Gtk_Adjustment;
+    use type Gtk.Scale.Gtk_Scale;
+  begin
+    Gtk.Box.Gtk_New_Hbox (The_Box);
+    Gtk.Label.Gtk_New (The_Label, Data.Title);
+    Gtk.Misc.Set_Alignment (Gtk.Misc.Gtk_Misc (The_Label), 0.0, 0.5);
+    if Data.Title_Size /= Automatic then
+      The_Label.Set_Size_Request (Width => Glib.Gint(Data.Title_Size));
+    end if;
+    The_Box.Pack_Start (The_Label, Expand => False);
+    Gtk.Adjustment.Gtk_New (Adjustment     => The_Adjustment,
+                            Value          => Glib.Gdouble(Data.Initial_Value),
+                            Lower          => Glib.Gdouble(Data.Minimum_Value),
+                            Upper          => Glib.Gdouble(Data.Maximum_Value),
+                            Step_Increment => 1.0,
+                            Page_Increment => 1.0);
+    Gtk.Scale.Gtk_New (Data.Scale, Gtk.Enums.Orientation_Horizontal, The_Adjustment);
+    if Data.Size /= Automatic then
+      Data.Scale.Set_Size_Request (Width => Glib.Gint(Data.Size));
+      The_Box.Pack_Start (Data.Scale, Expand => False);
+    else
+      The_Box.Pack_Start (Data.Scale);
+    end if;
+    Gtk.Scale.Set_Digits (Data.Scale, 0);
+    if Data.Add_Marks then
+      Gtk.Scale.Add_Mark(Data.Scale, Glib.Gdouble(Data.Minimum_Value), Gtk.Enums.Pos_Top, Data.Minimum_Value'img);
+      Gtk.Scale.Add_Mark(Data.Scale, Glib.Gdouble(Data.Maximum_Value), Gtk.Enums.Pos_Top, Data.Maximum_Value'img);
+    end if;
+    if Data.Action /= null then
+      Action_Callback.Connect (Data.Scale,
+                               "value-changed",
+                               Action_Callback.To_Marshaller(Action_Handler'access),
+                               Data.Action);
+    end if;
+    if Data.Parent_Page /= null then
+      Data.Parent_Page.Page_Box.Pack_Start (The_Box, False, False);
+    end if;
+
+  end Synchronous_Service;
+
+  function Create (Parent_Page        : Page;
+                   The_Title          : String;
+                   The_Initial_Value  : Natural;
+                   The_Minimum_Value  : Natural;
+                   The_Maximum_Value  : Natural;
+                   The_Action_Routine : Action_Routine := null;
+                   The_Size           : Natural := Automatic;
+                   The_Title_Size     : Natural := Automatic;
+                   Show_Marks         : Boolean := False) return Scale is
+    Data : Create_Scale_Data := (Gui.Router.Request_Data with Title_Length  => The_Title'length,
+                                                              Scale         => null, -- returned by call
+                                                              Parent_Page   => Parent_Page,
+                                                              Title         => The_Title,
+                                                              Initial_Value => The_Initial_Value,
+                                                              Minimum_Value => The_Minimum_Value,
+                                                              Maximum_Value => The_Maximum_Value,
+                                                              Action        => The_Action_Routine,
+                                                              Size          => The_Size,
+                                                              Title_Size    => The_Title_Size,
+                                                              Add_Marks     => Show_Marks);
+  begin
+    Gui.Router.Request (Data);
+    return (The_Scale => Data.Scale,
+            Widget    => Gtk.Widget.Gtk_Widget(Data.Scale));
+  end Create;
+
+
+  type Set_Scale_Data is new Gui.Router.Message_Data with record
+    The_Scale : Gtk.GRange.Gtk_Range;
+    The_Value : Glib.Gdouble;
+  end record;
+
+  overriding
+  procedure Asynchronous_Service (Data : Set_Scale_Data) is
+  begin
+    Gtk.GRange.Set_Value (Data.The_Scale, Data.The_Value);
+  end Asynchronous_Service;
+
+  procedure Set (The_Scale : Scale;
+                 The_Value : Natural) is
+    Data : constant Set_Scale_Data := (The_Scale =>  Gtk.GRange.Gtk_Range(The_Scale.The_Scale),
+                                       The_Value  => Glib.Gdouble(The_Value));
+  begin
+    Gui.Router.Send (Data);
+  end Set;
+
+
+  type Scale_Enquiry_Data is new Gui.Router.Request_Data with record
+    The_Scale : Gtk.Scale.Gtk_Scale;
+    The_Value : Glib.Gdouble;
+  end record;
+
+  overriding
+  procedure Synchronous_Service (Data : in out Scale_Enquiry_Data) is
+  begin
+    Data.The_Value := Gtk.GRange.Get_Value (Gtk.GRange.Gtk_Range(Data.The_Scale));
+  end Synchronous_Service;
+
+  function Get (The_Scale : Scale) return Natural is
+    Data : Scale_Enquiry_Data := (Gui.Router.Request_Data with The_Scale => The_Scale.The_Scale,
+                                                               The_Value => 0.0);
+  begin
+    Gui.Router.Request (Data);
+    return Natural(Data.The_Value);
+  end Get;
+
+
+  ------------------------
+  --
+  --  Separator functions
+  --
+  ------------------------
+
+  type Create_Separator_Data is new Gui.Router.Request_Data with record
+    Separator   : Gtk.Separator.Gtk_Separator;
+    Parent_Page : Page;
+    Padding     : Integer;
+  end record;
+
+  overriding
+  procedure Synchronous_Service (Data : in out Create_Separator_Data) is
+    The_Box : Gtk.Box.Gtk_Box;
+  begin
+    Gtk.Box.Gtk_New_Hbox (The_Box);
+    Gtk.Separator.Gtk_New (Data.Separator, Gtk.Enums.Orientation_Horizontal);
+    The_Box.Pack_Start (Data.Separator);
+    if Data.Parent_Page /= null then
+      Data.Parent_Page.Page_Box.Pack_Start (The_Box,
+                                            Expand  => False,
+                                            Fill    => False,
+                                            Padding => Glib.Guint(Data.Padding));
+    end if;
+  end Synchronous_Service;
+
+  function Create (Parent_Page : Page;
+                   Padding     : Natural := Automatic) return Separator is
+    Data : Create_Separator_Data := (Gui.Router.Request_Data with Separator   => null, -- returned by call
+                                                                  Parent_Page => Parent_Page,
+                                                                  Padding     => Padding);
+  begin
+    Gui.Router.Request (Data);
+    return (The_Separator => Data.Separator,
+            Widget        => Gtk.Widget.Gtk_Widget(Data.Separator));
+  end Create;
+
+
 
 begin
   Gtk.Main.Init;

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2013 .. 2020 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2013 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -29,6 +29,7 @@ with Os;
 with Strings;
 with Text;
 with Traces;
+with User;
 
 package body Parameter is
 
@@ -90,7 +91,7 @@ package body Parameter is
   The_Telescope_Connection : Connection;
 
   --Lx200
-  The_Lx200_Port          : Network.Port_Number;
+  The_Lx200_Port : Network.Port_Number;
 
   --Stellarium
   The_Stellarium_Port   : Network.Port_Number;
@@ -344,7 +345,8 @@ package body Parameter is
 
           exception
           when others =>
-            Error.Raise_With ("Can't find the telescope " & Telescope);
+            The_Telescope_Connection := (Kind => Is_Simulated);
+            User.Show_Error ("Can't find the telescope " & Telescope);
           end;
         end Prepare_Udp;
 
