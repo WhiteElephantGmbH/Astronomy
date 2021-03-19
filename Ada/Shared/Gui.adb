@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2015 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2015 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,6 +15,7 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with Ada.Text_Io; -- !!! temporary till Message_Box works on Big Sur
 with Definite_Doubly_Linked_Lists;
 with Gdk.RGBA;
 with Gdk.Event;
@@ -178,10 +179,11 @@ package body Gui is
 
   procedure Synchronous_Service (Data : in out Message_Box_Data) is
   begin
-    Data.Buttons := Gtkada.Dialogs.Message_Dialog (Msg         => Data.The_Message,
-                                                   Dialog_Type => Data.Severity,
-                                                   Buttons     => Data.Buttons,
-                                                   Parent      => The_Main_Window);
+    Ada.Text_Io.Put_Line (Data.The_Message);
+    --Data.Buttons := Gtkada.Dialogs.Message_Dialog (Msg         => Data.The_Message,
+    --                                               Dialog_Type => Data.Severity,
+    --                                               Buttons     => Data.Buttons,
+    --                                               Parent      => The_Main_Window);
   end Synchronous_Service;
 
   procedure Message_Box (The_Message    : String;
