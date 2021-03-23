@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2013 .. 2020 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2013 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -253,7 +253,7 @@ package body Stellarium is
     when others =>
       null; -- not started
     end;
-    Os.Process.Create (Filename, The_Process_Id);
+    The_Process_Id := Os.Process.Created (Filename);
     return True;
   exception
   when others =>

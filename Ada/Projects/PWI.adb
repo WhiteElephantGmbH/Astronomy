@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2019 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2019 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
@@ -16,7 +16,7 @@ package body PWI is
 
   function Startup (Filename : String) return Boolean is
   begin
-    Os.Process.Create (Filename, The_Process_Id);
+    The_Process_Id := Os.Process.Created (Filename);
     return True;
   exception
   when others =>

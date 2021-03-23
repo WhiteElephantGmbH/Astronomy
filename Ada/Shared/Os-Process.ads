@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2002 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2002 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -27,15 +27,17 @@ package Os.Process is
 
   type Console_Type is (None, Normal, Invisible);
 
-  procedure Create (Executable     :     String;
-                    Process_Id     : out Id;
-                    Parameters     :     String := "";
-                    Environment    :     String := "";
-                    Current_Folder :     String := "";
-                    Std_Input      :     Handle := No_Handle;
-                    Std_Output     :     Handle := No_Handle;
-                    Std_Error      :     Handle := No_Handle;
-                    Console        :     Console_Type := Normal);
+  procedure Create (Executable     : String;
+                    Parameters     : String := "";
+                    Environment    : String := "";
+                    Current_Folder : String := "";
+                    Std_Input      : Handle := No_Handle;
+                    Std_Output     : Handle := No_Handle;
+                    Std_Error      : Handle := No_Handle;
+                    Console        : Console_Type := Normal);
+
+  function Created (Executable : String;
+                    Parameters : String := "") return Id;
 
   Creation_Failure : exception;
   --
@@ -47,7 +49,7 @@ package Os.Process is
   --
   -- Note: If the current folder is set to the null string then the current folder of new process
   --       is set to equal the current folder of the parent (creating process)
-  --
+
 
   procedure Terminate_With (Process_Id : Id);
   --
@@ -76,13 +78,13 @@ private
 
   type Handle is new System.Address;
 
+  No_Handle : constant Handle := Handle(System.Null_Address);
+
   type Id_Value is mod 2**32;
 
   type Id is record
     Value      : Id_Value := 0;
     Is_Defined : Boolean  := False;
   end record;
-
-  No_Handle : constant Handle := Handle(System.Null_Address);
 
 end Os.Process;

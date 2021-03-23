@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2002 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2002 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -17,7 +17,6 @@ pragma Style_White_Elephant;
 
 with Log;
 with Text;
-with Win32;
 with Win32.Winbase;
 with Win32.Winerror;
 with Win32.Winnt;
@@ -28,14 +27,14 @@ package body Os.Process is
   package Nt   renames Win32.Winnt;
 
   procedure Create (Executable     :     String;
-                    Process_Id     : out Id;
-                    Parameters     :     String := "";
-                    Environment    :     String := "";
-                    Current_Folder :     String := "";
-                    Std_Input      :     Handle := No_Handle;
-                    Std_Output     :     Handle := No_Handle;
-                    Std_Error      :     Handle := No_Handle;
-                    Console        :     Console_Type := Normal) is
+                    Parameters     :     String;
+                    Environment    :     String;
+                    Current_Folder :     String;
+                    Std_Input      :     Handle;
+                    Std_Output     :     Handle;
+                    Std_Error      :     Handle;
+                    Console        :     Console_Type;
+                    Process_Id     : out Id) is
 
     Startup_Info        : aliased Win32.Winbase.STARTUPINFOA;
     Process_Information : aliased Win32.Winbase.PROCESS_INFORMATION;
@@ -149,6 +148,45 @@ package body Os.Process is
   end Create;
 
 
+  procedure Create (Executable     : String;
+                    Parameters     : String := "";
+                    Environment    : String := "";
+                    Current_Folder : String := "";
+                    Std_Input      : Handle := No_Handle;
+                    Std_Output     : Handle := No_Handle;
+                    Std_Error      : Handle := No_Handle;
+                    Console        : Console_Type := Normal) is
+    The_Process_Id : Id with Unreferenced;
+  begin
+    Create (Executable     => Executable,
+            Parameters     => Parameters,
+            Environment    => Environment,
+            Current_Folder => Current_Folder,
+            Std_Input      => Std_Input,
+            Std_Output     => Std_Output,
+            Std_Error      => Std_Error,
+            Console        => Console,
+            Process_Id     => The_Process_Id);
+  end Create;
+
+
+  function Created (Executable : String;
+                    Parameters : String := "") return Id is
+    The_Process_Id : Id;
+  begin
+    Create (Executable     => Executable,
+            Parameters     => Parameters,
+            Environment    => "",
+            Current_Folder => "",
+            Std_Input      => No_Handle,
+            Std_Output     => No_Handle,
+            Std_Error      => No_Handle,
+            Console        => Normal,
+            Process_Id     => The_Process_Id);
+    return The_Process_Id;
+  end Created;
+
+
   procedure Terminate_With (Process_Id : Id) is
     SYNCHRONIZE       : constant := 16#00100000#;
     PROCESS_TERMINATE : constant := 1;
@@ -205,8 +243,6 @@ package body Os.Process is
       end if;
     end Standard_Output;
 
-    Unused_Id : Id;
-
   begin
     Security.nLength             := Win32.DWORD (Base.SECURITY_ATTRIBUTES'size / 8);
     Security.lpSecurityDescriptor:= System.Null_Address;
@@ -216,7 +252,7 @@ package body Os.Process is
                         lpPipeAttributes => Security'unchecked_access,
                         nSize            => Default_Size) /= Win32.TRUE
     then
-      Log.Write ("Process.Createpipe failed");
+      Log.Write ("!!! Process.Createpipe failed");
       raise Execution_Failed;
     end if;
     --
@@ -228,7 +264,7 @@ package body Os.Process is
                              Win32.FALSE, -- Non inheritable
                              Nt.DUPLICATE_SAME_ACCESS) /= Win32.TRUE
     then
-      Log.Write ("Process.Duplicatehandle failed");
+      Log.Write ("!!! Process.Duplicatehandle failed");
       raise Execution_Failed;
     end if;
     Unused := Base.CloseHandle (In_Temp); -- No longer used
@@ -239,8 +275,7 @@ package body Os.Process is
             Current_Folder => Current_Folder,
             Std_Error      => Handle(Error_Output),
             Std_Output     => Handle(Standard_Output),
-            Console        => Invisible,
-            Process_Id     => Unused_Id);
+            Console        => Invisible);
     Unused := Base.CloseHandle (Outbound); -- No longer used, child has a copy
     loop
       if Base.ReadFile (Inbound,
@@ -250,7 +285,7 @@ package body Os.Process is
                         null) /= Win32.TRUE
       then
         exit when Base.GetLastError = Win32.Winerror.ERROR_BROKEN_PIPE;
-        Log.Write ("Process.Readfile Error =" & Win32.DWORD'image(Base.GetLastError));
+        Log.Write ("!!! Process.Readfile Error =" & Win32.DWORD'image(Base.GetLastError));
         raise Execution_Failed;
       else
         Text.Append_To (The_Result, The_Data (The_Data'first .. The_Data'first + Natural(The_Length) - 1));
@@ -263,8 +298,8 @@ package body Os.Process is
   when Execution_Failed =>
     raise;
   when Item: others =>
-    Log.Write ("Process.Execution_Of", Item);
-    Log.Write ("Last Error =" & Win32.DWORD'image(Base.GetLastError));
+    Log.Write ("!!! Process.Execution_Of", Item);
+    Log.Write ("    Last Error =" & Win32.DWORD'image(Base.GetLastError));
     raise Execution_Failed;
   end Execution_Of;
 
