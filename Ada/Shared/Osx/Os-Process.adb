@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2002 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                           (c) 2021 by White Elephant GmbH, Schaffhausen, Switzerland                              *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,7 +15,13 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with Ada.Unchecked_Conversion;
+with GNAT.OS_Lib;
+with Log;
+
 package body Os.Process is
+
+  Not_Supported : exception;
 
   procedure Create (Executable     : String;
                     Parameters     : String := "";
@@ -26,22 +32,41 @@ package body Os.Process is
                     Std_Error      : Handle := No_Handle;
                     Console        : Console_Type := Normal) is
   begin
-    raise Program_Error; -- not implemented
+    raise Not_Supported;
   end Create;
 
 
   function Created (Executable : String;
                     Parameters : String := "") return Id is
-  begin
-    raise Program_Error; -- not implemented
-    return (Id_Value   => 0,
-            Is_Defined => False);
+
+    function Convert is new Ada.Unchecked_Conversion (GNAT.OS_Lib.Process_Id, Id_Value);
+
+    The_Process_Id : GNAT.OS_Lib.Process_Id;
+    The_Arguments  : GNAT.OS_Lib.Argument_List_Access;
+
+    use type GNAT.OS_Lib.Process_Id;
+
+  begin -- Create
+    The_Arguments := GNAT.OS_Lib.Argument_String_To_List (Parameters);
+    The_Process_Id := GNAT.OS_Lib.Non_Blocking_Spawn (Program_Name => Executable,
+                                                      Args         => The_Arguments.all);
+    GNAT.OS_Lib.Free (The_Arguments);
+    return (Is_Defined => The_Process_Id /= GNAT.OS_Lib.Invalid_Pid,
+            Value      => Convert (The_Process_Id));
+  exception
+  when Item: others =>
+    Log.Write ("Os.Process.Create", Item);
+    raise Execution_Failed;
   end Created;
 
 
   procedure Terminate_With (Process_Id : Id) is
+    function Convert is new Ada.Unchecked_Conversion (Id_Value, GNAT.OS_Lib.Process_Id);
   begin
-    null;
+    if Process_Id.Is_Defined then
+      GNAT.OS_Lib.Kill (Pid       => Convert (Process_Id.Value),
+                        Hard_Kill => True);
+    end if;
   end Terminate_With;
 
 
@@ -51,15 +76,86 @@ package body Os.Process is
                          Current_Folder : String  := "";
                          Handle_Output  : Boolean := True;
                          Handle_Errors  : Boolean := True) return String is
-  begin
-    raise Program_Error; -- not implemented
-    return "";
+
+    The_Arguments   : GNAT.OS_Lib.Argument_List_Access;
+    The_Return_Code : Integer;
+    The_File        : GNAT.OS_Lib.File_Descriptor := GNAT.OS_Lib.Null_FD;
+    The_Filename    : GNAT.OS_Lib.String_Access;
+
+    procedure Cleanup is
+      Unused : Boolean;
+      use type GNAT.OS_Lib.String_Access;
+      use type GNAT.OS_Lib.Argument_List_Access;
+    begin
+      if The_Filename /= null then
+        GNAT.OS_Lib.Close (The_File);
+        GNAT.OS_Lib.Delete_File (The_Filename.all, Unused);
+        GNAT.OS_Lib.Free (The_Filename);
+      end if;
+      if The_Arguments /= null then
+        GNAT.OS_Lib.Free (The_Arguments);
+      end if;
+    end Cleanup;
+
+    use type GNAT.OS_Lib.File_Descriptor;
+
+  begin -- Execution_Of
+    if Environment /= "" then
+      Log.Write ("Os.Process.Execution_Of - Environment NOT SUPPORTED");
+      raise Not_Supported;
+    elsif Current_Folder /= "" then
+      Log.Write ("Os.Process.Execution_Of - Current_Folder NOT SUPPORTED");
+      raise Not_Supported;
+    end if;
+    if not Handle_Output then
+      Log.Write ("Os.Process.Execution_Of - Output must be handled");
+      raise Not_Supported;
+    end if;
+    The_Arguments := GNAT.OS_Lib.Argument_String_To_List (Parameters);
+    GNAT.OS_Lib.Create_Temp_Output_File (FD   => The_File,
+                                         Name => The_Filename);
+    if The_File = GNAT.OS_Lib.Invalid_FD then
+      Log.Write ("Execution_Of (" & Executable & " failed (temp file creation failed)");
+      raise Execution_Failed;
+    end if;
+    GNAT.OS_Lib.Spawn (Program_Name           => Executable,
+                       Args                   => The_Arguments.all,
+                       Output_File_Descriptor => The_File,
+                       Return_Code            => The_Return_Code,
+                       Err_To_Out             => Handle_Errors);
+    if The_Return_Code /= 0 then
+      Log.Write ("Execution_Of " & Executable & " failed with " & GNAT.OS_Lib.Errno_Message);
+      raise Execution_Failed;
+    end if;
+    GNAT.OS_Lib.Close (The_File);
+    The_File := GNAT.OS_Lib.Open_Read (Name  => The_Filename.all,
+                                       Fmode => GNAT.OS_Lib.Text);
+    declare
+      The_String : aliased String(1..10000);
+      The_Count  : Integer;
+    begin
+      The_Count := GNAT.OS_Lib.Read (FD => The_File,
+                                     A  => The_String(The_String'first)'address,
+                                     N  => The_String'length);
+      if The_Count = The_String'length then
+        Log.Write ("Execution_Of " & Executable & " warning result truncated");
+      end if;
+      Cleanup;
+      return The_String(The_String'first .. The_String'first + The_Count - 1);
+    end;
+  exception
+  when Not_Supported =>
+    raise;
+  when Item: others =>
+    Log.Write ("Os.Process.Execution_Of", Item);
+    Cleanup;
+    raise Execution_Failed;
   end Execution_Of;
 
 
   procedure Set_Priority_Class (Priority : Priority_Class) is
   begin
-    null; -- not implemented
+    Log.Write ("Os.Process.Set_Priority_Class (Priority => " & Priority'image & ") - not IMPLEMENTED");
   end Set_Priority_Class;
 
 end Os.Process;
