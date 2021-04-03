@@ -1,12 +1,12 @@
-with "Gtkada";
+--with "Gtkada";
 
-project SkyTrack is
+project SkyGuider is
 
    package Naming is
       for Casing use "mixedcase"; 
    end Naming;
 
-   for Source_Dirs use ("../../../../Projects/Sky/SkyTrack",
+   for Source_Dirs use ("../../../../Projects/Sky/SkyGuider",
                         "../../../../Projects/Sky",
                         "../../../../Projects",
                         "../../../../SkyData",
@@ -14,11 +14,11 @@ project SkyTrack is
                         "../../../../Shared/Osx",
                         "../../../../Gid");
 
-   for Main use ("SkyTrack.adb");
+   for Main use ("SkyGuider.adb");
 
    for Exec_Dir use external ("HOME") & "/Product/Astronomy/Osx";
 
-   for Object_Dir use external ("HOME") & "/Objects/Astronomy/SkyTrack";
+   for Object_Dir use external ("HOME") & "/Objects/Astronomy/SkyGuider";
 
 
    package Pretty_Printer is
@@ -27,7 +27,7 @@ project SkyTrack is
 
    package Builder is
       for Default_Switches ("ada") use ("-s", "-g");
-      for Executable ("SkyTrack.adb") use "SkyTrack";
+      for Executable ("SkyGuider.adb") use "SkyGuider";
    end Builder;
 
    package Compiler is
@@ -46,4 +46,4 @@ project SkyTrack is
                                         "-Wl,-headerpad_max_install_names");
    end Linker;
 
-end SkyTrack;
+end SkyGuider;

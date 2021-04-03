@@ -35,8 +35,6 @@ package body Time is
 
   Lambda : Angle.Value := Angle.Zero; -- Greenwich longitude
 
-  The_Time_Offset : Duration := 0.0;
-
 
   -------------------
   -- set longitude --
@@ -109,11 +107,9 @@ package body Time is
     use Astro.TIMLIB;
     Now : Ada.Calendar.Time := Ada.Calendar.Clock;
     Y, M, D : Natural;
-    S, TS   : Duration;
+    S       : Duration;
   begin
-    TS := Time_Shift (Now);
-    The_Time_Offset := TS;
-    Now := Now - TS;
+    Now := Now - Time_Shift (Now);
     Ada.Calendar.Split (Date    => Now,
                         Year    => Y,
                         Month   => M,
@@ -173,13 +169,29 @@ package body Time is
   end Synchronized_Universal;
 
 
+  function Universal_Of (Ut_Year  : Year;
+                         Ut_Month : Month;
+                         Ut_Day   : Day;
+                         Ut_Hour  : Duration) return Ut is
+
+    Mjd : constant Astro.REAL := Astro.TIMLIB.MJD (DAY   => Ut_Day,
+                                                   MONTH => Ut_Month,
+                                                   YEAR  => Ut_Year,
+                                                   HOUR  => Astro.TIMLIB.HOURS(Ut_Hour));
+  begin
+    return Ut(Mjd - MJD_Offset) * One_Day;
+  end Universal_Of;
+
+
   function Image_Of (Item      : Ut;
                      Time_Only : Boolean := False) return String is
 
     use Astro;
     use TIMLIB;
 
-    Modjd : constant Astro.REAL :=  Astro.REAL((Item + The_Time_Offset) / One_Day) + MJD_Offset;
+    TS : constant Duration := Time_Shift (Ada.Calendar.Clock);
+
+    Modjd : constant Astro.REAL :=  Astro.REAL((Item + TS) / One_Day) + MJD_Offset;
 
     function Image_Of (Number : Natural) return String is
       Image : constant String := Number'img;

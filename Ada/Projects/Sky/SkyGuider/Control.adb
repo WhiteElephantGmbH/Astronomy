@@ -17,28 +17,73 @@ pragma Style_White_Elephant;
 
 with Ada.Command_Line;
 with Ada.Text_IO;
+with Angle;
+with Earth;
 with Exceptions;
-with Exif;
+with Picture;
+with Space;
+with Strings;
+with Time;
 
 package body Control is
 
-  procedure Put_Line (Item : String) renames Ada.Text_IO.Put_Line;
+  procedure Put (Item : String) renames Ada.Text_IO.Put_Line;
+
+  function Image_Of (Item : Angle.Value) return String is
+  begin
+    return Strings.Ansi_Of (Angle.Image_Of (The_Value   => Item,
+                                            Unit        => Angle.In_Degrees,
+                                            Decimals    => 3,
+                                            Show_Signed => True));
+  end Image_Of;
+
 
   procedure Start is
+    The_Time      : Time.Ut;
+    The_Elevation : Integer;
+    The_Latitude  : Angle.Value;
+    The_Longitude : Angle.Value;
+    The_Direction : Space.Direction;
+    The_Position  : Earth.Direction;
   begin
     case Ada.Command_Line.Argument_Count is
     when 0 =>
-      Put_Line ("Picture filename expected");
+      Put ("Picture filename expected");
     when 1 =>
-      Exif.Read (Ada.Command_Line.Argument(1));
+      Picture.Read (Filename => Ada.Command_Line.Argument(1),
+                    Height   => 2.97,
+                    Width    => 4.46);
+      The_Elevation := Picture.Elevation;
+      Put ("Elevation :" & The_Elevation'image & 'm');
+      The_Latitude := Picture.Latitude;
+      Put ("Latitude  : " & Image_Of (The_Latitude));
+      The_Longitude := Picture.Longitude;
+      Put ("Longitude : " & Image_Of (The_Longitude));
+      The_Time := Picture.Time_Stamp;
+      Put ("Time      : " & Time.Image_Of (The_Time));
+      The_Direction := Picture.Direction;
+      Put ("RA  J2000 : " & Space.Ra_Image_Of (The_Direction));
+      Put ("DEC J2000 : " & Space.Dec_Image_Of (The_Direction));
+      The_Direction := Picture.Actual_Direction;
+      Put ("RA        : " & Space.Ra_Image_Of (The_Direction));
+      Put ("DEC       : " & Space.Dec_Image_Of (The_Direction));
+      The_Position := Picture.Direction;
+      Put ("ALT       : " & Earth.Alt_Image_Of (The_Position));
+      Put ("AZ        : " & Earth.Az_Image_Of (The_Position));
     when others =>
-      Put_Line ("Too many arguments");
+      Put ("Too many arguments");
     end case;
   exception
-  when Exif.File_Not_Found =>
-    Put_Line ("File not found");
+  when Picture.File_Not_Found =>
+    Put ("Picture file not found");
+  when Picture.Invalid_File =>
+    Put ("Invalid picture file");
+  when Picture.Not_Solved =>
+    Put ("Picture not locatable");
+  when Picture.Undefined_Value =>
+    Put ("Undefined picture information");
   when Item: others =>
-    Put_Line (Exceptions.Information_Of(Item));
+    Put (Exceptions.Information_Of(Item));
   end Start;
 
 end Control;

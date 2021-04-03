@@ -82,8 +82,14 @@ package Time is
 
   function Synchronized_Universal (Base : Ut) return Ut;
 
+  function Universal_Of (Ut_Year  : Year;
+                         Ut_Month : Month;
+                         Ut_Day   : Day;
+                         Ut_Hour  : Duration) return Ut;
+
   function Image_Of (Item      : Ut;
                      Time_Only : Boolean := False) return String;
+  -- returns the local time image using the time shift from the time now.
 
 
   -----------------------------
