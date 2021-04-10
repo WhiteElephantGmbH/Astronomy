@@ -21,9 +21,9 @@ package Astap is
 
   type Degrees is new Long_Float;
 
-  procedure Solve (Filename :     String;
-                   Height   :     Degrees;
-                   Ra       : out Degrees;
-                   Dec      : out Degrees);
+  procedure Solve (Filename :        String;
+                   Height   :        Degrees;
+                   Ra       : in out Degrees;
+                   Dec      : in out Degrees);
 
 end Astap;

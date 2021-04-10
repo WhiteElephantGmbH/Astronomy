@@ -28,13 +28,15 @@ package body Picture is
   The_Dec : Astap.Degrees;
 
 
-  procedure Read (Filename  : String;
-                  Height    : Angle.Degrees;
-                  Width     : Angle.Degrees) is
+  procedure Read (Filename    : String;
+                  Height      : Angle.Degrees;
+                  Width       : Angle.Degrees;
+                  Search_From : Space.Direction) is
 
     The_Height : Astap.Degrees;
 
     use all type Exif.Image_Orientation;
+    use type Angle.Value;
 
   begin
     Solved := False;
@@ -48,6 +50,8 @@ package body Picture is
     when Mirror_Horizontal_And_Rotate_270 | Rotate_90 | Mirror_Horizontal_And_Rotate_90 | Rotate_270 =>
       The_Height := Astap.Degrees(Width);
     end case;
+    The_Ra := Astap.Degrees(Angle.Degrees'(+Space.Ra_Of (Search_From)));
+    The_Dec := Astap.Degrees(Angle.Degrees'(+Space.Dec_Of (Search_From)));
     Astap.Solve (Filename => Filename,
                  Height   => The_Height,
                  Ra       => The_Ra,

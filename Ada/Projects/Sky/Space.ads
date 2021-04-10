@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2014 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2014 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -22,6 +22,8 @@ package Space is
   type Direction is private;
 
   Unknown_Direction : constant Direction;
+
+  North_Pole : constant Direction;
 
   function Direction_Of (Dec : Angle.Value;
                          Ra  : Angle.Value) return Direction with Inline;
@@ -53,5 +55,9 @@ private
   end record;
 
   Unknown_Direction : constant Direction := (others => <>);
+
+  North_Pole : constant Direction := (Dec      => Angle.Quadrant,
+                                      Ra       => Angle.Zero,
+                                      Is_Known => True);
 
 end Space;

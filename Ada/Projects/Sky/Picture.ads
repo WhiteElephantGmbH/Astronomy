@@ -29,9 +29,10 @@ package Picture is
   Not_Solved      : exception renames Astap.Not_Solved;
   Undefined_Value : exception;
 
-  procedure Read (Filename : String;
-                  Height   : Angle.Degrees;
-                  Width    : Angle.Degrees);
+  procedure Read (Filename    : String;
+                  Height      : Angle.Degrees;
+                  Width       : Angle.Degrees;
+                  Search_From : Space.Direction);
 
   function Elevation return Integer;
 
@@ -47,7 +48,7 @@ package Picture is
 
   function Actual_Direction return Space.Direction;
   -- return the center of the picture in actual coordinates.
-  
+
   function Direction return Earth.Direction;
   -- returns the center of the picture in alt/az coordinates.
 

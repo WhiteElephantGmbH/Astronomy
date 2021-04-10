@@ -50,9 +50,10 @@ package body Control is
     when 0 =>
       Put ("Picture filename expected");
     when 1 =>
-      Picture.Read (Filename => Ada.Command_Line.Argument(1),
-                    Height   => 2.97,
-                    Width    => 4.46);
+      Picture.Read (Filename    => Ada.Command_Line.Argument(1),
+                    Height      => 2.97,
+                    Width       => 4.46,
+                    Search_From => Space.North_Pole);
       The_Elevation := Picture.Elevation;
       Put ("Elevation :" & The_Elevation'image & 'm');
       The_Latitude := Picture.Latitude;

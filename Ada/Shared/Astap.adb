@@ -24,13 +24,21 @@ package body Astap is
   package Log is new Traces ("Astap");
 
 
-  procedure Solve (Filename :     String;
-                   Height   :     Degrees;
-                   Ra       : out Degrees;
-                   Dec      : out Degrees) is
-    Parameters : constant String := "-f " & Filename & " -ra 0.0 -spd 90.0 -fov" & Height'image & " -r 180";
+  procedure Solve (Filename :        String;
+                   Height   :        Degrees;
+                   Ra       : in out Degrees;
+                   Dec      : in out Degrees) is
+
+    type Value is delta 0.01 range 0.0 .. 360.0;
+
+    Height_Image : constant String := Value(Height)'image;
+    Ra_Image     : constant String := Value(Ra)'image;
+    Spd_Image    : constant String := Value(Dec + 90.0)'image;
+    Parameters   : constant String
+      := "-f " & Filename & " -ra" & Ra_Image & " -spd" & Spd_Image & " -fov" & Height_Image & " -r 180";
+
   begin
-    Log.Write (Parameters);
+    Log.Write ("Parameters: " & Parameters);
     declare
       Output : constant String := Os.Process.Execution_Of (Executable => "./astap",
                                                            Parameters => Parameters);
