@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2002 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2002 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -96,28 +96,32 @@ package body Configuration is
             when ';' | '#' =>
               null;
             when others =>
-              if The_Section /= null then
-                declare
-                  Separator_Index : constant Natural := Text.Location_Of ('=', Line);
-                begin
-                  if Separator_Index = Text.Not_Found then
-                    exit;
-                  else
-                    declare
-                      Key   : constant String := Strings.Trimmed (Line(Line'first .. Separator_Index - 1));
-                      Value : constant String := Strings.Trimmed (Line(Separator_Index + 1 .. Line'last));
-                      use type Item_List.Item;
-                    begin
-                      if Found_Item (Key, The_Section.Items) = null then
-                        The_Section.Items.all := The_Section.Items.all + new Item_Data'(Key_Length   => Key'length,
-                                                                                        Key          => Key,
-                                                                                        Value_Length => Value'length,
-                                                                                        Value        => Value);
-                      end if;
-                    end;
-                  end if;
-                end;
+              if The_Section = null then
+                The_Section := new Section_Data'(Name_Length => No_Section'length,
+                                                 Name        => No_Section,
+                                                 Items       => new Item_List.Item);
+                The_Handle.all := The_Handle.all + The_Section;
               end if;
+              declare
+                Separator_Index : constant Natural := Text.Location_Of ('=', Line);
+              begin
+                if Separator_Index = Text.Not_Found then
+                  exit;
+                else
+                  declare
+                    Key   : constant String := Strings.Trimmed (Line(Line'first .. Separator_Index - 1));
+                    Value : constant String := Strings.Trimmed (Line(Separator_Index + 1 .. Line'last));
+                    use type Item_List.Item;
+                  begin
+                    if Found_Item (Key, The_Section.Items) = null then
+                      The_Section.Items.all := The_Section.Items.all + new Item_Data'(Key_Length   => Key'length,
+                                                                                      Key          => Key,
+                                                                                      Value_Length => Value'length,
+                                                                                      Value        => Value);
+                    end if;
+                  end;
+                end if;
+              end;
             end case;
           end if;
         end;
@@ -135,7 +139,7 @@ package body Configuration is
 
 
   function Handle_For (For_Handle   : File_Handle;
-                       Section_Name : String) return Section_Handle is
+                       Section_Name : String := No_Section) return Section_Handle is
     The_Section : Section;
   begin
     The_Section := Found_Section (Section_Name, For_Handle);

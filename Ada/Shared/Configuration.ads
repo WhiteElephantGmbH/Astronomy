@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2002 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2002 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -24,10 +24,12 @@ package Configuration is
 
   type Section_Handle is private;
 
+  No_Section : String := "";
+
   function Handle_For (File_Name : String) return File_Handle;
 
   function Handle_For (For_Handle   : File_Handle;
-                       Section_Name : String) return Section_Handle;
+                       Section_Name : String := No_Section) return Section_Handle;
 
   function Value_Of (The_Section : Section_Handle;
                      Key         : String;

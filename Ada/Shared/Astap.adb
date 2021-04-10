@@ -15,8 +15,9 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with Configuration;
+with File;
 with Os.Process;
-with Strings;
 with Traces;
 
 package body Astap is
@@ -29,6 +30,41 @@ package body Astap is
                    Ra       : in out Degrees;
                    Dec      : in out Degrees) is
 
+    Directory : constant String := File.Containing_Directory_Of (Filename);
+    Base_Name : constant String := File.Base_Name_Of (Filename);
+
+    Result_Filename : constant String := File.Composure (Directory, Base_Name, "ini");
+    Wcs_Filename    : constant String := File.Composure (Directory, Base_Name, "wcs");
+
+    procedure Cleanup is
+    begin
+      File.Delete (Result_Filename);
+      File.Delete (Wcs_Filename);
+    end Cleanup;
+
+    procedure Handle_Result is
+
+      Result_Handle : constant Configuration.File_Handle := Configuration.Handle_For (Result_Filename);
+      Null_Section  : constant Configuration.Section_Handle := Configuration.Handle_For (Result_Handle);
+      Ra_2000       : constant String := Configuration.Value_Of (Null_Section, "CRVAL1");
+      Dec_2000      : constant String := Configuration.Value_Of (Null_Section, "CRVAL2");
+      Error         : constant String := Configuration.Value_Of (Null_Section, "ERROR");
+      Warning       : constant String := Configuration.Value_Of (Null_Section, "WARNING");
+    begin
+      if Error /= "" then
+        Log.Error (Error);
+        raise Not_Solved;
+      end if;
+      if Warning /= "" then
+        Log.Warning (Warning);
+      end if;
+      Ra := Degrees'value(Ra_2000);
+      Dec := Degrees'value(Dec_2000);
+    exception
+    when others =>
+      raise Not_Solved;
+    end Handle_Result;
+
     type Value is delta 0.01 range 0.0 .. 360.0;
 
     Height_Image : constant String := Value(Height)'image;
@@ -37,79 +73,39 @@ package body Astap is
     Parameters   : constant String
       := "-f " & Filename & " -ra" & Ra_Image & " -spd" & Spd_Image & " -fov" & Height_Image & " -r 180";
 
-  begin
+  begin -- Solve
     Log.Write ("Parameters: " & Parameters);
+    Cleanup;
     declare
-      Output : constant String := Os.Process.Execution_Of (Executable => "./astap",
+      Output : constant String := Os.Process.Execution_Of (Executable => "astap",
                                                            Parameters => Parameters);
-      --Output : constant String :=
-      --  "Creating monochromatic x 2 binning image for solving/star alignment." &
-      --  "Will use mean value 1055 as background rather then most common value 469" &
-      --  "516 stars, 376 quads selected in the image. 774 database stars, 564 database " &
-      --  "quads required for the square search field of 4.5°. Search window at 100% based on " &
-      --  "the number of quads. Step size at 100% of image height Using star database H18 " &
-      --  " 58 of 58 quads selected matching within 0.01 tolerance.  Solution[""] " &
-      --  "x:=4.401762*x+ 0.115247*y+ -5558.009504,  y:=-0.117058*x+ 4.402542*y+ -7875.411421 " &
-      --  "Solution found: 12: 34 54.2 +87° 20 51 Solved in 3.2 sec. Δ was 79.5°. No mount info." &
-      --  " Used stars up to magnitude: 11.4";
+      Timeout    : constant Duration := 20.0;
+      Delay_Time : constant Duration := 0.2;
 
-      Solution  : constant String := "Solution found:";
-      The_Index : Natural;
-
-      function Next_Number return String is
-        The_First  : Natural;
-      begin
-        while not (Output(The_Index) in '0'..'9') loop
-          The_Index := The_Index + 1;
-        end loop;
-        The_First := The_Index;
-        while Output(The_Index) in '0'..'9' loop
-          The_Index := The_Index + 1;
-        end loop;
-        if Output(The_First - 1) = '-' then
-          The_First := The_First - 1;
-        end if;
-        return Output(The_First .. The_Index - 1);
-      end Next_Number;
+      The_Time : Duration := 0.0;
 
     begin
-      The_Index := Strings.Location_Of (Solution, Output);
-      if The_Index = Strings.Not_Found then
-        raise Not_Solved;
-      end if;
-      The_Index := The_Index + Solution'length;
-      declare
-        Hrs : constant String := Next_Number;
-        Min : constant String := Next_Number;
-        S   : constant String := Next_Number;
-        Sec : constant String := S & '.' & Next_Number;
-      begin
-        Ra := (Degrees'value(Hrs) + Degrees'value(Min) / 60.0 + Degrees'value(Sec) / 3600.0) * 15.0;
-        if Hrs(Hrs'first) = '-' then
+      while not File.Exists (Result_Filename) loop
+        delay Delay_Time;
+        The_Time := The_Time + Delay_Time;
+        if The_Time > Timeout then
+          if Output /= "" then -- Windows has no output
+            Log.Error (Output);
+          else
+            Log.Error ("Timeout");
+          end if;
           raise Not_Solved;
         end if;
-      exception
-      when others =>
-        Log.Error ("Unexpected RA <" & Hrs & ' ' & Min & ' ' & Sec & '>');
-        raise Not_Solved;
-      end;
-      declare
-        Deg : constant String := Next_Number;
-        Min : constant String := Next_Number;
-        Sec : constant String := Next_Number;
-      begin
-        Dec := abs (Degrees'value(Deg)) + Degrees'value(Min) / 60.0 + Degrees'value(Sec) / 3600.0;
-        if Deg(Deg'first) = '-' then
-          Dec := - Dec;
-        end if;
-      exception
-      when others =>
-        Log.Error ("Unexpected DEC <" & Deg & ' ' & Min & ' ' & Sec & '>');
-        raise Not_Solved;
-      end;
+      end loop;
     end;
+    Handle_Result;
+    Cleanup;
   exception
-  when others =>
+  when Not_Solved =>
+    Cleanup;
+    raise;
+  when Item: others =>
+    Log.Termination (Item);
     raise Not_Solved;
   end Solve;
 
