@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2014 .. 2020 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2014 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -24,8 +24,6 @@ package Motor is
   type Hardware_Version is (Stepper_Version_0, Stepper_Version_1, Unknown, Undefined);
 
   type Celsius is delta 10.0**(-1) range -273.2 .. 3276.7;
-
-  function Is_Stepper return Boolean;
 
   Time_Divider : constant := 2;
 

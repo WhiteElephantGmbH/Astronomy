@@ -15,10 +15,8 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Ada.Numerics;
 with Ada.Text_IO;
 with Application;
-with Astro;
 with Configuration;
 with Definite_Doubly_Linked_Lists;
 with Error;
@@ -26,6 +24,7 @@ with File;
 with Language;
 with Motor;
 with Os;
+with Site;
 with Strings;
 with Text;
 with Traces;
@@ -67,11 +66,6 @@ package body Parameter is
   Program_Key    : constant String := "Program";
   Magnitude_Key  : constant String := "Magnitude";
 
-  Site_Id       : constant String := "Site";
-  Longitude_Key : constant String := "Longitude";
-  Latitude_Key  : constant String := "Latitude";
-  Altitude_Key  : constant String := "Altitude";
-
   The_Section : Configuration.Section_Handle;
 
   --Telescope
@@ -96,11 +90,6 @@ package body Parameter is
   --Stellarium
   The_Stellarium_Port   : Network.Port_Number;
   The_Magnitude_Maximum : Stellarium.Magnitude;
-
-  -- Site
-  The_Latitude  : Angle.Value;
-  The_Longitude : Angle.Value;
-  The_Altitude  : Integer; -- in meters above see level
 
 
   procedure Set (Section : Configuration.Section_Handle) is
@@ -221,7 +210,7 @@ package body Parameter is
   end Number_Of;
 
 
-  procedure Read (Is_Stepper_Driver : Boolean) is
+  procedure Read is
 
     procedure Create_Default_Parameters is
 
@@ -254,17 +243,12 @@ package body Parameter is
       Put (Strings.Bom_8 & "[" & Localization_Id & "]");
       Put (Language_Key & " = " & Strings.Legible_Of (Stellarium.Language'img));
       Put ("");
-      case Default_Location is
-      when Home =>
+      if Site.Is_Defined then
         Put ("[" & Telescope_Id & "]");
         Put (Name_Key & "                 = EQ6");
-        if Is_Stepper_Driver then
-          Put (Ip_Address_Key & "           = SkyTracker" & (if Os.Is_Windows then "" else ".local"));
-          Put_Steps_Per_Revolution (141 * 5 * 200 * 16, Single_Parameter => True); -- EQU-6
-          Put (Clocks_Per_Second_Key & "    = 5000000");
-        else
-          Put (Ip_Address_Key & "           = 127.0.0.1");
-        end if;
+        Put (Ip_Address_Key & "           = SkyTracker" & (if Os.Is_Windows then "" else ".local"));
+        Put_Steps_Per_Revolution (141 * 5 * 200 * 16, Single_Parameter => True); -- EQU-6
+        Put (Clocks_Per_Second_Key & "    = 5000000");
         Put (Park_Azimuth_Key & "         = +137°16'00.0""");
         Put (Park_Altitude_Key & "        = +5°35'00.0""");
         Put (Meridian_Flip_Offset_Key & " = 5°");
@@ -273,16 +257,12 @@ package body Parameter is
         Put (Second_Acceleration_Key & "  = 6°/s²");
         Put (Synch_On_Targets_Key & "     = True");
         Put (Expert_Mode_Key & "          = True");
-      when Unknown =>
+      else
         Put ("[" & Telescope_Id & "]");
         Put (Name_Key & "                        = M-Zero");
-        if Is_Stepper_Driver then
-          Put (Ip_Address_Key & "                  = None");
-          Put_Steps_Per_Revolution (1232086);
-          Put (Clocks_Per_Second_Key & "           = 5000000");
-        else
-          Put (Ip_Address_Key & "                  = 127.0.0.1");
-        end if;
+        Put (Ip_Address_Key & "                  = None");
+        Put_Steps_Per_Revolution (1232086);
+        Put (Clocks_Per_Second_Key & "           = 5000000");
         Put (Park_Azimuth_Key & "                = +180°00'");
         Put (Park_Altitude_Key & "               = +0°00'");
         Put (Meridian_Flip_Offset_Key & "        = 30°");
@@ -291,22 +271,22 @@ package body Parameter is
         Put (Second_Acceleration_Key & "         = 3°/s²");
         Put (Synch_On_Targets_Key & "            = True");
         Put (Expert_Mode_Key & "                 = False");
-      end case;
+      end if;
       Put ("");
       Put ("[" & Lx200_Id & "]");
       Put (Port_Key & " = 4030");
       Put ("");
       Put ("[" & Stellarium_Id & "]");
       Put (Port_Key & "      = 10001");
-      if Os.Is_Windows then
+      case Os.Family is
+      when Os.Windows =>
         Put (Program_Key & "   = C:\Program Files\Stellarium\Stellarium.exe");
-      end if;
+      when Os.Osx =>
+        Put (Program_Key & "   = /Applications/Stellarium.app/Contents/MacOS/stellarium");
+      when Os.Linux =>
+        null;
+      end case;
       Put (Magnitude_Key & " = 8.0");
-      Put ("");
-      Put ("[" & Site_Id & "]");
-      Put (Longitude_Key & " = " & Angle.Image_Of (+Stellarium.Longitude, Decimals => 2, Show_Signed => True));
-      Put (Latitude_Key & "  = " & Angle.Image_Of (+Stellarium.Latitude, Decimals => 2, Show_Signed => True));
-      Put (Altitude_Key & "  ="  & Stellarium.Altitude'img & "m");
       Ada.Text_IO.Close (The_File);
     exception
     when Item: others =>
@@ -322,7 +302,6 @@ package body Parameter is
       Telescope_Handle    : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Telescope_Id);
       Lx200_Handle        : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Lx200_Id);
       Stellarium_Handle   : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Stellarium_Id);
-      Site_Handle         : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Site_Id);
       Localization_Handle : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Localization_Id);
 
       procedure Connect_Telescope is
@@ -383,24 +362,22 @@ package body Parameter is
           declare
             Telescope : constant String := String_Of (Ip_Address_Key);
           begin
-            if not Is_Stepper_Driver or else (Telescope /= "None") then
+            if Telescope /= "None" then
               Prepare_Udp (Telescope);
             end if;
           end;
         end if;
-        if Is_Stepper_Driver then
-          The_Clocks_Per_Second := Number_Of (Clocks_Per_Second_Key);
-          if String_Value_Of (Steps_Per_Revolution_Key) = "" then
-            The_Steps_Per_Revolution(Device.D1) := Step_Number_Of (First_Steps_Per_Revolution_Key);
-            The_Steps_Per_Revolution(Device.D2) := Step_Number_Of (Second_Steps_Per_Revolution_Key);
-          elsif (String_Value_Of (First_Steps_Per_Revolution_Key) = "") and
-                (String_Value_Of (Second_Steps_Per_Revolution_Key) = "")
-          then
-            The_Steps_Per_Revolution(Device.D1) := Step_Number_Of (Steps_Per_Revolution_Key);
-            The_Steps_Per_Revolution(Device.D2) := The_Steps_Per_Revolution(Device.D1);
-          else
-            Error.Raise_With ("The steps per revolution are defined more then once");
-          end if;
+        The_Clocks_Per_Second := Number_Of (Clocks_Per_Second_Key);
+        if String_Value_Of (Steps_Per_Revolution_Key) = "" then
+          The_Steps_Per_Revolution(Device.D1) := Step_Number_Of (First_Steps_Per_Revolution_Key);
+          The_Steps_Per_Revolution(Device.D2) := Step_Number_Of (Second_Steps_Per_Revolution_Key);
+        elsif (String_Value_Of (First_Steps_Per_Revolution_Key) = "") and
+              (String_Value_Of (Second_Steps_Per_Revolution_Key) = "")
+        then
+          The_Steps_Per_Revolution(Device.D1) := Step_Number_Of (Steps_Per_Revolution_Key);
+          The_Steps_Per_Revolution(Device.D2) := The_Steps_Per_Revolution(Device.D1);
+        else
+          Error.Raise_With ("The steps per revolution are defined more then once");
         end if;
         if The_Telescope_Connection.Kind = Is_Simulated then
           Text.Append_To (The_Telescope_Name, " Simulation");
@@ -427,11 +404,6 @@ package body Parameter is
     begin -- Read_Values
       Set (Localization_Handle);
       Standard.Language.Define (Language);
-
-      Set (Site_Handle);
-      The_Latitude := Angle_Of (Latitude_Key);
-      The_Longitude := Angle_Of (Longitude_Key);
-      The_Altitude := Value_Of (Altitude_Key, "m");
 
       Set (Telescope_Handle);
       The_Telescope_Name := Text.String_Of (String_Value_Of ("Name"));
@@ -485,52 +457,7 @@ package body Parameter is
       Create_Default_Parameters;
     end if;
     Read_Values;
-    Log.Write ("Home_Longitude = " & Stellarium.Longitude'img);
-    Log.Write ("Home_Latitude  = " & Stellarium.Latitude'img);
   end Read;
-
-
-  ----------
-  -- Site --
-  ----------
-
-  Home_Latitude  : constant Angle.Degrees := 47.666683;
-  Home_Longitude : constant Angle.Degrees :=  8.741743;
-  -- home values from log file
-
-  function Default_Location return Location is
-
-    function "=" (Left, Right : Angle.Degrees) return Boolean is
-      use type Angle.Degrees;
-      Two_Meters : constant Angle.Degrees := 0.36 / (Astro.Earth_Equatorial_Radius * Ada.Numerics.Pi);
-    begin
-      return abs (Left - Right) < Two_Meters;
-    end "=";
-
-  begin
-    if Stellarium.Latitude = Home_Latitude and then Stellarium.Longitude = Home_Longitude then
-      return Home;
-    end if;
-    return Unknown;
-  end Default_Location;
-
-
-  function Latitude return Angle.Value is
-  begin
-    return The_Latitude;
-  end Latitude;
-
-
-  function Longitude return Angle.Value is
-  begin
-    return The_Longitude;
-  end Longitude;
-
-
-  function Elevation return Integer is
-  begin
-    return The_Altitude;
-  end Elevation;
 
 
   ---------------
@@ -571,12 +498,6 @@ package body Parameter is
   begin
     return The_Park_Altitude;
   end Park_Altitude;
-
-
-  function Pole_Height return Angle.Value is
-  begin
-    return The_Latitude;
-  end Pole_Height;
 
 
   function Meridian_Flip_Offset return Angle.Value is

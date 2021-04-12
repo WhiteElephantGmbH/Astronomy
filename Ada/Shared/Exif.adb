@@ -462,7 +462,7 @@ package body Exif is
           case Main_Entry.Tag is
           when Orientation_Tag =>
             The_Orientation := Read_Orientation;
-            Log.Write ("Orientation       : " & Orientation'image);
+            Log.Write ("Orientation : " & Orientation'image);
           when Gps_Info_Tag =>
             The_Gps_Offset := Main_Entry.Data;
           when others =>

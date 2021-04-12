@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2012 .. 2020 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2012 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -17,8 +17,8 @@ pragma Style_White_Elephant;
 
 with Astro;
 with Matrix;
-with Parameter;
 with Refraction;
+with Site;
 
 package body Numerics is
 
@@ -105,7 +105,7 @@ package body Numerics is
     if Space.Direction_Is_Known (Direction) then
       EQUHOR (DEC => Space.Dec_Of (Direction),
               TAU => Lmst - Space.Ra_Of (Direction),
-              PHI => Parameter.Latitude,
+              PHI => Site.Latitude,
               A   => The_Altitude,
               AZ  => The_Azimuth);
       return Earth.Direction_Of (Alt => The_Altitude,
@@ -149,7 +149,7 @@ package body Numerics is
     if Earth.Direction_Is_Known (Direction) then
       HOREQU (A   => Earth.Alt_Of (Direction),
               AZ  => Earth.Az_Of (Direction),
-              PHI => Parameter.Latitude,
+              PHI => Site.Latitude,
               DEC => The_Declination,
               TAU => The_Hours_Angle);
       return Space.Direction_Of (Dec => The_Declination,
@@ -187,7 +187,7 @@ package body Numerics is
         end if;
         Astro.SPHLIB.EQUHOR (DEC => +Dec,
                              TAU => +Tau,
-                             PHI => +Parameter.Latitude,
+                             PHI => +Site.Latitude,
                              H   => The_Altitude,
                              AZ  => The_Azimuth);
       end;
@@ -204,7 +204,7 @@ package body Numerics is
       Refraction.Correct (The_Altitude);
       Astro.SPHLIB.HOREQU (H   => The_Altitude,
                            AZ  => The_Azimuth,
-                           PHI => +Parameter.Pole_Height,
+                           PHI => +Site.Latitude,
                            DEC  => The_Second_Angle,
                            TAU  => The_First_Angle);
       return Motor.Position_Of (First  => Angle.Semi_Circle + The_First_Angle,
@@ -229,7 +229,7 @@ package body Numerics is
     end if;
     HOREQU (A   => Earth.Alt_Of (Direction),
             AZ  => Earth.Az_Of (Direction),
-            PHI => Parameter.Pole_Height,
+            PHI => Site.Latitude,
             DEC => The_Second_Angle,
             TAU => The_First_Angle);
     return Motor.Position_Of (First  => The_First_Angle + Angle.Semi_Circle,
@@ -259,12 +259,12 @@ package body Numerics is
     if Motor.Is_Defined (Data.Positions) then
       EQUHOR (DEC => Motor.Second_Of (Data.Positions),
               TAU => Motor.First_Of (Data.Positions) + Angle.Semi_Circle,
-              PHI => Parameter.Pole_Height,
+              PHI => Site.Latitude,
               A   => The_Altitude,
               AZ  => The_Azimuth);
       EQUHOR (DEC => Motor.Second_Of (Original_Positions),
               TAU => Motor.First_Of (Original_Positions) + Angle.Semi_Circle,
-              PHI => Parameter.Pole_Height,
+              PHI => Site.Latitude,
               A   => The_Altitude_Offset,
               AZ  => The_Azimuth_Offset);
       The_Altitude_Offset := The_Altitude - The_Altitude_Offset;

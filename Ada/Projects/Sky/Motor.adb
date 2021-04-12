@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2014 .. 2020 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2014 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -113,12 +113,6 @@ package body Motor is
   begin
     return In_Limits (Item(D1), D1) and In_Limits (Item(D2), D2);
   end In_Limits;
-
-
-  function Is_Stepper return Boolean is
-  begin
-    return Io.Is_Stepper_Driver;
-  end Is_Stepper;
 
 
   function Version return Hardware_Version is
@@ -358,6 +352,9 @@ package body Motor is
       end;
     end loop;
     The_State_Handler (Terminated);
+  exception
+  when Item: others =>
+    Log.Termination (Item);
   end Receiver;
 
 

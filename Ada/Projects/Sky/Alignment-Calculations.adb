@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2016 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2016 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,7 +15,7 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Parameter;
+with Site;
 with Traces;
 
 package body Alignment.Calculations is
@@ -94,7 +94,7 @@ package body Alignment.Calculations is
                                           The_Dec_Rotation       : out REAL;
                                           The_System_Error       : out Astro.REAL) is
 
-    Phi : constant REAL := +Parameter.Pole_Height;
+    Phi : constant REAL := +Site.Latitude;
 
 
     procedure Evaluate_Two_Star_Pole_Rotations (Star_1_Nominal_Alt :     REAL;
@@ -404,7 +404,7 @@ package body Alignment.Calculations is
                                             The_Ra_Correction  : out Astro.REAL;
                                             The_Dec_Correction : out Astro.REAL) is
 
-    Phi : constant REAL := +Parameter.Pole_Height;
+    Phi : constant REAL := +Site.Latitude;
 
     The_Nominal_Az : REAL;
     The_Actual_Az  : REAL;

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2013 .. 2020 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2013 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -42,22 +42,7 @@ package Parameter is
     end case;
   end record;
 
-  procedure Read (Is_Stepper_Driver : Boolean);
-
-
-  ----------
-  -- Site --
-  ----------
-
-  type Location is (Home, Unknown);
-
-  function Default_Location return Location;
-
-  function Latitude return Angle.Value;
-
-  function Longitude return Angle.Value;
-
-  function Elevation return Integer; -- in meters
+  procedure Read;
 
 
   ------------
@@ -75,8 +60,6 @@ package Parameter is
   function Park_Azimuth return Angle.Value;
 
   function Park_Altitude return Angle.Value;
-
-  function Pole_Height return Angle.Value;
 
   function Meridian_Flip_Offset return Angle.Value;
 

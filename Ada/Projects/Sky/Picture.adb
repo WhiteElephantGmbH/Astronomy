@@ -37,21 +37,34 @@ package body Picture is
 
     use all type Exif.Image_Orientation;
     use type Angle.Value;
+    use type Angle.Degrees;
 
   begin
     Solved := False;
     Exif.Read (Filename);
+    The_Ra := Astap.Degrees(Angle.Degrees'(+Space.Ra_Of (Search_From)));
+    The_Dec := Astap.Degrees(Angle.Degrees'(+Space.Dec_Of (Search_From)));
     case Exif.Orientation is
     when Undefined =>
-      Log.Error ("Undefined picture Orientation");
-      raise Undefined_Value;
+      Log.Warning ("Orientation Undefined");
+      begin
+        -- try width
+        Astap.Solve (Filename => Filename,
+                     Height   => Astap.Degrees(Width),
+                     Ra       => The_Ra,
+                     Dec      => The_Dec);
+        Solved := True;
+        return;
+      exception
+      when Not_Solved =>
+        -- when not solved try height
+        The_Height := Astap.Degrees(Height);
+      end;
     when Horizontal | Mirror_Horizontal | Rotate_180 | Mirror_Vertical =>
       The_Height := Astap.Degrees(Height);
     when Mirror_Horizontal_And_Rotate_270 | Rotate_90 | Mirror_Horizontal_And_Rotate_90 | Rotate_270 =>
       The_Height := Astap.Degrees(Width);
     end case;
-    The_Ra := Astap.Degrees(Angle.Degrees'(+Space.Ra_Of (Search_From)));
-    The_Dec := Astap.Degrees(Angle.Degrees'(+Space.Dec_Of (Search_From)));
     Astap.Solve (Filename => Filename,
                  Height   => The_Height,
                  Ra       => The_Ra,

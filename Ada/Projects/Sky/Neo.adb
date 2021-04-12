@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2013 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2013 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -26,8 +26,8 @@ with Error;
 with File;
 with Norad;
 with Numerics;
-with Parameter;
 with Satellite;
+with Site;
 with Sky_Line;
 with Strings;
 with Traces;
@@ -224,11 +224,10 @@ package body Neo is
 
       procedure Evaluate_Site is
         use all type Angle.Value;
-        use SPHLIB;
       begin
-        SITE (PHI   => +Parameter.Latitude,
-              RCPHI => Rcphi,
-              RSPHI => Rsphi);
+        SPHLIB.SITE (PHI   => +Site.Latitude,
+                     RCPHI => Rcphi,
+                     RSPHI => Rsphi);
       end Evaluate_Site;
 
       The_Time      : Time.Ut;
@@ -262,7 +261,7 @@ package body Neo is
         --Write ("Speed   ", The_Geozentric_Velocity);
         declare
           use all type Angle.Value;
-          Er   : constant REAL := Earth_Equatorial_Radius + (REAL(Parameter.Elevation) / 1000.0);
+          Er   : constant REAL := Earth_Equatorial_Radius + (REAL(Site.Elevation) / 1000.0);
           Lmst : constant REAL := +The_Lmst;
         begin
           The_Location_Vector := (X => Er * Rcphi * CS (Lmst),

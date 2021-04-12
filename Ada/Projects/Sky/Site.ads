@@ -16,36 +16,25 @@
 pragma Style_White_Elephant;
 
 with Angle;
-with Earth;
-with Space;
-with Time;
 
-package Numerics is
+package Site is
 
-  function Interpolation_Of (Az, Az1, Az2, Alt1, Alt2 : Angle.Value) return Angle.Value;
+  type Data is record
+    Latitude  : Angle.Value;
+    Longitude : Angle.Value;
+    Elevation : Integer; -- in meters
+  end record;
 
-  function Interpolation_Of (T, T1, T2 : Time.Ut;
-                                V1, V2 : Angle.Value) return Angle.Value;
+  Not_Defined : exception;
+  
+  procedure Define (Item : Data);
 
-  function Interpolation_Of (T, T1, T2 : Time.Ut;
-                                V1, V2 : Angle.Degrees) return Angle.Degrees;
+  function Is_Defined return Boolean;
 
+  function Latitude return Angle.Value;
 
-  -------------------------------------------------
-  -- Convert eqatorial to horizontal coordinates --
-  -------------------------------------------------
+  function Longitude return Angle.Value;
 
-  function Direction_Of (Direction : Space.Direction;
-                         Latitude  : Angle.Value;
-                         Lmst      : Time.Value) return Earth.Direction;
+  function Elevation return Integer;
 
-
-  -------------------------------------------------
-  -- Convert horizontal to eqatorial coordinates --
-  -------------------------------------------------
-
-  function Direction_Of (Direction : Earth.Direction;
-                         Latitude  : Angle.Value;
-                         Ut        : Time.Ut) return Space.Direction;
-
-end Numerics;
+end Site;

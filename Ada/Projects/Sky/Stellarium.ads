@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2013 .. 2020 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2013 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -36,12 +36,6 @@ package Stellarium is
   function Landscape_Filename return String;
 
   function Landscape_Rotation return Angle.Degrees;
-
-  function Altitude return Integer;
-
-  function Latitude return Angle.Degrees;
-
-  function Longitude return Angle.Degrees;
 
   function Language return Language.Kind;
 

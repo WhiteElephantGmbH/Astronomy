@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2014 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2014 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -18,8 +18,6 @@ pragma Style_White_Elephant;
 with Alignment;
 
 private package Motor.Io is
-
-  Is_Stepper_Driver : constant Boolean := True;
 
   procedure Define (Parameters_1 :     Parameters;
                     Parameters_2 :     Parameters;

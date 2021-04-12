@@ -37,6 +37,7 @@ with Parameter;
 with Persistent;
 with Refraction;
 with Sky_Line;
+with Site;
 with Space;
 with Strings;
 with Time;
@@ -84,6 +85,9 @@ package body User is
   Setup_Page           : Gui.Page;
   Add_Or_Adjust_Button : Gui.Button;
   Next_Or_Clear_Button : Gui.Button;
+  Longitude            : Gui.Plain_Edit_Box;
+  Latitude             : Gui.Plain_Edit_Box;
+  Elevation            : Gui.Plain_Edit_Box;
   Orientation_Box      : Gui.Plain_Combo_Box;
   Autoguiding_Rate     : Gui.Plain_Edit_Box;
   Air_Pressure         : Gui.Plain_Edit_Box;
@@ -604,6 +608,15 @@ package body User is
         Gui.Set_Text (Time_Offset, Information.Time_Adjustment'img & "s");
       end if;
     when Is_Setup =>
+      if Site.Is_Defined then
+        Gui.Set_Text (Longitude, Angle.Image_Of (Site.Longitude, Decimals => 2));
+        Gui.Set_Text (Latitude, Angle.Image_Of (Site.Latitude, Decimals => 2, Show_Signed => True));
+        Gui.Set_Text (Elevation, Strings.Trimmed (Site.Elevation'img) & 'm');
+      else
+        Gui.Set_Text (Longitude, "");
+        Gui.Set_Text (Latitude, "");
+        Gui.Set_Text (Elevation, "");
+      end if;
       case The_Operation is
       when Set_Sky_Line | Align_Global | Align_1_Star | Align_Pole_Axis =>
         Gui.Set_Text (Aligned_Stars, "");
@@ -1536,6 +1549,22 @@ package body User is
 
         Add_Or_Adjust_Button := Gui.Create (Setup_Page, "Align", Handle_Add_Or_Adjust'access);
         Next_Or_Clear_Button := Gui.Create (Setup_Page, "Clear", Handle_Next_Or_Clear'access);
+
+        Longitude := Gui.Create (Setup_Page, "Longitude", "",
+                                 Is_Modifiable  => False,
+                                 The_Size       => Text_Size,
+                                 The_Title_Size => Title_Size);
+
+        Latitude := Gui.Create (Setup_Page, "Latitude", "",
+                                Is_Modifiable  => False,
+                                The_Size       => Text_Size,
+                                The_Title_Size => Title_Size);
+
+        Elevation := Gui.Create (Setup_Page, "Elevation", "",
+                                 Is_Modifiable  => False,
+                                 The_Size       => Text_Size,
+                                 The_Title_Size => Title_Size);
+
         Orientation_Box := Gui.Create (Setup_Page, Orientation_Key,
                                        The_Action_Routine => Set_Orientation'access,
                                        The_Size           => Text_Size,

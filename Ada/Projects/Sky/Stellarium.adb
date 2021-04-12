@@ -22,6 +22,7 @@ with Configuration;
 with File;
 with Network.Tcp.Servers;
 with Os.Process;
+with Site;
 with Strings;
 with Traces;
 with Unsigned;
@@ -112,14 +113,6 @@ package body Stellarium is
   Landscape_Config  : constant Configuration.File_Handle := Configuration.Handle_For (Landscape_Config_Name);
   Landscape_Section : constant Configuration.Section_Handle := Configuration.Handle_For (Landscape_Config, "landscape");
 
-  Paris_Altitude  : constant Natural       := 42;
-  Paris_Latitude  : constant Angle.Degrees := 48.8534083333;
-  Paris_Longitude : constant Angle.Degrees := 2.4488;
-
-  The_Altitude  : Integer       := Paris_Altitude;
-  The_Latitude  : Angle.Degrees := Paris_Latitude;
-  The_Longitude : Angle.Degrees := Paris_Longitude;
-
 
   function Satellites_Filename return String is
   begin
@@ -136,17 +129,18 @@ package body Stellarium is
   procedure Read_Location is
 
     function Value_Of (Image        : String;
-                       Is_Positive  : Boolean := True) return Angle.Degrees is
+                       Is_Positive  : Boolean := True) return Angle.Value is
 
       The_Value : Angle.Degrees := Angle.Degrees'value(Image);
 
       use type Angle.Degrees;
+      use type Angle.Value;
 
     begin
       if not Is_Positive then
         The_Value := -The_Value;
       end if;
-      return The_Value;
+      return +The_Value;
     end Value_Of;
 
 
@@ -158,9 +152,9 @@ package body Stellarium is
           Latitude_Image  : constant String       := Items(Strings.First_Index);
           Longitude_Image : constant String       := Items(Strings.First_Index + 1);
         begin
-          The_Latitude := Value_Of (Latitude_Image);
-          The_Longitude := Value_Of (Longitude_Image);
-          The_Altitude := 0;
+          Site.Define (Site.Data'(Latitude  => Value_Of (Latitude_Image),
+                                  Longitude => Value_Of (Longitude_Image),
+                                  Elevation => 0));
         end;
         Log.Write ("automatic location => " & Last_Location);
         return True;
@@ -187,15 +181,15 @@ package body Stellarium is
         begin
           if Location = Place & ", " & Country then
             declare
-              Latitude_Image  : constant String := Items(Strings.First_Index + 5);
-              Longitude_Image : constant String := Items(Strings.First_Index + 6);
-              Altitude_Image  : constant String := Items(Strings.First_Index + 7);
+              Lat_Image : constant String := Items(Strings.First_Index + 5);
+              Lon_Image : constant String := Items(Strings.First_Index + 6);
+              Alt_Image : constant String := Items(Strings.First_Index + 7);
             begin
-              The_Latitude := Value_Of (Latitude_Image(Latitude_Image'first .. Latitude_Image'last - 1),
-                                        Is_Positive => Latitude_Image(Latitude_Image'last) = 'N');
-              The_Longitude := Value_Of (Longitude_Image(Longitude_Image'first .. Longitude_Image'last - 1),
-                                         Is_Positive => Longitude_Image(Longitude_Image'last) = 'E');
-              The_Altitude := Integer'value(Altitude_Image);
+              Site.Define (Site.Data'(Latitude  => Value_Of (Lat_Image(Lat_Image'first .. Lat_Image'last - 1),
+                                                             Is_Positive => Lat_Image(Lat_Image'last) = 'N'),
+                                      Longitude => Value_Of (Lon_Image(Lon_Image'first .. Lon_Image'last - 1),
+                                                             Is_Positive => Lon_Image(Lon_Image'last) = 'E'),
+                                      Elevation => Integer'value(Alt_Image)));
             end;
             Log.Write ("user location => " & Location);
             IO.Close (The_File);
@@ -286,24 +280,6 @@ package body Stellarium is
     Log.Error ("Incorrect landscape rotation angle (assumed 0.0)");
     return 0.0;
   end Landscape_Rotation;
-
-
-  function Altitude return Integer is
-  begin
-    return The_Altitude;
-  end Altitude;
-
-
-  function Latitude return Angle.Degrees is
-  begin
-    return The_Latitude;
-  end Latitude;
-
-
-  function Longitude return Angle.Degrees is
-  begin
-    return The_Longitude;
-  end Longitude;
 
 
   function Language return Standard.Language.Kind is

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2012 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2012 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -17,14 +17,13 @@ pragma Style_White_Elephant;
 
 with Angle;
 with Astro;
-with Parameter;
+with Site;
 
 package body Moon is
 
   use Astro;
   use MATLIB;
   use MOOLIB;
-  use SPHLIB;
 
   function Direction_Of (Id : Name.Id;
                          UT : Time.Ut) return Space.Direction is
@@ -44,9 +43,9 @@ package body Moon is
 
     G := CART (R, DEC, RA);
 
-    SITE (PHI   => +Parameter.Latitude,
-          RCPHI => RCPHI,
-          RSPHI => RSPHI);
+    SPHLIB.SITE (PHI   => +Site.Latitude,
+                 RCPHI => RCPHI,
+                 RSPHI => RSPHI);
 
     LMST := +Time.Lmst_Of (UT);
 

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2011 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                           (c) 2021 by White Elephant GmbH, Schaffhausen, Switzerland                              *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,22 +15,57 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Space;
+with Persistent;
 
-package Os.Ascom is
+package body Site is
 
-  type Handler is access procedure (Direction : Space.Direction);
+  package Persistent_Site is new Persistent (Data, "Site");
 
-  procedure Start;
+  The_Site : Persistent_Site.Data;
 
-  procedure Define_Handlers (Goto_Handler  : Handler;
-                             Synch_Handler : Handler);
+  Defined : Boolean := not Persistent_Site.Storage_Is_Empty;
 
-  procedure Set (The_Location : Space.Direction);
 
-  procedure Set (Is_Approaching : Boolean);
+  procedure Define (Item : Data) is
+  begin
+    Defined := False;
+    The_Site.Storage := Item;
+    Defined := True;
+  end Define;
 
-  procedure Close;
 
-end Os.Ascom;
+  procedure Check_Defined is
+  begin
+    if not Defined then
+      raise Not_Defined;
+    end if;
+  end Check_Defined;
 
+
+  function Is_Defined return Boolean is
+  begin
+    return Defined;
+  end Is_Defined;
+
+
+  function Latitude return Angle.Value is
+  begin
+    Check_Defined;
+    return The_Site.Storage.Latitude;
+  end Latitude;
+
+
+  function Longitude return Angle.Value is
+  begin
+    Check_Defined;
+    return The_Site.Storage.Longitude;
+  end Longitude;
+
+
+  function Elevation return Integer is
+  begin
+    Check_Defined;
+    return The_Site.Storage.Elevation;
+  end Elevation;
+
+end Site;
