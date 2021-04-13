@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2012 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2012 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -31,13 +31,6 @@ package Time is
   subtype Value is Angle.Value;
 
   function Image_Of (Item : Value) return String;
-
-
-  -------------------
-  -- set longitude --
-  -------------------
-
-  procedure Set (Longitude : Value); -- east positive
 
 
   -------------------------

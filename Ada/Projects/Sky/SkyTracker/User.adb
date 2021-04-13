@@ -31,6 +31,7 @@ with Parameter;
 with Persistent;
 with Program;
 with Refraction;
+with Site;
 with Space;
 with Strings;
 with Time;
@@ -595,9 +596,9 @@ package body User is
       Gui.Set_Text (Moving_Speed, Angle.Image_Of (Information.Moving_Speed, Decimals => 2) & "/s");
       Gui.Set_Text (Fans_State, Strings.Legible_Of (Information.Fans_State'img));
       Gui.Set_Text (M3_Position, Strings.Legible_Of (Information.M3_Position'img));
-      Gui.Set_Text (Longitude, Angle.Image_Of (Parameter.Longitude, Decimals => 2));
-      Gui.Set_Text (Latitude, Angle.Image_Of (Parameter.Latitude, Decimals => 2, Show_Signed => True));
-      Gui.Set_Text (Elevation, Strings.Trimmed (Parameter.Elevation'img) & 'm');
+      Gui.Set_Text (Longitude, Angle.Image_Of (Site.Longitude, Decimals => 2));
+      Gui.Set_Text (Latitude, Angle.Image_Of (Site.Latitude, Decimals => 2, Show_Signed => True));
+      Gui.Set_Text (Elevation, Strings.Trimmed (Site.Elevation'img) & 'm');
       if Information.Universal_Time = Time.In_The_Past then
         Gui.Set_Text (Lmst, "");
         Gui.Set_Text (Local_Time, "");

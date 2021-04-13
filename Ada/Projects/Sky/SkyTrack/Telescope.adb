@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2011 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2011 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -20,6 +20,7 @@ with Device;
 with Matrix;
 with Numerics;
 with Parameter;
+with Site;
 with System;
 with Traces;
 with User;
@@ -1264,9 +1265,11 @@ package body Telescope is
               The_Data.Arriving_Time := 0.0;
             end case;
             The_Data.Motor_Positions := Motor.Positions;
-            Numerics.Calculate_Horizontal_Coordinates_For (The_Data.Motor_Positions,
-                                                           The_Data.Local_Direction,
-                                                           The_Data.Adjustment);
+            if Site.Is_Defined then
+              Numerics.Calculate_Horizontal_Coordinates_For (The_Data.Motor_Positions,
+                                                             The_Data.Local_Direction,
+                                                             The_Data.Adjustment);
+            end if;
             case The_State is
             when Preparing | Waiting | Approaching | Tracking | Adjusting =>
               The_Data.Universal_Time := The_Current_Time - Motor.Time_Delta;
@@ -1284,6 +1287,7 @@ package body Telescope is
               The_Data.Universal_Time := Time.Universal;
               The_Data.Alignment_Offsets := Earth.Unknown_Direction;
             end case;
+            The_Data.Cone_Error := Alignment.Cone_Error;
             The_Data.Pole_Offsets := Alignment.Pole_Offsets;
             The_Data.Rotations := Alignment.Rotations;
             The_Data.System_Error := Alignment.System_Error;

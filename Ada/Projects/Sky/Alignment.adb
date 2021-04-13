@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2015 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2015 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -63,14 +63,20 @@ package body Alignment is
                           Alt_Nominal : out Angle.Degrees;
                           Az_Nominal  : out Angle.Degrees);
 
+    procedure Set (Cone_Error : Angle.Value);
+
+    procedure Set (Pole_Offsets : Earth.Direction);
+
     procedure Set (The_Pole_Height_Offset : Angle.Degrees;
                    The_Pole_Az_Offset     : Angle.Degrees;
                    The_Ra_Rotation        : Angle.Degrees;
                    The_Dec_Rotation       : Angle.Degrees);
 
-    function Three_Star_Rotations return Space.Direction;
+    function Cone_Error return Angle.Value;
 
-    function Three_Star_Pole_Offsets return Earth.Direction;
+    function Pole_Offsets return Earth.Direction;
+
+    function Three_Star_Rotations return Space.Direction;
 
     function Three_Star_Corrections return Space.Direction;
 
@@ -95,8 +101,9 @@ package body Alignment is
     The_Ra_Correction  : Angle.Degrees := 0.0;
     The_Dec_Correction : Angle.Degrees := 0.0;
 
-    The_Rotations    : Space.Direction;
+    The_Cone_Error   : Angle.Value := Angle.Zero;
     The_Pole_Offsets : Earth.Direction;
+    The_Rotations    : Space.Direction;
     The_Corrections  : Space.Direction;
   end Control;
 
@@ -149,9 +156,27 @@ package body Alignment is
   end Image_Of;
 
 
+  procedure Set (Cone_Error : Angle.Value) is
+  begin
+    Control.Set (Cone_Error);
+  end Set;
+
+
+  procedure Set (Pole_Offsets : Earth.Direction) is
+  begin
+    Control.Set (Pole_Offsets);
+  end Set;
+
+
+  function Cone_Error return Angle.Value is
+  begin
+    return Control.Cone_Error;
+  end Cone_Error;
+
+
   function Pole_Offsets return Earth.Direction is
   begin
-    return Control.Three_Star_Pole_Offsets;
+    return Control.Pole_Offsets;
   end Pole_Offsets;
 
 
@@ -362,6 +387,18 @@ package body Alignment is
     end Get_Values;
 
 
+    procedure Set (Cone_Error : Angle.Value) is
+    begin
+      The_Cone_Error := Cone_Error;
+    end Set;
+
+
+    procedure Set (Pole_Offsets : Earth.Direction) is
+    begin
+      The_Pole_Offsets := Pole_Offsets;
+    end Set;
+
+
     procedure Set (The_Pole_Height_Offset : Angle.Degrees;
                    The_Pole_Az_Offset     : Angle.Degrees;
                    The_Ra_Rotation        : Angle.Degrees;
@@ -395,16 +432,22 @@ package body Alignment is
     end Set;
 
 
+    function Cone_Error return Angle.Value is
+    begin
+      return The_Cone_Error;
+    end Cone_Error;
+
+
+    function Pole_Offsets return Earth.Direction is
+    begin
+      return The_Pole_Offsets;
+    end Pole_Offsets;
+
+
     function Three_Star_Rotations return Space.Direction is
     begin
       return The_Rotations;
     end Three_Star_Rotations;
-
-
-    function Three_Star_Pole_Offsets return Earth.Direction is
-    begin
-      return The_Pole_Offsets;
-    end Three_Star_Pole_Offsets;
 
 
     function Three_Star_Corrections return Space.Direction is

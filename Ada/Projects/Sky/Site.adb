@@ -19,17 +19,28 @@ with Persistent;
 
 package body Site is
 
-  package Persistent_Site is new Persistent (Data, "Site");
+  type Element is record
+    Location   : Data;
+    Is_Defined : Boolean := False;
+  end record;
 
-  The_Site : Persistent_Site.Data;
+  package Persistent_Site is new Persistent (Element, "Site");
 
-  Defined : Boolean := not Persistent_Site.Storage_Is_Empty;
+  The_Data : Persistent_Site.Data;
+
+  The_Site : Data    renames The_Data.Storage.Location;
+  Defined  : Boolean renames The_Data.Storage.Is_Defined;
+
+
+  procedure Clear is
+  begin
+    Defined := False;
+  end Clear;
 
 
   procedure Define (Item : Data) is
   begin
-    Defined := False;
-    The_Site.Storage := Item;
+    The_Site := Item;
     Defined := True;
   end Define;
 
@@ -51,21 +62,21 @@ package body Site is
   function Latitude return Angle.Value is
   begin
     Check_Defined;
-    return The_Site.Storage.Latitude;
+    return The_Site.Latitude;
   end Latitude;
 
 
   function Longitude return Angle.Value is
   begin
     Check_Defined;
-    return The_Site.Storage.Longitude;
+    return The_Site.Longitude;
   end Longitude;
 
 
   function Elevation return Integer is
   begin
     Check_Defined;
-    return The_Site.Storage.Elevation;
+    return The_Site.Elevation;
   end Elevation;
 
 end Site;

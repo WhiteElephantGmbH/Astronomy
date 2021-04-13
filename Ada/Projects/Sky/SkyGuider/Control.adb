@@ -21,6 +21,7 @@ with Angle;
 with Earth;
 with Exceptions;
 with Picture;
+with Site;
 with Space;
 with Strings;
 with Time;
@@ -56,6 +57,9 @@ package body Control is
       Put ("Elevation :" & Picture.Elevation'image & 'm');
       Put ("Latitude  : " & Image_Of ( Picture.Latitude));
       Put ("Longitude : " & Image_Of (Picture.Longitude));
+      Site.Define ((Latitude  => Picture.Latitude,
+                    Longitude => Picture.Longitude,
+                    Elevation => Picture.Elevation));
       Put ("Time      : " & Time.Image_Of (Picture.Time_Stamp));
       The_Direction := Picture.Actual_Direction;
       Put ("RA        : " & Space.Ra_Image_Of (The_Direction));

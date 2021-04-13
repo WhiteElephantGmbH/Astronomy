@@ -24,6 +24,7 @@ with File;
 with Language;
 with Motor;
 with Os;
+with Pole_Axis;
 with Site;
 with Strings;
 with Text;
@@ -62,9 +63,15 @@ package body Parameter is
 
   Stellarium_Id  : constant String := "Stellarium";
   Lx200_Id       : constant String := "Lx200";
+  Picture_Id     : constant String := "Picture";
+  Filename_Key   : constant String := "Filename";
+  Height_Key     : constant String := "Height";
+  Width_Key      : constant String := "Width";
   Port_Key       : constant String := "Port";
   Program_Key    : constant String := "Program";
   Magnitude_Key  : constant String := "Magnitude";
+
+  Degree_Unit : constant String := "°";
 
   The_Section : Configuration.Section_Handle;
 
@@ -90,6 +97,19 @@ package body Parameter is
   --Stellarium
   The_Stellarium_Port   : Network.Port_Number;
   The_Magnitude_Maximum : Stellarium.Magnitude;
+
+
+  function Default_Picture_Filename return String is
+  begin
+    case Os.Family is
+    when Os.Osx =>
+      return "/usr/" & Os.User_Name & "/Downloads/getframe.php.jpeg";
+    when Os.Windows =>
+      return "D:\temp\Picture.jpeg";
+    when Os.Linux =>
+      return "Picture.jpeg";
+    end case;
+  end Default_Picture_Filename;
 
 
   procedure Set (Section : Configuration.Section_Handle) is
@@ -153,6 +173,21 @@ package body Parameter is
     begin
       Log.Write (Key & ": " & Item);
       return Angle.Value_Of (Image);
+    end;
+  exception
+  when others =>
+    Error.Raise_With ("Incorrect " & Key & ": <" & Item & ">");
+  end Angle_Of;
+
+
+  function Angle_Of (Key : String) return Angle.Degrees is
+    Item : constant String := String_Of (Key);
+  begin
+    declare
+      Image : constant String := Image_Of (Item, Degree_Unit);
+    begin
+      Log.Write (Key & ": " & Item);
+      return Angle.Degrees'value(Image);
     end;
   exception
   when others =>
@@ -249,12 +284,12 @@ package body Parameter is
         Put (Ip_Address_Key & "           = SkyTracker" & (if Os.Is_Windows then "" else ".local"));
         Put_Steps_Per_Revolution (141 * 5 * 200 * 16, Single_Parameter => True); -- EQU-6
         Put (Clocks_Per_Second_Key & "    = 5000000");
-        Put (Park_Azimuth_Key & "         = +137°16'00.0""");
-        Put (Park_Altitude_Key & "        = +5°35'00.0""");
-        Put (Meridian_Flip_Offset_Key & " = 5°");
-        Put (Moving_Speed_List_Key & "    = 6""/s, 1'/s, 10'/s, 6°/s");
-        Put (First_Acceleration_Key & "   = 6°/s²");
-        Put (Second_Acceleration_Key & "  = 6°/s²");
+        Put (Park_Azimuth_Key & "         = 170°12'00.0""");
+        Put (Park_Altitude_Key & "        = 0°42'00.0""");
+        Put (Meridian_Flip_Offset_Key & " = 10°");
+        Put (Moving_Speed_List_Key & "    = 6""/s, 1'/s, 10'/s, 3°/s");
+        Put (First_Acceleration_Key & "   = 2°/s²");
+        Put (Second_Acceleration_Key & "  = 2°/s²");
         Put (Synch_On_Targets_Key & "     = True");
         Put (Expert_Mode_Key & "          = True");
       else
@@ -263,8 +298,8 @@ package body Parameter is
         Put (Ip_Address_Key & "                  = None");
         Put_Steps_Per_Revolution (1232086);
         Put (Clocks_Per_Second_Key & "           = 5000000");
-        Put (Park_Azimuth_Key & "                = +180°00'");
-        Put (Park_Altitude_Key & "               = +0°00'");
+        Put (Park_Azimuth_Key & "                = 180°00'");
+        Put (Park_Altitude_Key & "               = 0°00'");
         Put (Meridian_Flip_Offset_Key & "        = 30°");
         Put (Moving_Speed_List_Key & "           = 6""/s, 1'/s, 10'/s, 6°/s");
         Put (First_Acceleration_Key & "          = 3°/s²");
@@ -275,6 +310,11 @@ package body Parameter is
       Put ("");
       Put ("[" & Lx200_Id & "]");
       Put (Port_Key & " = 4030");
+      Put ("");
+      Put ("[" & Picture_Id & "]");
+      Put (Filename_Key & " = " & Default_Picture_Filename);
+      Put (Height_Key & "   = 2.97" & Degree_Unit);
+      Put (Width_Key & "    = 4.46" & Degree_Unit);
       Put ("");
       Put ("[" & Stellarium_Id & "]");
       Put (Port_Key & "      = 10001");
@@ -301,6 +341,7 @@ package body Parameter is
       Handle              : constant Configuration.File_Handle    := Configuration.Handle_For (Filename);
       Telescope_Handle    : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Telescope_Id);
       Lx200_Handle        : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Lx200_Id);
+      Picture_Handle      : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Picture_Id);
       Stellarium_Handle   : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Stellarium_Id);
       Localization_Handle : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Localization_Id);
 
@@ -420,6 +461,7 @@ package body Parameter is
       The_First_Acceleration := Angle_Of (First_Acceleration_Key, Acceleration_Unit);
       The_Second_Acceleration := Angle_Of (Second_Acceleration_Key, Acceleration_Unit);
       Is_Synch_On_Targets := Strings.Lowercase_Of (String_Of (Synch_On_Targets_Key)) = "true";
+
       Set (Lx200_Handle);
       begin
         The_Lx200_Port := Network.Port_Number (Value_Of (Port_Key));
@@ -428,6 +470,12 @@ package body Parameter is
       when others =>
         Error.Raise_With ("Lx200 port number out of range");
       end;
+
+      Set (Picture_Handle);
+      Pole_Axis.Define_Picture (Filename => String_Of (Filename_Key),
+                                Height   => Angle_Of (Height_Key),
+                                Width    => Angle_Of (Width_Key));
+
       Set (Stellarium_Handle);
       begin
         The_Stellarium_Port := Network.Port_Number (Value_Of (Port_Key));

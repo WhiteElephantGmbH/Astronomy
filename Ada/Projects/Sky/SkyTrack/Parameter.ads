@@ -82,7 +82,6 @@ package Parameter is
 
   function Lx200_Port return Network.Port_Number;
 
-
   ----------------
   -- Stellarium --
   ----------------

@@ -16,7 +16,7 @@
 pragma Style_White_Elephant;
 
 with Astro;
-with Numerics;
+with Site;
 with Traces;
 
 package body Picture is
@@ -174,36 +174,80 @@ package body Picture is
   end Direction;
 
 
-  function Actual_Direction return Space.Direction is
+  use Astro;
 
-    T : constant Time.T := Time.Tut_Of (Time_Stamp);
+  procedure Evaluate_Actual (Ra  : out REAL;
+                             Dec : out REAL) is
 
-    use Astro;
+    function T return Time.T is
+    begin
+      return Time.Tut_Of (Time_Stamp);
+    exception
+    when Undefined_Value =>
+      Log.Warning ("Undefined GPS Time_Stamp (used actual time)");
+      return Time.Tut;
+    end T;
+
     use Astro.PNULIB;
     use Astro.SPHLIB;
 
     Pn_Mat : REAL33;
     Ve     : VECTOR;
-    Ra     : REAL := REAL(The_Ra);
-    Dec    : REAL := REAL(The_Dec);
 
-  begin
+  begin -- Evaluate_Actual;
     if not Solved then
       raise Undefined_Value;
     end if;
+    Ra := REAL(The_Ra);
+    Dec := REAL(The_Dec);
     PN_MATRIX (Time.T_J2000, T, Pn_Mat);
     ABERRAT (T, Ve);
     APPARENT (Pn_Mat, Ve, Ra, Dec);
+  end Evaluate_Actual;
+
+
+  function Actual_Direction return Space.Direction is
+    Ra, Dec : REAL;
+  begin
+    Evaluate_Actual (Ra => Ra, Dec => Dec);
     return Space.Direction_Of (Ra  => Angle.Degrees(Ra),
                                Dec => Angle.Degrees(Dec));
   end Actual_Direction;
 
 
   function Direction return Earth.Direction is
-  begin
-    return Numerics.Direction_Of (Direction => Actual_Direction,
-                                  Latitude  => Latitude,
-                                  Lmst      => Time.Lmst_Of (Time_Stamp));
+
+    function Lmst return Time.Value is
+    begin
+      return Time.Lmst_Of (Time_Stamp);
+    exception
+    when Undefined_Value =>
+      return Time.Lmst;
+    end Lmst;
+
+    function Phy return Angle.Value is
+    begin
+      return Latitude;
+    exception
+    when Undefined_Value =>
+      Log.Warning ("Undefined GPS Latitude (used Site.Latitude)");
+      return Site.Latitude;
+    end Phy;
+
+    Ra, Dec, Alt, Az : REAL;
+
+    use Astro.SPHLIB;
+    use type Angle.Value;
+
+  begin -- Direction
+    Evaluate_Actual (Ra => Ra, Dec => Dec);
+    EQUHOR (DEC => +Dec,
+            TAU => +(Lmst - Ra),
+            PHI => +Phy,
+            H   => Alt,
+            AZ  => Az);
+    return Earth.Direction_Of (Alt => +Alt,
+                               Az  => Angle.Semi_Circle + Az);
   end Direction;
 
 end Picture;

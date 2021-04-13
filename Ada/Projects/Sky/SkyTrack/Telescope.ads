@@ -62,6 +62,7 @@ package Telescope is
     Local_Direction   : Earth.Direction;
     Adjustment        : Earth.Direction;
     Alignment_Offsets : Earth.Direction;
+    Cone_Error        : Angle.Value := Angle.Zero;
     Pole_Offsets      : Earth.Direction;
     Rotations         : Space.Direction;
     Motor_Positions   : Motor.Position_Data;

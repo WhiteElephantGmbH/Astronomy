@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2019 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2019 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -16,7 +16,7 @@
 pragma Style_White_Elephant;
 
 with Astro;
-with Parameter;
+with Site;
 
 package body Numerics is
 
@@ -103,7 +103,7 @@ package body Numerics is
     if Space.Direction_Is_Known (Direction) then
       EQUHOR (DEC => Space.Dec_Of (Direction),
               TAU => Lmst - Space.Ra_Of (Direction),
-              PHI => Parameter.Latitude,
+              PHI => Site.Latitude,
               A   => The_Altitude,
               AZ  => The_Azimuth);
       return Earth.Direction_Of (Alt => The_Altitude,
@@ -147,7 +147,7 @@ package body Numerics is
     if Earth.Direction_Is_Known (Direction) then
       HOREQU (A   => Earth.Alt_Of (Direction),
               AZ  => Earth.Az_Of (Direction),
-              PHI => Parameter.Latitude,
+              PHI => Site.Latitude,
               DEC => The_Declination,
               TAU => The_Hours_Angle);
       return Space.Direction_Of (Dec => The_Declination,

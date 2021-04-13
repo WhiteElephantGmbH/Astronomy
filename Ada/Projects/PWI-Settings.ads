@@ -1,10 +1,8 @@
 -- *********************************************************************************************************************
--- *                           (c) 2019 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2019 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
-
-with Angle;
 
 package PWI.Settings is
 
@@ -20,12 +18,6 @@ package PWI.Settings is
   Missing_Upper_Alt_Goto_Limit : exception;
 
   procedure Read (Filename : String);
-
-  function Latitude return Angle.Value;
-
-  function Longitude return Angle.Value;
-
-  function Elevation return Integer; -- in meters
 
   function Lower_Azm_Goto_Limit return Encoder_Degrees;
 

@@ -27,6 +27,8 @@ package Site is
 
   Not_Defined : exception;
   
+  procedure Clear;
+
   procedure Define (Item : Data);
 
   function Is_Defined return Boolean;

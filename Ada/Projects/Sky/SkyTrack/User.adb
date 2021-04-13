@@ -35,6 +35,7 @@ with Motor;
 with Numerics;
 with Parameter;
 with Persistent;
+with Pole_Axis;
 with Refraction;
 with Sky_Line;
 with Site;
@@ -83,8 +84,8 @@ package body User is
   Time_Offset       : Gui.Plain_Edit_Box;
 
   Setup_Page           : Gui.Page;
-  Add_Or_Adjust_Button : Gui.Button;
-  Next_Or_Clear_Button : Gui.Button;
+  First_Setup_Button   : Gui.Button;
+  Second_Setup_Button  : Gui.Button;
   Longitude            : Gui.Plain_Edit_Box;
   Latitude             : Gui.Plain_Edit_Box;
   Elevation            : Gui.Plain_Edit_Box;
@@ -95,6 +96,7 @@ package body User is
   Operation_Control    : Gui.Plain_Combo_Box;
   Magnitude_Limit      : Gui.Plain_Edit_Box;
   Aligned_Stars        : Gui.Plain_Edit_Box;
+  Cone_Error           : Gui.Plain_Edit_Box;
   Pole_Az_Offset       : Gui.Plain_Edit_Box;
   Pole_Height_Offset   : Gui.Plain_Edit_Box;
   Ra_Rotation          : Gui.Plain_Edit_Box;
@@ -135,8 +137,11 @@ package body User is
 
   The_Status : Telescope.State := Telescope.Disconnected;
 
-  type Operation is (Set_Sky_Line, Align_Global, Align_Local, Align_1_Star, Align_Pole_Axis);
+  type Operation is (Set_Sky_Line,
+                     Align_Global, Align_Local, Align_1_Star, Align_Pole_Axis,
+                     Get_Pole_Top, Get_Pole_Left, Get_Pole_Right);
 
+  subtype Get_Pole is Operation range Get_Pole_Top .. Get_Pole_Right;
 
   The_Operation               : Operation := Align_1_Star;
   Alignment_Adding_Is_Enabled : Boolean := False;
@@ -321,7 +326,7 @@ package body User is
     case The_Operation is
     when Align_Global =>
       return True;
-    when Align_Local | Align_1_Star | Align_Pole_Axis | Set_Sky_Line =>
+    when Align_Local | Align_1_Star | Align_Pole_Axis | Set_Sky_Line | Get_Pole =>
       return False;
     end case;
   end Next_Operation_Enabled;
@@ -338,89 +343,97 @@ package body User is
       case The_Operation is
       when Set_Sky_Line =>
         if Is_Stopped then
-          Gui.Enable (Add_Or_Adjust_Button);
+          Gui.Enable (First_Setup_Button);
         else
-          Gui.Disable (Add_Or_Adjust_Button);
+          Gui.Disable (First_Setup_Button);
         end if;
+      when Get_Pole =>
+        null;
       when Align_Global =>
-        Gui.Disable (Add_Or_Adjust_Button);
-        Gui.Disable (Next_Or_Clear_Button);
+        Gui.Disable (First_Setup_Button);
+        Gui.Disable (Second_Setup_Button);
       when Align_Local =>
         case The_Status is
         when Telescope.Stopped =>
           if Alignment.Has_Correction_Data then
             Is_Ready_For_Alignment_Calculations := True;
-            Gui.Set_Text (Add_Or_Adjust_Button, "Apply");
-            Gui.Enable (Add_Or_Adjust_Button);
+            Gui.Set_Text (First_Setup_Button, "Apply");
+            Gui.Enable (First_Setup_Button);
           end if;
         when others =>
-          Gui.Disable (Add_Or_Adjust_Button);
+          Gui.Disable (First_Setup_Button);
         end case;
         if not Alignment.Has_Correction then
-          Gui.Disable (Next_Or_Clear_Button);
+          Gui.Disable (Second_Setup_Button);
         end if;
       when Align_1_Star =>
-        Gui.Disable (Add_Or_Adjust_Button);
-        Gui.Disable (Next_Or_Clear_Button);
+        Gui.Disable (First_Setup_Button);
+        Gui.Disable (Second_Setup_Button);
       when Align_Pole_Axis =>
-        Gui.Disable (Add_Or_Adjust_Button);
+        Gui.Disable (First_Setup_Button);
         if not Alignment.Has_Correction then
-          Gui.Disable (Next_Or_Clear_Button);
+          Gui.Disable (Second_Setup_Button);
         end if;
       end case;
     end if;
   end Disable_Operation_Buttons;
 
 
-  procedure Set_Add_Button_Text is
+  procedure Set_First_Button_Text is
   begin
     Is_Ready_For_Alignment_Calculations := False;
     case The_Operation is
     when Align_1_Star =>
-      Gui.Set_Text (Add_Or_Adjust_Button, "Align");
+      Gui.Set_Text (First_Setup_Button, "Align");
     when Align_Pole_Axis =>
       case The_Alignment_Star is
       when No_Star =>
-        Gui.Set_Text (Add_Or_Adjust_Button, "Align");
+        Gui.Set_Text (First_Setup_Button, "Align");
       when First_Star =>
-        Gui.Set_Text (Add_Or_Adjust_Button, "Add First");
+        Gui.Set_Text (First_Setup_Button, "Add First");
       when Second_Star =>
-        Gui.Set_Text (Add_Or_Adjust_Button, "Add Second");
+        Gui.Set_Text (First_Setup_Button, "Add Second");
       when Third_Star =>
-        Gui.Set_Text (Add_Or_Adjust_Button, "Add Third");
+        Gui.Set_Text (First_Setup_Button, "Add Third");
       end case;
     when Set_Sky_Line | Align_Global | Align_Local =>
-      Gui.Set_Text (Add_Or_Adjust_Button, "Add");
+      Gui.Set_Text (First_Setup_Button, "Add");
+    when Get_Pole =>
+      Gui.Set_Text (First_Setup_Button, "Get");
     end case;
-  end Set_Add_Button_Text;
+  end Set_First_Button_Text;
 
 
   procedure Enable_Operation_Buttons is
   begin
     if Is_Expert_Mode then
       case The_Operation is
+      when Get_Pole =>
+        if Site.Is_Defined then
+          Gui.Enable (Second_Setup_Button);
+        end if;
       when Set_Sky_Line =>
-        Set_Add_Button_Text;
-        Gui.Disable (Add_Or_Adjust_Button);
+        Set_First_Button_Text;
+        Gui.Disable (First_Setup_Button);
         if Sky_Line.Is_Defined then
-          Gui.Enable (Next_Or_Clear_Button);
+          Gui.Enable (Second_Setup_Button);
         end if;
       when Align_1_Star =>
         if Alignment.Has_One_Star_Offsets then
-          Gui.Enable (Add_Or_Adjust_Button);
+          Gui.Enable (First_Setup_Button);
         end if;
       when Align_Global | Align_Local | Align_Pole_Axis =>
         if Alignment_Adding_Is_Enabled then
-          Set_Add_Button_Text;
+          Set_First_Button_Text;
           if The_Alignment_Star = No_Star then
             Align_Is_Enabled := True;
           end if;
         end if;
-        Gui.Enable (Add_Or_Adjust_Button);
+        Gui.Enable (First_Setup_Button);
         if Next_Operation_Enabled then
-          Gui.Enable (Next_Or_Clear_Button);
+          Gui.Enable (Second_Setup_Button);
         elsif Alignment.Has_Correction or The_Alignment_Star /= First_Star then
-          Gui.Enable (Next_Or_Clear_Button);
+          Gui.Enable (Second_Setup_Button);
         end if;
       end case;
     end if;
@@ -430,8 +443,9 @@ package body User is
   The_Actual_Direction : Earth.Direction;
 
   procedure Show (Information : Telescope.Data) is
-    use type Telescope.State;
+    use type Angle.Value;
     use type Device.Time_Synch_State;
+    use type Telescope.State;
   begin
     if The_Target_Selection = No_Target then
       Define_Park_Position;
@@ -599,7 +613,11 @@ package body User is
         Gui.Set_Text (Lmst, "");
         Gui.Set_Text (Local_Time, "");
       else
-        Gui.Set_Text (Lmst, Time.Image_Of (Time.Lmst_Of (Information.Universal_Time)));
+        if Site.Is_Defined then
+          Gui.Set_Text (Lmst, Time.Image_Of (Time.Lmst_Of (Information.Universal_Time)));
+        else
+          Gui.Set_Text (Lmst, "");
+        end if;
         Gui.Set_Text (Local_Time, Time.Image_Of (Information.Universal_Time, Time_Only => True));
       end if;
       if Information.Time_Adjustment = 0.0 then
@@ -618,14 +636,27 @@ package body User is
         Gui.Set_Text (Elevation, "");
       end if;
       case The_Operation is
-      when Set_Sky_Line | Align_Global | Align_1_Star | Align_Pole_Axis =>
+      when Get_Pole | Set_Sky_Line | Align_Global | Align_1_Star | Align_Pole_Axis =>
         Gui.Set_Text (Aligned_Stars, "");
       when Align_Local =>
         Gui.Set_Text (Aligned_Stars, Strings.Trimmed (Alignment.Number_Of_Aligned_Stars'img));
       end case;
+      if Information.Cone_Error = Angle.Zero then
+        Gui.Set_Text (Cone_Error, "");
+      else
+        Gui.Set_Text (Cone_Error, Angle.Image_Of (Information.Cone_Error, Show_Signed => True));
+      end if;
       if Earth.Direction_Is_Known (Information.Pole_Offsets) then
-        Gui.Set_Text (Pole_Az_Offset, Earth.Az_Offset_Image_Of (Information.Pole_Offsets));
-        Gui.Set_Text (Pole_Height_Offset, Earth.Alt_Offset_Image_Of (Information.Pole_Offsets));
+        if Earth.Az_Of (Information.Pole_Offsets) = Angle.Zero then
+          Gui.Set_Text (Pole_Az_Offset, "");
+        else
+          Gui.Set_Text (Pole_Az_Offset, Earth.Az_Offset_Image_Of (Information.Pole_Offsets));
+        end if;
+        if Earth.Alt_Of (Information.Pole_Offsets) = Angle.Zero then
+          Gui.Set_Text (Pole_Height_Offset, "");
+        else
+          Gui.Set_Text (Pole_Height_Offset, Earth.Alt_Offset_Image_Of (Information.Pole_Offsets));
+        end if;
       else
         Gui.Set_Text (Pole_Az_Offset, "");
         Gui.Set_Text (Pole_Height_Offset, "");
@@ -889,7 +920,7 @@ package body User is
     procedure Initialize_Next_Operation is
       use type Catalog.Magnitude;
     begin
-      Gui.Set_Text (Next_Or_Clear_Button, "Next");
+      Gui.Set_Text (Second_Setup_Button, "Next");
       The_Next_Stars.Clear;
       Next_Is_First := True;
       if Max_Magnitude <= 0.0 then
@@ -905,7 +936,7 @@ package body User is
       end if;
       Log.Write ("Next Width:" & The_Next_Width'img);
       Catalog_Menu.Set (Data.Hip);
-      Gui.Disable (Next_Or_Clear_Button);
+      Gui.Disable (Second_Setup_Button);
     end Initialize_Next_Operation;
 
   begin -- Define_Operation
@@ -917,30 +948,41 @@ package body User is
       Matrix.Clear;
       Initialize_Next_Operation;
     when Align_1_Star =>
-      Set_Add_Button_Text;
-      Gui.Set_Text (Next_Or_Clear_Button, "Clear");
-      Gui.Disable (Next_Or_Clear_Button);
+      Set_First_Button_Text;
+      Gui.Set_Text (Second_Setup_Button, "");
+      Gui.Disable (Second_Setup_Button);
     when Align_Pole_Axis =>
       Alignment.Clear_Corrections;
       Matrix.Clear;
-      Set_Add_Button_Text;
-      Gui.Set_Text (Next_Or_Clear_Button, "Clear");
-      Gui.Disable (Next_Or_Clear_Button);
+      Set_First_Button_Text;
+      Gui.Set_Text (Second_Setup_Button, "Clear");
+      Gui.Disable (Second_Setup_Button);
     when Align_Local =>
       Matrix.Clear;
-      Set_Add_Button_Text;
-      Gui.Set_Text (Next_Or_Clear_Button, "Clear");
-      Gui.Disable (Next_Or_Clear_Button);
+      Set_First_Button_Text;
+      Gui.Set_Text (Second_Setup_Button, "Clear");
+      Gui.Disable (Second_Setup_Button);
     when Set_Sky_Line =>
-      Set_Add_Button_Text;
-      Gui.Set_Text (Next_Or_Clear_Button, "Clear");
+      Set_First_Button_Text;
+      Gui.Set_Text (Second_Setup_Button, "Clear");
       if Sky_Line.Is_Defined then
-        Gui.Enable (Next_Or_Clear_Button);
+        Gui.Enable (Second_Setup_Button);
       else
-        Gui.Disable (Next_Or_Clear_Button);
+        Gui.Disable (Second_Setup_Button);
       end if;
+    when Get_Pole =>
+      Alignment.Clear_Corrections;
+      Set_First_Button_Text;
+      Gui.Set_Text (Second_Setup_Button, "Clear");
+      Gui.Enable (First_Setup_Button);
+      if Site.Is_Defined then
+        Gui.Enable (Second_Setup_Button);
+      else
+        Gui.Disable (Second_Setup_Button);
+      end if;
+      return;
     end case;
-    Gui.Disable (Add_Or_Adjust_Button);
+    Gui.Disable (First_Setup_Button);
   exception
   when others =>
     Log.Error ("Define_Operation");
@@ -952,7 +994,7 @@ package body User is
     The_Item     : Name.Id;
     use Astro;
   begin
-    Gui.Disable (Next_Or_Clear_Button);
+    Gui.Disable (Second_Setup_Button);
     Log.Write ("Next_Azimuth :" & The_Next_Azimuth'img);
     Log.Write ("Next_Altitude:" & The_Next_Altitude'img);
     The_Distance := Angle.Degrees'last;
@@ -984,7 +1026,7 @@ package body User is
                 The_Distance := Az_Distance;
                 The_Item := Item;
               end if;
-            when Align_Local | Align_1_Star | Align_Pole_Axis | Set_Sky_Line =>
+            when Align_Local | Align_1_Star | Align_Pole_Axis | Set_Sky_Line | Get_Pole =>
               raise Program_Error;
             end case;
           end;
@@ -1005,8 +1047,8 @@ package body User is
   end Next_Global_Alignment;
 
 
-  procedure Handle_Next_Or_Clear is
-  begin -- Handle_Next_Or_Clear
+  procedure Handle_Second_Setup_Button is
+  begin
     Define_Magnitude;
     case The_Operation is
     when Align_Global =>
@@ -1021,22 +1063,26 @@ package body User is
       when others =>
         raise Program_Error;
       end case;
-      Set_Add_Button_Text;
+      Set_First_Button_Text;
       Alignment.Clear_Corrections;
-      Gui.Disable (Next_Or_Clear_Button);
+      Gui.Disable (Second_Setup_Button);
     when Set_Sky_Line =>
       Sky_Line.Clear;
-      Gui.Disable (Next_Or_Clear_Button);
+      Gui.Disable (Second_Setup_Button);
+    when Get_Pole =>
+      Site.Clear;
+      Pole_Axis.Clear;
+      Gui.Disable (Second_Setup_Button);
     when Align_1_Star =>
       raise Program_Error;
     end case;
   exception
   when others =>
-    Log.Error ("Handle_Next_Or_Clear");
-  end Handle_Next_Or_Clear;
+    Log.Error ("Handle_Second_Setup_Button");
+  end Handle_Second_Setup_Button;
 
 
-  procedure Handle_Add_Or_Adjust is
+  procedure Handle_First_Setup_Button is
 
     procedure Initialize_First_Next is
       use type Angle.Value;
@@ -1048,78 +1094,91 @@ package body User is
       end if;
     end Initialize_First_Next;
 
-  begin -- Handle_Add_Or_Adjust
+  begin -- Handle_First_Setup_Button
     case The_Operation is
+    when Get_Pole_Top =>
+      Pole_Axis.Evaluate_Pole_Top;
+      Gui.Enable (Second_Setup_Button);
+    when Get_Pole_Left =>
+      Pole_Axis.Evaluate_Pole_Left;
+      Gui.Enable (Second_Setup_Button);
+    when Get_Pole_Right =>
+      Pole_Axis.Evaluate_Pole_Right;
+      Gui.Enable (Second_Setup_Button);
     when Set_Sky_Line =>
       Sky_Line.Add (The_Actual_Direction);
-      Gui.Enable (Next_Or_Clear_Button);
+      Gui.Enable (Second_Setup_Button);
     when Align_1_Star =>
       Signal_Action (Align);
-      Gui.Disable (Add_Or_Adjust_Button);
+      Gui.Disable (First_Setup_Button);
     when Align_Global | Align_Local | Align_Pole_Axis =>
       if Align_Is_Enabled then
-        Gui.Disable (Next_Or_Clear_Button);
+        Gui.Disable (Second_Setup_Button);
         Align_Is_Enabled := False;
         The_Alignment_Star := First_Star;
-        Set_Add_Button_Text;
+        Set_First_Button_Text;
         Signal_Action (Align);
       elsif Is_Ready_For_Alignment_Calculations then
         Is_Ready_For_Alignment_Calculations := False;
-        Gui.Disable (Add_Or_Adjust_Button);
-        Gui.Set_Text (Add_Or_Adjust_Button, "busy...");
+        Gui.Disable (First_Setup_Button);
+        Gui.Set_Text (First_Setup_Button, "busy...");
         Alignment.Apply;
-        Gui.Set_Text (Add_Or_Adjust_Button, "Add");
+        Gui.Set_Text (First_Setup_Button, "Add");
       elsif Alignment_Adding_Is_Enabled then
         case The_Operation is
         when Align_Global =>
           Initialize_First_Next;
           Alignment.Store;
-          Handle_Next_Or_Clear;
+          Handle_Second_Setup_Button;
         when Align_Local =>
           Alignment.Add;
-          Gui.Set_Text (Add_Or_Adjust_Button, "Add");
+          Gui.Set_Text (First_Setup_Button, "Add");
           if Alignment.Has_Correction then
-            Gui.Enable (Next_Or_Clear_Button);
+            Gui.Enable (Second_Setup_Button);
           end if;
         when Align_Pole_Axis =>
           case The_Alignment_Star is
           when First_Star =>
             Alignment.Add_First;
             The_Alignment_Star := Second_Star;
-            Set_Add_Button_Text;
+            Set_First_Button_Text;
           when Second_Star =>
             Alignment.Add_Second;
             The_Alignment_Star := Third_Star;
-            Set_Add_Button_Text;
+            Set_First_Button_Text;
           when Third_Star =>
             begin
               Alignment.Add_Third;
               Alignment_Adding_Is_Enabled := False;
               The_Alignment_Star := No_Star;
-              Gui.Set_Text (Add_Or_Adjust_Button, "Adjust");
+              Gui.Set_Text (First_Setup_Button, "Adjust");
               Signal_Action (Go_To);
               return;
             exception
             when Alignment.Failure =>
               The_Alignment_Star := First_Star;
-              Set_Add_Button_Text;
+              Set_First_Button_Text;
             end;
           when No_Star =>
             null;
           end case;
-          Gui.Enable (Next_Or_Clear_Button);
-        when Align_1_Star | Set_Sky_Line =>
+          Gui.Enable (Second_Setup_Button);
+        when Align_1_Star | Set_Sky_Line | Get_Pole =>
           raise Program_Error;
         end case;
       else
-        Set_Add_Button_Text;
+        Set_First_Button_Text;
       end if;
-      Gui.Disable (Add_Or_Adjust_Button);
+      Gui.Disable (First_Setup_Button);
     end case;
   exception
+  when Pole_Axis.Picture_Not_Found =>
+    Show_Error ("Picture " & Pole_Axis.Picture_Filename & " not found");
+  when Pole_Axis.Picture_Not_Solved =>
+    Show_Error ("Picture not solved");
   when others =>
-    Log.Error ("Handle_Add_Or_Adjust");
-  end Handle_Add_Or_Adjust;
+    Log.Error ("Handle_First_Setup_Button");
+  end Handle_First_Setup_Button;
 
 
   procedure Put (The_Command : Device.Command) is
@@ -1229,8 +1288,8 @@ package body User is
 
   procedure Enter_Handling is
   begin
-    if Is_Expert_Mode and then Gui.Is_Enabled (Add_Or_Adjust_Button) then
-      Handle_Add_Or_Adjust;
+    if Is_Expert_Mode and then Gui.Is_Enabled (First_Setup_Button) then
+      Handle_First_Setup_Button;
     else
       Enter_Number;
     end if;
@@ -1314,8 +1373,8 @@ package body User is
       when Gui.Key_Codes.KP_Subtract | Gui.Key_Codes.K_Page_Down =>
         Put (Device.No_Command);
       when Gui.Key_Codes.KP_Decimal =>
-        if Is_Expert_Mode and then Gui.Is_Enabled (Next_Or_Clear_Button) then
-          Handle_Next_Or_Clear;
+        if Is_Expert_Mode and then Gui.Is_Enabled (Second_Setup_Button) then
+          Handle_Second_Setup_Button;
         else
           Not_A_Number;
         end if;
@@ -1547,8 +1606,8 @@ package body User is
                                     The_Style  => (Gui.Buttons_Fill_Horizontally => True,
                                                    Gui.Buttons_Fill_Vertically   => False));
 
-        Add_Or_Adjust_Button := Gui.Create (Setup_Page, "Align", Handle_Add_Or_Adjust'access);
-        Next_Or_Clear_Button := Gui.Create (Setup_Page, "Clear", Handle_Next_Or_Clear'access);
+        First_Setup_Button := Gui.Create (Setup_Page, "Align", Handle_First_Setup_Button'access);
+        Second_Setup_Button := Gui.Create (Setup_Page, "", Handle_Second_Setup_Button'access);
 
         Longitude := Gui.Create (Setup_Page, "Longitude", "",
                                  Is_Modifiable  => False,
@@ -1602,6 +1661,10 @@ package body User is
                                      Is_Modifiable  => False,
                                      The_Size       => Text_Size,
                                      The_Title_Size => Title_Size);
+        Cone_Error := Gui.Create (Setup_Page, "Cone Error", "",
+                                  Is_Modifiable  => False,
+                                  The_Size       => Text_Size,
+                                  The_Title_Size => Title_Size);
         Pole_Az_Offset := Gui.Create (Setup_Page, "Pole Az Offset", "",
                                       Is_Modifiable  => False,
                                       The_Size       => Text_Size,

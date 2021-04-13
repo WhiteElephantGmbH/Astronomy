@@ -168,7 +168,9 @@ package body Control is
         accept Stop;
         exit;
       or delay 10.0;
-        Define_Targets;
+        if Site.Is_Defined then
+          Define_Targets;
+        end if;
       end select;
     end loop;
     Log.Write ("target handler end");
@@ -654,7 +656,6 @@ package body Control is
     end if;
     Os.Process.Set_Priority_Class (Os.Process.Realtime);
     Parameter.Read;
-    Time.Set (Site.Longitude);
     Read_Data;
     Motor.Define (First_Acceleration   => Parameter.First_Acceleration,
                   Second_Acceleration  => Parameter.Second_Acceleration,

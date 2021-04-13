@@ -1,11 +1,13 @@
 -- *********************************************************************************************************************
--- *                           (c) 2019 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2019 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
 with Ada.Numerics;
 with Ada.Text_IO;
+with Angle;
+with Site;
 with Strings;
 
 package body PWI.Settings is
@@ -78,6 +80,7 @@ package body PWI.Settings is
     end Next_Limit;
 
     use type Angle.Degrees;
+    use type Angle.Value;
 
   begin -- Read
     begin
@@ -125,27 +128,10 @@ package body PWI.Settings is
     elsif The_Upper_Alt_Goto_Limit = Undefined_Limit then
       raise Missing_Upper_Alt_Goto_Limit;
     end if;
+    Site.Define ((Latitude  => +The_Latitude,
+                  Longitude => +The_Longitude,
+                  Elevation => The_Elevation));
   end Read;
-
-
-  function Latitude return Angle.Value is
-    use type Angle.Value;
-  begin
-    return +The_Latitude;
-  end Latitude;
-
-
-  function Longitude return Angle.Value is
-    use type Angle.Value;
-  begin
-    return +The_Longitude;
-  end Longitude;
-
-
-  function Elevation return Integer is
-  begin
-    return The_Elevation;
-  end Elevation;
 
 
   function Lower_Azm_Goto_Limit return Encoder_Degrees is

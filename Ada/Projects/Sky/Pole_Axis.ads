@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                               (c) 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                           (c) 2021 by White Elephant GmbH, Schaffhausen, Switzerland                              *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -16,41 +16,24 @@
 pragma Style_White_Elephant;
 
 with Angle;
-with Astap;
-with Earth;
-with Exif;
-with Space;
-with Time;
 
-package Picture is
+package Pole_Axis is
 
-  File_Not_Found  : exception renames Exif.File_Not_Found;
-  Invalid_File    : exception renames Exif.Invalid_File;
-  Not_Solved      : exception renames Astap.Not_Solved;
-  Undefined_Value : exception;
+  Picture_Not_Found  : exception;
+  Picture_Not_Solved : exception;
 
-  procedure Read (Filename    : String;
-                  Height      : Angle.Degrees;
-                  Width       : Angle.Degrees;
-                  Search_From : Space.Direction);
+  procedure Define_Picture (Filename : String;
+                            Height   : Angle.Degrees;
+                            Width    : Angle.Degrees);
 
-  function Elevation return Integer;
+  function Picture_Filename return String;
 
-  function Latitude return Angle.Value;
+  procedure Clear;
 
-  function Longitude return Angle.Value;
+  procedure Evaluate_Pole_Top;
 
-  function Time_Stamp return Time.Ut;
-  -- returns the time when the picture is taken.
+  procedure Evaluate_Pole_Left;
 
-  function Direction return Space.Direction;
-  -- returns the center of the picture in J2000 coordinates.
+  procedure Evaluate_Pole_Right;
 
-  function Actual_Direction return Space.Direction;
-  -- return the center of the picture in actual coordinates.
-
-  function Direction return Earth.Direction;
-  -- PRECONDITION: The site must be defined (persistent type in package Site).
-  -- returns the center of the picture in alt/az coordinates.
-
-end Picture;
+end Pole_Axis;

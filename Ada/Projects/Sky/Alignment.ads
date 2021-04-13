@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2015 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2015 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -45,6 +45,12 @@ package Alignment is
   procedure Add_Third;
 
   procedure Read;
+
+  procedure Set (Cone_Error : Angle.Value);
+
+  procedure Set (Pole_Offsets : Earth.Direction);
+
+  function Cone_Error return Angle.Value;
 
   function Pole_Offsets return Earth.Direction;
 

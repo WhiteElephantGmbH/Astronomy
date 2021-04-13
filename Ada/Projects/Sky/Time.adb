@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2012 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2012 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -16,11 +16,9 @@
 pragma Style_White_Elephant;
 
 with Ada.Calendar.Time_Zones;
-with Traces;
+with Site;
 
 package body Time is
-
-  package Log is new Traces ("Time");
 
   function Image_Of (Item : Value) return String is
   begin
@@ -33,18 +31,11 @@ package body Time is
     return Duration (Ada.Calendar.Time_Zones.UTC_Time_Offset (Now)) * 60.0;
   end Time_Shift;
 
-  Lambda : Angle.Value := Angle.Zero; -- Greenwich longitude
 
-
-  -------------------
-  -- set longitude --
-  -------------------
-
-  procedure Set (Longitude : Value) is
+  function Lambda return Angle.Value is
   begin
-    Lambda := Longitude;
-    Log.Write ("Lambda: " & Angle.Image_Of (Lambda));
-  end Set;
+    return Site.Longitude;
+  end Lambda;
 
 
   -------------------------
