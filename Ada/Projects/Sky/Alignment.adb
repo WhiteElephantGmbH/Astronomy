@@ -67,6 +67,9 @@ package body Alignment is
 
     procedure Set (Pole_Offsets : Earth.Direction);
 
+    procedure Set_Offsets (Ra  : Angle.Degrees;
+                           Dec : Angle.Degrees);
+
     procedure Set (The_Pole_Height_Offset : Angle.Degrees;
                    The_Pole_Az_Offset     : Angle.Degrees;
                    The_Ra_Rotation        : Angle.Degrees;
@@ -80,7 +83,7 @@ package body Alignment is
 
     function Three_Star_Corrections return Space.Direction;
 
-    function Three_Star_Synchronized_Offsets return Offsets;
+    function Star_Synchronized_Offsets return Offsets;
 
     function Number_Of_Stars_Added return Natural;
 
@@ -168,6 +171,16 @@ package body Alignment is
   end Set;
 
 
+  procedure Set (Ra_Offset  : Angle.Degrees;
+                 Dec_Offset : Angle.Degrees) is
+  begin
+    Log.Write ("Ra_Offset :" & Ra_Offset'image);
+    Log.Write ("Dec_Offset:" & Dec_Offset'image);
+    Control.Set_Offsets (Ra  => Ra_Offset,
+                         Dec => Dec_Offset);
+  end Set;
+
+
   function Cone_Error return Angle.Value is
   begin
     return Control.Cone_Error;
@@ -202,7 +215,7 @@ package body Alignment is
 
 
   function Synchronized_Offsets return Offsets is
-    The_Offsets : constant Offsets := Control.Three_Star_Synchronized_Offsets;
+    The_Offsets : constant Offsets := Control.Star_Synchronized_Offsets;
   begin
     Control.Clear_All_Corrections;
     return The_Offsets;
@@ -399,6 +412,14 @@ package body Alignment is
     end Set;
 
 
+    procedure Set_Offsets (Ra  : Angle.Degrees;
+                           Dec : Angle.Degrees) is
+    begin
+      The_Ra_Correction  := Ra;
+      The_Dec_Correction := Dec;
+    end Set_Offsets;
+
+
     procedure Set (The_Pole_Height_Offset : Angle.Degrees;
                    The_Pole_Az_Offset     : Angle.Degrees;
                    The_Ra_Rotation        : Angle.Degrees;
@@ -456,11 +477,11 @@ package body Alignment is
     end Three_Star_Corrections;
 
 
-    function Three_Star_Synchronized_Offsets return Offsets is
+    function Star_Synchronized_Offsets return Offsets is
     begin
-      Log.Write ("Third star Synchronized_Offsets");
+      Log.Write ("Star Synchronized_Offsets");
       return (Device.D1 => The_Ra_Correction, Device.D2 => The_Dec_Correction);
-    end Three_Star_Synchronized_Offsets;
+    end Star_Synchronized_Offsets;
 
   end Control;
 

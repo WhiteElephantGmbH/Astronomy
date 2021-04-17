@@ -24,7 +24,7 @@ with File;
 with Language;
 with Motor;
 with Os;
-with Pole_Axis;
+with Picture;
 with Site;
 with Strings;
 with Text;
@@ -103,7 +103,7 @@ package body Parameter is
   begin
     case Os.Family is
     when Os.Osx =>
-      return "/usr/" & Os.User_Name & "/Downloads/getframe.php.jpeg";
+      return "/Users/" & Os.User_Name & "/Downloads/getframe.php.jpeg";
     when Os.Windows =>
       return "D:\temp\Picture.jpeg";
     when Os.Linux =>
@@ -313,8 +313,13 @@ package body Parameter is
       Put ("");
       Put ("[" & Picture_Id & "]");
       Put (Filename_Key & " = " & Default_Picture_Filename);
-      Put (Height_Key & "   = 2.97" & Degree_Unit);
-      Put (Width_Key & "    = 4.46" & Degree_Unit);
+      if Site.Is_Defined then -- EQ6
+        Put (Height_Key & "   = 0.66" & Degree_Unit);
+        Put (Width_Key & "    = 1.00" & Degree_Unit);
+      else -- M-Zero
+        Put (Height_Key & "   = 2.97" & Degree_Unit);
+        Put (Width_Key & "    = 4.46" & Degree_Unit);
+      end if;
       Put ("");
       Put ("[" & Stellarium_Id & "]");
       Put (Port_Key & "      = 10001");
@@ -472,9 +477,9 @@ package body Parameter is
       end;
 
       Set (Picture_Handle);
-      Pole_Axis.Define_Picture (Filename => String_Of (Filename_Key),
-                                Height   => Angle_Of (Height_Key),
-                                Width    => Angle_Of (Width_Key));
+      Picture.Define (Name   => String_Of (Filename_Key),
+                      Height => Angle_Of (Height_Key),
+                      Width  => Angle_Of (Width_Key));
 
       Set (Stellarium_Handle);
       begin

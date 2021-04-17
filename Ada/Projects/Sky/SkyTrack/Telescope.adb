@@ -20,6 +20,7 @@ with Device;
 with Matrix;
 with Numerics;
 with Parameter;
+with Picture;
 with Site;
 with System;
 with Traces;
@@ -129,10 +130,36 @@ package body Telescope is
   end Define_Space_Access;
 
 
+  function Actual_Target_Direction return Space.Direction is
+  begin
+    return Next_Get_Direction (Next_Id, Time.Universal);
+  end Actual_Target_Direction;
+
+
   procedure Synch_On_Target is
   begin
     Control.Synch_On_Target;
   end Synch_On_Target;
+
+
+  procedure Enable_Synch_On_Picture is
+    use type Space.Direction;
+    use type Angle.Signed;
+    use type Angle.Value;
+    Actual_Direction : constant Space.Direction := Actual_Target_Direction;
+    The_Direction    : Space.Direction;
+  begin
+    Picture.Read (Actual_Direction);
+    The_Direction := Actual_Direction - Picture.Actual_Direction;
+    Alignment.Set (Ra_Offset  => Angle.Degrees'(+Angle.Signed'(+Space.Ra_Of (The_Direction))),
+                   Dec_Offset => Angle.Degrees'(+Angle.Signed'(+Space.Dec_Of (The_Direction))));
+    User.Enable_Align_On_Picture;
+  exception
+  when Picture.Not_Solved =>
+    Log.Warning ("No sulution for synch on picture");
+  when Item: others =>
+    Log.Termination (Item);
+  end Enable_Synch_On_Picture;
 
 
   procedure Synch_Park_Position is
@@ -466,7 +493,7 @@ package body Telescope is
       if Next_Get_Direction = null then
         Log.Error ("undefined synch target");
       else
-        Target_Direction := Next_Get_Direction (Next_Id, Time.Universal);
+        Target_Direction := Actual_Target_Direction;
         if Target_Direction = Space.Unknown_Direction then
           Log.Error ("undefined synch target direction");
         else

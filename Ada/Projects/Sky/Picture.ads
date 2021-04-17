@@ -29,10 +29,15 @@ package Picture is
   Not_Solved      : exception renames Astap.Not_Solved;
   Undefined_Value : exception;
 
-  procedure Read (Filename    : String;
-                  Height      : Angle.Degrees;
-                  Width       : Angle.Degrees;
-                  Search_From : Space.Direction);
+  procedure Define (Name   : String;
+                    Height : Angle.Degrees;
+                    Width  : Angle.Degrees);
+
+  function Filename return String;
+
+  function Exists return Boolean;
+
+  procedure Read (Search_From : Space.Direction);
 
   function Elevation return Integer;
 

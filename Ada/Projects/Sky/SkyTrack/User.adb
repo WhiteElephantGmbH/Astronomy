@@ -35,6 +35,7 @@ with Motor;
 with Numerics;
 with Parameter;
 with Persistent;
+with Picture;
 with Pole_Axis;
 with Refraction;
 with Sky_Line;
@@ -56,7 +57,7 @@ package body User is
   Operation_Control_Key : constant String := "Operation";
 
   Control_Page         : Gui.Page;
-  Goto_Or_Park_Button  : Gui.Button;
+  First_Control_Button : Gui.Button;
   Stop_Or_Synch_Button : Gui.Button;
   Progress_Bar         : Gui.Progress_Bar;
   Target               : Gui.Plain_Edit_Box;
@@ -132,6 +133,9 @@ package body User is
   Last_Target_Selection : Target_Selection;
 
   Autoguiding_Change : Boolean := False;
+
+  Align_On_Picture_Change     : Boolean := False;
+  Align_On_Picture_Is_Enabled : Boolean := False;
 
   Synchronizing_Is_Enabled : Boolean := False;
 
@@ -451,14 +455,20 @@ package body User is
       Define_Park_Position;
       return;
     end if;
-    if (The_Status /= Information.Status) or (Last_Target_Selection /= The_Target_Selection) or Autoguiding_Change then
+    if (The_Status /= Information.Status)
+      or (Last_Target_Selection /= The_Target_Selection)
+      or Autoguiding_Change
+      or Align_On_Picture_Change
+    then
       Autoguiding_Change := False;
+      Align_On_Picture_Change := False;
       The_Status := Information.Status;
       Last_Target_Selection := The_Target_Selection;
       Synchronizing_Is_Enabled := False;
       case The_Target_Selection is
       when Park_Position =>
-        Gui.Set_Text (Goto_Or_Park_Button, "Park");
+        Align_On_Picture_Is_Enabled := False;
+        Gui.Set_Text (First_Control_Button, "Park");
         case The_Status is
         when Telescope.Startup | Telescope.Stopped | Telescope.Ready =>
           Gui.Set_Text (Stop_Or_Synch_Button, "Synch");
@@ -469,14 +479,21 @@ package body User is
           null;
         end case;
       when Target_Object =>
-        Gui.Set_Text (Goto_Or_Park_Button, "Goto");
+        Gui.Set_Text (First_Control_Button, "Goto");
         if Parameter.Synch_On_Targets then
           case The_Status is
           when Telescope.Ready | Telescope.Stopped | Telescope.Parked =>
             Gui.Set_Text (Stop_Or_Synch_Button, "Synch");
             Synchronizing_Is_Enabled := True;
+            Align_On_Picture_Is_Enabled := False;
+          when Telescope.Tracking =>
+            if Align_On_Picture_Is_Enabled then
+              Gui.Set_Text (First_Control_Button, "Align");
+            end if;
+            Gui.Set_Text (Stop_Or_Synch_Button, "Stop");
           when others =>
             Gui.Set_Text (Stop_Or_Synch_Button, "Stop");
+            Align_On_Picture_Is_Enabled := False;
           end case;
         else
           Gui.Set_Text (Stop_Or_Synch_Button, "Stop");
@@ -488,7 +505,7 @@ package body User is
       when Telescope.Startup | Telescope.Disconnected | Telescope.Directing | Telescope.Stopping =>
         Disable_Operation_Buttons;
         Gui.Disable (Stop_Or_Synch_Button);
-        Gui.Disable (Goto_Or_Park_Button);
+        Gui.Disable (First_Control_Button);
       when Telescope.Ready | Telescope.Stopped =>
         Disable_Operation_Buttons (Is_Stopped => The_Status = Telescope.Stopped);
         case The_Target_Selection is
@@ -503,12 +520,12 @@ package body User is
         when others =>
           raise Program_Error;
         end case;
-        Gui.Enable (Goto_Or_Park_Button);
+        Gui.Enable (First_Control_Button);
       when Telescope.Parked =>
         Disable_Operation_Buttons;
         case The_Target_Selection is
         when Park_Position =>
-          Gui.Disable (Goto_Or_Park_Button);
+          Gui.Disable (First_Control_Button);
           Gui.Disable (Stop_Or_Synch_Button);
         when Target_Object =>
           if Synchronizing_Is_Enabled then
@@ -516,29 +533,29 @@ package body User is
           else
             Gui.Disable (Stop_Or_Synch_Button);
           end if;
-          Gui.Enable (Goto_Or_Park_Button);
+          Gui.Enable (First_Control_Button);
         when others =>
           raise Program_Error;
         end case;
       when Telescope.Adjusting =>
         Disable_Operation_Buttons;
-        Gui.Disable (Goto_Or_Park_Button);
+        Gui.Disable (First_Control_Button);
       when Telescope.Parking =>
         Disable_Operation_Buttons;
         Gui.Enable (Stop_Or_Synch_Button);
-        Gui.Disable (Goto_Or_Park_Button);
+        Gui.Disable (First_Control_Button);
       when Telescope.Waiting =>
         Disable_Operation_Buttons;
         Gui.Disable (Stop_Or_Synch_Button);
-        Gui.Enable (Goto_Or_Park_Button);
+        Gui.Enable (First_Control_Button);
       when Telescope.Positioning | Telescope.Approaching | Telescope.Preparing =>
         Disable_Operation_Buttons;
         Gui.Enable (Stop_Or_Synch_Button);
-        Gui.Enable (Goto_Or_Park_Button);
+        Gui.Enable (First_Control_Button);
       when Telescope.Tracking =>
         Enable_Operation_Buttons;
         Gui.Enable (Stop_Or_Synch_Button);
-        Gui.Enable (Goto_Or_Park_Button);
+        Gui.Enable (First_Control_Button);
       end case;
     end if;
     Gui.Set_Status_Line (Information.Status'img);
@@ -774,20 +791,26 @@ package body User is
   end Perform_Stop_Or_Synch;
 
 
-  procedure Perform_Goto_Or_Park is
+  procedure Perform_First_Control is
   begin
     case The_Target_Selection is
     when Park_Position =>
       Perform_Park;
     when Target_Object =>
-      Perform_Goto;
+      if Align_On_Picture_Is_Enabled then
+        Align_On_Picture_Is_Enabled := False;
+        Align_On_Picture_Change := True;
+        Signal_Action (Align);
+      else
+        Perform_Goto;
+      end if;
     when No_Target =>
       raise Program_Error;
     end case;
   exception
   when others =>
-    Log.Error ("Perform_Goto_Or_Park");
-  end Perform_Goto_Or_Park;
+    Log.Error ("Perform_First_Control");
+  end Perform_First_Control;
 
 
   function Target_Name return String is
@@ -1173,7 +1196,7 @@ package body User is
     end case;
   exception
   when Pole_Axis.Picture_Not_Found =>
-    Show_Error ("Picture " & Pole_Axis.Picture_Filename & " not found");
+    Show_Error ("Picture " & Picture.Filename & " not found");
   when Pole_Axis.Picture_Not_Solved =>
     Show_Error ("Picture not solved");
   when others =>
@@ -1245,7 +1268,7 @@ package body User is
         end loop;
       end if;
       Is_Entering_Number := False;
-    elsif The_Target_Selection = Target_Object and then Gui.Is_Enabled (Goto_Or_Park_Button) then
+    elsif The_Target_Selection = Target_Object and then Gui.Is_Enabled (First_Control_Button) then
       Signal_Action (Go_To);
     end if;
   end Enter_Number;
@@ -1464,8 +1487,8 @@ package body User is
                                       The_Style  => (Gui.Buttons_Fill_Horizontally => True,
                                                      Gui.Buttons_Fill_Vertically   => False));
 
-        Goto_Or_Park_Button := Gui.Create (Control_Page, "Goto", Perform_Goto_Or_Park'access);
-        Gui.Disable (Goto_Or_Park_Button);
+        First_Control_Button := Gui.Create (Control_Page, "Goto", Perform_First_Control'access);
+        Gui.Disable (First_Control_Button);
         Stop_Or_Synch_Button := Gui.Create (Control_Page, "Stop", Perform_Stop_Or_Synch'access);
         Gui.Disable (Stop_Or_Synch_Button);
         Progress_Bar := Gui.Create (Control_Page);
@@ -1795,5 +1818,12 @@ package body User is
   begin
     Set_Park_Position;
   end Define_Park_Position;
+
+
+  procedure Enable_Align_On_Picture is
+  begin
+    Align_On_Picture_Is_Enabled := True;
+    Align_On_Picture_Change := True;
+  end Enable_Align_On_Picture;
 
 end User;

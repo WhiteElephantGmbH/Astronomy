@@ -26,6 +26,9 @@ package body Exif is
 
   The_Orientation : Image_Orientation := Undefined;
 
+  The_Image_Width  : Size := Undefined_Size;
+  The_Image_Height : Size := Undefined_Size;
+
   The_Altitude_Ref : See_Level := Undefined;
   The_Altitude     : Height    := Undefined_Height;
 
@@ -38,10 +41,23 @@ package body Exif is
   The_Time_Stamp : Values := Undefined_Values;
   The_Date_Stamp : Date   := Undefined_Date;
 
+
   function Orientation return Image_Orientation is
   begin
     return The_Orientation;
   end Orientation;
+
+
+  function Image_Height return Size is
+  begin
+    return The_Image_Height;
+  end Image_Height;
+
+
+  function Image_Width return Size is
+  begin
+    return The_Image_Width;
+  end Image_Width;
 
 
   function Altitude_Ref return See_Level is
@@ -117,7 +133,12 @@ package body Exif is
 
   -- Main Tags
   Orientation_Tag : constant := 16#0112#;
+  Exif_Offset_Tag : constant := 16#8769#;
   Gps_Info_Tag    : constant := 16#8825#;
+
+  -- Sub Tags
+  Exif_Image_Width_Tag  : constant := 16#A002#;
+  Exif_Image_Height_Tag : constant := 16#A003#;
 
   -- Gps Tags
   Gps_Latitude_Ref_Tag  : constant := 16#01#;
@@ -366,6 +387,44 @@ package body Exif is
       return Trimmed (Image_Of ("", Values));
     end Image_Of;
 
+    procedure Get_Sub_Image_File_Directory is
+      Entry_Count : constant Natural := Natural(Word'(Get));
+    begin
+      for Unused in 1 .. Entry_Count loop
+        declare
+          Sub_Entry : constant IFD_Entry := Get_Entry;
+          Next_IFD  : constant File_Position := Actual_Position;
+
+          function Read_Size return Size is
+            Values : constant Words := Unsigned_Shorts_Of (Sub_Entry);
+          begin
+            if Values'length = 1 then
+              return Size(Values(Values'first));
+            end if;
+            return Undefined_Size;
+          exception
+          when others =>
+            return Undefined_Size;
+          end Read_Size;
+
+        begin
+          case Sub_Entry.Tag is
+          when Exif_Image_Width_Tag =>
+            The_Image_Width := Read_Size;
+            Log.Write ("Image Width  :" & The_Image_Width'image);
+          when Exif_Image_Height_Tag =>
+            The_Image_Height := Read_Size;
+            Log.Write ("Image Height :" & The_Image_Height'image);
+          when Gps_Altitude_Ref_Tag =>
+            null;
+          when others =>
+            null;
+          end case;
+          Set (Position => Next_IFD);
+        end;
+      end loop;
+    end Get_Sub_Image_File_Directory;
+
 
     procedure GPS_Info is
       Entry_Count : constant Natural := Natural(Word'(Get));
@@ -438,8 +497,9 @@ package body Exif is
 
 
     procedure Get_Main_Image_File_Directory is
-      Entry_Count    : constant Natural := Natural(Word'(Get));
-      The_Gps_Offset : Longword := 0;
+      Entry_Count     : constant Natural := Natural(Word'(Get));
+      The_Exif_Offset : Longword := 0;
+      The_Gps_Offset  : Longword := 0;
     begin
       for Unused in 1 .. Entry_Count loop
         declare
@@ -462,7 +522,9 @@ package body Exif is
           case Main_Entry.Tag is
           when Orientation_Tag =>
             The_Orientation := Read_Orientation;
-            Log.Write ("Orientation : " & Orientation'image);
+            Log.Write ("Orientation  : " & Orientation'image);
+          when Exif_Offset_Tag =>
+            The_Exif_Offset := Main_Entry.Data;
           when Gps_Info_Tag =>
             The_Gps_Offset := Main_Entry.Data;
           when others =>
@@ -471,6 +533,10 @@ package body Exif is
           Set (Position => Next_IFD);
         end;
       end loop;
+      if The_Exif_Offset /= 0 then
+        Set (Offset => The_Exif_Offset);
+        Get_Sub_Image_File_Directory;
+      end if;
       if The_Gps_Offset /= 0 then
         Set (Offset => The_Gps_Offset);
         GPS_Info;
@@ -489,6 +555,8 @@ package body Exif is
       use type OS.File_Descriptor;
     begin
       The_Orientation := Undefined;
+      The_Image_Height := Undefined_Size;
+      The_Image_Width := Undefined_Size;
       The_Altitude_Ref := Undefined;
       The_Altitude := Undefined_Height;
       The_Latitude_Ref := Undefined_Ref;

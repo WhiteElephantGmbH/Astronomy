@@ -65,11 +65,25 @@ package body Astap is
       raise Not_Solved;
     end Handle_Result;
 
+    function Ra_Image return String is
+      type Ra_Value is delta 0.001 range 0.0 .. 24.0;
+      Value : constant Degrees := Ra / 15.0;
+    begin
+      return Ra_Value(Value)'img;
+    end Ra_Image;
+
     type Value is delta 0.01 range 0.0 .. 360.0;
 
+    function Spd_Image return String is
+      Spd : Degrees := Dec + 90.0;
+    begin
+      if Spd > 360.0 then
+        Spd := Spd - 360.0;
+      end if;
+      return Value(Spd)'img;
+    end Spd_Image;
+
     Height_Image : constant String := Value(Height)'image;
-    Ra_Image     : constant String := Value(Ra)'image;
-    Spd_Image    : constant String := Value(Dec + 90.0)'image;
     Parameters   : constant String
       := "-f " & Filename & " -ra" & Ra_Image & " -spd" & Spd_Image & " -fov" & Height_Image & " -r 180";
 

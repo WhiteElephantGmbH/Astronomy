@@ -32,6 +32,7 @@ with Network.Tcp;
 with Numerics;
 with Os.Application;
 with Parameter;
+with Picture;
 with Os.Process;
 with Site;
 with Sky_Line;
@@ -415,7 +416,15 @@ package body Control is
     Telescope_Information_Is_Handled : Boolean := False;
 
     procedure Handle_Telescope_Information is
+
+      procedure End_Travelling is
+      begin
+        The_Travelling_Time := 0.0;
+        User.Show (The_Progress => 0);
+      end End_Travelling;
+
       use type Telescope.State;
+
     begin -- Handle_Telescope_Information
       The_Data := Telescope.Information;
       User.Show (The_Data);
@@ -460,9 +469,13 @@ package body Control is
             User.Show (User.Percent(Float(Actual_Duration) * Float(User.Percent'last) / Float(The_Travelling_Time)));
           end if;
         end;
+      when Telescope.Tracking =>
+        End_Travelling;
+        if Picture.Exists then
+          Telescope.Enable_Synch_On_Picture;
+        end if;
       when others =>
-        The_Travelling_Time := 0.0;
-        User.Show (The_Progress => 0);
+        End_Travelling;
       end case;
       Lx200.Set (The_Data.Actual_Direction);
       Stellarium.Set (The_Data.Actual_Direction);

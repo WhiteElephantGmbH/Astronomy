@@ -16,7 +16,9 @@
 pragma Style_White_Elephant;
 
 with Astro;
+with File;
 with Site;
+with Text;
 with Traces;
 
 package body Picture is
@@ -28,29 +30,53 @@ package body Picture is
   The_Dec : Astap.Degrees;
 
 
-  procedure Read (Filename    : String;
-                  Height      : Angle.Degrees;
-                  Width       : Angle.Degrees;
-                  Search_From : Space.Direction) is
+  The_Filename : Text.String;
+  The_Height   : Angle.Degrees;
+  The_Width    : Angle.Degrees;
 
-    The_Height : Astap.Degrees;
 
-    use all type Exif.Image_Orientation;
+  procedure Define (Name   : String;
+                    Height : Angle.Degrees;
+                    Width  : Angle.Degrees) is
+  begin
+    The_Filename := Text.String_Of (Name);
+    The_Height := Height;
+    The_Width := Width;
+  end Define;
+
+
+  function Filename return String is
+  begin
+    return Text.String_Of (The_Filename);
+  end Filename;
+
+
+  function Exists return Boolean is
+  begin
+    return File.Exists (Filename);
+  end Exists;
+
+
+  procedure Read (Search_From : Space.Direction) is
+
+    Actual_Height : Astap.Degrees;
+
     use type Angle.Value;
     use type Angle.Degrees;
+    use type Exif.Size;
 
   begin
+    Log.Write ("Read - RA: " & Space.Ra_Image_Of (Search_From) & " - DEC: " & Space.Dec_Image_Of (Search_From));
     Solved := False;
     Exif.Read (Filename);
     The_Ra := Astap.Degrees(Angle.Degrees'(+Space.Ra_Of (Search_From)));
     The_Dec := Astap.Degrees(Angle.Degrees'(+Space.Dec_Of (Search_From)));
-    case Exif.Orientation is
-    when Undefined =>
-      Log.Warning ("Orientation Undefined");
+    if (Exif.Image_Height = Exif.Undefined_Size) or (Exif.Image_Width = Exif.Undefined_Size) then
+      Log.Warning ("Image size undefined");
       begin
         -- try width
         Astap.Solve (Filename => Filename,
-                     Height   => Astap.Degrees(Width),
+                     Height   => Astap.Degrees(The_Width),
                      Ra       => The_Ra,
                      Dec      => The_Dec);
         Solved := True;
@@ -58,18 +84,22 @@ package body Picture is
       exception
       when Not_Solved =>
         -- when not solved try height
-        The_Height := Astap.Degrees(Height);
+        Actual_Height := Astap.Degrees(The_Height);
       end;
-    when Horizontal | Mirror_Horizontal | Rotate_180 | Mirror_Vertical =>
-      The_Height := Astap.Degrees(Height);
-    when Mirror_Horizontal_And_Rotate_270 | Rotate_90 | Mirror_Horizontal_And_Rotate_90 | Rotate_270 =>
-      The_Height := Astap.Degrees(Width);
-    end case;
+    elsif Exif.Image_Height < Exif.Image_Width then
+      Actual_Height := Astap.Degrees(The_Height);
+    else
+      Actual_Height := Astap.Degrees(The_Width);
+    end if;
     Astap.Solve (Filename => Filename,
-                 Height   => The_Height,
+                 Height   => Actual_Height,
                  Ra       => The_Ra,
                  Dec      => The_Dec);
+    File.Delete (Filename);
     Solved := True;
+  exception
+  when Not_Solved =>
+    File.Delete (Filename);
   end Read;
 
 

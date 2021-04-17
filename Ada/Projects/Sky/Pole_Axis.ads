@@ -15,18 +15,10 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Angle;
-
 package Pole_Axis is
 
   Picture_Not_Found  : exception;
   Picture_Not_Solved : exception;
-
-  procedure Define_Picture (Filename : String;
-                            Height   : Angle.Degrees;
-                            Width    : Angle.Degrees);
-
-  function Picture_Filename return String;
 
   procedure Clear;
 

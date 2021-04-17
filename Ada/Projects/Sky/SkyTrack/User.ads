@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2011 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2011 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -63,6 +63,8 @@ package User is
   procedure Update_Targets;
 
   procedure Define_Park_Position;
+
+  procedure Enable_Align_On_Picture;
 
   function Target_Name return String;
 

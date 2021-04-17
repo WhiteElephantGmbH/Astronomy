@@ -26,6 +26,10 @@ package Exif is
   
   Undefined_Ref : constant Reference := ' ';
   
+  type Size is new Unsigned.Word;
+  
+  Undefined_Size : constant Size := 0;
+
   type Longword is new Unsigned.Longword;
 
   type Rational_Value is record
@@ -56,6 +60,10 @@ package Exif is
   procedure Read (Filename : String);
 
   function Orientation return Image_Orientation;
+
+  function Image_Height return Size;
+
+  function Image_Width return Size;
 
   function Altitude_Ref return See_Level;
 

@@ -16,38 +16,16 @@
 pragma Style_White_Elephant;
 
 with Alignment;
+with Angle;
 with Earth;
-with File;
 with Picture;
 with Site;
 with Space;
-with Text;
 with Traces;
 
 package body Pole_Axis is
 
   package Log is new Traces ("Pole_Axis");
-
-
-  The_Picture_Filename : Text.String;
-  The_Picture_Height   : Angle.Degrees;
-  The_Picture_Width    : Angle.Degrees;
-
-
-  procedure Define_Picture (Filename : String;
-                            Height   : Angle.Degrees;
-                            Width    : Angle.Degrees) is
-  begin
-    The_Picture_Filename := Text.String_Of (Filename);
-    The_Picture_Height := Height;
-    The_Picture_Width := Width;
-  end Define_Picture;
-
-
-  function Picture_Filename return String is
-  begin
-    return Text.String_Of (The_Picture_Filename);
-  end Picture_Filename;
 
 
   function Image_Of (Item : Angle.Value) return String is
@@ -61,10 +39,7 @@ package body Pole_Axis is
 
   procedure Evaluate_Direction (The_Direction : in out Earth.Direction) is
   begin
-    Picture.Read (Filename    => Picture_Filename,
-                  Height      => The_Picture_Height,
-                  Width       => The_Picture_Width,
-                  Search_From => Space.North_Pole);
+    Picture.Read (Search_From => Space.North_Pole);
     if not Site.Is_Defined then
       declare
         The_Site : Site.Data;
@@ -83,7 +58,6 @@ package body Pole_Axis is
       end;
     end if;
     The_Direction := Picture.Direction;
-    File.Delete (Picture_Filename);
   exception
   when Picture.File_Not_Found =>
     raise Picture_Not_Found;

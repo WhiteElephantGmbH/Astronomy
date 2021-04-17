@@ -50,6 +50,9 @@ package Alignment is
 
   procedure Set (Pole_Offsets : Earth.Direction);
 
+  procedure Set (Ra_Offset  : Angle.Degrees;
+                 Dec_Offset : Angle.Degrees);
+
   function Cone_Error return Angle.Value;
 
   function Pole_Offsets return Earth.Direction;
