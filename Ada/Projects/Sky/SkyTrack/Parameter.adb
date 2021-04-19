@@ -17,6 +17,7 @@ pragma Style_White_Elephant;
 
 with Ada.Text_IO;
 with Application;
+with Astap;
 with Configuration;
 with Definite_Doubly_Linked_Lists;
 with Error;
@@ -64,6 +65,7 @@ package body Parameter is
   Stellarium_Id  : constant String := "Stellarium";
   Lx200_Id       : constant String := "Lx200";
   Picture_Id     : constant String := "Picture";
+  Astap_Key      : constant String := "ASTAP";
   Filename_Key   : constant String := "Filename";
   Height_Key     : constant String := "Height";
   Width_Key      : constant String := "Width";
@@ -97,6 +99,19 @@ package body Parameter is
   --Stellarium
   The_Stellarium_Port   : Network.Port_Number;
   The_Magnitude_Maximum : Stellarium.Magnitude;
+
+
+  function Default_Astap_Executable return String is
+  begin
+    case Os.Family is
+    when Os.Osx =>
+      return "/Applications/ASTAP.app/Contents/MacOS/astap";
+    when Os.Windows =>
+      return "C:\Program Files\astap\astap.exe";
+    when Os.Linux =>
+      return "astap.exe";
+    end case;
+  end Default_Astap_Executable;
 
 
   function Default_Picture_Filename return String is
@@ -224,6 +239,16 @@ package body Parameter is
   end Angles_Of;
 
 
+  function Filename_Of (Key : String) return String is
+    Name : constant String := String_Of (Key);
+  begin
+    if not File.Exists (Name) then
+      Error.Raise_With ("Filename " & Name & " not found for " & Key);
+    end if;
+    return Name;
+  end Filename_Of;
+
+
   function Value_Of (Key  : String;
                      Unit : String := "") return Integer is
     Item : constant String := String_Of (Key);
@@ -312,6 +337,7 @@ package body Parameter is
       Put (Port_Key & " = 4030");
       Put ("");
       Put ("[" & Picture_Id & "]");
+      Put (Astap_Key & "    = " & Default_Astap_Executable);
       Put (Filename_Key & " = " & Default_Picture_Filename);
       if Site.Is_Defined then -- EQ6
         Put (Height_Key & "   = 0.66" & Degree_Unit);
@@ -477,6 +503,7 @@ package body Parameter is
       end;
 
       Set (Picture_Handle);
+      Astap.Define (Executable => Filename_Of (Astap_Key));
       Picture.Define (Name   => String_Of (Filename_Key),
                       Height => Angle_Of (Height_Key),
                       Width  => Angle_Of (Width_Key));

@@ -15,7 +15,9 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with Ada.Directories;
 with Ada.Unchecked_Conversion;
+with File;
 with GNAT.OS_Lib;
 with Log;
 
@@ -36,26 +38,52 @@ package body Os.Process is
   end Create;
 
 
-  function Created (Executable : String;
-                    Parameters : String := "") return Id is
+  function Created (Executable     : String;
+                    Current_Folder : String := "";
+                    Parameters     : String := "") return Id is
 
     function Convert is new Ada.Unchecked_Conversion (GNAT.OS_Lib.Process_Id, Id_Value);
 
     The_Process_Id : GNAT.OS_Lib.Process_Id;
     The_Arguments  : GNAT.OS_Lib.Argument_List_Access;
 
+    procedure Cleanup is
+      use type GNAT.OS_Lib.Argument_List_Access;
+    begin
+      if The_Arguments /= null then
+        GNAT.OS_Lib.Free (The_Arguments);
+      end if;
+    end Cleanup;
+
     use type GNAT.OS_Lib.Process_Id;
 
   begin -- Create
+    if not File.Exists (Executable) then
+      Log.Write ("Executable " & Executable & " not found");
+      raise Execution_Failed;
+    end if;
     The_Arguments := GNAT.OS_Lib.Argument_String_To_List (Parameters);
+    if Current_Folder /= "" then
+      begin
+        Ada.Directories.Set_Directory (Current_Folder);
+      exception
+      when others =>
+        Log.Write ("Current_Folder " & Current_Folder & " not set");
+        raise Execution_Failed;
+      end;
+    end if;
     The_Process_Id := GNAT.OS_Lib.Non_Blocking_Spawn (Program_Name => Executable,
                                                       Args         => The_Arguments.all);
-    GNAT.OS_Lib.Free (The_Arguments);
+    Cleanup;
     return (Is_Defined => The_Process_Id /= GNAT.OS_Lib.Invalid_Pid,
             Value      => Convert (The_Process_Id));
   exception
+  when Execution_Failed =>
+    Cleanup;
+    raise;
   when Item: others =>
     Log.Write ("Os.Process.Create", Item);
+    Cleanup;
     raise Execution_Failed;
   end Created;
 
@@ -104,8 +132,17 @@ package body Os.Process is
       Log.Write ("Os.Process.Execution_Of - Environment NOT SUPPORTED");
       raise Not_Supported;
     elsif Current_Folder /= "" then
-      Log.Write ("Os.Process.Execution_Of - Current_Folder NOT SUPPORTED");
-      raise Not_Supported;
+      begin
+        Ada.Directories.Set_Directory (Current_Folder);
+      exception
+      when others =>
+        Log.Write ("Current_Folder " & Current_Folder & " not set");
+        raise Execution_Failed;
+      end;
+    end if;
+    if not File.Exists (Executable) then
+      Log.Write ("Executable " & Executable & " not found");
+      raise Execution_Failed;
     end if;
     if not Handle_Output then
       Log.Write ("Os.Process.Execution_Of - Output must be handled");
@@ -144,6 +181,9 @@ package body Os.Process is
       return The_String(The_String'first .. The_String'first + The_Count - 1);
     end;
   exception
+  when Execution_Failed =>
+    Cleanup;
+    raise;
   when Not_Supported =>
     raise;
   when Item: others =>

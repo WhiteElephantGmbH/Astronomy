@@ -142,24 +142,43 @@ package body Telescope is
   end Synch_On_Target;
 
 
-  procedure Enable_Synch_On_Picture is
+  function Synch_On_Picture return Boolean is
+    Actual_Direction : constant Space.Direction := Actual_Target_Direction;
+  begin
+    return Picture.Solve (Actual_Direction);
+  exception
+  when Picture.Not_Solved =>
+    Log.Warning ("No sulution for synch on picture");
+    return False;
+  when Item: others =>
+    Log.Termination (Item);
+    return False;
+  end Synch_On_Picture;
+
+
+  function Synch_On_Picture_Complete return Boolean is
     use type Space.Direction;
     use type Angle.Signed;
     use type Angle.Value;
     Actual_Direction : constant Space.Direction := Actual_Target_Direction;
     The_Direction    : Space.Direction;
   begin
-    Picture.Read (Actual_Direction);
-    The_Direction := Actual_Direction - Picture.Actual_Direction;
-    Alignment.Set (Ra_Offset  => Angle.Degrees'(+Angle.Signed'(+Space.Ra_Of (The_Direction))),
-                   Dec_Offset => Angle.Degrees'(+Angle.Signed'(+Space.Dec_Of (The_Direction))));
-    User.Enable_Align_On_Picture;
+    if Picture.Solved then
+      The_Direction := Actual_Direction - Picture.Actual_Direction;
+      Alignment.Set (Ra_Offset  => Angle.Degrees'(+Angle.Signed'(+Space.Ra_Of (The_Direction))),
+                     Dec_Offset => Angle.Degrees'(+Angle.Signed'(+Space.Dec_Of (The_Direction))));
+      User.Enable_Align_On_Picture;
+      return True;
+    end if;
+    return False;
   exception
   when Picture.Not_Solved =>
     Log.Warning ("No sulution for synch on picture");
+    return True;
   when Item: others =>
     Log.Termination (Item);
-  end Enable_Synch_On_Picture;
+    return True;
+  end Synch_On_Picture_Complete;
 
 
   procedure Synch_Park_Position is
@@ -232,8 +251,9 @@ package body Telescope is
 
     Event_After_Stop : Event := No_Event;
 
-    The_User_Command : Command;
-    Is_Aligning      : Boolean := False;
+    The_User_Command         : Command;
+    Is_Aligning              : Boolean := False;
+    Picture_Aligning_Enabled : Boolean := False;
 
     Id            : Name.Id;
     Get_Direction : Get_Space_Access;
@@ -425,10 +445,24 @@ package body Telescope is
     end Time_Control_End;
 
 
+    procedure Set_State (Item : State) is
+    begin
+      The_State := Item;
+    end Set_State;
+
+
+    procedure Set_Stopping is
+    begin
+      Picture_Aligning_Enabled := False;
+      Picture.Stop_Solving;
+      Set_State (Stopping);
+    end Set_Stopping;
+
+
     procedure Stop_And_Park is
     begin
       Motor.Stop;
-      The_State := Stopping;
+      Set_Stopping;
       Event_After_Stop := Park;
     end Stop_And_Park;
 
@@ -436,7 +470,7 @@ package body Telescope is
     procedure Stop_And_Position is
     begin
       Motor.Stop;
-      The_State := Stopping;
+      Set_Stopping;
       Event_After_Stop := Position;
     end Stop_And_Position;
 
@@ -444,7 +478,7 @@ package body Telescope is
     procedure Stop_And_Synch is
     begin
       Motor.Stop;
-      The_State := Stopping;
+      Set_Stopping;
       Event_After_Stop := Synch_On_Target;
     end Stop_And_Synch;
 
@@ -452,7 +486,7 @@ package body Telescope is
     procedure Stop_And_Follow is
     begin
       Motor.Stop;
-      The_State := Stopping;
+      Set_Stopping;
       Event_After_Stop := Follow;
     end Stop_And_Follow;
 
@@ -464,7 +498,7 @@ package body Telescope is
       else
         Motor.Stop;
       end if;
-      The_State := Stopping;
+      Set_Stopping;
     end Stop_Target;
 
 
@@ -472,7 +506,7 @@ package body Telescope is
     begin
       The_Time_When_Stopped := Motor.Time_When_Positioned (Numerics.Position_Of (Name.Direction_Of (The_Landmark)));
       if The_Time_When_Stopped > Time.In_The_Past then
-        The_State := Positioning;
+        Set_State (Positioning);
       end if;
     end Do_Position;
 
@@ -481,7 +515,7 @@ package body Telescope is
     begin
       Alignment.Clear_Corrections;
       The_Time_When_Stopped := Motor.Time_When_Parked;
-      The_State := Parking;
+      Set_State (Parking);
     end Do_Park;
 
 
@@ -489,7 +523,7 @@ package body Telescope is
       Target_Direction : Space.Direction;
       use type Space.Direction;
     begin
-      The_State := Stopped;
+      Set_State (Stopped);
       if Next_Get_Direction = null then
         Log.Error ("undefined synch target");
       else
@@ -515,7 +549,7 @@ package body Telescope is
 
     procedure Handle_Positioned is
     begin
-      The_State := Stopped;
+      Set_State (Stopped);
       Time_Control_End;
       case Event_After_Stop is
       when Park =>
@@ -584,7 +618,7 @@ package body Telescope is
     begin
       Motor.Adjust (Device.D1, The_Speed * First_Adjust_Factor);
       The_Adjusting_Kind := First_Adjusting;
-      The_State := Adjusting;
+      Set_State (Adjusting);
     end Adjust_First;
 
 
@@ -595,7 +629,7 @@ package body Telescope is
     begin
       Motor.Adjust (Device.D2, The_Speed * Second_Adjust_Factor);
       The_Adjusting_Kind := Second_Adjusting;
-      The_State := Adjusting;
+      Set_State (Adjusting);
     end Adjust_Second;
 
 
@@ -605,7 +639,7 @@ package body Telescope is
       The_Adjusting_Start_Time := Time.Universal;
       The_Adjusting_End_Time := Time.In_The_Future;
       The_Adjusting_Kind := Time_Adjusting;
-      The_State := Adjusting;
+      Set_State (Adjusting);
     end Adjust_Time;
 
 
@@ -619,7 +653,7 @@ package body Telescope is
       when Time_Adjusting =>
         The_Adjusting_End_Time := Time.Universal;
       end case;
-      The_State := Tracking;
+      Set_State (Tracking);
     end End_Adjust;
 
 
@@ -760,14 +794,14 @@ package body Telescope is
       case The_Event is
       when Motor_Startup =>
         Motor.Initialize;
-        The_State := Startup;
+        Set_State (Startup);
       when Motor_Ready =>
         Motor.Define_Positions;
-        The_State := Ready;
+        Set_State (Ready);
       when Motor_Parked =>
-        The_State := Parked;
+        Set_State (Parked);
       when Motor_Positioned =>
-        The_State := Stopped;
+        Set_State (Stopped);
       when others =>
         Motor.Stop;
       end case;
@@ -782,14 +816,14 @@ package body Telescope is
       case The_Event is
       when Motor_Startup =>
         Motor.Initialize;
-        The_State := Startup;
+        Set_State (Startup);
       when Motor_Ready =>
         Motor.Define_Positions;
-        The_State := Ready;
+        Set_State (Ready);
       when Motor_Parked =>
-        The_State := Parked;
+        Set_State (Parked);
       when Motor_Positioned =>
-        The_State := Stopped;
+        Set_State (Stopped);
       when others =>
         null;
       end case;
@@ -810,11 +844,11 @@ package body Telescope is
       when Park =>
         Do_Park;
       when Motor_Parked =>
-        The_State := Parked;
+        Set_State (Parked);
       when Motor_Parking =>
-        The_State := Parking;
+        Set_State (Parking);
       when Motor_Directing =>
-        The_State := Directing;
+        Set_State (Directing);
       when others =>
         null;
       end case;
@@ -835,13 +869,13 @@ package body Telescope is
       when Synch_On_Target =>
         Do_Synch_On_Target;
       when Motor_Ready =>
-        The_State := Ready;
+        Set_State (Ready);
       when Motor_Parking =>
-        The_State := Parking;
+        Set_State (Parking);
       when Motor_Directing =>
-        The_State := Directing;
+        Set_State (Directing);
       when Motor_Positioning =>
-        The_State := Positioning;
+        Set_State (Positioning);
       when Follow =>
         Synchronize_Time;
       when Position =>
@@ -860,12 +894,12 @@ package body Telescope is
     begin
       case The_Event is
       when Motor_Parked =>
-        The_State := Parked;
+        Set_State (Parked);
       when Halt =>
         Motor.Stop;
-        The_State := Stopping;
+        Set_Stopping;
       when Motor_Positioned =>
-        The_State := Stopped;
+        Set_State (Stopped);
       when others =>
         null;
       end case;
@@ -892,13 +926,13 @@ package body Telescope is
       when Synch_On_Target =>
         Do_Synch_On_Target;
       when Motor_Parking =>
-        The_State := Parking;
+        Set_State (Parking);
       when Motor_Parked =>
-        The_State := Parked;
+        Set_State (Parked);
       when Motor_Directing =>
-        The_State := Directing;
+        Set_State (Directing);
       when Motor_Positioning =>
-        The_State := Positioning;
+        Set_State (Positioning);
       when Motor_Positioned =>
         Handle_Positioned;
       when others =>
@@ -915,11 +949,11 @@ package body Telescope is
       when Halt =>
         Event_After_Stop := No_Event;
       when Motor_Parked =>
-        The_State := Parked;
+        Set_State (Parked);
       when Motor_Parking =>
-        The_State := Parking;
+        Set_State (Parking);
       when Motor_Ready =>
-        The_State := Ready;
+        Set_State (Ready);
       when Motor_Positioned =>
         Handle_Positioned;
       when Time_Increment =>
@@ -940,11 +974,11 @@ package body Telescope is
       when User_Command =>
         End_Direct_Handling;
       when Motor_Parked =>
-        The_State := Parked;
+        Set_State (Parked);
       when Motor_Ready =>
-        The_State := Ready;
+        Set_State (Ready);
       when Motor_Positioned =>
-        The_State := Stopped;
+        Set_State (Stopped);
       when others =>
         null;
       end case;
@@ -965,11 +999,11 @@ package body Telescope is
       when Halt =>
         Stop_Target;
       when Motor_Fault =>
-        The_State := Stopping;
+        Set_Stopping;
       when Motor_Positioned =>
         Handle_Positioned;
       when Motor_Parked =>
-        The_State := Parked;
+        Set_State (Parked);
       when Time_Increment =>
         Handle_Time_Increment;
       when others =>
@@ -990,18 +1024,18 @@ package body Telescope is
       when Halt =>
         Stop_Target;
       when Motor_Positioning | Motor_Fault  =>
-        The_State := Stopping;
+        Set_Stopping;
         Time_Control_End;
       when Motor_Positioned =>
         Handle_Positioned;
       when Follow =>
         if not Follow_New_Target then
           Motor.Stop;
-          The_State := Stopping;
+          Set_Stopping;
         end if;
       when Time_Increment =>
         if The_Time_When_Stopped <= Tb then
-          The_State := Waiting;
+          Set_State (Waiting);
         end if;
         Motor.Update;
       when others =>
@@ -1022,14 +1056,14 @@ package body Telescope is
       when Halt =>
         Stop_Target;
       when Motor_Positioning | Motor_Fault =>
-        The_State := Stopping;
+        Set_Stopping;
         Time_Control_End;
       when Motor_Positioned =>
         Handle_Positioned;
       when Follow =>
         if not Follow_New_Target then
           Motor.Stop;
-          The_State := Stopped;
+          Set_State (Stopped);
         end if;
       when Time_Increment =>
         if The_Arriving_Time <= Tb then
@@ -1037,7 +1071,7 @@ package body Telescope is
             Motor.Update;
           else
             Motor.Stop;
-            The_State := Stopped;
+            Set_State (Stopped);
           end if;
         else
           Motor.Update;
@@ -1060,26 +1094,26 @@ package body Telescope is
       when Halt =>
         Stop_Target;
       when Motor_Positioning | Motor_Fault =>
-        The_State := Stopping;
+        Set_Stopping;
         Time_Control_End;
       when Motor_Positioned =>
         Handle_Positioned;
       when Follow =>
         if not Follow_New_Target then
           Motor.Stop;
-          The_State := Stopping;
+          Set_Stopping;
         end if;
       when Time_Increment =>
         if The_Arriving_Time <= Tb then
           if Following_Target then
-            The_State := Tracking;
+            Set_State (Tracking);
             Motor.Update;
           else
             if Goto_Target then
               Motor.Update;
             else
               Motor.Stop;
-              The_State := Stopping;
+              Set_Stopping;
             end if;
           end if;
         else
@@ -1103,16 +1137,17 @@ package body Telescope is
       when Halt =>
         Stop_Target;
       when Motor_Positioning | Motor_Fault =>
-        The_State := Stopping;
+        Set_Stopping;
         Time_Control_End;
       when Motor_Positioned =>
         Handle_Positioned;
       when Follow =>
         if not Follow_New_Target then
           Motor.Stop;
-          The_State := Stopping;
+          Set_Stopping;
         end if;
       when Align =>
+        Picture_Aligning_Enabled := False;
         Is_Aligning := True;
       when Synch_On_Target =>
         Stop_And_Synch;
@@ -1130,12 +1165,20 @@ package body Telescope is
             end if;
             Is_Aligning := False;
           end if;
+          if The_State = Solving then
+            if Synch_On_Picture_Complete then
+              Picture_Aligning_Enabled := True;
+              The_State := Tracking;
+            end if;
+          elsif not Picture_Aligning_Enabled and then Picture.Exists and then Synch_On_Picture then
+            The_State := Solving;
+          end if;
         else
           if Goto_Target then
             Motor.Update;
           else
             Motor.Stop;
-            The_State := Stopping;
+            Set_Stopping;
           end if;
         end if;
       when User_Command =>
@@ -1158,14 +1201,14 @@ package body Telescope is
       when Halt =>
         Motor.Stop;
       when Motor_Positioning | Motor_Fault =>
-        The_State := Stopping;
+        Set_Stopping;
         Time_Control_End;
       when Motor_Positioned =>
         Handle_Positioned;
       when Follow =>
         if not Follow_New_Target then
           Motor.Stop;
-          The_State := Stopping;
+          Set_Stopping;
         end if;
       when Time_Increment =>
         if Following_Target then
@@ -1175,7 +1218,7 @@ package body Telescope is
             Motor.Update;
           else
             Motor.Stop;
-            The_State := Stopping;
+            Set_Stopping;
           end if;
         end if;
       when User_Command =>
@@ -1194,7 +1237,7 @@ package body Telescope is
     accept Start do
       Motor.Open_Communication (Motor_State_Handler'access);
     end Start;
-    The_State := Disconnected;
+    Set_State (Disconnected);
     loop
       begin
         select
@@ -1254,7 +1297,7 @@ package body Telescope is
           accept New_Motor_State (New_State : Motor.State) do
             case New_State is
             when Motor.Disconnected =>
-              The_State := Disconnected;
+              Set_State (Disconnected);
               The_Event := Motor_Disconnected;
             when Motor.Startup =>
               The_Event := Motor_Startup;
@@ -1298,7 +1341,7 @@ package body Telescope is
                                                              The_Data.Adjustment);
             end if;
             case The_State is
-            when Preparing | Waiting | Approaching | Tracking | Adjusting =>
+            when Preparing | Waiting | Approaching | Tracking | Solving | Adjusting =>
               The_Data.Universal_Time := The_Current_Time - Motor.Time_Delta;
               declare
                 Alignment_Offsets : constant Earth.Direction := Matrix.Actual_Offset;
@@ -1339,20 +1382,20 @@ package body Telescope is
         if The_Event /= No_Event then
           Log.Write ("state => " & The_State'img & " - event => " & The_Event'img);
           case The_State is
-          when Disconnected => Disconnected_State;
-          when Startup      => Startup_State;
-          when Ready        => Ready_State;
-          when Parked       => Parked_State;
-          when Parking      => Parking_State;
-          when Stopped      => Stopped_State;
-          when Stopping     => Stopping_State;
-          when Directing    => Directing_State;
-          when Positioning  => Positioning_State;
-          when Preparing    => Preparing_State;
-          when Waiting      => Waiting_State;
-          when Approaching  => Approaching_State;
-          when Tracking     => Tracking_State;
-          when Adjusting    => Adjusting_State;
+          when Disconnected       => Disconnected_State;
+          when Startup            => Startup_State;
+          when Ready              => Ready_State;
+          when Parked             => Parked_State;
+          when Parking            => Parking_State;
+          when Stopped            => Stopped_State;
+          when Stopping           => Stopping_State;
+          when Directing          => Directing_State;
+          when Positioning        => Positioning_State;
+          when Preparing          => Preparing_State;
+          when Waiting            => Waiting_State;
+          when Approaching        => Approaching_State;
+          when Tracking | Solving => Tracking_State;
+          when Adjusting          => Adjusting_State;
           end case;
           Has_New_Data := True;
         end if;

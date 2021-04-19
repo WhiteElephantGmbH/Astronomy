@@ -486,7 +486,7 @@ package body User is
             Gui.Set_Text (Stop_Or_Synch_Button, "Synch");
             Synchronizing_Is_Enabled := True;
             Align_On_Picture_Is_Enabled := False;
-          when Telescope.Tracking =>
+          when Telescope.Tracking | Telescope.Solving =>
             if Align_On_Picture_Is_Enabled then
               Gui.Set_Text (First_Control_Button, "Align");
             end if;
@@ -552,7 +552,7 @@ package body User is
         Disable_Operation_Buttons;
         Gui.Enable (Stop_Or_Synch_Button);
         Gui.Enable (First_Control_Button);
-      when Telescope.Tracking =>
+      when Telescope.Tracking | Telescope.Solving=>
         Enable_Operation_Buttons;
         Gui.Enable (Stop_Or_Synch_Button);
         Gui.Enable (First_Control_Button);

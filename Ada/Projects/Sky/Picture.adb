@@ -25,11 +25,6 @@ package body Picture is
 
   package Log is new Traces ("Picture");
 
-  Solved  : Boolean := False;
-  The_Ra  : Astap.Degrees;
-  The_Dec : Astap.Degrees;
-
-
   The_Filename : Text.String;
   The_Height   : Angle.Degrees;
   The_Width    : Angle.Degrees;
@@ -57,7 +52,7 @@ package body Picture is
   end Exists;
 
 
-  procedure Read (Search_From : Space.Direction) is
+  function Solve (Search_From : Space.Direction) return Boolean is
 
     Actual_Height : Astap.Degrees;
 
@@ -67,25 +62,10 @@ package body Picture is
 
   begin
     Log.Write ("Read - RA: " & Space.Ra_Image_Of (Search_From) & " - DEC: " & Space.Dec_Image_Of (Search_From));
-    Solved := False;
     Exif.Read (Filename);
-    The_Ra := Astap.Degrees(Angle.Degrees'(+Space.Ra_Of (Search_From)));
-    The_Dec := Astap.Degrees(Angle.Degrees'(+Space.Dec_Of (Search_From)));
     if (Exif.Image_Height = Exif.Undefined_Size) or (Exif.Image_Width = Exif.Undefined_Size) then
-      Log.Warning ("Image size undefined");
-      begin
-        -- try width
-        Astap.Solve (Filename => Filename,
-                     Height   => Astap.Degrees(The_Width),
-                     Ra       => The_Ra,
-                     Dec      => The_Dec);
-        Solved := True;
-        return;
-      exception
-      when Not_Solved =>
-        -- when not solved try height
-        Actual_Height := Astap.Degrees(The_Height);
-      end;
+      Log.Error ("Image size undefined");
+      raise Not_Solved;
     elsif Exif.Image_Height < Exif.Image_Width then
       Actual_Height := Astap.Degrees(The_Height);
     else
@@ -93,15 +73,40 @@ package body Picture is
     end if;
     Astap.Solve (Filename => Filename,
                  Height   => Actual_Height,
-                 Ra       => The_Ra,
-                 Dec      => The_Dec);
-    File.Delete (Filename);
-    Solved := True;
+                 Ra       => Astap.Degrees(Angle.Degrees'(+Space.Ra_Of (Search_From))),
+                 Dec      => Astap.Degrees(Angle.Degrees'(+Space.Dec_Of (Search_From))));
+    return True;
   exception
   when Not_Solved =>
     File.Delete (Filename);
-  end Read;
+    return False;
+  end Solve;
 
+
+  The_Ra    : Astap.Degrees;
+  The_Dec   : Astap.Degrees;
+  Is_Solved : Boolean := False;
+
+  function Solved return Boolean is
+  begin
+    Is_Solved := Astap.Solved (Ra => The_Ra, Dec => The_Dec);
+    if Is_Solved then
+      File.Delete (Filename);
+    end if;
+    return Is_Solved;
+  exception
+  when others =>
+    File.Delete (Filename);
+    raise;
+  end Solved;
+
+
+  procedure Stop_Solving is
+  begin
+    Astap.Stop;
+    File.Delete (Filename);
+  end Stop_Solving;
+  
 
   Value_Delta   : constant := 1.0 / 3600_000.0; -- millisecond
   Lowest_Value  : constant := -2**62 * Value_Delta;
@@ -225,7 +230,7 @@ package body Picture is
     Ve     : VECTOR;
 
   begin -- Evaluate_Actual;
-    if not Solved then
+    if not Is_Solved then
       raise Undefined_Value;
     end if;
     Ra := REAL(The_Ra);

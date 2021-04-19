@@ -36,8 +36,9 @@ package Os.Process is
                     Std_Error      : Handle := No_Handle;
                     Console        : Console_Type := Normal);
 
-  function Created (Executable : String;
-                    Parameters : String := "") return Id;
+  function Created (Executable     : String;
+                    Current_Folder : String := "";
+                    Parameters     : String := "") return Id;
 
   Creation_Failure : exception;
   --

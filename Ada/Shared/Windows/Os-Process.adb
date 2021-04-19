@@ -170,14 +170,15 @@ package body Os.Process is
   end Create;
 
 
-  function Created (Executable : String;
-                    Parameters : String := "") return Id is
+  function Created (Executable     : String;
+                    Current_Folder : String := "";
+                    Parameters     : String := "") return Id is
     The_Process_Id : Id;
   begin
     Create (Executable     => Executable,
             Parameters     => Parameters,
             Environment    => "",
-            Current_Folder => "",
+            Current_Folder => Current_Folder,
             Std_Input      => No_Handle,
             Std_Output     => No_Handle,
             Std_Error      => No_Handle,

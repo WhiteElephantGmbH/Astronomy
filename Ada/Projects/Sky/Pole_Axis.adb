@@ -38,26 +38,37 @@ package body Pole_Axis is
 
 
   procedure Evaluate_Direction (The_Direction : in out Earth.Direction) is
+    The_Count : Natural := 0;
   begin
-    Picture.Read (Search_From => Space.North_Pole);
-    if not Site.Is_Defined then
-      declare
-        The_Site : Site.Data;
-      begin
-        The_Site.Latitude := Picture.Latitude;
-        The_Site.Longitude := Picture.Longitude;
-        The_Site.Elevation := Picture.Elevation;
-        Site.Define (The_Site);
-        Log.Write ("Elevation :" & Picture.Elevation'image & 'm');
-        Log.Write ("Latitude  : " & Image_Of (Picture.Latitude));
-        Log.Write ("Longitude : " & Image_Of (Picture.Longitude));
-      exception
-      when others =>
-        Log.Error ("Unknown Site");
-        return;
-      end;
+    if Picture.Solve (Search_From => Space.North_Pole) then
+      if not Site.Is_Defined then
+        declare
+          The_Site : Site.Data;
+        begin
+          The_Site.Latitude := Picture.Latitude;
+          The_Site.Longitude := Picture.Longitude;
+          The_Site.Elevation := Picture.Elevation;
+          Site.Define (The_Site);
+          Log.Write ("Elevation :" & Picture.Elevation'image & 'm');
+          Log.Write ("Latitude  : " & Image_Of (Picture.Latitude));
+          Log.Write ("Longitude : " & Image_Of (Picture.Longitude));
+        exception
+        when others =>
+          Log.Error ("Unknown Site");
+          return;
+        end;
+      end if;
+      while not Picture.Solved loop
+        delay 0.5;
+        The_Count := The_Count + 1;
+        if The_Count = 40 then
+          Picture.Stop_Solving;
+          Log.Write ("Evaluation timeout");
+          raise Picture_Not_Solved;
+        end if;
+      end loop;
+      The_Direction := Picture.Direction;
     end if;
-    The_Direction := Picture.Direction;
   exception
   when Picture.File_Not_Found =>
     raise Picture_Not_Found;

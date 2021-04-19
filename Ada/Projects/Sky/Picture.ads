@@ -37,7 +37,11 @@ package Picture is
 
   function Exists return Boolean;
 
-  procedure Read (Search_From : Space.Direction);
+  function Solve (Search_From : Space.Direction) return Boolean;
+
+  function Solved return Boolean;
+  
+  procedure Stop_Solving;
 
   function Elevation return Integer;
 

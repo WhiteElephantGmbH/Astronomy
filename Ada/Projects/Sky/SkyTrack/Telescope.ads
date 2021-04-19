@@ -50,6 +50,7 @@ package Telescope is
                  Waiting,      -- stopped at the targets rising direction
                  Approaching,  -- approaching to target
                  Tracking,     -- following the target
+                 Solving,      -- Picture solving
                  Adjusting);   -- corrrect the target diretion
 
   type Orientation is (Correct, Upside_Down, Backwards, Rotated);
@@ -93,8 +94,6 @@ package Telescope is
   procedure Position_To (Landmark : Name.Id);
 
   procedure Align;
-  
-  procedure Enable_Synch_On_Picture;
 
   procedure Synch_On_Target;
 

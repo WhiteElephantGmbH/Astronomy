@@ -32,7 +32,6 @@ with Network.Tcp;
 with Numerics;
 with Os.Application;
 with Parameter;
-with Picture;
 with Os.Process;
 with Site;
 with Sky_Line;
@@ -469,11 +468,6 @@ package body Control is
             User.Show (User.Percent(Float(Actual_Duration) * Float(User.Percent'last) / Float(The_Travelling_Time)));
           end if;
         end;
-      when Telescope.Tracking =>
-        End_Travelling;
-        if Picture.Exists then
-          Telescope.Enable_Synch_On_Picture;
-        end if;
       when others =>
         End_Travelling;
       end case;

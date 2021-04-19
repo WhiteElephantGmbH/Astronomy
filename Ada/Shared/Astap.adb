@@ -18,52 +18,62 @@ pragma Style_White_Elephant;
 with Configuration;
 with File;
 with Os.Process;
+with Text;
 with Traces;
 
 package body Astap is
 
   package Log is new Traces ("Astap");
 
+  The_Executable      : Text.String;
+  The_Result_Filename : Text.String;
+  The_Wcs_Filename    : Text.String;
+  The_Process_Id      : Os.Process.Id;
 
-  procedure Solve (Filename :        String;
-                   Height   :        Degrees;
-                   Ra       : in out Degrees;
-                   Dec      : in out Degrees) is
+  Is_Solving : Boolean := False;
+
+
+  procedure Terminate_Process is
+  begin
+    Os.Process.Terminate_With (The_Process_Id);
+  exception
+  when others =>
+    null;
+  end Terminate_Process;
+
+
+  function Result_Filename return String is
+  begin
+    return Text.String_Of (The_Result_Filename);
+  end Result_Filename;
+
+
+  function Wcs_Filename return String is
+  begin
+    return Text.String_Of (The_Wcs_Filename);
+  end Wcs_Filename;
+
+
+  procedure Cleanup is
+  begin
+    File.Delete (Result_Filename);
+    File.Delete (Wcs_Filename);
+  end Cleanup;
+
+
+  procedure Define (Executable : String) is
+  begin
+    The_Executable := Text.String_Of (Executable);
+  end Define;
+
+
+  procedure Solve (Filename : String;
+                   Height   : Degrees;
+                   Ra       : Degrees;
+                   Dec      : Degrees) is
 
     Directory : constant String := File.Containing_Directory_Of (Filename);
     Base_Name : constant String := File.Base_Name_Of (Filename);
-
-    Result_Filename : constant String := File.Composure (Directory, Base_Name, "ini");
-    Wcs_Filename    : constant String := File.Composure (Directory, Base_Name, "wcs");
-
-    procedure Cleanup is
-    begin
-      File.Delete (Result_Filename);
-      File.Delete (Wcs_Filename);
-    end Cleanup;
-
-    procedure Handle_Result is
-
-      Result_Handle : constant Configuration.File_Handle := Configuration.Handle_For (Result_Filename);
-      Null_Section  : constant Configuration.Section_Handle := Configuration.Handle_For (Result_Handle);
-      Ra_2000       : constant String := Configuration.Value_Of (Null_Section, "CRVAL1");
-      Dec_2000      : constant String := Configuration.Value_Of (Null_Section, "CRVAL2");
-      Error         : constant String := Configuration.Value_Of (Null_Section, "ERROR");
-      Warning       : constant String := Configuration.Value_Of (Null_Section, "WARNING");
-    begin
-      if Error /= "" then
-        Log.Error (Error);
-        raise Not_Solved;
-      end if;
-      if Warning /= "" then
-        Log.Warning (Warning);
-      end if;
-      Ra := Degrees'value(Ra_2000);
-      Dec := Degrees'value(Dec_2000);
-    exception
-    when others =>
-      raise Not_Solved;
-    end Handle_Result;
 
     function Ra_Image return String is
       type Ra_Value is delta 0.001 range 0.0 .. 24.0;
@@ -84,36 +94,26 @@ package body Astap is
     end Spd_Image;
 
     Height_Image : constant String := Value(Height)'image;
+    Executable   : constant String := Text.String_Of (The_Executable);
+
     Parameters   : constant String
       := "-f " & Filename & " -ra" & Ra_Image & " -spd" & Spd_Image & " -fov" & Height_Image & " -r 180";
 
   begin -- Solve
+    if not File.Exists (Executable) then
+      Log.Error ("Executable not found");
+      raise Not_Solved;
+    end if;
     Log.Write ("Parameters: " & Parameters);
-    Cleanup;
-    declare
-      Output : constant String := Os.Process.Execution_Of (Executable => "astap",
-                                                           Parameters => Parameters);
-      Timeout    : constant Duration := 20.0;
-      Delay_Time : constant Duration := 0.2;
 
-      The_Time : Duration := 0.0;
+    The_Result_Filename := Text.String_Of (File.Composure (Directory, Base_Name, "ini"));
+    The_Wcs_Filename := Text.String_Of (File.Composure (Directory, Base_Name, "wcs"));
 
-    begin
-      while not File.Exists (Result_Filename) loop
-        delay Delay_Time;
-        The_Time := The_Time + Delay_Time;
-        if The_Time > Timeout then
-          if Output /= "" then -- Windows has no output
-            Log.Error (Output);
-          else
-            Log.Error ("Timeout");
-          end if;
-          raise Not_Solved;
-        end if;
-      end loop;
-    end;
-    Handle_Result;
     Cleanup;
+    The_Process_Id := Os.Process.Created (Executable     => Executable,
+                                          Parameters     => Parameters,
+                                          Current_Folder => Directory);
+    Is_Solving := True;
   exception
   when Not_Solved =>
     Cleanup;
@@ -122,5 +122,64 @@ package body Astap is
     Log.Termination (Item);
     raise Not_Solved;
   end Solve;
+
+
+  function Solved (Ra  : out Degrees;
+                   Dec : out Degrees) return Boolean is
+
+    procedure Handle_Result is
+
+      Result_Handle : constant Configuration.File_Handle := Configuration.Handle_For (Result_Filename);
+      Null_Section  : constant Configuration.Section_Handle := Configuration.Handle_For (Result_Handle);
+      Ra_2000       : constant String := Configuration.Value_Of (Null_Section, "CRVAL1");
+      Dec_2000      : constant String := Configuration.Value_Of (Null_Section, "CRVAL2");
+      Error         : constant String := Configuration.Value_Of (Null_Section, "ERROR");
+      Warning       : constant String := Configuration.Value_Of (Null_Section, "WARNING");
+
+    begin
+      if Error /= "" then
+        Log.Error (Error);
+        raise Not_Solved;
+      end if;
+      if Warning /= "" then
+        Log.Warning (Warning);
+      end if;
+      Ra := Degrees'value(Ra_2000);
+      Dec := Degrees'value(Dec_2000);
+    exception
+    when others =>
+      raise Not_Solved;
+    end Handle_Result;
+
+  begin -- Solved
+    if Is_Solving then
+      if File.Exists (Result_Filename) then
+        Handle_Result;
+        Cleanup;
+        Terminate_Process;
+        Is_Solving := False;
+        return True;
+      end if;
+      return False;
+    else
+      raise Not_Solved;
+    end if;
+  exception
+  when Not_Solved =>
+    Is_Solving := False;
+    Cleanup;
+    raise Not_Solved;
+  when Item: others =>
+    Is_Solving := False;
+    Log.Termination (Item);
+    raise Not_Solved;
+  end Solved;
+
+
+  procedure Stop is
+  begin
+    Terminate_Process;
+    Is_Solving := False;
+  end Stop;
 
 end Astap;
