@@ -25,10 +25,9 @@ package body Astap is
 
   package Log is new Traces ("Astap");
 
-  The_Executable      : Text.String;
-  The_Result_Filename : Text.String;
-  The_Wcs_Filename    : Text.String;
-  The_Process_Id      : Os.Process.Id;
+  The_Executable : Text.String;
+  The_Filename   : Text.String; -- without extension
+  The_Process_Id : Os.Process.Id;
 
   Is_Solving : Boolean := False;
 
@@ -42,20 +41,27 @@ package body Astap is
   end Terminate_Process;
 
 
+  function Fits_Filename return String is
+  begin
+    return Text.String_Of (The_Filename) & ".CR2.fits";
+  end Fits_Filename;
+
+
   function Result_Filename return String is
   begin
-    return Text.String_Of (The_Result_Filename);
+    return Text.String_Of (The_Filename) & ".ini";
   end Result_Filename;
 
 
   function Wcs_Filename return String is
   begin
-    return Text.String_Of (The_Wcs_Filename);
+    return Text.String_Of (The_Filename) & ".wcs";
   end Wcs_Filename;
 
 
   procedure Cleanup is
   begin
+    File.Delete (Fits_Filename);
     File.Delete (Result_Filename);
     File.Delete (Wcs_Filename);
   end Cleanup;
@@ -74,6 +80,7 @@ package body Astap is
 
     Directory : constant String := File.Containing_Directory_Of (Filename);
     Base_Name : constant String := File.Base_Name_Of (Filename);
+    Name      : constant String := Directory & File.Folder_Separator & Base_Name; -- without extension
 
     function Ra_Image return String is
       type Ra_Value is delta 0.001 range 0.0 .. 24.0;
@@ -95,9 +102,8 @@ package body Astap is
 
     Height_Image : constant String := Value(Height)'image;
     Executable   : constant String := Text.String_Of (The_Executable);
-
     Parameters   : constant String
-      := "-f " & Filename & " -ra" & Ra_Image & " -spd" & Spd_Image & " -fov" & Height_Image & " -r 180";
+      := "-f " & Filename & " -ra" & Ra_Image & " -spd" & Spd_Image & " -fov" & Height_Image & " -r 180 -o " & Name;
 
   begin -- Solve
     if not File.Exists (Executable) then
@@ -106,8 +112,7 @@ package body Astap is
     end if;
     Log.Write ("Parameters: " & Parameters);
 
-    The_Result_Filename := Text.String_Of (File.Composure (Directory, Base_Name, "ini"));
-    The_Wcs_Filename := Text.String_Of (File.Composure (Directory, Base_Name, "wcs"));
+    The_Filename := Text.String_Of (Name);
 
     Cleanup;
     The_Process_Id := Os.Process.Created (Executable     => Executable,

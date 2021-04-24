@@ -21,13 +21,13 @@ package Exif is
 
   File_Not_Found : exception;
   Invalid_File   : exception;
-  
+
   subtype Reference is Character;
-  
+
   Undefined_Ref : constant Reference := ' ';
-  
+
   type Size is new Unsigned.Word;
-  
+
   Undefined_Size : constant Size := 0;
 
   type Longword is new Unsigned.Longword;
@@ -36,7 +36,7 @@ package Exif is
     Nominator   : Longword := 0;
     Denominator : Longword := 0;
   end record;
-  
+
   type Rational_Values is array (Positive range <>) of Rational_Value;
 
   type Image_Orientation is (Undefined, Horizontal, Mirror_Horizontal, Rotate_180, Mirror_Vertical,
@@ -44,17 +44,17 @@ package Exif is
                              -- rotations are clockwise
 
   type See_Level is (Below, Above, Undefined);
-  
+
   subtype Height is Rational_Value; -- in meters
 
   Undefined_Height : constant Height := (others => <>);
-  
+
   subtype Values is Rational_Values(1..3);
 
   Undefined_Values : constant Values := (others => <>);
-  
+
   subtype Date is String(1..10); -- yyyy:mm:dd
-  
+
   Undefined_Date : constant Date := (others => ' ');
 
   procedure Read (Filename : String);
@@ -78,7 +78,9 @@ package Exif is
   function Longitude return Values;
 
   function Time_Stamp return Values;
-  
+
   function Date_Stamp return Date;
+
+  function Date_Time_Digitized return String;
 
 end Exif;

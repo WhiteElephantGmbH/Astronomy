@@ -18,6 +18,7 @@ pragma Style_White_Elephant;
 with GNAT.OS_Lib;
 with System;
 with Strings;
+with Text;
 with Traces;
 
 package body Exif is
@@ -25,6 +26,8 @@ package body Exif is
   package Log is new Traces ("Exif");
 
   The_Orientation : Image_Orientation := Undefined;
+
+  The_Date_Time_Digitized : Text.String;
 
   The_Image_Width  : Size := Undefined_Size;
   The_Image_Height : Size := Undefined_Size;
@@ -108,6 +111,12 @@ package body Exif is
   end Date_Stamp;
 
 
+  function Date_Time_Digitized return String is
+  begin
+    return Text.String_Of (The_Date_Time_Digitized);
+  end Date_Time_Digitized;
+
+
   package OS renames GNAT.OS_Lib;
 
   type Marker is new Unsigned.Word;
@@ -137,8 +146,9 @@ package body Exif is
   Gps_Info_Tag    : constant := 16#8825#;
 
   -- Sub Tags
-  Exif_Image_Width_Tag  : constant := 16#A002#;
-  Exif_Image_Height_Tag : constant := 16#A003#;
+  Date_Time_Digitized_Tag : constant := 16#9004#;
+  Exif_Image_Width_Tag    : constant := 16#A002#;
+  Exif_Image_Height_Tag   : constant := 16#A003#;
 
   -- Gps Tags
   Gps_Latitude_Ref_Tag  : constant := 16#01#;
@@ -409,6 +419,13 @@ package body Exif is
 
         begin
           case Sub_Entry.Tag is
+          when Date_Time_Digitized_Tag =>
+            declare
+              Date_Time : constant String := String_Of (Sub_Entry);
+            begin
+              The_Date_Time_Digitized := Text.String_Of (Date_Time);
+              Log.Write ("Date Time    : " & Date_Time);
+            end;
           when Exif_Image_Width_Tag =>
             The_Image_Width := Read_Size;
             Log.Write ("Image Width  :" & The_Image_Width'image);
@@ -565,6 +582,7 @@ package body Exif is
       The_Longitude := Undefined_Values;
       The_Time_Stamp := Undefined_Values;
       The_Date_Stamp := Undefined_Date;
+      Text.Clear (The_Date_Time_Digitized);
       if File = OS.Invalid_FD then
         raise File_Not_Found;
       end if;

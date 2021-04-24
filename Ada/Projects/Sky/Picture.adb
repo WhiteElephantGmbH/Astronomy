@@ -15,6 +15,7 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with Ada.Calendar;
 with Astro;
 with File;
 with Site;
@@ -106,7 +107,7 @@ package body Picture is
     Astap.Stop;
     File.Delete (Filename);
   end Stop_Solving;
-  
+
 
   Value_Delta   : constant := 1.0 / 3600_000.0; -- millisecond
   Lowest_Value  : constant := -2**62 * Value_Delta;
@@ -181,21 +182,52 @@ package body Picture is
   end Longitude;
 
 
+  function Universal_Of (DT : String) return Time.Ut is
+
+    The_Time : Ada.Calendar.Time;
+
+    function Seconds_Of (T : String) return Duration is
+      --     01234567
+      -- T: <hh:mm:ss>
+      The_Seconds : Natural;
+    begin
+      The_Seconds := Natural'value(T(T'first .. T'first + 1)) * 3600;
+      The_Seconds := The_Seconds + Natural'value(T(T'first + 3 .. T'first + 4)) * 60;
+      The_Seconds := The_Seconds + Natural'value(T(T'first + 6 .. T'first + 7));
+      return Duration(The_Seconds);
+    end Seconds_Of;
+
+    --      0123456789 76543210
+    -- DT: <JJJJ:MM:DD hh:mm:ss>
+
+  begin -- Universal_Of
+    The_Time := Ada.Calendar.Time_Of (Year    => Ada.Calendar.Year_Number'value(DT(DT'first .. DT'first + 3)),
+                                      Month   => Ada.Calendar.Month_Number'value(DT(DT'first + 5 .. DT'first + 6)),
+                                      Day     => Ada.Calendar.Day_Number'value(DT(DT'first + 8 .. DT'first + 9)),
+                                      Seconds => Seconds_Of (DT(DT'last - 7 .. DT'last)));
+    return Time.Universal_Of (The_Time);
+  end Universal_Of;
+
+
   function Time_Stamp return Time.Ut is
 
-    Date : constant Exif.Date := Exif.Date_Stamp;
-    TS   : constant Exif.Values := Exif.Time_Stamp;
+    Date      : constant Exif.Date := Exif.Date_Stamp;
+    TS        : constant Exif.Values := Exif.Time_Stamp;
+    Date_Time : constant String := Exif.Date_Time_Digitized;
 
     use type Exif.Values;
 
   begin -- Time_Stamp
-    if Date = Exif.Undefined_Date or TS = Exif.Undefined_Values then
+    if Date /= Exif.Undefined_Date and TS /= Exif.Undefined_Values then
+      return Time.Universal_Of (Ut_Year  => Time.Year'value(Date(Date'first .. Date'first + 3)),
+                                Ut_Month => Time.Month'value(Date(Date'first + 5 .. Date'first + 6)),
+                                Ut_Day   => Time.Day'value(Date(Date'last - 1 .. Date'last)),
+                                Ut_Hour  => Duration(Value_Of (TS)));
+    elsif Date_Time /= "" then
+      return Universal_Of (Date_Time);
+    else
       raise Undefined_Value;
     end if;
-    return Time.Universal_Of (Ut_Year  => Time.Year'value(Date(Date'first .. Date'first + 3)),
-                              Ut_Month => Time.Month'value(Date(Date'first + 5 .. Date'first + 6)),
-                              Ut_Day   => Time.Day'value(Date(Date'last - 1 .. Date'last)),
-                              Ut_Hour  => Duration(Value_Of (TS)));
   end Time_Stamp;
 
 
@@ -214,18 +246,11 @@ package body Picture is
   procedure Evaluate_Actual (Ra  : out REAL;
                              Dec : out REAL) is
 
-    function T return Time.T is
-    begin
-      return Time.Tut_Of (Time_Stamp);
-    exception
-    when Undefined_Value =>
-      Log.Warning ("Undefined GPS Time_Stamp (used actual time)");
-      return Time.Tut;
-    end T;
-
     use Astro.PNULIB;
     use Astro.SPHLIB;
 
+    TS     : Time.Ut;
+    T      : Time.T;
     Pn_Mat : REAL33;
     Ve     : VECTOR;
 
@@ -233,6 +258,15 @@ package body Picture is
     if not Is_Solved then
       raise Undefined_Value;
     end if;
+    begin
+      TS := Time_Stamp;
+      Log.Write ("Time Stamp: " & Time.Image_Of (TS));
+      T := Time.Tut_Of (TS);
+    exception
+    when Undefined_Value =>
+      Log.Warning ("Undefined Picture Time_Stamp (used actual time)");
+      T := Time.Tut;
+    end;
     Ra := REAL(The_Ra);
     Dec := REAL(The_Dec);
     PN_MATRIX (Time.T_J2000, T, Pn_Mat);
