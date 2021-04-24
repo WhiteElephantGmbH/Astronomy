@@ -66,6 +66,10 @@ package Time is
 
   Undefined : constant Period := (others => <>);
 
+  function Local_Of (Item : Ut) return Ada.Calendar.Time;
+
+  function Universal_Of (Time_Local : Ada.Calendar.Time) return Ut;
+
   function Universal return Ut;
 
   function Nearest_Universal (Base : Ut) return Ut;
@@ -82,7 +86,7 @@ package Time is
 
   function Image_Of (Item      : Ut;
                      Time_Only : Boolean := False) return String;
-  -- returns the local time image using the time shift from the time now.
+  -- returns the local time image
 
 
   -----------------------------

@@ -93,20 +93,24 @@ package body Time is
   -- Modified Julian Date --
   --------------------------
 
-  function Mod_Jd return Astro.REAL is
+  function Mod_Jd_Of (Time_Local : Ada.Calendar.Time) return Astro.REAL is
     use type Ada.Calendar.Time;
     use Astro.TIMLIB;
-    Now : Ada.Calendar.Time := Ada.Calendar.Clock;
-    Y, M, D : Natural;
-    S       : Duration;
+    Y, M, D  : Natural;
+    S        : Duration;
   begin
-    Now := Now - Time_Shift (Now);
-    Ada.Calendar.Split (Date    => Now,
+    Ada.Calendar.Split (Date    => Time_Local - Time_Shift (Time_Local),
                         Year    => Y,
                         Month   => M,
                         Day     => D,
                         Seconds => S);
     return MJD (D, M, Y, HOURS(S) / 3600.0);
+  end Mod_Jd_Of;
+
+
+  function Mod_Jd return Astro.REAL is
+  begin
+    return Mod_Jd_Of (Ada.Calendar.Clock);
   end Mod_Jd;
 
 
@@ -134,6 +138,33 @@ package body Time is
   --------------------
   -- universal time --
   --------------------
+
+  function Local_Of (Item : Ut) return Ada.Calendar.Time is
+
+    use Astro;
+    use TIMLIB;
+
+    Modjd : constant Astro.REAL :=  Astro.REAL((Item) / One_Day) + MJD_Offset;
+
+    The_Day          : Natural;
+    The_Month        : Natural;
+    The_Year         : Natural;
+    The_Hours        : HOURS;
+
+  begin
+    CALDAT (Modjd, The_Day, The_Month, The_Year, The_Hours);
+    return Ada.Calendar.Time_Of (Year    => The_Year,
+                                 Month   => The_Month,
+                                 Day     => The_Day,
+                                 Seconds => Duration(The_Hours) * 3600.0);
+  end Local_Of;
+
+
+  function Universal_Of (Time_Local : Ada.Calendar.Time) return Ut is
+  begin
+    return Ut(Mod_Jd_Of (Time_Local) - MJD_Offset) * One_Day;
+  end Universal_Of;
+
 
   function Universal return Ut is
   begin
@@ -180,7 +211,7 @@ package body Time is
     use Astro;
     use TIMLIB;
 
-    TS : constant Duration := Time_Shift (Ada.Calendar.Clock);
+    TS : constant Duration := Time_Shift (Local_Of (Item));
 
     Modjd : constant Astro.REAL :=  Astro.REAL((Item + TS) / One_Day) + MJD_Offset;
 
@@ -275,4 +306,3 @@ package body Time is
   end Ut_Of;
 
 end Time;
-
