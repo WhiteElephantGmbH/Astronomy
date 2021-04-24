@@ -1170,7 +1170,11 @@ package body Telescope is
               Picture_Aligning_Enabled := True;
               The_State := Tracking;
             end if;
-          elsif not Picture_Aligning_Enabled and then Picture.Exists and then Synch_On_Picture then
+          elsif User.In_Control_Mode
+            and then not Picture_Aligning_Enabled
+            and then Picture.Exists
+            and then Synch_On_Picture
+          then
             The_State := Solving;
           end if;
         else

@@ -1826,4 +1826,15 @@ package body User is
     Align_On_Picture_Change := True;
   end Enable_Align_On_Picture;
 
+
+  function In_Control_Mode return Boolean is
+  begin
+    case The_Page is
+    when Is_Control =>
+      return True;
+    when others =>
+      return False;
+    end case;
+  end In_Control_Mode;
+
 end User;

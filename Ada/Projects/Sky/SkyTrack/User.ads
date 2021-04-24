@@ -65,6 +65,8 @@ package User is
   procedure Define_Park_Position;
 
   procedure Enable_Align_On_Picture;
+  
+  function In_Control_Mode return Boolean;
 
   function Target_Name return String;
 
