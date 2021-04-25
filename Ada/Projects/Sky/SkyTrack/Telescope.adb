@@ -157,16 +157,11 @@ package body Telescope is
 
 
   function Synch_On_Picture_Complete return Boolean is
-    use type Space.Direction;
-    use type Angle.Signed;
-    use type Angle.Value;
-    Actual_Direction : constant Space.Direction := Actual_Target_Direction;
-    The_Direction    : Space.Direction;
   begin
     if Picture.Solved then
-      The_Direction := Actual_Direction - Picture.Actual_Direction;
-      Alignment.Set (Ra_Offset  => Angle.Degrees'(+Angle.Signed'(+Space.Ra_Of (The_Direction))),
-                     Dec_Offset => Angle.Degrees'(+Angle.Signed'(+Space.Dec_Of (The_Direction))));
+      Motor.Update_Offsets (To => Numerics.Position_Of (Direction => Picture.Actual_Direction,
+                                                        Rotations => Alignment.Corrections,
+                                                        At_Time   => Time.Universal));
       User.Enable_Align_On_Picture;
       return True;
     end if;
@@ -1147,7 +1142,6 @@ package body Telescope is
           Set_Stopping;
         end if;
       when Align =>
-        Picture_Aligning_Enabled := False;
         Is_Aligning := True;
       when Synch_On_Target =>
         Stop_And_Synch;
@@ -1155,9 +1149,10 @@ package body Telescope is
         if Following_Target then
           Motor.Update;
           if Is_Aligning then
-            if Alignment.Is_One_Star then
+            if not Picture_Aligning_Enabled and then Alignment.Is_One_Star then
               Motor.Synchronize_Positions;
             else
+              Picture_Aligning_Enabled := False;
               Motor.Update_Positions;
               Motor.Set_Undefined (Pb);
               Motor.Set_Undefined (Pe);
@@ -1170,7 +1165,7 @@ package body Telescope is
               Picture_Aligning_Enabled := True;
               The_State := Tracking;
             end if;
-          elsif User.In_Control_Mode
+          elsif not User.In_Setup_Mode
             and then not Picture_Aligning_Enabled
             and then Picture.Exists
             and then Synch_On_Picture

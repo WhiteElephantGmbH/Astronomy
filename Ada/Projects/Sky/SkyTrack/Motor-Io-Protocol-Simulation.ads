@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2015 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2015 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -29,6 +29,8 @@ private package Motor.Io.Protocol.Simulation is
                                C0_2 : Natural);
 
   procedure Set_Step_Positions (The_Positions : Step_Positions);
+
+  procedure Update_Step_Offsets (Offsets : Step_Positions);
 
   procedure Update_Step_Positions (Offsets : Step_Positions);
 

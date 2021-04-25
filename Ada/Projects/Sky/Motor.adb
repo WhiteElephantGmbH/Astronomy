@@ -1001,6 +1001,21 @@ package body Motor is
   end Update;
 
 
+  procedure Update_Offsets (To : Position) is
+    P, O : Values;
+  begin
+    Allow_Inversion;
+    if Assigned (P, To) then
+      O := P - AP;
+      Io.Update_Offsets (O);
+      Alignment.Set (Ra_Offset  => O(D1),
+                     Dec_Offset => O(D2));
+    else
+      Log.Error ("Set_Offsets position not assigned");
+    end if;
+  end Update_Offsets;
+
+
   procedure Update_Positions is
     use type Angle.Value;
     use type Value;

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2014 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2014 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -328,6 +328,13 @@ package body Motor.Io is
     Protocol.Define_Positions ((M1 => N_Of (The_Positions(D1), D1),
                                 M2 => N_Of (The_Positions(D2), D2)));
   end Set_Positions;
+
+
+  procedure Update_Offsets (Offsets : Values) is
+  begin
+    Protocol.Update_Offsets ((M1 => N_Of (Offsets(D1), D1),
+                              M2 => N_Of (Offsets(D2), D2)));
+  end Update_Offsets;
 
 
   procedure Update_Positions (Offsets : Alignment.Offsets) is

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2014 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2014 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -132,6 +132,19 @@ package body Motor.Io.Protocol is
       Udp.Set_Step_Positions (The_Positions);
     end case;
   end Define_Positions;
+
+
+  procedure Update_Offsets (Offsets : Step_Positions) is
+  begin
+    case The_Connection_Kind is
+    when Is_Simulated =>
+      Simulation.Update_Step_Offsets (Offsets);
+    when Is_Serial =>
+      Serial.Update_Step_Offsets (Offsets);
+    when Is_Udp =>
+      Udp.Update_Step_Offsets (Offsets);
+    end case;
+  end Update_Offsets;
 
 
   procedure Update_Positions (Offsets : Step_Positions) is

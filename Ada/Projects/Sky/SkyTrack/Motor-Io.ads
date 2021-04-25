@@ -39,6 +39,8 @@ private package Motor.Io is
 
   procedure Set_Positions (The_Positions : Values);
 
+  procedure Update_Offsets (Offsets : Values);
+
   procedure Update_Positions (Offsets : Alignment.Offsets);
 
   function Position_Is_Known return Boolean;

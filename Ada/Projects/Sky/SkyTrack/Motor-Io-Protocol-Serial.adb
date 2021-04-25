@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2014 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2014 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -212,6 +212,8 @@ package body Motor.Io.Protocol.Serial is
         end;
       end loop;
       accept Finish;
+    exception when Item: others =>
+      Log.Termination (Item);
     end Receiver;
 
     The_Device_State     : Device.State := Disconnected;
@@ -290,6 +292,8 @@ package body Motor.Io.Protocol.Serial is
       end select;
     end loop;
     Receiver.Finish;
+  exception when Item: others =>
+    Log.Termination (Item);
   end Control;
 
 
@@ -405,6 +409,12 @@ package body Motor.Io.Protocol.Serial is
   when Occurrence: others =>
     Log.Termination (Occurrence);
   end Set_Step_Positions;
+
+
+  procedure Update_Step_Offsets (Offsets : Step_Positions) is
+  begin
+    null; -- !!! not implemented
+  end Update_Step_Offsets;
 
 
   procedure Update_Step_Positions (Offsets : Step_Positions)  is

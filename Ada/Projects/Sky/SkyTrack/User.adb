@@ -1827,14 +1827,14 @@ package body User is
   end Enable_Align_On_Picture;
 
 
-  function In_Control_Mode return Boolean is
+  function In_Setup_Mode return Boolean is
   begin
     case The_Page is
-    when Is_Control =>
+    when Is_Setup =>
       return True;
     when others =>
       return False;
     end case;
-  end In_Control_Mode;
+  end In_Setup_Mode;
 
 end User;

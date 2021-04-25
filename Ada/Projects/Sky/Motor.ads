@@ -21,7 +21,7 @@ with Time;
 
 package Motor is
 
-  type Hardware_Version is (Stepper_Version_0, Stepper_Version_1, Unknown, Undefined);
+  type Hardware_Version is (Stepper_Version_0, Stepper_Version_1, Stepper_Version_2, Unknown, Undefined);
 
   type Celsius is delta 10.0**(-1) range -273.2 .. 3276.7;
 
@@ -91,6 +91,9 @@ package Motor is
 
   procedure Update;
   -- update next profile
+
+  procedure Update_Offsets (To : Position);
+  -- update offsets without changing the motor position
 
   procedure Update_Positions;
   -- update the alignment position and clears the offsets

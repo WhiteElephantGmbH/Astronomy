@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2014 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2014 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -33,6 +33,8 @@ private package Motor.Io.Protocol is
   function Actual_Device_Synch_State return Device.Time_Synch_State;
 
   procedure Define_Positions (The_Positions : Step_Positions);
+
+  procedure Update_Offsets (Offsets : Step_Positions);
 
   procedure Update_Positions (Offsets : Step_Positions);
 

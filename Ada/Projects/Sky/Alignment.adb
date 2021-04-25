@@ -174,8 +174,6 @@ package body Alignment is
   procedure Set (Ra_Offset  : Angle.Degrees;
                  Dec_Offset : Angle.Degrees) is
   begin
-    Log.Write ("Ra_Offset :" & Ra_Offset'image);
-    Log.Write ("Dec_Offset:" & Dec_Offset'image);
     Control.Set_Offsets (Ra  => Ra_Offset,
                          Dec => Dec_Offset);
   end Set;
@@ -216,8 +214,10 @@ package body Alignment is
 
   function Synchronized_Offsets return Offsets is
     The_Offsets : constant Offsets := Control.Star_Synchronized_Offsets;
+    use all type Device.Drive;
   begin
     Control.Clear_All_Corrections;
+    Log.Write ("Synchronized_Offsets M1:" & The_Offsets(D1)'image & " - M2:" & The_Offsets(D2)'image);
     return The_Offsets;
   end Synchronized_Offsets;
 
@@ -479,7 +479,6 @@ package body Alignment is
 
     function Star_Synchronized_Offsets return Offsets is
     begin
-      Log.Write ("Star Synchronized_Offsets");
       return (Device.D1 => The_Ra_Correction, Device.D2 => The_Dec_Correction);
     end Star_Synchronized_Offsets;
 

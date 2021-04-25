@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2014 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2014 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -31,6 +31,8 @@ private package Motor.Io.Protocol.Serial is
                                C0_2 : Natural);
 
   procedure Set_Step_Positions (P : Step_Positions);
+
+  procedure Update_Step_Offsets (Offsets : Step_Positions);
 
   procedure Update_Step_Positions (Offsets : Step_Positions);
 

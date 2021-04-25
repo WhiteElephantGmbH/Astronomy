@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2015 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2015 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -35,6 +35,7 @@ package body Motor.Io.Protocol.Udp is
                    Define_Directions,
                    Synchronize,
                    Update,
+                   Update_Offsets,
                    Update_Directions,
                    Adjust_1,
                    Adjust_2,
@@ -98,7 +99,7 @@ package body Motor.Io.Protocol.Udp is
       Start_Count_2 : Natural;
     when Define_Directions =>
       Positions : Step_Positions;
-    when Update_Directions =>
+    when Update_Offsets | Update_Directions =>
       Offsets : Step_Positions;
     when Set_Autoguiding =>
       Parameters : Autoguiding_Parameters;
@@ -214,6 +215,8 @@ package body Motor.Io.Protocol.Udp is
         return Stepper_Version_0;
       when 4 =>
         return Stepper_Version_1;
+      when 5 =>
+        return Stepper_Version_2;
       when others =>
         null;
       end case;
@@ -230,6 +233,9 @@ package body Motor.Io.Protocol.Udp is
 
     The_Transmit_Data     : Transmit_Data;
     Has_New_Transmit_Data : Boolean := False;
+
+    The_Update_Offset_Data : Transmit_Data;
+    Has_Update_Offset_Data : Boolean := False;
 
     The_Update_Direction_Data : Transmit_Data;
     Has_Update_Direction_Data : Boolean := False;
@@ -291,6 +297,9 @@ package body Motor.Io.Protocol.Udp is
       select
         accept Transmit (Data : Transmit_Data) do
           case Data.The_Command is
+          when Update_Offsets =>
+            The_Update_Offset_Data := Data;
+            Has_Update_Offset_Data := True;
           when Update_Directions =>
             The_Update_Direction_Data := Data;
             Has_Update_Direction_Data := True;
@@ -343,6 +352,9 @@ package body Motor.Io.Protocol.Udp is
         The_Delay_Time := Default_Delay_Time;
         if Has_New_Transmit_Data then
           Has_New_Transmit_Data := False;
+        elsif Has_Update_Offset_Data then
+          Has_Update_Offset_Data := False;
+          The_Transmit_Data := The_Update_Offset_Data;
         elsif Has_Update_Direction_Data then
           Has_Update_Direction_Data := False;
           The_Transmit_Data := The_Update_Direction_Data;
@@ -560,7 +572,7 @@ package body Motor.Io.Protocol.Udp is
           Log.Write ("Connected SkyTracker protocol version " & Image_Of (The_Telescope_Data.The_Version));
           The_Hardware_Version := Hardware_Version_Of (The_Telescope_Data.The_Version);
           case The_Hardware_Version is
-          when Stepper_Version_0 | Stepper_Version_1 =>
+          when Stepper_Version_2 =>
             return;
           when others =>
             Error.Raise_With ("firmware update required in stepper hardware.");
@@ -692,16 +704,25 @@ package body Motor.Io.Protocol.Udp is
 
   procedure Set_Step_Positions (The_Positions : Step_Positions) is
   begin
-    Log.Write ("set step position: P1 =>" & The_Positions.M1'img & "; P2 =>" & The_Positions.M2'img);
+    Log.Write ("set step positions: M1 =>" & The_Positions.M1'img & "; M2 =>" & The_Positions.M2'img);
     Transmit ((The_Command => Define_Directions,
                Positions   => The_Positions,
                others      => <>));
   end Set_Step_Positions;
 
 
+  procedure Update_Step_Offsets (Offsets : Step_Positions) is
+  begin
+    Log.Write ("update step offsets: M1 =>" & Offsets.M1'img & "; M2 =>" & Offsets.M2'img);
+    Transmit ((The_Command => Update_Offsets,
+               Offsets     => Offsets,
+               others      => <>));
+  end Update_Step_Offsets;
+
+
   procedure Update_Step_Positions (Offsets : Step_Positions) is
   begin
-    Log.Write ("update step position: O1 =>" & Offsets.M1'img & "; O2 =>" & Offsets.M2'img);
+    Log.Write ("update step positions: M1 =>" & Offsets.M1'img & "; M2 =>" & Offsets.M2'img);
     Transmit ((The_Command => Update_Directions,
                Offsets     => Offsets,
                others      => <>));

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2015 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2015 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -42,6 +42,8 @@ package body Motor.Io.Protocol.Simulation is
 
     entry Update (The_Drive  : Device.Drive;
                   The_Action : Action);
+
+    entry Update_Offsets (Offsets : Step_Positions);
 
     entry Update_Positions (Offsets : Step_Positions);
 
@@ -96,7 +98,7 @@ package body Motor.Io.Protocol.Simulation is
   begin
     The_Simulation.Get_Step_Data (The_Data);
     Log.Write ("actual step positions: M1 =>" & The_Data.Positions.M1'img & "; M2 =>" & The_Data.Positions.M2'img);
-    Log.Write ("actual step offsets: M1 =>" & The_Data.Offsets.M1'img & "; M2 =>" & The_Data.Offsets.M2'img);
+    Log.Write ("actual step offsets  : M1 =>" & The_Data.Offsets.M1'img & "  ; M2 =>" & The_Data.Offsets.M2'img);
     return The_Data;
   end Actual_Step_Data;
 
@@ -130,6 +132,13 @@ package body Motor.Io.Protocol.Simulation is
   begin
     The_Simulation.Update (The_Drive, The_Action);
   end Update;
+
+
+  procedure Update_Step_Offsets (Offsets : Step_Positions) is
+  begin
+    Log.Write ("update step offsets: M1 =>" & Offsets.M1'img & "; M2 =>" & Offsets.M2'img);
+    The_Simulation.Update_Offsets (Offsets);
+  end Update_Step_Offsets;
 
 
   procedure Update_Step_Positions (Offsets : Step_Positions) is
@@ -592,6 +601,13 @@ package body Motor.Io.Protocol.Simulation is
             end if;
           end;
         end Update;
+      or
+        accept Update_Offsets (Offsets : Step_Positions) do
+          The_Actions(D1).Offset := The_Actions(D1).Offset + Offsets.M1;
+          The_Actions(D2).Offset := The_Actions(D2).Offset + Offsets.M2;
+          The_Actions(D1).Position := The_Actions(D1).Position + Offsets.M1;
+          The_Actions(D2).Position := The_Actions(D2).Position + Offsets.M2;
+        end Update_Offsets;
       or
         accept Update_Positions (Offsets : Step_Positions) do
           The_Actions(D1).Position := The_Actions(D1).Position - The_Actions(D1).Offset + Offsets.M1;

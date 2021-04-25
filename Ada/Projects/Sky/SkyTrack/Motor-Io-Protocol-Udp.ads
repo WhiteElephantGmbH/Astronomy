@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2015 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2015 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -18,7 +18,7 @@ pragma Style_White_Elephant;
 private package Motor.Io.Protocol.Udp is
 
   procedure Connect_Device;
-  
+
   function Stepper_Version return Hardware_Version;
 
   procedure Start;
@@ -39,6 +39,8 @@ private package Motor.Io.Protocol.Udp is
   function Actual_Temperature return Celsius;
 
   procedure Set_Step_Positions (The_Positions : Step_Positions);
+
+  procedure Update_Step_Offsets (Offsets : Step_Positions);
 
   procedure Update_Step_Positions (Offsets : Step_Positions);
 
