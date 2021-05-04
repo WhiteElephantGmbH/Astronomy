@@ -6,8 +6,14 @@ pragma Style_White_Elephant;
 
 with Ada.Command_Line;
 with Ada.Text_IO;
+with Angle;
+with Earth;
 with Exceptions;
 with Network.Tcp;
+with Objects;
+with Space;
+with Stellarium;
+with Time;
 
 package body Test is
 
@@ -21,10 +27,19 @@ package body Test is
   Max_Retries : constant := 3;
 
 
+  function Home_Direction return Space.Direction is
+    East : constant Earth.Direction := Earth.Direction_Of (Alt => Angle.Zero, Az => Angle.Quadrant);
+  begin
+    return Objects.Direction_Of (East, Time.Universal);
+  end Home_Direction;
+
+
   procedure Client (Server : String) is
     The_Socket : Network.Tcp.Socket;
     Nr_Retries : Natural;
   begin
+    Io.Put_Line ("Language: " & Stellarium.Language'image);
+    Io.Put_Line ("Home RA : " & Space.Ra_Image_Of (Home_Direction));
     begin
       Nr_Retries := 0;
       loop

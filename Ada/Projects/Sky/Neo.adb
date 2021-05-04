@@ -25,12 +25,12 @@ with Earth;
 with Error;
 with File;
 with Norad;
-with Numerics;
 with Satellite;
 with Site;
 with Sky_Line;
 with Strings;
 with Traces;
+with Values;
 
 package body Neo is
 
@@ -127,32 +127,32 @@ package body Neo is
                   The_Az := Az_Below_Horizon;
                   The_Alt := Alt_Below_Horizon;
                   while The_Ut < Ut loop
-                    The_Az := Numerics.Interpolation_Of (T  => The_Ut,
-                                                         T1 => The_Data_Below_Horizon.Ut,
-                                                         T2 => Ut,
-                                                         V1 => Az_Below_Horizon,
-                                                         V2 => Az);
-                    The_Alt := Numerics.Interpolation_Of (T  => The_Ut,
-                                                          T1 => The_Data_Below_Horizon.Ut,
-                                                          T2 => Ut,
-                                                          V1 => Alt_Below_Horizon,
-                                                          V2 => Alt);
+                    The_Az := Values.Interpolation_Of (T  => The_Ut,
+                                                       T1 => The_Data_Below_Horizon.Ut,
+                                                       T2 => Ut,
+                                                       V1 => Az_Below_Horizon,
+                                                       V2 => Az);
+                    The_Alt := Values.Interpolation_Of (T  => The_Ut,
+                                                        T1 => The_Data_Below_Horizon.Ut,
+                                                        T2 => Ut,
+                                                        V1 => Alt_Below_Horizon,
+                                                        V2 => Alt);
                     if Sky_Line.Is_Above (Earth.Direction_Of (Alt => The_Alt, Az => The_Az)) then
                       exit;
                     end if;
                     The_Ut := The_Ut + Time.One_Second;
                   end loop;
                   return (Ut  => The_Ut,
-                          Ra => Numerics.Interpolation_Of (T  => The_Ut,
-                                                           T1 => The_Data_Below_Horizon.Ut,
-                                                           T2 => Ut,
-                                                           V1 => The_Data_Below_Horizon.Ra,
-                                                           V2 => Ra),
-                          Dec => Numerics.Interpolation_Of (T  => The_Ut,
-                                                            T1 => The_Data_Below_Horizon.Ut,
-                                                            T2 => Ut,
-                                                            V1 => The_Data_Below_Horizon.Dec,
-                                                            V2 => Dec));
+                          Ra => Values.Interpolation_Of (T  => The_Ut,
+                                                         T1 => The_Data_Below_Horizon.Ut,
+                                                         T2 => Ut,
+                                                         V1 => The_Data_Below_Horizon.Ra,
+                                                         V2 => Ra),
+                          Dec => Values.Interpolation_Of (T  => The_Ut,
+                                                          T1 => The_Data_Below_Horizon.Ut,
+                                                          T2 => Ut,
+                                                          V1 => The_Data_Below_Horizon.Dec,
+                                                          V2 => Dec));
                 else
                   return (Ut => Ut, Ra => Ra, Dec => Dec);
                 end if;
@@ -421,16 +421,16 @@ package body Neo is
     if Data /= null then
       for The_Index in Data.all'range loop
         if The_Index < Data.all'last and then Data(The_Index + 1).Ut >= Ut then
-          return Space.Direction_Of (Ra => Numerics.Interpolation_Of (T  => Ut,
-                                                                      T1 => Data(The_Index).Ut,
-                                                                      T2 => Data(The_Index + 1).Ut,
-                                                                      V1 => Data(The_Index).Ra,
-                                                                      V2 => Data(The_Index + 1).Ra),
-                                     Dec => Numerics.Interpolation_Of (T  => Ut,
-                                                                       T1 => Data(The_Index).Ut,
-                                                                       T2 => Data(The_Index + 1).Ut,
-                                                                       V1 => Data(The_Index).Dec,
-                                                                       V2 => Data(The_Index + 1).Dec));
+          return Space.Direction_Of (Ra => Values.Interpolation_Of (T  => Ut,
+                                                                    T1 => Data(The_Index).Ut,
+                                                                    T2 => Data(The_Index + 1).Ut,
+                                                                    V1 => Data(The_Index).Ra,
+                                                                    V2 => Data(The_Index + 1).Ra),
+                                     Dec => Values.Interpolation_Of (T  => Ut,
+                                                                     T1 => Data(The_Index).Ut,
+                                                                     T2 => Data(The_Index + 1).Ut,
+                                                                     V1 => Data(The_Index).Dec,
+                                                                     V2 => Data(The_Index + 1).Dec));
         end if;
       end loop;
     end if;

@@ -32,7 +32,7 @@ with Gui.Registered;
 with Lexicon;
 with Matrix;
 with Motor;
-with Numerics;
+with Objects;
 with Parameter;
 with Persistent;
 with Picture;
@@ -1032,8 +1032,8 @@ package body User is
           (Name.Is_Visible (Item) and (Magnitude < Max_Magnitude))
         then
           declare
-            Direction : constant Earth.Direction := Numerics.Direction_Of (Name.Direction_Of (Item, Time.Universal),
-                                                                           Time.Lmst);
+            Direction : constant Earth.Direction := Objects.Direction_Of (Name.Direction_Of (Item, Time.Universal),
+                                                                          Time.Lmst);
             use type Angle.Value;
             use type Angle.Signed;
 

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2012 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2012 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -22,9 +22,10 @@ with Application;
 with Definite_Doubly_Linked_Lists;
 with Error;
 with File;
-with Numerics;
+with Objects;
 with Strings;
 with Traces;
+with Values;
 
 package body Sky_Line is
 
@@ -58,11 +59,11 @@ package body Sky_Line is
                              First   : Element;
                              Second  : Element) return Angle.Value is
   begin
-    return Numerics.Interpolation_Of (Az   => Azimuth,
-                                      Az1  => First.Azimuth,
-                                      Alt1 => First.Altitude,
-                                      Az2  => Second.Azimuth,
-                                      Alt2 => Second.Altitude);
+    return Values.Interpolation_Of (Az   => Azimuth,
+                                    Az1  => First.Azimuth,
+                                    Alt1 => First.Altitude,
+                                    Az2  => Second.Azimuth,
+                                    Alt2 => Second.Altitude);
   end Interpolation_Of;
 
 
@@ -297,11 +298,11 @@ package body Sky_Line is
       Inc   : constant Angle.Unsigned := +Azimuth_Increment;
       I1    : constant Index          := Index(Angle.Unsigned'(+Az) / Inc);
       Az1   : constant Angle.Value    := +(Angle.Unsigned(I1) * Inc);
-      Limit : constant Angle.Value    := Numerics.Interpolation_Of (Az   => Az,
-                                                                    Az1  => Az1,
-                                                                    Alt1 => The_Horizon(I1),
-                                                                    Az2  => Az1 + Azimuth_Increment,
-                                                                    Alt2 => The_Horizon(I1 + 1));
+      Limit : constant Angle.Value    := Values.Interpolation_Of (Az   => Az,
+                                                                  Az1  => Az1,
+                                                                  Alt1 => The_Horizon(I1),
+                                                                  Az2  => Az1 + Azimuth_Increment,
+                                                                  Alt2 => The_Horizon(I1 + 1));
     begin
       return Limit < Earth.Alt_Of (Direction);
     end;
@@ -311,7 +312,7 @@ package body Sky_Line is
   function Is_Above (Direction : Space.Direction;
                      Lmst      : Time.Value) return Boolean is
   begin
-    return Is_Above (Numerics.Direction_Of (Direction, Lmst));
+    return Is_Above (Objects.Direction_Of (Direction, Lmst));
   end Is_Above;
 
 end Sky_Line;

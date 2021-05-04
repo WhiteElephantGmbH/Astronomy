@@ -19,6 +19,7 @@ with Alignment;
 with Device;
 with Matrix;
 with Numerics;
+with Objects;
 with Parameter;
 with Picture;
 with Site;
@@ -1360,7 +1361,7 @@ package body Telescope is
             The_Data.Pole_Offsets := Alignment.Pole_Offsets;
             The_Data.Rotations := Alignment.Rotations;
             The_Data.System_Error := Alignment.System_Error;
-            The_Data.Actual_Direction := Numerics.Direction_Of (The_Data.Local_Direction, The_Data.Universal_Time);
+            The_Data.Actual_Direction := Objects.Direction_Of (The_Data.Local_Direction, The_Data.Universal_Time);
             if Get_Direction = null then
               The_Data.Target_Direction := Space.Unknown_Direction;
             else

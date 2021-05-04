@@ -190,6 +190,9 @@ package body Network.Tcp.Servers is
     end loop Main;
     accept Finish;
     Log_Write ("finished");
+  exception
+  when Item: others =>
+    Log.Termination (Item);
   end Listener;
 
 

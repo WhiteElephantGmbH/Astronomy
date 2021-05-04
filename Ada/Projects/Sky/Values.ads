@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2019 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2019 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -16,11 +16,9 @@
 pragma Style_White_Elephant;
 
 with Angle;
-with Earth;
-with Space;
 with Time;
 
-package Numerics is
+package Values is
 
   function Interpolation_Of (Az, Az1, Az2, Alt1, Alt2 : Angle.Value) return Angle.Value;
 
@@ -30,20 +28,4 @@ package Numerics is
   function Interpolation_Of (T, T1, T2 : Time.Ut;
                                 V1, V2 : Angle.Degrees) return Angle.Degrees;
 
-
-  -------------------------------------------------
-  -- Convert eqatorial to horizontal coordinates --
-  -------------------------------------------------
-
-  function Direction_Of (Direction : Space.Direction;
-                         Lmst      : Time.Value) return Earth.Direction;
-
-
-  -------------------------------------------------
-  -- Convert horizontal to eqatorial coordinates --
-  -------------------------------------------------
-
-  function Direction_Of (Direction : Earth.Direction;
-                         Ut        : Time.Ut) return Space.Direction;
-
-end Numerics;
+end Values;

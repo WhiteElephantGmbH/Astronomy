@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2012 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2017 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,35 +15,21 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Earth;
-with Motor;
+with Network;
 with Space;
-with Time;
 
-package Numerics is
+package Lx200 is
 
-  ---------------------------------------------
-  -- Motor position of eqatorial coordinates --
-  ---------------------------------------------
+  subtype Port_Number is Network.Port_Number;
 
-  function Position_Of (Direction : Space.Direction;
-                        Rotations : Space.Direction;
-                        At_Time   : Time.Ut) return Motor.Position;
+  type Goto_Handler is access procedure (Direction : Space.Direction);
 
+  procedure Start (Used_Port : Port_Number);
 
-  ----------------------------------------------
-  -- Motor position of horizontal coordinates --
-  ----------------------------------------------
+  procedure Define_Handler (The_Handler : Goto_Handler);
 
-  function Position_Of (Direction : Earth.Direction) return Motor.Position;
+  procedure Set (Direction : Space.Direction);
 
+  procedure Close;
 
-  ----------------------------------------------
-  -- Horizontal coordinates of motor position
-  ----------------------------------------------
-
-  procedure Calculate_Horizontal_Coordinates_For (Data          :     Motor.Position_Data;
-                                                  The_Positions : out Earth.Direction;
-                                                  The_Offsets   : out Earth.Direction);
-
-end Numerics;
+end Lx200;

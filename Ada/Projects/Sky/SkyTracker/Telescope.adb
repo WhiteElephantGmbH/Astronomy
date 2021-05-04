@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2019 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2019 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -17,7 +17,7 @@ pragma Style_White_Elephant;
 
 with Ada.Real_Time;
 with Cwe;
-with Numerics;
+with Objects;
 with Parameter;
 with System;
 with Traces;
@@ -271,9 +271,9 @@ package body Telescope is
         raise Target_Lost;
       end if;
       if Earth.Direction_Is_Known (The_Adjusted_Offset) then
-        The_Direction := Numerics.Direction_Of (Direction, Time.Lmst_Of (Adjusted_Time));
+        The_Direction := Objects.Direction_Of (Direction, Time.Lmst_Of (Adjusted_Time));
         Earth.Add_To (The_Direction, The_Adjusted_Offset);
-        return Numerics.Direction_Of (The_Direction, Adjusted_Time);
+        return Objects.Direction_Of (The_Direction, Adjusted_Time);
       else
         return Direction;
       end if;
@@ -329,8 +329,8 @@ package body Telescope is
       Limits  : constant Device.Encoder_Limits := Device.Limits;
 
       function Azm_Encoder_Goto_Position return Device.Encoder_Degrees is
-        The_Direction : constant Earth.Direction := Numerics.Direction_Of (Target_Direction (The_Start_Time),
-                                                                           Time.Lmst_Of (The_Start_Time));
+        The_Direction : constant Earth.Direction := Objects.Direction_Of (Target_Direction (The_Start_Time),
+                                                                          Time.Lmst_Of (The_Start_Time));
         Azm_Goto_Position : Device.Encoder_Degrees := Azm_Encoder_Position_Of (The_Direction);
         The_Delta         : Device.Encoder_Degrees;
       begin
@@ -350,13 +350,13 @@ package body Telescope is
       end Azm_Encoder_Goto_Position;
 
       function Home_Direction return Space.Direction is
-        The_Direction : Earth.Direction := Numerics.Direction_Of (Target_Direction (The_Start_Time),
-                                                                  Time.Lmst_Of (The_Start_Time));
+        The_Direction : Earth.Direction := Objects.Direction_Of (Target_Direction (The_Start_Time),
+                                                                 Time.Lmst_Of (The_Start_Time));
         use type Angle.Value;
       begin
         The_Direction := Earth.Direction_Of (Az  => Angle.Semi_Circle + Angle.Degrees(The_Azm_Offset),
                                              Alt => Earth.Alt_Of (The_Direction));
-        return Numerics.Direction_Of (The_Direction, The_Start_Time);
+        return Objects.Direction_Of (The_Direction, The_Start_Time);
       end Home_Direction;
 
     begin -- Goto_Target
@@ -445,11 +445,11 @@ package body Telescope is
         Lower_Limit : constant Device.Encoder_Degrees := Limits.Azm_Lower_Goto + Azm_Goto_Limit;
         Upper_Limit : constant Device.Encoder_Degrees := Limits.Azm_Upper_Goto - Azm_Goto_Limit;
 
-        Arrival_Position : constant Earth.Direction := Numerics.Direction_Of (Get_Direction (Id, The_Arrival_Time),
-                                                                              Time.Lmst_Of (The_Arrival_Time));
+        Arrival_Position : constant Earth.Direction := Objects.Direction_Of (Get_Direction (Id, The_Arrival_Time),
+                                                                             Time.Lmst_Of (The_Arrival_Time));
         Leaving_Time     : constant Time.Ut := The_Next_Tracking_Period.Leaving_Time;
-        Leaving_Position : constant Earth.Direction := Numerics.Direction_Of (Get_Direction (Id, Leaving_Time),
-                                                                              Time.Lmst_Of (Leaving_Time));
+        Leaving_Position : constant Earth.Direction := Objects.Direction_Of (Get_Direction (Id, Leaving_Time),
+                                                                             Time.Lmst_Of (Leaving_Time));
         Current_Azm_Encoder_Position : constant Device.Encoder_Degrees := Mount.Actual_Encoder.Azm;
         Arrival_Azm_Encoder_Position : Device.Encoder_Degrees := Azm_Encoder_Position_Of (Arrival_Position);
         Leaving_Azm_Encoder_Position : Device.Encoder_Degrees := Azm_Encoder_Position_Of (Leaving_Position);

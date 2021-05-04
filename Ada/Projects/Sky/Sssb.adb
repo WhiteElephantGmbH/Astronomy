@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2013 .. 2020 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2013 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -22,9 +22,9 @@ with Data;
 with Definite_Doubly_Linked_Lists;
 with Error;
 with File;
-with Numerics;
 with Strings;
 with Traces;
+with Values;
 
 package body Sssb is
 
@@ -154,16 +154,16 @@ package body Sssb is
         for The_Place of The_Object.Ephemeris loop
           if The_Place.Ut > Ut then
             if Has_Place_Before then
-              Ra := Numerics.Interpolation_Of (T  => Ut,
-                                               T1 => The_Place_Before.Ut,
-                                               T2 => The_Place.Ut,
-                                               V1 => The_Place_Before.Ra,
-                                               V2 => The_Place.Ra);
-              Dec := Numerics.Interpolation_Of (T  => Ut,
-                                                T1 => The_Place_Before.Ut,
-                                                T2 => The_Place.Ut,
-                                                V1 => The_Place_Before.Dec,
-                                                V2 => The_Place.Dec);
+              Ra := Values.Interpolation_Of (T  => Ut,
+                                             T1 => The_Place_Before.Ut,
+                                             T2 => The_Place.Ut,
+                                             V1 => The_Place_Before.Ra,
+                                             V2 => The_Place.Ra);
+              Dec := Values.Interpolation_Of (T  => Ut,
+                                              T1 => The_Place_Before.Ut,
+                                              T2 => The_Place.Ut,
+                                              V1 => The_Place_Before.Dec,
+                                              V2 => The_Place.Dec);
             else
               Ra := The_Place.Ra;
               Dec := The_Place.Dec;

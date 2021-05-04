@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2012 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                           (c) 2021 by White Elephant GmbH, Schaffhausen, Switzerland                              *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -16,34 +16,24 @@
 pragma Style_White_Elephant;
 
 with Earth;
-with Motor;
 with Space;
 with Time;
 
-package Numerics is
+package Objects is
 
-  ---------------------------------------------
-  -- Motor position of eqatorial coordinates --
-  ---------------------------------------------
+  -------------------------------------------------
+  -- Convert eqatorial to horizontal coordinates --
+  -------------------------------------------------
 
-  function Position_Of (Direction : Space.Direction;
-                        Rotations : Space.Direction;
-                        At_Time   : Time.Ut) return Motor.Position;
-
-
-  ----------------------------------------------
-  -- Motor position of horizontal coordinates --
-  ----------------------------------------------
-
-  function Position_Of (Direction : Earth.Direction) return Motor.Position;
+  function Direction_Of (Direction : Space.Direction;
+                         Lmst      : Time.Value) return Earth.Direction;
 
 
-  ----------------------------------------------
-  -- Horizontal coordinates of motor position
-  ----------------------------------------------
+  -------------------------------------------------
+  -- Convert horizontal to eqatorial coordinates --
+  -------------------------------------------------
 
-  procedure Calculate_Horizontal_Coordinates_For (Data          :     Motor.Position_Data;
-                                                  The_Positions : out Earth.Direction;
-                                                  The_Offsets   : out Earth.Direction);
+  function Direction_Of (Direction : Earth.Direction;
+                         Ut        : Time.Ut) return Space.Direction;
 
-end Numerics;
+end Objects;
