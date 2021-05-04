@@ -425,6 +425,38 @@ package body Network.Tcp is
   end String_From;
 
 
+  function Raw_Character_From (Used_Socket     : Socket;
+                               Receive_Timeout : Duration := Use_Socket_Timeout) return Character is
+    use type Ada.Calendar.Time;
+    The_Timeout  : Duration;
+    The_Deadline : Ada.Calendar.Time;
+    The_Data     : Data (1..1);
+    function Convert is new Ada.Unchecked_Conversion (Data_Item, Character);
+  begin
+    if Used_Socket.The_Protocol /= Raw then
+      raise Usage_Error;
+    end if;
+    if Receive_Timeout = Use_Socket_Timeout then
+      The_Timeout := Used_Socket.The_Timeout;
+    else
+      The_Timeout := Receive_Timeout;
+    end if;
+    if The_Timeout >= Net.Forever then
+      The_Timeout := Net.Forever;
+    else
+      The_Deadline := Ada.Calendar.Clock + The_Timeout;
+    end if;
+    The_Data := Get_Data_From (Used_Socket.The_Socket, 1, The_Timeout);
+    if The_Timeout /= Net.Forever then
+      The_Timeout := The_Deadline - Ada.Calendar.Clock;
+    end if;
+    if The_Timeout <= Net.Immediate then
+      raise Timeout;
+    end if;
+    return Convert(The_Data(The_Data'first));
+  end Raw_Character_From;
+
+
   function Raw_String_From (Used_Socket     : Socket;
                             Terminator      : Character;
                             Receive_Timeout : Duration := Use_Socket_Timeout) return String is

@@ -72,6 +72,9 @@ package Network.Tcp is
                         Receive_Timeout : Duration := Use_Socket_Timeout) return Unsigned.Byte_String;
   -- Note: Protocol can't be raw
 
+  function Raw_Character_From (Used_Socket     : Socket;
+                               Receive_Timeout : Duration := Use_Socket_Timeout) return Character;
+
   function Raw_String_From (Used_Socket     : Socket;
                             Terminator      : Character;
                             Receive_Timeout : Duration := Use_Socket_Timeout) return String;
