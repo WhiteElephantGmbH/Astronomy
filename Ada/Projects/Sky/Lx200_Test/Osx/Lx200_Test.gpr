@@ -1,15 +1,15 @@
-project Tcp_Test is
+project Lx200_Test is
 
    package Naming is
       for Casing use "mixedcase"; 
    end Naming;
 
-   for Source_Dirs use ("../../../Projects/Tcp_Test",
+   for Source_Dirs use ("../../../Projects/Lx200_Test",
                         "../../../Projects",
                         "../../../Shared",
                         "../../../Shared/Osx");
                         
-   for Main use ("Tcp_Test.adb");
+   for Main use ("Lx200_Test.adb");
 
    for Exec_Dir use external ("HOME") & "/Product/Astronomy/Osx";
 
@@ -41,4 +41,4 @@ project Tcp_Test is
                                         "-Wl,-headerpad_max_install_names");
    end Linker;
 
-end Tcp_Test;
+end Lx200_Test;

@@ -1,13 +1,13 @@
 -- *********************************************************************************************************************
--- *                       (c) 2016 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                           (c) 2021 by White Elephant GmbH, Schaffhausen, Switzerland                              *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
-pragma Style_Soudronic;
+pragma Style_White_Elephant;
 pragma Console_Application;
 
-with Tcp;
+with Test;
 
-procedure Tcp_Test is
+procedure Lx200_Test is
 begin
-  Tcp.Work;
-end Tcp_Test;
+  Test.Execute;
+end Lx200_Test;

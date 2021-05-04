@@ -1,12 +1,12 @@
 -- *********************************************************************************************************************
--- *                       (c) 2016 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                           (c) 2021 by White Elephant GmbH, Schaffhausen, Switzerland                              *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
-pragma Style_Soudronic;
+pragma Style_White_Elephant;
 
-package Tcp is
+package Test is
 
-   procedure Work;
+   procedure Execute;
 
-end Tcp;
+end Test;
 
