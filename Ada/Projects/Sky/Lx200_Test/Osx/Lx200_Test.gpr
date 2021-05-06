@@ -4,10 +4,13 @@ project Lx200_Test is
       for Casing use "mixedcase"; 
    end Naming;
 
-   for Source_Dirs use ("../../../Projects/Lx200_Test",
-                        "../../../Projects",
-                        "../../../Shared",
-                        "../../../Shared/Osx");
+   for Source_Dirs use ("../../../../Projects/Sky/Lx200_Test",
+                        "../../../../Projects/Sky",
+                        "../../../../Projects",
+                        "../../../../SkyData",
+                        "../../../../Shared",
+                        "../../../../Shared/Osx",
+                        "../../../../Gid");
                         
    for Main use ("Lx200_Test.adb");
 

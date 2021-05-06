@@ -20,7 +20,8 @@ with Ada.Text_IO;
 with Angle;
 with Earth;
 with Exceptions;
-with Picture;
+with M_Zero;
+with Objects;
 with Site;
 with Space;
 with Strings;
@@ -30,6 +31,8 @@ package body Control is
 
   procedure Put (Item : String) renames Ada.Text_IO.Put_Line;
 
+  function Get return String renames Ada.Text_IO.Get_Line;
+
   function Image_Of (Item : Angle.Value) return String is
   begin
     return Strings.Ansi_Of (Angle.Image_Of (The_Value   => Item,
@@ -38,49 +41,81 @@ package body Control is
                                             Show_Signed => True));
   end Image_Of;
 
+  function Home_Direction return Space.Direction is
+    East : constant Earth.Direction := Earth.Direction_Of (Alt => Angle.Zero, Az => Angle.Quadrant);
+  begin
+    return Objects.Direction_Of (East, Time.Universal);
+  end Home_Direction;
+
+  Is_Complete : Boolean;
+
+  procedure Slewing_Completion (Is_Ok : Boolean) is
+  begin
+    Is_Complete := Is_Ok;
+  end Slewing_Completion;
+
+
+  procedure Client (Server : String) is
+  begin
+    Put ("Home RA : " & Space.Ra_Image_Of (Home_Direction));
+    M_Zero.Connect (Slewing_Completion'access, Server);
+    Put (">>> connected to " & Server);
+    loop
+      Ada.Text_IO.Put (">");
+      Is_Complete := False;
+      declare
+        Command : constant String := Get;
+      begin
+        exit when Command = "";
+        declare
+          Replay : constant String := M_Zero.Reply_For (Command);
+        begin
+          if Replay /= "" then
+            Put (Replay);
+          end if;
+        end;
+        if Command = "MS" then
+          Put ("slewing");
+          while not Is_Complete loop
+            Put (M_Zero.Reply_For ("GD"));
+            Put (M_Zero.Reply_For ("GR"));
+            delay 1.0;
+          end loop;
+          Put ("tracking");
+        end if;
+      exception
+      when M_Zero.No_Connection =>
+        Put ("<not connected>");
+      end;
+    end loop;
+    M_Zero.Disconnect;
+  exception
+  when others =>
+    M_Zero.Disconnect;
+    raise;
+  end Client;
+
 
   procedure Start is
-    The_Direction : Space.Direction;
-    The_Position  : Earth.Direction;
   begin
     case Ada.Command_Line.Argument_Count is
     when 0 =>
-      Put ("Picture filename expected");
+      Put ("IP Address expected");
     when 1 =>
-      Picture.Read (Filename    => Ada.Command_Line.Argument(1),
-                    Height      => 2.97,
-                    Width       => 4.46,
-                    Search_From => Space.North_Pole);
-      The_Direction := Picture.Direction;
-      Put ("RA  J2000 : " & Space.Ra_Image_Of (The_Direction));
-      Put ("DEC J2000 : " & Space.Dec_Image_Of (The_Direction));
-      Put ("Elevation :" & Picture.Elevation'image & 'm');
-      Put ("Latitude  : " & Image_Of ( Picture.Latitude));
-      Put ("Longitude : " & Image_Of (Picture.Longitude));
-      Site.Define ((Latitude  => Picture.Latitude,
-                    Longitude => Picture.Longitude,
-                    Elevation => Picture.Elevation));
-      Put ("Time      : " & Time.Image_Of (Picture.Time_Stamp));
-      The_Direction := Picture.Actual_Direction;
-      Put ("RA        : " & Space.Ra_Image_Of (The_Direction));
-      Put ("DEC       : " & Space.Dec_Image_Of (The_Direction));
-      The_Position := Picture.Direction;
-      Put ("ALT       : " & Earth.Alt_Image_Of (The_Position));
-      Put ("AZ        : " & Earth.Az_Image_Of (The_Position));
+      if Site.Is_Defined then
+        Put ("Elevation :" & Site.Elevation'image & 'm');
+        Put ("Latitude  : " & Image_Of ( Site.Latitude));
+        Put ("Longitude : " & Image_Of (Site.Longitude));
+        Client (Ada.Command_Line.Argument(1));
+      else
+        Put ("Site not Defined");
+      end if;
     when others =>
       Put ("Too many arguments");
     end case;
   exception
-  when Picture.File_Not_Found =>
-    Put ("Picture file not found");
-  when Picture.Invalid_File =>
-    Put ("Invalid picture file");
-  when Picture.Not_Solved =>
-    Put ("Picture not locatable");
-  when Picture.Undefined_Value =>
-    Put ("Undefined picture information");
   when Item: others =>
-    Put (Exceptions.Information_Of(Item));
+    Put ("<Traceback> " & Exceptions.Information_Of (Item));
   end Start;
 
 end Control;

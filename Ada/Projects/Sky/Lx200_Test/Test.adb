@@ -6,130 +6,27 @@ pragma Style_White_Elephant;
 
 with Ada.Command_Line;
 with Ada.Text_IO;
-with Angle;
-with Earth;
 with Exceptions;
 with Network.Tcp;
-with Objects;
-with Space;
-with Stellarium;
-with Time;
 
 package body Test is
 
   package Io renames Ada.Text_IO;
 
-  Socket_Protocol : constant Network.Tcp.Protocol := Network.Tcp.Raw;
-  Server_Port     : constant Network.Port_Number := 4030;
-
-  Terminator : constant Character := '#';
-
-  Max_Retries : constant := 3;
-
-
-  function Home_Direction return Space.Direction is
-    East : constant Earth.Direction := Earth.Direction_Of (Alt => Angle.Zero, Az => Angle.Quadrant);
-  begin
-    return Objects.Direction_Of (East, Time.Universal);
-  end Home_Direction;
-
-
-  procedure Client (Server : String) is
-    The_Socket : Network.Tcp.Socket;
-    Nr_Retries : Natural;
-  begin
-    Io.Put_Line ("Language: " & Stellarium.Language'image);
-    Io.Put_Line ("Home RA : " & Space.Ra_Image_Of (Home_Direction));
-    begin
-      Nr_Retries := 0;
-      loop
-        begin
-          The_Socket := Network.Tcp.Socket_For (Network.Ip_Address_Of (Server), Server_Port, Socket_Protocol, 1.0);
-          exit;
-        exception
-        when Item: others =>
-          Io.Put_Line ("Client Error: " & Network.Net.Resolve_Exception (Item)'img);
-          Io.Put_Line (Exceptions.Information_Of (Item));
-        end;
-        Nr_Retries := Nr_Retries + 1;
-        if Nr_Retries > Max_Retries then
-          return;
-        end if;
-      end loop;
-      Io.Put_Line (">>> connected to " & Server);
-      loop
-        Ada.Text_IO.Put (">");
-        declare
-          Command : constant String := Io.Get_Line;
-        begin
-          Network.Tcp.Send (The_String  => ':' & Command & Terminator,
-                            Used_Socket => The_Socket);
-          exit when Command = "";
-          case Command(Command'first) is
-          when 'A' | 'M' | 'Q' | 'R' =>
-            if Command in "MS" | "MA" then -- MA -> Timeout
-              declare
-                Reply : constant String := Network.Tcp.Raw_String_From (The_Socket, Terminator => Terminator);
-              begin
-                Io.Put_Line (Reply);
-              end;
-              declare
-                Reply : constant String
-                  := Network.Tcp.Raw_String_From (The_Socket, Terminator => Terminator, Receive_Timeout => 40.0);
-              begin
-                Io.Put_Line (Reply);
-              end;
-            end if;
-          when 'S' =>
-            case Command(Command'first + 1) is
-            when 'g' | 't' =>
-              loop
-                declare
-                  Reply : constant String := Network.Tcp.Raw_String_From (The_Socket, Terminator => Terminator);
-                begin
-                  Io.Put_Line (Reply);
-                  exit when Reply /= "#";
-                end;
-              end loop;
-            when others =>
-              declare
-                Reply : constant Character := Network.Tcp.Raw_Character_From (The_Socket);
-              begin
-                Io.Put_Line ("" & Reply);
-              end;
-            end case;
-          when others =>
-            declare
-              Reply : constant String := Network.Tcp.Raw_String_From (The_Socket, Terminator => Terminator);
-            begin
-              Io.Put_Line (Reply);
-            end;
-          end case;
-        exception
-        when Network.Timeout =>
-          Io.Put_Line ("<Timeout>");
-        end;
-      end loop;
-      Network.Tcp.Close (The_Socket);
-    exception
-    when Network.Not_Found
-      |  Network.Host_Error
-      |  Network.Tcp.No_Client =>
-      Io.Put_Line ("!!! Server not responding");
-      Network.Tcp.Close (The_Socket);
-    end;
-  exception
-  when Occurrence: others =>
-    Io.Put_Line ("Client Error: " & Network.Net.Resolve_Exception (Occurrence)'img);
-    Io.Put_Line ("Traceback: " & Exceptions.Information_Of (Occurrence));
-  end Client;
-
 
   procedure Server is
+
+    Socket_Protocol : constant Network.Tcp.Protocol := Network.Tcp.Raw;
+    Server_Port     : constant Network.Port_Number := 4030;
+
+    Terminator : constant Character := '#';
 
     Listener_Socket   : Network.Tcp.Listener_Socket;
     The_Client_Socket : Network.Tcp.Socket;
     Client_Address    : Network.Ip_Address;
+
+    Send_Ge_Is_Pending : Boolean := False;
+    Send_Delay         : Integer;
 
     procedure Message_Handler (Data : String) is
 
@@ -148,6 +45,14 @@ package body Test is
         declare
           Command : constant String := Data(Data'first .. Data'first + 2);
         begin
+          if Send_Ge_Is_Pending then
+            Send_Delay := Send_Delay - 1;
+            if Send_Delay = 0 then
+              Send ("ge#");
+              Io.Put_Line ("tracking");
+              Send_Ge_Is_Pending := False;
+            end if;
+          end if;
           if Command = ":GW" then
             Io.Put_Line ("Get Alignment Status");
             Send ("PT0#");
@@ -218,9 +123,8 @@ package body Test is
             Io.Put_Line ("Slew to Target Object");
             Send ("0#"); -- OK
             Io.Put_Line ("slewing..");
-            delay (3.0);
-            Send ("ge#"); -- OK
-            Io.Put_Line ("tracking");
+            Send_Ge_Is_Pending := True;
+            Send_Delay := 7;
           elsif Command = ":CM" then
             Io.Put_Line ("Synch");
             Send ("0#"); -- OK
@@ -301,10 +205,8 @@ package body Test is
     if Nr_Of_Arguments = 0 then
       Io.Put_Line ("TCP Test program in server mode.");
       Server;
-    elsif Nr_Of_Arguments > 1 then
-      Io.Put_Line ("Incorrect number of parameters");
     else
-      Client (Ada.Command_Line.Argument(1));
+      Io.Put_Line ("Incorrect number of parameters");
     end if;
   exception
   when Event : others =>
