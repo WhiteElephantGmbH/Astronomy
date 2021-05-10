@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2017 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2017 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -24,7 +24,7 @@ with Traces;
 with Time;
 with User.Input;
 
-package body Lx200 is
+package body Lx200_Server is
 
   package Log is new Traces ("Lx200");
 
@@ -181,4 +181,4 @@ package body Lx200 is
     Log.Write ("end");
   end Close;
 
-end Lx200;
+end Lx200_Server;

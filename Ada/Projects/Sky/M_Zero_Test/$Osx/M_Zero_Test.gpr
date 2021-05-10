@@ -1,10 +1,10 @@
-project Lx200_Test is
+project M_Zero_Test is
 
    package Naming is
       for Casing use "mixedcase"; 
    end Naming;
 
-   for Source_Dirs use ("../../../../Projects/Sky/Lx200_Test",
+   for Source_Dirs use ("../../../../Projects/Sky/M_Zero_Test",
                         "../../../../Projects/Sky",
                         "../../../../Projects",
                         "../../../../SkyData",
@@ -12,7 +12,7 @@ project Lx200_Test is
                         "../../../../Shared/Osx",
                         "../../../../Gid");
                         
-   for Main use ("Lx200_Test.adb");
+   for Main use ("M_Zero_Test.adb");
 
    for Exec_Dir use external ("HOME") & "/Product/Astronomy/Osx";
 
@@ -44,4 +44,4 @@ project Lx200_Test is
                                         "-Wl,-headerpad_max_install_names");
    end Linker;
 
-end Lx200_Test;
+end M_Zero_Test;

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2017 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2017 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -18,7 +18,7 @@ pragma Style_White_Elephant;
 with Network;
 with Space;
 
-package Lx200 is
+package Lx200_Server is
 
   subtype Port_Number is Network.Port_Number;
 
@@ -32,4 +32,4 @@ package Lx200 is
 
   procedure Close;
 
-end Lx200;
+end Lx200_Server;

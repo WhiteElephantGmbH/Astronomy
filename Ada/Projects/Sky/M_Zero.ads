@@ -4,16 +4,41 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with Network;
+with Space;
+
 package M_Zero is
 
-  No_Connection : exception;
+  type State is (Error, Disconnected, Connected, Initialized, Moving, Approaching, Tracking);
 
-  type Slewing_Complete_Handling is access procedure (Is_Ok : Boolean);
+  type Information is record
+    Status    : State;
+    Direction : Space.Direction;
+  end record;
 
-  procedure Connect (Slewing_Complete : Slewing_Complete_Handling;
-                     Server_Address   : String);
+  type Moving_Rate is (Centering, Guiding, Finding, Slewing);
 
-  function Reply_For (Command : String) return String;
+  type Directions is (Up, Down, Left, Right);
+
+  function Error_Message return String;
+
+  procedure Connect (Server_Address : Network.Ip_Address);
+
+  procedure Initialize;
+
+  procedure Set_Rate (Rate : Moving_Rate);
+
+  procedure Start_Move (Direction : Directions);
+
+  procedure Stop_Move (Direction : Directions);
+
+  procedure Stop_Move;
+
+  procedure Slew_To (Location : Space.Direction);
+
+  procedure Synch_To (Location : Space.Direction);
+
+  function Get return Information;
 
   procedure Disconnect;
 

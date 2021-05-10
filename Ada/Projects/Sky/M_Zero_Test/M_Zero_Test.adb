@@ -7,7 +7,7 @@ pragma Console_Application;
 
 with Test;
 
-procedure Lx200_Test is
+procedure M_Zero_Test is
 begin
   Test.Execute;
-end Lx200_Test;
+end M_Zero_Test;

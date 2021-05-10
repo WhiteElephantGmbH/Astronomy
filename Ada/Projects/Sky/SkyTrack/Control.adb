@@ -23,7 +23,7 @@ with Earth;
 with Error;
 with Gui;
 with Horizon;
-with Lx200;
+with Lx200_Server;
 with Moon;
 with Motor;
 with Name;
@@ -471,7 +471,7 @@ package body Control is
       when others =>
         End_Travelling;
       end case;
-      Lx200.Set (The_Data.Actual_Direction);
+      Lx200_Server.Set (The_Data.Actual_Direction);
       Stellarium.Set (The_Data.Actual_Direction);
     end Handle_Telescope_Information;
 
@@ -569,7 +569,7 @@ package body Control is
           Targets.Stop;
           Telescope.Close;
           Stellarium.Close;
-          Lx200.Close;
+          Lx200_Server.Close;
           exit;
         end case;
       or
@@ -590,7 +590,7 @@ package body Control is
     Gui.Close;
     Telescope.Close;
     Stellarium.Close;
-    Lx200.Close;
+    Lx200_Server.Close;
     Action_Handler.Enable_Termination;
   end Manager;
 
@@ -618,7 +618,7 @@ package body Control is
 
     procedure Startup is
     begin
-      Lx200.Define_Handler (Goto_Handler'access);
+      Lx200_Server.Define_Handler (Goto_Handler'access);
       Stellarium.Define_Handler (Goto_Handler'access);
       The_Manager := new Manager;
     end Startup;
@@ -642,7 +642,7 @@ package body Control is
     procedure Start_Lx200_Server is
       Used_Port : constant Network.Port_Number := Parameter.Lx200_Port;
     begin
-      Lx200.Start (Used_Port);
+      Lx200_Server.Start (Used_Port);
     exception
     when Network.Tcp.Port_In_Use =>
       Error.Raise_With (Application.Name & " - TCP port" & Used_Port'img & " for Lx200 in use");

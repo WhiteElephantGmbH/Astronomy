@@ -8,6 +8,7 @@ with Ada.Command_Line;
 with Ada.Text_IO;
 with Exceptions;
 with Network.Tcp;
+with Log;
 
 package body Test is
 
@@ -25,8 +26,13 @@ package body Test is
     The_Client_Socket : Network.Tcp.Socket;
     Client_Address    : Network.Ip_Address;
 
+    type State is (Startup, Initialize, Tracking);
+
+    Is_Polar           : Boolean := True;
+    The_State          : State := Startup;
     Send_Ge_Is_Pending : Boolean := False;
     Send_Delay         : Integer;
+
 
     procedure Message_Handler (Data : String) is
 
@@ -55,10 +61,15 @@ package body Test is
           end if;
           if Command = ":GW" then
             Io.Put_Line ("Get Alignment Status");
-            Send ("PT0#");
+            if Is_Polar then
+              Send ("PT0#");
+            else
+              Send ("AT0#");
+            end if;
           elsif Command = ":GV" then
-            case Command(Command'first + 3) is
+            case Data(Data'first + 3) is
             when 'P' => -- GVP
+              The_State := Startup;
               Io.Put_Line ("Get Product Name");
               Send ("Avalon#");
             when 'D' => -- GVD
@@ -71,15 +82,17 @@ package body Test is
               Io.Put_Line ("Unknown GV Command");
             end case;
           elsif Command = ":AA" then
+            Is_Polar := False;
             Io.Put_Line ("Set AltAz Alignment");
           elsif Command = ":AP" then
+            Is_Polar := True;
             Io.Put_Line ("Set Polar Alignment");
           elsif Command = ":Gg" then
             Io.Put_Line ("Get Longitude");
-            Send ("+012*34:18G#");
+            Send ("+012*34:18#");
           elsif Command = ":Gt" then
             Io.Put_Line ("Get Latitude");
-            Send ("+41t37:23");
+            Send ("+41*37:23");
           elsif Command = ":GS" then
             Io.Put_Line ("Get Sideral Time");
             Send ("00:34:56");
@@ -88,7 +101,14 @@ package body Test is
             Send ("+48*22'37");
           elsif Command = ":GD" then
             Io.Put_Line ("Get Telescope DEC");
-            Send ("+00*00:00#");
+            case The_State is
+            when Startup =>
+              Send ("+00*00:00#");
+            when Initialize =>
+              Send ("+90*00:00#");
+            when Tracking =>
+              Send ("+30*00:00#");
+            end case;
           elsif Command = ":GR" then
             Io.Put_Line ("Get Telescope RA");
             Send ("00:16:25#");
@@ -116,10 +136,11 @@ package body Test is
           elsif Command = ":Sg" then -- :Sg+010g39:42#
             Io.Put_Line ("Set Longitude");
             Send ("0#");
-          elsif Command = ":St" then -- :Gt+47*40:35#
+          elsif Command = ":St" then -- :St+47*40:35#
             Io.Put_Line ("Set Latitude");
             Send ("0#");
           elsif Command = ":MS" then
+            The_State := Tracking;
             Io.Put_Line ("Slew to Target Object");
             Send ("0#"); -- OK
             Io.Put_Line ("slewing..");
@@ -128,6 +149,14 @@ package body Test is
           elsif Command = ":CM" then
             Io.Put_Line ("Synch");
             Send ("0#"); -- OK
+            case The_State is
+            when Startup =>
+              The_State := Initialize;
+            when Initialize =>
+              The_State := Tracking;
+            when Tracking =>
+              null;
+            end case;
           elsif Command = ":Me" then
             Execute ("Move_Left");
           elsif Command = ":Mn" then
@@ -167,34 +196,37 @@ package body Test is
       elsif Data = ":Q#" then
         Execute ("Stop");
       else
-        Io.Put_Line ("Unknown");
+        Io.Put_Line ("Unknown " & Data);
       end if;
     end Message_Handler;
 
-  begin
+  begin -- Server
     Network.Tcp.Create_Socket_For (The_Port     => Server_Port,
                                    The_Protocol => Socket_Protocol,
                                    The_Listener => Listener_Socket);
-    Network.Tcp.Accept_Client_From (Listener_Socket,
-                                    The_Client_Socket,
-                                    Client_Address);
-    Io.Put_Line ("Client connected. Ip Address " & Network.Image_Of (Client_Address));
-    begin
-      loop
-        declare
-          Command : constant String := Network.Tcp.Raw_String_From (The_Client_Socket, Terminator => Terminator);
-        begin
-          exit when Command = ":#";
-          Io.Put_Line (Command);
-          Message_Handler (Command);
-        end;
-      end loop;
-    exception
-    when Network.Tcp.No_Client =>
-      Io.Put_Line ("Client has disconnected");
-    end;
+    Main: loop
+      Network.Tcp.Accept_Client_From (Listener_Socket,
+                                      The_Client_Socket,
+                                      Client_Address);
+      Io.Put_Line ("Client connected. Ip Address " & Network.Image_Of (Client_Address));
+      begin
+        loop
+          declare
+            Command : constant String := Network.Tcp.Raw_String_From (The_Client_Socket, Terminator => Terminator);
+          begin
+            exit Main when Command = "";
+            Io.Put_Line (Command);
+            Message_Handler (Command);
+          end;
+        end loop;
+      exception
+      when Network.Tcp.No_Client =>
+        Io.Put_Line ("Client has disconnected");
+      end;
+    end loop Main;
   exception
   when Item: others =>
+    Log.Write (Item);
     Io.Put_Line ("Server Error: " & Network.Net.Resolve_Exception (Item)'img);
   end Server;
 

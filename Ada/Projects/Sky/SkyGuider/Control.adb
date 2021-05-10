@@ -16,16 +16,19 @@
 pragma Style_White_Elephant;
 
 with Ada.Command_Line;
+with Ada.Exceptions;
 with Ada.Text_IO;
 with Angle;
 with Earth;
 with Exceptions;
 with M_Zero;
+with Network;
 with Objects;
 with Site;
 with Space;
 with Strings;
 with Time;
+with Log;
 
 package body Control is
 
@@ -41,58 +44,164 @@ package body Control is
                                             Show_Signed => True));
   end Image_Of;
 
-  function Home_Direction return Space.Direction is
-    East : constant Earth.Direction := Earth.Direction_Of (Alt => Angle.Zero, Az => Angle.Quadrant);
+  function Direction_For (Alt : Angle.Degrees;
+                          Az  : Angle.Degrees) return Space.Direction is
+    use type Angle.Value;
+    Location : constant Earth.Direction := Earth.Direction_Of (Alt => +Alt, Az  => +Az);
   begin
-    return Objects.Direction_Of (East, Time.Universal);
-  end Home_Direction;
+    return Objects.Direction_Of (Location, Time.Universal);
+  end Direction_For;
 
-  Is_Complete : Boolean;
 
-  procedure Slewing_Completion (Is_Ok : Boolean) is
+  function Object return Space.Direction is
   begin
-    Is_Complete := Is_Ok;
-  end Slewing_Completion;
+    return Direction_For (Alt => 30.0, Az => 90.0);
+  end Object;
+
+
+  function North return Space.Direction is
+  begin
+    return Direction_For (Alt => 0.0, Az => 0.0);
+  end North;
+
+
+  function East return Space.Direction is
+  begin
+    return Direction_For (Alt => 0.0, Az => 90.0);
+  end East;
+
+
+  function South return Space.Direction is
+  begin
+    return Direction_For (Alt => 0.0, Az => 180.0);
+  end South;
+
+
+  function West return Space.Direction is
+  begin
+    return Direction_For (Alt => 0.0, Az => 270.0);
+  end West;
 
 
   procedure Client (Server : String) is
+    The_Information : M_Zero.Information;
   begin
-    Put ("Home RA : " & Space.Ra_Image_Of (Home_Direction));
-    M_Zero.Connect (Slewing_Completion'access, Server);
-    Put (">>> connected to " & Server);
-    loop
-      Ada.Text_IO.Put (">");
-      Is_Complete := False;
-      declare
-        Command : constant String := Get;
-      begin
-        exit when Command = "";
-        declare
-          Replay : constant String := M_Zero.Reply_For (Command);
+    declare
+      Ip_Address : constant Network.Ip_Address := Network.Ip_Address_Of (Server);
+    begin
+      loop
+        Ada.Text_IO.Put (">");
         begin
-          if Replay /= "" then
-            Put (Replay);
-          end if;
+          declare
+            Command : constant String := Strings.Lowercase_Of (Get);
+          begin
+            exit when Command = "";
+            case Command(Command'first) is
+            when 'c' =>
+              M_Zero.Connect (Ip_Address);
+              case M_Zero.Get.Status is
+              when M_Zero.Connected =>
+                Put (">>> connected to " & Server);
+              when M_Zero.Error =>
+                Put (">>> connect failed with " & M_Zero.Error_Message);
+              when others =>
+                null;
+              end case;
+            when 'i' =>
+              M_Zero.Initialize;
+            when 'g' =>
+              The_Information := M_Zero.Get;
+              Put ("Status: " & The_Information.Status'image);
+              if Space.Direction_Is_Known (The_Information.Direction) then
+                Put ("RA    : " & Space.Ra_Image_Of (The_Information.Direction));
+                Put ("DEC   : " & Space.Dec_Image_Of (The_Information.Direction));
+              end if;
+            when 'm' =>
+              if Command'length = 1 then
+                Put ("Unknown Direction");
+              else
+                case Command(Command'first + 1) is
+                when 'u' =>
+                  M_Zero.Start_Move (M_Zero.Up);
+                when 'd' =>
+                  M_Zero.Start_Move (M_Zero.Down);
+                when 'l' =>
+                  M_Zero.Start_Move (M_Zero.Left);
+                when 'r' =>
+                  M_Zero.Start_Move (M_Zero.Right);
+                when others =>
+                  Put ("Unknown Direction <u, d, l or r>");
+                end case;
+              end if;
+            when 'q' =>
+              if Command'length = 1 then
+                M_Zero.Stop_Move;
+              else
+                case Command(Command'first + 1) is
+                when 'u' =>
+                  M_Zero.Stop_Move (M_Zero.Up);
+                when 'd' =>
+                  M_Zero.Stop_Move (M_Zero.Down);
+                when 'l' =>
+                  M_Zero.Stop_Move (M_Zero.Left);
+                when 'r' =>
+                  M_Zero.Stop_Move (M_Zero.Right);
+                when others =>
+                  Put ("Unknown Direction <u, d, l or r>");
+                end case;
+              end if;
+            when 'a' =>
+              if Command'length = 1 then
+                M_Zero.Synch_To (Object);
+              else
+                case Command(Command'first + 1) is
+                when 'n' =>
+                  M_Zero.Synch_To (North);
+                when 'e' =>
+                  M_Zero.Synch_To (East);
+                when 's' =>
+                  M_Zero.Synch_To (South);
+                when 'w' =>
+                  M_Zero.Synch_To (West);
+                when others =>
+                  Put ("Unknown Direction <n, e, s or w>");
+                end case;
+              end if;
+            when 's' =>
+              if Command'length = 1 then
+                M_Zero.Slew_To (Object);
+              else
+                case Command(Command'first + 1) is
+                when 'n' =>
+                  M_Zero.Slew_To (North);
+                when 'e' =>
+                  M_Zero.Slew_To (East);
+                when 's' =>
+                  M_Zero.Slew_To (South);
+                when 'w' =>
+                  M_Zero.Slew_To (West);
+                when others =>
+                  Put ("Unknown Direction <n, e, s or w>");
+                end case;
+              end if;
+            when 'd' =>
+              M_Zero.Disconnect;
+              Put (">>> Disconnected");
+            when 'e' =>
+              Put ("<error> " & M_Zero.Error_Message);
+            when others =>
+              Put ("<unknown command>");
+            end case;
+          end;
+        exception
+        when Item: others =>
+          Log.Write (Item);
+          Put ("<unexpected exception> " & Ada.Exceptions.Exception_Message(Item));
+          exit;
         end;
-        if Command = "MS" then
-          Put ("slewing");
-          while not Is_Complete loop
-            Put (M_Zero.Reply_For ("GD"));
-            Put (M_Zero.Reply_For ("GR"));
-            delay 1.0;
-          end loop;
-          Put ("tracking");
-        end if;
-      exception
-      when M_Zero.No_Connection =>
-        Put ("<not connected>");
-      end;
-    end loop;
-    M_Zero.Disconnect;
-  exception
-  when others =>
-    M_Zero.Disconnect;
-    raise;
+      end loop;
+      M_Zero.Disconnect;
+    end;
   end Client;
 
 
@@ -106,6 +215,7 @@ package body Control is
         Put ("Elevation :" & Site.Elevation'image & 'm');
         Put ("Latitude  : " & Image_Of ( Site.Latitude));
         Put ("Longitude : " & Image_Of (Site.Longitude));
+        Put ("Time      : " & Time.Image_Of (Time.Universal));
         Client (Ada.Command_Line.Argument(1));
       else
         Put ("Site not Defined");
