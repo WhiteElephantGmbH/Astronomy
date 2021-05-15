@@ -214,10 +214,9 @@ package body Alignment is
 
   function Synchronized_Offsets return Offsets is
     The_Offsets : constant Offsets := Control.Star_Synchronized_Offsets;
-    use all type Device.Drive;
   begin
     Control.Clear_All_Corrections;
-    Log.Write ("Synchronized_Offsets M1:" & The_Offsets(D1)'image & " - M2:" & The_Offsets(D2)'image);
+    Log.Write ("Synchronized_Offsets Ra:" & The_Offsets(Ra)'image & " - Dec:" & The_Offsets(Dec)'image);
     return The_Offsets;
   end Synchronized_Offsets;
 
@@ -479,7 +478,7 @@ package body Alignment is
 
     function Star_Synchronized_Offsets return Offsets is
     begin
-      return (Device.D1 => The_Ra_Correction, Device.D2 => The_Dec_Correction);
+      return (Ra => The_Ra_Correction, Dec => The_Dec_Correction);
     end Star_Synchronized_Offsets;
 
   end Control;

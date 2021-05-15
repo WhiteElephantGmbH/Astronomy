@@ -9,7 +9,7 @@ with Space;
 
 package M_Zero is
 
-  type State is (Error, Disconnected, Connected, Initialized, Moving, Approaching, Tracking);
+  type State is (Error, Disconnected, Connected, Initialized, Moving, Approaching, Tracking, Solving);
 
   type Information is record
     Status    : State;
@@ -18,25 +18,30 @@ package M_Zero is
 
   type Moving_Rate is (Centering, Guiding, Finding, Slewing);
 
-  type Directions is (Up, Down, Left, Right);
+  type Moving_Direction is (Up, Down, Left, Right);
 
   function Error_Message return String;
 
-  procedure Connect (Server_Address : Network.Ip_Address);
+  procedure Connect (Server_Address : Network.Ip_Address;
+                     Server_Port    : Network.Port_Number);
 
   procedure Initialize;
 
   procedure Set_Rate (Rate : Moving_Rate);
 
-  procedure Start_Move (Direction : Directions);
+  procedure Start_Moving (Direction : Moving_Direction);
 
-  procedure Stop_Move (Direction : Directions);
+  procedure Stop_Moving (Direction : Moving_Direction);
 
-  procedure Stop_Move;
+  procedure Stop_Moving;
 
   procedure Slew_To (Location : Space.Direction);
 
   procedure Synch_To (Location : Space.Direction);
+
+  procedure Start_Solving;
+
+  procedure End_Solving;
 
   function Get return Information;
 

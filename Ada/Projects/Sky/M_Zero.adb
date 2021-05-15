@@ -23,19 +23,18 @@ package body M_Zero is
 
   Socket_Protocol : constant Network.Tcp.Protocol := Network.Tcp.Raw;
 
-  Server_Port     : constant Network.Port_Number := 4030;
   Receive_Timeout : constant Duration := 3.0;
 
   The_Socket : Network.Tcp.Socket;
   The_Status : State := Disconnected;
-  Stop_State : State := Disconnected;
+  Last_State : State := Disconnected;
   The_Error  : Text.String;
 
   procedure Set_Status (Item : State) is
   begin
     case Item is
-    when Connected | Initialized | Tracking =>
-      Stop_State := Item;
+    when Disconnected | Connected | Initialized | Tracking =>
+      Last_State := Item;
     when others =>
       null;
     end case;
@@ -55,6 +54,7 @@ package body M_Zero is
   begin
     Error ("Device not Connected");
     Network.Tcp.Close (The_Socket);
+    Last_State := Disconnected;
     raise Device_Disconnected;
   end Disconnect_Device;
 
@@ -66,9 +66,19 @@ package body M_Zero is
       return "No Error";
     end if;
     Text.Clear (The_Error);
-    Disconnect;
+    Set_Status (Last_State);
     return Message;
   end Error_Message;
+
+
+  function Not_Connected return Boolean is
+  begin
+    if The_Status < Connected then
+      Log.Warning ("not connected");
+      return True;
+    end if;
+    return False;
+  end Not_Connected;
 
 
   function Not_Initialized return Boolean is
@@ -204,7 +214,8 @@ package body M_Zero is
   end Reply_For;
 
 
-  procedure Connect (Server_Address : Network.Ip_Address) is
+  procedure Connect (Server_Address : Network.Ip_Address;
+                     Server_Port    : Network.Port_Number) is
   begin
     case The_Status is
     when Disconnected =>
@@ -215,15 +226,15 @@ package body M_Zero is
                                               Receive_Timeout => Receive_Timeout);
       exception
       when Item: others =>
-        Log.Error ("<Connect Failed> " & Exceptions.Information_Of (Item));
-        Disconnect_Device;
+        Error ("M-Zero " & Network.Exception_Kind (Item)'image);
+        return;
       end;
       if Reply_For (Lx200.Get_Product_Name) = "Avalon" and then
          Reply_For (Lx200.Get_Firmware_Number) = "56.3"
       then
         Set_Status (Connected);
       else
-        Error ("unknown device");
+        Error ("device not M-Zero version 56.3");
       end if;
     when Error =>
       null;
@@ -254,18 +265,35 @@ package body M_Zero is
   end Actual_Direction;
 
 
+  function Status_Ok return Boolean is
+  begin
+    return Reply_For (Lx200.Get_Alignment_Status) = "PT0";
+  end Status_Ok;
+
+
   function Get return Information is
     The_Information : Information;
   begin
     The_Information.Status := The_Status;
-    if The_Status > Connected then
+    if Last_State > Connected then
       The_Information.Direction := Actual_Direction;
+    elsif Last_State > Disconnected and then Status_Ok then
+      The_Information.Direction := Space.Unknown_Direction;
     end if;
     return The_Information;
   exception
   when others =>
     return The_Information;
   end Get;
+
+
+  procedure Synchronize_To (Location : Space.Direction) is
+    use Lx200;
+  begin
+    Execute (Set_Right_Ascension, Hours_Of (Space.Ra_Of (Location)), Expected => "1");
+    Execute (Set_Declination, Signed_Degrees_Of (Space.Dec_Of (Location)), Expected => "1");
+    Execute (Synchronize, Expected => "0");
+  end Synchronize_To;
 
 
   procedure Initialize is
@@ -283,6 +311,10 @@ package body M_Zero is
     when Disconnected =>
       Error ("not connected");
     when Connected =>
+      if not Site.Is_Defined then
+        Error ("Site not defined");
+        return;
+      end if;
       declare
         Direction   : constant Space.Direction := Actual_Direction;
         Declination : constant Angle.Value := Space.Dec_Of (Direction);
@@ -290,25 +322,25 @@ package body M_Zero is
       begin
         Log.Write ("Initialize - Declination " & Angle.Image_Of (Declination));
         if Declination in Angle.Zero | Angle.Quadrant then
-          if Reply_For (Lx200.Get_Alignment_Status) /= "PT0" then
+          if not Status_Ok then
             Execute (Lx200.Set_Polar_Alignment);
             delay 1.0; -- give avalon time to initialize
-            if Reply_For (Lx200.Get_Alignment_Status) /= "PT0" then
-              Error ("alignment not polar alignment");
+            if not Status_Ok then
+              Error ("alignment not polar");
               return;
             end if;
           end if;
           Execute (Lx200.Set_Latitude, Lx200.Signed_Degrees_Of (Site.Latitude), Expected => "0");
           Execute (Lx200.Set_Longitude, Lx200.Signed_Degrees_Of (Site.Longitude, Front_Digits => 3), Expected => "0");
           Set_Status (Initialized);
-          Synch_To (Home);
+          Synchronize_To (Home);
           delay 0.5; -- give avalon time to settle.
           declare
             Home_Declination : constant Angle.Value := Space.Dec_Of (Actual_Direction);
           begin
             Log.Write ("Initialize - Home Declination " & Angle.Image_Of (Home_Declination));
             if Home_Declination /= Angle.Quadrant then
-              Synch_To (Direction); -- already initialized
+              Synchronize_To (Direction); -- already initialized
             end if;
           end;
         else
@@ -326,7 +358,7 @@ package body M_Zero is
 
   procedure Set_Rate (Rate : Moving_Rate) is
   begin
-    if Not_Initialized then
+    if Not_Connected then
       return;
     end if;
     case Rate is
@@ -345,9 +377,9 @@ package body M_Zero is
   end Set_Rate;
 
 
-  procedure Start_Move (Direction : Directions) is
+  procedure Start_Moving (Direction : Moving_Direction) is
   begin
-    if Not_Initialized then
+    if Not_Connected then
       return;
     end if;
     case Direction is
@@ -364,12 +396,12 @@ package body M_Zero is
   exception
   when Device_Disconnected =>
     null;
-  end Start_Move;
+  end Start_Moving;
 
 
-  procedure Stop_Move (Direction : Directions) is
+  procedure Stop_Moving (Direction : Moving_Direction) is
   begin
-    if Not_Initialized then
+    if Not_Connected then
       return;
     end if;
     case Direction is
@@ -382,24 +414,24 @@ package body M_Zero is
     when Right =>
       Execute (Lx200.Quit_Move_West);
     end case;
-    Set_Status (Stop_State);
+    Set_Status (Last_State);
   exception
   when Device_Disconnected =>
     null;
-  end Stop_Move;
+  end Stop_Moving;
 
 
-  procedure Stop_Move is
+  procedure Stop_Moving is
   begin
-    if Not_Initialized then
+    if Not_Connected then
       return;
     end if;
     Execute (Lx200.Quit_Move, Expected => "");
-    Set_Status (Stop_State);
+    Set_Status (Last_State);
   exception
   when Device_Disconnected =>
     null;
-  end Stop_Move;
+  end Stop_Moving;
 
 
   procedure Slew_To (Location : Space.Direction) is
@@ -418,18 +450,28 @@ package body M_Zero is
 
 
   procedure Synch_To (Location : Space.Direction) is
-    use Lx200;
   begin
     if Not_Initialized then
       return;
     end if;
-    Execute (Set_Right_Ascension, Hours_Of (Space.Ra_Of (Location)), Expected => "1");
-    Execute (Set_Declination, Signed_Degrees_Of (Space.Dec_Of (Location)), Expected => "1");
-    Execute (Synchronize, Expected => "0");
+    Synchronize_To (Location);
+    Set_Status (Tracking);
   exception
   when Device_Disconnected =>
     null;
   end Synch_To;
+
+
+  procedure Start_Solving is
+  begin
+    Set_Status (Solving);
+  end Start_Solving;
+
+
+  procedure End_Solving is
+  begin
+    Set_Status (Last_State);
+  end End_Solving;
 
 
   procedure Disconnect is

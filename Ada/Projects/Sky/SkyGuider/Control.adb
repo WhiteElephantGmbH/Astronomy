@@ -15,217 +15,622 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Ada.Command_Line;
-with Ada.Exceptions;
-with Ada.Text_IO;
-with Angle;
-with Earth;
-with Exceptions;
-with M_Zero;
-with Network;
-with Objects;
+with Application;
+with Data;
+with Error;
+with Gui;
+with Horizon;
+with Moon;
+with Name;
+with Neo;
+with Network.Tcp;
+with Os.Application;
+with Parameter;
+with Os.Process;
 with Site;
+with Sky_Line;
+with Solar_System;
 with Space;
-with Strings;
+with Sssb;
+with Stellarium;
+with Telescope;
 with Time;
-with Log;
+with Traces;
+with User;
 
 package body Control is
 
-  procedure Put (Item : String) renames Ada.Text_IO.Put_Line;
+  package Log is new Traces ("Control");
 
-  function Get return String renames Ada.Text_IO.Get_Line;
+  task type Target_Handler is
 
-  function Image_Of (Item : Angle.Value) return String is
-  begin
-    return Strings.Ansi_Of (Angle.Image_Of (The_Value   => Item,
-                                            Unit        => Angle.In_Degrees,
-                                            Decimals    => 3,
-                                            Show_Signed => True));
-  end Image_Of;
+    entry Define_Catalog;
 
-  function Direction_For (Alt : Angle.Degrees;
-                          Az  : Angle.Degrees) return Space.Direction is
-    use type Angle.Value;
-    Location : constant Earth.Direction := Earth.Direction_Of (Alt => +Alt, Az  => +Az);
-  begin
-    return Objects.Direction_Of (Location, Time.Universal);
-  end Direction_For;
+    entry Update;
+
+    entry Get_For (Target_Name : String;
+                   Target_Id   : out Name.Id);
+    entry Stop;
+
+  end Target_Handler;
 
 
-  function Object return Space.Direction is
-  begin
-    return Direction_For (Alt => 30.0, Az => 90.0);
-  end Object;
+  task body Target_Handler is
 
+    The_Targets : aliased Name.Id_List;
 
-  function North return Space.Direction is
-  begin
-    return Direction_For (Alt => 0.0, Az => 0.0);
-  end North;
+    New_List : Boolean := False;
 
+    procedure Define_Targets is
 
-  function East return Space.Direction is
-  begin
-    return Direction_For (Alt => 0.0, Az => 90.0);
-  end East;
+      function Is_Visible (Direction : Space.Direction) return Boolean is
+      begin
+        return Sky_Line.Is_Above (Direction => Direction,
+                                  Lmst      => Time.Lmst);
+      end Is_Visible;
 
+      function Is_To_Add (Item      : User.Selection;
+                          Direction : Space.Direction) return Boolean is
+      begin
+        return Space.Direction_Is_Known (Direction) and then User.Is_Selected (Item) and then Is_Visible (Direction);
+      end Is_To_Add;
 
-  function South return Space.Direction is
-  begin
-    return Direction_For (Alt => 0.0, Az => 180.0);
-  end South;
+      The_Changes : Natural := 0;
 
+      Ut : constant Time.Ut := Time.Universal;
 
-  function West return Space.Direction is
-  begin
-    return Direction_For (Alt => 0.0, Az => 270.0);
-  end West;
+    begin -- Define_Targets
+      if not Site.Is_Defined then
+        return;
+      end if;
+      for Index in The_Targets.Ids'first .. The_Targets.Last loop
+        declare
 
+          Item : Name.Id renames The_Targets.Ids(Index);
 
-  procedure Client (Server : String) is
-    The_Information : M_Zero.Information;
-  begin
-    declare
-      Ip_Address : constant Network.Ip_Address := Network.Ip_Address_Of (Server);
-    begin
-      loop
-        Ada.Text_IO.Put (">");
-        begin
-          declare
-            Command : constant String := Strings.Lowercase_Of (Get);
+          function Is_To_Add return Boolean is
           begin
-            exit when Command = "";
-            case Command(Command'first) is
-            when 'c' =>
-              M_Zero.Connect (Ip_Address);
-              case M_Zero.Get.Status is
-              when M_Zero.Connected =>
-                Put (">>> connected to " & Server);
-              when M_Zero.Error =>
-                Put (">>> connect failed with " & M_Zero.Error_Message);
-              when others =>
-                null;
-              end case;
-            when 'i' =>
-              M_Zero.Initialize;
-            when 'g' =>
-              The_Information := M_Zero.Get;
-              Put ("Status: " & The_Information.Status'image);
-              if Space.Direction_Is_Known (The_Information.Direction) then
-                Put ("RA    : " & Space.Ra_Image_Of (The_Information.Direction));
-                Put ("DEC   : " & Space.Dec_Image_Of (The_Information.Direction));
-              end if;
-            when 'm' =>
-              if Command'length = 1 then
-                Put ("Unknown Direction");
-              else
-                case Command(Command'first + 1) is
-                when 'u' =>
-                  M_Zero.Start_Move (M_Zero.Up);
-                when 'd' =>
-                  M_Zero.Start_Move (M_Zero.Down);
-                when 'l' =>
-                  M_Zero.Start_Move (M_Zero.Left);
-                when 'r' =>
-                  M_Zero.Start_Move (M_Zero.Right);
-                when others =>
-                  Put ("Unknown Direction <u, d, l or r>");
+            case Name.Kind_Of (Item) is
+            when Name.Moon =>
+              return Is_To_Add (User.Solar_System, Moon.Direction_Of (Item, Ut));
+            when Name.Sun | Name.Planet =>
+              return Is_To_Add (User.Solar_System, Solar_System.Direction_Of (Item, Ut));
+            when Name.Small_Solar_System_Body =>
+              return Is_To_Add (User.Solar_System, Sssb.Direction_Of (Item, Ut));
+            when Name.Landmark =>
+              Log.Warning ("Landmarks not supported");
+              return False;
+            when Name.Near_Earth_Object =>
+              return User.Is_Selected (User.Near_Earth_Objects) and then Neo.Is_Arriving (Item);
+            when Name.Sky_Object =>
+              declare
+                Object : constant Data.Object := Name.Object_Of (Item);
+              begin
+                case Data.Type_Of (Object) is
+                when Data.Landmark  =>
+                  raise Program_Error;
+                when Data.Quasar  =>
+                  return Is_To_Add (User.Galaxies, Data.Direction_Of (Object, Ut));
+                when Data.Galaxy  =>
+                  return Is_To_Add (User.Galaxies, Data.Direction_Of (Object, Ut));
+                when Data.Nebula  =>
+                  return Is_To_Add (User.Nebulas, Data.Direction_Of (Object, Ut));
+                when Data.Cluster =>
+                  return Is_To_Add (User.Clusters, Data.Direction_Of (Object, Ut));
+                when Data.Stars =>
+                  return Is_To_Add (User.Open_Clusters, Data.Direction_Of (Object, Ut));
+                when Data.Double =>
+                  return Is_To_Add (User.Multiple_Stars, Data.Direction_Of (Object, Ut));
+                when Data.Star =>
+                  return Is_To_Add (User.Stars, Data.Direction_Of (Object, Ut));
+                when Data.Satellite =>
+                  raise Program_Error;
+                when Data.Unknown =>
+                  return False;
                 end case;
-              end if;
-            when 'q' =>
-              if Command'length = 1 then
-                M_Zero.Stop_Move;
-              else
-                case Command(Command'first + 1) is
-                when 'u' =>
-                  M_Zero.Stop_Move (M_Zero.Up);
-                when 'd' =>
-                  M_Zero.Stop_Move (M_Zero.Down);
-                when 'l' =>
-                  M_Zero.Stop_Move (M_Zero.Left);
-                when 'r' =>
-                  M_Zero.Stop_Move (M_Zero.Right);
-                when others =>
-                  Put ("Unknown Direction <u, d, l or r>");
-                end case;
-              end if;
-            when 'a' =>
-              if Command'length = 1 then
-                M_Zero.Synch_To (Object);
-              else
-                case Command(Command'first + 1) is
-                when 'n' =>
-                  M_Zero.Synch_To (North);
-                when 'e' =>
-                  M_Zero.Synch_To (East);
-                when 's' =>
-                  M_Zero.Synch_To (South);
-                when 'w' =>
-                  M_Zero.Synch_To (West);
-                when others =>
-                  Put ("Unknown Direction <n, e, s or w>");
-                end case;
-              end if;
-            when 's' =>
-              if Command'length = 1 then
-                M_Zero.Slew_To (Object);
-              else
-                case Command(Command'first + 1) is
-                when 'n' =>
-                  M_Zero.Slew_To (North);
-                when 'e' =>
-                  M_Zero.Slew_To (East);
-                when 's' =>
-                  M_Zero.Slew_To (South);
-                when 'w' =>
-                  M_Zero.Slew_To (West);
-                when others =>
-                  Put ("Unknown Direction <n, e, s or w>");
-                end case;
-              end if;
-            when 'd' =>
-              M_Zero.Disconnect;
-              Put (">>> Disconnected");
-            when 'e' =>
-              Put ("<error> " & M_Zero.Error_Message);
-            when others =>
-              Put ("<unknown command>");
+              end;
             end case;
-          end;
-        exception
-        when Item: others =>
-          Log.Write (Item);
-          Put ("<unexpected exception> " & Ada.Exceptions.Exception_Message(Item));
-          exit;
+          end Is_To_Add;
+
+        begin
+          if Name.Visibility_Changed_For (Item, Is_To_Add) then
+            The_Changes := The_Changes + 1;
+          end if;
         end;
       end loop;
-      M_Zero.Disconnect;
-    end;
-  end Client;
+      if New_List or (The_Changes > 10) then
+        New_List := False;
+        User.Clear_Targets;
+        Name.Clear_History_For (The_Targets);
+        User.Define (The_Targets'unrestricted_access);
+      else
+        User.Update_Targets;
+      end if;
+    end Define_Targets;
 
+  begin -- Target_Handler
+    loop
+      select
+        accept Define_Catalog;
+        User.Clear_Targets;
+        The_Targets := Name.Actual_List;
+        New_List := True;
+        Define_Targets;
+      or
+        accept Update;
+        Define_Targets;
+      or
+        accept Get_For (Target_Name : String;
+                        Target_Id   : out Name.Id)
+        do
+          Target_Id := Name.Item_Of (The_Targets, Target_Name);
+        end Get_For;
+      or
+        accept Stop;
+        exit;
+      or delay 10.0;
+        Define_Targets;
+      end select;
+    end loop;
+    Log.Write ("target handler end");
+  exception
+  when Occurrence: others =>
+    Log.Termination (Occurrence);
+  end Target_Handler;
+
+
+  task type Manager is
+  end Manager;
+
+
+  type Command is (Define_Catalog,
+                   Define_Target,
+                   Start,
+                   Initialize,
+                   Stop,
+                   Align,
+                   Synch,
+                   Go_To,
+                   Start_Moving,
+                   Stop_Moving,
+                   Increase_Moving_Rate,
+                   Decrease_Moving_Rate,
+                   New_Goto_Direction,
+                   New_Synch_Direction,
+                   Update,
+                   New_Telescope_Information,
+                   Close);
+
+  protected Action_Handler is
+    procedure Put_Goto (The_Direction : Space.Direction);
+    procedure Put (The_Action : User.Action);
+    procedure Signal_New_Telescope_Data;
+    function New_Direction return Space.Direction;
+    function Moving_Direction return Telescope.Moving_Direction;
+    entry Get (The_Command : out Command);
+    procedure Enable_Termination;
+    entry Wait_For_Termination;
+  private
+    The_New_Direction        : Space.Direction;
+    The_Moving_Direction     : Telescope.Moving_Direction;
+    Next_Command             : User.Command_Action;
+    Has_New_Telescope_Data   : Boolean := False;
+    Has_New_Goto_Direction   : Boolean := False;
+    Has_New_Synch_Direction  : Boolean := False;
+    Define_Catalog_Pending   : Boolean := False;
+    Define_Target_Pending    : Boolean := False;
+    Update_Pending           : Boolean := False;
+    Command_Is_Pending       : Boolean := False;
+    Termination_Is_Enabled   : Boolean := False;
+  end Action_Handler;
+
+
+  procedure Goto_Handler (The_Direction : Space.Direction) is
+  begin
+    Action_Handler.Put_Goto (The_Direction);
+  end Goto_Handler;
+
+
+  procedure User_Action_Handler (The_Action : User.Action) is
+  begin
+    Action_Handler.Put (The_Action);
+  end User_Action_Handler;
+
+
+  protected body Action_Handler is
+
+    procedure Put (The_Action : User.Action) is
+      use type User.Action;
+    begin
+      if Next_Command = User.Close then
+        return;
+      end if;
+      case The_Action is
+      when User.Define_Catalog =>
+        Define_Catalog_Pending := True;
+      when User.Define_Target =>
+        Define_Target_Pending := True;
+      when User.Update =>
+        Update_Pending := True;
+      when User.Command_Action =>
+        Next_Command := The_Action;
+        Command_Is_Pending := True;
+      end case;
+    end Put;
+
+    procedure Put_Goto (The_Direction : Space.Direction) is
+      use type User.Action;
+    begin
+      The_New_Direction := The_Direction;
+      if Next_Command /= User.Close then
+        Has_New_Goto_Direction := True;
+      end if;
+    end Put_Goto;
+
+    procedure Signal_New_Telescope_Data is
+      use type User.Action;
+    begin
+      if Next_Command /= User.Close then
+        Has_New_Telescope_Data := True;
+      end if;
+    end Signal_New_Telescope_Data;
+
+    entry Get (The_Command : out Command)
+      when Has_New_Goto_Direction
+        or Has_New_Synch_Direction
+        or Command_Is_Pending
+        or Define_Catalog_Pending
+        or Update_Pending
+        or Define_Target_Pending
+        or Has_New_Telescope_Data
+    is
+      use type User.Action;
+
+      function Moving_Direction_For (Item : User.Action) return Telescope.Moving_Direction is
+      begin
+        return Telescope.Moving_Direction'val(User.Action'pos(Next_Command) - User.Action'pos(Item));
+      end Moving_Direction_For;
+
+    begin -- Get
+      if Next_Command = User.Close then
+        The_Command := Close;
+        Command_Is_Pending := False;
+      elsif Define_Catalog_Pending then
+        The_Command := Define_Catalog;
+        Define_Catalog_Pending := False;
+      elsif Update_Pending then
+        The_Command := Update;
+        Update_Pending := False;
+      elsif Define_Target_Pending then
+        The_Command := Define_Target;
+        Define_Target_Pending := False;
+      elsif Has_New_Goto_Direction then
+        The_Command := New_Goto_Direction;
+        Has_New_Goto_Direction := False;
+      elsif Has_New_Synch_Direction then
+        The_Command := New_Synch_Direction;
+        Has_New_Synch_Direction := False;
+      elsif Has_New_Telescope_Data then
+        The_Command := New_Telescope_Information;
+        Has_New_Telescope_Data := False;
+      else
+        case Next_Command is
+        when User.Start_Moving =>
+          The_Moving_Direction := Moving_Direction_For (User.Start_Moving'first);
+          The_Command := Start_Moving;
+        when User.Stop_Moving =>
+          The_Moving_Direction := Moving_Direction_For (User.Stop_Moving'first);
+          The_Command := Stop_Moving;
+        when User.Increase_Moving_Rate =>
+          The_Command := Increase_Moving_Rate;
+        when User.Decrease_Moving_Rate =>
+          The_Command := Decrease_Moving_Rate;
+        when User.Start =>
+          The_Command := Start;
+        when User.Initialize =>
+          The_Command := Initialize;
+        when User.Stop =>
+          The_Command := Stop;
+        when User.Align =>
+          The_Command := Align;
+        when User.Synch =>
+          The_Command := Synch;
+        when User.Go_To =>
+          The_Command := Go_To;
+        when User.Close =>
+          raise Program_Error; -- already handled
+        end case;
+        Command_Is_Pending := False;
+      end if;
+    end Get;
+
+    function New_Direction return Space.Direction is
+    begin
+      return The_New_Direction;
+    end New_Direction;
+
+    function Moving_Direction return Telescope.Moving_Direction is
+    begin
+      return The_Moving_Direction;
+    end Moving_Direction;
+
+    procedure Enable_Termination is
+    begin
+      Termination_Is_Enabled := True;
+    end Enable_Termination;
+
+    entry Wait_For_Termination when Termination_Is_Enabled is
+    begin
+      null;
+    end Wait_For_Termination;
+
+  end Action_Handler;
+
+
+  New_Target_Direction : Space.Direction;
+
+  function Target_Direction_Of (Unused_Id : Name.Id;
+                                Unused_Ut : Time.Ut) return Space.Direction is
+  begin
+    return New_Target_Direction;
+  end Target_Direction_Of;
+
+
+  task body Manager is
+
+    type Target_Access is access Target_Handler;
+
+    Targets : constant Target_Access := new Target_Handler;
+
+    The_Command : Command;
+
+    The_Data : Telescope.Data;
+
+    The_Neo_Target : Name.Id;
+
+    procedure Define_External_Target is
+    begin
+      User.Clear_Target;
+      New_Target_Direction := Action_Handler.New_Direction;
+      Telescope.Define_Space_Access (Target_Direction_Of'access, Name.No_Id);
+      The_Neo_Target := Name.No_Id;
+    end Define_External_Target;
+
+
+    procedure Handle_Goto is
+    begin
+      Define_External_Target;
+      case The_Data.Status is
+      when Telescope.Error
+         | Telescope.Disconnected
+         | Telescope.Connected
+         | Telescope.Moving
+         | Telescope.Solving
+      =>
+        Log.Error ("goto not executed");
+      when Telescope.Initialized
+         | Telescope.Approaching
+         | Telescope.Tracking
+      =>
+        User.Perform_Goto;
+      end case;
+    end Handle_Goto;
+
+
+    procedure Handle_Synch is
+    begin
+      Define_External_Target;
+      case The_Data.Status is
+      when Telescope.Error
+         | Telescope.Disconnected
+         | Telescope.Connected
+         | Telescope.Approaching
+         | Telescope.Moving
+         | Telescope.Solving
+      =>
+        Log.Error ("synch not executed");
+      when Telescope.Initialized
+         | Telescope.Tracking
+      =>
+        User.Perform_Synch;
+      end case;
+    end Handle_Synch;
+
+
+    procedure Handle_Telescope_Information is
+      use type Telescope.State;
+    begin
+      The_Data := Telescope.Information;
+      User.Show (The_Data);
+      if Name.Is_Known (The_Neo_Target) then
+        declare
+          Tracking_Period : constant Time.Period := Neo.Tracking_Period_Of (The_Neo_Target);
+          Arriving_In     : Time.Ut;
+          use type Time.Period;
+        begin
+          if Tracking_Period /= Time.Undefined then
+            Arriving_In := Tracking_Period.Arrival_Time - Time.Universal;
+            if Arriving_In >= 0.0 then
+              User.Show (Arriving_In);
+            end if;
+          end if;
+        end;
+      end if;
+      case The_Data.Status is
+      when Telescope.Error
+         | Telescope.Disconnected
+         | Telescope.Connected
+      =>
+        null;
+      when Telescope.Initialized
+         | Telescope.Moving
+         | Telescope.Approaching
+         | Telescope.Tracking
+         | Telescope.Solving
+      =>
+        Stellarium.Set (The_Data.Actual_Direction);
+      end case;
+    end Handle_Telescope_Information;
+
+  begin -- Manager
+    Log.Write ("manager start");
+    loop
+      Action_Handler.Get (The_Command);
+      case The_Command is
+      when Define_Catalog =>
+        Targets.Define_Catalog;
+      when Update =>
+        Targets.Update;
+      when Define_Target =>
+        declare
+          The_Item : Name.Id;
+        begin
+          User.Show_Description ("");
+          The_Neo_Target := Name.No_Id;
+          Targets.Get_For (User.Target_Name, The_Item);
+          if Name.Is_Known (The_Item)  then
+            case Name.Kind_Of (The_Item) is
+            when Name.Sky_Object =>
+              Telescope.Define_Space_Access (Name.Direction_Of'access, The_Item);
+              User.Show_Description (Data.Descriptor_Of (Name.Object_Of (The_Item)));
+            when Name.Moon =>
+              Telescope.Define_Space_Access (Moon.Direction_Of'access, Name.No_Id);
+            when Name.Sun =>
+              Telescope.Define_Space_Access (Solar_System.Direction_Of'access, The_Item);
+            when Name.Planet =>
+              Telescope.Define_Space_Access (Solar_System.Direction_Of'access, The_Item);
+              if Name.Image_Of (The_Item) = "Pluto" then
+                User.Show_Description ("Dwarf Planet");
+              else
+                User.Show_Description ("Planet");
+              end if;
+            when Name.Small_Solar_System_Body =>
+              Telescope.Define_Space_Access (Sssb.Direction_Of'access, The_Item);
+            when Name.Near_Earth_Object =>
+              Telescope.Define_Space_Access (Neo.Direction_Of'access, The_Item);
+              The_Neo_Target := The_Item;
+            when Name.Landmark =>
+              null; -- no land mark
+            end case;
+          else
+            null; -- no park position
+          end if;
+        end;
+      when Start =>
+        Telescope.Start;
+      when Initialize =>
+        Telescope.Initialize;
+      when Align =>
+        Telescope.Align;
+      when Synch =>
+        Telescope.Synch;
+      when Go_To =>
+        Telescope.Go_To;
+      when Start_Moving =>
+        Telescope.Start_Moving (Action_Handler.Moving_Direction);
+      when Stop_Moving =>
+        Telescope.Stop_Moving (Action_Handler.Moving_Direction);
+      when Stop =>
+        Telescope.Stop_Moving;
+      when Increase_Moving_Rate =>
+        Telescope.Increase_Moving_Rate;
+      when Decrease_Moving_Rate =>
+        Telescope.Decrease_Moving_Rate;
+      when New_Goto_Direction =>
+        Handle_Goto;
+      when New_Synch_Direction =>
+        Handle_Synch;
+      when New_Telescope_Information =>
+        Handle_Telescope_Information;
+      when Close =>
+        Targets.Stop;
+        Telescope.Close;
+        Stellarium.Close;
+        exit;
+      end case;
+    end loop;
+    Log.Write ("manager end");
+    Action_Handler.Enable_Termination;
+  exception
+  when Occurrence: others =>
+    Log.Termination (Occurrence);
+    Targets.Stop;
+    Gui.Close;
+    Telescope.Close;
+    Stellarium.Close;
+    Action_Handler.Enable_Termination;
+  end Manager;
+
+
+  procedure Read_Data is
+  begin
+    if not Sky_Line.Is_Defined then
+      Horizon.Generate;
+    end if;
+    Sky_Line.Read;
+    Neo.Add_Objects;
+    Name.Read_Favorites;
+  end Read_Data;
+
+
+  procedure Information_Update_Handler is
+  begin
+    Action_Handler.Signal_New_Telescope_Data;
+  end Information_Update_Handler;
 
   procedure Start is
-  begin
-    case Ada.Command_Line.Argument_Count is
-    when 0 =>
-      Put ("IP Address expected");
-    when 1 =>
-      if Site.Is_Defined then
-        Put ("Elevation :" & Site.Elevation'image & 'm');
-        Put ("Latitude  : " & Image_Of ( Site.Latitude));
-        Put ("Longitude : " & Image_Of (Site.Longitude));
-        Put ("Time      : " & Time.Image_Of (Time.Universal));
-        Client (Ada.Command_Line.Argument(1));
-      else
-        Put ("Site not Defined");
-      end if;
+
+    The_Manager : access Manager with Unreferenced;
+
+    procedure Startup is
+    begin
+      Stellarium.Define_Handler (Goto_Handler'access);
+      The_Manager := new Manager;
+    end Startup;
+
+    procedure Termination is
+    begin
+      Action_Handler.Wait_For_Termination;
+    end Termination;
+
+    procedure Start_Stellarium_Server is
+      Used_Port : constant Network.Port_Number := Parameter.Stellarium_Port;
+    begin
+      Stellarium.Start (Used_Port);
+    exception
+    when Network.Tcp.Port_In_Use =>
+      Error.Raise_With (Application.Name & " - TCP port" & Used_Port'img & " for Stellarium in use");
     when others =>
-      Put ("Too many arguments");
-    end case;
+      Error.Raise_With (Application.Name & " - could not start stellarium server");
+    end Start_Stellarium_Server;
+
+  begin -- Start
+    begin
+      if (not Os.Is_Osx) and then (not Os.Application.Is_First_Instance) then
+      --
+      -- Note: This test is to prevent this application from being run more than once concurrently.
+      --       If we mandate that this application is always run from within an OSX .app bundle then
+      --       OSX will enforce this and therefore this test is not required.
+      --       In this case it is better not to attempt detecting first instance because if the application
+      --       is terminated by force quit the mutex is not released but remains until the host is rebooted.
+      --
+        Error.Raise_With (Application.Name & " already running");
+      end if;
+      Os.Process.Set_Priority_Class (Os.Process.Realtime);
+      Parameter.Read;
+      Read_Data;
+      Start_Stellarium_Server;
+    exception
+    when Error.Occurred =>
+      User.Show_Error;
+    end;
+    Telescope.Start (Information_Update_Handler'access);
+    User.Execute (Startup'access,
+                  User_Action_Handler'access,
+                  Termination'access);
   exception
-  when Item: others =>
-    Put ("<Traceback> " & Exceptions.Information_Of (Item));
+  when Occurrence: others =>
+    Log.Termination (Occurrence);
   end Start;
 
 end Control;

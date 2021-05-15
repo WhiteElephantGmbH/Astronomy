@@ -1,4 +1,4 @@
---with "Gtkada";
+with "Gtkada";
 
 project SkyGuider is
 

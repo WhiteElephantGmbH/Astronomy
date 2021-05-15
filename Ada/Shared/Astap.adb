@@ -103,7 +103,7 @@ package body Astap is
     Height_Image : constant String := Value(Height)'image;
     Executable   : constant String := Text.String_Of (The_Executable);
     Parameters   : constant String
-      := "-f " & Filename & " -ra" & Ra_Image & " -spd" & Spd_Image & " -fov" & Height_Image & " -r 180 -o " & Name;
+      := "-f " & Filename & " -ra" & Ra_Image & " -spd" & Spd_Image & " -fov" & Height_Image & " -r 180 -o " & Filename;
 
   begin -- Solve
     if not File.Exists (Executable) then
@@ -183,8 +183,10 @@ package body Astap is
 
   procedure Stop is
   begin
-    Terminate_Process;
-    Is_Solving := False;
+    if Is_Solving then
+      Terminate_Process;
+      Is_Solving := False;
+    end if;
   end Stop;
 
 end Astap;

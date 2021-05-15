@@ -1022,13 +1022,13 @@ package body Motor is
     Alignment_Offsets : constant Alignment.Offsets := Alignment.Synchronized_Offsets;
   begin
     Io.Update_Positions (Alignment_Offsets);
-    M1.Sb := M1.Sb + Alignment_Offsets(D1);
-    M2.Sb := M2.Sb + Alignment_Offsets(D2);
+    M1.Sb := M1.Sb + Alignment_Offsets(Alignment.Ra);
+    M2.Sb := M2.Sb + Alignment_Offsets(Alignment.Dec);
     if Log.Is_Enabled then
       Log.Write ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
-      Log.Write ("M1 Offset => " & Alignment_Offsets(D1)'img);
+      Log.Write ("M1 Offset => " & Alignment_Offsets(Alignment.Ra)'img);
       Log.Write ("   New Sb => " & Angle.Image_Of (+M1.Sb));
-      Log.Write ("M2 Offset => " & Alignment_Offsets(D2)'img);
+      Log.Write ("M2 Offset => " & Alignment_Offsets(Alignment.Dec)'img);
       Log.Write ("   New Sb => " & Angle.Image_Of (+M2.Sb));
       Log.Write ("%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
     end if;

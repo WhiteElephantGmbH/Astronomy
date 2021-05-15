@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2014 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2014 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -67,6 +67,18 @@ package body Space is
   begin
     return Angle.Image_Of (The_Direction.Ra, Unit => Angle.In_Hours, Decimals => 2);
   end Ra_Image_Of;
+
+
+  function Dec_Offset_Image_Of (The_Direction : Direction) return String is
+  begin
+    return Angle.Image_Of (The_Direction.Dec, Show_Signed => True);
+  end Dec_Offset_Image_Of;
+
+
+  function Ra_Offset_Image_Of (The_Direction : Direction) return String is
+  begin
+    return Angle.Image_Of (The_Direction.Ra, Show_Signed => True);
+  end Ra_Offset_Image_Of;
 
 
   function Direction_Is_Known (The_Direction : Direction) return Boolean is

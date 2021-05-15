@@ -12,7 +12,26 @@ with Log;
 
 package body Test is
 
-  package Io renames Ada.Text_IO;
+  Start_Hiding : Boolean := False;
+  Hiding       : Boolean := False;
+
+
+  procedure Put_Line (Item : String) is
+  begin
+    if not Hiding then
+      Ada.Text_IO.Put_Line (Item);
+    end if;
+  end Put_Line;
+
+
+  procedure End_Hiding is
+  begin
+    if Hiding then
+      Hiding := False;
+      Put_Line ("");
+    end if;
+    Start_Hiding := False;
+  end End_Hiding;
 
 
   procedure Server is
@@ -33,16 +52,24 @@ package body Test is
     Send_Ge_Is_Pending : Boolean := False;
     Send_Delay         : Integer;
 
+    Ra_Image  : String := "00:00:00#";
+    Dec_Image : String := "+00:00:00#";
+
 
     procedure Message_Handler (Data : String) is
 
       procedure Execute (Command : String) is
       begin
-        Io.Put_Line ("Execute " & Command);
+        Put_Line ("Execute " & Command);
       end Execute;
 
       procedure Send (Item :  String) is
       begin
+        if Hiding then
+          Ada.Text_IO.Put ('.');
+        else
+          Put_Line ("->" & Item);
+        end if;
         Network.Tcp.Send (Item, The_Client_Socket);
       end Send;
 
@@ -50,17 +77,18 @@ package body Test is
       if Data'length > 3  and then Data(Data'last) = Terminator then
         declare
           Command : constant String := Data(Data'first .. Data'first + 2);
+          Image   : constant String := Data(Data'first + 3 .. Data'last);
         begin
           if Send_Ge_Is_Pending then
             Send_Delay := Send_Delay - 1;
             if Send_Delay = 0 then
               Send ("ge#");
-              Io.Put_Line ("tracking");
+              Put_Line ("tracking");
               Send_Ge_Is_Pending := False;
             end if;
           end if;
           if Command = ":GW" then
-            Io.Put_Line ("Get Alignment Status");
+            Put_Line ("Get Alignment Status");
             if Is_Polar then
               Send ("PT0#");
             else
@@ -70,84 +98,86 @@ package body Test is
             case Data(Data'first + 3) is
             when 'P' => -- GVP
               The_State := Startup;
-              Io.Put_Line ("Get Product Name");
+              Put_Line ("Get Product Name");
               Send ("Avalon#");
             when 'D' => -- GVD
-              Io.Put_Line ("Get Firmware Date");
+              Put_Line ("Get Firmware Date");
               Send ("d02102017#");
             when 'N' => -- GVN
-              Io.Put_Line ("Get Firmware Number");
+              Put_Line ("Get Firmware Number");
               Send ("56.3#");
             when others =>
-              Io.Put_Line ("Unknown GV Command");
+              Put_Line ("Unknown GV Command");
             end case;
           elsif Command = ":AA" then
             Is_Polar := False;
-            Io.Put_Line ("Set AltAz Alignment");
+            Put_Line ("Set AltAz Alignment");
           elsif Command = ":AP" then
             Is_Polar := True;
-            Io.Put_Line ("Set Polar Alignment");
+            Put_Line ("Set Polar Alignment");
           elsif Command = ":Gg" then
-            Io.Put_Line ("Get Longitude");
+            Put_Line ("Get Longitude");
             Send ("+012*34:18#");
           elsif Command = ":Gt" then
-            Io.Put_Line ("Get Latitude");
+            Put_Line ("Get Latitude");
             Send ("+41*37:23");
           elsif Command = ":GS" then
-            Io.Put_Line ("Get Sideral Time");
+            Put_Line ("Get Sideral Time");
             Send ("00:34:56");
           elsif Command = ":GA" then
-            Io.Put_Line ("Get Telescope Altitude");
+            Put_Line ("Get Telescope Altitude");
             Send ("+48*22'37");
           elsif Command = ":GD" then
-            Io.Put_Line ("Get Telescope DEC");
+            Put_Line ("Get Telescope DEC");
             case The_State is
             when Startup =>
               Send ("+00*00:00#");
             when Initialize =>
               Send ("+90*00:00#");
             when Tracking =>
-              Send ("+30*00:00#");
+              Send (Dec_Image);
             end case;
           elsif Command = ":GR" then
-            Io.Put_Line ("Get Telescope RA");
-            Send ("00:16:25#");
+            Put_Line ("Get Telescope RA");
+            Send (Ra_Image);
           elsif Command = ":GZ" then
-            Io.Put_Line ("Get Azimuth");
+            Put_Line ("Get Azimuth");
             Send ("179*59'59#");
-          elsif Command = ":Sr" then -- :Sr02:44:50#
-            Io.Put_Line ("Set Object RA");
+          elsif Command = ":Sr" then
+            Ra_Image := Image;
+            Put_Line ("Set Object RA " & Image);
             Send ("1");
-          elsif Command = ":Sd" then -- :Sd+02*55:54#
-            Io.Put_Line ("Set Object DEC");
+          elsif Command = ":Sd" then
+            Dec_Image := Image;
+            Put_Line ("Set Object DEC " & Image);
             Send ("1");
           elsif Command = ":Sa" then -- :Sa+20*23'42#
-            Io.Put_Line ("Set Object Altitude");
+            Put_Line ("Set Object Altitude");
             Send ("1");
           elsif Command = ":Sz" then -- :Sz123*20'30#
-            Io.Put_Line ("Set Object Azimuth");
+            Put_Line ("Set Object Azimuth");
             Send ("1");
           elsif Command = ":SL" then -- :SL09:45:00#
-            Io.Put_Line ("Set Local Time");
+            Put_Line ("Set Local Time");
             Send ("1");
           elsif Command = ":SG" then -- :SG+02.0#
-            Io.Put_Line ("Set UTC - Local Time");
+            Put_Line ("Set UTC - Local Time");
             Send ("1");
           elsif Command = ":Sg" then -- :Sg+010g39:42#
-            Io.Put_Line ("Set Longitude");
+            Put_Line ("Set Longitude");
             Send ("0#");
           elsif Command = ":St" then -- :St+47*40:35#
-            Io.Put_Line ("Set Latitude");
+            Put_Line ("Set Latitude");
             Send ("0#");
           elsif Command = ":MS" then
             The_State := Tracking;
-            Io.Put_Line ("Slew to Target Object");
+            Put_Line ("Slew to Target Object");
             Send ("0#"); -- OK
-            Io.Put_Line ("slewing..");
+            Put_Line ("slewing..");
             Send_Ge_Is_Pending := True;
-            Send_Delay := 7;
+            Send_Delay := 20;
           elsif Command = ":CM" then
-            Io.Put_Line ("Synch");
+            Put_Line ("Synch");
             Send ("0#"); -- OK
             case The_State is
             when Startup =>
@@ -190,13 +220,13 @@ package body Test is
           elsif Command = ":RS" then
             Execute ("Set_Slewing_Rate");
           else
-            Io.Put_Line ("Unknown Command");
+            Put_Line ("Unknown Command");
           end if;
         end;
       elsif Data = ":Q#" then
         Execute ("Stop");
       else
-        Io.Put_Line ("Unknown " & Data);
+        Put_Line ("Unknown " & Data);
       end if;
     end Message_Handler;
 
@@ -208,26 +238,37 @@ package body Test is
       Network.Tcp.Accept_Client_From (Listener_Socket,
                                       The_Client_Socket,
                                       Client_Address);
-      Io.Put_Line ("Client connected. Ip Address " & Network.Image_Of (Client_Address));
+      Put_Line ("Client connected. Ip Address " & Network.Image_Of (Client_Address));
       begin
         loop
           declare
             Command : constant String := Network.Tcp.Raw_String_From (The_Client_Socket, Terminator => Terminator);
           begin
             exit Main when Command = "";
-            Io.Put_Line (Command);
+            if Command in ":GW#" | ":GD#" | ":GR#" then
+              if not Hiding then
+                Start_Hiding := True;
+              end if;
+            else
+              End_Hiding;
+            end if;
+            Put_Line (Command);
             Message_Handler (Command);
+            if Start_Hiding then
+              Hiding := True;
+            end if;
           end;
         end loop;
       exception
       when Network.Tcp.No_Client =>
-        Io.Put_Line ("Client has disconnected");
+        End_Hiding;
+        Put_Line ("Client has disconnected");
       end;
     end loop Main;
   exception
   when Item: others =>
     Log.Write (Item);
-    Io.Put_Line ("Server Error: " & Network.Net.Resolve_Exception (Item)'img);
+    Put_Line ("Server Error: " & Network.Net.Resolve_Exception (Item)'img);
   end Server;
 
 
@@ -235,14 +276,14 @@ package body Test is
     Nr_Of_Arguments : constant Natural := Ada.Command_Line.Argument_Count;
   begin
     if Nr_Of_Arguments = 0 then
-      Io.Put_Line ("TCP Test program in server mode.");
+      Put_Line ("TCP Test program in server mode.");
       Server;
     else
-      Io.Put_Line ("Incorrect number of parameters");
+      Put_Line ("Incorrect number of parameters");
     end if;
   exception
   when Event : others =>
-    Io.Put_Line ("Work exception = " & Exceptions.Information_Of (Event));
+    Put_Line ("Work exception = " & Exceptions.Information_Of (Event));
   end Execute;
 
 end Test;

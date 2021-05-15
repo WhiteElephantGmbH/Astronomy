@@ -15,9 +15,27 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Control;
+with Network;
+with Stellarium;
 
-procedure SkyGuider is
-begin
-  Control.Start;
-end SkyGuider;
+package Parameter is
+
+  procedure Read;
+  
+  ------------
+  -- M_Zero --
+  ------------
+
+  function M_Zero_Ip_Address return Network.Ip_Address;
+
+  function M_Zero_Port return Network.Port_Number;
+
+  ----------------
+  -- Stellarium --
+  ----------------
+
+  function Stellarium_Port return Network.Port_Number;
+
+  function Magnitude_Maximum return Stellarium.Magnitude;
+
+end Parameter;

@@ -15,9 +15,66 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Control;
+with Error;
+with Name;
+with Telescope;
 
-procedure SkyGuider is
-begin
-  Control.Start;
-end SkyGuider;
+package User is
+
+  type Action is (Define_Catalog, Define_Target, Update,
+                  Start, Initialize, Stop, Align, Synch, Go_To,
+                  Move_Up, Move_Down, Move_Left, Move_Right,
+                  End_Move_Up, End_Move_Down, End_Move_Left, End_Move_Right,
+                  Increase_Moving_Rate, Decrease_Moving_Rate,
+                  Close);
+
+  subtype Start_Moving is Action range Move_Up .. Move_Right;
+
+  subtype Stop_Moving is Action range End_Move_Up .. End_Move_Right;
+
+  subtype Command_Action is Action range Start .. Close;
+
+  subtype Button_Action is Action range Start .. Go_To;
+
+  type Action_Handler is access procedure (The_Action : Action);
+
+  type Selection is (All_Objects, Solar_System, Clusters, Open_Clusters, Nebulas, Galaxies,
+                     Stars, Multiple_Stars, Near_Earth_Objects);
+
+  subtype Object is Selection range Selection'succ(Selection'first) .. Selection'last;
+
+  procedure Show_Error (The_Text : String := Error.Message);
+
+  procedure Show (Visible_In : Duration);
+
+  procedure Show (Information : Telescope.Data);
+
+  procedure Clear_Target;
+
+  procedure Execute (The_Startup_Handler     : not null access procedure;
+                     The_Action_Handler      : Action_Handler;
+                     The_Termination_Handler : not null access procedure);
+
+  procedure Perform_Synch;
+
+  procedure Perform_Goto;
+
+  procedure Perform_Stop;
+
+  procedure Clear_Targets;
+
+  procedure Define (Targets : Name.Id_List_Access);
+
+  procedure Update_Targets;
+
+  procedure Enable_Align_On_Picture;
+
+  function In_Setup_Mode return Boolean;
+
+  function Target_Name return String;
+
+  procedure Show_Description (Image : String);
+
+  function Is_Selected (The_Object : Object) return Boolean;
+
+end User;

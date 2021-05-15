@@ -42,6 +42,10 @@ package Space is
 
   function Ra_Image_Of (The_Direction : Direction) return String with Inline;
 
+  function Dec_Offset_Image_Of (The_Direction : Direction) return String with Inline;
+
+  function Ra_Offset_Image_Of (The_Direction : Direction) return String with Inline;
+
   function Direction_Is_Known (The_Direction : Direction) return Boolean with Inline;
 
   function "-" (Left, Right : Direction) return Direction;

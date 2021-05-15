@@ -15,11 +15,13 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Angle, Device, Earth, Space;
+with Angle, Earth, Space;
 
 package Alignment is
 
-  type Offsets is array (Device.Drive) of Angle.Degrees;
+  type Offset_Range is (Ra, Dec);
+
+  type Offsets is array (Offset_Range) of Angle.Degrees;
 
   Zero_Offset : constant Offsets := (0.0, 0.0);
 

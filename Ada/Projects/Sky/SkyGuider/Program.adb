@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2017 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                           (c) 2021 by White Elephant GmbH, Schaffhausen, Switzerland                              *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -21,12 +21,12 @@ package body Program is
 
   function Version return Unsigned.Quadword is
   begin
-    return Unsigned.Quadword_Of (Unsigned.Word_String'(Major_Id, Minor_Id, 0, Revision));
+    return Unsigned.Quadword_Of (Unsigned.Word_String'(Major_Id, Minor_Id, 0, 0));
   end Version;
 
   function Version return String is
   begin
-    return Strings.Trimmed (Major_Id'img) & '.' & Strings.Trimmed (Minor_Id'img) & '.' & Strings.Trimmed (Revision'img);
+    return Strings.Trimmed (Major_Id'img) & '.' & Strings.Trimmed (Minor_Id'img);
   end Version;
 
 end Program;

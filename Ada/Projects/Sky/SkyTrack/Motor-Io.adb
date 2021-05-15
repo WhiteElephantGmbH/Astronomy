@@ -339,8 +339,8 @@ package body Motor.Io is
 
   procedure Update_Positions (Offsets : Alignment.Offsets) is
   begin
-    Protocol.Update_Positions ((M1 => N_Of (Offsets(D1), D1),
-                                M2 => N_Of (Offsets(D2), D2)));
+    Protocol.Update_Positions ((M1 => N_Of (Offsets(Alignment.Ra), D1),
+                                M2 => N_Of (Offsets(Alignment.Dec), D2)));
   end Update_Positions;
 
 

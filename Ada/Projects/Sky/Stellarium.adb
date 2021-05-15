@@ -214,7 +214,11 @@ package body Stellarium is
     elsif Is_User_Defined_Location then
       return;
     end if;
-    Log.Write ("location Paris => " & Last_Location);
+    if Last_Location /= "" then
+      Log.Write ("location Paris => " & Last_Location);
+    else
+      Log.Write ("Location undefined");
+    end if;
   end Read_Location;
 
 
