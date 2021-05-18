@@ -388,9 +388,9 @@ package body M_Zero is
     when Down =>
       Execute (Lx200.Move_South);
     when Left =>
-      Execute (Lx200.Move_East);
-    when Right =>
       Execute (Lx200.Move_West);
+    when Right =>
+      Execute (Lx200.Move_East);
     end case;
     Set_Status (Moving);
   exception
@@ -410,9 +410,9 @@ package body M_Zero is
     when Down =>
       Execute (Lx200.Quit_Move_South);
     when Left =>
-      Execute (Lx200.Quit_Move_East);
-    when Right =>
       Execute (Lx200.Quit_Move_West);
+    when Right =>
+      Execute (Lx200.Quit_Move_East);
     end case;
     Set_Status (Last_State);
   exception

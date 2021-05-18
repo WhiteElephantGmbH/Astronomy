@@ -25,6 +25,7 @@ with File;
 with Language;
 with Network.Tcp;
 with PWI.Settings;
+with Stellarium;
 with Strings;
 with Text;
 with Traces;
@@ -80,8 +81,7 @@ package body Parameter is
   The_Lx200_Port : Network.Port_Number;
 
   --Stellarium
-  The_Stellarium_Port   : Network.Port_Number;
-  The_Magnitude_Maximum : Stellarium.Magnitude;
+  The_Stellarium_Port : Network.Port_Number;
 
 
   procedure Set (Section : Configuration.Section_Handle) is
@@ -128,6 +128,7 @@ package body Parameter is
     if Image = "" then
       Error.Raise_With ("No language defined");
     end if;
+    Log.Write ("Language: " & Image);
     begin
       return Standard.Language.Kind'value(Image);
     exception
@@ -287,6 +288,8 @@ package body Parameter is
       Put (Magnitude_Key & " = 8.0");
       Ada.Text_IO.Close (The_File);
     exception
+    when Error.Occurred =>
+      raise;
     when Item: others =>
       Log.Termination (Item);
       Ada.Text_IO.Delete (The_File);
@@ -505,14 +508,16 @@ package body Parameter is
         Error.Raise_With ("Stellarium port number out of range");
       end;
       declare
-        Image : constant String := String_Value_Of (Magnitude_Key);
+        Image     : constant String := String_Value_Of (Magnitude_Key);
+        Magnitude : Stellarium.Magnitude;
       begin
         if Image = "" then
-          The_Magnitude_Maximum := Stellarium.Magnitude'last;
+          Magnitude := Stellarium.Magnitude'last;
         else
-          The_Magnitude_Maximum := Stellarium.Magnitude'value(Image);
+          Magnitude := Stellarium.Magnitude'value(Image);
         end if;
-        Log.Write ("Magnitude Maximum:" & The_Magnitude_Maximum'img);
+        Log.Write ("Magnitude Maximum:" & Magnitude'image);
+        Stellarium.Set_Maximum (Magnitude);
       exception
       when others =>
         Error.Raise_With ("Magnitude out of range");
@@ -636,11 +641,5 @@ package body Parameter is
   begin
     return The_Stellarium_Port;
   end Stellarium_Port;
-
-
-  function Magnitude_Maximum return Stellarium.Magnitude is
-  begin
-    return The_Magnitude_Maximum;
-  end Magnitude_Maximum;
 
 end Parameter;

@@ -33,6 +33,19 @@ package body Stellarium is
 
   package IO renames Ada.Text_IO;
 
+  The_Magnitude_Maximum : Magnitude := 8.0; -- Default
+
+  procedure Set_Maximum (Item : Magnitude) is
+  begin
+    The_Magnitude_Maximum := Item;
+  end Set_Maximum;
+
+
+  function Magnitude_Maximum return Magnitude is
+  begin
+    return The_Magnitude_Maximum;
+  end Magnitude_Maximum;
+
 
   function Actual_Data_Directory return String is
 

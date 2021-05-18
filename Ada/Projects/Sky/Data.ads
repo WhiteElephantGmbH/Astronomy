@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2012 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2012 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -22,7 +22,9 @@ with Time;
 
 package Data is
 
-  type Kind is (Favorites, Caldwell, Hip, Hr, Messier, Neo, Ngc, Ocl, Quasars);
+  type Kind is (Favorites, Caldwell, Hip, Hr, Messier, Ngc, Ocl, Quasars, Neo);
+
+  subtype Sky_Object is Kind range Kind'first .. Quasars; -- no NEOs
 
   procedure Apparent (Ra  : in out Astro.REAL;
                       Dec : in out Astro.REAL);

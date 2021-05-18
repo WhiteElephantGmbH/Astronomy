@@ -155,15 +155,14 @@ package body User is
 
     type Names is array (Selection) of Lexicon.Word;
 
-    Name_Of : constant Names := (All_Objects        => Lexicon.All_Objects,
-                                 Solar_System       => Lexicon.Solar_System,
-                                 Clusters           => Lexicon.Clusters,
-                                 Open_Clusters      => Lexicon.Open_Clusters,
-                                 Nebulas            => Lexicon.Nebulas,
-                                 Galaxies           => Lexicon.Galaxies,
-                                 Stars              => Lexicon.Stars,
-                                 Multiple_Stars     => Lexicon.Multiple_Stars,
-                                 Near_Earth_Objects => Lexicon.Neos);
+    Name_Of : constant Names := (All_Objects    => Lexicon.All_Objects,
+                                 Solar_System   => Lexicon.Solar_System,
+                                 Clusters       => Lexicon.Clusters,
+                                 Open_Clusters  => Lexicon.Open_Clusters,
+                                 Nebulas        => Lexicon.Nebulas,
+                                 Galaxies       => Lexicon.Galaxies,
+                                 Stars          => Lexicon.Stars,
+                                 Multiple_Stars => Lexicon.Multiple_Stars);
   begin
     return Lexicon.Image_Of (Name_Of(The_Selection));
   end Image_Of;
@@ -183,8 +182,8 @@ package body User is
   end Selection_Handler;
 
 
-  function Image_Of (The_Selection : Data.Kind) return String is
-    use all type Data.Kind;
+  function Image_Of (The_Selection : Data.Sky_Object) return String is
+    use all type Data.Sky_Object;
   begin
     case The_Selection is
     when Favorites =>
@@ -197,8 +196,6 @@ package body User is
       return "HR";
     when Messier =>
       null;
-    when Neo =>
-      return "NEO";
     when Ngc =>
       return "NGC";
     when Ocl =>
@@ -209,9 +206,9 @@ package body User is
     return Strings.Legible_Of (The_Selection'img);
   end Image_Of;
 
-  package Catalog_Menu is new Gui.Enumeration_Menu_Of (Data.Kind, Gui.Radio, Image_Of);
+  package Catalog_Menu is new Gui.Enumeration_Menu_Of (Data.Sky_Object, Gui.Radio, Image_Of);
 
-  procedure Catalog_Handler (The_Catalog : Data.Kind) is
+  procedure Catalog_Handler (The_Catalog : Data.Sky_Object) is
   begin
     Log.Write ("Catalog: " & The_Catalog'img);
     Name.Define (The_Catalog);
@@ -233,46 +230,6 @@ package body User is
   begin
     Text.Clear (The_Error_Text);
   end Clear_Error;
-
-
-  procedure Show (Visible_In : Duration) is
-
-    function Image_Of (Value : Natural;
-                       Unit  : String) return String is
-      Image : constant String := Value'img & " " & Unit;
-    begin
-      if Value = 0 then
-        return "";
-      elsif Value = 1 then
-        return Image;
-      else
-        return Image & "s";
-      end if;
-    end Image_Of;
-
-    Header : constant String := "Visible in";
-    Second : constant String := "second";
-    Minute : constant String := "minute";
-    Hour   : constant String := "hour";
-
-    procedure Show_Duration (Value      : Natural;
-                             Upper_Unit : String;
-                             Lower_Unit : String) is
-    begin
-      Show_Description (Header & Image_Of (Value / 60, Upper_Unit) & Image_Of (Value mod 60, Lower_Unit));
-    end Show_Duration;
-
-    Delta_Time : constant Natural := Natural(Visible_In);
-
-  begin -- Show
-    if Delta_Time = 0 then
-      Show_Description ("");
-    elsif Delta_Time < 3600 then
-      Show_Duration (Delta_Time, Minute, Second);
-    else
-      Show_Duration ((Delta_Time + 59) / 60, Hour, Minute);
-    end if;
-  end Show;
 
 
   procedure Disable_Operation_Buttons (Is_Stopped : Boolean := False) is
@@ -878,9 +835,9 @@ package body User is
                      The_Action_Handler      : Action_Handler;
                      The_Termination_Handler : not null access procedure) is
 
-    Windows_Width  : constant Natural := (if Os.Is_Osx then 260 else 260);
-    Windows_Height : constant Natural := (if Os.Is_Osx then 1200 else 800);
-    Minimum_Width  : constant Natural := (if Os.Is_Osx then 200 else 200);
+    Windows_Width  : constant Natural := 260;
+    Windows_Height : constant Natural := 800;
+    Minimum_Width  : constant Natural := 200;
     Separation     : constant Natural := (if Os.Is_Osx then 8 else 6);
 
     procedure Create_Interface is

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2011 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2011 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -31,6 +31,9 @@ with Traces;
 package body Name is
 
   package Log is new Traces ("Name");
+
+  Support_Neos       : Boolean := False;
+  Support_Land_Marks : Boolean := False;
 
   type Text is new Ada.Strings.Unbounded.Unbounded_String;
 
@@ -319,8 +322,11 @@ package body Name is
   end "=";
 
 
-  procedure Read_Favorites is
+  procedure Read_Favorites (Enable_Neos        : Boolean := True;
+                            Enable_Land_Marks  : Boolean := True) is
   begin
+    Support_Neos := Enable_Neos;
+    Support_Land_Marks := Enable_Land_Marks;
     Actual_Catalog.Read_Favorite_Catalog;
   end Read_Favorites;
 
@@ -462,7 +468,7 @@ package body Name is
                       The_Element.Kind := Planet;
                     elsif Sssb.Exists (Object_Id) then
                       The_Element.Kind := Small_Solar_System_Body;
-                    elsif Neo.Exists (Object_Id) then
+                    elsif Support_Neos and then Neo.Exists (Object_Id) then
                       The_Element.Kind := Near_Earth_Object;
                       The_Element.Object := Data.Neo_Object_Of (Object_Id);
                     elsif (Item(Item'first) = 'C') or (Item(Item'first) = 'M') then
@@ -499,7 +505,7 @@ package body Name is
                           The_Element.Object := Data.Object_Of (Value, Data.Quasars);
                         elsif Sssb.Exists (Object_Id) then
                           The_Element.Kind := Small_Solar_System_Body;
-                        elsif Neo.Exists (Object_Id) then
+                        elsif Support_Neos and then Neo.Exists (Object_Id) then
                           The_Element.Kind := Near_Earth_Object;
                           The_Element.Object := Data.Neo_Object_Of (Object_Id);
                         else
@@ -519,7 +525,7 @@ package body Name is
           end Add_Sky_Object;
 
         begin
-          if Part_1_Parts.Count >= 2 and then Part_1_Parts(Strings.First_Index) = "LM" then
+          if Support_Land_Marks and then Part_1_Parts.Count >= 2 and then Part_1_Parts(Strings.First_Index) = "LM" then
             Add_Landmark;
           else
             Add_Sky_Object;
@@ -574,8 +580,10 @@ package body Name is
         Put (Image_Of (Lexicon.Neptune));
         Put (Image_Of (Lexicon.Pluto));
         Put ("");
-        Put ("LM " & Image_Of (Lexicon.Road_Sign) & " | 259° 49' 13"" | 2° 56' 15""");
-        Put ("");
+        if Support_Land_Marks then
+          Put ("LM " & Image_Of (Lexicon.Road_Sign) & " | 259° 49' 13"" | 2° 56' 15""");
+          Put ("");
+        end if;
         Put ("HIP 95947  | " & Image_Of (Lexicon.Albireo));
         Put ("HIP 21421  | " & Image_Of (Lexicon.Aldebaran));
         Put ("HIP 97649  | " & Image_Of (Lexicon.Altair));

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2011 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2011 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -53,7 +53,8 @@ package Name is
 
   function "=" (Left, Right : Id_List) return Boolean;
 
-  procedure Read_Favorites;
+  procedure Read_Favorites (Enable_Neos        : Boolean := True;
+                            Enable_Land_Marks  : Boolean := True);
 
   procedure Define (List : Data.Kind);
 

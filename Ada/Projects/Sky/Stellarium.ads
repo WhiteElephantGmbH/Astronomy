@@ -28,6 +28,10 @@ package Stellarium is
 
   type Goto_Handler is access procedure (Direction : Space.Direction);
 
+  procedure Set_Maximum (Item : Magnitude);
+
+  function Magnitude_Maximum return Magnitude;
+
   function Startup (Filename : String;
                     The_Port : Network.Port_Number) return Boolean;
 

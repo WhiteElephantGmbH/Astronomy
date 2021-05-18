@@ -16,7 +16,7 @@ package M_Zero is
     Direction : Space.Direction;
   end record;
 
-  type Moving_Rate is (Centering, Guiding, Finding, Slewing);
+  type Moving_Rate is (Guiding, Centering, Finding, Slewing);
 
   type Moving_Direction is (Up, Down, Left, Right);
 

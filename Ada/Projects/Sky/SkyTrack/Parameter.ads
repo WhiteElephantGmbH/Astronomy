@@ -19,8 +19,6 @@ with Angle;
 with Device;
 with Network.Udp;
 with Serial_Io;
-with Stellarium;
-
 package Parameter is
 
   Acceleration_Unit : constant String := "/s²";
@@ -87,7 +85,5 @@ package Parameter is
   ----------------
 
   function Stellarium_Port return Network.Port_Number;
-
-  function Magnitude_Maximum return Stellarium.Magnitude;
 
 end Parameter;

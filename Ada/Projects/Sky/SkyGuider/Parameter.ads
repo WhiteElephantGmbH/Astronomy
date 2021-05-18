@@ -16,12 +16,11 @@
 pragma Style_White_Elephant;
 
 with Network;
-with Stellarium;
 
 package Parameter is
 
   procedure Read;
-  
+
   ------------
   -- M_Zero --
   ------------
@@ -35,7 +34,5 @@ package Parameter is
   ----------------
 
   function Stellarium_Port return Network.Port_Number;
-
-  function Magnitude_Maximum return Stellarium.Magnitude;
 
 end Parameter;

@@ -18,7 +18,6 @@ pragma Style_White_Elephant;
 with Angle;
 with Device;
 with PWI;
-with Stellarium;
 with Network;
 
 package Parameter is
@@ -68,7 +67,5 @@ package Parameter is
   ----------------
 
   function Stellarium_Port return Network.Port_Number;
-
-  function Magnitude_Maximum return Stellarium.Magnitude;
 
 end Parameter;

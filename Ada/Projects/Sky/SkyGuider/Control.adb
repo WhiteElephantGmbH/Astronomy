@@ -22,7 +22,6 @@ with Gui;
 with Horizon;
 with Moon;
 with Name;
-with Neo;
 with Network.Tcp;
 with Os.Application;
 with Parameter;
@@ -101,7 +100,8 @@ package body Control is
               Log.Warning ("Landmarks not supported");
               return False;
             when Name.Near_Earth_Object =>
-              return User.Is_Selected (User.Near_Earth_Objects) and then Neo.Is_Arriving (Item);
+              Log.Warning ("NEOs not supported");
+              return False;
             when Name.Sky_Object =>
               declare
                 Object : constant Data.Object := Name.Object_Of (Item);
@@ -386,14 +386,11 @@ package body Control is
 
     The_Data : Telescope.Data;
 
-    The_Neo_Target : Name.Id;
-
     procedure Define_External_Target is
     begin
       User.Clear_Target;
       New_Target_Direction := Action_Handler.New_Direction;
       Telescope.Define_Space_Access (Target_Direction_Of'access, Name.No_Id);
-      The_Neo_Target := Name.No_Id;
     end Define_External_Target;
 
 
@@ -442,20 +439,6 @@ package body Control is
     begin
       The_Data := Telescope.Information;
       User.Show (The_Data);
-      if Name.Is_Known (The_Neo_Target) then
-        declare
-          Tracking_Period : constant Time.Period := Neo.Tracking_Period_Of (The_Neo_Target);
-          Arriving_In     : Time.Ut;
-          use type Time.Period;
-        begin
-          if Tracking_Period /= Time.Undefined then
-            Arriving_In := Tracking_Period.Arrival_Time - Time.Universal;
-            if Arriving_In >= 0.0 then
-              User.Show (Arriving_In);
-            end if;
-          end if;
-        end;
-      end if;
       case The_Data.Status is
       when Telescope.Error
          | Telescope.Disconnected
@@ -486,7 +469,6 @@ package body Control is
           The_Item : Name.Id;
         begin
           User.Show_Description ("");
-          The_Neo_Target := Name.No_Id;
           Targets.Get_For (User.Target_Name, The_Item);
           if Name.Is_Known (The_Item)  then
             case Name.Kind_Of (The_Item) is
@@ -507,8 +489,7 @@ package body Control is
             when Name.Small_Solar_System_Body =>
               Telescope.Define_Space_Access (Sssb.Direction_Of'access, The_Item);
             when Name.Near_Earth_Object =>
-              Telescope.Define_Space_Access (Neo.Direction_Of'access, The_Item);
-              The_Neo_Target := The_Item;
+              null; -- no NEOs
             when Name.Landmark =>
               null; -- no land mark
             end case;
@@ -568,8 +549,8 @@ package body Control is
       Horizon.Generate;
     end if;
     Sky_Line.Read;
-    Neo.Add_Objects;
-    Name.Read_Favorites;
+    Name.Read_Favorites (Enable_Neos       => False,
+                         Enable_Land_Marks => False);
   end Read_Data;
 
 

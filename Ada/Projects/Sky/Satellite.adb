@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2013 .. 2020 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2013 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -19,7 +19,6 @@ with Ada.Directories;
 with Ada.Text_IO;
 with File;
 with Norad;
-with Parameter;
 with Stellarium;
 with String_List;
 with Strings;
@@ -286,7 +285,7 @@ package body Satellite is
       use type String_List.Item;
       use type Stellarium.Magnitude;
     begin
-      if The_Magnitude <= Parameter.Magnitude_Maximum and then not The_Names.Contains (Filename) and then
+      if The_Magnitude <= Stellarium.Magnitude_Maximum and then not The_Names.Contains (Filename) and then
         not Norad.Is_In_Deep_Space (The_Data)
       then
         The_Names := The_Names + Filename;

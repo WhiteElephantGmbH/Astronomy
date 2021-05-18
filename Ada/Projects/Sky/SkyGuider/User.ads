@@ -38,14 +38,11 @@ package User is
 
   type Action_Handler is access procedure (The_Action : Action);
 
-  type Selection is (All_Objects, Solar_System, Clusters, Open_Clusters, Nebulas, Galaxies,
-                     Stars, Multiple_Stars, Near_Earth_Objects);
+  type Selection is (All_Objects, Solar_System, Clusters, Open_Clusters, Nebulas, Galaxies, Stars, Multiple_Stars);
 
   subtype Object is Selection range Selection'succ(Selection'first) .. Selection'last;
 
   procedure Show_Error (The_Text : String := Error.Message);
-
-  procedure Show (Visible_In : Duration);
 
   procedure Show (Information : Telescope.Data);
 
