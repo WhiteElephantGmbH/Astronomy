@@ -42,17 +42,17 @@ package body M_Zero is
   end Set_Status;
 
 
-  procedure Error (Message : String) is
+  procedure Set_Error (Message : String) is
   begin
     The_Error := Text.String_Of (Message);
     Log.Error (Message);
     Set_Status (Error);
-  end Error;
+  end Set_Error;
 
 
   procedure Disconnect_Device with No_Return is
   begin
-    Error ("Device not Connected");
+    Set_Error ("Device not Connected");
     Network.Tcp.Close (The_Socket);
     Last_State := Disconnected;
     raise Device_Disconnected;
@@ -147,7 +147,7 @@ package body M_Zero is
                         Used_Socket => The_Socket);
     exception
     when Item: others =>
-      Error ("no anwer <" & Network.Exception_Kind (Item)'image & '>');
+      Set_Error ("no anwer <" & Network.Exception_Kind (Item)'image & '>');
       Disconnect_Device;
     end;
     case Command is
@@ -226,7 +226,7 @@ package body M_Zero is
                                               Receive_Timeout => Receive_Timeout);
       exception
       when Item: others =>
-        Error ("M-Zero " & Network.Exception_Kind (Item)'image);
+        Set_Error ("M-Zero " & Network.Exception_Kind (Item)'image);
         return;
       end;
       if Reply_For (Lx200.Get_Product_Name) = "Avalon" and then
@@ -234,7 +234,7 @@ package body M_Zero is
       then
         Set_Status (Connected);
       else
-        Error ("device not M-Zero version 56.3");
+        Set_Error ("device not M-Zero version 56.3");
       end if;
     when Error =>
       null;
@@ -253,7 +253,7 @@ package body M_Zero is
     Reply : constant String := Reply_For (Command, Parameter);
   begin
     if Reply /= Expected then
-      Error ("command " & Command'image & " failed with " & Reply);
+      Set_Error ("command " & Command'image & " failed with " & Reply);
     end if;
   end Execute;
 
@@ -309,10 +309,10 @@ package body M_Zero is
     when Error =>
       null;
     when Disconnected =>
-      Error ("not connected");
+      Set_Error ("not connected");
     when Connected =>
       if not Site.Is_Defined then
-        Error ("Site not defined");
+        Set_Error ("Site not defined");
         return;
       end if;
       declare
@@ -326,7 +326,7 @@ package body M_Zero is
             Execute (Lx200.Set_Polar_Alignment);
             delay 1.0; -- give avalon time to initialize
             if not Status_Ok then
-              Error ("alignment not polar");
+              Set_Error ("alignment not polar");
               return;
             end if;
           end if;

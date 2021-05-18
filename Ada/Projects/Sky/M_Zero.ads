@@ -20,6 +20,8 @@ package M_Zero is
 
   type Moving_Direction is (Up, Down, Left, Right);
 
+  procedure Set_Error (Message : String);
+
   function Error_Message return String;
 
   procedure Connect (Server_Address : Network.Ip_Address;

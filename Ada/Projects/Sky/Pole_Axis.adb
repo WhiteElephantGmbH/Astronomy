@@ -68,6 +68,8 @@ package body Pole_Axis is
         end if;
       end loop;
       The_Direction := Picture.Direction;
+    else
+      raise Picture_Not_Solved;
     end if;
   exception
   when Picture.File_Not_Found =>

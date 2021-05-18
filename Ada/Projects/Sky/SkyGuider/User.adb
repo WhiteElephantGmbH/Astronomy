@@ -229,6 +229,12 @@ package body User is
   end Show_Error;
 
 
+  procedure Clear_Error is
+  begin
+    Text.Clear (The_Error_Text);
+  end Clear_Error;
+
+
   procedure Show (Visible_In : Duration) is
 
     function Image_Of (Value : Natural;
@@ -546,7 +552,7 @@ package body User is
   begin
     case The_Status is
     when Telescope.Error =>
-      Text.Clear (The_Error_Text);
+      Clear_Error;
     when Telescope.Disconnected =>
       Signal_Action (Start);
     when Telescope.Connected =>
@@ -610,7 +616,7 @@ package body User is
       Refraction.Set (The_Air_Pressure);
     exception
     when others =>
-      Show_Error ("Incorrect Air Pressure: " & Value);
+      Telescope.Set_Error ("Incorrect Air Pressure: " & Value);
     end;
     Gui.Set_Text (Air_Pressure, Image_Of (The_Air_Pressure));
   exception
@@ -677,17 +683,21 @@ package body User is
 
 
   procedure Handle_Clear_Button is
+    use type Telescope.State;
   begin
-    case The_Setup_Object is
-    when Skyline =>
-      Sky_Line.Clear;
-      Gui.Disable (Clear_Button);
-    when Get_Pole =>
-      Site.Clear;
-      Pole_Axis.Clear;
-      Gui.Disable (Clear_Button);
-    end case;
-    Text.Clear (The_Error_Text);
+    if The_Status = Telescope.Error then
+      Clear_Error;
+    else
+      case The_Setup_Object is
+      when Skyline =>
+        Sky_Line.Clear;
+        Gui.Disable (Clear_Button);
+      when Get_Pole =>
+        Site.Clear;
+        Pole_Axis.Clear;
+        Gui.Disable (Clear_Button);
+      end case;
+    end if;
   exception
   when others =>
     Log.Error ("Handle_Clear_Button");
@@ -711,11 +721,11 @@ package body User is
     end case;
   exception
   when Pole_Axis.Picture_Not_Found =>
-    Show_Error ("Picture " & Picture.Filename & " not found");
+    Telescope.Set_Error ("Picture " & Picture.Filename & " not found");
   when Pole_Axis.Picture_Not_Solved =>
-    Show_Error ("Picture not solved");
-  when others =>
-    Log.Error ("Handle_First_Setup_Button");
+    Telescope.Set_Error ("Picture not solved");
+  when Item: others =>
+    Log.Termination (Item);
   end Handle_First_Setup_Button;
 
 
@@ -916,7 +926,8 @@ package body User is
         Moving_Rate_Text : constant String := "Moving Rate";
 
         Title_Size : constant Natural := Gui.Text_Size_Of (Moving_Rate_Text) + Separation;
-        Text_Size  : constant Natural := Gui.Text_Size_Of ("20h58m58.58s") + Separation;
+        Text_Size  : constant Natural := Natural'max (Gui.Text_Size_Of ("+360d00'00.0"""),
+                                                      Gui.Text_Size_Of ("20h58m58.58s")) + Separation;
       begin
         Display_Page := Gui.Add_Page (The_Title  => "Display",
                                       The_Action => Enter_Display_Page'access,

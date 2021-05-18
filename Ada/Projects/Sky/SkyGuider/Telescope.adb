@@ -153,37 +153,6 @@ package body Telescope is
   end Actual_Target_Direction;
 
 
-  function Synch_On_Picture return Boolean is
-    Actual_Direction : constant Space.Direction := Actual_Target_Direction;
-  begin
-    return Picture.Solve (Actual_Direction);
-  exception
-  when Picture.Not_Solved =>
-    Log.Warning ("No sulution for synch on picture");
-    return False;
-  when Item: others =>
-    Log.Termination (Item);
-    return False;
-  end Synch_On_Picture;
-
-
-  function Synch_On_Picture_Complete return Boolean is
-  begin
-    if Picture.Solved then
-      User.Enable_Align_On_Picture;
-      return True;
-    end if;
-    return False;
-  exception
-  when Picture.Not_Solved =>
-    Log.Warning ("No sulution for synch on picture");
-    return True;
-  when Item: others =>
-    Log.Termination (Item);
-    return True;
-  end Synch_On_Picture_Complete;
-
-
   function Information return Data is
     The_Data : Data;
   begin
@@ -239,6 +208,39 @@ package body Telescope is
     end Startup;
 
 
+    function Solve_Picture return Boolean is
+      Actual_Direction : constant Space.Direction := Actual_Target_Direction;
+    begin
+      if not Picture.Solve (Actual_Direction) then
+        M_Zero.Set_Error ("Picture not solved");
+        return False;
+      end if;
+      return True;
+    exception
+    when Picture.Not_Solved =>
+      M_Zero.Set_Error ("Picture solving not started");
+      return False;
+    when Item: others =>
+      M_Zero.Set_Error ("Picture solving failed");
+      Log.Termination (Item);
+      return False;
+    end Solve_Picture;
+
+
+    function Picture_Solved return Boolean is
+    begin
+      return Picture.Solved;
+    exception
+    when Picture.Not_Solved =>
+      M_Zero.Set_Error ("Picture not solved");
+      return False;
+    when Item: others =>
+      M_Zero.Set_Error ("Picture solving failed");
+      Log.Termination (Item);
+      return False;
+    end Picture_Solved;
+
+
     procedure Update_Handling is
       Last_Status : constant State := The_Status;
     begin
@@ -251,14 +253,15 @@ package body Telescope is
         if not User.In_Setup_Mode
           and then not Aligning_Enabled
           and then Picture.Exists
-          and then Synch_On_Picture
+          and then Solve_Picture
         then
           M_Zero.Start_Solving;
         end if;
       when Solving =>
-        if Synch_On_Picture_Complete then
-          Aligning_Enabled := True;
+        if Picture_Solved then
           The_Picture_Direction := Picture.Actual_Direction;
+          User.Enable_Align_On_Picture;
+          Aligning_Enabled := True;
           M_Zero.End_Solving;
         end if;
       when Disconnected =>

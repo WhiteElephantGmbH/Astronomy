@@ -73,6 +73,8 @@ package Telescope is
 
   function Information return Data;
 
+  procedure Set_Error (Message : String) renames M_Zero.Set_Error;
+
   function Error_Message return String renames M_Zero.Error_Message;
 
   procedure Close;

@@ -64,6 +64,9 @@ package body Astap is
     File.Delete (Fits_Filename);
     File.Delete (Result_Filename);
     File.Delete (Wcs_Filename);
+  exception
+  when others =>
+    null;
   end Cleanup;
 
 
@@ -111,9 +114,7 @@ package body Astap is
       raise Not_Solved;
     end if;
     Log.Write ("Parameters: " & Parameters);
-
     The_Filename := Text.String_Of (Name);
-
     Cleanup;
     The_Process_Id := Os.Process.Created (Executable     => Executable,
                                           Parameters     => Parameters,
@@ -122,6 +123,7 @@ package body Astap is
   exception
   when Not_Solved =>
     Cleanup;
+    Log.Warning ("Not solution for " & Filename);
     raise;
   when Item: others =>
     Log.Termination (Item);
@@ -163,6 +165,7 @@ package body Astap is
         Cleanup;
         Terminate_Process;
         Is_Solving := False;
+        Log.Write ("Solution found");
         return True;
       end if;
       return False;
@@ -173,6 +176,7 @@ package body Astap is
   when Not_Solved =>
     Is_Solving := False;
     Cleanup;
+    Log.Warning ("No solution found");
     raise Not_Solved;
   when Item: others =>
     Is_Solving := False;
