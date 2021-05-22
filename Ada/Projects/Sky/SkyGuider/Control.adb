@@ -23,9 +23,10 @@ with Horizon;
 with Moon;
 with Name;
 with Network.Tcp;
+with Objects;
 with Os.Application;
-with Parameter;
 with Os.Process;
+with Parameter;
 with Site;
 with Sky_Line;
 with Solar_System;
@@ -97,8 +98,7 @@ package body Control is
             when Name.Small_Solar_System_Body =>
               return Is_To_Add (User.Solar_System, Sssb.Direction_Of (Item, Ut));
             when Name.Landmark =>
-              Log.Warning ("Landmarks not supported");
-              return False;
+              return True;
             when Name.Near_Earth_Object =>
               Log.Warning ("NEOs not supported");
               return False;
@@ -376,6 +376,13 @@ package body Control is
   end Target_Direction_Of;
 
 
+  function Earth_Direction_Of (Landmark : Name.Id;
+                               Ut       : Time.Ut) return Space.Direction is
+  begin
+    return Objects.Direction_Of (Name.Direction_Of (Landmark), Ut);
+  end Earth_Direction_Of;
+
+
   task body Manager is
 
     type Target_Access is access Target_Handler;
@@ -407,6 +414,7 @@ package body Control is
         Log.Error ("goto not executed");
       when Telescope.Initialized
          | Telescope.Approaching
+         | Telescope.Stopped
          | Telescope.Tracking
       =>
         User.Perform_Goto;
@@ -427,6 +435,7 @@ package body Control is
       =>
         Log.Error ("synch not executed");
       when Telescope.Initialized
+         | Telescope.Stopped
          | Telescope.Tracking
       =>
         User.Perform_Synch;
@@ -448,6 +457,7 @@ package body Control is
       when Telescope.Initialized
          | Telescope.Moving
          | Telescope.Approaching
+         | Telescope.Stopped
          | Telescope.Tracking
          | Telescope.Solving
       =>
@@ -476,7 +486,7 @@ package body Control is
               Telescope.Define_Space_Access (Name.Direction_Of'access, The_Item);
               User.Show_Description (Data.Descriptor_Of (Name.Object_Of (The_Item)));
             when Name.Moon =>
-              Telescope.Define_Space_Access (Moon.Direction_Of'access, Name.No_Id);
+              Telescope.Define_Space_Access (Moon.Direction_Of'access, The_Item);
             when Name.Sun =>
               Telescope.Define_Space_Access (Solar_System.Direction_Of'access, The_Item);
             when Name.Planet =>
@@ -491,7 +501,7 @@ package body Control is
             when Name.Near_Earth_Object =>
               null; -- no NEOs
             when Name.Landmark =>
-              null; -- no land mark
+              Telescope.Define_Space_Access (Earth_Direction_Of'access, The_Item);
             end case;
           else
             null; -- no park position
@@ -550,7 +560,7 @@ package body Control is
     end if;
     Sky_Line.Read;
     Name.Read_Favorites (Enable_Neos       => False,
-                         Enable_Land_Marks => False);
+                         Enable_Land_Marks => True);
   end Read_Data;
 
 

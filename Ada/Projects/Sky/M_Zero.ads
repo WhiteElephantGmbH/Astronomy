@@ -9,7 +9,9 @@ with Space;
 
 package M_Zero is
 
-  type State is (Error, Disconnected, Connected, Initialized, Moving, Approaching, Tracking, Solving);
+  type State is (Error, Disconnected, Connected, Initialized, Moving, Approaching, Stopped, Tracking, Solving);
+
+  type Target_Kind is (Landmark, Moon, Sun, Other_Targets);
 
   type Information is record
     Status    : State;
@@ -37,9 +39,11 @@ package M_Zero is
 
   procedure Stop_Moving;
 
-  procedure Slew_To (Location : Space.Direction);
+  procedure Slew_To (Location : Space.Direction;
+                     Kind     : Target_Kind := Other_Targets);
 
-  procedure Synch_To (Location : Space.Direction);
+  procedure Synch_To (Location : Space.Direction;
+                      Kind     : Target_Kind := Other_Targets);
 
   procedure Start_Solving;
 

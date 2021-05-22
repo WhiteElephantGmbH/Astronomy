@@ -581,7 +581,12 @@ package body Name is
         Put (Image_Of (Lexicon.Pluto));
         Put ("");
         if Support_Land_Marks then
-          Put ("LM " & Image_Of (Lexicon.Road_Sign) & " | 259° 49' 13"" | 2° 56' 15""");
+          if Support_Neos then -- like CDK observatorium Schaffhausen
+            Put ("LM " & Image_Of (Lexicon.Road_Sign) & " | 259° 49' 13"" | 2° 56' 15""");
+          else -- like M_Zero
+            Put ("LM " & Image_Of (Lexicon.East) &  " |  90° | 0°");
+            Put ("LM " & Image_Of (Lexicon.West) &  " | 270° | 0°");
+          end if;
           Put ("");
         end if;
         Put ("HIP 95947  | " & Image_Of (Lexicon.Albireo));

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2016 .. 2020 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2016 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 -->Style: Soudronic
@@ -176,7 +176,6 @@ package body Network.Tcp is
       raise Aborted;
     when others =>
       Log.Write ("Network.Tcp.Handle_Receive_Error: " & Error'img);
-      Log.Write ("Network.Tcp.Handle_Receive_Error: ", Occurrence);
     end case;
     raise Receive_Error;
   end Handle_Receive_Error;

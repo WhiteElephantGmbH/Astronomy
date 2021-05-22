@@ -48,6 +48,8 @@ package Lx200 is
     Set_Finding_Rate,
     Set_Slewing_Rate);
 
+  function Command_For (Item : String) return String;
+
   function String_Of (Item      : Command;
                       Parameter : String := "") return String;
 

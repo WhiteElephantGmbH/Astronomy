@@ -135,6 +135,26 @@ package body Telescope is
   Next_Id            : Name.Id;
   Next_Get_Direction : Get_Space_Access := null;
 
+
+  function Target_Kind return M_Zero.Target_Kind is
+  begin
+    if Name.Is_Known (Next_Id) then
+      case Name.Kind_Of (Next_Id) is
+      when Name.Landmark =>
+        return M_Zero.Landmark;
+      when Name.Moon =>
+        return M_Zero.Moon;
+      when Name.Sun =>
+        return M_Zero.Sun;
+      when others =>
+        return M_Zero.Other_Targets;
+      end case;
+    else
+      return M_Zero.Other_Targets;
+    end if;
+  end Target_Kind;
+
+
   procedure Define_Space_Access (Get_Direction : Get_Space_Access;
                                  The_Id        : Name.Id) is
   begin
@@ -299,12 +319,12 @@ package body Telescope is
           end Initialize;
         or
           accept Go_To do
-            M_Zero.Slew_To (Actual_Target_Direction);
+            M_Zero.Slew_To (Actual_Target_Direction, Target_Kind);
           end Go_To;
         or
           accept Align do
             Synch_On_Picture;
-            M_Zero.Slew_To (Actual_Target_Direction);
+            M_Zero.Slew_To (Actual_Target_Direction, Target_Kind);
          end Align;
         or
           accept Synch do

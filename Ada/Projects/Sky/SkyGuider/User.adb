@@ -339,7 +339,7 @@ package body User is
       when Telescope.Approaching | Telescope.Solving =>
         Gui.Set_Text (Stop_Or_Synch_Button, "Stop");
         Disable_Operation_Buttons;
-      when Telescope.Tracking =>
+      when Telescope.Stopped | Telescope.Tracking =>
         Set_Tracking_Buttons;
         Enable_Operation_Buttons;
         if Align_On_Picture_Is_Enabled then
@@ -485,7 +485,7 @@ package body User is
   procedure Perform_Stop_Or_Synch is
   begin
     case The_Status is
-    when Telescope.Initialized | Telescope.Tracking =>
+    when Telescope.Initialized | Telescope.Stopped | Telescope.Tracking =>
       case The_Target_Selection is
       when Target_Object =>
         Perform_Synch;
@@ -514,7 +514,7 @@ package body User is
       Signal_Action (Start);
     when Telescope.Connected =>
       Signal_Action (Initialize);
-    when Telescope.Initialized | Telescope.Tracking =>
+    when Telescope.Initialized | Telescope.Stopped | Telescope.Tracking =>
       case The_Target_Selection is
       when Target_Object =>
         if Align_On_Picture_Is_Enabled then

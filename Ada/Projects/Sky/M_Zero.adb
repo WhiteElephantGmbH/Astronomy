@@ -6,7 +6,6 @@ pragma Style_White_Elephant;
 
 with Angle;
 with Earth;
-with Exceptions;
 with Lx200;
 with Network.Tcp;
 with Objects;
@@ -23,17 +22,34 @@ package body M_Zero is
 
   Socket_Protocol : constant Network.Tcp.Protocol := Network.Tcp.Raw;
 
+  Product_Name    : constant String := "Avalon";
+  Firmware_Number : constant String := "62.0";
+
   Receive_Timeout : constant Duration := 3.0;
+
+  -- LX200 command extesions
+
+  Get_Device_Status   : constant String := "X3C";
+  Set_Lunar_Guiding   : constant String := "TL";
+  Set_Solar_Guiding   : constant String := "TS";
+  Set_Sideral_Guiding : constant String := "TQ";
+  Set_Stop_Guiding    : constant String := "X120";
 
   The_Socket : Network.Tcp.Socket;
   The_Status : State := Disconnected;
   Last_State : State := Disconnected;
-  The_Error  : Text.String;
+
+  type Alignment is (Not_Aligned, Unused_1, Unused_2, North_Aligned);
+
+  The_Alignment   : Alignment;
+  The_Target_Kind : Target_Kind;
+
+  The_Error : Text.String;
 
   procedure Set_Status (Item : State) is
   begin
     case Item is
-    when Disconnected | Connected | Initialized | Tracking =>
+    when Disconnected | Connected | Initialized | Stopped | Tracking =>
       Last_State := Item;
     when others =>
       null;
@@ -50,9 +66,9 @@ package body M_Zero is
   end Set_Error;
 
 
-  procedure Disconnect_Device with No_Return is
+  procedure Disconnect_Device (Message : String) with No_Return is
   begin
-    Set_Error ("Device not Connected");
+    Set_Error (Message);
     Network.Tcp.Close (The_Socket);
     Last_State := Disconnected;
     raise Device_Disconnected;
@@ -91,15 +107,28 @@ package body M_Zero is
   end Not_Initialized;
 
 
-  function Received_String return String is
+  procedure Set_Status is
+  begin
+    case The_Target_Kind is
+    when Landmark =>
+      Set_Status (Stopped);
+    when others =>
+      Set_Status (Tracking);
+    end case;
+  end Set_Status;
+
+
+  function Received_String (Log_Enabled : Boolean := True) return String is
   begin
     loop
       declare
         Reply : constant String := Network.Tcp.Raw_String_From (The_Socket, Terminator => Lx200.Terminator);
       begin
-        Log.Write ("Reply " & Reply);
+        if Log_Enabled then
+          Log.Write ("Reply " & Reply);
+        end if;
         if Reply = "ge" & Lx200.Terminator then -- M-Zero extension
-          Set_Status (Tracking);
+          Set_Status;
         else
           return Reply (Reply'first .. Reply'last - 1);
         end if;
@@ -120,7 +149,7 @@ package body M_Zero is
           begin
             Log.Write ("Reply g" & Reply);
             if The_Status = Approaching and then Reply = "e" & Lx200.Terminator then -- M-Zero extension
-              Set_Status (Tracking);
+              Set_Status;
             else
               return 'g' & Reply(Reply'first .. Reply'last - 1);
             end if;
@@ -134,26 +163,71 @@ package body M_Zero is
   end Received_Character;
 
 
+  procedure Send (Command     : String;
+                  Log_Enabled : Boolean := True) is
+  begin
+    if Log_Enabled then
+      Log.Write ("Command " & Command);
+    end if;
+    Network.Tcp.Send (The_String  => Command,
+                      Used_Socket => The_Socket);
+  exception
+  when Item: others =>
+    Disconnect_Device ("no anwer <" & Network.Exception_Kind (Item)'image & '>');
+  end Send;
+
+
+  procedure Execute (Command : String) is
+  begin
+    Send (Lx200.Command_For (Command));
+  end Execute;
+
+
+  procedure Set_Device_Status is
+
+    type Guiding_Kind is (Stopped, Lunar, Solar, Sideral);
+
+    The_Guiding : Guiding_Kind;
+
+  begin
+    Execute (Get_Device_Status);
+    declare                                       --  12345
+      Reply : constant String := Received_String; -- :Z1at2#
+    begin
+      The_Alignment   := Alignment'val(Natural'value("" & Reply(Reply'first + 3)));
+      Log.Write ("Alignment " & The_Alignment'image);
+      The_Guiding := Guiding_Kind'val(Natural'value("" & Reply(Reply'first + 4)));
+      Log.Write ("Guiding " & The_Guiding'image);
+    end;
+    case The_Guiding is
+    when Stopped =>
+      The_Target_Kind := Landmark;
+    when Lunar =>
+      The_Target_Kind := Moon;
+    when Solar =>
+      The_Target_Kind := Sun;
+    when others =>
+      The_Target_Kind := Other_Targets;
+    end case;
+  exception
+  when others =>
+    Set_Error ("Unknown device status");
+  end Set_Device_Status;
+
+
+
   function Reply_For (Command   : Lx200.Command;
                       Parameter : String := "") return String is
     use Lx200;
 
-    Command_String : constant String := String_Of (Command, Parameter);
+    Log_Enabled : constant Boolean := not (Command in Get_Declination | Get_Right_Ascension);
 
   begin
-    Log.Write ("Command " & Command_String);
-    begin
-      Network.Tcp.Send (The_String  => Command_String,
-                        Used_Socket => The_Socket);
-    exception
-    when Item: others =>
-      Set_Error ("no anwer <" & Network.Exception_Kind (Item)'image & '>');
-      Disconnect_Device;
-    end;
+    Send (String_Of (Command, Parameter), Log_Enabled);
     case Command is
     when Slew =>
       declare
-        Reply : constant String := Received_String;
+        Reply : constant String := Received_String (Log_Enabled);
       begin
         if Reply = "0" then
           Set_Status (Approaching);
@@ -200,17 +274,16 @@ package body M_Zero is
        | Set_Longitude
        | Synchronize
     =>
-      return Received_String;
+      return Received_String (Log_Enabled);
     end case;
   exception
   when Device_Disconnected =>
     raise;
   when Network.Timeout =>
-    Log.Error ("Reply_For timeout");
-    Disconnect_Device;
+    Disconnect_Device ("Reply timeout");
   when Item: others =>
-    Log.Error (Exceptions.Information_Of (Item));
-    Disconnect_Device;
+    Log.Termination (Item);
+    Disconnect_Device ("Reply - unknown error");
   end Reply_For;
 
 
@@ -229,12 +302,12 @@ package body M_Zero is
         Set_Error ("M-Zero " & Network.Exception_Kind (Item)'image);
         return;
       end;
-      if Reply_For (Lx200.Get_Product_Name) = "Avalon" and then
-         Reply_For (Lx200.Get_Firmware_Number) = "56.3"
+      if Reply_For (Lx200.Get_Product_Name) = Product_Name and then
+         Reply_For (Lx200.Get_Firmware_Number) = Firmware_Number
       then
         Set_Status (Connected);
       else
-        Set_Error ("device not M-Zero version 56.3");
+        Set_Error ("device not M-Zero version " & Firmware_Number);
       end if;
     when Error =>
       null;
@@ -318,10 +391,10 @@ package body M_Zero is
       declare
         Direction   : constant Space.Direction := Actual_Direction;
         Declination : constant Angle.Value := Space.Dec_Of (Direction);
-        use type Angle.Value;
       begin
+        Set_Device_Status;
         Log.Write ("Initialize - Declination " & Angle.Image_Of (Declination));
-        if Declination in Angle.Zero | Angle.Quadrant then
+        if The_Alignment = Not_Aligned then
           if not Status_Ok then
             Execute (Lx200.Set_Polar_Alignment);
             delay 1.0; -- give avalon time to initialize
@@ -335,16 +408,8 @@ package body M_Zero is
           Set_Status (Initialized);
           Synchronize_To (Home);
           delay 0.5; -- give avalon time to settle.
-          declare
-            Home_Declination : constant Angle.Value := Space.Dec_Of (Actual_Direction);
-          begin
-            Log.Write ("Initialize - Home Declination " & Angle.Image_Of (Home_Declination));
-            if Home_Declination /= Angle.Quadrant then
-              Synchronize_To (Direction); -- already initialized
-            end if;
-          end;
         else
-          Set_Status (Tracking);
+          Set_Status;
         end if;
       end;
     when others =>
@@ -434,12 +499,34 @@ package body M_Zero is
   end Stop_Moving;
 
 
-  procedure Slew_To (Location : Space.Direction) is
+  procedure Set_Guiding_Speed_For (Kind : Target_Kind) is
+  begin
+    if The_Target_Kind /= Kind then
+      The_Target_Kind := Kind;
+      Log.Write ("Set guiding speed for " & Kind'image);
+      case Kind is
+      when Landmark =>
+        Execute (Set_Stop_Guiding);
+      when Moon =>
+        Execute (Set_Lunar_Guiding);
+      when Sun =>
+        Execute (Set_Solar_Guiding);
+      when Other_Targets =>
+        Execute (Set_Sideral_Guiding);
+      end case;
+      Set_Device_Status;
+    end if;
+  end Set_Guiding_Speed_For;
+
+
+  procedure Slew_To (Location : Space.Direction;
+                     Kind     : Target_Kind := Other_Targets) is
     use Lx200;
   begin
     if Not_Initialized then
       return;
     end if;
+    Set_Guiding_Speed_For (Kind);
     Execute (Set_Right_Ascension, Hours_Of (Space.Ra_Of (Location)), Expected => "1");
     Execute (Set_Declination, Signed_Degrees_Of (Space.Dec_Of (Location)), Expected => "1");
     Execute (Slew, Expected => "0");
@@ -449,13 +536,15 @@ package body M_Zero is
   end Slew_To;
 
 
-  procedure Synch_To (Location : Space.Direction) is
+  procedure Synch_To (Location : Space.Direction;
+                      Kind     : Target_Kind := Other_Targets) is
   begin
     if Not_Initialized then
       return;
     end if;
+    Set_Guiding_Speed_For (Kind);
     Synchronize_To (Location);
-    Set_Status (Tracking);
+    Set_Status;
   exception
   when Device_Disconnected =>
     null;
