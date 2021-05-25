@@ -26,7 +26,7 @@ package M_Zero is
 
   function Error_Message return String;
 
-  procedure Connect (Server_Address : Network.Ip_Address;
+  procedure Startup (Server_Address : Network.Ip_Address;
                      Server_Port    : Network.Port_Number);
 
   procedure Initialize;

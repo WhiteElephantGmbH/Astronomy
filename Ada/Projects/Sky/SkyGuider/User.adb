@@ -25,6 +25,7 @@ with Gui.Enumeration_Menu_Of;
 with Gui.Key_Codes;
 with Gui.Registered;
 with Lexicon;
+with Objects;
 with Os;
 with Persistent;
 with Picture;
@@ -63,6 +64,8 @@ package body User is
   Dec_Offset   : Gui.Plain_Edit_Box;
   Picture_Ra   : Gui.Plain_Edit_Box;
   Picture_Dec  : Gui.Plain_Edit_Box;
+  Actual_Alt   : Gui.Plain_Edit_Box;
+  Actual_Az    : Gui.Plain_Edit_Box;
   Moving_Rate  : Gui.Plain_Edit_Box;
   Lmst         : Gui.Plain_Edit_Box;
   Local_Time   : Gui.Plain_Edit_Box;
@@ -108,11 +111,9 @@ package body User is
 
   The_Status : Telescope.State := Telescope.Disconnected;
 
-  type Setup_Object is (Skyline, Pole_Top, Pole_Left, Pole_Right);
-
   subtype Get_Pole is Setup_Object range Pole_Top .. Pole_Right;
 
-  The_Setup_Object : Setup_Object := Pole_Top;
+  The_Setup_Object : Setup_Object := Skyline;
 
   Action_Routine   : Action_Handler;
   The_Last_Action  : Action := Action'pred (Button_Action'first);
@@ -232,50 +233,62 @@ package body User is
   end Clear_Error;
 
 
-  procedure Disable_Operation_Buttons (Is_Stopped : Boolean := False) is
+  The_Actual_Direction : Earth.Direction; -- used for Skyline
+
+  procedure Define_Setup_Buttons is
   begin
-    case The_Setup_Object is
-    when Skyline =>
-      if Is_Stopped then
-        Gui.Enable (First_Setup_Button);
-      else
-        Gui.Disable (First_Setup_Button);
-      end if;
-    when Get_Pole =>
-      null;
-    end case;
-  end Disable_Operation_Buttons;
-
-
-  procedure Set_First_Button_Text is
-  begin
-    case The_Setup_Object is
-    when Skyline =>
-      Gui.Set_Text (First_Setup_Button, "Add");
-    when Get_Pole =>
-      Gui.Set_Text (First_Setup_Button, "Get");
-    end case;
-  end Set_First_Button_Text;
-
-
-  procedure Enable_Operation_Buttons is
-  begin
-    case The_Setup_Object is
-    when Get_Pole =>
+    case The_Status is
+    when Telescope.Disconnected | Telescope.Connected | Telescope.Initialized =>
+      Gui.Disable (Setup_Control);
+      Gui.Set_Text (Clear_Button, "Clear");
       if Site.Is_Defined then
         Gui.Enable (Clear_Button);
+      else
+        Gui.Disable (Clear_Button);
       end if;
-    when Skyline =>
-      Set_First_Button_Text;
+    when Telescope.Stopped | Telescope.Tracking =>
+      Gui.Enable (Setup_Control);
+      Gui.Set_Text (Clear_Button, "Delete");
+      case The_Setup_Object is
+      when Skyline =>
+        Gui.Set_Text (First_Setup_Button, "Add");
+        if Earth.Direction_Is_Known (The_Actual_Direction) then
+          Gui.Enable (First_Setup_Button);
+        else
+          Gui.Disable (First_Setup_Button);
+        end if;
+        if Sky_Line.Is_Defined then
+          Gui.Enable (Clear_Button);
+        else
+          Gui.Disable (Clear_Button);
+        end if;
+      when Get_Pole =>
+        Gui.Set_Text (First_Setup_Button, "Get");
+        if Pole_Axis.Has_Values then
+          Gui.Enable (Clear_Button);
+        else
+          Gui.Disable (Clear_Button);
+        end if;
+      end case;
+      Gui.Enable (First_Setup_Button);
+    when Telescope.Approaching =>
+      Gui.Disable (Setup_Control);
+      Gui.Set_Text (First_Setup_Button, "Stop");
+      Gui.Enable (First_Setup_Button);
+      Gui.Disable (Clear_Button);
+    when Telescope.Error =>
+      Gui.Disable (Setup_Control);
+      Gui.Set_Text (Clear_Button, "Reset");
+      Gui.Enable (Clear_Button);
       Gui.Disable (First_Setup_Button);
-      if Sky_Line.Is_Defined then
-        Gui.Enable (Clear_Button);
-      end if;
+    when Telescope.Solving | Telescope.Moving =>
+      Gui.Disable (Setup_Control);
+      Gui.Set_Text (First_Setup_Button, "");
+      Gui.Disable (First_Setup_Button);
+      Gui.Disable (Clear_Button);
     end case;
-  end Enable_Operation_Buttons;
+  end Define_Setup_Buttons;
 
-
-  The_Actual_Direction : Earth.Direction;
 
   procedure Show (Information : Telescope.Data) is
 
@@ -298,6 +311,9 @@ package body User is
       Gui.Set_Text (Actual_Ra, "");
       Gui.Set_Text (Dec_Offset, "");
       Gui.Set_Text (Ra_Offset, "");
+      Gui.Set_Text (Actual_Alt, "");
+      Gui.Set_Text (Actual_Az, "");
+      The_Actual_Direction := Earth.Unknown_Direction;
     end Clear_Actual_Values;
 
     The_Offset : Space.Direction;
@@ -308,7 +324,11 @@ package body User is
 
   begin -- Show
     if not Text.Is_Null (The_Error_Text) then
+      Gui.Set_Text (First_Control_Button, "Reset");
+      Gui.Set_Text (Clear_Button, "Reset");
       Gui.Set_Status_Line ("ERROR - " & Text.String_Of (The_Error_Text));
+      Gui.Enable (First_Control_Button);
+      Gui.Enable (Clear_Button);
       return;
     end if;
     if (The_Status /= Information.Status)
@@ -318,42 +338,49 @@ package body User is
       Align_On_Picture_Change := False;
       The_Status := Information.Status;
       Last_Target_Selection := The_Target_Selection;
-      Gui.Enable (First_Control_Button);
       case The_Status is
       when Telescope.Error =>
-        Gui.Set_Text (First_Control_Button, "Clear");
+        Gui.Set_Text (First_Control_Button, "Reset");
+        Gui.Enable (First_Control_Button);
         Show_Error (Telescope.Error_Message);
       when Telescope.Disconnected =>
         Gui.Set_Text (First_Control_Button, "Start");
-        Disable_Operation_Buttons;
+        Gui.Enable (First_Control_Button);
         Gui.Disable (Stop_Or_Synch_Button);
         Align_On_Picture_Is_Enabled := False;
       when Telescope.Connected =>
         Gui.Set_Text (First_Control_Button, "Initialize");
-        Enable_Operation_Buttons;
+        Gui.Enable (First_Control_Button);
         Gui.Disable (Stop_Or_Synch_Button);
         Align_On_Picture_Is_Enabled := False;
       when Telescope.Initialized =>
         Set_Tracking_Buttons;
-        Enable_Operation_Buttons;
-      when Telescope.Approaching | Telescope.Solving =>
+      when Telescope.Solving =>
+        Gui.Disable (First_Control_Button);
         Gui.Set_Text (Stop_Or_Synch_Button, "Stop");
-        Disable_Operation_Buttons;
-      when Telescope.Stopped | Telescope.Tracking =>
+      when Telescope.Approaching =>
+        Gui.Enable (First_Control_Button);
+        Gui.Set_Text (Stop_Or_Synch_Button, "Stop");
+        Gui.Enable (Stop_Or_Synch_Button);
+      when Telescope.Stopped =>
         Set_Tracking_Buttons;
-        Enable_Operation_Buttons;
+      when Telescope.Tracking =>
+        Set_Tracking_Buttons;
         if Align_On_Picture_Is_Enabled then
           Gui.Set_Text (First_Control_Button, "Align");
         end if;
       when Telescope.Moving =>
-        Disable_Operation_Buttons;
         Gui.Disable (First_Control_Button);
         Gui.Set_Text (Stop_Or_Synch_Button, "Stop");
         Gui.Enable (Stop_Or_Synch_Button);
         Align_On_Picture_Is_Enabled := False;
       end case;
+      Define_Setup_Buttons;
+      Gui.Set_Status_Line (Information.Status'img);
     end if;
-    Gui.Set_Status_Line (Information.Status'img);
+    if Space.Direction_Is_Known (Information.Actual_Direction) then
+      The_Actual_Direction := Objects.Direction_Of (Information.Actual_Direction, Time.Lmst);
+    end if;
     case The_Page is
     when Is_Control =>
       null;
@@ -367,6 +394,8 @@ package body User is
           The_Offset := Information.Actual_Direction - Information.Target_Direction;
           Gui.Set_Text (Dec_Offset, Space.Dec_Offset_Image_Of (The_Offset));
           Gui.Set_Text (Ra_Offset, Space.Ra_Offset_Image_Of (The_Offset));
+          Gui.Set_Text (Actual_Alt, Earth.Alt_Image_Of (The_Actual_Direction));
+          Gui.Set_Text (Actual_Az, Earth.Az_Image_Of (The_Actual_Direction));
         else
           Clear_Actual_Values;
         end if;
@@ -608,6 +637,15 @@ package body User is
   end Define_Temperature;
 
 
+  procedure Goto_Pole (Item : Get_Pole) is
+  begin
+    The_Target_Selection := No_Target;
+    Gui.Set_Text (Target, Strings.Legible_Of (Item'image));
+    Signal_Action (Define_Target);
+    Perform_Goto;
+  end Goto_Pole;
+
+
   procedure Define_Setup_Object is
 
     Setup_Object_Image : constant String := Identifier_Of (Gui.Contents_Of (Setup_Control));
@@ -615,23 +653,13 @@ package body User is
   begin -- Define_Operation
     The_Setup_Object := Setup_Object'value(Setup_Object_Image);
     Log.Write ("Setup Object - " & Setup_Object_Image);
+    Define_Setup_Buttons;
     case The_Setup_Object is
     when Skyline =>
-      Set_First_Button_Text;
       Gui.Disable (First_Setup_Button);
-      if Sky_Line.Is_Defined then
-        Gui.Enable (Clear_Button);
-      else
-        Gui.Disable (Clear_Button);
-      end if;
+      Set_Target_Name ("");
     when Get_Pole =>
-      Set_First_Button_Text;
-      Gui.Enable (First_Setup_Button);
-      if Site.Is_Defined then
-        Gui.Enable (Clear_Button);
-      else
-        Gui.Disable (Clear_Button);
-      end if;
+      Goto_Pole (The_Setup_Object);
     end case;
   exception
   when others =>
@@ -642,19 +670,22 @@ package body User is
   procedure Handle_Clear_Button is
     use type Telescope.State;
   begin
-    if The_Status = Telescope.Error then
+    case The_Status is
+    when Telescope.Error =>
       Clear_Error;
-    else
+    when Telescope.Disconnected | Telescope.Connected | Telescope.Initialized =>
+      Site.Clear;
+      Gui.Disable (Clear_Button);
+    when others =>
       case The_Setup_Object is
       when Skyline =>
         Sky_Line.Clear;
         Gui.Disable (Clear_Button);
       when Get_Pole =>
-        Site.Clear;
         Pole_Axis.Clear;
         Gui.Disable (Clear_Button);
       end case;
-    end if;
+    end case;
   exception
   when others =>
     Log.Error ("Handle_Clear_Button");
@@ -663,18 +694,23 @@ package body User is
 
   procedure Handle_First_Setup_Button is
   begin
-    Gui.Enable (Clear_Button);
-    case The_Setup_Object is
-    when Pole_Top =>
-      Pole_Axis.Evaluate_Pole_Top;
-    when Pole_Left =>
-      Pole_Axis.Evaluate_Pole_Left;
-    when Pole_Right =>
-      Pole_Axis.Evaluate_Pole_Right;
-    when Skyline =>
-      Sky_Line.Add (The_Actual_Direction);
-      Set_First_Button_Text;
-      Gui.Disable (First_Setup_Button);
+    case The_Status is
+    when Telescope.Stopped | Telescope.Tracking =>
+      case The_Setup_Object is
+      when Pole_Top =>
+        Pole_Axis.Evaluate_Pole_Top;
+      when Pole_Left =>
+        Pole_Axis.Evaluate_Pole_Left;
+      when Pole_Right =>
+        Pole_Axis.Evaluate_Pole_Right;
+      when Skyline =>
+        Sky_Line.Add (The_Actual_Direction);
+      end case;
+      Define_Setup_Buttons;
+    when Telescope.Approaching =>
+      Perform_Stop;
+    when others =>
+      null;
     end case;
   exception
   when Pole_Axis.Picture_Not_Found =>
@@ -927,6 +963,15 @@ package body User is
                                    The_Size       => Text_Size,
                                    The_Title_Size => Title_Size);
 
+        Actual_Alt := Gui.Create (Display_Page, "Actual Alt", "",
+                                  Is_Modifiable  => False,
+                                  The_Size       => Text_Size,
+                                  The_Title_Size => Title_Size);
+        Actual_Az := Gui.Create (Display_Page, "Actual Az", "",
+                                 Is_Modifiable  => False,
+                                 The_Size       => Text_Size,
+                                 The_Title_Size => Title_Size);
+
         Moving_Rate := Gui.Create (Display_Page, Moving_Rate_Text, "",
                                    Is_Modifiable  => False,
                                    The_Size       => Text_Size,
@@ -958,11 +1003,9 @@ package body User is
                                     The_Style  => (Gui.Buttons_Fill_Horizontally => True,
                                                    Gui.Buttons_Fill_Vertically   => False));
 
-        First_Setup_Button := Gui.Create (Setup_Page, "Get", Handle_First_Setup_Button'access);
-        Clear_Button := Gui.Create (Setup_Page, "Clear", Handle_Clear_Button'access);
-        if not Site.Is_Defined then
-          Gui.Disable (Clear_Button);
-        end if;
+        First_Setup_Button := Gui.Create (Setup_Page, "", Handle_First_Setup_Button'access);
+        Clear_Button := Gui.Create (Setup_Page, "", Handle_Clear_Button'access);
+        Gui.Disable (Clear_Button);
 
         Longitude := Gui.Create (Setup_Page, "Longitude", "",
                                  Is_Modifiable  => False,
@@ -1114,5 +1157,11 @@ package body User is
       return False;
     end case;
   end In_Setup_Mode;
+
+
+  function Setup_Kind return Setup_Object is
+  begin
+    return The_Setup_Object;
+  end Setup_Kind;
 
 end User;

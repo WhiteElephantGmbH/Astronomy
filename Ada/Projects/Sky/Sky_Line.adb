@@ -79,22 +79,10 @@ package body Sky_Line is
   Extension : constant String := "csv";
 
 
-  function Filename_With (Name : String) return String is
-  begin
-    return File.Composure (Directory, Name, Extension);
-  end Filename_With;
-
-
   function Actual_Filename return String is
   begin
-    return Filename_With ("Horizon");
+    return File.Composure (Directory, "Horizon", Extension);
   end Actual_Filename;
-
-
-  function New_Filename return String is
-  begin
-    return Filename_With ("New_Horizon");
-  end New_Filename;
 
 
   The_File : Ada.Text_IO.File_Type;
@@ -258,12 +246,12 @@ package body Sky_Line is
 
   procedure Clear is
   begin
-    File.Delete (New_Filename);
+    File.Delete (Actual_Filename);
   end Clear;
 
 
   procedure Add (Direction : Earth.Direction) is
-    Filename : constant String := New_Filename;
+    Filename : constant String := Actual_Filename;
   begin
     if Earth.Direction_Is_Known (Direction) then
       if File.Exists (Filename) then
@@ -273,6 +261,7 @@ package body Sky_Line is
       end if;
       Append (Direction);
       Close_File;
+      Read;
     end if;
   exception
   when others =>

@@ -7,7 +7,7 @@ pragma Console_Application;
 
 with Test;
 
-procedure M_Zero_Test is
+procedure M_Zero_Simulator is
 begin
   Test.Execute;
-end M_Zero_Test;
+end M_Zero_Simulator;

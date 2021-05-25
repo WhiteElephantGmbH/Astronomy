@@ -37,17 +37,13 @@ package Picture is
 
   function Exists return Boolean;
 
+  procedure Set_Site;
+
   function Solve (Search_From : Space.Direction) return Boolean;
 
   function Solved return Boolean;
-  
+
   procedure Stop_Solving;
-
-  function Elevation return Integer;
-
-  function Latitude return Angle.Value;
-
-  function Longitude return Angle.Value;
 
   function Time_Stamp return Time.Ut;
   -- returns the time when the picture is taken.

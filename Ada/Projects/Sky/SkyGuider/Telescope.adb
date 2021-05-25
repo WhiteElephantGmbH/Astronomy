@@ -18,8 +18,6 @@ pragma Style_White_Elephant;
 with Alignment;
 with Parameter;
 with Picture;
-with Site;
-with System;
 with Traces;
 with User;
 
@@ -28,7 +26,7 @@ package body Telescope is
   package Log is new Traces ("Telescope");
 
 
-  task type Control_Task with Priority => System.Max_Priority is
+  task type Control_Task is
 
     entry Start;
 
@@ -149,6 +147,8 @@ package body Telescope is
       when others =>
         return M_Zero.Other_Targets;
       end case;
+    elsif Next_Get_Direction = null then
+      return M_Zero.Landmark;
     else
       return M_Zero.Other_Targets;
     end if;
@@ -163,10 +163,43 @@ package body Telescope is
   end Define_Space_Access;
 
 
+  function Pole_Left return Space.Direction is
+    use type Angle.Value;
+    Left_Ra : constant Angle.Value := Time.Lmst + Angle.Degrees'(0.5);
+  begin
+    return Space.Direction_Of (Ra => Left_Ra, Dec => Angle.Quadrant - Angle.One_Minute);
+  end Pole_Left;
+
+
+  function Pole_Top return Space.Direction is
+    use type Angle.Value;
+    Top_Ra : constant Angle.Value := Time.Lmst - Angle.Degrees'(90.0);
+  begin
+    return Space.Direction_Of (Ra => Top_Ra, Dec => Angle.Quadrant);
+  end Pole_Top;
+
+
+  function Pole_Right return Space.Direction is
+    use type Angle.Value;
+    Right_Ra : constant Angle.Value := Time.Lmst - Angle.Degrees'(180.5);
+  begin
+    return Space.Direction_Of (Ra => Right_Ra, Dec => Angle.Quadrant - Angle.One_Minute);
+  end Pole_Right;
+
+
   function Actual_Target_Direction return Space.Direction is
   begin
     if Next_Get_Direction = null then
-      return Space.Unknown_Direction;
+      case User.Setup_Kind is
+      when User.Pole_Top =>
+        return Pole_Top;
+      when User.Pole_Left =>
+        return Pole_Left;
+      when User.Pole_Right =>
+        return Pole_Right;
+      when others =>
+        return Space.Unknown_Direction;
+      end case;
     else
       return Next_Get_Direction (Next_Id, Time.Universal);
     end if;
@@ -216,14 +249,12 @@ package body Telescope is
     begin
       Get_Information;
       if The_Status = Disconnected then
-        M_Zero.Connect (Parameter.M_Zero_Ip_Address, Parameter.M_Zero_Port);
+        M_Zero.Startup (Parameter.M_Zero_Ip_Address, Parameter.M_Zero_Port);
         Set (The_Moving_Rate);
       end if;
       Get_Information;
       if The_Status = Connected then
-        if Site.Is_Defined then
-          M_Zero.Initialize;
-        end if;
+        M_Zero.Initialize;
       end if;
     end Startup;
 
@@ -232,16 +263,16 @@ package body Telescope is
       Actual_Direction : constant Space.Direction := Actual_Target_Direction;
     begin
       if not Picture.Solve (Actual_Direction) then
-        M_Zero.Set_Error ("Picture not solved");
+        Set_Error ("Picture not solved");
         return False;
       end if;
       return True;
     exception
     when Picture.Not_Solved =>
-      M_Zero.Set_Error ("Picture solving not started");
+      Set_Error ("Picture solving not started");
       return False;
     when Item: others =>
-      M_Zero.Set_Error ("Picture solving failed");
+      Set_Error ("Picture solving failed");
       Log.Termination (Item);
       return False;
     end Solve_Picture;
@@ -252,10 +283,10 @@ package body Telescope is
       return Picture.Solved;
     exception
     when Picture.Not_Solved =>
-      M_Zero.Set_Error ("Picture not solved");
+      Set_Error ("Picture not solved");
       return False;
     when Item: others =>
-      M_Zero.Set_Error ("Picture solving failed");
+      Set_Error ("Picture solving failed");
       Log.Termination (Item);
       return False;
     end Picture_Solved;
@@ -278,7 +309,7 @@ package body Telescope is
           M_Zero.Start_Solving;
         end if;
       when Solving =>
-        if Picture_Solved then
+        if not User.In_Setup_Mode and then Picture_Solved then
           The_Picture_Direction := Picture.Actual_Direction;
           User.Enable_Align_On_Picture;
           Aligning_Enabled := True;

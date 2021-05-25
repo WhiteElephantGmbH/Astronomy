@@ -42,6 +42,8 @@ package User is
 
   subtype Object is Selection range Selection'succ(Selection'first) .. Selection'last;
 
+  type Setup_Object is (Skyline, Pole_Top, Pole_Left, Pole_Right);
+
   procedure Show_Error (The_Text : String := Error.Message);
 
   procedure Show (Information : Telescope.Data);
@@ -67,6 +69,8 @@ package User is
   procedure Enable_Align_On_Picture;
 
   function In_Setup_Mode return Boolean;
+
+  function Setup_Kind return Setup_Object;
 
   function Target_Name return String;
 

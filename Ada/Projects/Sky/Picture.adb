@@ -53,62 +53,6 @@ package body Picture is
   end Exists;
 
 
-  function Solve (Search_From : Space.Direction) return Boolean is
-
-    Actual_Height : Astap.Degrees;
-
-    use type Angle.Value;
-    use type Angle.Degrees;
-    use type Exif.Size;
-
-  begin
-    Log.Write ("Read - RA: " & Space.Ra_Image_Of (Search_From) & " - DEC: " & Space.Dec_Image_Of (Search_From));
-    Exif.Read (Filename);
-    if (Exif.Image_Height = Exif.Undefined_Size) or (Exif.Image_Width = Exif.Undefined_Size) then
-      Log.Error ("Image size undefined");
-      raise Not_Solved;
-    elsif Exif.Image_Height < Exif.Image_Width then
-      Actual_Height := Astap.Degrees(The_Height);
-    else
-      Actual_Height := Astap.Degrees(The_Width);
-    end if;
-    Astap.Solve (Filename => Filename,
-                 Height   => Actual_Height,
-                 Ra       => Astap.Degrees(Angle.Degrees'(+Space.Ra_Of (Search_From))),
-                 Dec      => Astap.Degrees(Angle.Degrees'(+Space.Dec_Of (Search_From))));
-    return True;
-  exception
-  when Not_Solved =>
-    File.Delete (Filename);
-    return False;
-  end Solve;
-
-
-  The_Ra    : Astap.Degrees;
-  The_Dec   : Astap.Degrees;
-  Is_Solved : Boolean := False;
-
-  function Solved return Boolean is
-  begin
-    Is_Solved := Astap.Solved (Ra => The_Ra, Dec => The_Dec);
-    if Is_Solved then
-      File.Delete (Filename);
-    end if;
-    return Is_Solved;
-  exception
-  when others =>
-    File.Delete (Filename);
-    raise;
-  end Solved;
-
-
-  procedure Stop_Solving is
-  begin
-    Astap.Stop;
-    File.Delete (Filename);
-  end Stop_Solving;
-
-
   Value_Delta   : constant := 1.0 / 3600_000.0; -- millisecond
   Lowest_Value  : constant := -2**62 * Value_Delta;
   Highest_Value : constant := 2**62 * Value_Delta;
@@ -180,6 +124,106 @@ package body Picture is
   begin
     return Angle_Of (Exif.Longitude, Exif.Latitude_Ref = 'W');
   end Longitude;
+
+
+  function Image_Of (Item : Angle.Value) return String is
+  begin
+    return Angle.Image_Of (The_Value   => Item,
+                           Unit        => Angle.In_Degrees,
+                           Decimals    => 3,
+                           Show_Signed => True);
+  end Image_Of;
+
+
+  procedure Define_Site is
+    The_Site : Site.Data;
+  begin
+    The_Site.Latitude := Latitude;
+    The_Site.Longitude := Longitude;
+    The_Site.Elevation := Elevation;
+    Site.Define (The_Site);
+    Log.Write ("Elevation :" & Picture.Elevation'image & 'm');
+    Log.Write ("Latitude  : " & Image_Of (Picture.Latitude));
+    Log.Write ("Longitude : " & Image_Of (Picture.Longitude));
+  end Define_Site;
+
+
+  procedure Set_Site is
+  begin
+    Exif.Read (Filename);
+    Define_Site;
+    File.Delete (Filename);
+  exception
+  when others =>
+    File.Delete (Filename);
+    raise;
+  end Set_Site;
+
+
+  Is_Solving : Boolean := False;
+
+  function Solve (Search_From : Space.Direction) return Boolean is
+
+    Actual_Height : Astap.Degrees;
+
+    use type Angle.Value;
+    use type Angle.Degrees;
+    use type Exif.Size;
+
+  begin
+    Log.Write ("Read - RA: " & Space.Ra_Image_Of (Search_From) & " - DEC: " & Space.Dec_Image_Of (Search_From));
+    Exif.Read (Filename);
+    if not Site.Is_Defined then
+      Define_Site;
+    end if;
+    if (Exif.Image_Height = Exif.Undefined_Size) or (Exif.Image_Width = Exif.Undefined_Size) then
+      Log.Error ("Image size undefined");
+      raise Not_Solved;
+    elsif Exif.Image_Height < Exif.Image_Width then
+      Actual_Height := Astap.Degrees(The_Height);
+    else
+      Actual_Height := Astap.Degrees(The_Width);
+    end if;
+    Astap.Solve (Filename => Filename,
+                 Height   => Actual_Height,
+                 Ra       => Astap.Degrees(Angle.Degrees'(+Space.Ra_Of (Search_From))),
+                 Dec      => Astap.Degrees(Angle.Degrees'(+Space.Dec_Of (Search_From))));
+    Is_Solving := True;
+    return True;
+  exception
+  when Not_Solved =>
+    File.Delete (Filename);
+    return False;
+  end Solve;
+
+
+  The_Ra    : Astap.Degrees;
+  The_Dec   : Astap.Degrees;
+  Is_Solved : Boolean := False;
+
+  function Solved return Boolean is
+  begin
+    Is_Solved := Astap.Solved (Ra => The_Ra, Dec => The_Dec);
+    if Is_Solved then
+      Is_Solving := False;
+      File.Delete (Filename);
+    end if;
+    return Is_Solved;
+  exception
+  when others =>
+    File.Delete (Filename);
+    raise;
+  end Solved;
+
+
+  procedure Stop_Solving is
+  begin
+    if Is_Solving then
+      Is_Solving := False;
+      Astap.Stop;
+      File.Delete (Filename);
+    end if;
+  end Stop_Solving;
 
 
   function Universal_Of (DT : String) return Time.Ut is

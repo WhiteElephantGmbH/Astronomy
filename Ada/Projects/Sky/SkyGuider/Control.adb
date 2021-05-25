@@ -503,14 +503,18 @@ package body Control is
             when Name.Landmark =>
               Telescope.Define_Space_Access (Earth_Direction_Of'access, The_Item);
             end case;
+          elsif User.In_Setup_Mode then
+            Telescope.Define_Space_Access (null, The_Item);
           else
-            null; -- no park position
+            null;
           end if;
         end;
       when Start =>
         Telescope.Start;
+        Targets.Update;
       when Initialize =>
         Telescope.Initialize;
+        Targets.Update;
       when Align =>
         Telescope.Align;
       when Synch =>

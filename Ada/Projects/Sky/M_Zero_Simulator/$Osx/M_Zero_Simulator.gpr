@@ -1,10 +1,10 @@
-project M_Zero_Test is
+project M_Zero_Simulator is
 
    package Naming is
       for Casing use "mixedcase"; 
    end Naming;
 
-   for Source_Dirs use ("../../../../Projects/Sky/M_Zero_Test",
+   for Source_Dirs use ("../../../../Projects/Sky/M_Zero_Simulator",
                         "../../../../Projects/Sky",
                         "../../../../Projects",
                         "../../../../SkyData",
@@ -16,7 +16,7 @@ project M_Zero_Test is
 
    for Exec_Dir use external ("HOME") & "/Product/Astronomy/Osx";
 
-   for Object_Dir use external ("HOME") & "/Objects/Tcp_Test";
+   for Object_Dir use external ("HOME") & "/Objects/M_Zero_Simulator";
 
 
    package Pretty_Printer is
@@ -25,7 +25,7 @@ project M_Zero_Test is
 
    package Builder is
       for Default_Switches ("ada") use ("-s", "-g");
-      for Executable ("GuiTest.adb") use "Tcp_Test";
+      for Executable ("M_Zero_Simulator.adb") use "M_Zero_Simulator";
    end Builder;
 
    package Compiler is
@@ -44,4 +44,4 @@ project M_Zero_Test is
                                         "-Wl,-headerpad_max_install_names");
    end Linker;
 
-end M_Zero_Test;
+end M_Zero_Simulator;

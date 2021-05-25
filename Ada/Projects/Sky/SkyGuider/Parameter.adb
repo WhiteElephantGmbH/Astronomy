@@ -198,8 +198,8 @@ package body Parameter is
       Put (Language_Key & " = " & Strings.Legible_Of (Stellarium.Language'img));
       Put ("");
       Put ("[" & M_Zero_Id & "]");
-      Put (Ip_Address_Key & " = 10.0.0.1");
-      Put (Port_Key & "       = 4030");
+      Put (Ip_Address_Key & " = 192.168.4.1");
+      Put (Port_Key & "       = 4040");
       Put ("");
       Put ("[" & Picture_Id & "]");
       Put (Astap_Key & "    = " & Default_Astap_Executable);

@@ -9,6 +9,7 @@ with Earth;
 with Lx200;
 with Network.Tcp;
 with Objects;
+with Picture;
 with Site;
 with Text;
 with Time;
@@ -18,14 +19,14 @@ package body M_Zero is
 
   package Log is new Traces ("M_Zero");
 
-  Device_Disconnected : exception;
+  Error_Set : exception;
 
   Socket_Protocol : constant Network.Tcp.Protocol := Network.Tcp.Raw;
 
   Product_Name    : constant String := "Avalon";
   Firmware_Number : constant String := "62.0";
 
-  Receive_Timeout : constant Duration := 3.0;
+  Receive_Timeout : constant Duration := 5.0;
 
   -- LX200 command extesions
 
@@ -66,12 +67,18 @@ package body M_Zero is
   end Set_Error;
 
 
-  procedure Disconnect_Device (Message : String) with No_Return is
+  procedure Raise_Error (Message : String) with No_Return is
   begin
     Set_Error (Message);
+    raise Error_Set;
+  end Raise_Error;
+
+
+  procedure Disconnect_Device (Message : String) with No_Return is
+  begin
     Network.Tcp.Close (The_Socket);
     Last_State := Disconnected;
-    raise Device_Disconnected;
+    Raise_Error (Message);
   end Disconnect_Device;
 
 
@@ -198,20 +205,21 @@ package body M_Zero is
       Log.Write ("Alignment " & The_Alignment'image);
       The_Guiding := Guiding_Kind'val(Natural'value("" & Reply(Reply'first + 4)));
       Log.Write ("Guiding " & The_Guiding'image);
-    end;
-    case The_Guiding is
-    when Stopped =>
-      The_Target_Kind := Landmark;
-    when Lunar =>
-      The_Target_Kind := Moon;
-    when Solar =>
-      The_Target_Kind := Sun;
+      case The_Guiding is
+      when Stopped =>
+        The_Target_Kind := Landmark;
+      when Lunar =>
+        The_Target_Kind := Moon;
+      when Solar =>
+        The_Target_Kind := Sun;
+      when others =>
+        The_Target_Kind := Other_Targets;
+      end case;
+    exception
     when others =>
-      The_Target_Kind := Other_Targets;
-    end case;
-  exception
-  when others =>
-    Set_Error ("Unknown device status");
+      Set_Error ("Unknown device status " & Reply & "#");
+      raise Error_Set;
+    end;
   end Set_Device_Status;
 
 
@@ -277,7 +285,7 @@ package body M_Zero is
       return Received_String (Log_Enabled);
     end case;
   exception
-  when Device_Disconnected =>
+  when Error_Set =>
     raise;
   when Network.Timeout =>
     Disconnect_Device ("Reply timeout");
@@ -287,11 +295,27 @@ package body M_Zero is
   end Reply_For;
 
 
-  procedure Connect (Server_Address : Network.Ip_Address;
+  procedure Check_Site is
+  begin
+    if not Site.Is_Defined then
+      Picture.Set_Site;
+    end if;
+  exception
+  when Picture.File_Not_Found =>
+    Raise_Error ("Picture " & Picture.Filename & " not found to evaluate site");
+  when Picture.Invalid_File | Picture.Undefined_Value =>
+    Raise_Error ("No site information in downloaded picture");
+  when Site.Not_Defined =>
+    Raise_Error ("Site not defined");
+  end Check_Site;
+
+
+  procedure Startup (Server_Address : Network.Ip_Address;
                      Server_Port    : Network.Port_Number) is
   begin
     case The_Status is
     when Disconnected =>
+      Check_Site;
       begin
         The_Socket := Network.Tcp.Socket_For (The_Address     => Server_Address,
                                               The_Port        => Server_Port,
@@ -299,15 +323,14 @@ package body M_Zero is
                                               Receive_Timeout => Receive_Timeout);
       exception
       when Item: others =>
-        Set_Error ("M-Zero " & Network.Exception_Kind (Item)'image);
-        return;
+        Raise_Error ("M-Zero " & Network.Exception_Kind (Item)'image);
       end;
       if Reply_For (Lx200.Get_Product_Name) = Product_Name and then
          Reply_For (Lx200.Get_Firmware_Number) = Firmware_Number
       then
         Set_Status (Connected);
       else
-        Set_Error ("device not M-Zero version " & Firmware_Number);
+        Raise_Error ("device not M-Zero version " & Firmware_Number);
       end if;
     when Error =>
       null;
@@ -315,9 +338,9 @@ package body M_Zero is
       Log.Warning ("already connected");
     end case;
   exception
-  when Device_Disconnected =>
+  when Error_Set =>
     null;
-  end Connect;
+  end Startup;
 
 
   procedure Execute (Command   : Lx200.Command;
@@ -347,6 +370,11 @@ package body M_Zero is
   function Get return Information is
     The_Information : Information;
   begin
+    if The_Status > Disconnected then
+      if not Site.Is_Defined then
+        The_Status := Connected;
+      end if;
+    end if;
     The_Information.Status := The_Status;
     if Last_State > Connected then
       The_Information.Direction := Actual_Direction;
@@ -384,10 +412,7 @@ package body M_Zero is
     when Disconnected =>
       Set_Error ("not connected");
     when Connected =>
-      if not Site.Is_Defined then
-        Set_Error ("Site not defined");
-        return;
-      end if;
+      Check_Site;
       declare
         Direction   : constant Space.Direction := Actual_Direction;
         Declination : constant Angle.Value := Space.Dec_Of (Direction);
@@ -416,7 +441,9 @@ package body M_Zero is
       Log.Warning ("Already Initialized");
     end case;
   exception
-  when Device_Disconnected =>
+  when Network.Timeout =>
+    Disconnect_Device ("Reply timeout");
+  when Error_Set =>
     null;
   end Initialize;
 
@@ -437,7 +464,7 @@ package body M_Zero is
       Execute (Lx200.Set_Slewing_Rate);
     end case;
   exception
-  when Device_Disconnected =>
+  when Error_Set =>
     null;
   end Set_Rate;
 
@@ -459,7 +486,7 @@ package body M_Zero is
     end case;
     Set_Status (Moving);
   exception
-  when Device_Disconnected =>
+  when Error_Set =>
     null;
   end Start_Moving;
 
@@ -481,7 +508,7 @@ package body M_Zero is
     end case;
     Set_Status (Last_State);
   exception
-  when Device_Disconnected =>
+  when Error_Set =>
     null;
   end Stop_Moving;
 
@@ -494,7 +521,7 @@ package body M_Zero is
     Execute (Lx200.Quit_Move, Expected => "");
     Set_Status (Last_State);
   exception
-  when Device_Disconnected =>
+  when Error_Set =>
     null;
   end Stop_Moving;
 
@@ -531,7 +558,7 @@ package body M_Zero is
     Execute (Set_Declination, Signed_Degrees_Of (Space.Dec_Of (Location)), Expected => "1");
     Execute (Slew, Expected => "0");
   exception
-  when Device_Disconnected =>
+  when Error_Set =>
     null;
   end Slew_To;
 
@@ -546,7 +573,7 @@ package body M_Zero is
     Synchronize_To (Location);
     Set_Status;
   exception
-  when Device_Disconnected =>
+  when Error_Set =>
     null;
   end Synch_To;
 

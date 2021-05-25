@@ -266,7 +266,7 @@ package body Test is
       Network.Tcp.Accept_Client_From (Listener_Socket,
                                       The_Client_Socket,
                                       Client_Address);
-      Put_Line ("Client connected. Ip Address " & Network.Image_Of (Client_Address));
+      Put_Line ("M-Zero connected. Ip Address " & Network.Image_Of (Client_Address));
       begin
         loop
           declare
@@ -290,13 +290,13 @@ package body Test is
       exception
       when Network.Tcp.No_Client =>
         End_Hiding;
-        Put_Line ("Client has disconnected");
+        Put_Line ("M-Zero has disconnected");
       end;
     end loop Main;
   exception
   when Item: others =>
     Log.Write (Item);
-    Put_Line ("Server Error: " & Network.Net.Resolve_Exception (Item)'img);
+    Put_Line ("Error: " & Network.Net.Resolve_Exception (Item)'img);
   end Server;
 
 
@@ -304,14 +304,14 @@ package body Test is
     Nr_Of_Arguments : constant Natural := Ada.Command_Line.Argument_Count;
   begin
     if Nr_Of_Arguments = 0 then
-      Put_Line ("TCP Test program in server mode.");
+      Put_Line ("M-Zero Simulator.");
       Server;
     else
       Put_Line ("Incorrect number of parameters");
     end if;
   exception
   when Event : others =>
-    Put_Line ("Work exception = " & Exceptions.Information_Of (Event));
+    Put_Line (Exceptions.Information_Of (Event));
   end Execute;
 
 end Test;

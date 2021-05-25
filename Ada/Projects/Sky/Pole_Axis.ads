@@ -22,6 +22,8 @@ package Pole_Axis is
 
   procedure Clear;
 
+  function Has_Values return Boolean;
+
   procedure Evaluate_Pole_Top;
 
   procedure Evaluate_Pole_Left;

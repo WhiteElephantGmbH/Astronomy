@@ -20,7 +20,7 @@ with Unsigned;
 package Program is
 
   Major_Id : constant := 1;
-  Minor_Id : constant := 0;
+  Minor_Id : constant := 3;
   Variant  : constant := 0;
   Revision : constant := 0;
 
