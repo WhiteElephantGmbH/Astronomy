@@ -7,8 +7,9 @@ pragma Style_White_Elephant;
 with Ada.Command_Line;
 with Ada.Text_IO;
 with Exceptions;
-with Network.Tcp;
 with Log;
+with Network.Tcp;
+with Strings;
 
 package body Test is
 
@@ -55,6 +56,14 @@ package body Test is
     Ra_Image  : String := "00:00:00#";
     Dec_Image : String := "+00:00:00#";
 
+    type Alignment is (Not_Aligned, Unused_1, Unused_2, North_Aligned);
+
+    The_Alignment : Alignment := Not_Aligned;
+
+    type Guiding_Kind is (Stopped, Lunar, Solar, Sideral);
+
+    The_Guiding : Guiding_Kind := Sideral;
+
 
     procedure Message_Handler (Data : String) is
 
@@ -72,6 +81,8 @@ package body Test is
         end if;
         Network.Tcp.Send (Item, The_Client_Socket);
       end Send;
+
+      function Image_Of is new Strings.Image_Of (Natural);
 
     begin -- Message_Handler
       if Data'length > 3  and then Data(Data'last) = Terminator then
@@ -98,6 +109,7 @@ package body Test is
             case Data(Data'first + 3) is
             when 'P' => -- GVP
               The_State := Startup;
+              The_Alignment := Not_Aligned;
               Put_Line ("Get Product Name");
               Send ("Avalon#");
             when 'D' => -- GVD
@@ -105,10 +117,13 @@ package body Test is
               Send ("d02102017#");
             when 'N' => -- GVN
               Put_Line ("Get Firmware Number");
-              Send ("56.3#");
+              Send ("62.0#");
             when others =>
               Put_Line ("Unknown GV Command");
             end case;
+          elsif Command =":X3" then
+            Put_Line ("Get_Device_Status");
+            Send (":Z1" & Image_Of (Alignment'pos(The_Alignment)) & Image_Of (Guiding_Kind'pos(The_Guiding)) & "2#");
           elsif Command = ":AA" then
             Is_Polar := False;
             Put_Line ("Set AltAz Alignment");
@@ -182,6 +197,7 @@ package body Test is
             case The_State is
             when Startup =>
               The_State := Initialize;
+              The_Alignment := North_Aligned;
             when Initialize =>
               The_State := Tracking;
             when Tracking =>
@@ -219,6 +235,18 @@ package body Test is
             Execute ("Set_Finding_Rate");
           elsif Command = ":RS" then
             Execute ("Set_Slewing_Rate");
+          elsif Command =":TL" then
+            Execute ("Set_Lunar_Guiding");
+            The_Guiding := Lunar;
+          elsif Command =":TS" then
+            Execute ("Set_Solar_Guiding");
+            The_Guiding := Solar;
+          elsif Command =":TQ" then
+            Execute ("Set_Sideral_Guiding");
+            The_Guiding := Sideral;
+          elsif Command =":X1" then
+            Execute ("Set_Stop_Guiding");
+            The_Guiding := Stopped;
           else
             Put_Line ("Unknown Command");
           end if;

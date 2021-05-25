@@ -192,7 +192,7 @@ package body M_Zero is
   begin
     Execute (Get_Device_Status);
     declare                                       --  12345
-      Reply : constant String := Received_String; -- :Z1at2#
+      Reply : constant String := Received_String; -- :Z1ag2#
     begin
       The_Alignment   := Alignment'val(Natural'value("" & Reply(Reply'first + 3)));
       Log.Write ("Alignment " & The_Alignment'image);
