@@ -38,7 +38,7 @@ package body Test is
   procedure Server is
 
     Socket_Protocol : constant Network.Tcp.Protocol := Network.Tcp.Raw;
-    Server_Port     : constant Network.Port_Number := 4030;
+    Server_Port     : constant Network.Port_Number := 4040;
 
     Terminator : constant Character := '#';
 
