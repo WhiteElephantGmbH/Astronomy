@@ -9,21 +9,26 @@ PORT      = 11001
 TELESCOPE = 'APO'
 
 while True:
-  target = raw_input('Target>')
+  target = input ('Target>')
   if target == '':
     info = TELESCOPE
+  elif target == 'x':
+    info = ''
   else:
     info = TELESCOPE + ':' + target
-  count = len(info)
-  header = bytearray([count % 256, count // 256])
-  data = header + bytearray(info, 'Utf8')
+  count = len (info)
+  header = bytearray ([count % 256, count // 256])
+  data = header + bytearray (info, 'utf-8')
 
-  s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-  s.connect((HOST, PORT))
-  s.sendall(data)
-  reply = s.recv(count)
-  s.close
-  if reply == info:
-    print('ok')
+  s = socket.socket (socket.AF_INET, socket.SOCK_STREAM)
+  s.connect ((HOST, PORT))
+  s.sendall (data)
+
+  if info == '':
+    print ('Exit')
+    break  
+  reply = s.recv(count + 2)
+  if reply == data:
+    print ('ok')
   else:
-    print('failed')
+    print ('failed')
