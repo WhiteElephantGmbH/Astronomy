@@ -54,12 +54,16 @@ package body Parameter is
   M3_Ocular_Port_Key    : constant String := "M3 Ocular Port";
   Pointing_Model_Key    : constant String := "Pointing Model";
   Ip_Address_Key        : constant String := "IP Address";
+  Port_Key              : constant String := "Port";
   Moving_Speed_List_Key : constant String := "Moving Speed List";
   Cwe_Distance_Key      : constant String := "CWE Distance";
 
-  Lx200_Id       : constant String := "Lx200";
+  Lx200_Id : constant String := "Lx200";
+
+  Remote_Id     : constant String := "Remote";
+  Telescope_Key : constant String := "Telescope";
+
   Stellarium_Id  : constant String := "Stellarium";
-  Port_Key       : constant String := "Port";
   Magnitude_Key  : constant String := "Magnitude";
 
   The_Section : Configuration.Section_Handle;
@@ -79,6 +83,11 @@ package body Parameter is
 
   --Lx200
   The_Lx200_Port : Network.Port_Number;
+
+  --Remote
+  The_Telescope_Name : Text.String;
+  The_Remote_Address : Network.Ip_Address;
+  The_Remote_Port    : Network.Port_Number;
 
   --Stellarium
   The_Stellarium_Port : Network.Port_Number;
@@ -211,14 +220,44 @@ package body Parameter is
   end Angle_Of;
 
 
-  function Value_Of (Key : String) return Integer is
+  function Value_Of (Key     : String;
+                     Section : String := "") return Integer is
     Item : constant String := String_Of (Key);
   begin
     return Integer'value(Image_Of(Item));
   exception
   when others =>
-    Error.Raise_With ("Incorrect " & Key & ": <" & Item & ">");
+    Error.Raise_With ("Incorrect " & (if Section = "" then "" else Section & " ") & Key & ": <" & Item & ">");
   end Value_Of;
+
+
+  function Ip_Address_For (Section : String) return Network.Ip_Address is
+    Server      : constant String := String_Of (Ip_Address_Key, Section);
+    The_Address : Network.Ip_Address;
+  begin
+    begin
+      The_Address := Network.Ip_Address_Of (Server);
+    exception
+    when others =>
+      The_Address := Network.Ip_Address_Of_Host (Server);
+    end;
+    Log.Write (Section & " " & Ip_Address_Key & ": " & Network.Image_Of (The_Address));
+    return The_Address;
+  exception
+  when others =>
+    Error.Raise_With ("Incorrect " & Section & " IP address " & Server);
+  end Ip_Address_For;
+
+
+  function Port_For (Section : String) return Network.Port_Number is
+    Value : constant Integer := Value_Of (Port_Key, Remote_Id);
+  begin
+    Log.Write (Section & " port number:" & Value'image);
+    return Network.Port_Number (Value);
+  exception
+  when others =>
+    Error.Raise_With (Section & " port number" & Value'image & " out of range");
+  end Port_For;
 
 
   function PWI_Socket return Network.Tcp.Socket is
@@ -274,13 +313,18 @@ package body Parameter is
       Put (M3_Ocular_Port_Key & "    = 1");
       Put (Fans_Key & "              = Off");
       Put (Pointing_Model_Key & "    = Default_Mount_Model.PXP");
-      Put (Ip_Address_Key & "        = 127.0.0.1");
+      Put (Ip_Address_Key & "        = Localhost");
       Put (Port_Key & "              = 8080");
       Put (Moving_Speed_List_Key & " = 30""/s, 3'/s, 20'/s, 2°/s");
       Put (Cwe_Distance_Key & "      = 30'");
       Put ("");
       Put ("[" & Lx200_Id & "]");
       Put (Port_Key & " = 4030");
+      Put ("");
+      Put ("[" & Remote_Id & "]");
+      Put (Telescope_Key & "  = CDK_Ost");
+      Put (Ip_Address_Key & " = 127.0.0.1");
+      Put (Port_Key & "       = 11001");
       Put ("");
       Put ("[" & Stellarium_Id & "]");
       Put (Port_Key & "      = 10001");
@@ -302,6 +346,7 @@ package body Parameter is
       Handle              : constant Configuration.File_Handle    := Configuration.Handle_For (Filename);
       PWI_Handle          : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, PWI_Id);
       Lx200_Handle        : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Lx200_Id);
+      Remote_Handle       : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Remote_Id);
       Stellarium_Handle   : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Stellarium_Id);
       Localization_Handle : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Localization_Id);
 
@@ -332,22 +377,11 @@ package body Parameter is
         Error.Raise_With ("PWI settings missing upper alt goto limit");
       end Define_Site_Parameters;
 
-
       procedure Startup_PWI is
 
         procedure Prepare_Tcp is
-          Server : constant String := String_Of (Ip_Address_Key);
         begin
-          begin
-            begin
-              The_PWI_Address := Network.Ip_Address_Of (Server);
-            exception
-            when others =>
-              The_PWI_Address := Network.Ip_Address_Of_Host (Server);
-              Log.Write ("IP address of: " & Server & " = " & Network.Image_Of (The_PWI_Address));
-            end;
-            Network.Tcp.Close (PWI_Socket);
-          end;
+          Network.Tcp.Close (PWI_Socket);
         end Prepare_Tcp;
 
         PWI_Program_Filename : constant String := String_Value_Of (Program_Key);
@@ -360,13 +394,8 @@ package body Parameter is
         if not File.Exists (PWI_Program_Filename) then
           Error.Raise_With ("PWI program file """ & PWI_Program_Filename & """ not found");
         end if;
-        begin
-          The_PWI_Port := Network.Port_Number (Value_Of (Port_Key));
-          Log.Write ("PWI port:" & The_PWI_Port'img);
-        exception
-        when others =>
-          Error.Raise_With ("PWI port number out of range");
-        end;
+        The_PWI_Address := Ip_Address_For (PWI_Id);
+        The_PWI_Port := Port_For (PWI_Id);
         begin
           Prepare_Tcp;
         exception
@@ -491,22 +520,15 @@ package body Parameter is
       The_Cwe_Distance := Angle_Of (Cwe_Distance_Key);
 
       Set (Lx200_Handle);
-      begin
-        The_Lx200_Port := Network.Port_Number (Value_Of (Port_Key));
-        Log.Write ("Lx200 Port:" & The_Lx200_Port'img);
-      exception
-      when others =>
-        Error.Raise_With ("Lx200 port number out of range");
-      end;
+      The_Lx200_Port := Port_For (Lx200_Id);
+
+      Set (Remote_Handle);
+      The_Telescope_Name := Text.String_Of (String_Of (Telescope_Key, Remote_Id));
+      The_Remote_Address := Ip_Address_For (Remote_Id);
+      The_Remote_Port := Port_For (Remote_Id);
 
       Set (Stellarium_Handle);
-      begin
-        The_Stellarium_Port := Network.Port_Number (Value_Of (Port_Key));
-        Log.Write ("Stellarium Port:" & The_Stellarium_Port'img);
-      exception
-      when others =>
-        Error.Raise_With ("Stellarium port number out of range");
-      end;
+      The_Stellarium_Port :=  Port_For (Stellarium_Id);
       declare
         Image     : constant String := String_Value_Of (Magnitude_Key);
         Magnitude : Stellarium.Magnitude;
@@ -631,6 +653,28 @@ package body Parameter is
   begin
     return The_Lx200_Port;
   end Lx200_Port;
+
+
+  ------------
+  -- Remote --
+  ------------
+
+  function Telescope_Name return String is
+  begin
+    return Text.String_Of (The_Telescope_Name);
+  end Telescope_Name;
+
+
+  function Remote_Address return Network.Ip_Address is
+  begin
+    return The_Remote_Address;
+  end Remote_Address;
+
+
+  function Remote_Port return Network.Port_Number is
+  begin
+    return The_Remote_Port;
+  end Remote_Port;
 
 
   ----------------

@@ -31,6 +31,7 @@ with Parameter;
 with Persistent;
 with Program;
 with Refraction;
+with Remote;
 with Site;
 with Space;
 with Strings;
@@ -545,6 +546,7 @@ package body User is
         Menu_Disable;
       end case;
     end if;
+    Remote.Define (Target_Name, Information.Status);
     Gui.Set_Status_Line (Information.Status'img);
     case The_Page is
     when Is_Control =>

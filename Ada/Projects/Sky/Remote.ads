@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2019 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                           (c) 2021 by White Elephant GmbH, Schaffhausen, Switzerland                              *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,65 +15,11 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Angle;
-with Device;
-with PWI;
-with Network;
+with Telescope;
 
-package Parameter is
+package Remote is
 
-  Speed_Unit : constant String := "/s";
+  procedure Define (Target : String;
+                    State  : Telescope.State);
 
-  procedure Read;
-
-  procedure Shutdown;
-
-  ------------
-  -- Device --
-  ------------
-
-  function Is_Expert_Mode return Boolean;
-
-  function Is_Simulation_Mode return Boolean;
-
-  function M3_Ocular_Port return PWI.Port;
-
-  function M3_Camera_Port return PWI.Port;
-
-  function M3_Default_Place return Device.M3.Place;
-
-  function Turn_Fans_On return Boolean;
-
-  function Pointing_Model return String;
-
-  function Pole_Height return Angle.Value;
-
-  function Is_Azimuthal_Mount return Boolean;
-
-  function Moving_Speeds return Angle.Values; -- in angle / s
-
-  function Cwe_Distance return Angle.Degrees;
-
-  -----------
-  -- Lx200 --
-  -----------
-
-  function Lx200_Port return Network.Port_Number;
-
-  ------------
-  -- Remote --
-  ------------
-
-  function Telescope_Name return String;
-
-  function Remote_Address return Network.Ip_Address;
-
-  function Remote_Port return Network.Port_Number;
-
-  ----------------
-  -- Stellarium --
-  ----------------
-
-  function Stellarium_Port return Network.Port_Number;
-
-end Parameter;
+end Remote;
