@@ -24,7 +24,7 @@ package body M_Zero is
   Socket_Protocol : constant Network.Tcp.Protocol := Network.Tcp.Raw;
 
   Product_Name    : constant String := "Avalon";
-  Firmware_Number : constant String := "62.0";
+  Firmware_Number : constant String := "65.6";
 
   Receive_Timeout : constant Duration := 5.0;
 
