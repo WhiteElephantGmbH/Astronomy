@@ -3,11 +3,12 @@
 ##########
 
 import socket
+import sys
 
-HOST      = '127.0.0.1'
 PORT      = 11001
 TELESCOPE = 'APO'
 
+host = '192.168.110.129'
 while True:
   target = input ('Target>')
   if target == '':
@@ -20,8 +21,20 @@ while True:
   header = bytearray ([count % 256, count // 256])
   data = header + bytearray (info, 'utf-8')
 
-  s = socket.socket (socket.AF_INET, socket.SOCK_STREAM)
-  s.connect ((HOST, PORT))
+  while True:
+    try: 
+      s = socket.socket (socket.AF_INET, socket.SOCK_STREAM)
+      s.connect ((host, PORT))
+      break
+    except socket.error as error:
+      print('!!! ' + error.args[1])
+    except:
+      print('!!! unknown error')
+    s.close
+    host = input ('Server IP address>')
+    if host == 'x':
+      sys.exit()
+
   s.sendall (data)
 
   if info == '':
