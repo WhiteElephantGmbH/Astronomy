@@ -117,7 +117,7 @@ package body Test is
               Send ("d02102017#");
             when 'N' => -- GVN
               Put_Line ("Get Firmware Number");
-              Send ("62.0#");
+              Send ("65.6#");
             when others =>
               Put_Line ("Unknown GV Command");
             end case;
