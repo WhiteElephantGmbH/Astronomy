@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2015 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2015 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -46,16 +46,16 @@ package Gui.Key_Codes is
   K_Back   : constant Key_Code := Win32.Winuser.VK_BACK;
   K_Delete : constant Key_Code := Win32.Winuser.VK_DELETE;
   K_Menu   : constant Key_Code := Win32.Winuser.VK_MENU;
-  K_Return : constant Key_Code := -1; -- not used
+  K_Return : constant Key_Code := Key_Code'last; -- not used
   K_Space  : constant Key_Code := Win32.Winuser.VK_SPACE;
   K_Tab    : constant Key_Code := Win32.Winuser.VK_TAB;
 
   K_Page_Down : constant Key_Code := Win32.Winuser.VK_NEXT;
   K_Page_Up   : constant Key_Code := Win32.Winuser.VK_PRIOR;
 
-  K_Down  : constant Key_Code := -2; -- not used
-  K_Left  : constant Key_Code := -3; -- not used
-  K_Right : constant Key_Code := -4; -- not used
-  K_Up    : constant Key_Code := -5; -- not used
+  K_Down  : constant Key_Code := Key_Code'last - 1; -- not used
+  K_Left  : constant Key_Code := Key_Code'last - 2; -- not used
+  K_Right : constant Key_Code := Key_Code'last - 3; -- not used
+  K_Up    : constant Key_Code := Key_Code'last - 4; -- not used
 
 end Gui.Key_Codes;

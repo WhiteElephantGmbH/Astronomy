@@ -12,13 +12,13 @@ BEGIN
   BEGIN
     BLOCK "040904E4"
     BEGIN
-      VALUE "LegalCopyright", "Copyright \251 White Elephant GmbH 2020\0"
+      VALUE "LegalCopyright", "Copyright \251 White Elephant GmbH 2021\0"
       VALUE "FileDescription", "Sky Guiding Control Program\0"
       VALUE "FileVersion", "1.3\0"
       VALUE "OriginalFilename", "SkyGuider.exe\0"
       VALUE "InternalName", "SkyGuider\0"
-      VALUE "ProductName", "GPL 2020\0"
-      VALUE "ProductVersion", "9.3.1\0"
+      VALUE "ProductName", "GPL 2021\0"
+      VALUE "ProductVersion", "10.3.1\0"
       VALUE "Libraries", "\0"
     END
   END

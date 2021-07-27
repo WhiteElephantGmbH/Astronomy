@@ -37,7 +37,7 @@ package Motor is
   type Position_Data is record
     Positions : Position;
     Offsets   : Position;
-    Inverted  : Boolean;
+    Inverted  : Boolean := False;
   end record;
 
   type Speed is private;

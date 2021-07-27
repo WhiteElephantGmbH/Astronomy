@@ -15,8 +15,8 @@ BEGIN
       VALUE "FileVersion", "1.3\0"
       VALUE "Originalfilename", "M_Zero_Simulator.exe\0"
       VALUE "InternalName", "M_Zero_Simulator\0"
-      VALUE "ProductName", "GPL 2020\0"
-      VALUE "ProductVersion", "9.3.1\0"
+      VALUE "ProductName", "GPL 2021\0"
+      VALUE "ProductVersion", "10.3.1\0"
       VALUE "Libraries", "\0"
     END
   END

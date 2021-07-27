@@ -1,10 +1,10 @@
 1 VERSIONINFO
   FILEVERSION 1,1
-  FILEFLAGSMASK 0x3FL
-  FILEFLAGS 0x0L
-  FILEOS 0x4L
-  FILETYPE 0x1L
-  FILESUBTYPE 0x0L
+  FILEFLAGSMASK 0X3FL
+  FILEFLAGS 0X0L
+  FILEOS 0X4L
+  FILETYPE 0X1L
+  FILESUBTYPE 0X0L
 BEGIN
   BLOCK "StringFileInfo"
   BEGIN
@@ -15,8 +15,8 @@ BEGIN
       VALUE "FileVersion", "1.1\0"
       VALUE "OriginalFilename", "GuiTest.exe\0"
       VALUE "InternalName", "GuiTest\0"
-      VALUE "ProductName", "GPL 2020\0"
-      VALUE "ProductVersion", "9.3.1\0"
+      VALUE "ProductName", "GPL 2021\0"
+      VALUE "ProductVersion", "10.3.1\0"
     END
   END
   BLOCK "VarFileInfo"

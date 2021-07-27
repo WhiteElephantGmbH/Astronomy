@@ -52,9 +52,9 @@ package body Neo is
 
 
   type Element is record
-    Ut  : Time.Ut;
-    Ra  : Angle.Value;
-    Dec : Angle.Value;
+    Ut  : Time.Ut     := Time.In_The_Past;
+    Ra  : Angle.Value := Angle.Zero;
+    Dec : Angle.Value := Angle.Zero;
   end record;
 
   type List is array (Positive range <>) of Element;
