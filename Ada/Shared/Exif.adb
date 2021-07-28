@@ -191,17 +191,17 @@ package body Exif is
     Is_Big_Endian  : Boolean;
 
 
-    procedure Read (Item : System.Address;
-                    Size : Positive) is
+    procedure Read (Item     : System.Address;
+                    The_Size : Positive) is
       The_Count : Integer;
     begin
       The_Count := OS.Read (FD => File,
                             A  => Item,
-                            N  => Size);
-      if The_Count /= Size then
+                            N  => The_Size);
+      if The_Count /= The_Size then
         raise Invalid_File;
       end if;
-      The_Position := The_Position + File_Position(Size);
+      The_Position := The_Position + File_Position(The_Size);
     end Read;
 
 
@@ -226,10 +226,10 @@ package body Exif is
     end Set;
 
 
-    function Get (Size : Natural) return String is
-      Item : aliased String(1..Size);
+    function Get (The_Size : Natural) return String is
+      Item : aliased String(1..The_Size);
     begin
-      Read (Item'address, Size);
+      Read (Item'address, The_Size);
       return Item;
     end Get;
 
@@ -337,10 +337,10 @@ package body Exif is
         The_Count := 4;
       end if;
       declare
-        Values : Unsigned.Byte_String(1 .. The_Count);
-        for Values'address use Item.Data'address;
+        The_Values : Unsigned.Byte_String(1 .. The_Count);
+        for The_Values'address use Item.Data'address;
       begin
-        return Values;
+        return The_Values;
       end;
     end Unsigned_Bytes_Of;
 
@@ -363,10 +363,10 @@ package body Exif is
         end;
       else
         declare
-          Values : Words(1 .. Item.Count);
-          for Values'address use Item.Data'address;
+          The_Values : Words(1 .. Item.Count);
+          for The_Values'address use Item.Data'address;
         begin
-          return Values;
+          return The_Values;
         end;
       end if;
     end Unsigned_Shorts_Of;
@@ -380,7 +380,7 @@ package body Exif is
     end Image_Of;
 
 
-    function Image_Of (Values : Rational_Values) return String is
+    function Image_Of (The_Values : Rational_Values) return String is
 
       function Image_Of (I : String;
                          V : Rational_Values) return String is
@@ -394,7 +394,7 @@ package body Exif is
       end Image_Of;
 
     begin
-      return Trimmed (Image_Of ("", Values));
+      return Trimmed (Image_Of ("", The_Values));
     end Image_Of;
 
     procedure Get_Sub_Image_File_Directory is
@@ -406,10 +406,10 @@ package body Exif is
           Next_IFD  : constant File_Position := Actual_Position;
 
           function Read_Size return Size is
-            Values : constant Words := Unsigned_Shorts_Of (Sub_Entry);
+            The_Values : constant Words := Unsigned_Shorts_Of (Sub_Entry);
           begin
-            if Values'length = 1 then
-              return Size(Values(Values'first));
+            if The_Values'length = 1 then
+              return Size(The_Values(The_Values'first));
             end if;
             return Undefined_Size;
           exception
@@ -461,11 +461,11 @@ package body Exif is
           end Ref;
 
           function Level return See_Level is
-            Values : constant Unsigned.Byte_String :=  Unsigned_Bytes_Of (Gps_Entry);
+            The_Values : constant Unsigned.Byte_String :=  Unsigned_Bytes_Of (Gps_Entry);
           begin
-            if Values'length = 1 then
+            if The_Values'length = 1 then
               declare
-                Value : constant Unsigned.Byte := Values(Values'first);
+                Value : constant Unsigned.Byte := The_Values(The_Values'first);
                 use type Unsigned.Byte;
               begin
                 if Value = 0 then
@@ -524,10 +524,10 @@ package body Exif is
           Next_IFD   : constant File_Position := Actual_Position;
 
           function Read_Orientation return Image_Orientation is
-            Values : constant Words := Unsigned_Shorts_Of (Main_Entry);
+            The_Values : constant Words := Unsigned_Shorts_Of (Main_Entry);
           begin
-            if Values'length = 1 then
-              return Image_Orientation'val(Values(Values'first));
+            if The_Values'length = 1 then
+              return Image_Orientation'val(The_Values(The_Values'first));
             end if;
             return Undefined;
           exception

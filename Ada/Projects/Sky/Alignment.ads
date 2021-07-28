@@ -48,9 +48,9 @@ package Alignment is
 
   procedure Read;
 
-  procedure Set (Cone_Error : Angle.Value);
+  procedure Set (The_Cone_Error : Angle.Value);
 
-  procedure Set (Pole_Offsets : Earth.Direction);
+  procedure Set (The_Pole_Offsets : Earth.Direction);
 
   procedure Set (Ra_Offset  : Angle.Degrees;
                  Dec_Offset : Angle.Degrees);

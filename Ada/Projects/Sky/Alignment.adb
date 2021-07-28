@@ -63,21 +63,21 @@ package body Alignment is
                           Alt_Nominal : out Angle.Degrees;
                           Az_Nominal  : out Angle.Degrees);
 
-    procedure Set (Cone_Error : Angle.Value);
+    procedure Set_Cone_Error (Item : Angle.Value);
 
-    procedure Set (Pole_Offsets : Earth.Direction);
+    procedure Set_Pole_Offsets (Item : Earth.Direction);
 
-    procedure Set_Offsets (Ra  : Angle.Degrees;
-                           Dec : Angle.Degrees);
+    procedure Set_Offsets (For_Ra  : Angle.Degrees;
+                           For_Dec : Angle.Degrees);
 
     procedure Set (The_Pole_Height_Offset : Angle.Degrees;
                    The_Pole_Az_Offset     : Angle.Degrees;
                    The_Ra_Rotation        : Angle.Degrees;
                    The_Dec_Rotation       : Angle.Degrees);
 
-    function Cone_Error return Angle.Value;
+    function Actual_Cone_Error return Angle.Value;
 
-    function Pole_Offsets return Earth.Direction;
+    function Actual_Pole_Offsets return Earth.Direction;
 
     function Three_Star_Rotations return Space.Direction;
 
@@ -159,35 +159,35 @@ package body Alignment is
   end Image_Of;
 
 
-  procedure Set (Cone_Error : Angle.Value) is
+  procedure Set (The_Cone_Error : Angle.Value) is
   begin
-    Control.Set (Cone_Error);
+    Control.Set_Cone_Error (The_Cone_Error);
   end Set;
 
 
-  procedure Set (Pole_Offsets : Earth.Direction) is
+  procedure Set (The_Pole_Offsets : Earth.Direction) is
   begin
-    Control.Set (Pole_Offsets);
+    Control.Set_Pole_Offsets (The_Pole_Offsets);
   end Set;
 
 
   procedure Set (Ra_Offset  : Angle.Degrees;
                  Dec_Offset : Angle.Degrees) is
   begin
-    Control.Set_Offsets (Ra  => Ra_Offset,
-                         Dec => Dec_Offset);
+    Control.Set_Offsets (For_Ra  => Ra_Offset,
+                         For_Dec => Dec_Offset);
   end Set;
 
 
   function Cone_Error return Angle.Value is
   begin
-    return Control.Cone_Error;
+    return Control.Actual_Cone_Error;
   end Cone_Error;
 
 
   function Pole_Offsets return Earth.Direction is
   begin
-    return Control.Pole_Offsets;
+    return Control.Actual_Pole_Offsets;
   end Pole_Offsets;
 
 
@@ -399,23 +399,23 @@ package body Alignment is
     end Get_Values;
 
 
-    procedure Set (Cone_Error : Angle.Value) is
+    procedure Set_Cone_Error (Item : Angle.Value) is
     begin
-      The_Cone_Error := Cone_Error;
-    end Set;
+      The_Cone_Error := Item;
+    end Set_Cone_Error;
 
 
-    procedure Set (Pole_Offsets : Earth.Direction) is
+    procedure Set_Pole_Offsets (Item : Earth.Direction) is
     begin
-      The_Pole_Offsets := Pole_Offsets;
-    end Set;
+      The_Pole_Offsets := Item;
+    end Set_Pole_Offsets;
 
 
-    procedure Set_Offsets (Ra  : Angle.Degrees;
-                           Dec : Angle.Degrees) is
+    procedure Set_Offsets (For_Ra  : Angle.Degrees;
+                           For_Dec : Angle.Degrees) is
     begin
-      The_Ra_Correction  := Ra;
-      The_Dec_Correction := Dec;
+      The_Ra_Correction  := For_Ra;
+      The_Dec_Correction := For_Dec;
     end Set_Offsets;
 
 
@@ -452,16 +452,16 @@ package body Alignment is
     end Set;
 
 
-    function Cone_Error return Angle.Value is
+    function Actual_Cone_Error return Angle.Value is
     begin
       return The_Cone_Error;
-    end Cone_Error;
+    end Actual_Cone_Error;
 
 
-    function Pole_Offsets return Earth.Direction is
+    function Actual_Pole_Offsets return Earth.Direction is
     begin
       return The_Pole_Offsets;
-    end Pole_Offsets;
+    end Actual_Pole_Offsets;
 
 
     function Three_Star_Rotations return Space.Direction is
@@ -794,6 +794,5 @@ package body Alignment is
     Log.Termination (Occurrence);
     Ada.Text_IO.Close (The_File);
   end Read;
-
 
 end Alignment;

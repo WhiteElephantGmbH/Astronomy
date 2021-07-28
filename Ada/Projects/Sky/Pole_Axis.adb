@@ -86,14 +86,14 @@ package body Pole_Axis is
       The_Az := +Earth.Az_Of (The_Pol_Left);
     end if;
     if (The_Az = 0) and (The_Alt = 0) then
-      Alignment.Set (Pole_Offsets => Earth.Unknown_Direction);
+      Alignment.Set (The_Pole_Offsets => Earth.Unknown_Direction);
     else
       if The_Alt /= 0 then
         The_Alt := The_Alt - Angle.Signed'(+Site.Latitude) - The_Cone_Error;
       end if;
-      Alignment.Set (Pole_Offsets => Earth.Direction_Of (Alt => +The_Alt, Az => +The_Az));
+      Alignment.Set (The_Pole_Offsets => Earth.Direction_Of (Alt => +The_Alt, Az => +The_Az));
     end if;
-    Alignment.Set (Cone_Error => Angle.Value'(+The_Cone_Error));
+    Alignment.Set (The_Cone_Error => Angle.Value'(+The_Cone_Error));
   end Set_Alignment;
 
 
@@ -105,8 +105,8 @@ package body Pole_Axis is
     The_Pol_Right := Earth.Unknown_Direction;
     Set_Alignment;
   end Clear;
-  
-  
+
+
   function Has_Values return Boolean is
     use type Angle.Value;
   begin
