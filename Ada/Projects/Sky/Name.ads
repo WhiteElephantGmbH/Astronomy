@@ -50,6 +50,8 @@ package Name is
 
   type Id_List_Access is access all Id_List;
 
+  type Get_Space_Access is access function (Item : Id;
+                                            Ut   : Time.Ut) return Space.Direction;
 
   function "=" (Left, Right : Id_List) return Boolean;
 
@@ -72,6 +74,9 @@ package Name is
   function Item_Of (List  : Id_List;
                     Image : String) return Id;
 
+  function Item_Of (List      : Id_List;
+                    Direction : Space.Direction) return Id;
+
   function Is_Known (Item : Id) return Boolean;
 
   function Is_Visible (Item : Id) return Boolean;
@@ -90,12 +95,12 @@ package Name is
 
   function Type_Of (Item : Id) return Data.Object_Type;
 
-  function Direction_Of (Item : Name.Id;
+  function Direction_Of (Item : Id;
                          Ut   : Time.Ut) return Space.Direction;
 
-  function Direction_Of (Item : Name.Id) return Earth.Direction;
+  function Direction_Of (Item : Id) return Earth.Direction;
 
-  function Magnitude_Of (Item : Name.Id) return Float;
+  function Magnitude_Of (Item : Id) return Float;
 
 private
 

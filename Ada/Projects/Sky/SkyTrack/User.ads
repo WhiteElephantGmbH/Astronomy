@@ -29,11 +29,6 @@ package User is
 
   type Percent is new Natural range 0 .. 100;
 
-  type Selection is (All_Objects, Solar_System, Clusters, Open_Clusters, Nebulas, Galaxies,
-                     Stars, Multiple_Stars, Near_Earth_Objects);
-
-  subtype Object is Selection range Selection'succ(Selection'first) .. Selection'last;
-
   procedure Show_Error (The_Text : String := Error.Message);
 
   procedure Show (The_Progress : Percent);
@@ -41,6 +36,8 @@ package User is
   procedure Show (Visible_In : Duration);
 
   procedure Show (Information : Telescope.Data);
+
+  procedure Set (The_Target : Name.Id);
 
   procedure Clear_Target;
 
@@ -58,7 +55,7 @@ package User is
 
   procedure Clear_Targets;
 
-  procedure Define (Targets : Name.Id_List_Access);
+  procedure Define (New_Targets : Name.Id_List_Access);
 
   procedure Update_Targets;
 
@@ -71,8 +68,6 @@ package User is
   function Target_Name return String;
 
   procedure Show_Description (Image : String);
-
-  function Is_Selected (The_Object : Object) return Boolean;
 
   function Image_Orientation return Telescope.Orientation;
 

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2019 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                           (c) 2021 by White Elephant GmbH, Schaffhausen, Switzerland                              *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,52 +15,32 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Error;
 with Name;
-with Telescope;
+with Space;
 
-package User is
+package Targets is
 
-  type Action is (Define_Catalog, Define_Target, Startup, Shutdown, Stop, Go_To, Back, Set_Orientation, Update, Close);
+  type Selection is (All_Objects, Solar_System, Clusters, Open_Clusters, Nebulas, Galaxies, Stars, Multiple_Stars,
+                     Near_Earth_Objects);
 
-  subtype Button_Action is Action range Startup .. Go_To;
+  subtype Objects is Selection range Selection'succ(Selection'first) .. Selection'last;
+  
+  procedure Start (Clear  : access procedure;
+                   Define : access procedure (List : Name.Id_List_Access);
+                   Update : access procedure);
 
-  type Action_Handler is access procedure (The_Action : Action);
+  procedure Define_Catalog;
 
-  type Percent is new Natural range 0 .. 100;
+  procedure Set (The_Selection : Selection);
 
-  procedure Show_Error (The_Text : String := Error.Message);
+  procedure Update_List;
 
-  procedure Show (The_Progress : Percent);
+  procedure Get_For (Target_Name :     String;
+                     Target_Id   : out Name.Id);
 
-  procedure Show (Visible_In : Duration);
+  procedure Get_For (The_Direction :     Space.Direction;
+                     Target_Id     : out Name.Id);
 
-  procedure Show (Information : Telescope.Data);
+  procedure Stop;
 
-  procedure Set (The_Target : Name.Id);
-
-  procedure Clear_Target;
-
-  procedure Execute (The_Startup_Handler     : not null access procedure;
-                     The_Action_Handler      : Action_Handler;
-                     The_Termination_Handler : not null access procedure);
-
-  procedure Enter_Handling;
-
-  procedure Perform_Goto;
-
-  procedure Perform_Stop;
-
-  procedure Clear_Targets;
-
-  procedure Define (New_Targets : Name.Id_List_Access);
-
-  procedure Update_Targets;
-
-  function Target_Name return String;
-
-  procedure Show_Description (Image : String);
-
-  function Image_Orientation return Telescope.Orientation;
-
-end User;
+end Targets;

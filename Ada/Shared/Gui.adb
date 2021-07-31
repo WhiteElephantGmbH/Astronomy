@@ -15,7 +15,7 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Ada.Text_Io; -- !!! temporary till Message_Box works on Big Sur
+with Ada.Text_IO; -- !!! temporary till Message_Box works on Big Sur
 with Definite_Doubly_Linked_Lists;
 with Gdk.RGBA;
 with Gdk.Event;
@@ -179,7 +179,7 @@ package body Gui is
 
   procedure Synchronous_Service (Data : in out Message_Box_Data) is
   begin
-    Ada.Text_Io.Put_Line (Data.The_Message);
+    Ada.Text_IO.Put_Line (Data.The_Message);
     --Data.Buttons := Gtkada.Dialogs.Message_Dialog (Msg         => Data.The_Message,
     --                                               Dialog_Type => Data.Severity,
     --                                               Buttons     => Data.Buttons,
@@ -3116,12 +3116,12 @@ package body Gui is
   function Create (Parent_Page       : Page;
                    The_Click_Routine : Click_Routine   := null;
                    The_Color_Handler : Color_Handler   := null;
-                   Style             : Tree_View_Style := (others => <>)) return Tree_View is
+                   The_Style         : Tree_View_Style := (others => <>)) return Tree_View is
     Data : Tree_View_Data := (Gui.Router.Request_Data with Parent_Page     => Parent_Page,
                                                            The_View         => (others => <>),
                                                            Store           => null, -- Returned by call
-                                                           Single_Click    => Style.The_Click_Kind = Single_Click,
-                                                           Expand_By_Click => Style.Expand_By_Click,
+                                                           Single_Click    => The_Style.The_Click_Kind = Single_Click,
+                                                           Expand_By_Click => The_Style.Expand_By_Click,
                                                            The_Routine     => The_Click_Routine);
   begin
     Gui.Router.Request (Data);

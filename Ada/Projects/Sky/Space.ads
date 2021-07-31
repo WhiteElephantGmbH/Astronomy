@@ -20,6 +20,8 @@ with Angle;
 package Space is
 
   type Direction is private;
+  
+  subtype Distance is Angle.Degrees;
 
   Unknown_Direction : constant Direction;
 
@@ -49,6 +51,9 @@ package Space is
   function Direction_Is_Known (The_Direction : Direction) return Boolean with Inline;
 
   function "-" (Left, Right : Direction) return Direction;
+
+  function "<" (Left  : Direction;
+                Right : Distance) return Boolean; -- 
 
 private
 

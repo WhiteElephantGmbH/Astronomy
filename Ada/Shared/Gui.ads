@@ -85,10 +85,10 @@ package Gui is
   type Information_Array is array (Natural range <>) of Information;
 
   type Window_Metrics is record
-    X_Position : Integer;
-    Y_Position : Integer;
-    Width      : Natural;
-    Height     : Natural;
+    X_Position : Integer := 0;
+    Y_Position : Integer := 0;
+    Width      : Natural := 0;
+    Height     : Natural := 0;
   end record;
 
   type Action_Routine is access procedure;
@@ -603,7 +603,7 @@ package Gui is
   function Create (Parent_Page       : Page;
                    The_Click_Routine : Click_Routine   := null;
                    The_Color_Handler : Color_Handler   := null;
-                   Style             : Tree_View_Style := (others => <>)) return Tree_View;
+                   The_Style         : Tree_View_Style := (others => <>)) return Tree_View;
   --
   -- Note: The_Color_Handler is only called when an item is added, NOT when the item is clicked.
   --

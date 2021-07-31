@@ -95,4 +95,15 @@ package body Space is
             Is_Known => Left.Is_Known and Right.Is_Known);
   end "-";
 
+
+  function "<" (Left  : Direction;
+                Right : Distance) return Boolean is
+    use type Angle.Signed;
+    use type Angle.Degrees;
+  begin
+    return Left.Is_Known
+      and then Angle.Degrees'(+ abs Angle.Signed'(+Left.Dec)) < Right
+      and then Angle.Degrees'(+ abs Angle.Signed'(+Left.Ra)) < Right;
+  end "<";
+
 end Space;

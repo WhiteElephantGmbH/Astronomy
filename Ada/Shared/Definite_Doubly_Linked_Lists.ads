@@ -14,6 +14,7 @@
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
+pragma Warnings ("H"); -- !!! workaround for GNAT 2020
 
 with Ada.Containers.Doubly_Linked_Lists;
 

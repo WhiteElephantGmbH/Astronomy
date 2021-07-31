@@ -24,7 +24,9 @@ with Error;
 with File;
 with Lexicon;
 with Neo;
+with Solar_System;
 with Sssb;
+with Moon;
 with Strings;
 with Traces;
 
@@ -50,8 +52,6 @@ package body Name is
       Object : Data.Object := Data.Undefined;
     end case;
   end record;
-
-  Unknown_Id : constant Id := (Data.Favorites, False, False, null);
 
 
   function "=" (Left, Right : Id) return Boolean is
@@ -260,7 +260,48 @@ package body Name is
         end if;
       end;
     end loop;
-    return Unknown_Id;
+    return No_Id;
+  end Item_Of;
+
+
+  function Item_Of (List      : Id_List;
+                    Direction : Space.Direction) return Id is
+  begin
+    for Index in List.Ids'first .. List.Last loop
+      declare
+        Item : constant Id := List.Ids(Index);
+
+        function Found_Item (Direction_Of : Get_Space_Access;
+                             Distance     : Space.Distance) return Boolean is
+          use type Space.Direction;
+        begin
+          return Is_Visible (Item) and then (Direction - Direction_Of (Item, Time.Universal)) < Distance;
+        end Found_Item;
+
+      begin
+        case Kind_Of (Item) is
+        when Sky_Object =>
+          if Found_Item (Direction_Of'access, Distance => 0.01) then
+            return Item;
+          end if;
+        when Moon =>
+          if Found_Item (Standard.Moon.Direction_Of'access, 0.1) then
+            return Item;
+          end if;
+        when Name.Sun | Name.Planet =>
+          if Found_Item (Solar_System.Direction_Of'access, 0.1) then
+            return Item;
+          end if;
+        when Name.Small_Solar_System_Body =>
+          if Found_Item (Sssb.Direction_Of'access, 0.1) then
+            return Item;
+          end if;
+        when others =>
+          null;
+        end case;
+      end;
+    end loop;
+    return No_Id;
   end Item_Of;
 
 

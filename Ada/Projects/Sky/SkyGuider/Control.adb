@@ -27,12 +27,12 @@ with Objects;
 with Os.Application;
 with Os.Process;
 with Parameter;
-with Site;
 with Sky_Line;
 with Solar_System;
 with Space;
 with Sssb;
 with Stellarium;
+with Targets;
 with Telescope;
 with Time;
 with Traces;
@@ -42,146 +42,8 @@ package body Control is
 
   package Log is new Traces ("Control");
 
-  task type Target_Handler is
-
-    entry Define_Catalog;
-
-    entry Update;
-
-    entry Get_For (Target_Name : String;
-                   Target_Id   : out Name.Id);
-    entry Stop;
-
-  end Target_Handler;
-
-
-  task body Target_Handler is
-
-    The_Targets : aliased Name.Id_List;
-
-    New_List : Boolean := False;
-
-    procedure Define_Targets is
-
-      function Is_Visible (Direction : Space.Direction) return Boolean is
-      begin
-        return Sky_Line.Is_Above (Direction => Direction,
-                                  Lmst      => Time.Lmst);
-      end Is_Visible;
-
-      function Is_To_Add (Item      : User.Selection;
-                          Direction : Space.Direction) return Boolean is
-      begin
-        return Space.Direction_Is_Known (Direction) and then User.Is_Selected (Item) and then Is_Visible (Direction);
-      end Is_To_Add;
-
-      The_Changes : Natural := 0;
-
-      Ut : constant Time.Ut := Time.Universal;
-
-    begin -- Define_Targets
-      if not Site.Is_Defined then
-        return;
-      end if;
-      for Index in The_Targets.Ids'first .. The_Targets.Last loop
-        declare
-
-          Item : Name.Id renames The_Targets.Ids(Index);
-
-          function Is_To_Add return Boolean is
-          begin
-            case Name.Kind_Of (Item) is
-            when Name.Moon =>
-              return Is_To_Add (User.Solar_System, Moon.Direction_Of (Item, Ut));
-            when Name.Sun | Name.Planet =>
-              return Is_To_Add (User.Solar_System, Solar_System.Direction_Of (Item, Ut));
-            when Name.Small_Solar_System_Body =>
-              return Is_To_Add (User.Solar_System, Sssb.Direction_Of (Item, Ut));
-            when Name.Landmark =>
-              return True;
-            when Name.Near_Earth_Object =>
-              Log.Warning ("NEOs not supported");
-              return False;
-            when Name.Sky_Object =>
-              declare
-                Object : constant Data.Object := Name.Object_Of (Item);
-              begin
-                case Data.Type_Of (Object) is
-                when Data.Landmark  =>
-                  raise Program_Error;
-                when Data.Quasar  =>
-                  return Is_To_Add (User.Galaxies, Data.Direction_Of (Object, Ut));
-                when Data.Galaxy  =>
-                  return Is_To_Add (User.Galaxies, Data.Direction_Of (Object, Ut));
-                when Data.Nebula  =>
-                  return Is_To_Add (User.Nebulas, Data.Direction_Of (Object, Ut));
-                when Data.Cluster =>
-                  return Is_To_Add (User.Clusters, Data.Direction_Of (Object, Ut));
-                when Data.Stars =>
-                  return Is_To_Add (User.Open_Clusters, Data.Direction_Of (Object, Ut));
-                when Data.Double =>
-                  return Is_To_Add (User.Multiple_Stars, Data.Direction_Of (Object, Ut));
-                when Data.Star =>
-                  return Is_To_Add (User.Stars, Data.Direction_Of (Object, Ut));
-                when Data.Satellite =>
-                  raise Program_Error;
-                when Data.Unknown =>
-                  return False;
-                end case;
-              end;
-            end case;
-          end Is_To_Add;
-
-        begin
-          if Name.Visibility_Changed_For (Item, Is_To_Add) then
-            The_Changes := The_Changes + 1;
-          end if;
-        end;
-      end loop;
-      if New_List or (The_Changes > 10) then
-        New_List := False;
-        User.Clear_Targets;
-        Name.Clear_History_For (The_Targets);
-        User.Define (The_Targets'unrestricted_access);
-      else
-        User.Update_Targets;
-      end if;
-    end Define_Targets;
-
-  begin -- Target_Handler
-    loop
-      select
-        accept Define_Catalog;
-        User.Clear_Targets;
-        The_Targets := Name.Actual_List;
-        New_List := True;
-        Define_Targets;
-      or
-        accept Update;
-        Define_Targets;
-      or
-        accept Get_For (Target_Name : String;
-                        Target_Id   : out Name.Id)
-        do
-          Target_Id := Name.Item_Of (The_Targets, Target_Name);
-        end Get_For;
-      or
-        accept Stop;
-        exit;
-      or delay 10.0;
-        Define_Targets;
-      end select;
-    end loop;
-    Log.Write ("target handler end");
-  exception
-  when Occurrence: others =>
-    Log.Termination (Occurrence);
-  end Target_Handler;
-
-
   task type Manager is
   end Manager;
-
 
   type Command is (Define_Catalog,
                    Define_Target,
@@ -226,8 +88,15 @@ package body Control is
 
 
   procedure Goto_Handler (The_Direction : Space.Direction) is
+    The_Target : Name.Id;
+    use type Name.Id;
   begin
-    Action_Handler.Put_Goto (The_Direction);
+    Targets.Get_For (The_Direction, The_Target);
+    if The_Target = Name.No_Id then
+      Action_Handler.Put_Goto (The_Direction);
+    else
+      User.Set (The_Target);
+    end if;
   end Goto_Handler;
 
 
@@ -385,10 +254,6 @@ package body Control is
 
   task body Manager is
 
-    type Target_Access is access Target_Handler;
-
-    Targets : constant Target_Access := new Target_Handler;
-
     The_Command : Command;
 
     The_Data : Telescope.Data;
@@ -473,7 +338,7 @@ package body Control is
       when Define_Catalog =>
         Targets.Define_Catalog;
       when Update =>
-        Targets.Update;
+        Targets.Update_List;
       when Define_Target =>
         declare
           The_Item : Name.Id;
@@ -511,10 +376,10 @@ package body Control is
         end;
       when Start =>
         Telescope.Start;
-        Targets.Update;
+        Targets.Update_List;
       when Initialize =>
         Telescope.Initialize;
-        Targets.Update;
+        Targets.Update_List;
       when Align =>
         Telescope.Align;
       when Synch =>
@@ -620,6 +485,9 @@ package body Control is
       User.Show_Error;
     end;
     Telescope.Start (Information_Update_Handler'access);
+    Targets.Start (Clear  => User.Clear_Targets'access,
+                   Define => User.Define'access,
+                   Update => User.Update_Targets'access);
     User.Execute (Startup'access,
                   User_Action_Handler'access,
                   Termination'access);

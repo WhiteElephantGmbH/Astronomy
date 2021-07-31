@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2019 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2019 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -95,12 +95,11 @@ package Telescope is
     Time_Adjustment        : Time_Delta;
   end record;
 
-  type Get_Space_Access is access function (Id : Name.Id;
-                                            Ut : Time.Ut) return Space.Direction;
-
   type Information_Update_Handler is access procedure;
 
   procedure Start (Update_Handler : Information_Update_Handler);
+
+  type Get_Space_Access is new Name.Get_Space_Access;
 
   procedure Define_Space_Access (Get_Direction : Get_Space_Access;
                                  The_Id        : Name.Id);

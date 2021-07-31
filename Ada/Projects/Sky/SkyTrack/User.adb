@@ -42,6 +42,7 @@ with Sky_Line;
 with Site;
 with Space;
 with Strings;
+with Targets;
 with Time;
 with Traces;
 with User.Input;
@@ -198,6 +199,10 @@ package body User is
   end Set_Target_Name;
 
 
+  use all type Targets.Selection;
+  subtype Selection is Targets.Selection;
+
+
   function Image_Of (The_Selection : Selection) return String is
 
     type Names is array (Selection) of Lexicon.Word;
@@ -217,12 +222,11 @@ package body User is
 
   package Selection_Menu is new Gui.Enumeration_Menu_Of (Selection, Gui.Radio, Image_Of);
 
-  Actual_Selection : Selection;
 
   procedure Selection_Handler (The_Filter : Selection) is
   begin
     Log.Write ("Filter: " & The_Filter'img);
-    Actual_Selection := The_Filter;
+    Targets.Set (The_Selection => The_Filter);
     Signal_Action (Update);
   exception
   when others =>
@@ -697,28 +701,18 @@ package body User is
   end Show;
 
 
+  procedure Set (The_Target : Name.Id) is
+  begin
+    Set_Target_Name (Name.Image_Of (The_Target));
+    Signal_Action (Define_Target);
+    Perform_Goto;
+  end Set;
+
+
   procedure Clear_Target is
   begin
     Set_Target_Name ("");
   end Clear_Target;
-
-
-  function Is_Selected (The_Object : Object) return Boolean is
-  begin
-    case Actual_Selection is
-    when All_Objects =>
-      return True;
-    when Stars =>
-      case The_Object is
-      when Stars | Multiple_Stars  =>
-        return True;
-      when others =>
-        return False;
-      end case;
-    when others =>
-      return The_Object = Actual_Selection;
-    end case;
-  end Is_Selected;
 
 
   function Identifier_Of (Item : String) return String is
@@ -1712,7 +1706,7 @@ package body User is
 
     begin -- Create_Interface
       Selection_Menu.Create (Lexicon.Image_Of (Lexicon.Selection), Selection_Handler'access);
-      Actual_Selection := All_Objects;
+      Targets.Set (The_Selection => All_Objects);
       Catalog_Menu.Create (Lexicon.Image_Of (Lexicon.Catalog), Catalog_Handler'access);
       Catalog_Handler (Data.Favorites);
       Define_Control_Page;
@@ -1736,8 +1730,8 @@ package body User is
       Gui.Show;
       The_Startup_Handler.all;
     exception
-    when others =>
-      Log.Error ("Create_Interface failed");
+    when Item: others =>
+      Log.Termination (Item);
     end Create_Interface;
 
 
@@ -1785,9 +1779,9 @@ package body User is
   end Clear_Targets;
 
 
-  procedure Define (Targets : Name.Id_List_Access) is
+  procedure Define (New_Targets : Name.Id_List_Access) is
   begin
-    The_Targets := Targets;
+    The_Targets := New_Targets;
     Gui.Set_Title (The_Targets_Column, Image_Of (The_Targets.Kind));
     Gui.Add_To (Display, 1, Gui.No_Information);
     Update_Targets;

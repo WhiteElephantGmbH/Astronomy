@@ -38,15 +38,13 @@ package User is
 
   type Action_Handler is access procedure (The_Action : Action);
 
-  type Selection is (All_Objects, Solar_System, Clusters, Open_Clusters, Nebulas, Galaxies, Stars, Multiple_Stars);
-
-  subtype Object is Selection range Selection'succ(Selection'first) .. Selection'last;
-
   type Setup_Object is (Skyline, Pole_Top, Pole_Left, Pole_Right);
 
   procedure Show_Error (The_Text : String := Error.Message);
 
   procedure Show (Information : Telescope.Data);
+
+  procedure Set (The_Target : Name.Id);
 
   procedure Clear_Target;
 
@@ -62,7 +60,7 @@ package User is
 
   procedure Clear_Targets;
 
-  procedure Define (Targets : Name.Id_List_Access);
+  procedure Define (New_Targets : Name.Id_List_Access);
 
   procedure Update_Targets;
 
@@ -75,7 +73,5 @@ package User is
   function Target_Name return String;
 
   procedure Show_Description (Image : String);
-
-  function Is_Selected (The_Object : Object) return Boolean;
 
 end User;

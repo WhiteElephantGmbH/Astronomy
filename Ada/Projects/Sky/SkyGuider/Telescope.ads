@@ -41,14 +41,13 @@ package Telescope is
     Universal_Time     : Time.Ut;
   end record;
 
-  type Get_Space_Access is access function (Id : Name.Id;
-                                            Ut : Time.Ut) return Space.Direction;
-
   type Information_Update_Handler is access procedure;
 
   procedure Start (Update_Handler : Information_Update_Handler);
 
   procedure Start;
+
+  type Get_Space_Access is new Name.Get_Space_Access;
 
   procedure Define_Space_Access (Get_Direction : Get_Space_Access;
                                  The_Id        : Name.Id);
