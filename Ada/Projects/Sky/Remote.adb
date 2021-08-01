@@ -15,6 +15,7 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with Ada.Exceptions;
 with Network.Tcp;
 with Parameter;
 with Traces;
@@ -48,7 +49,9 @@ package body Remote is
   exception
   when Network.Not_Found
     |  Network.Host_Error
-    |  Network.Tcp.No_Client =>
+    |  Network.Tcp.No_Client
+    |  Network.Timeout
+    |  Network.Transmission_Error =>
     begin
       Network.Tcp.Close (The_Socket);
     exception
@@ -57,8 +60,7 @@ package body Remote is
     end;
     Log.Warning ("server not found");
   when Occurrence: others =>
-    Log.Error (Network.Net.Resolve_Exception (Occurrence)'img);
-    Log.Termination (Occurrence);
+    Log.Error (Ada.Exceptions.Exception_Name (Occurrence) & ": " & Network.Net.Resolve_Exception (Occurrence)'img);
   end Send;
 
 

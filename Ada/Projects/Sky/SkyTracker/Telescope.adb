@@ -744,6 +744,16 @@ package body Telescope is
   --==  States ==
   --=============
 
+    procedure Set_Tracking is
+    begin
+      if Is_Fast_Tracking then
+        The_State := Following;
+      else
+        The_State := Tracking;
+      end if;
+    end Set_Tracking;
+
+
     function Mount_Startup_State (The_Startup_Event : Mount_Startup) return State is
     begin
       case The_Startup_Event is
@@ -775,7 +785,7 @@ package body Telescope is
       when Mount_Approaching =>
         The_State := Approaching;
       when Mount_Tracking =>
-        The_State := Tracking;
+        Set_Tracking;
       when others =>
         Mount.Stop;
         The_State := Disconnected;
@@ -799,7 +809,7 @@ package body Telescope is
       when Mount_Approaching =>
         The_State := Approaching;
       when Mount_Tracking =>
-        The_State := Tracking;
+        Set_Tracking;
       when others =>
         Mount.Stop;
       end case;
@@ -1006,7 +1016,7 @@ package body Telescope is
       when Mount_Approaching =>
         The_State := Approaching;
       when Mount_Tracking =>
-        The_State := Tracking;
+        Set_Tracking;
       when Position =>
         Do_Position;
       when Shutdown =>
@@ -1037,7 +1047,7 @@ package body Telescope is
       when Mount_Approaching =>
         The_State := Approaching;
       when Mount_Tracking =>
-        The_State := Tracking;
+        Set_Tracking;
       when others =>
         null;
       end case;
@@ -1139,7 +1149,7 @@ package body Telescope is
       when Mount_Approaching =>
         The_State := Approaching;
       when Mount_Tracking =>
-        The_State := Tracking;
+        Set_Tracking;
       when Halt =>
         The_State := Stopped;
       when Follow =>
@@ -1182,7 +1192,7 @@ package body Telescope is
             end if;
           end;
         else
-          The_State := Tracking;
+          Set_Tracking;
         end if;
       when Halt =>
         Stop_Target;
@@ -1412,10 +1422,10 @@ package body Telescope is
           case The_State is
           when Approaching =>
             if The_Completion_Time < Time.Universal then
-              The_State := Tracking;
+              Set_Tracking;
             end if;
             Update_Target_Position;
-          when Tracking =>
+          when Is_Tracking =>
             Update_Target_Position;
           when Preparing =>
             Update_Preparing_Position;
@@ -1446,7 +1456,7 @@ package body Telescope is
           when Preparing     => Preparing_State;
           when Waiting       => Waiting_State;
           when Approaching   => Approaching_State;
-          when Tracking      => Tracking_State;
+          when Is_Tracking   => Tracking_State;
           end case;
           Has_New_Data := True;
         end if;

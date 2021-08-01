@@ -256,7 +256,7 @@ package body Control is
       | Telescope.Positioned
       | Telescope.Positioning
       | Telescope.Preparing
-      | Telescope.Tracking
+      | Telescope.Is_Tracking
       | Telescope.Waiting =>
         User.Perform_Goto;
       when others =>
@@ -316,7 +316,7 @@ package body Control is
       | Telescope.Positioning
       | Telescope.Preparing
       | Telescope.Approaching
-      | Telescope.Tracking
+      | Telescope.Is_Tracking
       | Telescope.Waiting =>
         Lx200_Server.Set (The_Data.Actual_Direction);
         Stellarium.Set (The_Data.Actual_Direction);

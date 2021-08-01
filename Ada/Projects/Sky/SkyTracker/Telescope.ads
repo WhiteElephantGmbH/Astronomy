@@ -69,7 +69,10 @@ package Telescope is
                  Preparing,
                  Waiting,
                  Approaching,
+                 Following,
                  Tracking);
+
+  subtype Is_Tracking is State range Following .. Tracking;
 
   subtype Startup_State is State range Unknown .. Initializing;
 

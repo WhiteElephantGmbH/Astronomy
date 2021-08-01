@@ -540,7 +540,7 @@ package body User is
       when Telescope.Positioned | Telescope.Waiting =>
         Enable_Stop_Button;
         Enable_Goto_Button;
-      when Telescope.Positioning | Telescope.Preparing | Telescope.Approaching | Telescope.Tracking =>
+      when Telescope.Positioning | Telescope.Preparing | Telescope.Approaching | Telescope.Is_Tracking =>
         Enable_Goto_Button;
         Enable_Stop_Button;
         Menu_Disable;
