@@ -103,7 +103,9 @@ package body Targets is
 
   task body Handler is
 
-    The_Targets          : aliased Name.Id_List;
+    The_Targets : aliased Name.Id_List;
+    New_List    : Boolean := False;
+
     The_Actual_Selection : Selection;
 
     function Is_Selected (The_Objects : Objects) return Boolean is
@@ -124,7 +126,7 @@ package body Targets is
     end Is_Selected;
 
 
-    procedure Define_Targets (New_List : Boolean := False) is
+    procedure Define_Targets is
 
       function Is_Visible (Direction : Space.Direction) return Boolean is
       begin
@@ -143,9 +145,6 @@ package body Targets is
       Ut : constant Time.Ut := Time.Universal;
 
     begin -- Define_Targets
-      if not Site.Is_Defined then
-        return;
-      end if;
       for Index in The_Targets.Ids'first .. The_Targets.Last loop
         declare
 
@@ -201,6 +200,7 @@ package body Targets is
         end;
       end loop;
       if New_List or (The_Changes > 10) then
+        New_List := False;
         Clear.all;
         Name.Clear_History_For (The_Targets);
         Define (The_Targets'unchecked_access);
@@ -216,14 +216,22 @@ package body Targets is
         accept Define_Catalog;
         Clear.all;
         The_Targets := Name.Actual_List;
-        Define_Targets (New_List => True);
+        New_List := True;
+        if Site.Is_Defined then
+          Define_Targets;
+        end if;
       or
         accept Set (The_Selection : Selection) do
           The_Actual_Selection := The_Selection;
         end Set;
       or
         accept Update_List;
-        Define_Targets;
+        if Site.Is_Defined then
+          Define_Targets;
+        else
+          New_List := True;
+          Clear.all;
+        end if;
       or
         accept Get_For (Target_Name :     String;
                         Target_Id   : out Name.Id)
@@ -240,7 +248,9 @@ package body Targets is
         accept Stop;
         exit;
       or delay 10.0;
-        Define_Targets;
+        if Site.Is_Defined then
+          Define_Targets;
+        end if;
       end select;
     end loop;
     Log.Write ("handler end");

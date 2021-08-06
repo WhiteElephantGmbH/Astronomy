@@ -383,7 +383,11 @@ package body User is
       Gui.Set_Status_Line (Information.Status'img);
     end if;
     if Space.Direction_Is_Known (Information.Actual_Direction) then
-      The_Actual_Direction := Objects.Direction_Of (Information.Actual_Direction, Time.Lmst);
+      if Site.Is_Defined then
+        The_Actual_Direction := Objects.Direction_Of (Information.Actual_Direction, Time.Lmst);
+      else
+        The_Actual_Direction := Earth.Unknown_Direction;
+      end if;
     end if;
     case The_Page is
     when Is_Control =>
@@ -669,6 +673,7 @@ package body User is
       Clear_Error;
     when Telescope.Disconnected | Telescope.Connected | Telescope.Initialized =>
       Site.Clear;
+      Targets.Update_List;
       Gui.Disable (Clear_Button);
     when others =>
       case The_Setup_Object is
