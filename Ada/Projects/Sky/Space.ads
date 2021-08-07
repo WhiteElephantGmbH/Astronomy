@@ -20,7 +20,7 @@ with Angle;
 package Space is
 
   type Direction is private;
-  
+
   subtype Distance is Angle.Degrees;
 
   Unknown_Direction : constant Direction;
@@ -44,6 +44,8 @@ package Space is
 
   function Ra_Image_Of (The_Direction : Direction) return String with Inline;
 
+  function Image_Of (The_Direction : Direction) return String;
+
   function Dec_Offset_Image_Of (The_Direction : Direction) return String with Inline;
 
   function Ra_Offset_Image_Of (The_Direction : Direction) return String with Inline;
@@ -53,7 +55,7 @@ package Space is
   function "-" (Left, Right : Direction) return Direction;
 
   function "<" (Left  : Direction;
-                Right : Distance) return Boolean; -- 
+                Right : Distance) return Boolean;
 
 private
 

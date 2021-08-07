@@ -275,13 +275,24 @@ package body Name is
                              Distance     : Space.Distance) return Boolean is
           use type Space.Direction;
         begin
-          return Is_Visible (Item) and then (Direction - Direction_Of (Item, Time.Universal)) < Distance;
+          if Is_Visible (Item) then
+            declare
+              List_Direction : constant Space.Direction := Direction_Of (Item, Time.Universal);
+            begin
+              if (Direction - List_Direction) < Distance then
+                Log.Write ("Found: in list: " & Space.Image_Of (List_Direction));
+                Log.Write ("       actual : " & Space.Image_Of (Direction));
+                return True;
+              end if;
+            end;
+          end if;
+          return False;
         end Found_Item;
 
       begin
         case Kind_Of (Item) is
         when Sky_Object =>
-          if Found_Item (Direction_Of'access, Distance => 0.01) then
+          if Found_Item (Direction_Of'access, Distance => 0.03) then
             return Item;
           end if;
         when Moon =>

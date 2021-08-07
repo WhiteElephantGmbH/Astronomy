@@ -69,6 +69,12 @@ package body Space is
   end Ra_Image_Of;
 
 
+  function Image_Of (The_Direction : Direction) return String is
+  begin
+    return "- Ra: " & Ra_Image_Of (The_Direction) & " - Dec: " & Dec_Image_Of (The_Direction);
+  end Image_Of;
+
+
   function Dec_Offset_Image_Of (The_Direction : Direction) return String is
   begin
     return Angle.Image_Of (The_Direction.Dec, Show_Signed => True);
