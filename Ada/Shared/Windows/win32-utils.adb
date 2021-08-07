@@ -17,8 +17,6 @@
 --
 -------------------------------------------------------------------------------
 
-with Interfaces;
-
 package body Win32.Utils is
    use Interfaces;
 

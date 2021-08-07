@@ -362,7 +362,7 @@ package body Telescope is
             if Aligning_Enabled then
               Synch_On_Picture;
             else
-              M_Zero.Synch_To (Actual_Target_Direction);
+              M_Zero.Synch_To (Actual_Target_Direction, Target_Kind);
             end if;
           end Synch;
         or

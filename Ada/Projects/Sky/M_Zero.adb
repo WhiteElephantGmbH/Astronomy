@@ -26,7 +26,8 @@ package body M_Zero is
   Product_Name    : constant String := "Avalon";
   Firmware_Number : constant String := "65.6";
 
-  Receive_Timeout : constant Duration := 5.0;
+  Receive_Timeout   : constant Duration := 1.0;
+  Number_Of_Retries : constant := 3;
 
   -- LX200 command extesions
 
@@ -56,6 +57,7 @@ package body M_Zero is
       null;
     end case;
     The_Status := Item;
+    Log.Write ("Status: " & Item'image);
   end Set_Status;
 
 
@@ -231,67 +233,72 @@ package body M_Zero is
     Log_Enabled : constant Boolean := not (Command in Get_Declination | Get_Right_Ascension);
 
   begin
-    Send (String_Of (Command, Parameter), Log_Enabled);
-    case Command is
-    when Slew =>
-      declare
-        Reply : constant String := Received_String (Log_Enabled);
+    for Unused_Count in 1 .. Number_Of_Retries loop
+      Send (String_Of (Command, Parameter), Log_Enabled);
       begin
-        if Reply = "0" then
-          Set_Status (Approaching);
-        end if;
-        return Reply;
+        case Command is
+        when Slew =>
+          declare
+            Reply : constant String := Received_String (Log_Enabled);
+          begin
+            if Reply = "0" then
+              Set_Status (Approaching);
+            end if;
+            return Reply;
+          end;
+        when Set_Alt_Az_Alignment
+           | Set_Polar_Alignment
+           | Set_Centering_Rate
+           | Set_Guiding_Rate
+           | Set_Finding_Rate
+           | Set_Slewing_Rate
+           | Move_North
+           | Move_South
+           | Move_East
+           | Move_West
+           | Quit_Move_North
+           | Quit_Move_South
+           | Quit_Move_East
+           | Quit_Move_West
+           | Quit_Move
+        =>
+          return "";
+        when Set_Local_Time
+           | Set_Time_Offset
+           | Set_Altitude
+           | Set_Azimuth
+           | Set_Right_Ascension
+           | Set_Declination
+        =>
+          return Received_Character;
+        when Get_Product_Name
+           | Get_Firmware_Number
+           | Get_Firmware_Date
+           | Get_Alignment_Status
+           | Get_Latitude
+           | Get_Longitude
+           | Get_Sideral_Time
+           | Get_Right_Ascension
+           | Get_Altitude
+           | Get_Azimuth
+           | Get_Declination
+           | Set_Latitude
+           | Set_Longitude
+           | Synchronize
+        =>
+          return Received_String (Log_Enabled);
+        end case;
+      exception
+      when Error_Set =>
+        raise;
+      when Network.Timeout =>
+        Log.Warning ("Reply timeout");
+      when Item: others =>
+        Log.Termination (Item);
+        Disconnect_Device ("Reply - unknown error");
       end;
-    when Set_Alt_Az_Alignment
-       | Set_Polar_Alignment
-       | Set_Centering_Rate
-       | Set_Guiding_Rate
-       | Set_Finding_Rate
-       | Set_Slewing_Rate
-       | Move_North
-       | Move_South
-       | Move_East
-       | Move_West
-       | Quit_Move_North
-       | Quit_Move_South
-       | Quit_Move_East
-       | Quit_Move_West
-       | Quit_Move
-    =>
-      return "";
-    when Set_Local_Time
-       | Set_Time_Offset
-       | Set_Altitude
-       | Set_Azimuth
-       | Set_Right_Ascension
-       | Set_Declination
-    =>
-      return Received_Character;
-    when Get_Product_Name
-       | Get_Firmware_Number
-       | Get_Firmware_Date
-       | Get_Alignment_Status
-       | Get_Latitude
-       | Get_Longitude
-       | Get_Sideral_Time
-       | Get_Right_Ascension
-       | Get_Altitude
-       | Get_Azimuth
-       | Get_Declination
-       | Set_Latitude
-       | Set_Longitude
-       | Synchronize
-    =>
-      return Received_String (Log_Enabled);
-    end case;
-  exception
-  when Error_Set =>
-    raise;
-  when Network.Timeout =>
+    end loop;
     Disconnect_Device ("Reply timeout");
-  when Item: others =>
-    Log.Termination (Item);
-    Disconnect_Device ("Reply - unknown error");
   end Reply_For;
 
 

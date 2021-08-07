@@ -30,7 +30,7 @@ package body Stdarg.Impl is
          return null;
       end if;
 
-      return Args.Contents.Vector (1)'Access;
+      return Args.Contents.Vector (1)'access;
    end Address_of_Arg;
 
    function Address_of_First_Arg (Args : ArgList) return Param_Access is
@@ -62,7 +62,7 @@ package body Stdarg.Impl is
       Left_Index  := Left.Contents.CurrentArgs + 1;
       Right_Index := 1;
 
-      for I in 1 .. Right.Contents.CurrentArgs loop
+      for Unused_Count in 1 .. Right.Contents.CurrentArgs loop
          Left.Contents.Vector (Left_Index) :=
            Right.Contents.Vector (Right_Index);
          Left_Index := Left_Index + 1;
