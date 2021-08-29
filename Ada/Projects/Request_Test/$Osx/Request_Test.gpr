@@ -1,0 +1,46 @@
+with "aws";
+
+project Request_Test is
+
+   package Naming is
+      for Casing use "mixedcase"; 
+   end Naming;
+
+   for Source_Dirs use ("../../../Projects/Request_Test",
+                        "../../../Projects",
+                        "../../../Shared",
+                        "../../../Shared/Osx");
+                        
+   for Main use ("Request_Test.adb");
+
+   for Exec_Dir use external ("HOME") & "/Product/Astronomy/Osx";
+
+   for Object_Dir use external ("HOME") & "/Objects/Request_Test";
+
+
+   package Pretty_Printer is
+      for Default_Switches ("ada") use ("-i2", "-M120", "-aL", "-A1", "-A4");
+   end Pretty_Printer;
+
+   package Builder is
+      for Default_Switches ("ada") use ("-s", "-g");
+      for Executable ("Request_Test.adb") use "Request_Test";
+   end Builder;
+
+   package Compiler is
+      for Default_Switches ("ada") use
+         ("-O1", "-gnatQ", "-gnata", "-gnato", "-g", "-gnat12",
+          "-gnatwceGhijkmopruvz.c.N.p.t.w.x", "-gnatykmpM120");
+   end Compiler;
+
+   package Binder is
+      for Default_Switches ("ada") use ("-E");
+   end Binder;
+
+   package Linker is
+      for Linker_Options use ();
+      for Default_Switches ("ada") use ("-g",
+                                        "-Wl,-headerpad_max_install_names");
+   end Linker;
+
+end Request_Test;
