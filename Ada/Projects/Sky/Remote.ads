@@ -22,4 +22,8 @@ package Remote is
   procedure Define (Target : String;
                     State  : Telescope.State);
 
+  type Command is (Generate);
+
+  procedure Execute (The_Command : Command);
+
 end Remote;

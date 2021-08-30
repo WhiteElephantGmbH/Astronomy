@@ -15,52 +15,67 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Ada.Exceptions;
-with Network.Tcp;
+with AWS.Client;
+with AWS.Response;
+with Network;
 with Parameter;
+with Persistent_String;
+with Strings;
 with Traces;
 
 package body Remote is
 
   package Log is new Traces ("Remote");
 
+  package Persistent_Key is new Persistent_String ("Remote_Key");
+
+  Remote_Key : Persistent_Key.Data;
+
+  function Actual_Key return String is
+  begin
+    if Remote_Key.Item = "" then
+      Remote_Key.Store ("ZzRW8sYHdHrgZGG3");
+    end if;
+    return Remote_Key.Item;
+  end Actual_Key;
+
+  Key : constant String := Actual_Key;
+
   Is_Tracking : Boolean := False;
 
 
   procedure Send (Info : String) is
-    The_Socket : Network.Tcp.Socket;
-  begin
-    Log.Write (Info);
-    The_Socket := Network.Tcp.Socket_For (The_Address     => Parameter.Remote_Address,
-                                          The_Port        => Parameter.Remote_Port,
-                                          The_Protocol    => Network.Tcp.LE16_Included,
-                                          Receive_Timeout => 0.1);
-    Network.Tcp.Send (Info, The_Socket);
+
+    Telescope_Name : constant String := Parameter.Telescope_Name;
+    Remote_Address : constant String := Network.Image_Of (Parameter.Remote_Address);
+    Remote_Port    : constant String := Network.Image_Of (Parameter.Remote_Port);
+    Parameters     : constant String := "?tele=" & Telescope_Name & "&target=" & Info;
+    URL            : constant String := "http://" & Remote_Address & ':' & Remote_Port & '/' & Key & Parameters;
+
+  begin -- Send
+    Log.Write ("Send " & Info & " from " & Telescope_Name);
+    Log.Write ("URL: " & URL);
     declare
-      Reply : constant String := Network.Tcp.String_From (The_Socket);
+      Response : constant String := AWS.Response.Message_Body (AWS.Client.Get (URL));
     begin
-      if Reply = Info then
-        Log.Write ("information accepted");
+      if Response = "ok" then
+        Log.Write ("Information accepted");
       else
-        Log.Error ("bad reply for " & Info & ": " & Reply );
+        declare
+          Last : Natural := Strings.Location_Of ("Call stack", Response);
+        begin
+          if Last = Strings.Not_Found then
+            Last := Response'last;
+          else
+            Last := Last - 1;
+          end if;
+          Log.Write (Strings.Trimmed (Response(Response'first .. Last)));
+        end;
       end if;
     end;
-    Network.Tcp.Close (The_Socket);
   exception
-  when Network.Not_Found
-    |  Network.Host_Error
-    |  Network.Tcp.No_Client
-    |  Network.Timeout
-    |  Network.Transmission_Error =>
-    begin
-      Network.Tcp.Close (The_Socket);
-    exception
-    when others =>
-      null;
-    end;
-    Log.Warning ("server not found");
   when Occurrence: others =>
-    Log.Error (Ada.Exceptions.Exception_Name (Occurrence) & ": " & Network.Net.Resolve_Exception (Occurrence)'img);
+    Log.Termination (Occurrence);
   end Send;
 
 
@@ -69,16 +84,25 @@ package body Remote is
     use type Telescope.State;
   begin
     if Is_Tracking then
-      if State /= Telescope.Tracking then
-        Send (Parameter.Telescope_Name);
+      if not (State in Telescope.Tracking | Telescope.Positioned) then
+        Send ("");
         Is_Tracking := False;
       end if;
     else
-      if State = Telescope.Tracking then
-        Send (Parameter.Telescope_Name & ":" & Target);
+      if State in Telescope.Tracking | Telescope.Positioned then
+        Send (Target);
         Is_Tracking := True;
       end if;
     end if;
   end Define;
+
+
+  procedure Execute (The_Command : Command) is
+  begin
+    case The_Command is
+    when Generate =>
+      Send ("QR-Code");
+    end case;
+  end Execute;
 
 end Remote;

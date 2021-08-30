@@ -92,7 +92,7 @@ package body Control is
     The_Target : Name.Id;
     use type Name.Id;
   begin
-    Targets.Get_For (The_Direction, The_Target);
+    Targets.Get_For (The_Direction, Stellarium.Search_Tolerance, The_Target);
     if The_Target = Name.No_Id then
       Action_Handler.Put_Goto (The_Direction);
     else

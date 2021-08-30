@@ -102,14 +102,26 @@ package body Space is
   end "-";
 
 
-  function "<" (Left  : Direction;
-                Right : Distance) return Boolean is
+  function "-" (Left, Right : Direction) return Distance is
+    Diff : constant Direction := Left - Right;
+    use type Angle.Value;
     use type Angle.Signed;
     use type Angle.Degrees;
   begin
-    return Left.Is_Known
-      and then Angle.Degrees'(+ abs Angle.Signed'(+Left.Dec)) < Right
-      and then Angle.Degrees'(+ abs Angle.Signed'(+Left.Ra)) < Right;
-  end "<";
+    if Diff.Is_Known then
+      declare
+        Left_Dec  : constant Angle.Degrees := + Left.Dec;
+        Delta_Dec : constant Angle.Degrees := + abs Angle.Signed'(+Diff.Dec);
+        Delta_Ra  : constant Angle.Degrees := + abs Angle.Signed'(+Diff.Ra);
+      begin
+        if Left_Dec > 88.0 then -- near Pole
+          return Angle.Degrees'max (Delta_Dec, Delta_Ra / 10.0);
+        else
+          return Angle.Degrees'max (Delta_Dec, Delta_Ra);
+        end if;
+      end;
+    end if;
+    return Angle.Degrees'last;
+  end "-";
 
 end Space;

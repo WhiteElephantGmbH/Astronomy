@@ -54,8 +54,8 @@ package Space is
 
   function "-" (Left, Right : Direction) return Direction;
 
-  function "<" (Left  : Direction;
-                Right : Distance) return Boolean;
+  function "-" (Left, Right : Direction) return Distance;
+  -- fast calculation for the maximum distance (RA or Dec) with a correction close to the Pole
 
 private
 

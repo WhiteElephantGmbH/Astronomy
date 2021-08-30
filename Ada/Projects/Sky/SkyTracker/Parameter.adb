@@ -63,8 +63,9 @@ package body Parameter is
   Remote_Id     : constant String := "Remote";
   Telescope_Key : constant String := "Telescope";
 
-  Stellarium_Id  : constant String := "Stellarium";
-  Magnitude_Key  : constant String := "Magnitude";
+  Stellarium_Id        : constant String := "Stellarium";
+  Search_Tolerance_Key : constant String := "Search Tolerance";
+  Magnitude_Key        : constant String := "Magnitude";
 
   The_Section : Configuration.Section_Handle;
 
@@ -90,8 +91,8 @@ package body Parameter is
   The_Remote_Port    : Network.Port_Number;
 
   --Stellarium
-  The_Stellarium_Port : Network.Port_Number;
-
+  The_Stellarium_Port  : Network.Port_Number;
+  The_Search_Tolerance : Space.Distance;
 
   procedure Set (Section : Configuration.Section_Handle) is
   begin
@@ -322,14 +323,15 @@ package body Parameter is
       Put (Port_Key & " = 4030");
       Put ("");
       Put ("[" & Remote_Id & "]");
-      Put (Telescope_Key & "  = CDK_Ost");
-      Put (Ip_Address_Key & " = 127.0.0.1");
-      Put (Port_Key & "       = 11001");
+      Put (Telescope_Key & "  = cdk_ost");
+      Put (Ip_Address_Key & " = 217.160.64.198");
+      Put (Port_Key & "       = 5000");
       Put ("");
       Put ("[" & Stellarium_Id & "]");
-      Put (Port_Key & "      = 10001");
-      Put (Program_Key & "   = " & Value ("ProgramFiles") & "\Stellarium\Stellarium.exe");
-      Put (Magnitude_Key & " = 8.0");
+      Put (Port_Key & "             = 10001");
+      Put (Program_Key & "          = " & Value ("ProgramFiles") & "\Stellarium\Stellarium.exe");
+      Put (Search_Tolerance_Key & " = 6'");
+      Put (Magnitude_Key & "        = 8.0");
       Ada.Text_IO.Close (The_File);
     exception
     when Error.Occurred =>
@@ -524,11 +526,13 @@ package body Parameter is
 
       Set (Remote_Handle);
       The_Telescope_Name := Text.String_Of (String_Of (Telescope_Key, Remote_Id));
+      Log.Write ("Telescope Name: " & Telescope_Name);
       The_Remote_Address := Ip_Address_For (Remote_Id);
       The_Remote_Port := Port_For (Remote_Id);
 
       Set (Stellarium_Handle);
       The_Stellarium_Port :=  Port_For (Stellarium_Id);
+      The_Search_Tolerance := Angle_Of (Search_Tolerance_Key);
       declare
         Image     : constant String := String_Value_Of (Magnitude_Key);
         Magnitude : Stellarium.Magnitude;
@@ -685,5 +689,11 @@ package body Parameter is
   begin
     return The_Stellarium_Port;
   end Stellarium_Port;
+
+
+  function Search_Tolerance return Space.Distance is
+  begin
+    return The_Search_Tolerance;
+  end Search_Tolerance;
 
 end Parameter;

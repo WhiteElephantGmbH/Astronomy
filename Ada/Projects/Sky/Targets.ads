@@ -24,7 +24,7 @@ package Targets is
                      Near_Earth_Objects);
 
   subtype Objects is Selection range Selection'succ(Selection'first) .. Selection'last;
-  
+
   procedure Start (Clear  : access procedure;
                    Define : access procedure (List : Name.Id_List_Access);
                    Update : access procedure);
@@ -39,6 +39,7 @@ package Targets is
                      Target_Id   : out Name.Id);
 
   procedure Get_For (The_Direction :     Space.Direction;
+                     Tolerance     :     Space.Distance;
                      Target_Id     : out Name.Id);
 
   procedure Stop;

@@ -264,22 +264,23 @@ package body Name is
   end Item_Of;
 
 
-  function Item_Of (List      : Id_List;
-                    Direction : Space.Direction) return Id is
+  function Item_Of (List             : Id_List;
+                    Direction        : Space.Direction;
+                    Search_Tolerance : Space.Distance) return Id is
   begin
     for Index in List.Ids'first .. List.Last loop
       declare
         Item : constant Id := List.Ids(Index);
 
-        function Found_Item (Direction_Of : Get_Space_Access;
-                             Distance     : Space.Distance) return Boolean is
+        function Found_Item (Direction_Of : Get_Space_Access) return Boolean is
           use type Space.Direction;
         begin
           if Is_Visible (Item) then
             declare
               List_Direction : constant Space.Direction := Direction_Of (Item, Time.Universal);
+              use type Angle.Degrees;
             begin
-              if (Direction - List_Direction) < Distance then
+              if (Direction - List_Direction) < Search_Tolerance then
                 Log.Write ("Found: in list: " & Space.Image_Of (List_Direction));
                 Log.Write ("       actual : " & Space.Image_Of (Direction));
                 return True;
@@ -292,19 +293,19 @@ package body Name is
       begin
         case Kind_Of (Item) is
         when Sky_Object =>
-          if Found_Item (Direction_Of'access, Distance => 0.03) then
+          if Found_Item (Direction_Of'access) then
             return Item;
           end if;
         when Moon =>
-          if Found_Item (Standard.Moon.Direction_Of'access, 0.1) then
+          if Found_Item (Standard.Moon.Direction_Of'access) then
             return Item;
           end if;
         when Name.Sun | Name.Planet =>
-          if Found_Item (Solar_System.Direction_Of'access, 0.1) then
+          if Found_Item (Solar_System.Direction_Of'access) then
             return Item;
           end if;
         when Name.Small_Solar_System_Body =>
-          if Found_Item (Sssb.Direction_Of'access, 0.1) then
+          if Found_Item (Sssb.Direction_Of'access) then
             return Item;
           end if;
         when others =>

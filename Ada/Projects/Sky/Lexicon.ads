@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2017 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2017 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -33,6 +33,7 @@ package Lexicon is
                 Fans,
                 Favorites,
                 Galaxies,
+                Generate,
                 Hubbles_Nebula,
                 Jupiter,
                 Mars,
@@ -48,6 +49,7 @@ package Lexicon is
                 Off,
                 On,
                 Open_Clusters,
+                Optic,
                 Orion_Nebula,
                 Park_Position,
                 Pluto,

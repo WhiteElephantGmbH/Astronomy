@@ -26,6 +26,8 @@ package Stellarium is
 
   type Magnitude is delta 0.1 range -30.0 .. 30.0;
 
+  Search_Tolerance : constant Angle.Degrees := 0.1;
+
   type Goto_Handler is access procedure (Direction : Space.Direction);
 
   procedure Set_Maximum (Item : Magnitude);

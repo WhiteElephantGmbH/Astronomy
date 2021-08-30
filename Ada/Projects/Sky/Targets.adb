@@ -43,6 +43,7 @@ package body Targets is
                    Target_Id   : out Name.Id);
 
     entry Get_For (The_Direction :     Space.Direction;
+                   Tolerance     :     Space.Distance;
                    Target_Id     : out Name.Id);
 
     entry Stop;
@@ -89,9 +90,10 @@ package body Targets is
 
 
   procedure Get_For (The_Direction :     Space.Direction;
+                     Tolerance     :     Space.Distance;
                      Target_Id     : out Name.Id) is
   begin
-    The_Handler.Get_For (The_Direction, Target_Id);
+    The_Handler.Get_For (The_Direction, Tolerance, Target_Id);
   end Get_For;
 
 
@@ -162,7 +164,7 @@ package body Targets is
             when Name.Near_Earth_Object =>
               return Is_Selected (Near_Earth_Objects) and then Neo.Is_Arriving (Item);
             when Name.Landmark =>
-              return True;
+              return The_Actual_Selection = All_Objects;
             when Name.Sky_Object =>
               declare
                 Object : constant Data.Object := Name.Object_Of (Item);
@@ -240,9 +242,10 @@ package body Targets is
         end Get_For;
       or
         accept Get_For (The_Direction :     Space.Direction;
+                        Tolerance     :     Space.Distance;
                         Target_Id     : out Name.Id)
         do
-          Target_Id := Name.Item_Of (The_Targets, The_Direction);
+          Target_Id := Name.Item_Of (The_Targets, The_Direction, Tolerance);
         end Get_For;
       or
         accept Stop;

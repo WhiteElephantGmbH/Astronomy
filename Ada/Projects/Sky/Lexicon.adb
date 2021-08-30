@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2017 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2017 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -58,6 +58,7 @@ package body Lexicon is
     Fans              => E ("Fans",              "Ventilateurs",             "Ventilatoren",       "Ανεμιστήρες",             "Fan",                         "Ventiladores"),
     Favorites         => E ("Favorites",         "Favoris",                  "Favoriten",          "Αγαπημένα",               "Preferiti",                   "Favoritos"),
     Galaxies          => E ("Galaxies",          "Galaxies",                 "Galaxien",           "Γαλαξίες",                "Galassie",                    "Galaxias"),
+    Generate          => E ("Generate",          "Produire",                 "Generieren",         "Παράγω",                  "Creare",                      "Generar"),
     Hubbles_Nebula    => E ("Hubble's nebula",   "Nébuleuse de Hubble",      "Hubbles Nebel",      "Νεφέλωμα του Hubble",     "Nebulosa di Hubble",          "Nebulosa Hubble"),
     Jupiter           => E ("Jupiter",           "Jupiter",                  "Jupiter",            "Δίας",                    "Giove",                       "Júpiter"),
     Mars              => E ("Mars",              "Mars",                     "Mars",               "Άρης",                    "Marte",                       "Marte"),
@@ -73,6 +74,7 @@ package body Lexicon is
     Off               => E ("Off",               "Off",                      "Aus",                "Off",                     "Off",                         "Off"),
     On                => E ("On",                "On",                       "Ein",                "On",                      "On",                          "On"),
     Open_Clusters     => E ("Open clusters",     "Amas ouverts",             "Offene Sternhaufen", "Ανοιχτά αστρικά σμήνη",   "Ammassi aperti",              "Cúmulos abiertos"),
+    Optic             => E ("Optic",             "Optique",                  "Optik",              "Οπτικός",                 "Ottica",                      "Óptica"),
     Orion_Nebula      => E ("Orion nebula",      "Nébuleuse d'Orion",        "Orionnebel",         "Νεφέλωμα του Ορίωνα",     "Nebulosa di Orione",          "Nebulosa de Orión"),
     Park_Position     => E ("Park position",     "Position de repos",        "Parkposition",       "θέση ανάπαυσης",          "Posizione riposo",            "Posición de reposo"),
     Pluto             => E ("Pluto",             "Pluton",                   "Pluto",              "Πλούτωνας",               "Plutone",                     "Plutón"),

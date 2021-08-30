@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2016 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2016 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -49,6 +49,8 @@ package Network is
   type Ip_Addresses is array (Positive range <>) of Ip_Address;
 
   function Image_Of (Addr : Ip_Address) return String renames Net.Image;
+
+  function Image_Of (Port : Port_Number) return String;
 
   function Ip_Address_Of (Dot_Notation : String) return Ip_Address renames Net.Inet_Addr;
 

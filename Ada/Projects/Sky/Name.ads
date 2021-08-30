@@ -74,8 +74,9 @@ package Name is
   function Item_Of (List  : Id_List;
                     Image : String) return Id;
 
-  function Item_Of (List      : Id_List;
-                    Direction : Space.Direction) return Id;
+  function Item_Of (List             : Id_List;
+                    Direction        : Space.Direction;
+                    Search_Tolerance : Space.Distance) return Id;
 
   function Is_Known (Item : Id) return Boolean;
 
