@@ -21,6 +21,7 @@ with Network;
 with Parameter;
 with Persistent_String;
 with Strings;
+with Text;
 with Traces;
 
 package body Remote is
@@ -41,7 +42,9 @@ package body Remote is
 
   Key : constant String := Actual_Key;
 
-  Is_Tracking : Boolean := False;
+  Session_Is_Active : Boolean := False;
+  Is_Tracking       : Boolean := False;
+  The_Actual_Target : Text.String;
 
 
   procedure Send (Info : String) is
@@ -79,19 +82,29 @@ package body Remote is
   end Send;
 
 
+  procedure Send_Actual_If_Session_Active is
+  begin
+    if Session_Is_Active then
+      Send (Text.String_Of (The_Actual_Target));
+    end if;
+  end Send_Actual_If_Session_Active;
+
+
   procedure Define (Target : String;
                     State  : Telescope.State) is
     use type Telescope.State;
   begin
     if Is_Tracking then
       if not (State in Telescope.Tracking | Telescope.Positioned) then
-        Send ("");
+        Text.Clear (The_Actual_Target);
         Is_Tracking := False;
+        Send_Actual_If_Session_Active;
       end if;
     else
       if State in Telescope.Tracking | Telescope.Positioned then
-        Send (Target);
+        The_Actual_Target := Text.String_Of (Target);
         Is_Tracking := True;
+        Send_Actual_If_Session_Active;
       end if;
     end if;
   end Define;
@@ -100,8 +113,15 @@ package body Remote is
   procedure Execute (The_Command : Command) is
   begin
     case The_Command is
-    when Generate =>
+    when Start_Session =>
+      Session_Is_Active := True;
+      Send ("Start");
+      Send_Actual_If_Session_Active;
+    when Generate_Qr_Code =>
       Send ("QR-Code");
+    when End_Session =>
+      Session_Is_Active := False;
+      Send ("End");
     end case;
   end Execute;
 

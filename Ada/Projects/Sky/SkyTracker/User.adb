@@ -312,20 +312,24 @@ package body User is
   function Image_Of (The_Command : Remote.Command) return String is
   begin
     case The_Command is
-    when Remote.Generate =>
-      return Lexicon.Image_Of (Lexicon.Generate);
+    when Remote.Start_Session =>
+      return Lexicon.Image_Of (Lexicon.Start);
+    when Remote.Generate_Qr_Code =>
+      return Lexicon.Image_Of (Lexicon.Qr_Code);
+    when Remote.End_Session =>
+      return Lexicon.Image_Of (Lexicon.Finish);
     end case;
   end Image_Of;
 
-  package Qr_Code_Menu is new Gui.Enumeration_Menu_Of (Remote.Command, Gui.Plain, Image_Of);
+  package Demo_21_Menu is new Gui.Enumeration_Menu_Of (Remote.Command, Gui.Plain, Image_Of);
 
-  procedure Qr_Code_Handler (The_Command : Remote.Command) is
+  procedure Demo_21_Handler (The_Command : Remote.Command) is
   begin
     Remote.Execute (The_Command);
   exception
   when others =>
-    Log.Error ("Qr_Code_Handler");
-  end Qr_Code_Handler;
+    Log.Error ("Demo_21_Handler");
+  end Demo_21_Handler;
 
 
   procedure Show_Error (The_Text : String := Error.Message) is
@@ -1247,7 +1251,7 @@ package body User is
       M3_Menu.Create (Lexicon.Image_Of (Lexicon.Optic), M3_Handler'access);
       Menu_Disable;
       Cwe_Menu.Create ("CWE", Cwe_Handler'access);
-      Qr_Code_Menu.Create ("QR-Code", Qr_Code_Handler'access);
+      Demo_21_Menu.Create ("Demo 21", Demo_21_Handler'access);
       Define_Control_Page;
       if Persistent_Setup.Storage_Is_Empty then
         The_Image_Orientation := Telescope.Correct;

@@ -22,7 +22,7 @@ package Remote is
   procedure Define (Target : String;
                     State  : Telescope.State);
 
-  type Command is (Generate);
+  type Command is (Start_Session, Generate_Qr_Code, End_Session);
 
   procedure Execute (The_Command : Command);
 
