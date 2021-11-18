@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2020 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2020 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,12 +15,17 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+pragma Build (Description => "GID test",
+              Version     => (1, 0, 0, 1),
+              Kind        => Console,
+              Icon        => False,
+              Compiler    => "GNAT\2021");
+
 with Alpha;
 with Ada.Exceptions;
 with Ada.Text_IO;
 
 procedure GID_Test is
-  pragma Linker_Options ("-mconsole");
 begin
   Ada.Text_IO.Put_Line ("GID Test");
   Ada.Text_IO.Put_Line ("========");

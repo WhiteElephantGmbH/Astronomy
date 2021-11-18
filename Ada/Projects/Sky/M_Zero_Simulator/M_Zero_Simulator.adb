@@ -3,8 +3,12 @@
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
-pragma Console_Application;
 
+pragma Build (Description => "M-Zero Simulator",
+              Version     => (1, 3, 0, 1),
+              Kind        => Console,
+              Icon        => False,
+              Compiler    => "GNAT\2021");
 with Test;
 
 procedure M_Zero_Simulator is

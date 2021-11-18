@@ -15,6 +15,11 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+pragma Build (Description => "Sky Guiding control program",
+              Version     => (1, 4, 0, 1),
+              Kind        => Windows,
+              Compiler    => "GNAT\2021");
+
 with Control;
 
 procedure SkyGuider is
