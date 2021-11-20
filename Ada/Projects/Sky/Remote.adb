@@ -42,7 +42,6 @@ package body Remote is
 
   Key : constant String := Actual_Key;
 
-  Session_Is_Active : Boolean := False;
   Is_Tracking       : Boolean := False;
   The_Actual_Target : Text.String;
 
@@ -52,7 +51,7 @@ package body Remote is
     Telescope_Name : constant String := Parameter.Telescope_Name;
     Remote_Address : constant String := Network.Image_Of (Parameter.Remote_Address);
     Remote_Port    : constant String := Network.Image_Of (Parameter.Remote_Port);
-    Parameters     : constant String := "?tele=" & Telescope_Name & "&target=" & Info;
+    Parameters     : constant String := "?tele=" & Telescope_Name & "&" & Info;
     URL            : constant String := "http://" & Remote_Address & ':' & Remote_Port & '/' & Key & Parameters;
 
   begin -- Send
@@ -82,12 +81,10 @@ package body Remote is
   end Send;
 
 
-  procedure Send_Actual_If_Session_Active is
+  procedure Send_Actual is
   begin
-    if Session_Is_Active then
-      Send (Text.String_Of (The_Actual_Target));
-    end if;
-  end Send_Actual_If_Session_Active;
+    Send ("target=" & Text.String_Of (The_Actual_Target));
+  end Send_Actual;
 
 
   procedure Define (Target : String;
@@ -98,30 +95,34 @@ package body Remote is
       if not (State in Telescope.Tracking | Telescope.Positioned) then
         Text.Clear (The_Actual_Target);
         Is_Tracking := False;
-        Send_Actual_If_Session_Active;
+        Send_Actual;
       end if;
     else
       if State in Telescope.Tracking | Telescope.Positioned then
         The_Actual_Target := Text.String_Of (Target);
         Is_Tracking := True;
-        Send_Actual_If_Session_Active;
+        Send_Actual;
       end if;
     end if;
   end Define;
 
 
   procedure Execute (The_Command : Command) is
-  begin
+
+    procedure Send_Command (Item : String) is
+    begin
+      Send ("command=" & Item);
+    end Send_Command;
+
+  begin -- Execute
     case The_Command is
     when Start_Session =>
-      Session_Is_Active := True;
-      Send ("Start");
-      Send_Actual_If_Session_Active;
+      Send_Command ("Start");
+      Send_Actual;
     when Generate_Qr_Code =>
-      Send ("QR-Code");
+      Send_Command ("QR-Code");
     when End_Session =>
-      Session_Is_Active := False;
-      Send ("End");
+      Send_Command ("End");
     end case;
   end Execute;
 

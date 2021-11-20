@@ -94,7 +94,7 @@ package body Lexicon is
     Solar_System      => E ("Solar system",      "Systèm solaire",           "Sonnensystem",       "Ηλιακό σύστημα",          "Sistema solare",              "Sistema solar"),
     South             => E ("S",                 "S",                        "S",                  "Ν",                       "S",                           "S"),
     Stars             => E ("Stars",             "Étoiles",                  "Sterne",             "Αστέρια",                 "Stelle",                      "Estrellas"),
-    Start             => E ("Start",             "Début",                    "Anfang",             "Έναρξη",                  "Inizio",                      "Principio"),
+    Start             => E ("Start",             "Début",                    "Start",              "Έναρξη",                  "Inizio",                      "Principio"),
     Sun               => E ("Sun",               "Soleil",                   "Sonne",              "Ἥλιος",                   "Sole",                        "Sol"),
     Target            => E ("Target",            "Cible",                    "Ziel",               "Στόχος",                  "Bersaglio",                   "Objetivo"),
     Uranus            => E ("Uranus",            "Uranus",                   "Uranus",             "Ουρανός",                 "Urano",                       "Urano"),
