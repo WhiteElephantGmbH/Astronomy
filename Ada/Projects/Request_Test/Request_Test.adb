@@ -5,11 +5,11 @@
 pragma Style_White_Elephant;
 
 pragma Build (Description => "Request test program",
-              Version     => (1, 0, 0, 1),
+              Version     => (1, 0, 0, 2),
               Kind        => Console,
               Icon        => False,
               Libraries   => ("AWS64"),
-              Compiler    => "GNAT\2021");
+              Compiler    => "GNATPRO\21.2");
 with Request;
 
 procedure Request_Test is

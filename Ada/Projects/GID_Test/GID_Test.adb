@@ -16,10 +16,10 @@
 pragma Style_White_Elephant;
 
 pragma Build (Description => "GID test",
-              Version     => (1, 0, 0, 1),
+              Version     => (1, 0, 0, 2),
               Kind        => Console,
               Icon        => False,
-              Compiler    => "GNAT\2021");
+              Compiler    => "GNATPRO\21.2");
 
 with Alpha;
 with Ada.Exceptions;
