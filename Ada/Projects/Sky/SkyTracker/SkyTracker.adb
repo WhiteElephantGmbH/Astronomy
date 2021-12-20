@@ -19,7 +19,7 @@ pragma Build (Description => "CDK700 Control Program",
               Version     => (2, 1, 0, 5),
               Kind        => Windows,
               Libraries   => ("AWS64"),
-              Compiler    => "GNATPRO\21.2");
+              Compiler    => "GNATPRO\22.0");
 
 with Control;
 

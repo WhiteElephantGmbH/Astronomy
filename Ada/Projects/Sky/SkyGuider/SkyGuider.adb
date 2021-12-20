@@ -18,7 +18,7 @@ pragma Style_White_Elephant;
 pragma Build (Description => "Sky Guiding control program",
               Version     => (1, 4, 0, 2),
               Kind        => Windows,
-              Compiler    => "GNATPRO\21.2");
+              Compiler    => "GNATPRO\22.0");
 
 with Control;
 

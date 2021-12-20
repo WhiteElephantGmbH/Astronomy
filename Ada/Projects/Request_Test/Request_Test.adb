@@ -9,7 +9,7 @@ pragma Build (Description => "Request test program",
               Kind        => Console,
               Icon        => False,
               Libraries   => ("AWS64"),
-              Compiler    => "GNATPRO\21.2");
+              Compiler    => "GNATPRO\22.0");
 with Request;
 
 procedure Request_Test is

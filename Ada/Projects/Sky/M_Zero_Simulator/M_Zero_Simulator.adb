@@ -8,7 +8,7 @@ pragma Build (Description => "M-Zero Simulator",
               Version     => (1, 3, 0, 2),
               Kind        => Console,
               Icon        => False,
-              Compiler    => "GNATPRO\21.2");
+              Compiler    => "GNATPRO\22.0");
 with Test;
 
 procedure M_Zero_Simulator is

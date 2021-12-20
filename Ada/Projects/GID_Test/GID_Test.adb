@@ -19,7 +19,7 @@ pragma Build (Description => "GID test",
               Version     => (1, 0, 0, 2),
               Kind        => Console,
               Icon        => False,
-              Compiler    => "GNATPRO\21.2");
+              Compiler    => "GNATPRO\22.0");
 
 with Alpha;
 with Ada.Exceptions;
