@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2002 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2002 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -117,7 +117,7 @@ package Strings is
   --    capitalized, otherwise the string is reduced to lowercase.
 
   function Reduced (The_String : String) return String;
-  -- Function to return a "reduces" version of the supplied string.
+  -- Function to return a "reduced" version of the supplied string.
   --    white_spaces :== {<cr> | <lf> | <tab> | space}.
   --    Leading & trailing white_spaces are removed.
   --    {<tab> | space} replaced with a single space.
@@ -213,8 +213,8 @@ package Strings is
   function Item_Of (Data      : String;
                     Separator : Character;
                     Symbols   : String := "") return Item;
-  -- Returns the splitted strings from Item.
-  --   Example: Item = "," and Separator = ',' results in two empty strings.
+  -- Returns the splitted strings from Data.
+  --   Example: Data = "," and Separator = ',' results in two empty strings.
 
 
   function Purge_Of (List : Item) return Item;
@@ -224,6 +224,10 @@ package Strings is
   function Item_Of (List      : Item;
                     Selection : Slice) return Item;
   -- Exception: CONSTRAINT_ERROR: Index out of range.
+
+
+  function Found_In (List : Item;
+                     Name : String) return Boolean;
 
 
   function Data_Of (List      : String_List.Item;
@@ -255,7 +259,6 @@ package Strings is
      with function Mapped_String_Of (Data : String) return String;
   function Creator_From (List : Item) return Item;
   -- Create a new string for each string in items.
-  -- Mapped_String_Of is called twice for each string.
 
 
 private

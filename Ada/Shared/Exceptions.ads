@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2002 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2002 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -18,6 +18,8 @@ pragma Style_White_Elephant;
 with Ada.Exceptions;
 
 package Exceptions is
+
+  function Name_Of (Occurrence : Ada.Exceptions.Exception_Occurrence) return String;
 
   function Information_Of (Occurrence : Ada.Exceptions.Exception_Occurrence) return String;
 

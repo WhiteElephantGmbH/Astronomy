@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2002 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2002 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -16,6 +16,7 @@
 pragma Style_White_Elephant;
 
 with Ada.Environment_Variables;
+with Ada.Task_Identification;
 with GNAT.Sockets;
 
 package body Os is
@@ -36,6 +37,17 @@ package body Os is
   when others =>
     return "UserName";
   end User_Name;
+
+
+  function Thread_Id return String is
+    Minimum_Size : constant Natural := 8;
+    Prefix       : constant String (1 .. Minimum_Size) := (others => ' ');
+    The_Id       : constant String := Prefix & Ada.Task_Identification.Image (Ada.Task_Identification.Current_Task);
+  begin
+    -- This function should return a fixed sized representation of the OS specific thread ID
+    -- When not implemented it returns the tail of the Ada Task ID (padded if required) minimum size
+    return The_Id(The_Id'last - Minimum_Size - 1 .. The_Id'last);
+  end Thread_Id;
 
 
   function Is_Shutting_Down return Boolean is
