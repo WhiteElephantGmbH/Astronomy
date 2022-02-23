@@ -1,11 +1,11 @@
 -- *********************************************************************************************************************
--- *                       (c) 2019 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2019 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
 pragma Build (Description => "Request test program",
-              Version     => (1, 0, 0, 2),
+              Version     => (1, 0, 0, 4),
               Kind        => Console,
               Icon        => False,
               Libraries   => ("AWS64"),
@@ -14,5 +14,5 @@ with Request;
 
 procedure Request_Test is
 begin
-  Request.Send ("M42");
+  Request.Work;
 end Request_Test;
