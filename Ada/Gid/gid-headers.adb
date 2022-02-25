@@ -389,7 +389,6 @@ package body GID.Headers is
     use Decoding_PNG, Buffering;
     ch: Chunk_head;
     n, dummy: U32;
-    pragma Unreferenced(dummy);
     b, color_type: U8;
     palette: Boolean:= False;
   begin

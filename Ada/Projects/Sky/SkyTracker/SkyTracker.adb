@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2019 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                      *
+-- *                           (c) 2019 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                      *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -19,7 +19,7 @@ pragma Build (Description => "CDK700 Control Program",
               Version     => (2, 1, 0, 5),
               Kind        => Windows,
               Libraries   => ("AWS64"),
-              Compiler    => "GNATPRO\22.0");
+              Compiler    => "GNATPRO\22.1");
 
 with Control;
 

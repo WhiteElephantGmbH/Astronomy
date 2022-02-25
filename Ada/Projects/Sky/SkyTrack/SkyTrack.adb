@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2013 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2013 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -18,7 +18,7 @@ pragma Style_White_Elephant;
 pragma Build (Description => "Telescope control program",
               Version     => (1, 6, 0, 2),
               Kind        => Windows,
-              Compiler    => "GNATPRO\22.0");
+              Compiler    => "GNATPRO\22.1");
 
 with Control;
 
