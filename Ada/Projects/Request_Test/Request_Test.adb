@@ -5,7 +5,7 @@
 pragma Style_White_Elephant;
 
 pragma Build (Description => "Request test program",
-              Version     => (1, 0, 0, 4),
+              Version     => (1, 0, 0, 5),
               Kind        => Console,
               Icon        => False,
               Libraries   => ("AWS64"),

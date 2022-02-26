@@ -1,5 +1,3 @@
-with "aws";
-
 project Request_Test is
 
    package Naming is
