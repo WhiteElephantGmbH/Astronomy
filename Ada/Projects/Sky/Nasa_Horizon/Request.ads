@@ -4,19 +4,8 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Os.Process;
-with Log;
+package Request is
 
-package body Os.Horizon is
+  procedure Work;
 
-  function Result_Of_Get_With (Item : Arguments) return String is
-
-    Args : constant String := Strings.Data_Of (Item, Separator => " ");
-    
-  begin
-    Log.Write ("ARG<<<" & Args & ">>>");
-    return Os.Process.Execution_Of (Executable =>"/Applications/Horizon_Get",
-                                    Parameters => Args);
-  end Result_Of_Get_With;
-
-end Os.Horizon;
+end Request;

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2021 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2021 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -168,7 +168,7 @@ package body Os.Process is
     The_File := GNAT.OS_Lib.Open_Read (Name  => The_Filename.all,
                                        Fmode => GNAT.OS_Lib.Text);
     declare
-      The_String : aliased String(1..10000);
+      The_String : aliased String(1..200000);
       The_Count  : Integer;
     begin
       The_Count := GNAT.OS_Lib.Read (FD => The_File,
