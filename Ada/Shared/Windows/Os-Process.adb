@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2002 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2002 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -156,7 +156,7 @@ package body Os.Process is
                     Std_Output     : Handle := No_Handle;
                     Std_Error      : Handle := No_Handle;
                     Console        : Console_Type := Normal) is
-    The_Process_Id : Id with Unreferenced;
+    Unused_Process_Id : Id;
   begin
     Create (Executable     => Executable,
             Parameters     => Parameters,
@@ -166,7 +166,7 @@ package body Os.Process is
             Std_Output     => Std_Output,
             Std_Error      => Std_Error,
             Console        => Console,
-            Process_Id     => The_Process_Id);
+            Process_Id     => Unused_Process_Id);
   end Create;
 
 

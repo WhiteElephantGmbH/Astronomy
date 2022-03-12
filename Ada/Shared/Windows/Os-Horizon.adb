@@ -4,7 +4,8 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Os.Process;
+with AWS.Client;
+with AWS.Response;
 with Log;
 
 package body Os.Horizon is
@@ -37,8 +38,7 @@ package body Os.Horizon is
                            & "&CSV_FORMAT=YES"
                            & "&OBJ_DATA=NO";
 
-    Result : constant String := Os.Process.Execution_Of (Executable =>"D:\Request_Get",
-                                                         Parameters => '"' & Url & '"');
+     Result : constant String := AWS.Response.Message_Body (AWS.Client.Get (Url));
 
   begin -- Result_Of_Get_With
     Log.Write ("URL<<<" & Url & ">>>");

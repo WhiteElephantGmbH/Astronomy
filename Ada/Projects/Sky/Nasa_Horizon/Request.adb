@@ -122,15 +122,17 @@ package body Request is
             case The_Character is
             when '0' .. '9' =>
               Is_Natural := True;
+              Text.Append_To (The_Target_Name, The_Character);
             when ' ' =>
               if Is_Natural then
+                Is_Natural := False;
                 Text.Clear (The_Target_Name);
               else
                 exit;
               end if;
             when '/' =>
               Is_Natural := False;
-              Text.Append_To (The_Target_Name, '_');
+              Text.Append_To (The_Target_Name, '-');
             when others =>
               Is_Natural := False;
               Text.Append_To (The_Target_Name, The_Character);
