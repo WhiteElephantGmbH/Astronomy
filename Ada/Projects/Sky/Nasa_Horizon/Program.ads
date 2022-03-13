@@ -22,7 +22,7 @@ package Program is
   Major_Id : constant := 1;
   Minor_Id : constant := 1;
   Variant  : constant := 0;
-  Revision : constant := 0;
+  Revision : constant := 1;
 
   function Version return String;
 
