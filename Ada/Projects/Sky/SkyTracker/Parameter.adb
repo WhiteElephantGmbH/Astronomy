@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2019 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2019 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -525,10 +525,12 @@ package body Parameter is
       The_Lx200_Port := Port_For (Lx200_Id);
 
       Set (Remote_Handle);
-      The_Telescope_Name := Text.String_Of (String_Of (Telescope_Key, Remote_Id));
-      Log.Write ("Telescope Name: " & Telescope_Name);
-      The_Remote_Address := Ip_Address_For (Remote_Id);
-      The_Remote_Port := Port_For (Remote_Id);
+      The_Telescope_Name := Text.String_Of (String_Value_Of (Telescope_Key));
+      if Remote_Configured then
+        Log.Write ("Telescope Name: " & Telescope_Name);
+        The_Remote_Address := Ip_Address_For (Remote_Id);
+        The_Remote_Port := Port_For (Remote_Id);
+      end if;
 
       Set (Stellarium_Handle);
       The_Stellarium_Port :=  Port_For (Stellarium_Id);
@@ -662,6 +664,12 @@ package body Parameter is
   ------------
   -- Remote --
   ------------
+
+  function Remote_Configured return Boolean is
+  begin
+    return not (Text.Is_Equal (Telescope_Name, "none") or Telescope_Name = "");
+  end Remote_Configured;
+
 
   function Telescope_Name return String is
   begin

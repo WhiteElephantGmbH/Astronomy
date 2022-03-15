@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2019 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2019 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -573,7 +573,9 @@ package body User is
         Menu_Disable;
       end case;
     end if;
-    Remote.Define (Target_Name, Information.Status);
+    if Parameter.Remote_Configured then
+      Remote.Define (Target_Name, Information.Status);
+    end if;
     Gui.Set_Status_Line (Information.Status'img);
     case The_Page is
     when Is_Control =>
@@ -1251,7 +1253,9 @@ package body User is
       M3_Menu.Create (Lexicon.Image_Of (Lexicon.Optic), M3_Handler'access);
       Menu_Disable;
       Cwe_Menu.Create ("CWE", Cwe_Handler'access);
-      Demo_21_Menu.Create ("Demo 21", Demo_21_Handler'access);
+      if Parameter.Remote_Configured then
+        Demo_21_Menu.Create ("Demo 21", Demo_21_Handler'access);
+      end if;
       Define_Control_Page;
       if Persistent_Setup.Storage_Is_Empty then
         The_Image_Orientation := Telescope.Correct;

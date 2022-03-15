@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2019 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2019 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -65,12 +65,14 @@ package Parameter is
   -- Remote --
   ------------
 
+  function Remote_Configured return Boolean;
+
   function Telescope_Name return String;
 
   function Remote_Address return Network.Ip_Address;
 
   function Remote_Port return Network.Port_Number;
-
+  
   ----------------
   -- Stellarium --
   ----------------
