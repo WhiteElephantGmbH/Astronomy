@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2021 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2021 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -19,11 +19,16 @@ with Telescope;
 
 package Remote is
 
-  procedure Define (Target : String;
-                    State  : Telescope.State);
+  procedure Start;
+
+  procedure Define (Target : String);
+
+  procedure Define (State : Telescope.State);
 
   type Command is (Start_Session, Generate_Qr_Code, End_Session);
 
   procedure Execute (The_Command : Command);
+
+  procedure Close;
 
 end Remote;

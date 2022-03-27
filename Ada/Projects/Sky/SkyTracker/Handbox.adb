@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2019 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2019 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -102,6 +102,8 @@ package body Handbox is
     Center_Is_Pressed : Boolean := False;
     Is_Changing       : Boolean := False;
 
+    Delay_Time_After_Error : constant Duration := 0.5; -- seconds
+
   begin -- Reader
     accept Start;
     Log.Write ("started");
@@ -170,8 +172,10 @@ package body Handbox is
             exit Main;
           when Serial_Io.No_Access =>
             Log.Error ("No Access");
+            delay (Delay_Time_After_Error);
           when Serial_Io.Operation_Failed =>
             Log.Error ("Read Error");
+            delay (Delay_Time_After_Error);
           end;
         end loop;
       end;

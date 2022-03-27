@@ -573,9 +573,6 @@ package body User is
         Menu_Disable;
       end case;
     end if;
-    if Parameter.Remote_Configured then
-      Remote.Define (Target_Name, Information.Status);
-    end if;
     Gui.Set_Status_Line (Information.Status'img);
     case The_Page is
     when Is_Control =>

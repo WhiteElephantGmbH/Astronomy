@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2019 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2019 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
@@ -953,6 +953,9 @@ package body PWI.XML is
     procedure Set (Data : Response) is
     begin
       The_Data := Data;
+      if Data.Mount.Azm_Motor_Error_Code /= 0 or Data.Mount.Alt_Motor_Error_Code /= 0 then
+        Log.Force_Enable;
+      end if;
       if Log.Is_Enabled then
         Log.Write ("Status");
         Log.Write ("  Utc        : " & XML.Image_Of (Data.Status.Utc));
@@ -1042,6 +1045,7 @@ package body PWI.XML is
         Log.Write ("  On : " & Image_Of (Data.Fans.On));
         Log.Write ("End");
       end if;
+      Log.Normal;
     end Set;
 
 

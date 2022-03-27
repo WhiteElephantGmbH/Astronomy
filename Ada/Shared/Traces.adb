@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2015 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2015 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -23,16 +23,36 @@ package body Traces is
 
   Category_Is_Enabled : constant Boolean := Log.Is_Enabled (Category);
 
+  Category_Forced_Enabled : Boolean := False;
+
 
   function Is_Enabled return Boolean is
   begin
-    return Category_Is_Enabled;
+    return Category_Is_Enabled or Category_Forced_Enabled;
   end Is_Enabled;
+
+
+  procedure Force_Enable is
+  begin
+    Category_Forced_Enabled := True;
+    Log.Write ("<I> " & Id & " - forced enabled on");
+  end Force_Enable;
+
+
+  procedure Normal is
+  begin
+    if Category_Forced_Enabled then
+      Category_Forced_Enabled := False;
+      Log.Write ("<I> " & Id & " - forced enabled off");
+    end if;
+  end Normal;
 
 
   procedure Write (Message : String) is
   begin
-    Log.Write (Id & " - " & Message, Category);
+    if Is_Enabled then
+      Log.Write (Id & " - " & Message);
+    end if;
   end Write;
 
 

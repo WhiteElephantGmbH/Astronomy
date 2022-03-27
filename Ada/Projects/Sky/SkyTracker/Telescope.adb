@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2019 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2019 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -19,6 +19,7 @@ with Ada.Real_Time;
 with Cwe;
 with Objects;
 with Parameter;
+with Remote;
 with System;
 with Traces;
 
@@ -1435,6 +1436,7 @@ package body Telescope is
             null;
           end case;
         end select;
+        Remote.Define (The_State);
         if The_Event /= No_Event then
           Log.Write ("State => " & The_State'img & " - Event => " & The_Event'img);
           case The_State is

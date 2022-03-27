@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2019 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2019 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -28,8 +28,9 @@ with Name;
 with Neo;
 with Network.Tcp;
 with Os.Application;
-with Parameter;
 with Os.Process;
+with Parameter;
+with Remote;
 with Sky_Line;
 with Solar_System;
 with Space;
@@ -344,6 +345,7 @@ package body Control is
     Log.Write ("manager start");
     Telescope.Set (User.Image_Orientation);
     Handbox.Start;
+    Remote.Start;
     loop
       select Action_Handler.Get (The_Command);
         case The_Command is
@@ -353,13 +355,15 @@ package body Control is
           Targets.Update_List;
         when Define_Target =>
           declare
-            The_Item : Name.Id;
+            Target_Name : constant String := User.Target_Name;
+            The_Item    : Name.Id;
           begin
             User.Show_Description ("");
             The_Landmark := Name.No_Id;
             The_Neo_Target := Name.No_Id;
-            Targets.Get_For (User.Target_Name, The_Item);
+            Targets.Get_For (Target_Name, The_Item);
             if Name.Is_Known (The_Item)  then
+              Remote.Define (Target_Name);
               case Name.Kind_Of (The_Item) is
               when Name.Sky_Object =>
                 Telescope.Define_Space_Access (Name.Direction_Of'access, The_Item);
@@ -410,6 +414,7 @@ package body Control is
           Handbox.Close;
           Targets.Stop;
           Telescope.Close;
+          Remote.Close;
           Stellarium.Close;
           Lx200_Server.Close;
           exit;
@@ -432,6 +437,7 @@ package body Control is
     Targets.Stop;
     Gui.Close;
     Telescope.Close;
+    Remote.Close;
     Stellarium.Close;
     Lx200_Server.Close;
     Action_Handler.Enable_Termination;

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2015 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2015 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -22,6 +22,10 @@ generic
 package Traces is
 
   function Is_Enabled return Boolean with Inline;
+
+  procedure Force_Enable;
+
+  procedure Normal;
 
   procedure Write (Message : String) with Inline;
 
