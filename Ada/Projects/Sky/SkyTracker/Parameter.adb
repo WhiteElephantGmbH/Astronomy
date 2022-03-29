@@ -57,6 +57,7 @@ package body Parameter is
   Port_Key              : constant String := "Port";
   Moving_Speed_List_Key : constant String := "Moving Speed List";
   Cwe_Distance_Key      : constant String := "CWE Distance";
+  Time_Adjustment_Key   : constant String := "Time Adjustment";
 
   Lx200_Id : constant String := "Lx200";
 
@@ -77,10 +78,11 @@ package body Parameter is
   Fans_On               : Boolean;
   The_Pointing_Model    : Text.String;
 
-  The_Moving_Speeds  : Angle_List.Item;
-  The_Cwe_Distance   : Angle.Degrees;
-  The_PWI_Address    : Network.Ip_Address;
-  The_PWI_Port       : Network.Port_Number;
+  The_Moving_Speeds   : Angle_List.Item;
+  The_Cwe_Distance    : Angle.Degrees;
+  The_PWI_Address     : Network.Ip_Address;
+  The_PWI_Port        : Network.Port_Number;
+  The_Time_Adjustment : Duration;
 
   --Lx200
   The_Lx200_Port : Network.Port_Number;
@@ -221,6 +223,33 @@ package body Parameter is
   end Angle_Of;
 
 
+  function Duration_Of (Key : String) return Duration is
+    Image : constant String := String_Value_Of (Key);
+  begin
+    if Image = "" then
+      return 0.0;
+    end if;
+    Log.Write (Key & ": " & Image);
+    if Image(Image'last) /= 's' then
+      Error.Raise_With ("Unit s (seconds) missing at end of value for " & Key & ": <" & Image & ">");
+    end if;
+    begin
+      declare
+        Value : constant Duration := Duration'value(Image(Image'first .. Image'last - 1));
+      begin
+        if Value >= -1.0 and Value <= 1.0 then
+          return Value;
+        else
+          Error.Raise_With ("value not in range -1.0s .. 1.0s");
+        end if;
+      end;
+    exception
+    when others =>
+      Error.Raise_With ("Incorrect value for " & Key & ": <" & Image & ">");
+    end;
+  end Duration_Of;
+
+
   function Value_Of (Key     : String;
                      Section : String := "") return Integer is
     Item : constant String := String_Of (Key);
@@ -318,6 +347,7 @@ package body Parameter is
       Put (Port_Key & "              = 8080");
       Put (Moving_Speed_List_Key & " = 30""/s, 3'/s, 20'/s, 2°/s");
       Put (Cwe_Distance_Key & "      = 30'");
+      Put (Time_Adjustment_Key & "   = 0.5s");
       Put ("");
       Put ("[" & Lx200_Id & "]");
       Put (Port_Key & " = 4030");
@@ -520,6 +550,7 @@ package body Parameter is
         Error.Raise_With ("The speed list must contain at least two values");
       end if;
       The_Cwe_Distance := Angle_Of (Cwe_Distance_Key);
+      The_Time_Adjustment := Duration_Of (Time_Adjustment_Key);
 
       Set (Lx200_Handle);
       The_Lx200_Port := Port_For (Lx200_Id);
@@ -649,6 +680,12 @@ package body Parameter is
   begin
     return The_Cwe_Distance;
   end Cwe_Distance;
+
+
+  function Time_Adjustment return Duration is
+  begin
+    return The_Time_Adjustment;
+  end Time_Adjustment;
 
 
   -----------

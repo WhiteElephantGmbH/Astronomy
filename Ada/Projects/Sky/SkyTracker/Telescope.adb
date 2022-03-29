@@ -195,10 +195,10 @@ package body Telescope is
     type Adjusting_Kind is (First_Adjusting, Second_Adjusting, Time_Adjusting);
 
     The_Adjusting_Kind        : Adjusting_Kind;
-    The_Adjusting_Start_Time  : Time.Ut := Time.In_The_Future;
-    The_Adjusting_End_Time    : Time.Ut := Time.In_The_Future;
+    The_Adjusting_Start_Time  : Time.Ut;
+    The_Adjusting_End_Time    : Time.Ut;
     The_Time_Adjusting_Factor : Duration;
-    The_Time_Adjustment       : Duration := 0.0;
+    The_Time_Adjustment       : Duration;
     First_Adjust_Factor       : Angle.Signed := 1;
     The_First_Moving_Speed    : Angle.Degrees := 0.0;
     Second_Adjust_Factor      : Angle.Signed := 1;
@@ -397,7 +397,7 @@ package body Telescope is
     procedure Reset_Adjustments is
     begin
       The_Adjusted_Offset := Cwe.Adjustment;
-      The_Time_Adjustment := 0.0;
+      The_Time_Adjustment := Parameter.Time_Adjustment;
       The_Adjusting_Start_Time := Time.In_The_Future;
       The_Adjusting_End_Time := Time.In_The_Future;
     end Reset_Adjustments;
@@ -1248,6 +1248,7 @@ package body Telescope is
     use type Ada.Real_Time.Time;
 
   begin -- Control_Task
+    Reset_Adjustments;
     accept Start do
       Device.Start (Fans_State_Handler'access,
                     Mount_State_Handler'access,

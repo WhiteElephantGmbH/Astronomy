@@ -55,6 +55,8 @@ package Parameter is
 
   function Cwe_Distance return Angle.Degrees;
 
+  function Time_Adjustment return Duration;
+
   -----------
   -- Lx200 --
   -----------
@@ -72,7 +74,7 @@ package Parameter is
   function Remote_Address return Network.Ip_Address;
 
   function Remote_Port return Network.Port_Number;
-  
+
   ----------------
   -- Stellarium --
   ----------------
