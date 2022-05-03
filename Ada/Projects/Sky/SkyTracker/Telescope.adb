@@ -1437,7 +1437,7 @@ package body Telescope is
             null;
           end case;
         end select;
-        Remote.Define (The_State);
+        Remote.Define (The_State in Is_Tracking | Positioned);
         if The_Event /= No_Event then
           Log.Write ("State => " & The_State'img & " - Event => " & The_Event'img);
           case The_State is

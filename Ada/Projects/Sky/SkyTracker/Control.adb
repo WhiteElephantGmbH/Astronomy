@@ -345,7 +345,9 @@ package body Control is
     Log.Write ("manager start");
     Telescope.Set (User.Image_Orientation);
     Handbox.Start;
-    Remote.Start;
+    if Parameter.Remote_Configured then
+      Remote.Start (Parameter.Telescope_Name, Parameter.Remote_Address, Parameter.Remote_Port);
+    end if;
     loop
       select Action_Handler.Get (The_Command);
         case The_Command is
