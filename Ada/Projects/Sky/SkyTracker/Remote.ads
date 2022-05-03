@@ -15,15 +15,17 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Telescope;
+with Network;
 
 package Remote is
 
-  procedure Start;
+  procedure Start (Telescope_Name : String;
+                   Ip_Address     : Network.Ip_Address;
+                   Port           : Network.Port_Number);
 
   procedure Define (Target : String);
 
-  procedure Define (State : Telescope.State);
+  procedure Define (Is_On_Target : Boolean);
 
   type Command is (Start_Session, Generate_Qr_Code, End_Session);
 

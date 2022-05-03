@@ -17,8 +17,6 @@ pragma Style_White_Elephant;
 
 with AWS.Client;
 with AWS.Response;
-with Network;
-with Parameter;
 with Persistent_String;
 with Strings;
 with Text;
@@ -42,27 +40,34 @@ package body Remote is
 
   Key : constant String := Actual_Key;
 
+  type Telescope_State is (Unknown, On_Target, Not_On_Target);
+
+
   task type Handler is
-    entry Start;
+
+    entry Start (Telescope_Name : String;
+                 Ip_Address     : Network.Ip_Address;
+                 Port           : Network.Port_Number);
 
     entry Execute (The_Command : Command);
 
     entry Define (Target : String);
 
-    entry Define (State  : Telescope.State);
+    entry Define (State : Telescope_State);
 
     entry Close;
   end Handler;
 
   The_Handler : access Handler;
 
-  procedure Start is
+
+  procedure Start (Telescope_Name : String;
+                   Ip_Address     : Network.Ip_Address;
+                   Port           : Network.Port_Number) is
   begin
-    if Parameter.Remote_Configured then
-      Log.Write ("start");
-      The_Handler := new Handler;
-      The_Handler.Start;
-    end if;
+    Log.Write ("start");
+    The_Handler := new Handler;
+    The_Handler.Start (Telescope_Name, Ip_Address, Port);
   end Start;
 
 
@@ -90,21 +95,21 @@ package body Remote is
     end if;
   end Define;
 
+
   protected Actual_State is
 
-    procedure Check (State       :     Telescope.State;
+    procedure Check (State       :     Telescope_State;
                      Has_Changed : out Boolean);
 
   private
-    Last_State : Telescope.State := Telescope.Unknown;
+    Last_State : Telescope_State:= Unknown;
   end Actual_State;
 
 
   protected body Actual_State is
 
-    procedure Check (State       :     Telescope.State;
+    procedure Check (State       :     Telescope_State;
                      Has_Changed : out Boolean) is
-      use type Telescope.State;
     begin
       Has_Changed := Last_State /= State;
       Last_State := State;
@@ -113,8 +118,9 @@ package body Remote is
   end Actual_State;
 
 
-  procedure Define (State : Telescope.State) is
+  procedure Define (Is_On_Target : Boolean) is
     Has_Changed : Boolean;
+    State       : constant Telescope_State := (if Is_On_Target then On_Target else Not_On_Target);
   begin
     if The_Handler /= null then
       Actual_State.Check (State, Has_Changed);
@@ -127,11 +133,15 @@ package body Remote is
 
   task body Handler is
 
+     The_Telescope_Name : Text.String;
+     The_Remote_Address : Network.Ip_Address;
+     The_Remote_Port    : Network.Port_Number;
+
     procedure Send (Info : String) is
 
-      Telescope_Name : constant String := Parameter.Telescope_Name;
-      Remote_Address : constant String := Network.Image_Of (Parameter.Remote_Address);
-      Remote_Port    : constant String := Network.Image_Of (Parameter.Remote_Port);
+      Telescope_Name : constant String := Text.String_Of (The_Telescope_Name);
+      Remote_Address : constant String := Network.Image_Of (The_Remote_Address);
+      Remote_Port    : constant String := Network.Image_Of (The_Remote_Port);
       Parameters     : constant String := "?tele=" & Telescope_Name & "&" & Info;
       URL            : constant String := "http://" & Remote_Address & ':' & Remote_Port & '/' & Key & Parameters;
 
@@ -168,14 +178,13 @@ package body Remote is
     end Send_Command;
 
 
-    The_State         : Telescope.State := Telescope.Unknown;
+    The_State         : Telescope_State := Unknown;
     Is_Cleared        : Boolean := True;
     The_Actual_Target : Text.String;
 
     procedure Send_Actual (Clear : Boolean := False) is
-      use type Telescope.State;
     begin
-      if The_State in Telescope.Tracking | Telescope.Positioned then
+      if The_State = On_Target then
         if Clear or Is_Cleared then
           Is_Cleared := False;
           Send ("target=" & Text.String_Of (The_Actual_Target));
@@ -187,7 +196,14 @@ package body Remote is
     end Send_Actual;
 
   begin -- Handler
-    accept Start;
+    accept Start (Telescope_Name : String;
+                  Ip_Address     : Network.Ip_Address;
+                  Port           : Network.Port_Number)
+    do
+      The_Telescope_Name := Text.String_Of (Telescope_Name);
+      The_Remote_Address := Ip_Address;
+      The_Remote_Port := Port;
+    end Start;
     Log.Write ("started");
     loop
       select
@@ -202,7 +218,7 @@ package body Remote is
           end case;
         end Execute;
       or
-        accept Define (State  : Telescope.State) do
+        accept Define (State  : Telescope_State) do
           The_State := State;
           Send_Actual;
         end Define;
