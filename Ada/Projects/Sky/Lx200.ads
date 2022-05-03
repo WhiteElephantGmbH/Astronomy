@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2021 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2021 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerlan                           *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
@@ -10,7 +10,9 @@ package Lx200 is
 
   Terminator : Character := '#';
 
-  type Command is (
+  Slew_Ok : constant String := "0";
+
+  type Extended_Command is (
     Get_Alignment_Status,
     Get_Product_Name,
     Get_Firmware_Date,
@@ -46,11 +48,18 @@ package Lx200 is
     Set_Centering_Rate,
     Set_Guiding_Rate,
     Set_Finding_Rate,
-    Set_Slewing_Rate);
+    Set_Slewing_Rate,
+
+    Get_Status,
+    Set_Ultra_Precision_Mode,
+    Slew_To_Park_Position,
+    Unpark);
+
+  subtype Command is Extended_Command range Extended_Command'first .. Set_Slewing_Rate;
 
   function Command_For (Item : String) return String;
 
-  function String_Of (Item      : Command;
+  function String_Of (Item      : Extended_Command;
                       Parameter : String := "") return String;
 
   function Signed_Degrees_Of (Item         : Angle.Value;

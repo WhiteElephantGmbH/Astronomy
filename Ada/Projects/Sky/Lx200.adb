@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2021 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2021 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
@@ -10,6 +10,8 @@ package body Lx200 is
 
   Command_Start : constant Character := ':';
 
+  Has_Ultra_Precision : Boolean := False;
+
 
   function Command_For (Item : String) return String is
   begin
@@ -17,7 +19,7 @@ package body Lx200 is
   end Command_For;
 
 
-  function String_Of (Item      : Command;
+  function String_Of (Item      : Extended_Command;
                       Parameter : String := "") return String is
   begin
     case Item is
@@ -93,17 +95,36 @@ package body Lx200 is
       return Command_For ("RM");
     when Set_Slewing_Rate =>
       return Command_For ("RS");
+
+    -- extended commands
+
+    when Get_Status =>
+      return Command_For ("Gstat");
+    when Set_Ultra_Precision_Mode =>
+      Has_Ultra_Precision := True;
+      return Command_For ("U2");
+    when Slew_To_Park_Position =>
+      return Command_For ("KA");
+    when Unpark =>
+      return Command_For ("PO");
     end case;
   end String_Of;
 
 
   function Angle_Image_Of (Data       : String;
                            U1, U2, U3 : Character) return String is
-                                     --             1  2  3
-    The_Image : String := Data & U3; -- format: "sddUddUddU
+    -- Extended     6543210
+    -- format: "s*ddUddUddU
+    -- Ultra        876543210
+    -- format: "sdddUddUdd.dU
+    -- Ultra       9876543210
+    -- format: "sddUddUdd.ddU
+    U1_Offset : constant Natural := (if Has_Ultra_Precision then (if Data(Data'last - 1) = '.' then 8 else 9) else 6);
+    U2_Offset : constant Natural := U1_Offset - 3;
+    The_Image : String := Data & U3;
   begin
-    The_Image(The_Image'last - 6) := U1;
-    The_Image(The_Image'last - 3) := U2;
+    The_Image(The_Image'last - U1_Offset) := U1;
+    The_Image(The_Image'last - U2_Offset) := U2;
     return The_Image;
   end Angle_Image_Of;
 
@@ -114,19 +135,28 @@ package body Lx200 is
 
     use type Angle.Units;
 
+    Decimals : constant Angle.Decimal_Places := (if Has_Ultra_Precision then 1 else 0);
+
     The_Image : String := Strings.Ansi_Of (Angle.Image_Of (The_Value   => Item,
                                                            Unit        => Angle.In_Degrees,
-                                                           Decimals    => 0,
+                                                           Decimals    => Decimals,
                                                            Show_Signed => True));
-    Image_Template : constant String := "sdDDmDDs";
+
+    Image_Template : constant String := (if Has_Ultra_Precision then "sdDDmDD.Ds" else "sdDDmDDs");
+
+    D_Offset : constant Natural := (if Has_Ultra_Precision then 8 else 6);
+    M_Offset : constant Natural := D_Offset - 3;
+
+    D_Replace : constant Character := (if Has_Ultra_Precision then ':' else '*');
+    M_Replace : constant Character := ':';
 
     Digits_To_Insert : constant Natural := Image_Template'length + Front_Digits - The_Image'length;
 
     Leading_Zeros : constant String(1..Digits_To_Insert) := (others => '0');
 
   begin -- Signed_Degrees_Of
-    The_Image(The_Image'last - 6) := '*'; -- replace d
-    The_Image(The_Image'last - 3) := ':'; -- replace m
+    The_Image(The_Image'last - D_Offset) := D_Replace;
+    The_Image(The_Image'last - M_Offset) := M_Replace;
     return The_Image(The_Image'first) & Leading_Zeros & The_Image(The_Image'first + 1 .. The_Image'last - 1);
   end Signed_Degrees_Of;
 
@@ -141,19 +171,28 @@ package body Lx200 is
 
     use type Angle.Units;
 
+    Decimals : constant Angle.Decimal_Places := (if Has_Ultra_Precision then 2 else 0);
+
     The_Image : String := Strings.Ansi_Of (Angle.Image_Of (The_Value   => Item,
                                                            Unit        => Angle.In_Hours,
-                                                           Decimals    => 0,
+                                                           Decimals    => Decimals,
                                                            Show_Signed => False));
-    Image_Template : constant String := "DDhDDmDDs";
+
+    Image_Template : constant String := (if Has_Ultra_Precision then "DDhDDmDD.DDs" else "DDhDDmDDs");
+
+    H_Offset : constant Natural := (if Has_Ultra_Precision then 9 else 6);
+    M_Offset : constant Natural := H_Offset - 3;
+
+    H_Replace : constant Character := ':';
+    M_Replace : constant Character := ':';
 
     Digits_To_Insert : constant Natural := Image_Template'length - The_Image'length;
 
     Leading_Zeros : constant String(1..Digits_To_Insert) := (others => '0');
 
   begin -- Hours_Of
-    The_Image(The_Image'last - 6) := ':'; -- replace h
-    The_Image(The_Image'last - 3) := ':'; -- replace m
+    The_Image(The_Image'last - H_Offset) := H_Replace;
+    The_Image(The_Image'last - M_Offset) := M_Replace;
     return Leading_Zeros & The_Image(The_Image'first .. The_Image'last - 1);
   end Hours_Of;
 
