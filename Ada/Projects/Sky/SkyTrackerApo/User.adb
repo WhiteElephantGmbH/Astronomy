@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2021 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                            (c) 2022 by White Elephant GmbH, Schaffhausen, Switzerland                             *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -25,7 +25,9 @@ with Gui.Registered;
 with Lexicon;
 with Objects;
 with Os;
+with Parameter;
 with Persistent;
+with Remote;
 with Site;
 with Space;
 with Strings;
@@ -58,6 +60,8 @@ package body User is
   Local_Time   : Gui.Plain_Edit_Box;
 
   type Page is (Is_Control, Is_Display);
+
+  Is_Expert_Mode : Boolean := False;
 
   The_Page : Page := Is_Control;
 
@@ -174,6 +178,29 @@ package body User is
   when others =>
     Log.Error ("Catalog_Handler");
   end Catalog_Handler;
+
+
+  function Image_Of (The_Command : Remote.Command) return String is
+  begin
+    case The_Command is
+    when Remote.Start_Session =>
+      return Lexicon.Image_Of (Lexicon.Start);
+    when Remote.Generate_Qr_Code =>
+      return Lexicon.Image_Of (Lexicon.Qr_Code);
+    when Remote.End_Session =>
+      return Lexicon.Image_Of (Lexicon.Finish);
+    end case;
+  end Image_Of;
+
+  package Demo_21_Menu is new Gui.Enumeration_Menu_Of (Remote.Command, Gui.Plain, Image_Of);
+
+  procedure Demo_21_Handler (The_Command : Remote.Command) is
+  begin
+    Remote.Execute (The_Command);
+  exception
+  when others =>
+    Log.Error ("Demo_21_Handler");
+  end Demo_21_Handler;
 
 
   procedure Perform_Park is
@@ -534,8 +561,14 @@ package body User is
       Targets.Set (The_Selection => All_Objects);
       Catalog_Menu.Create (Lexicon.Image_Of (Lexicon.Catalog), Catalog_Handler'access);
       Catalog_Handler (Data.Favorites);
+      if Parameter.Remote_Configured then
+        Demo_21_Menu.Create ("Demo 21", Demo_21_Handler'access);
+      end if;
       Define_Control_Page;
-      Define_Display_Page;
+      Is_Expert_Mode := Parameter.Is_Expert_Mode;
+      if Is_Expert_Mode then
+        Define_Display_Page;
+      end if;
       Gui.Enable_Key_Handler;
       Gui.Show;
       The_Startup_Handler.all;

@@ -25,9 +25,23 @@ package Parameter is
   -- 10micron --
   --------------
 
+  function Is_Expert_Mode return Boolean;
+
   function Ten_Micron_Ip_Address return Network.Ip_Address;
 
   function Ten_Micron_Port return Network.Port_Number;
+
+  ------------
+  -- Remote --
+  ------------
+
+  function Remote_Configured return Boolean;
+
+  function Telescope_Name return String;
+
+  function Remote_Address return Network.Ip_Address;
+
+  function Remote_Port return Network.Port_Number;
 
   ----------------
   -- Stellarium --

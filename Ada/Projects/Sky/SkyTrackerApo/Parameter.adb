@@ -23,6 +23,7 @@ with File;
 with Language;
 with Stellarium;
 with Strings;
+with Text;
 with Traces;
 
 package body Parameter is
@@ -33,18 +34,26 @@ package body Parameter is
 
   Localization_Id : constant String := "Localization";
   Language_Key    : constant String := "Language";
-
-  Ten_Micron_Id  : constant String := "10micron";
-  Stellarium_Id  : constant String := "Stellarium";
-  Ip_Address_Key : constant String := "IP Address";
-  Port_Key       : constant String := "Port";
-  Program_Key    : constant String := "Program";
+  Ten_Micron_Id   : constant String := "10micron";
+  Expert_Mode_Key : constant String := "Expert Mode";
+  Remote_Id       : constant String := "Remote";
+  Telescope_Key   : constant String := "Telescope";
+  Stellarium_Id   : constant String := "Stellarium";
+  Ip_Address_Key  : constant String := "IP Address";
+  Port_Key        : constant String := "Port";
+  Program_Key     : constant String := "Program";
 
   The_Section : Configuration.Section_Handle;
 
   -- 10micron
+  Is_In_Expert_Mode        : Boolean;
   The_10_Micron_Ip_Address : Network.Ip_Address;
   The_10_Micron_Port       : Network.Port_Number;
+
+  --Remote
+  The_Telescope_Name : Text.String;
+  The_Remote_Address : Network.Ip_Address;
+  The_Remote_Port    : Network.Port_Number;
 
   -- Stellarium
   The_Stellarium_Port : Network.Port_Number;
@@ -65,11 +74,12 @@ package body Parameter is
   end String_Value_Of;
 
 
-  function String_Of (Key : String) return String is
+  function String_Of (Key     : String;
+                      Section : String := "") return String is
     Image : constant String := String_Value_Of (Key);
   begin
     if Image = "" then
-      Error.Raise_With ("Parameter <" & Key & "> not defined");
+      Error.Raise_With ("Parameter <" & Key & (if Section = "" then "" else "> for <") & Section & "> not defined");
     end if;
     return Image;
   end String_Of;
@@ -103,15 +113,44 @@ package body Parameter is
   end Language;
 
 
-  function Value_Of (Key  : String;
-                     Unit : String := "") return Integer is
+  function Value_Of (Key     : String;
+                      Section : String := "") return Integer is
     Item : constant String := String_Of (Key);
   begin
-    return Integer'value(Image_Of(Item, Unit));
+    return Integer'value(Image_Of(Item));
   exception
   when others =>
-    Error.Raise_With ("Incorrect " & Key & ": <" & Item & ">");
+    Error.Raise_With ("Incorrect " & (if Section = "" then "" else Section & " ") & Key & ": <" & Item & ">");
   end Value_Of;
+
+
+  function Ip_Address_For (Section : String) return Network.Ip_Address is
+    Server      : constant String := String_Of (Ip_Address_Key, Section);
+    The_Address : Network.Ip_Address;
+  begin
+    begin
+      The_Address := Network.Ip_Address_Of (Server);
+    exception
+    when others =>
+      The_Address := Network.Ip_Address_Of_Host (Server);
+    end;
+    Log.Write (Section & " " & Ip_Address_Key & ": " & Network.Image_Of (The_Address));
+    return The_Address;
+  exception
+  when others =>
+    Error.Raise_With ("Incorrect " & Section & " IP address " & Server);
+  end Ip_Address_For;
+
+
+  function Port_For (Section : String) return Network.Port_Number is
+    Value : constant Integer := Value_Of (Port_Key, Remote_Id);
+  begin
+    Log.Write (Section & " port number:" & Value'image);
+    return Network.Port_Number (Value);
+  exception
+  when others =>
+    Error.Raise_With (Section & " port number" & Value'image & " out of range");
+  end Port_For;
 
 
   procedure Read is
@@ -136,8 +175,14 @@ package body Parameter is
       Put (Language_Key & " = " & Strings.Legible_Of (Stellarium.Language'img));
       Put ("");
       Put ("[" & Ten_Micron_Id & "]");
-      Put (Ip_Address_Key & " = 192.168.26.180");
-      Put (Port_Key & "       = 3490");
+      Put (Expert_Mode_Key & " = False");
+      Put (Ip_Address_Key & "  = 192.168.26.180");
+      Put (Port_Key & "        = 3490");
+      Put ("");
+      Put ("[" & Remote_Id & "]");
+      Put (Telescope_Key & "  = apo");
+      Put (Ip_Address_Key & " = 217.160.64.198");
+      Put (Port_Key & "       = 5000");
       Put ("");
       Put ("[" & Stellarium_Id & "]");
       Put (Port_Key & "    = 10001");
@@ -157,6 +202,7 @@ package body Parameter is
 
       Handle              : constant Configuration.File_Handle    := Configuration.Handle_For (Filename);
       Ten_Micron_Handle   : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Ten_Micron_Id);
+      Remote_Handle       : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Remote_Id);
       Stellarium_Handle   : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Stellarium_Id);
       Localization_Handle : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Localization_Id);
 
@@ -180,31 +226,20 @@ package body Parameter is
       Standard.Language.Define (Language);
 
       Set (Ten_Micron_Handle);
-      declare
-        IP_Address_Image : constant String := String_Of (Ip_Address_Key);
-      begin
-        The_10_Micron_Ip_Address := Network.Ip_Address_Of (IP_Address_Image);
-        Log.Write ("10micron IP Address: " & IP_Address_Image);
-      exception
-      when others =>
-        Error.Raise_With ("Incorrect 10micron IP Address: " & IP_Address_Image);
-      end;
-      begin
-        The_10_Micron_Port := Network.Port_Number (Value_Of (Port_Key));
-        Log.Write ("10micron Port:" & The_10_Micron_Port'img);
-      exception
-      when others =>
-        Error.Raise_With ("10micron port number out of range");
-      end;
+      Is_In_Expert_Mode := Strings.Is_Equal (String_Value_Of (Expert_Mode_Key), "True");
+      The_10_Micron_Ip_Address := Ip_Address_For (Remote_Id);
+      The_10_Micron_Port := Port_For (Remote_Id);
+
+      Set (Remote_Handle);
+      The_Telescope_Name := Text.String_Of (String_Value_Of (Telescope_Key));
+      if Remote_Configured then
+        Log.Write ("Telescope Name: " & Telescope_Name);
+        The_Remote_Address := Ip_Address_For (Remote_Id);
+        The_Remote_Port := Port_For (Remote_Id);
+      end if;
 
       Set (Stellarium_Handle);
-      begin
-        The_Stellarium_Port := Network.Port_Number (Value_Of (Port_Key));
-        Log.Write ("Stellarium Port:" & The_Stellarium_Port'img);
-      exception
-      when others =>
-        Error.Raise_With ("Stellarium port number out of range");
-      end;
+      The_Stellarium_Port := Port_For (Remote_Id);
       Startup_Stellarium;
     end Read_Values;
 
@@ -220,6 +255,12 @@ package body Parameter is
   -- 10micron --
   --------------
 
+  function Is_Expert_Mode return Boolean is
+  begin
+    return Is_In_Expert_Mode;
+  end Is_Expert_Mode;
+
+
   function Ten_Micron_Ip_Address return Network.Ip_Address is
   begin
     return The_10_Micron_Ip_Address;
@@ -230,6 +271,34 @@ package body Parameter is
   begin
     return The_10_Micron_Port;
   end Ten_Micron_Port;
+
+
+  ------------
+  -- Remote --
+  ------------
+
+  function Remote_Configured return Boolean is
+  begin
+    return not (Text.Is_Equal (Telescope_Name, "none") or Telescope_Name = "");
+  end Remote_Configured;
+
+
+  function Telescope_Name return String is
+  begin
+    return Text.String_Of (The_Telescope_Name);
+  end Telescope_Name;
+
+
+  function Remote_Address return Network.Ip_Address is
+  begin
+    return The_Remote_Address;
+  end Remote_Address;
+
+
+  function Remote_Port return Network.Port_Number is
+  begin
+    return The_Remote_Port;
+  end Remote_Port;
 
 
   ----------------

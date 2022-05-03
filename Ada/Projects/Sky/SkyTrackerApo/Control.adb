@@ -26,6 +26,7 @@ with Network.Tcp;
 with Os.Application;
 with Os.Process;
 with Parameter;
+with Remote;
 with Sky_Line;
 with Solar_System;
 with Space;
@@ -282,6 +283,9 @@ package body Control is
 
   begin -- Manager
     Log.Write ("manager start");
+    if Parameter.Remote_Configured then
+      Remote.Start (Parameter.Telescope_Name, Parameter.Remote_Address, Parameter.Remote_Port);
+    end if;
     loop
       Action_Handler.Get (The_Command);
       case The_Command is

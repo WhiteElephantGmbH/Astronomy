@@ -16,8 +16,9 @@
 pragma Style_White_Elephant;
 
 pragma Build (Description => "Sky Tracker control program for 10micron",
-              Version     => (1, 0, 0, 0),
+              Version     => (1, 0, 0, 1),
               Kind        => Windows,
+              Libraries   => ("AWS64"),
               Compiler    => "GNATPRO\22.1");
 
 with Control;

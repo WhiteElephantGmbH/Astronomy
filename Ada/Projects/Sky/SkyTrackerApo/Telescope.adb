@@ -16,6 +16,7 @@
 pragma Style_White_Elephant;
 
 with Parameter;
+with Remote;
 with Traces;
 
 package body Telescope is
@@ -160,6 +161,7 @@ package body Telescope is
           Signal_Information_Update.all;
           Update_Handling;
         end select;
+        Remote.Define (The_Status in Tracking | Following);
       exception
       when Item: others =>
         Log.Termination (Item);
