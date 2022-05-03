@@ -17,7 +17,7 @@ package body Test is
   end Put_Line;
 
 
-  procedure Client is
+  procedure Client (Ip_Address : String := "192.168.26.180") is
 
     Socket_Protocol : constant Network.Tcp.Protocol := Network.Tcp.Raw;
     Receive_Timeout : constant Duration := 1.0;
@@ -25,8 +25,9 @@ package body Test is
     The_Socket : Network.Tcp.Socket;
 
   begin -- Client
+    Put_Line ("10micron on " & Ip_Address);
     begin
-      The_Socket := Network.Tcp.Socket_For (The_Address     => Network.Ip_Address_Of ("192.168.178.99"),
+      The_Socket := Network.Tcp.Socket_For (The_Address     => Network.Ip_Address_Of (Ip_Address),
                                             The_Port        => Network.Port_Number (3490),
                                             The_Protocol    => Socket_Protocol,
                                             Receive_Timeout => Receive_Timeout);
@@ -104,10 +105,11 @@ package body Test is
     Nr_Of_Arguments : constant Natural := Ada.Command_Line.Argument_Count;
   begin
     if Nr_Of_Arguments = 0 then
-      Put_Line ("10micron");
       Client;
+    elsif Nr_Of_Arguments = 1 then
+      Client (Ada.Command_Line.Argument(1));
     else
-      Put_Line ("Incorrect number of parameters");
+      Put_Line ("Incorrect number of parameters (Tcp address");
     end if;
   exception
   when Event : others =>

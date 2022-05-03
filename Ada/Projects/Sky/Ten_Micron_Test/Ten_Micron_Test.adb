@@ -5,13 +5,13 @@
 pragma Style_White_Elephant;
 
 pragma Build (Description => "10micron test",
-              Version     => (1, 0, 0, 0),
+              Version     => (1, 0, 0, 1),
               Kind        => Console,
               Icon        => False,
               Compiler    => "GNATPRO\22.1");
 with Test;
 
-procedure Ten_Micron is
+procedure Ten_Micron_Test is
 begin
   Test.Execute;
-end Ten_Micron;
+end Ten_Micron_Test;
