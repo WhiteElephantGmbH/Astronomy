@@ -237,18 +237,18 @@ package body Control is
          | Telescope.Inconsistent
          | Telescope.Inhibited
          | Telescope.Homing
+         | Telescope.Parked
          | Telescope.Parking
          | Telescope.Unparking
          | Telescope.Unknown
          | Telescope.Disconnected
       =>
-        Log.Error ("goto not executed");
+        Log.Warning ("goto not executed");
       when Telescope.Slewing
          | Telescope.Following
          | Telescope.Halted
          | Telescope.Outside
          | Telescope.Stopped
-         | Telescope.Parked
          | Telescope.Tracking
       =>
         User.Perform_Goto;

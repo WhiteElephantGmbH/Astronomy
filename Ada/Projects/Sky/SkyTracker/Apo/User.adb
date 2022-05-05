@@ -45,7 +45,7 @@ package body User is
 
   Control_Page   : Gui.Page;
   Goto_Button    : Gui.Button;
-  Parking_Button : Gui.Button;
+  Control_Button : Gui.Button;
   Target         : Gui.Plain_Edit_Box;
   Description    : Gui.Plain_Edit_Box;
   Display        : Gui.List_View;
@@ -238,20 +238,20 @@ package body User is
       end if;
     end Set_Goto_Button;
 
-    procedure Define_Parking_Button is
+    procedure Define_Control_Button is
     begin
       case Information.Status is
       when Telescope.Parked =>
-        Gui.Set_Text (Parking_Button, "Unpark");
+        Gui.Set_Text (Control_Button, "Unpark");
         Perform_Parking := Perform_Unpark'access;
       when Telescope.Slewing | Telescope.Parking =>
-        Gui.Set_Text (Parking_Button, "Stop");
+        Gui.Set_Text (Control_Button, "Stop");
         Perform_Parking := Perform_Stop'access;
       when others =>
-        Gui.Set_Text (Parking_Button, "Park");
+        Gui.Set_Text (Control_Button, "Park");
         Perform_Parking := Perform_Park'access;
       end case;
-    end Define_Parking_Button;
+    end Define_Control_Button;
 
     procedure Clear_Actual_Values is
     begin
@@ -270,21 +270,22 @@ package body User is
     then
       The_Status := Information.Status;
       Last_Target_Selection := The_Target_Selection;
-      Define_Parking_Button;
+      Define_Control_Button;
       case The_Status is
       when Telescope.Disconnected
          | Telescope.Failure
          | Telescope.Homing
          | Telescope.Inconsistent
          | Telescope.Inhibited
-         | Telescope.Parking
          | Telescope.Unknown
          | Telescope.Unparking
       =>
         Gui.Disable (Goto_Button);
-        Gui.Disable (Parking_Button);
-      when Telescope.Parked =>
-        Gui.Enable (Parking_Button);
+        Gui.Disable (Control_Button);
+      when Telescope.Parked
+         | Telescope.Parking
+      =>
+        Gui.Enable (Control_Button);
         Gui.Disable (Goto_Button);
       when Telescope.Tracking
          | Telescope.Stopped
@@ -294,7 +295,7 @@ package body User is
          | Telescope.Following
       =>
         Set_Goto_Button;
-        Gui.Enable (Parking_Button);
+        Gui.Enable (Control_Button);
       end case;
       Gui.Set_Status_Line (Information.Status'img);
     end if;
@@ -491,8 +492,8 @@ package body User is
 
         Goto_Button := Gui.Create (Control_Page, "Goto", Handle_Goto'access);
         Gui.Disable (Goto_Button);
-        Parking_Button := Gui.Create (Control_Page, "Unpark", Handle_Parking'access);
-        Gui.Disable (Parking_Button);
+        Control_Button := Gui.Create (Control_Page, "Unpark", Handle_Parking'access);
+        Gui.Disable (Control_Button);
 
         Target := Gui.Create (Control_Page, Title, "", The_Title_Size => Title_Size, Is_Modifiable  => False);
         Description := Gui.Create (Control_Page, "", "", Is_Modifiable  => False);
