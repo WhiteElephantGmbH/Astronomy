@@ -15,14 +15,41 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-pragma Build (Description => "Sky Guiding control program",
-              Version     => (1, 4, 0, 3),
-              Kind        => Windows,
-              Compiler    => "GNATPRO\22.1");
+with Name;
+with Telescope;
 
-with Control;
+package User is
 
-procedure SkyGuider is
-begin
-  Control.Start;
-end SkyGuider;
+  type Action is (Define_Catalog, Define_Target, Update, Go_To, Park, Stop, Unpark, Close);
+
+  subtype Command_Action is Action range Go_To .. Close;
+
+  subtype Button_Action is Action range Go_To .. Unpark;
+
+  type Action_Handler is access procedure (The_Action : Action);
+
+  procedure Show (Information : Telescope.Data);
+
+  procedure Set (The_Target : Name.Id);
+
+  procedure Clear_Target;
+
+  procedure Execute (The_Startup_Handler     : not null access procedure;
+                     The_Action_Handler      : Action_Handler;
+                     The_Termination_Handler : not null access procedure);
+
+  procedure Perform_Goto;
+
+  procedure Clear_Targets;
+
+  procedure Define (New_Targets : Name.Id_List_Access);
+
+  procedure Update_Targets;
+
+  function Target_Name return String;
+
+  procedure Show_Description (Image : String);
+
+  procedure Show_Error (Image : String);
+
+end User;

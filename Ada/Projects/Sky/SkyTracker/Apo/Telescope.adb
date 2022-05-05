@@ -30,6 +30,8 @@ package body Telescope is
 
     entry Park;
 
+    entry Stop;
+
     entry Unpark;
 
     entry Get (The_Data : out Data);
@@ -63,6 +65,12 @@ package body Telescope is
   begin
     Control.Park;
   end Park;
+
+
+  procedure Stop is
+  begin
+    Control.Stop;
+  end Stop;
 
 
   procedure Unpark is
@@ -146,6 +154,10 @@ package body Telescope is
           accept Park do
             Ten_Micron.Park;
           end Park;
+        or
+          accept Stop do
+            Ten_Micron.Stop;
+          end Stop;
         or
           accept Unpark do
             Ten_Micron.Unpark;

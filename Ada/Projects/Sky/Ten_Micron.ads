@@ -37,6 +37,8 @@ package Ten_Micron is
   
   procedure Park;
 
+  procedure Stop;
+
   procedure Unpark;
 
   function Get return Information;

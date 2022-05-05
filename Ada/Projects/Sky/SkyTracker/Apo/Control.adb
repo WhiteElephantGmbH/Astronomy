@@ -49,6 +49,7 @@ package body Control is
                    Define_Target,
                    Go_To,
                    Park,
+                   Stop,
                    Unpark,
                    New_Goto_Direction,
                    Update,
@@ -176,6 +177,8 @@ package body Control is
           The_Command := Go_To;
         when User.Park =>
           The_Command := Park;
+        when User.Stop =>
+          The_Command := Stop;
         when User.Unpark =>
           The_Command := Unpark;
         when User.Close =>
@@ -330,6 +333,8 @@ package body Control is
         Telescope.Go_To;
       when Park =>
         Telescope.Park;
+      when Stop =>
+        Telescope.Stop;
       when Unpark =>
         Telescope.Unpark;
       when New_Goto_Direction =>
@@ -339,6 +344,7 @@ package body Control is
       when Close =>
         Targets.Stop;
         Telescope.Close;
+        Remote.Close;
         Stellarium.Close;
         exit;
       end case;
@@ -351,6 +357,7 @@ package body Control is
     Targets.Stop;
     Gui.Close;
     Telescope.Close;
+    Remote.Close;
     Stellarium.Close;
     Action_Handler.Enable_Termination;
   end Manager;

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2019 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                           (c) 2022 by White Elephant GmbH, Schaffhausen, Switzerland                              *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,12 +15,16 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with Unsigned;
+
 package Program is
 
   Major_Id : constant := 2;
-  Minor_Id : constant := 1;
+  Minor_Id : constant := 2;
 
   function Version return String;
+
+  function Version return Unsigned.Quadword;
 
 end Program;
 

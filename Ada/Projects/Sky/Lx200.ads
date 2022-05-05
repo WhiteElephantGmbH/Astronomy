@@ -48,11 +48,12 @@ package Lx200 is
     Set_Centering_Rate,
     Set_Guiding_Rate,
     Set_Finding_Rate,
-    Set_Slewing_Rate,
+    Set_Slewing_Rate, -- last normal command
 
     Get_Status,
     Set_Ultra_Precision_Mode,
     Slew_To_Park_Position,
+    Stop,
     Unpark);
 
   subtype Command is Extended_Command range Extended_Command'first .. Set_Slewing_Rate;

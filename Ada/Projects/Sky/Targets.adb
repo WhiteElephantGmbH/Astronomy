@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2021 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2021 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -201,7 +201,7 @@ package body Targets is
           end if;
         end;
       end loop;
-      if New_List or (The_Changes > 10) then
+      if New_List or (The_Changes > 100) then
         New_List := False;
         Clear.all;
         Name.Clear_History_For (The_Targets);

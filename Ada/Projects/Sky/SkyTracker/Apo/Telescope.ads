@@ -15,14 +15,40 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-pragma Build (Description => "Sky Guiding control program",
-              Version     => (1, 4, 0, 3),
-              Kind        => Windows,
-              Compiler    => "GNATPRO\22.1");
+with Name;
+with Space;
+with Ten_Micron;
+with Time;
 
-with Control;
+package Telescope is
 
-procedure SkyGuider is
-begin
-  Control.Start;
-end SkyGuider;
+  type State is new Ten_Micron.State;
+
+  type Data is record
+    Status             : State := Disconnected;
+    Target_Direction   : Space.Direction;
+    Actual_Direction   : Space.Direction;
+    Universal_Time     : Time.Ut;
+  end record;
+
+  type Information_Update_Handler is access procedure;
+
+  procedure Start (Update_Handler : Information_Update_Handler);
+
+  type Get_Space_Access is new Name.Get_Space_Access;
+
+  procedure Define_Space_Access (Get_Direction : Get_Space_Access;
+                                 The_Id        : Name.Id);
+  procedure Go_To;
+
+  procedure Park;
+
+  procedure Stop;
+
+  procedure Unpark;
+
+  function Information return Data;
+
+  procedure Close;
+
+end Telescope;

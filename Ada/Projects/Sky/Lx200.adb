@@ -5,8 +5,11 @@
 pragma Style_White_Elephant;
 
 with Strings;
+with Traces;
 
 package body Lx200 is
+
+  package Log is new Traces ("Lx200");
 
   Command_Start : constant Character := ':';
 
@@ -105,6 +108,8 @@ package body Lx200 is
       return Command_For ("U2");
     when Slew_To_Park_Position =>
       return Command_For ("KA");
+    when Stop =>
+      return Command_For ("STOP");
     when Unpark =>
       return Command_For ("PO");
     end case;
@@ -164,6 +169,10 @@ package body Lx200 is
   function Signed_Degrees_Of (Item : String) return Angle.Value is
   begin
     return Angle.Value_Of (Angle_Image_Of (Item, 'd', ''', '"'), With_Units => Angle.In_Degrees);
+  exception
+  when others =>
+    Log.Error ("Signed_Degrees_Of failed with " & Item);
+    raise;
   end Signed_Degrees_Of;
 
 
@@ -200,6 +209,10 @@ package body Lx200 is
   function Hours_Of (Item : String) return Angle.Value is
   begin
     return Angle.Value_Of (Angle_Image_Of (Item, 'h', 'm', 's'), With_Units => Angle.In_Hours);
+  exception
+  when others =>
+    Log.Error ("Hours_Of failed with " & Item);
+    raise;
   end Hours_Of;
 
 end Lx200;

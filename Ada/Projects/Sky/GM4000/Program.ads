@@ -15,38 +15,19 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Name;
-with Space;
-with Ten_Micron;
-with Time;
+with Unsigned;
 
-package Telescope is
+package Program is
 
-  type State is new Ten_Micron.State;
+  Major_Id : constant := 2;
+  Minor_Id : constant := 15;
+  Variant  : constant := 1;
+  Revision : constant := 0;
 
-  type Data is record
-    Status             : State := Disconnected;
-    Target_Direction   : Space.Direction;
-    Actual_Direction   : Space.Direction;
-    Universal_Time     : Time.Ut;
-  end record;
+  function Version return String;
 
-  type Information_Update_Handler is access procedure;
+  function Version return Unsigned.Quadword;
 
-  procedure Start (Update_Handler : Information_Update_Handler);
+end Program;
 
-  type Get_Space_Access is new Name.Get_Space_Access;
 
-  procedure Define_Space_Access (Get_Direction : Get_Space_Access;
-                                 The_Id        : Name.Id);
-  procedure Go_To;
-
-  procedure Park;
-
-  procedure Unpark;
-
-  function Information return Data;
-
-  procedure Close;
-
-end Telescope;

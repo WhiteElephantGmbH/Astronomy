@@ -105,7 +105,7 @@ package body Ten_Micron is
       Set_Status (State'val(Character'pos(Reply(Reply'first)) - Character'pos('0')));
     exception
     when others =>
-      Error.Raise_With ("Unknown device status " & Reply);
+      Error.Raise_With ("Unknown device status <" & Reply & ">");
     end;
   end Set_Device_Status;
 
@@ -163,6 +163,7 @@ package body Ten_Micron is
           return Received_String (Log_Enabled);
         when Set_Ultra_Precision_Mode
            | Slew_To_Park_Position
+           | Stop
            | Unpark
         =>
           return "";
@@ -187,7 +188,7 @@ package body Ten_Micron is
         end case;
       exception
       when Error.Occurred =>
-        null;
+        Log.Error (Error.Message);
       when Network.Timeout =>
         Log.Warning ("Reply timeout");
       when Item: others =>
@@ -292,6 +293,12 @@ package body Ten_Micron is
   begin
     Execute (Lx200.Slew_To_Park_Position);
   end Park;
+
+
+  procedure Stop is
+  begin
+    Execute (Lx200.Stop);
+  end Stop;
 
 
   procedure Unpark is

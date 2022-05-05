@@ -227,8 +227,8 @@ package body Parameter is
 
       Set (Ten_Micron_Handle);
       Is_In_Expert_Mode := Strings.Is_Equal (String_Value_Of (Expert_Mode_Key), "True");
-      The_10_Micron_Ip_Address := Ip_Address_For (Remote_Id);
-      The_10_Micron_Port := Port_For (Remote_Id);
+      The_10_Micron_Ip_Address := Ip_Address_For (Ten_Micron_Id);
+      The_10_Micron_Port := Port_For (Ten_Micron_Id);
 
       Set (Remote_Handle);
       The_Telescope_Name := Text.String_Of (String_Value_Of (Telescope_Key));
@@ -239,7 +239,7 @@ package body Parameter is
       end if;
 
       Set (Stellarium_Handle);
-      The_Stellarium_Port := Port_For (Remote_Id);
+      The_Stellarium_Port := Port_For (Stellarium_Id);
       Startup_Stellarium;
     end Read_Values;
 

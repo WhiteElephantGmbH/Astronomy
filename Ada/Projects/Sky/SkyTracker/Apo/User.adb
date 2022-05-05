@@ -27,6 +27,7 @@ with Objects;
 with Os;
 with Parameter;
 with Persistent;
+with Program;
 with Remote;
 with Site;
 with Space;
@@ -40,7 +41,7 @@ package body User is
   package Log is new Traces ("User");
 
   Application_Name : constant String := Application.Name;
-  Version          : constant String := Application.Version;
+  Version          : constant String := Program.Version;
 
   Control_Page   : Gui.Page;
   Goto_Button    : Gui.Button;
@@ -215,6 +216,12 @@ package body User is
   end Perform_Unpark;
 
 
+  procedure Perform_Stop is
+  begin
+    Signal_Action (Stop);
+  end Perform_Stop;
+
+
   Perform_Parking : not null access procedure := Perform_Unpark'access;
 
   The_Actual_Direction : Earth.Direction; -- used for Skyline
@@ -237,6 +244,9 @@ package body User is
       when Telescope.Parked =>
         Gui.Set_Text (Parking_Button, "Unpark");
         Perform_Parking := Perform_Unpark'access;
+      when Telescope.Slewing | Telescope.Parking =>
+        Gui.Set_Text (Parking_Button, "Stop");
+        Perform_Parking := Perform_Stop'access;
       when others =>
         Gui.Set_Text (Parking_Button, "Park");
         Perform_Parking := Perform_Park'access;

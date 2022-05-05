@@ -15,17 +15,19 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Unsigned;
+with Strings;
 
-package Program is
+package body Program is
 
-  Major_Id : constant := 1;
-  Minor_Id : constant := 0;
+  function Version return Unsigned.Quadword is
+  begin
+    return Unsigned.Quadword_Of (Unsigned.Word_String'(Major_Id, Minor_Id, 0, Revision));
+  end Version;
 
-  function Version return String;
-
-  function Version return Unsigned.Quadword;
+  function Version return String is
+  begin
+    return Strings.Trimmed (Major_Id'img) & '.' & Strings.Trimmed (Minor_Id'img) & '.' & Strings.Trimmed (Revision'img);
+  end Version;
 
 end Program;
-
 
