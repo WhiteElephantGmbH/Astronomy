@@ -22,12 +22,15 @@ with Time;
 
 package Telescope is
 
-  type State is new Ten_Micron.State;
+  subtype State is Ten_Micron.State;
+
+  use all type State;
 
   type Data is record
     Status             : State := Disconnected;
     Target_Direction   : Space.Direction;
     Actual_Direction   : Space.Direction;
+    Actual_Position    : Space.Direction;
     Universal_Time     : Time.Ut;
   end record;
 

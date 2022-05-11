@@ -163,6 +163,8 @@ package body Targets is
               return Is_To_Add (Solar_System, Sssb.Direction_Of (Item, Ut));
             when Name.Near_Earth_Object =>
               return Is_Selected (Near_Earth_Objects) and then Neo.Is_Arriving (Item);
+            when Name.Axis_Position =>
+              return The_Actual_Selection = All_Objects;
             when Name.Landmark =>
               return The_Actual_Selection = All_Objects;
             when Name.Sky_Object =>

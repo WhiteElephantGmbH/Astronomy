@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2014 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2014 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -26,6 +26,10 @@ package body Angle is
   function To_Signed   is new Ada.Unchecked_Conversion (Value, Signed);
 
   Per_Degree : constant := 360.0 / (2.0 ** 32);
+
+  Degree_Symbol : constant Character := '°';
+
+  function Degree return String is (Strings.Utf8_Of ("" & Degree_Symbol));
 
 
   function "+" (Item : Degrees) return Value is
@@ -208,7 +212,7 @@ package body Angle is
 
   type Unit_List is array (In_Unit) of Unit_Images;
 
-  Unit_Table : constant Unit_List := ("°'""", "hms");
+  Unit_Table : constant Unit_List := (Degree_Symbol & "'""", "hms");
 
   One_Degree  : constant := 3600.0;
   Full_Circle : constant := 360.0 * One_Degree;

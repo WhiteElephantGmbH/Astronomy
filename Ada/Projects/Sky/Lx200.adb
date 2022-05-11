@@ -103,9 +103,19 @@ package body Lx200 is
 
     when Get_Status =>
       return Command_For ("Gstat");
+    when Get_Axis_RA_Position =>
+      return Command_For ("GaXa");
+    when Get_Axis_Dec_Position =>
+      return Command_For ("GaXb");
+    when Set_Axis_RA_Position =>
+      return Command_For ("SaXa" & Parameter);
+    when Set_Axis_Dec_Position =>
+      return Command_For ("SaXb" & Parameter);
     when Set_Ultra_Precision_Mode =>
       Has_Ultra_Precision := True;
       return Command_For ("U2");
+    when Slew_To_Axis_Position =>
+      return Command_For ("MaX");
     when Slew_To_Park_Position =>
       return Command_For ("KA");
     when Stop =>
@@ -132,7 +142,6 @@ package body Lx200 is
     The_Image(The_Image'last - U2_Offset) := U2;
     return The_Image;
   end Angle_Image_Of;
-
 
 
   function Signed_Degrees_Of (Item         : Angle.Value;
@@ -214,5 +223,35 @@ package body Lx200 is
     Log.Error ("Hours_Of failed with " & Item);
     raise;
   end Hours_Of;
+
+
+  function Position_Of (Item : Angle.Value) return String is
+    use type Angle.Value;
+    use type Angle.Degrees;
+    The_Value : Angle.Degrees := +Item;
+  begin
+    if The_Value > 180.0 then
+      The_Value := The_Value - 360.0;
+    end if;
+    declare
+      type Degrees is delta 0.0001 range -180.0 .. 180.0;
+      Image : constant String := Strings.Trimmed (Degrees'image(Degrees(abs The_Value)));
+      Sign  : constant Character := (if The_Value >= 0.0 then '+' else '-');
+      Zeros : constant String := "00";
+    begin
+      return Sign & Zeros(Zeros'first .. Zeros'first + 7 - Image'length) & Image;
+    end;
+  end Position_Of;
+
+
+  function Position_Of (Item : String) return Angle.Value is
+    use type Angle.Value;
+  begin
+    return +Angle.Degrees'value(Item);
+  exception
+  when others =>
+    Log.Error ("Position_Of failed with " & Item);
+    raise;
+  end Position_Of;
 
 end Lx200;

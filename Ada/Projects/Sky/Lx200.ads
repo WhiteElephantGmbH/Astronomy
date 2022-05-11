@@ -51,7 +51,12 @@ package Lx200 is
     Set_Slewing_Rate, -- last normal command
 
     Get_Status,
+    Get_Axis_RA_Position,
+    Get_Axis_Dec_Position,
+    Set_Axis_RA_Position,
+    Set_Axis_Dec_Position,
     Set_Ultra_Precision_Mode,
+    Slew_To_Axis_Position,
     Slew_To_Park_Position,
     Stop,
     Unpark);
@@ -71,5 +76,9 @@ package Lx200 is
   function Hours_Of (Item : Angle.Value) return String;
 
   function Hours_Of (Item : String) return Angle.Value;
+
+  function Position_Of (Item : Angle.Value) return String;
+
+  function Position_Of (Item : String) return Angle.Value;
 
 end Lx200;

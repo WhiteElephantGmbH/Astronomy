@@ -82,6 +82,20 @@ package body Telescope is
   Next_Id            : Name.Id;
   Next_Get_Direction : Get_Space_Access := null;
 
+  function Target_Kind return Ten_Micron.Target_Kind is
+  begin
+    if Name.Is_Known (Next_Id) then
+      case Name.Kind_Of (Next_Id) is
+      when Name.Axis_Position =>
+        return Ten_Micron.Axis_Position;
+      when others =>
+        return Ten_Micron.Other_Targets;
+      end case;
+    else
+      return Ten_Micron.Other_Targets;
+    end if;
+  end Target_Kind;
+
 
   procedure Define_Space_Access (Get_Direction : Get_Space_Access;
                                  The_Id        : Name.Id) is
@@ -117,19 +131,17 @@ package body Telescope is
 
   task body Control_Task is
 
-    Update_Delay : constant Duration := 0.25;
+    Update_Delay : constant Duration := 0.5;
 
-    The_Information  : Ten_Micron.Information;
-    The_Status       : State       := Disconnected;
+    The_Information : Ten_Micron.Information;
 
 
     procedure Get_Information is
     begin
-      if The_Status = Disconnected then
+      if The_Information.Status = Disconnected then
         Ten_Micron.Startup (Parameter.Ten_Micron_Ip_Address, Parameter.Ten_Micron_Port);
       end if;
       The_Information := Ten_Micron.Get;
-      The_Status := Telescope.State(The_Information.Status);
     end Get_Information;
 
 
@@ -148,7 +160,7 @@ package body Telescope is
           exit;
         or
           accept Go_To do
-            Ten_Micron.Slew_To (Actual_Target_Direction);
+            Ten_Micron.Slew_To (Actual_Target_Direction, Target_Kind);
           end Go_To;
         or
           accept Park do
@@ -167,13 +179,14 @@ package body Telescope is
             The_Data.Status := Telescope.State(The_Information.Status);
             The_Data.Target_Direction := Actual_Target_Direction;
             The_Data.Actual_Direction := The_Information.Direction;
+            The_Data.Actual_Position := The_Information.Position;
             The_Data.Universal_Time := Time.Universal;
           end Get;
         or delay Update_Delay;
           Signal_Information_Update.all;
           Update_Handling;
         end select;
-        Remote.Define (The_Status in Tracking | Following);
+        Remote.Define (The_Information.Status in Tracking | Following);
       exception
       when Item: others =>
         Log.Termination (Item);

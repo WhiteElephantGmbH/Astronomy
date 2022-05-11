@@ -16,7 +16,7 @@ package Ten_Micron is
                  Homing,
                  Parked,
                  Slewing,
-                 Halted,        -- not moving (tracking off)
+                 Positioned,    -- not moving (tracking off)
                  Inhibited,     -- low temperator (motors pre-heating)
                  Outside,       -- not within tracking limits
                  Following,     -- following a precalculated trajectory
@@ -25,16 +25,20 @@ package Ten_Micron is
                  Failure,       -- error
                  Disconnected); -- no connection to mount
 
+  type Target_Kind is (Axis_Position, Other_Targets);
+
   type Information is record
     Status    : State := Disconnected;
     Direction : Space.Direction;
+    Position  : Space.Direction;
   end record;
 
   procedure Startup (Server_Address : Network.Ip_Address;
                      Server_Port    : Network.Port_Number);
 
-  procedure Slew_To (Location : Space.Direction);
-  
+  procedure Slew_To (Location : Space.Direction;
+                     Target   : Target_Kind := Other_Targets);
+
   procedure Park;
 
   procedure Stop;

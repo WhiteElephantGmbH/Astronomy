@@ -127,7 +127,9 @@ package body Ten_Micron is
       Send (String_Of (Command, Parameter), Log_Enabled);
       begin
         case Command is
-        when Slew =>
+        when Slew
+           | Slew_To_Axis_Position
+        =>
           declare
             Reply : constant String := Received_Character;
           begin
@@ -141,6 +143,8 @@ package body Ten_Micron is
            | Set_Time_Offset
            | Set_Altitude
            | Set_Azimuth
+           | Set_Axis_RA_Position
+           | Set_Axis_Dec_Position
            | Set_Right_Ascension
            | Set_Declination
         =>
@@ -153,17 +157,19 @@ package body Ten_Micron is
            | Get_Longitude
            | Get_Sideral_Time
            | Get_Status
+           | Get_Axis_RA_Position
+           | Get_Axis_Dec_Position
            | Get_Right_Ascension
+           | Get_Declination
            | Get_Altitude
            | Get_Azimuth
-           | Get_Declination
            | Set_Latitude
            | Set_Longitude
          =>
           return Received_String (Log_Enabled);
         when Set_Ultra_Precision_Mode
-           | Slew_To_Park_Position
            | Stop
+           | Slew_To_Park_Position
            | Unpark
         =>
           return "";
@@ -214,22 +220,28 @@ package body Ten_Micron is
       when Item: others =>
         Error.Raise_With (Network.Exception_Kind (Item)'image);
       end;
-      declare
-        Product : constant String := Reply_For (Lx200.Get_Product_Name);
       begin
-        if Product = GM1000HPS then
-          if Reply_For (Lx200.Get_Firmware_Number) /= Firmware_GM1000 then
-            Error.Raise_With ("expected version GM1000HPS " & Firmware_GM1000);
+        declare
+          Product : constant String := Reply_For (Lx200.Get_Product_Name);
+        begin
+          if Product = GM1000HPS then
+            if Reply_For (Lx200.Get_Firmware_Number) /= Firmware_GM1000 then
+              Error.Raise_With ("expected version GM1000HPS " & Firmware_GM1000);
+            end if;
+          elsif Product = GM4000HPS then
+            if Reply_For (Lx200.Get_Firmware_Number) /= Firmware_GM4000 then
+              Error.Raise_With ("expected version GM1000HPS " & Firmware_GM1000);
+            end if;
+          else
+            Error.Raise_With ("Incorrect 10micron product name " & Product);
           end if;
-        elsif Product = GM4000HPS then
-          if Reply_For (Lx200.Get_Firmware_Number) /= Firmware_GM4000 then
-            Error.Raise_With ("expected version GM1000HPS " & Firmware_GM1000);
-          end if;
-        else
-          Error.Raise_With ("Incorrect 10micron product name " & Product);
-        end if;
-        Set_Ultra_Precision_Mode;
-        Set_Device_Status;
+          Set_Ultra_Precision_Mode;
+          Set_Device_Status;
+        end;
+      exception
+      when others =>
+        Network.Tcp.Close (The_Socket);
+        raise;
       end;
     when others =>
       Log.Error ("already connected");
@@ -258,6 +270,13 @@ package body Ten_Micron is
   end Actual_Direction;
 
 
+  function Actual_Position return Space.Direction is
+  begin
+    return Space.Direction_Of (Ra  => Lx200.Position_Of (Reply_For (Lx200.Get_Axis_RA_Position)),
+                               Dec => Lx200.Position_Of (Reply_For (Lx200.Get_Axis_Dec_Position)));
+  end Actual_Position;
+
+
   function Get return Information is
     The_Information : Information;
   begin
@@ -265,6 +284,7 @@ package body Ten_Micron is
       Set_Device_Status;
       The_Information.Status := The_Status;
       The_Information.Direction := Actual_Direction;
+      The_Information.Position := Actual_Position;
     end if;
     return The_Information;
   exception
@@ -274,15 +294,23 @@ package body Ten_Micron is
   end Get;
 
 
-  procedure Slew_To (Location : Space.Direction) is
+  procedure Slew_To (Location : Space.Direction;
+                     Target   : Target_Kind := Other_Targets) is
     use Lx200;
   begin
     if Not_Connected then
       return;
     end if;
-    Execute (Set_Right_Ascension, Hours_Of (Space.Ra_Of (Location)), Expected => "1");
-    Execute (Set_Declination, Signed_Degrees_Of (Space.Dec_Of (Location)), Expected => "1");
-    Execute (Slew, Expected => Slew_Ok);
+    case Target is
+    when Axis_Position =>
+      Execute (Set_Axis_RA_Position, Position_Of (Space.Ra_Of (Location)), Expected => "1");
+      Execute (Set_Axis_Dec_Position, Position_Of (Space.Dec_Of (Location)), Expected => "1");
+      Execute (Slew_To_Axis_Position, Expected => Slew_Ok);
+    when Other_Targets =>
+      Execute (Set_Right_Ascension, Hours_Of (Space.Ra_Of (Location)), Expected => "1");
+      Execute (Set_Declination, Signed_Degrees_Of (Space.Dec_Of (Location)), Expected => "1");
+      Execute (Slew, Expected => Slew_Ok);
+    end case;
   exception
   when Error.Occurred =>
     Log.Error (Error.Message);

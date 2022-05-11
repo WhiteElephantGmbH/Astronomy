@@ -363,10 +363,12 @@ package body Control is
               end if;
             when Name.Small_Solar_System_Body =>
               Telescope.Define_Space_Access (Sssb.Direction_Of'access, The_Item);
-            when Name.Near_Earth_Object =>
-              null; -- no NEOs
+            when Name.Axis_Position =>
+              null; -- no axis positions
             when Name.Landmark =>
               Telescope.Define_Space_Access (Earth_Direction_Of'access, The_Item);
+            when Name.Near_Earth_Object =>
+              null; -- no NEOs
             end case;
           elsif User.In_Setup_Mode then
             Telescope.Define_Space_Access (null, The_Item);
@@ -428,8 +430,9 @@ package body Control is
       Horizon.Generate;
     end if;
     Sky_Line.Read;
-    Name.Read_Favorites (Enable_Neos       => False,
-                         Enable_Land_Marks => True);
+    Name.Read_Favorites (Enable_Axis_Positions => False,
+                         Enable_Land_Marks     => True,
+                         Enable_Neos           => False);
   end Read_Data;
 
 

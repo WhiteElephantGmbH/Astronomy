@@ -383,11 +383,13 @@ package body Control is
                 end if;
               when Name.Small_Solar_System_Body =>
                 Telescope.Define_Space_Access (Sssb.Direction_Of'access, The_Item);
+              when Name.Axis_Position =>
+                null;
+              when Name.Landmark =>
+                The_Landmark := The_Item;
               when Name.Near_Earth_Object =>
                 Telescope.Define_Space_Access (Neo.Direction_Of'access, The_Item);
                 The_Neo_Target := The_Item;
-              when Name.Landmark =>
-                The_Landmark := The_Item;
               end case;
             end if;
           end;
@@ -453,7 +455,9 @@ package body Control is
     end if;
     Sky_Line.Read;
     Neo.Add_Objects;
-    Name.Read_Favorites;
+    Name.Read_Favorites (Enable_Axis_Positions => False,
+                         Enable_Land_Marks     => True,
+                         Enable_Neos           => True);
   end Read_Data;
 
 

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2011 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2011 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -24,7 +24,8 @@ package Name is
 
   type Selector is (Enumerated, Caldwell, Messier);
 
-  type Object_Kind is (Landmark, Moon, Sun, Planet, Near_Earth_Object, Small_Solar_System_Body, Sky_Object);
+  type Object_Kind is (Axis_Position, Landmark,
+                       Moon, Sun, Planet, Near_Earth_Object, Small_Solar_System_Body, Sky_Object);
 
   type Id is private;
 
@@ -55,8 +56,9 @@ package Name is
 
   function "=" (Left, Right : Id_List) return Boolean;
 
-  procedure Read_Favorites (Enable_Neos        : Boolean := True;
-                            Enable_Land_Marks  : Boolean := True);
+  procedure Read_Favorites (Enable_Axis_Positions : Boolean;
+                            Enable_Land_Marks     : Boolean;
+                            Enable_Neos           : Boolean);
 
   procedure Define (List : Data.Kind);
 
@@ -98,6 +100,8 @@ package Name is
 
   function Direction_Of (Item : Id;
                          Ut   : Time.Ut) return Space.Direction;
+
+  function Direction_Of (Item : Id) return Space.Direction;
 
   function Direction_Of (Item : Id) return Earth.Direction;
 

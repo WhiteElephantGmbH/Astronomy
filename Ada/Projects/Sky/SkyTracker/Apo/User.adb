@@ -15,6 +15,7 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with Angle;
 with Ada.Real_Time;
 with Ada.Unchecked_Conversion;
 with Application;
@@ -23,6 +24,7 @@ with Earth;
 with Gui.Enumeration_Menu_Of;
 with Gui.Registered;
 with Lexicon;
+with Lx200;
 with Objects;
 with Os;
 with Parameter;
@@ -57,6 +59,8 @@ package body User is
   Actual_Dec   : Gui.Plain_Edit_Box;
   Actual_Alt   : Gui.Plain_Edit_Box;
   Actual_Az    : Gui.Plain_Edit_Box;
+  Ra_Axis      : Gui.Plain_Edit_Box;
+  Dec_Axis     : Gui.Plain_Edit_Box;
   Lmst         : Gui.Plain_Edit_Box;
   Local_Time   : Gui.Plain_Edit_Box;
 
@@ -71,7 +75,11 @@ package body User is
   The_Target_Selection  : Target_Selection := No_Target;
   Last_Target_Selection : Target_Selection := Target_Object;
 
-  The_Status : Telescope.State := Telescope.Disconnected;
+  subtype State is Telescope.State;
+
+  use all type State;
+
+  The_Status : State := Disconnected;
 
   Action_Routine   : Action_Handler;
   The_Last_Action  : Action := Action'pred (Button_Action'first);
@@ -241,10 +249,10 @@ package body User is
     procedure Define_Control_Button is
     begin
       case Information.Status is
-      when Telescope.Parked =>
+      when Parked =>
         Gui.Set_Text (Control_Button, "Unpark");
         Perform_Parking := Perform_Unpark'access;
-      when Telescope.Slewing | Telescope.Parking =>
+      when Slewing | Parking =>
         Gui.Set_Text (Control_Button, "Stop");
         Perform_Parking := Perform_Stop'access;
       when others =>
@@ -262,8 +270,6 @@ package body User is
       The_Actual_Direction := Earth.Unknown_Direction;
     end Clear_Actual_Values;
 
-    use type Telescope.State;
-
   begin -- Show
     if (The_Status /= Information.Status)
       or (Last_Target_Selection /= The_Target_Selection)
@@ -272,27 +278,27 @@ package body User is
       Last_Target_Selection := The_Target_Selection;
       Define_Control_Button;
       case The_Status is
-      when Telescope.Disconnected
-         | Telescope.Failure
-         | Telescope.Homing
-         | Telescope.Inconsistent
-         | Telescope.Inhibited
-         | Telescope.Unknown
-         | Telescope.Unparking
+      when Disconnected
+         | Failure
+         | Homing
+         | Inconsistent
+         | Inhibited
+         | Unknown
+         | Unparking
       =>
         Gui.Disable (Goto_Button);
         Gui.Disable (Control_Button);
-      when Telescope.Parked
-         | Telescope.Parking
+      when Parked
+         | Parking
       =>
         Gui.Enable (Control_Button);
         Gui.Disable (Goto_Button);
-      when Telescope.Tracking
-         | Telescope.Stopped
-         | Telescope.Slewing
-         | Telescope.Halted
-         | Telescope.Outside
-         | Telescope.Following
+      when Tracking
+         | Stopped
+         | Slewing
+         | Positioned
+         | Outside
+         | Following
       =>
         Set_Goto_Button;
         Gui.Enable (Control_Button);
@@ -324,6 +330,13 @@ package body User is
         Gui.Set_Text (Actual_Az, Earth.Az_Image_Of (The_Actual_Direction));
       else
         Clear_Actual_Values;
+      end if;
+      if Space.Direction_Is_Known (Information.Actual_Position) then
+        Gui.Set_Text (Dec_Axis, Lx200.Position_Of (Space.Dec_Of (Information.Actual_Position)) & Angle.Degree);
+        Gui.Set_Text (Ra_Axis, Lx200.Position_Of (Space.Ra_Of (Information.Actual_Position)) & Angle.Degree);
+      else
+        Gui.Set_Text (Dec_Axis, "");
+        Gui.Set_Text (Ra_Axis, "");
       end if;
       if Information.Universal_Time = Time.In_The_Past then
         Gui.Set_Text (Lmst, "");
@@ -518,9 +531,9 @@ package body User is
 
       procedure Define_Display_Page is
         -- largest texts
-        Moving_Rate_Text : constant String := "Moving Rate";
+        Local_Time_Text : constant String := "Local Time";
 
-        Title_Size : constant Natural := Gui.Text_Size_Of (Moving_Rate_Text) + Separation;
+        Title_Size : constant Natural := Gui.Text_Size_Of (Local_Time_Text) + Separation;
         Text_Size  : constant Natural := Natural'max (Gui.Text_Size_Of ("+360d00'00.0"""),
                                                       Gui.Text_Size_Of ("20h58m58.58s")) + Separation;
       begin
@@ -533,7 +546,7 @@ package body User is
                                  Is_Modifiable  => False,
                                  The_Size       => Text_Size,
                                  The_Title_Size => Title_Size);
-        Target_Dec := Gui.Create (Display_Page, "Target DEC", "",
+        Target_Dec := Gui.Create (Display_Page, "Target Dec", "",
                                   Is_Modifiable  => False,
                                   The_Size       => Text_Size,
                                   The_Title_Size => Title_Size);
@@ -556,12 +569,21 @@ package body User is
                                  The_Size       => Text_Size,
                                  The_Title_Size => Title_Size);
 
+        Ra_Axis := Gui.Create (Display_Page, "RA Axis", "",
+                               Is_Modifiable  => False,
+                               The_Size       => Text_Size,
+                               The_Title_Size => Title_Size);
+        Dec_Axis := Gui.Create (Display_Page, "Dec Axis", "",
+                                Is_Modifiable  => False,
+                                The_Size       => Text_Size,
+                                The_Title_Size => Title_Size);
+
         Lmst := Gui.Create (Display_Page, "LMST", "",
                             Is_Modifiable  => False,
                             The_Size       => Text_Size,
                             The_Title_Size => Title_Size);
 
-        Local_Time := Gui.Create (Display_Page, "Local Time", "",
+        Local_Time := Gui.Create (Display_Page, Local_Time_Text, "",
                                   Is_Modifiable  => False,
                                   The_Size       => Text_Size,
                                   The_Title_Size => Title_Size);

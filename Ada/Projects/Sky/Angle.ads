@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2014 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2014 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -42,6 +42,8 @@ package Angle is
   Maximum : constant Value; -- just before zero (cyclic)
 
   Epsilon : constant Value; -- smallest value
+
+  function Degree return String;
 
   function "+" (Item : Degrees) return Value;
 

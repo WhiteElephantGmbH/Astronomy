@@ -215,11 +215,20 @@ package body Control is
   end Target_Direction_Of;
 
 
+  function Axis_Direction_Of (Axis_Position : Name.Id;
+                              Unused_Ut     : Time.Ut) return Space.Direction is
+  begin
+    return Name.Direction_Of (Axis_Position);
+  end Axis_Direction_Of;
+
+
   task body Manager is
 
     The_Command : Command;
 
     The_Data : Telescope.Data;
+
+    use all type Telescope.State;
 
     procedure Define_External_Target is
     begin
@@ -228,28 +237,27 @@ package body Control is
       Telescope.Define_Space_Access (Target_Direction_Of'access, Name.No_Id);
     end Define_External_Target;
 
-
     procedure Handle_Goto is
     begin
       Define_External_Target;
       case The_Data.Status is
-      when Telescope.Failure
-         | Telescope.Inconsistent
-         | Telescope.Inhibited
-         | Telescope.Homing
-         | Telescope.Parked
-         | Telescope.Parking
-         | Telescope.Unparking
-         | Telescope.Unknown
-         | Telescope.Disconnected
+      when Failure
+         | Inconsistent
+         | Inhibited
+         | Homing
+         | Parked
+         | Parking
+         | Unparking
+         | Unknown
+         | Disconnected
       =>
         Log.Warning ("goto not executed");
-      when Telescope.Slewing
-         | Telescope.Following
-         | Telescope.Halted
-         | Telescope.Outside
-         | Telescope.Stopped
-         | Telescope.Tracking
+      when Slewing
+         | Following
+         | Positioned
+         | Outside
+         | Stopped
+         | Tracking
       =>
         User.Perform_Goto;
       end case;
@@ -257,28 +265,27 @@ package body Control is
 
 
     procedure Handle_Telescope_Information is
-      use type Telescope.State;
     begin
       The_Data := Telescope.Information;
       User.Show (The_Data);
       case The_Data.Status is
-      when Telescope.Failure
-         | Telescope.Inconsistent
-         | Telescope.Inhibited
-         | Telescope.Outside
-         | Telescope.Unknown
-         | Telescope.Disconnected
+      when Failure
+         | Inconsistent
+         | Inhibited
+         | Outside
+         | Unknown
+         | Disconnected
       =>
         null;
-      when Telescope.Slewing
-         | Telescope.Following
-         | Telescope.Halted
-         | Telescope.Stopped
-         | Telescope.Parked
-         | Telescope.Tracking
-         | Telescope.Homing
-         | Telescope.Parking
-         | Telescope.Unparking
+      when Slewing
+         | Following
+         | Positioned
+         | Stopped
+         | Parked
+         | Tracking
+         | Homing
+         | Parking
+         | Unparking
       =>
         Stellarium.Set (The_Data.Actual_Direction);
       end case;
@@ -320,10 +327,12 @@ package body Control is
               end if;
             when Name.Small_Solar_System_Body =>
               Telescope.Define_Space_Access (Sssb.Direction_Of'access, The_Item);
-            when Name.Near_Earth_Object =>
-              null; -- no NEOs
+            when Name.Axis_Position =>
+              Telescope.Define_Space_Access (Axis_Direction_Of'access, The_Item);
             when Name.Landmark =>
               null; -- no Landmark
+            when Name.Near_Earth_Object =>
+              null; -- no NEOs
             end case;
           else
             null;
@@ -369,8 +378,9 @@ package body Control is
       Horizon.Generate;
     end if;
     Sky_Line.Read;
-    Name.Read_Favorites (Enable_Neos       => False,
-                         Enable_Land_Marks => False);
+    Name.Read_Favorites (Enable_Axis_Positions => True,
+                         Enable_Land_Marks     => False,
+                         Enable_Neos           => False);
   end Read_Data;
 
 

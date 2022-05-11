@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2011 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2011 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -34,21 +34,26 @@ package body Name is
 
   package Log is new Traces ("Name");
 
-  Support_Neos       : Boolean := False;
-  Support_Land_Marks : Boolean := False;
+  Support_Axis_Positions : Boolean := False;
+  Support_Land_Marks     : Boolean := False;
+  Support_Neos           : Boolean := False;
 
   type Text is new Ada.Strings.Unbounded.Unbounded_String;
 
-  type Element_Data (Is_Landmark : Boolean := False) is record
+  type Data_Kind is (Axis_Position, Landmark, Sky_Object);
+
+  type Element_Data (Item : Data_Kind) is record
     Kind      : Object_Kind;
     Number    : Natural;
     Number_Id : Selector;
     Name      : Text;
     Next      : Element_Access;
-    case Is_Landmark is
-    when True =>
+    case Item is
+    when Axis_Position =>
+      Position : Space.Direction;
+    when Landmark =>
       Direction : Earth.Direction;
-    when False =>
+    when others =>
       Object : Data.Object := Data.Undefined;
     end case;
   end record;
@@ -216,6 +221,12 @@ package body Name is
   end Direction_Of;
 
 
+  function Direction_Of (Item : Name.Id) return Space.Direction is
+  begin
+    return Item.Element.Position;
+  end Direction_Of;
+
+
   function Direction_Of (Item : Name.Id) return Earth.Direction is
   begin
     return Item.Element.Direction;
@@ -375,11 +386,13 @@ package body Name is
   end "=";
 
 
-  procedure Read_Favorites (Enable_Neos        : Boolean := True;
-                            Enable_Land_Marks  : Boolean := True) is
+  procedure Read_Favorites (Enable_Axis_Positions : Boolean;
+                            Enable_Land_Marks     : Boolean;
+                            Enable_Neos           : Boolean) is
   begin
-    Support_Neos := Enable_Neos;
+    Support_Axis_Positions := Enable_Axis_Positions;
     Support_Land_Marks := Enable_Land_Marks;
+    Support_Neos := Enable_Neos;
     Actual_Catalog.Read_Favorite_Catalog;
   end Read_Favorites;
 
@@ -419,8 +432,8 @@ package body Name is
           return False;
         end if;
         declare
-          Part_1       : constant String := Part_For (Strings.First_Index);
-          Part_1_Parts : constant Strings.Item := Strings.Purge_Of (Strings.Item_Of (Part_1, ' '));
+          Part_1  : constant String := Part_For (Strings.First_Index);
+          Parts_1 : constant Strings.Item := Strings.Purge_Of (Strings.Item_Of (Part_1, ' '));
 
           function Pixels_Of (The_Value : Angle.Value) return Integer is
             use type Angle.Value;
@@ -430,20 +443,49 @@ package body Name is
             return Integer(Value * 8192.0 / 360.0);
           end Pixels_Of;
 
+          procedure Add_Axis_Position is
+          begin
+            if Parts.Count = 3 then
+              declare
+                Words : constant Strings.Item := Strings.Item_Of (Parts_1, (First => Strings.First_Index + 1,
+                                                                            Last  => Parts_1.Count));
+                Position_Name : constant String := Strings.Data_Of (Words, Separator => " ");
+                Ra_Image      : constant String := Part_For (Strings.First_Index + 1);
+                Dec_Image     : constant String := Part_For (Strings.First_Index + 2);
+              begin
+                The_Element := new Element_Data (Axis_Position);
+                The_Element.Number := Number;
+                The_Element.Number_Id := Enumerated;
+                The_Element.Name := To_Unbounded_String (Position_Name);
+                declare
+                  Ra  : constant Angle.Value := Angle.Value_Of (Ra_Image);
+                  Dec : constant Angle.Value := Angle.Value_Of (Dec_Image);
+                begin
+                  The_Element.Position := Space.Direction_Of (Ra  => Ra,
+                                                              Dec => Dec);
+                end;
+                return;
+              exception
+              when others =>
+                null;
+              end;
+            end if;
+            Error.Raise_With ("Incorrect Position - " & Line);
+          end Add_Axis_Position;
+
           procedure Add_Landmark is
           begin
             if Parts.Count = 3 then
               declare
-                Words : constant Strings.Item := Strings.Item_Of (Part_1_Parts, (First => Strings.First_Index + 1,
-                                                                                 Last  => Part_1_Parts.Count));
+                Words : constant Strings.Item := Strings.Item_Of (Parts_1, (First => Strings.First_Index + 1,
+                                                                            Last  => Parts_1.Count));
                 Mark_Name : constant String := Strings.Data_Of (Words, Separator => " ");
                 Az_Image  : constant String := Part_For (Strings.First_Index + 1);
                 Alt_Image : constant String := Part_For (Strings.First_Index + 2);
               begin
-                The_Element := new Element_Data (Is_Landmark => True);
+                The_Element := new Element_Data (Landmark);
                 The_Element.Number := Number;
                 The_Element.Number_Id := Enumerated;
-                The_Element.Kind := Landmark;
                 The_Element.Name := To_Unbounded_String (Mark_Name);
                 declare
                   Az  : constant Angle.Value := Angle.Value_Of (Az_Image);
@@ -466,7 +508,7 @@ package body Name is
 
           procedure Add_Sky_Object is
           begin
-            The_Element := new Element_Data;
+            The_Element := new Element_Data(Sky_Object);
             The_Element.Number := Number;
             The_Element.Number_Id := Enumerated;
             if Parts.Count = 4 then
@@ -578,7 +620,9 @@ package body Name is
           end Add_Sky_Object;
 
         begin
-          if Support_Land_Marks and then Part_1_Parts.Count >= 2 and then Part_1_Parts(Strings.First_Index) = "LM" then
+          if Support_Axis_Positions and then Parts_1.Count >= 2 and then Parts_1(Strings.First_Index) = "AP" then
+            Add_Axis_Position;
+          elsif Support_Land_Marks and then Parts_1.Count >= 2 and then Parts_1(Strings.First_Index) = "LM" then
             Add_Landmark;
           else
             Add_Sky_Object;
