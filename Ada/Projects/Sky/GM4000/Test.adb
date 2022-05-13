@@ -41,11 +41,15 @@ package body Test is
 
     Terminator : constant Character := '#';
 
+    Delay_Counter : constant := 10;
+
+    None : constant String := "    ";
+
     Listener_Socket   : Network.Tcp.Listener_Socket;
     The_Client_Socket : Network.Tcp.Socket;
     Client_Address    : Network.Ip_Address;
 
-    type State is (Parked, Slewing, Tracking, Stopped);
+    type State is (Parked, Slewing, Tracking, Stopped, Positioning, Positioned);
 
     The_State  : State := Parked;
     Send_Delay : Integer;
@@ -55,6 +59,12 @@ package body Test is
 
     Ra_Image  : String := Ra_Park_Image;
     Dec_Image : String := Dec_Park_Image;
+
+    RA_Park_Axis_Image  : constant String := "+090.0000#";
+    Dec_Park_Axis_Image : constant String := "+000.0000#";
+
+    RA_Axis_Image  : String := RA_Park_Axis_Image;
+    Dec_Axis_Image : String := Dec_Park_Axis_Image;
 
     procedure Message_Handler (Data : String) is
 
@@ -74,8 +84,10 @@ package body Test is
     begin -- Message_Handler
       if Data'length > 3  and then Data(Data'last) = Terminator then
         declare
-          Command : constant String := Data(Data'first .. Data'first + 2);
-          Image   : constant String := Data(Data'first + 3 .. Data'last);
+          Command          : constant String := Data(Data'first .. Data'first + 2);
+          Image            : constant String := Data(Data'first + 3 .. Data'last);
+          Extended_Command : constant String := (if Data'length > 5 then Data(Data'first .. Data'first + 4) else None);
+          Extended_Image   : constant String := (if Data'length > 5 then Data(Data'first + 5 .. Data'last) else "");
         begin
           if Data = ":Gstat#" then
             Put_Line ("Get Status");
@@ -90,12 +102,54 @@ package body Test is
               if Send_Delay = 0 then
                 The_State := Tracking;
               end if;
+            when Positioning =>
+              Send ("6#");
+              Send_Delay := Send_Delay - 1;
+              if Send_Delay = 0 then
+                The_State := Positioned;
+              end if;
+            when Positioned =>
+              Send ("7#");
             when Tracking =>
               Send ("0#");
             end case;
           elsif Data = ":STOP#" then
             Put_Line ("Stop");
             The_State := Stopped;
+          elsif Data = ":STOP#" then
+            Put_Line ("Stop");
+            The_State := Stopped;
+          elsif Data = ":GaXa#" then
+            Put_Line ("Get RA Axis Angle");
+            case The_State is
+            when Parked =>
+              RA_Axis_Image := RA_Park_Axis_Image;
+            when others =>
+              null;
+            end case;
+            Send (RA_Axis_Image);
+          elsif Data = ":GaXb#" then
+            Put_Line ("Get Dec Axis Angle");
+            case The_State is
+            when Parked =>
+              Dec_Axis_Image := Dec_Park_Axis_Image;
+            when others =>
+              null;
+            end case;
+            Send (Dec_Axis_Image);
+          elsif Data = ":MaX#" then
+            The_State := Positioning;
+            Put_Line ("Slew to Axis Position");
+            Send ("0"); -- OK
+            Send_Delay := Delay_Counter;
+          elsif Extended_Command = ":SaXa" then
+            Put_Line ("Set RA Axis Angle");
+            RA_Axis_Image := Extended_Image;
+            Send ("1");
+          elsif Extended_Command = ":SaXb" then
+            Put_Line ("Set Dec Axis Angle");
+            Dec_Axis_Image := Extended_Image;
+            Send ("1");
           elsif Command = ":GV" then
             case Data(Data'first + 3) is
             when 'P' => -- GVP
@@ -170,7 +224,7 @@ package body Test is
             The_State := Slewing;
             Put_Line ("Slew to Target Object");
             Send ("0"); -- OK
-            Send_Delay := 20;
+            Send_Delay := Delay_Counter;
           else
             Put_Line ("Unknown Command " & Data);
           end if;
@@ -195,7 +249,7 @@ package body Test is
             Command : constant String := Network.Tcp.Raw_String_From (The_Client_Socket, Terminator => Terminator);
           begin
             exit Main when Command = "";
-            if Command in ":Gstat#" | ":GD#" | ":GR#" then
+            if Command in ":Gstat#" | ":GD#" | ":GR#" | ":GaXa#" | ":GaXb#" then
               if not Hiding then
                 Start_Hiding := True;
               end if;
