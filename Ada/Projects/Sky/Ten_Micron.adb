@@ -120,7 +120,8 @@ package body Ten_Micron is
                       Parameter : String := "") return String is
     use Lx200;
 
-    Log_Enabled : constant Boolean := not (Command in Get_Declination | Get_Right_Ascension);
+    Log_Enabled : constant Boolean
+      := not (Command in Get_Declination | Get_Right_Ascension | Get_Axis_Dec_Position | Get_Axis_RA_Position);
 
   begin
     for Unused_Count in 1 .. Number_Of_Retries loop
@@ -290,6 +291,10 @@ package body Ten_Micron is
   exception
   when Error.Occurred =>
     Log.Error (Error.Message);
+    return The_Information;
+  when Item: others =>
+    Log.Termination (Item);
+    The_Information.Status := Failure;
     return The_Information;
   end Get;
 

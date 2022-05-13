@@ -454,6 +454,7 @@ package body Name is
                 Dec_Image     : constant String := Part_For (Strings.First_Index + 2);
               begin
                 The_Element := new Element_Data (Axis_Position);
+                The_Element.Kind := Axis_Position;
                 The_Element.Number := Number;
                 The_Element.Number_Id := Enumerated;
                 The_Element.Name := To_Unbounded_String (Position_Name);
@@ -484,6 +485,7 @@ package body Name is
                 Alt_Image : constant String := Part_For (Strings.First_Index + 2);
               begin
                 The_Element := new Element_Data (Landmark);
+                The_Element.Kind := Landmark;
                 The_Element.Number := Number;
                 The_Element.Number_Id := Enumerated;
                 The_Element.Name := To_Unbounded_String (Mark_Name);
@@ -667,7 +669,12 @@ package body Name is
 
       begin -- Create_Default_Favorites
         Ada.Text_IO.Create (The_File, Name => Filename);
-        Put (Strings.Bom_8 & Image_Of (Lexicon.Mercury));
+        Ada.Text_IO.Put (The_File, Strings.Bom_8);
+        if Support_Axis_Positions then
+          Put ("AP Home | 0° 00' 00"" | 0° 00' 00""");
+          Put ("");
+        end if;
+        Put (Image_Of (Lexicon.Mercury));
         Put (Image_Of (Lexicon.Venus));
         Put (Image_Of (Lexicon.Moon));
         Put (Image_Of (Lexicon.Mars));

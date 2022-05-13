@@ -21,7 +21,7 @@ package Catalog is
 
   Undefined : constant := 0;
 
-  type Object_Type is (Landmark, Star, Double, Stars, Cluster, Galaxy, Nebula, Quasar, Satellite, Unknown);
+  type Object_Type is (Star, Double, Stars, Cluster, Galaxy, Nebula, Quasar, Satellite, Unknown);
 
   type Degrees   is delta 0.00000001 digits 12;
   type Motion    is delta 0.01       digits 7;

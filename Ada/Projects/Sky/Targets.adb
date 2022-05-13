@@ -172,8 +172,6 @@ package body Targets is
                 Object : constant Data.Object := Name.Object_Of (Item);
               begin
                 case Data.Type_Of (Object) is
-                when Data.Landmark  =>
-                  raise Program_Error;
                 when Data.Quasar  =>
                   return Is_To_Add (Galaxies, Data.Direction_Of (Object, Ut));
                 when Data.Galaxy  =>
