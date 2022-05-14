@@ -55,30 +55,20 @@ package body Ten_Micron is
 
 
   function Received_String (Log_Enabled : Boolean := True) return String is
+    Reply : constant String := Network.Tcp.Raw_String_From (The_Socket, Terminator => Lx200.Terminator);
   begin
-    loop
-      declare
-        Reply : constant String := Network.Tcp.Raw_String_From (The_Socket, Terminator => Lx200.Terminator);
-      begin
-        if Log_Enabled then
-          Log.Write ("Reply " & Reply);
-        end if;
-        return Reply (Reply'first .. Reply'last - 1);
-      end;
-    end loop;
+    if Log_Enabled then
+      Log.Write ("Reply " & Reply);
+    end if;
+    return Reply (Reply'first .. Reply'last - 1);
   end Received_String;
 
 
   function Received_Character return String is
+    Item : constant Character := Network.Tcp.Raw_Character_From (The_Socket);
   begin
-    loop
-      declare
-        Item : constant Character := Network.Tcp.Raw_Character_From (The_Socket);
-      begin
-        Log.Write ("Reply " & Item);
-        return "" & Item;
-      end;
-    end loop;
+    Log.Write ("Reply " & Item);
+    return "" & Item;
   end Received_Character;
 
 
@@ -98,15 +88,24 @@ package body Ten_Micron is
 
   procedure Set_Device_Status is
   begin
-    Send (Lx200.String_Of(Lx200.Get_Status), Log_Enabled => False);
-    declare
-      Reply : constant String := Received_String (Log_Enabled => False);
-    begin
-      Set_Status (State'val(Character'pos(Reply(Reply'first)) - Character'pos('0')));
-    exception
-    when others =>
-      Error.Raise_With ("Unknown device status <" & Reply & ">");
-    end;
+    for Unused_Count in 1 .. Number_Of_Retries loop
+      begin
+        Send (Lx200.String_Of(Lx200.Get_Status), Log_Enabled => False);
+        declare
+          Reply : constant String := Received_String (Log_Enabled => False);
+        begin
+          Set_Status (State'val(Character'pos(Reply(Reply'first)) - Character'pos('0')));
+          return;
+        exception
+        when others =>
+          Error.Raise_With ("Unknown device status <" & Reply & ">");
+        end;
+      exception
+      when Network.Timeout =>
+        Log.Warning ("Reply timeout - retry");
+      end;
+    end loop;
+    Error.Raise_With ("Device Status - reply timeout");
   end Set_Device_Status;
 
 
@@ -291,10 +290,6 @@ package body Ten_Micron is
   exception
   when Error.Occurred =>
     Log.Error (Error.Message);
-    return The_Information;
-  when Item: others =>
-    Log.Termination (Item);
-    The_Information.Status := Failure;
     return The_Information;
   end Get;
 

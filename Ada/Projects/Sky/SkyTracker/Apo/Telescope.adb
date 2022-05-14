@@ -152,7 +152,13 @@ package body Telescope is
     end Update_Handling;
 
   begin -- Control_Task
-    Get_Information;
+    begin
+      Get_Information;
+    exception
+    when Item: others =>
+      Log.Error ("First Get Failed");
+      Log.Termination (Item);
+    end;
     loop
       begin
         select

@@ -671,7 +671,7 @@ package body Name is
         Ada.Text_IO.Create (The_File, Name => Filename);
         Ada.Text_IO.Put (The_File, Strings.Bom_8);
         if Support_Axis_Positions then
-          Put ("AP Home | 0° 00' 00"" | 0° 00' 00""");
+          Put ("AP Home | 30° 00' 00"" | -125° 00' 00""");
           Put ("");
         end if;
         Put (Image_Of (Lexicon.Mercury));
