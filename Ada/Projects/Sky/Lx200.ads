@@ -10,6 +10,8 @@ package Lx200 is
 
   Terminator : Character := '#';
 
+  Flush_Input : String := "" & Terminator;
+
   Slew_Ok : constant String := "0";
 
   type Extended_Command is (

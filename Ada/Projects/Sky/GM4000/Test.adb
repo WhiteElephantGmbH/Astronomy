@@ -14,6 +14,7 @@ package body Test is
 
   Start_Hiding : Boolean := False;
   Hiding       : Boolean := False;
+  Log_All      : Boolean := False;
 
 
   procedure Put_Line (Item : String) is
@@ -80,6 +81,21 @@ package body Test is
         end if;
         Network.Tcp.Send (Item, The_Client_Socket);
       end Send;
+
+      procedure Flush_Input is
+      begin
+        Put_Line ("Flush Input");
+        declare
+          Flushed : constant String := Network.Tcp.Raw_String_From (Used_Socket     => The_Client_Socket,
+                                                                    Terminator      => Terminator,
+                                                                    Receive_Timeout => 0.1);
+        begin
+          Log.Write ("  - Flushed: " & Flushed);
+        end;
+      exception
+      when others =>
+        null;
+      end Flush_Input;
 
     begin -- Message_Handler
       if Data'length > 3  and then Data(Data'last) = Terminator then
@@ -229,6 +245,8 @@ package body Test is
             Put_Line ("Unknown Command " & Data);
           end if;
         end;
+      elsif Data = "#" then
+        Flush_Input;
       else
         Put_Line ("Unknown " & Data);
       end if;
@@ -247,10 +265,12 @@ package body Test is
         loop
           declare
             Command : constant String := Network.Tcp.Raw_String_From (The_Client_Socket, Terminator => Terminator);
+            The_Character : Character;
+            Is_Available  : Boolean;
           begin
             exit Main when Command = "";
             if Command in ":Gstat#" | ":GD#" | ":GR#" | ":GaXa#" | ":GaXb#" then
-              if not Hiding then
+              if not Hiding and not Log_All then
                 Start_Hiding := True;
               end if;
             else
@@ -260,6 +280,12 @@ package body Test is
             Message_Handler (Command);
             if Start_Hiding then
               Hiding := True;
+            end if;
+            Ada.Text_IO.Get_Immediate (The_Character, Is_Available);
+            if Is_Available and The_Character in '1' | '9' then
+              delay Duration(Character'pos(The_Character) - Character'pos('0'));
+              Put_Line (" Delay " & The_Character & 's');
+              Log_All := True;
             end if;
           end;
         end loop;

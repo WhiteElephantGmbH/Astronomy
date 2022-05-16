@@ -22,6 +22,7 @@ package body Ten_Micron is
 
   Receive_Timeout   : constant Duration := 1.0;
   Number_Of_Retries : constant := 3;
+  Timeout_Detected  : Boolean := False;
 
   The_Socket : Network.Tcp.Socket;
   The_Status : State := Disconnected;
@@ -57,7 +58,7 @@ package body Ten_Micron is
   function Received_String (Log_Enabled : Boolean := True) return String is
     Reply : constant String := Network.Tcp.Raw_String_From (The_Socket, Terminator => Lx200.Terminator);
   begin
-    if Log_Enabled then
+    if Log_Enabled or Timeout_Detected then
       Log.Write ("Reply " & Reply);
     end if;
     return Reply (Reply'first .. Reply'last - 1);
@@ -75,15 +76,31 @@ package body Ten_Micron is
   procedure Send (Command     : String;
                   Log_Enabled : Boolean := True) is
   begin
-    if Log_Enabled then
+    if Log_Enabled or Timeout_Detected then
       Log.Write ("Command " & Command);
     end if;
     Network.Tcp.Send (The_String  => Command,
                       Used_Socket => The_Socket);
   exception
-  when Item: others =>
-    Disconnect_Device ("no anwer <" & Network.Exception_Kind (Item)'image & '>');
+  when Network.Tcp.No_Client =>
+    Disconnect_Device ("no network client");
+  when  Network.Transmission_Error =>
+    Disconnect_Device ("network transmission error");
   end Send;
+
+
+  procedure Flush_Input is
+  begin
+    Send (Lx200.Flush_Input);
+    declare
+      Flushed : constant String := Network.Tcp.Raw_String_From (The_Socket, Terminator => Lx200.Terminator);
+    begin
+      Log.Write ("Flushed: " & Flushed);
+    end;
+  exception
+  when others =>
+    null;
+  end Flush_Input;
 
 
   procedure Set_Device_Status is
@@ -94,7 +111,24 @@ package body Ten_Micron is
         declare
           Reply : constant String := Received_String (Log_Enabled => False);
         begin
-          Set_Status (State'val(Character'pos(Reply(Reply'first)) - Character'pos('0')));
+          declare
+            State_Number : constant Natural := Natural'value(Reply);
+            The_State    : State;
+          begin
+            case State_Number is
+            when 98 =>
+              The_State := Unknown;
+            when 99 =>
+              The_State := Failure;
+            when others =>
+              The_State := State'val(State_Number);
+            end case;
+            if The_State = Disconnected then
+              Log.Error ("Overloaded State");
+              The_State := Failure;
+            end if;
+            Set_Status (The_State);
+          end;
           return;
         exception
         when others =>
@@ -104,6 +138,8 @@ package body Ten_Micron is
       when Network.Timeout =>
         Log.Warning ("Reply timeout - retry");
       end;
+      Timeout_Detected := True;
+      Flush_Input;
     end loop;
     Error.Raise_With ("Device Status - reply timeout");
   end Set_Device_Status;
@@ -201,6 +237,8 @@ package body Ten_Micron is
         Log.Termination (Item);
         Disconnect_Device ("Reply - unknown error");
       end;
+      Flush_Input;
+      Timeout_Detected := True;
     end loop;
     Disconnect_Device ("Reply timeout");
   end Reply_For;
@@ -217,32 +255,28 @@ package body Ten_Micron is
                                               The_Protocol    => Socket_Protocol,
                                               Receive_Timeout => Receive_Timeout);
       exception
+      when Network.Not_Found =>
+        return;
       when Item: others =>
         Error.Raise_With (Network.Exception_Kind (Item)'image);
       end;
+      declare
+        Product : constant String := Reply_For (Lx200.Get_Product_Name);
       begin
-        declare
-          Product : constant String := Reply_For (Lx200.Get_Product_Name);
-        begin
-          if Product = GM1000HPS then
-            if Reply_For (Lx200.Get_Firmware_Number) /= Firmware_GM1000 then
-              Error.Raise_With ("expected version GM1000HPS " & Firmware_GM1000);
-            end if;
-          elsif Product = GM4000HPS then
-            if Reply_For (Lx200.Get_Firmware_Number) /= Firmware_GM4000 then
-              Error.Raise_With ("expected version GM1000HPS " & Firmware_GM1000);
-            end if;
-          else
-            Error.Raise_With ("Incorrect 10micron product name " & Product);
+        if Product = GM1000HPS then
+          if Reply_For (Lx200.Get_Firmware_Number) /= Firmware_GM1000 then
+            Error.Raise_With ("expected version GM1000HPS " & Firmware_GM1000);
           end if;
-          Set_Ultra_Precision_Mode;
-          Set_Device_Status;
-        end;
-      exception
-      when others =>
-        Network.Tcp.Close (The_Socket);
-        raise;
+        elsif Product = GM4000HPS then
+          if Reply_For (Lx200.Get_Firmware_Number) /= Firmware_GM4000 then
+            Error.Raise_With ("expected version GM4000HPS " & Firmware_GM4000);
+          end if;
+        else
+          Error.Raise_With ("Incorrect 10micron product name " & Product);
+        end if;
       end;
+      Set_Ultra_Precision_Mode;
+      Set_Device_Status;
     when others =>
       Log.Error ("already connected");
     end case;
