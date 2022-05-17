@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2013 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2013 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -125,6 +125,7 @@ package body Stellarium is
 
   Landscape_Config  : constant Configuration.File_Handle := Configuration.Handle_For (Landscape_Config_Name);
   Landscape_Section : constant Configuration.Section_Handle := Configuration.Handle_For (Landscape_Config, "landscape");
+  Location_Section  : constant Configuration.Section_Handle := Configuration.Handle_For (Landscape_Config, "location");
 
 
   function Satellites_Filename return String is
@@ -180,6 +181,25 @@ package body Stellarium is
     end Is_Automatic_Defined_Location;
 
 
+    function Is_Location_From_Landscape return Boolean is
+      Latitude  : constant String := Configuration.Value_Of (Location_Section, "latitude");
+      Longitude : constant String := Configuration.Value_Of (Location_Section, "longitude");
+      Altitude  : constant String := Configuration.Value_Of (Location_Section, "altitude");
+    begin
+      if Latitude /= "" and then Longitude /= "" and then Altitude /= "" then
+        Site.Define (Site.Data'(Latitude  => Angle.Value_Of (Latitude),
+                                Longitude => Angle.Value_Of (Longitude),
+                                Elevation => Integer'value(Altitude)));
+        return True;
+      end if;
+      return False;
+    exception
+    when others =>
+      Log.Error ("landscape location handling failed");
+      return False;
+    end Is_Location_From_Landscape;
+
+
     function Is_User_Defined_Location return Boolean is
       The_File : IO.File_Type;
     begin
@@ -223,6 +243,8 @@ package body Stellarium is
 
    begin -- Read_Location
     if Is_Automatic_Defined_Location then
+      return;
+    elsif Is_Location_From_Landscape then
       return;
     elsif Is_User_Defined_Location then
       return;

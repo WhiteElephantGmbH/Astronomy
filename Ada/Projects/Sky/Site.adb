@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2021 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2021 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -16,8 +16,11 @@
 pragma Style_White_Elephant;
 
 with Persistent;
+with Traces;
 
 package body Site is
+
+  package Log is new Traces ("Site");
 
   type Element is record
     Location   : Data;
@@ -41,6 +44,9 @@ package body Site is
   procedure Define (Item : Data) is
   begin
     The_Site := Item;
+    Log.Write ("Latitude  := " & Angle.Image_Of (The_Site.Latitude));
+    Log.Write ("Longitude := " & Angle.Image_Of (The_Site.Longitude));
+    Log.Write ("Elevation :="  & Integer'image (The_Site.Elevation) & 'm');
     Defined := True;
   end Define;
 
