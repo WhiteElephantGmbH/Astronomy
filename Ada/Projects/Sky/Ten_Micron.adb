@@ -20,9 +20,9 @@ package body Ten_Micron is
   Firmware_GM1000 : constant String := "3.1.2";
   Firmware_GM4000 : constant String := "2.15.1";
 
-  Receive_Timeout   : constant Duration := 1.0;
-  Number_Of_Retries : constant := 3;
-  Timeout_Detected  : Boolean := False;
+  Receive_Timeout  : constant Duration := 1.0;
+  Flush_Timeout    : constant Duration := 0.1;
+  Timeout_Detected : Boolean := False;
 
   The_Socket : Network.Tcp.Socket;
   The_Status : State := Disconnected;
@@ -93,7 +93,9 @@ package body Ten_Micron is
   begin
     Send (Lx200.Flush_Input);
     declare
-      Flushed : constant String := Network.Tcp.Raw_String_From (The_Socket, Terminator => Lx200.Terminator);
+      Flushed : constant String := Network.Tcp.Raw_String_From (Used_Socket     => The_Socket,
+                                                                Terminator      => Lx200.Terminator,
+                                                                Receive_Timeout => Flush_Timeout);
     begin
       Log.Write ("Flushed: " & Flushed);
     end;
@@ -105,43 +107,38 @@ package body Ten_Micron is
 
   procedure Set_Device_Status is
   begin
-    for Unused_Count in 1 .. Number_Of_Retries loop
+    Send (Lx200.String_Of(Lx200.Get_Status), Log_Enabled => False);
+    declare
+      Reply : constant String := Received_String (Log_Enabled => False);
+    begin
+      declare
+        State_Number : constant Natural := Natural'value(Reply);
+        The_State    : State;
       begin
-        Send (Lx200.String_Of(Lx200.Get_Status), Log_Enabled => False);
-        declare
-          Reply : constant String := Received_String (Log_Enabled => False);
-        begin
-          declare
-            State_Number : constant Natural := Natural'value(Reply);
-            The_State    : State;
-          begin
-            case State_Number is
-            when 98 =>
-              The_State := Unknown;
-            when 99 =>
-              The_State := Failure;
-            when others =>
-              The_State := State'val(State_Number);
-            end case;
-            if The_State = Disconnected then
-              Log.Error ("Overloaded State");
-              The_State := Failure;
-            end if;
-            Set_Status (The_State);
-          end;
-          return;
-        exception
+        case State_Number is
+        when 98 =>
+          The_State := Unknown;
+        when 99 =>
+          The_State := Failure;
         when others =>
-          Error.Raise_With ("Unknown device status <" & Reply & ">");
-        end;
-      exception
-      when Network.Timeout =>
-        Log.Warning ("Reply timeout - retry");
+          The_State := State'val(State_Number);
+        end case;
+        if The_State = Disconnected then
+          Log.Error ("Overloaded State");
+          The_State := Failure;
+        end if;
+        Set_Status (The_State);
       end;
-      Timeout_Detected := True;
-      Flush_Input;
-    end loop;
-    Error.Raise_With ("Device Status - reply timeout");
+      return;
+    exception
+    when others =>
+      Error.Raise_With ("Unknown device status <" & Reply & ">");
+    end;
+  exception
+  when Network.Timeout =>
+    Log.Warning ("Reply timeout");
+    Timeout_Detected := True;
+    Flush_Input;
   end Set_Device_Status;
 
 
@@ -159,88 +156,87 @@ package body Ten_Micron is
       := not (Command in Get_Declination | Get_Right_Ascension | Get_Axis_Dec_Position | Get_Axis_RA_Position);
 
   begin
-    for Unused_Count in 1 .. Number_Of_Retries loop
-      Send (String_Of (Command, Parameter), Log_Enabled);
-      begin
-        case Command is
-        when Slew
-           | Slew_To_Axis_Position
-        =>
-          declare
-            Reply : constant String := Received_Character;
-          begin
-            if Reply /= Slew_Ok then
-              Log.Warning (Received_String);
-              return Slew_Ok; -- simulate ok
-            end if;
-            return Reply;
-          end;
-        when Set_Local_Time
-           | Set_Time_Offset
-           | Set_Altitude
-           | Set_Azimuth
-           | Set_Axis_RA_Position
-           | Set_Axis_Dec_Position
-           | Set_Right_Ascension
-           | Set_Declination
-        =>
-          return Received_Character;
-        when Get_Product_Name
-           | Get_Firmware_Number
-           | Get_Firmware_Date
-           | Get_Alignment_Status
-           | Get_Latitude
-           | Get_Longitude
-           | Get_Sideral_Time
-           | Get_Status
-           | Get_Axis_RA_Position
-           | Get_Axis_Dec_Position
-           | Get_Right_Ascension
-           | Get_Declination
-           | Get_Altitude
-           | Get_Azimuth
-           | Set_Latitude
-           | Set_Longitude
-         =>
-          return Received_String (Log_Enabled);
-        when Set_Ultra_Precision_Mode
-           | Stop
-           | Slew_To_Park_Position
-           | Unpark
-        =>
-          return "";
-        when Set_Polar_Alignment
-           | Set_Alt_Az_Alignment
-           | Synchronize
-           | Move_East
-           | Move_North
-           | Move_South
-           | Move_West
-           | Quit_Move_East
-           | Quit_Move_North
-           | Quit_Move_South
-           | Quit_Move_West
-           | Quit_Move
-           | Set_Centering_Rate
-           | Set_Guiding_Rate
-           | Set_Finding_Rate
-           | Set_Slewing_Rate
-        =>
-          raise Program_Error; -- not implemented for 10micron
-        end case;
-      exception
-      when Error.Occurred =>
-        Log.Error (Error.Message);
-      when Network.Timeout =>
-        Log.Warning ("Reply timeout");
-      when Item: others =>
-        Log.Termination (Item);
-        Disconnect_Device ("Reply - unknown error");
-      end;
+    Send (String_Of (Command, Parameter), Log_Enabled);
+    begin
+      case Command is
+      when Slew
+         | Slew_To_Axis_Position
+      =>
+        declare
+          Reply : constant String := Received_Character;
+        begin
+          if Reply /= Slew_Ok then
+            Log.Warning (Received_String);
+            return Slew_Ok; -- simulate ok
+          end if;
+          return Reply;
+        end;
+      when Set_Local_Time
+         | Set_Time_Offset
+         | Set_Altitude
+         | Set_Azimuth
+         | Set_Axis_RA_Position
+         | Set_Axis_Dec_Position
+         | Set_Right_Ascension
+         | Set_Declination
+      =>
+        return Received_Character;
+      when Get_Product_Name
+         | Get_Firmware_Number
+         | Get_Firmware_Date
+         | Get_Alignment_Status
+         | Get_Latitude
+         | Get_Longitude
+         | Get_Sideral_Time
+         | Get_Status
+         | Get_Axis_RA_Position
+         | Get_Axis_Dec_Position
+         | Get_Right_Ascension
+         | Get_Declination
+         | Get_Altitude
+         | Get_Azimuth
+         | Set_Latitude
+         | Set_Longitude
+       =>
+        return Received_String (Log_Enabled);
+      when Set_Ultra_Precision_Mode
+         | Stop
+         | Slew_To_Park_Position
+         | Unpark
+      =>
+        return "";
+      when Set_Polar_Alignment
+         | Set_Alt_Az_Alignment
+         | Synchronize
+         | Move_East
+         | Move_North
+         | Move_South
+         | Move_West
+         | Quit_Move_East
+         | Quit_Move_North
+         | Quit_Move_South
+         | Quit_Move_West
+         | Quit_Move
+         | Set_Centering_Rate
+         | Set_Guiding_Rate
+         | Set_Finding_Rate
+         | Set_Slewing_Rate
+      =>
+        raise Program_Error; -- not implemented for 10micron
+      end case;
+    exception
+    when Error.Occurred =>
+      Log.Error (Error.Message);
+      Disconnect_Device ("Error.Message");
+    when Network.Timeout =>
+      Log.Warning ("Reply timeout");
       Flush_Input;
       Timeout_Detected := True;
-    end loop;
-    Disconnect_Device ("Reply timeout");
+      Error.Raise_With ("Reply Timeout");
+    when Item: others =>
+      Log.Termination (Item);
+      Disconnect_Device ("Reply_For - unknown error");
+    end;
   end Reply_For;
 
 
