@@ -233,6 +233,8 @@ package body Ten_Micron is
       Flush_Input;
       Timeout_Detected := True;
       Error.Raise_With ("Reply Timeout");
+    when Network.Tcp.No_Client =>
+      Disconnect_Device ("Reply_For - no client");
     when Item: others =>
       Log.Termination (Item);
       Disconnect_Device ("Reply_For - unknown error");
