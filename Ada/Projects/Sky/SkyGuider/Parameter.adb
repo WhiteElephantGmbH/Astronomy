@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2021 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2021 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -38,8 +38,10 @@ package body Parameter is
   Localization_Id : constant String := "Localization";
   Language_Key    : constant String := "Language";
 
+  Stellarium_Id        : constant String := "Stellarium";
+  Search_Tolerance_Key : constant String := "Search Tolerance";
+
   M_Zero_Id      : constant String := "M-Zero";
-  Stellarium_Id  : constant String := "Stellarium";
   Picture_Id     : constant String := "Picture";
   Ip_Address_Key : constant String := "IP Address";
   Port_Key       : constant String := "Port";
@@ -58,7 +60,8 @@ package body Parameter is
   The_M_Zero_Port       : Network.Port_Number;
 
   -- Stellarium
-  The_Stellarium_Port : Network.Port_Number;
+  The_Stellarium_Port  : Network.Port_Number;
+  The_Search_Tolerance : Space.Distance;
 
 
   function Default_Astap_Executable return String is
@@ -208,15 +211,16 @@ package body Parameter is
       Put (Width_Key & "    = 4.46" & Degree_Unit);
       Put ("");
       Put ("[" & Stellarium_Id & "]");
-      Put (Port_Key & "    = 10001");
+      Put (Port_Key & "             = 10001");
       case Os.Family is
       when Os.Windows =>
-        Put (Program_Key & " = C:\Program Files\Stellarium\Stellarium.exe");
+        Put (Program_Key & "          = C:\Program Files\Stellarium\Stellarium.exe");
       when Os.Osx =>
-        Put (Program_Key & " = /Applications/Stellarium.app/Contents/MacOS/stellarium");
+        Put (Program_Key & "          = /Applications/Stellarium.app/Contents/MacOS/stellarium");
       when Os.Linux =>
         null;
       end case;
+      Put (Search_Tolerance_Key & " = 6'");
       Ada.Text_IO.Close (The_File);
     exception
     when Error.Occurred =>
@@ -286,6 +290,7 @@ package body Parameter is
       when others =>
         Error.Raise_With ("Stellarium port number out of range");
       end;
+      The_Search_Tolerance := Angle_Of (Search_Tolerance_Key);
       Startup_Stellarium;
     end Read_Values;
 
@@ -321,5 +326,10 @@ package body Parameter is
   begin
     return The_Stellarium_Port;
   end Stellarium_Port;
+
+  function Search_Tolerance return Space.Distance is
+  begin
+    return The_Search_Tolerance;
+  end Search_Tolerance;
 
 end Parameter;

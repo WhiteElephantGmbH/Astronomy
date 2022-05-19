@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2013 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2013 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -25,8 +25,6 @@ package Stellarium is
   subtype Port_Number is Network.Port_Number;
 
   type Magnitude is delta 0.1 range -30.0 .. 30.0;
-
-  Search_Tolerance : constant Angle.Degrees := 0.1;
 
   type Goto_Handler is access procedure (Direction : Space.Direction);
 

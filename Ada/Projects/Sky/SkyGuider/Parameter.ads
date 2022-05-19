@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2021 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2021 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -16,6 +16,7 @@
 pragma Style_White_Elephant;
 
 with Network;
+with Space;
 
 package Parameter is
 
@@ -34,5 +35,7 @@ package Parameter is
   ----------------
 
   function Stellarium_Port return Network.Port_Number;
+
+  function Search_Tolerance return Space.Distance;
 
 end Parameter;

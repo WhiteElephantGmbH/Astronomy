@@ -96,6 +96,7 @@ package body Parameter is
   The_Stellarium_Port  : Network.Port_Number;
   The_Search_Tolerance : Space.Distance;
 
+
   procedure Set (Section : Configuration.Section_Handle) is
   begin
     The_Section := Section;

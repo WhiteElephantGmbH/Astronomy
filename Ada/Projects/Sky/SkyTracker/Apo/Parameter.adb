@@ -16,6 +16,7 @@
 pragma Style_White_Elephant;
 
 with Ada.Text_IO;
+with Angle;
 with Application;
 with Configuration;
 with Error;
@@ -34,14 +35,17 @@ package body Parameter is
 
   Localization_Id : constant String := "Localization";
   Language_Key    : constant String := "Language";
+
+  Stellarium_Id        : constant String := "Stellarium";
+  Program_Key          : constant String := "Program";
+  Search_Tolerance_Key : constant String := "Search Tolerance";
+
   Ten_Micron_Id   : constant String := "10micron";
   Expert_Mode_Key : constant String := "Expert Mode";
   Remote_Id       : constant String := "Remote";
   Telescope_Key   : constant String := "Telescope";
-  Stellarium_Id   : constant String := "Stellarium";
   Ip_Address_Key  : constant String := "IP Address";
   Port_Key        : constant String := "Port";
-  Program_Key     : constant String := "Program";
 
   The_Section : Configuration.Section_Handle;
 
@@ -56,7 +60,8 @@ package body Parameter is
   The_Remote_Port    : Network.Port_Number;
 
   -- Stellarium
-  The_Stellarium_Port : Network.Port_Number;
+  The_Stellarium_Port  : Network.Port_Number;
+  The_Search_Tolerance : Space.Distance;
 
 
   procedure Set (Section : Configuration.Section_Handle) is
@@ -153,6 +158,31 @@ package body Parameter is
   end Port_For;
 
 
+  function Angle_Of (Key  : String;
+                     Unit : String := "") return Angle.Degrees is
+    Item : constant String := String_Of (Key);
+    use type Angle.Value;
+  begin
+    Log.Write (Key & ": " & Item);
+    begin
+      declare
+        Image : constant String := Image_Of (Item, Unit);
+        Value : constant Angle.Degrees := +Angle.Value_Of (Image);
+        use type Angle.Degrees;
+      begin
+        if Value <= 2.0 then
+          return Value;
+        else
+          Error.Raise_With ("value > 2 degrees");
+        end if;
+      end;
+    exception
+    when others =>
+      Error.Raise_With ("Incorrect value of " & Key & ": <" & Item & ">");
+    end;
+  end Angle_Of;
+
+
   procedure Read is
 
     procedure Create_Default_Parameters is
@@ -185,8 +215,9 @@ package body Parameter is
       Put (Port_Key & "       = 5000");
       Put ("");
       Put ("[" & Stellarium_Id & "]");
-      Put (Port_Key & "    = 10001");
-      Put (Program_Key & " = C:\Program Files\Stellarium\Stellarium.exe");
+      Put (Port_Key & "             = 10001");
+      Put (Program_Key & "          = C:\Program Files\Stellarium\Stellarium.exe");
+      Put (Search_Tolerance_Key & " = 6'");
       Ada.Text_IO.Close (The_File);
     exception
     when Error.Occurred =>
@@ -240,6 +271,7 @@ package body Parameter is
 
       Set (Stellarium_Handle);
       The_Stellarium_Port := Port_For (Stellarium_Id);
+      The_Search_Tolerance := Angle_Of (Search_Tolerance_Key);
       Startup_Stellarium;
     end Read_Values;
 
@@ -309,5 +341,10 @@ package body Parameter is
   begin
     return The_Stellarium_Port;
   end Stellarium_Port;
+
+  function Search_Tolerance return Space.Distance is
+  begin
+    return The_Search_Tolerance;
+  end Search_Tolerance;
 
 end Parameter;

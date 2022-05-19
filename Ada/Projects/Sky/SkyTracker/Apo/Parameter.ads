@@ -16,6 +16,7 @@
 pragma Style_White_Elephant;
 
 with Network;
+with Space;
 
 package Parameter is
 
@@ -49,4 +50,6 @@ package Parameter is
 
   function Stellarium_Port return Network.Port_Number;
 
+  function Search_Tolerance return Space.Distance;
+  
 end Parameter;

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                               (c) 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                           (c) 2021 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                      *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -91,7 +91,7 @@ package body Control is
     The_Target : Name.Id;
     use type Name.Id;
   begin
-    Targets.Get_For (The_Direction, Stellarium.Search_Tolerance, The_Target);
+    Targets.Get_For (The_Direction, Parameter.Search_Tolerance, The_Target);
     if The_Target = Name.No_Id then
       Action_Handler.Put_Goto (The_Direction);
     else
