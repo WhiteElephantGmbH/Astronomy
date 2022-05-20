@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2013 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2013 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -19,6 +19,8 @@ with Angle;
 with Device;
 with Network.Udp;
 with Serial_Io;
+with Space;
+
 package Parameter is
 
   Acceleration_Unit : constant String := "/s²";
@@ -86,4 +88,6 @@ package Parameter is
 
   function Stellarium_Port return Network.Port_Number;
 
+  function Search_Tolerance return Space.Distance;
+  
 end Parameter;

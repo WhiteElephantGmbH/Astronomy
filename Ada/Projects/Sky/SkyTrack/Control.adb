@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2011 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2011 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -92,7 +92,7 @@ package body Control is
     The_Target : Name.Id;
     use type Name.Id;
   begin
-    Targets.Get_For (The_Direction, Stellarium.Search_Tolerance, The_Target);
+    Targets.Get_For (The_Direction, Parameter.Search_Tolerance, The_Target);
     if The_Target = Name.No_Id then
       Action_Handler.Put_Goto (The_Direction);
     else
@@ -402,6 +402,8 @@ package body Control is
                 The_Neo_Target := The_Item;
               when Name.Landmark =>
                 The_Landmark := The_Item;
+              when Name.Axis_Position =>
+                raise Program_Error;
               end case;
               Is_Zero_Target := False;
             else
@@ -474,7 +476,9 @@ package body Control is
     end if;
     Sky_Line.Read;
     Neo.Add_Objects;
-    Name.Read_Favorites;
+    Name.Read_Favorites (Enable_Axis_Positions => False,
+                         Enable_Land_Marks     => True,
+                         Enable_Neos           => True);
   end Read_Data;
 
 
