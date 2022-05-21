@@ -145,11 +145,15 @@ package body Remote is
       Parameters     : constant String := "?tele=" & Telescope_Name & "&" & Info;
       URL            : constant String := "http://" & Remote_Address & ':' & Remote_Port & '/' & Key & Parameters;
 
+      Timeouts : constant AWS.Client.Timeouts_Values := AWS.Client.Timeouts (Connect  => 1.0,
+                                                                             Send     => 1.0,
+                                                                             Receive  => 1.0,
+                                                                             Response => 1.0);
     begin -- Send
       Log.Write ("Send " & Info & " from " & Telescope_Name);
       Log.Write ("URL: " & URL);
       declare
-        Response : constant String := AWS.Response.Message_Body (AWS.Client.Get (URL));
+        Response : constant String := AWS.Response.Message_Body (AWS.Client.Get (URL, Timeouts => Timeouts));
       begin
         if Response = "ok" then
           Log.Write ("Information accepted");
@@ -162,7 +166,7 @@ package body Remote is
             else
               Last := Last - 1;
             end if;
-            Log.Write (Strings.Trimmed (Response(Response'first .. Last)));
+            Log.Error (Strings.Trimmed (Response(Response'first .. Last)));
           end;
         end if;
       end;
@@ -178,9 +182,10 @@ package body Remote is
     end Send_Command;
 
 
-    The_State         : Telescope_State := Unknown;
-    Is_Cleared        : Boolean := True;
-    The_Actual_Target : Text.String;
+    The_State          : Telescope_State := Unknown;
+    Is_Cleared         : Boolean := True;
+    The_Actual_Command : Command;
+    The_Actual_Target  : Text.String;
 
     procedure Send_Actual (Clear : Boolean := False) is
     begin
@@ -208,20 +213,21 @@ package body Remote is
     loop
       select
         accept Execute (The_Command : Command) do
-          case The_Command is
-          when Start_Session =>
-            Send_Command ("Start");
-          when Generate_Qr_Code =>
-            Send_Command ("QR-Code");
-          when End_Session =>
-            Send_Command ("End");
-          end case;
+          The_Actual_Command := The_Command;
         end Execute;
+        case The_Actual_Command is
+        when Start_Session =>
+          Send_Command ("Start");
+        when Generate_Qr_Code =>
+          Send_Command ("QR-Code");
+        when End_Session =>
+          Send_Command ("End");
+        end case;
       or
         accept Define (State  : Telescope_State) do
           The_State := State;
-          Send_Actual;
         end Define;
+        Send_Actual;
       or
         accept Define (Target : String) do
           The_Actual_Target := Text.String_Of (Target);
