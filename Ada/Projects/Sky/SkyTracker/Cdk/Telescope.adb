@@ -1266,11 +1266,17 @@ package body Telescope is
           exit;
         or
           accept Halt;
+          Remote.Define (Target => "");
           The_Event := Halt;
         or
           accept Follow (Tracking_Period : Time.Period) do
             The_Next_Tracking_Period := Tracking_Period;
           end Follow;
+          if Name.Is_Known (Next_Id) then
+            Remote.Define (Target => Name.Image_Of (Next_Id));
+          else
+            Remote.Define (Target => "");
+          end if;
           Reset_Adjustments;
           The_Event := Follow;
         or
@@ -1287,6 +1293,7 @@ package body Telescope is
           accept Position_To (Landmark : Name.Id) do
             The_Landmark := Landmark;
           end Position_To;
+          Remote.Define (Target => "");
           Reset_Adjustments;
           The_Event := Position;
         or
@@ -1437,7 +1444,7 @@ package body Telescope is
             null;
           end case;
         end select;
-        Remote.Define (The_State in Is_Tracking | Positioned);
+        Remote.Define (The_State in Is_Tracking);
         if The_Event /= No_Event then
           Log.Write ("State => " & The_State'img & " - Event => " & The_Event'img);
           case The_State is

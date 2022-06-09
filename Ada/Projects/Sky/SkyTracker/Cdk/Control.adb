@@ -357,15 +357,13 @@ package body Control is
           Targets.Update_List;
         when Define_Target =>
           declare
-            Target_Name : constant String := User.Target_Name;
-            The_Item    : Name.Id;
+            The_Item : Name.Id;
           begin
             User.Show_Description ("");
             The_Landmark := Name.No_Id;
             The_Neo_Target := Name.No_Id;
-            Targets.Get_For (Target_Name, The_Item);
+            Targets.Get_For (User.Target_Name, The_Item);
             if Name.Is_Known (The_Item)  then
-              Remote.Define (Target_Name);
               case Name.Kind_Of (The_Item) is
               when Name.Sky_Object =>
                 Telescope.Define_Space_Access (Name.Direction_Of'access, The_Item);

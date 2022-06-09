@@ -160,17 +160,30 @@ package body Telescope is
         or
           accept Go_To do
             Ten_Micron.Slew_To (Actual_Target_Direction, Target_Kind);
+            if Name.Is_Known (Next_Id) then
+              case Name.Kind_Of (Next_Id) is
+              when Name.Axis_Position =>
+                Remote.Define (Target => "");
+              when others =>
+                Remote.Define (Target => Name.Image_Of (Next_Id));
+              end case;
+            else
+              Remote.Define (Target => "");
+            end if;
           end Go_To;
         or
           accept Park do
+            Remote.Define (Target => "");
             Ten_Micron.Park;
           end Park;
         or
           accept Stop do
+            Remote.Define (Target => "");
             Ten_Micron.Stop;
           end Stop;
         or
           accept Unpark do
+            Remote.Define (Target => "");
             Ten_Micron.Unpark;
           end Unpark;
         or
