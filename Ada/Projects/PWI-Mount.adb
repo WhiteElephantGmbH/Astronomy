@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2019 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2019 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
@@ -23,7 +23,9 @@ package body PWI.Mount is
 
   function Status_Of (Flags : XML.Mount_Flag) return State is
   begin
-    if Is_Simulation then
+    if Flags.Has_Motor_Error then
+      return Error;
+    elsif Is_Simulation then
       if Flags.On_Target then
         return Tracking;
       elsif Flags.Tracking then

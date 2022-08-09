@@ -54,6 +54,7 @@ package Telescope is
   type State is (Unknown, -- PWI server not available
                  Disconnected,
                  Disconnecting,
+                 Mount_Error,
                  Connecting,
                  Connected,
                  Disabling,

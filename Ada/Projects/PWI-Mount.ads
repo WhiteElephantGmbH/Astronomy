@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2019 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2019 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
@@ -21,7 +21,8 @@ package PWI.Mount is
                  Synchronised, -- Encoders_Have_Been_Set and not Pointing_Model_Set
                  Stopped,      -- Encoders_Have_Been_Set and Pointing_Model_Set and not Tracking
                  Approaching,  -- Tracking and not On_Target
-                 Tracking);    -- not yet decoded
+                 Tracking,     -- not yet decoded
+                 Error);
 
   type Information is record
     Status         : State;

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2019 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2019 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
@@ -142,6 +142,7 @@ private package PWI.XML is
     Is_Finding_Home        : Boolean;
     Encoders_Have_Been_Set : Boolean;
     Pointing_Model_Set     : Boolean;
+    Has_Motor_Error        : Boolean;
   end record with Pack;
 
   type Mount_Info is record

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2019 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2019 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -477,6 +477,8 @@ package body Device is
             if The_Mount_State in Mount.Approaching | Mount.Tracking  then
               The_Mount_State := Mount.Stopped;
             end if;
+          when PWI.Mount.Error =>
+            The_Mount_State := Mount.Error;
           when others =>
             if The_Mount_State = Mount.Unknown then
               The_Mount_State := Mount.Disconnected;
@@ -504,6 +506,8 @@ package body Device is
             The_Mount_State := Mount.Approaching;
           when PWI.Mount.Tracking =>
             The_Mount_State := Mount.Tracking;
+          when PWI.Mount.Error =>
+            The_Mount_State := Mount.Error;
           end case;
           case PWI.M3.Actual_Port is
           when PWI.Unknown =>

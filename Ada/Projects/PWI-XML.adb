@@ -626,6 +626,7 @@ package body PWI.XML is
         Error_Message : constant String := Parsed_Text;
       begin
         if Error_Message /= "No error" then
+          The_Response.Mount.Flags.Has_Motor_Error := True;
           Log.Error (Axis & "_Motor_Error: " & Error_Message);
         end if;
       end Handle_Motor_Error;
@@ -640,6 +641,7 @@ package body PWI.XML is
       end Pointing_Model_Has_Been_Set;
 
     begin -- Parse_Mount
+      The_Response.Mount.Flags.Has_Motor_Error := False;
       loop
         case Next_Token is
         when End_Tag =>
@@ -953,7 +955,7 @@ package body PWI.XML is
     procedure Set (Data : Response) is
     begin
       The_Data := Data;
-      if Data.Mount.Azm_Motor_Error_Code /= 0 or Data.Mount.Alt_Motor_Error_Code /= 0 then
+      if Data.Mount.Flags.Has_Motor_Error then
         Log.Force_Enable;
       end if;
       if Log.Is_Enabled then

@@ -216,6 +216,7 @@ package body Telescope is
                    User_Setup,
                    Mount_Unknown,
                    Mount_Disconnected,
+                   Mount_Error,
                    Mount_Connected,
                    Mount_Enabled,
                    Mount_Homing,
@@ -760,6 +761,8 @@ package body Telescope is
       case The_Startup_Event is
       when Mount_Disconnected =>
         return Disconnected;
+      when Mount_Error =>
+        return Mount_Error;
       when Mount_Connected =>
         return Connected;
       when Mount_Enabled =>
@@ -832,6 +835,23 @@ package body Telescope is
         null;
       end case;
     end Disconnecting_State;
+
+    -----------
+    -- Error --
+    -----------
+    procedure Error_State is
+    begin
+      case The_Event is
+      when Shutdown =>
+        Fans.Turn_On_Or_Off;
+        Mount.Disable;
+        delay 3.0;
+        Mount.Disconnect;
+        The_State := Disconnecting;
+      when others =>
+        null;
+      end case;
+    end Error_State;
 
     ----------------
     -- Connecting --
@@ -1368,6 +1388,9 @@ package body Telescope is
                 The_Event := Mount_Approaching;
               end if;
               Mount_Is_Stopped := False;
+            when Mount.Error =>
+              Mount.Stop;
+              The_Event := Mount_Error;
             end case;
             Has_New_Data := True;
           end New_Mount_State;
@@ -1451,6 +1474,7 @@ package body Telescope is
           when Unknown       => Unknown_State;
           when Disconnected  => Disconnected_State;
           when Disconnecting => Disconnecting_State;
+          when Mount_Error   => Error_State;
           when Connecting    => Connecting_State;
           when Connected     => Connected_State;
           when Disabling     => Disabling_State;

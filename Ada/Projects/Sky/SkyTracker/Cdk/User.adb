@@ -544,6 +544,11 @@ package body User is
         Enable_Startup_Button;
         Disable_Shutdown_Button;
         Menu_Disable;
+      when Telescope.Mount_Error =>
+        Disable_Startup_Button;
+        Disable_Stop_Button;
+        Menu_Disable;
+        Enable_Shutdown_Button;
       when Telescope.Connected | Telescope.Enabled | Telescope.Synchronised =>
         Enable_Startup_Button;
         Enable_Shutdown_Button;
