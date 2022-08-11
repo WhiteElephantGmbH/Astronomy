@@ -128,19 +128,26 @@ package body Lx200 is
 
   function Angle_Image_Of (Data       : String;
                            U1, U2, U3 : Character) return String is
-    -- Extended     6543210
-    -- format: "s*ddUddUddU
-    -- Ultra        876543210
-    -- format: "sdddUddUdd.dU
-    -- Ultra       9876543210
-    -- format: "sddUddUdd.ddU
-    U1_Offset : constant Natural := (if Has_Ultra_Precision then (if Data(Data'last - 1) = '.' then 8 else 9) else 6);
-    U2_Offset : constant Natural := U1_Offset - 3;
-    The_Image : String := Data & U3;
-  begin
-    The_Image(The_Image'last - U1_Offset) := U1;
-    The_Image(The_Image'last - U2_Offset) := U2;
-    return The_Image;
+  begin                         
+    declare
+      -- Extended     6543210
+      -- format: "s*ddUddUddU
+      -- Ultra        876543210
+      -- format: "sdddUddUdd.dU
+      -- Ultra       9876543210
+      -- format: "sddUddUdd.ddU
+      U1_Offset : constant Natural := (if Has_Ultra_Precision then (if Data(Data'last - 1) = '.' then 8 else 9) else 6);
+      U2_Offset : constant Natural := U1_Offset - 3;
+      The_Image : String := Data & U3;
+    begin
+      The_Image(The_Image'last - U1_Offset) := U1;
+      The_Image(The_Image'last - U2_Offset) := U2;
+      return The_Image;
+    end;
+  exception
+  when others =>
+    Log.Error ("Angle_Image_Of failed with " & Data);
+    raise Protocol_Error;
   end Angle_Image_Of;
 
 
@@ -181,7 +188,7 @@ package body Lx200 is
   exception
   when others =>
     Log.Error ("Signed_Degrees_Of failed with " & Item);
-    raise;
+    raise Protocol_Error;
   end Signed_Degrees_Of;
 
 
@@ -221,7 +228,7 @@ package body Lx200 is
   exception
   when others =>
     Log.Error ("Hours_Of failed with " & Item);
-    raise;
+    raise Protocol_Error;
   end Hours_Of;
 
 
@@ -251,7 +258,7 @@ package body Lx200 is
   exception
   when others =>
     Log.Error ("Position_Of failed with " & Item);
-    raise;
+    raise Protocol_Error;
   end Position_Of;
 
 end Lx200;

@@ -8,6 +8,8 @@ with Angle;
 
 package Lx200 is
 
+  Protocol_Error : exception;
+
   Terminator : Character := '#';
 
   Flush_Input : String := "" & Terminator;

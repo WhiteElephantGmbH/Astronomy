@@ -20,8 +20,8 @@ package body Ten_Micron is
   Firmware_GM1000 : constant String := "3.1.2";
   Firmware_GM4000 : constant String := "2.15.1";
 
-  Receive_Timeout  : constant Duration := 1.0;
-  Flush_Timeout    : constant Duration := 0.1;
+  Receive_Timeout  : constant Duration := 3.0;
+  Flush_Timeout    : constant Duration := 0.5;
   Timeout_Detected : Boolean := False;
 
   The_Socket : Network.Tcp.Socket;
@@ -320,6 +320,9 @@ package body Ten_Micron is
     end if;
     return The_Information;
   exception
+  when Lx200.Protocol_Error =>
+    Flush_Input;
+    return The_Information;
   when Error.Occurred =>
     Log.Error (Error.Message);
     return The_Information;
