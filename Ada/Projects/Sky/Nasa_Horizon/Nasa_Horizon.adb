@@ -5,11 +5,11 @@
 pragma Style_White_Elephant;
 
 pragma Build (Description => "Get ephimerides from NASA horizon",
-              Version     => (1, 1, 0, 1),
+              Version     => (1, 1, 0, 2),
               Kind        => Console,
               Icon        => False,
               Libraries   => ("AWS64"),
-              Compiler    => "GNATPRO\22.1");
+              Compiler    => "GNATPRO\22.2");
 with Request;
 
 procedure Nasa_Horizon is
