@@ -1,8 +1,8 @@
 -- *********************************************************************************************************************
--- *                       (c) 2016 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2016 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
--->Style: Soudronic
+pragma Style_White_Elephant;
 
 with Unsigned;
 

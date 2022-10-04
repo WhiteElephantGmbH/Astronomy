@@ -19,7 +19,7 @@ pragma Build (Description => "Generate Sky data",
               Version     => (3, 1, 0, 2),
               Kind        => Windows,
               Icon        => False,
-              Compiler    => "GNATPRO\22.1");
+              Compiler    => "GNATPRO\22.2");
 
 with Data_Generator;
 

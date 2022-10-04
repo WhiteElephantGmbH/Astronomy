@@ -19,7 +19,7 @@ pragma Build (Description => "Sky Tracker control program for 10micron",
               Version     => (2, 2, 1, 3),
               Kind        => Windows,
               Libraries   => ("AWS64"),
-              Compiler    => "GNATPRO\22.1");
+              Compiler    => "GNATPRO\22.2");
 
 with Control;
 

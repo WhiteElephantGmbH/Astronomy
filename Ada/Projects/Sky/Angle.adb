@@ -257,11 +257,11 @@ package body Angle is
     end if;
     The_Number := Natural(The_Seconds * Factor);
     The_Fraction := Seconds(The_Number mod Natural(Factor)) / Factor;
-    The_Number := The_Number / Natural(Factor);
+    The_Number := @ / Natural(Factor);
     The_Seconds := Seconds(The_Number mod 60) + The_Fraction;
-    The_Number := The_Number / 60;
+    The_Number := @ / 60;
     The_Minutes := The_Number mod 60;
-    The_Number := The_Number / 60;
+    The_Number := @ / 60;
     Text.Append_To (The_Text, Text.Trimmed(The_Number'img) & Actual_Units(First));
     if The_Minutes < 10 then
       Text.Append_To (The_Text, '0');
@@ -303,10 +303,10 @@ package body Angle is
     function Next_Character return Character is
     begin
       if The_Next > Image'last then
-        The_Next := The_Next + 1;
+        The_Next := @ + 1;
         return ' ';
       else
-        The_Next := The_Next + 1;
+        The_Next := @ + 1;
         return Image(The_Next - 1);
       end if;
     end Next_Character;
@@ -314,7 +314,7 @@ package body Angle is
     procedure Undo_Next_Character is
     begin
       if The_Next > Image'first then
-        The_Next := The_Next - 1;
+        The_Next := @ - 1;
       end if;
     end Undo_Next_Character;
 
@@ -327,7 +327,7 @@ package body Angle is
         elsif Image(The_Next) /= ' ' then
           exit;
         end if;
-        The_Next := The_Next + 1;
+        The_Next := @ + 1;
       end loop;
     end Skip_Spaces;
 
@@ -340,7 +340,7 @@ package body Angle is
         Error.Raise_With (Image(The_Next) & " is not a number");
       end if;
       The_First := The_Next;
-      The_Next := The_Next + 1;
+      The_Next := @ + 1;
       loop
         if The_Next > Image'last then
           The_State := At_End;
@@ -348,7 +348,7 @@ package body Angle is
         else
           exit when not (Image(The_Next) in '0' .. '9');
         end if;
-        The_Next := The_Next + 1;
+        The_Next := @ + 1;
       end loop;
       The_Number := Natural'value (Image(The_First .. The_Next - 1));
     end Get_Next_Number;
@@ -356,27 +356,27 @@ package body Angle is
     procedure Handle_Fraction is
       The_Last : Natural;
     begin
-      The_Seconds := The_Seconds + Seconds(The_Number);
+      The_Seconds := @ + Seconds(The_Number);
       Get_Next_Number;
       The_Last := The_Next - 1;
       Skip_Spaces;
       if The_Last = Image'last then
-        The_Seconds := The_Seconds + Seconds'value ("0." & Image(The_First .. The_Last));
+        The_Seconds := @ + Seconds'value ("0." & Image(The_First .. The_Last));
       else
         case Next_Character is
         when '"' =>
           if The_Unit = In_Hours then
             Error.Raise_With ("s expected");
           end if;
-          The_Seconds := The_Seconds + Seconds'value ("0." & Image(The_First .. The_Last));
+          The_Seconds := @ + Seconds'value ("0." & Image(The_First .. The_Last));
         when 's' =>
           if The_Unit = In_Degrees then
             Error.Raise_With (""" expected");
           end if;
-          The_Seconds := The_Seconds + Seconds'value ("0." & Image(The_First .. The_Last));
+          The_Seconds := @ + Seconds'value ("0." & Image(The_First .. The_Last));
         when others =>
           Undo_Next_Character;
-          The_Seconds := The_Seconds + Seconds'value ("0." & Image(The_First .. The_Last));
+          The_Seconds := @ + Seconds'value ("0." & Image(The_First .. The_Last));
         end case;
       end if;
     end Handle_Fraction;
@@ -453,20 +453,20 @@ package body Angle is
       Get_Next_Number;
       case Next_Character is
       when ' ' =>
-        The_Seconds := The_Seconds + Seconds(The_Number * A_Minute);
+        The_Seconds := @ + Seconds(The_Number * A_Minute);
         The_State := At_Seconds;
       when ''' =>
         if The_Unit = In_Hours then
           Error.Raise_With ("m or s expected");
         end if;
-        The_Seconds := The_Seconds + Seconds(The_Number * A_Minute);
+        The_Seconds := @ + Seconds(The_Number * A_Minute);
         The_Unit := In_Degrees;
         The_State := At_Seconds;
       when 'm' =>
         if The_Unit = In_Degrees then
           Error.Raise_With ("' or "" expected");
         end if;
-        The_Seconds := The_Seconds + Seconds(The_Number * A_Minute);
+        The_Seconds := @ + Seconds(The_Number * A_Minute);
         The_Unit := In_Hours;
         The_State := At_Seconds;
       when '.' =>
@@ -475,14 +475,14 @@ package body Angle is
         if The_Unit = In_Hours then
           Error.Raise_With ("m or s expected");
         end if;
-        The_Seconds := The_Seconds + Seconds(The_Number);
+        The_Seconds := @ + Seconds(The_Number);
         The_Unit := In_Degrees;
         The_State := At_End;
       when 's' =>
         if The_Unit = In_Degrees then
           Error.Raise_With ("' or "" expected");
         end if;
-        The_Seconds := The_Seconds + Seconds(The_Number);
+        The_Seconds := @ + Seconds(The_Number);
         The_Unit := In_Hours;
         The_State := At_End;
       when others =>
@@ -494,20 +494,20 @@ package body Angle is
       Get_Next_Number;
       case Next_Character is
       when ' ' =>
-        The_Seconds := The_Seconds + Seconds(The_Number);
+        The_Seconds := @ + Seconds(The_Number);
       when '.' =>
         Handle_Fraction;
       when '"' =>
         if The_Unit = In_Hours then
           Error.Raise_With ("s expected");
         end if;
-        The_Seconds := The_Seconds + Seconds(The_Number);
+        The_Seconds := @ + Seconds(The_Number);
         The_Unit := In_Degrees;
       when 's' =>
         if The_Unit = In_Degrees then
           Error.Raise_With (""" expected");
         end if;
-        The_Seconds := The_Seconds + Seconds(The_Number);
+        The_Seconds := @ + Seconds(The_Number);
         The_Unit := In_Hours;
       when others =>
         Error.Raise_With ("unexpected: " & Image(The_Next));
@@ -518,7 +518,7 @@ package body Angle is
       Error.Raise_With ("unexpected: " & Image(The_Next..Image'last));
     end if;
     if Is_Negative then
-      The_Seconds := -The_Seconds;
+      The_Seconds := -@;
     end if;
     declare
       use type Degrees;

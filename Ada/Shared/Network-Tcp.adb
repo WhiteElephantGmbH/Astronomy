@@ -1,8 +1,9 @@
 -- *********************************************************************************************************************
--- *                       (c) 2016 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2016 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
--->Style: Soudronic
+pragma Style_White_Elephant;
+
 with Ada.Calendar;
 with Ada.Unchecked_Conversion;
 with Log;
@@ -602,6 +603,5 @@ package body Network.Tcp is
   when others =>
     null;
   end Close;
-
 
 end Network.Tcp;

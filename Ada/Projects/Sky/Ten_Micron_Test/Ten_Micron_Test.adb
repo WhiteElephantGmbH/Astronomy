@@ -8,7 +8,7 @@ pragma Build (Description => "10micron test",
               Version     => (1, 0, 0, 1),
               Kind        => Console,
               Icon        => False,
-              Compiler    => "GNATPRO\22.1");
+              Compiler    => "GNATPRO\22.2");
 with Test;
 
 procedure Ten_Micron_Test is

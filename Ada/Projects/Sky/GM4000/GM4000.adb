@@ -8,7 +8,7 @@ pragma Build (Description => "GM4000 Simulator",
               Version     => (2, 15, 1, 2),
               Kind        => Console,
               Icon        => False,
-              Compiler    => "GNATPRO\22.1");
+              Compiler    => "GNATPRO\22.2");
 with Test;
 
 procedure GM4000 is

@@ -8,7 +8,7 @@ pragma Build (Description => "PWI test program",
               Version     => (2, 0, 0, 17),
               Kind        => Console,
               Icon        => False,
-              Compiler    => "GNATPRO\22.1");
+              Compiler    => "GNATPRO\22.2");
 with Test;
 
 procedure PWI_Test is
