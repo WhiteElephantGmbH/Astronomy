@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2002 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2002 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -312,6 +312,19 @@ package body Os.Application is
     end;
   end Name;
 
+  function Main_Version return String is
+  begin
+    return Value_Of ("FileVersion", Module_Name);
+  exception
+  when others =>
+    declare
+      Version_Numbers : constant Unsigned.Word_String := Unsigned.String_Of (Version);
+      Major_Id        : constant String := Strings.Trimmed (Version_Numbers(Version_Numbers'first + 3)'img);
+      Minor_Id        : constant String := Strings.Trimmed (Version_Numbers(Version_Numbers'first + 2)'img);
+    begin
+      return Major_Id & '.' & Minor_Id;
+    end;
+  end Main_Version;
 
   function Version return String is
   begin

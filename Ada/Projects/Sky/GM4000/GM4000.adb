@@ -5,10 +5,10 @@
 pragma Style_White_Elephant;
 
 pragma Build (Description => "GM4000 Simulator",
-              Version     => (2, 15, 1, 2),
+              Version     => (2, 15, 1, 3),
               Kind        => Console,
               Icon        => False,
-              Compiler    => "GNATPRO\22.2");
+              Compiler    => "GNATPRO\23.0");
 with Test;
 
 procedure GM4000 is

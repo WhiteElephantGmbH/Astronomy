@@ -16,10 +16,10 @@
 pragma Style_White_Elephant;
 
 pragma Build (Description => "Generate Sky data",
-              Version     => (3, 1, 0, 2),
+              Version     => (3, 1, 0, 3),
               Kind        => Windows,
               Icon        => False,
-              Compiler    => "GNATPRO\22.2");
+              Compiler    => "GNATPRO\23.0");
 
 with Data_Generator;
 

@@ -5,10 +5,10 @@
 pragma Style_White_Elephant;
 
 pragma Build (Description => "M-Zero Simulator",
-              Version     => (1, 3, 0, 2),
+              Version     => (1, 3, 0, 3),
               Kind        => Console,
               Icon        => False,
-              Compiler    => "GNATPRO\22.2");
+              Compiler    => "GNATPRO\23.0");
 with Test;
 
 procedure M_Zero_Simulator is

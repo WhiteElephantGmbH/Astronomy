@@ -6,13 +6,13 @@ pragma Style_White_Elephant;
 
 with Gui;
 with Gui.Registered;
-with Os.Application;
+with Application;
 with Log;
 
 package body Test is
 
-  Application_Name    : constant String := Os.Application.Name;
-  Application_Version : constant String := "v" & Os.Application.Version;
+  Application_Name    : constant String := Application.Name;
+  Application_Version : constant String := "v" & Application.Version;
 
   First_Page  : Gui.Page;
   Button_One  : Gui.Button with Unreferenced;

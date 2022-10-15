@@ -90,7 +90,7 @@ package body GID.Decoding_PNG is
 
   package body CRC32 is
 
-    CRC32_Table : array( Unsigned_32'(0)..255 ) of Unsigned_32;
+    CRC32_Table : array( Unsigned_32(0)..255 ) of Unsigned_32;
 
     procedure Prepare_table is
       --  CRC-32 algorithm, ISO-3309
@@ -533,7 +533,7 @@ package body GID.Decoding_PNG is
                     declare
                       b: U8;
                       shift: Integer:= 8 - png_bits_per_pixel;
-                      max: constant U8:= U8(Shift_Left(Unsigned_32'(1), png_bits_per_pixel)-1);
+                      max: constant U8:= U8(Shift_Left(Unsigned_32(1), png_bits_per_pixel)-1);
                       --  Scaling factor to obtain the correct color value on a 0..255 range.
                       --  The division is exact in all cases (bpp=8,4,2,1),
                       --  since 255 = 3 * 5 * 17 and max = 255, 15, 3 or 1.
@@ -600,7 +600,7 @@ package body GID.Decoding_PNG is
                   when 1 | 2 | 4 =>
                     declare
                       shift: Integer:= 8 - png_bits_per_pixel;
-                      max: constant U8:= U8(Shift_Left(Unsigned_32'(1), png_bits_per_pixel)-1);
+                      max: constant U8:= U8(Shift_Left(Unsigned_32(1), png_bits_per_pixel)-1);
                     begin
                       --  loop through the number of pixels in this byte:
                       for k in reverse 1..8/png_bits_per_pixel loop
@@ -703,6 +703,7 @@ package body GID.Decoding_PNG is
       --------------------------------------
 
       package UnZ_Glob is
+        pragma Warnings ("U");
         --  I/O Buffers
         --  > Sliding dictionary for unzipping, and output buffer as well
         slide: Byte_array( 0..wsize );

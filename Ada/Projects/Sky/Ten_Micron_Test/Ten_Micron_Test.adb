@@ -5,10 +5,10 @@
 pragma Style_White_Elephant;
 
 pragma Build (Description => "10micron test",
-              Version     => (1, 0, 0, 1),
+              Version     => (1, 0, 0, 2),
               Kind        => Console,
               Icon        => False,
-              Compiler    => "GNATPRO\22.2");
+              Compiler    => "GNATPRO\23.0");
 with Test;
 
 procedure Ten_Micron_Test is

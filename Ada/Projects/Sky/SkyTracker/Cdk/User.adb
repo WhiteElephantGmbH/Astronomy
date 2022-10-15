@@ -29,7 +29,6 @@ with Gui.Registered;
 with Lexicon;
 with Parameter;
 with Persistent;
-with Program;
 with Refraction;
 with Remote;
 with Site;
@@ -49,7 +48,7 @@ package body User is
   package M3      renames Device.M3;
 
   Application_Name : constant String := Application.Name;
-  Version          : constant String := Program.Version;
+  Version          : constant String := Application.Main_Version;
 
   Focuser_Actual_Key : constant String := "Focuser Actual";
 

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2021 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2021 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
@@ -228,13 +228,14 @@ package body M_Zero is
 
   function Reply_For (Command   : Lx200.Command;
                       Parameter : String := "") return String is
-    use Lx200;
+
+    use all type Lx200.Command;
 
     Log_Enabled : constant Boolean := not (Command in Get_Declination | Get_Right_Ascension);
 
   begin
     for Unused_Count in 1 .. Number_Of_Retries loop
-      Send (String_Of (Command, Parameter), Log_Enabled);
+      Send (Lx200.String_Of (Command, Parameter), Log_Enabled);
       begin
         case Command is
         when Slew =>

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2021 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2021 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -45,7 +45,7 @@ package body User is
   package Log is new Traces ("User");
 
   Application_Name : constant String := Application.Name;
-  Version          : constant String := Application.Version;
+  Version          : constant String := Application.Main_Version;
 
   Setup_Object_Key : constant String := "Setup Object";
 

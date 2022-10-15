@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2013 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2013 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -254,7 +254,7 @@ package body Norad is
     procedure Convert_Sat_State (With_Position : in out Vector;
                                  And_Velocity  : in out Vector) is
     begin
-      for Index in Astro.INDEX loop
+      for Index in Astro.AXIS loop
         With_Position(Index) := With_Position(Index) * Xkmper;      -- kilometers
         And_Velocity(Index) := And_Velocity(Index) * Xkmper / 60.0; -- kilometers / second
       end loop;

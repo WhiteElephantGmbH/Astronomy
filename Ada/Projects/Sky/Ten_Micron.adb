@@ -150,13 +150,13 @@ package body Ten_Micron is
 
   function Reply_For (Command   : Lx200.Extended_Command;
                       Parameter : String := "") return String is
-    use Lx200;
+    use all type Lx200.Command;
 
     Log_Enabled : constant Boolean
       := not (Command in Get_Declination | Get_Right_Ascension | Get_Axis_Dec_Position | Get_Axis_RA_Position);
 
   begin
-    Send (String_Of (Command, Parameter), Log_Enabled);
+    Send (Lx200.String_Of (Command, Parameter), Log_Enabled);
     begin
       case Command is
       when Slew
@@ -165,9 +165,9 @@ package body Ten_Micron is
         declare
           Reply : constant String := Received_Character;
         begin
-          if Reply /= Slew_Ok then
+          if Reply /= Lx200.Slew_Ok then
             Log.Warning (Received_String);
-            return Slew_Ok; -- simulate ok
+            return Lx200.Slew_Ok; -- simulate ok
           end if;
           return Reply;
         end;
@@ -331,20 +331,20 @@ package body Ten_Micron is
 
   procedure Slew_To (Location : Space.Direction;
                      Target   : Target_Kind := Other_Targets) is
-    use Lx200;
+    use all type Lx200.Command;
   begin
     if Not_Connected then
       return;
     end if;
     case Target is
     when Axis_Position =>
-      Execute (Set_Axis_RA_Position, Position_Of (Space.Ra_Of (Location)), Expected => "1");
-      Execute (Set_Axis_Dec_Position, Position_Of (Space.Dec_Of (Location)), Expected => "1");
-      Execute (Slew_To_Axis_Position, Expected => Slew_Ok);
+      Execute (Set_Axis_RA_Position, Lx200.Position_Of (Space.Ra_Of (Location)), Expected => "1");
+      Execute (Set_Axis_Dec_Position, Lx200.Position_Of (Space.Dec_Of (Location)), Expected => "1");
+      Execute (Slew_To_Axis_Position, Expected => Lx200.Slew_Ok);
     when Other_Targets =>
-      Execute (Set_Right_Ascension, Hours_Of (Space.Ra_Of (Location)), Expected => "1");
-      Execute (Set_Declination, Signed_Degrees_Of (Space.Dec_Of (Location)), Expected => "1");
-      Execute (Slew, Expected => Slew_Ok);
+      Execute (Set_Right_Ascension, Lx200.Hours_Of (Space.Ra_Of (Location)), Expected => "1");
+      Execute (Set_Declination, Lx200.Signed_Degrees_Of (Space.Dec_Of (Location)), Expected => "1");
+      Execute (Slew, Expected => Lx200.Slew_Ok);
     end case;
   exception
   when Error.Occurred =>

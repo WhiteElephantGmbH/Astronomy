@@ -29,7 +29,6 @@ with Objects;
 with Os;
 with Parameter;
 with Persistent;
-with Program;
 with Remote;
 with Site;
 with Space;
@@ -43,7 +42,7 @@ package body User is
   package Log is new Traces ("User");
 
   Application_Name : constant String := Application.Name;
-  Version          : constant String := Program.Version;
+  Version          : constant String := Application.Main_Version;
 
   Control_Page   : Gui.Page;
   Goto_Button    : Gui.Button;

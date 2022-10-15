@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2012 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2012 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -23,8 +23,8 @@ package Astro is
 
   -- Vektoren und Matrizen
 
-  type INDEX  is (X,Y,Z);
-  type VECTOR is array (INDEX) of REAL;
+  type AXIS   is (X,Y,Z);
+  type VECTOR is array (AXIS) of REAL;
   type MAT3X  is array (1..3)  of VECTOR;
 
   type REAL3  is array (1..3)  of REAL;

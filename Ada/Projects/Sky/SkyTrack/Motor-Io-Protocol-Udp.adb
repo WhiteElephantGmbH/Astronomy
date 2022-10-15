@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2015 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2015 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -19,7 +19,6 @@ with Ada.Real_Time;
 with Error;
 with Network.Udp;
 with Parameter;
-with Program;
 with Unsigned;
 with Strings;
 with System;
@@ -43,9 +42,9 @@ package body Motor.Io.Protocol.Udp is
                    Stop);
 
   type Protocol_Version is record
-    Major_Id : Unsigned.Byte := Program.Major_Id;
-    Minor_Id : Unsigned.Byte := Program.Minor_Id;
-    Revision : Unsigned.Word := Program.Revision;
+    Major_Id : Unsigned.Byte := 1;
+    Minor_Id : Unsigned.Byte := 6;
+    Revision : Unsigned.Word := 4;
   end record;
 
   type Protocol_Type is new Unsigned.Byte;

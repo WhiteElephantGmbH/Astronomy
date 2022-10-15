@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2012 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2012 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -23,7 +23,6 @@ package body Moon is
 
   use Astro;
   use MATLIB;
-  use MOOLIB;
 
   function Direction_Of (Id : Name.Id;
                          UT : Time.Ut) return Space.Direction is
@@ -36,10 +35,10 @@ package body Moon is
     pragma Unreferenced (Id);
 
   begin
-    MOONEQU (T   => Time.Tet_Of (UT),
-             RA  => RA,
-             DEC => DEC,
-             R   => R);
+    MOOLIB.MOONEQU (T   => Time.Tet_Of (UT),
+                    RA  => RA,
+                    DEC => DEC,
+                    R   => R);
 
     G := CART (R, DEC, RA);
 

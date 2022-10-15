@@ -5,10 +5,10 @@
 pragma Style_White_Elephant;
 
 pragma Build (Description => "GUI test",
-              Version     => (1, 1, 0, 2),
+              Version     => (1, 1, 0, 3),
               Kind        => Console,
               Icon        => False,
-              Compiler    => "GNATPRO\22.2");
+              Compiler    => "GNATPRO\23.0");
 with Test;
 
 procedure GuiTest is

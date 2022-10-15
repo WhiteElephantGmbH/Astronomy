@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2015 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2015 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -37,6 +37,15 @@ package body Applications is
       return Product;
     end if;
   end Name;
+
+
+  function Main_Version return String is
+  begin
+    return Os.Application.Main_Version;
+  exception
+  when others =>
+    return "no information";
+  end Main_Version;
 
 
   function Version return String is
