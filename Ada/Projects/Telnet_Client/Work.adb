@@ -18,8 +18,6 @@ package body Work is
 
     Socket_Protocol : constant Network.Tcp.Protocol := Network.Tcp.Raw;
 
-    Terminator : constant Character := Ascii.Lf;
-
     The_Socket : Network.Tcp.Socket;
 
     procedure Send (Item : String) is
@@ -29,29 +27,32 @@ package body Work is
 
     procedure Receive is
     begin
-      declare
-        Data : constant String := Network.Tcp.Raw_String_From (The_Socket,
-                                                               Terminator      => Terminator,
-                                                               Receive_Timeout => 3.0);
-      begin
-        Ada.Text_IO.Put_Line ("< " & Unsigned.Hex_Image_Of (Unsigned.String_Of (Data)));
-      end;
+      loop
+        declare
+          Data : constant Character := Network.Tcp.Raw_Character_From (The_Socket,
+                                                                       Receive_Timeout => 0.3);
+        begin
+          Ada.Text_IO.Put_Line ("<" & Unsigned.Hex_Image_Of (Unsigned.Byte(Character'pos(Data))) & ">");
+        end;
+      end loop;
     exception
     when Network.Timeout =>
-      Ada.Text_IO.Put_Line ("< TIMEOUT");
+      null;
     end Receive;
 
   begin -- Client
     The_Socket := Network.Tcp.Socket_For (Ip_Addrees, Network.Port_Number'value(Port), Socket_Protocol);
-    Receive;
     loop
-      Ada.Text_IO.Put (">");
+      Receive;
       declare
         Data : constant String := Ada.Text_IO.Get_Line;
       begin
-        Send (Data & Ascii.Cr & Ascii.Lf);
-        Receive;
         exit when Data = "";
+        if Data(Data'first) = '/' then
+          Send ([Character'val(Unsigned.Byte'(Unsigned.Hex_Value_Of (Data(Data'first + 1 .. Data'first + 2))))]);
+        else
+          Send (Data);
+        end if;
       end;
     end loop;
   end Client;

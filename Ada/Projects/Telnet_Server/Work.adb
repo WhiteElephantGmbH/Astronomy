@@ -42,8 +42,7 @@ package body Work is
                                       The_Client_Socket,
                                       Client_Address);
       Put_Line ("# connected. Ip Address " & Network.Image_Of (Client_Address));
-      Put_Line ("> Hello");
-      Send ("Hello" & Ascii.Cr & Ascii.Lf);
+      Send ("Hello" & Ascii.Cr & Ascii.Lf & '>');
       begin
         loop
           declare
@@ -51,8 +50,7 @@ package body Work is
             Hex_Data : constant String := Unsigned.Hex_Image_Of (Unsigned.String_Of (Data));
           begin
             Put_Line ("< " & Hex_Data);
-            Put_Line ("> " & Hex_Data);
-            Send (Data);
+            Send ("Response" & Ascii.Cr & Ascii.Lf & '>');
             exit Main when Data = Ascii.Cr & Ascii.Lf;
           end;
         end loop;
