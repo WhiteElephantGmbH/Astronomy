@@ -33,12 +33,10 @@ package body Work is
   procedure Execute is
     Nr_Of_Arguments : constant Natural := Ada.Command_Line.Argument_Count;
   begin
-    if Nr_Of_Arguments = 1 then
-      declare
-        Url : constant String := Ada.Command_Line.Argument (1);
-      begin
-        Client (Url);
-      end;
+    if Nr_Of_Arguments = 0 then
+      Client ("http://user:secret@192.168.10.160/statusjsn.js?components=513&cmd=1&p=3&s=1");
+    elsif Nr_Of_Arguments = 1 then
+      Client (Ada.Command_Line.Argument (1));
     else
       Put_Line ("Incorrect number of parameters");
     end if;
