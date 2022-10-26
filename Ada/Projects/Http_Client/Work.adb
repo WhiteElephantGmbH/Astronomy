@@ -19,7 +19,9 @@ package body Work is
   end Put_Line;
 
 
-  procedure Client (Url : String) is
+  procedure Client (Ip : String) is
+
+    Url : constant String := "http://user:secret@" & Ip & "/statusjsn.js?components=513&cmd=1&p=3&s=1";
 
     Result : constant String := AWS.Response.Message_Body (AWS.Client.Get (Url));
 
@@ -34,7 +36,7 @@ package body Work is
     Nr_Of_Arguments : constant Natural := Ada.Command_Line.Argument_Count;
   begin
     if Nr_Of_Arguments = 0 then
-      Client ("http://user:secret@192.168.10.160/statusjsn.js?components=513&cmd=1&p=3&s=1");
+      Client ("192.168.10.160");
     elsif Nr_Of_Arguments = 1 then
       Client (Ada.Command_Line.Argument (1));
     else

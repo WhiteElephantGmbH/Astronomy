@@ -16,27 +16,27 @@ package body Response is
          """num_inputs"":8," &
          """num_idt"":0," &
          """num_slave_idt"":0," &
---         """has"":" &
---           "{" &
---           """amp_meter"":0," &
---           """amp_diff"":0," &
---           """amp_neutral"":0," &
---           """messages"":0," &
---           """beeper"":0," &
---           """snmp"":1," &
---           """gsm"":0," &
---           """sntp"":0," &
---           """email"":1," &
---           """twin"":0," &
---           """ets"":0," &
---           """slave"":0," &
---           """serialconsole"":1," &
---           """ext12vout"":0," &
---           """ext3vout"":0," &
---           """brightness"":0," &
---           """buttonlock"":1," &
---           """display"":0" &
---           "}," &
+         """has"":" &
+           "{" &
+           """amp_meter"":0," &
+           """amp_diff"":0," &
+           """amp_neutral"":0," &
+           """messages"":0," &
+           """beeper"":0," &
+           """snmp"":1," &
+           """gsm"":0," &
+           """sntp"":0," &
+           """email"":1," &
+           """twin"":0," &
+           """ets"":0," &
+           """slave"":0," &
+           """serialconsole"":1," &
+           """ext12vout"":0," &
+           """ext3vout"":0," &
+           """brightness"":0," &
+           """buttonlock"":1," &
+           """display"":0" &
+           "}," &
          """provider_known"":0," &
          """outtype"":2," &
          """poe"":0," &
