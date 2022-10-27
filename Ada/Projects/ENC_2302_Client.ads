@@ -4,14 +4,24 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-pragma Build (Description => "Telnet Client",
-              Version     => (1, 0, 0, 0),
-              Kind        => Console,
-              Icon        => False,
-              Compiler    => "GNATPRO\23.0");
-with Work;
+package ENC_2302_Client is
 
-procedure Telnet_Client is
-begin
-  Work.Execute;
-end Telnet_Client;
+  subtype Ip_Address is String; -- local 127.0.0.1
+
+  type Port is (Port_1, Port_2, Port_3, Port_4);
+
+  type Switch is (Off, On);
+
+  type Switches is array (Port) of Switch;
+
+  All_Off : constant Switches := [others => Off];
+
+  function Switches_Of (Host : Ip_Address) return Switches;
+
+  procedure Set (The_Port   : Port;
+                 The_Switch : Switch;
+                 Host       : Ip_Address);
+
+  Not_Set : exception;
+
+end ENC_2302_Client;

@@ -21,7 +21,7 @@ package body Work is
 
   procedure Client (Ip : String) is
 
-    Url : constant String := "http://user:secret@" & Ip & "/statusjsn.js?components=513&cmd=1&p=3&s=1";
+    Url : constant String := "http://" & Ip & "/statusjsn.js?components=513&cmd=1&p=3&s=1";
 
     Result : constant String := AWS.Response.Message_Body (AWS.Client.Get (Url));
 

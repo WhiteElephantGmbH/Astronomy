@@ -4,8 +4,12 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with ENC_2302_Client;
+
 package Response is
 
-   function Item return String;
+  package ENC renames ENC_2302_Client;
+
+  function Item (With_Switches : ENC.Switches) return String;
 
 end Response;

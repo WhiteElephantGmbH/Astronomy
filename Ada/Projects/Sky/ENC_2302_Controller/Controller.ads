@@ -4,9 +4,9 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-package Work is
+package Controller is
 
    procedure Execute;
 
-end Work;
+end Controller;
 
