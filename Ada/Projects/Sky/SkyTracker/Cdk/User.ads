@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2019 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2019 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -17,6 +17,7 @@ pragma Style_White_Elephant;
 
 with Error;
 with Name;
+with Progress;
 with Telescope;
 
 package User is
@@ -27,7 +28,7 @@ package User is
 
   type Action_Handler is access procedure (The_Action : Action);
 
-  type Percent is new Natural range 0 .. 100;
+  subtype Percent is Progress.Percent;
 
   procedure Show_Error (The_Text : String := Error.Message);
 

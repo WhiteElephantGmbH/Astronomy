@@ -535,7 +535,7 @@ package body User is
       The_Status := Information.Status;
       Last_Target_Selection := The_Target_Selection;
       case The_Status is
-      when Telescope.Unknown =>
+      when Telescope.Unknown | Telescope.Restarting =>
         Disable_Startup_Button;
         Disable_Stop_Button;
         Menu_Disable;

@@ -17,6 +17,7 @@ pragma Style_White_Elephant;
 
 with Ada.Real_Time;
 with Application;
+with Cdk_700;
 with Data;
 with Error;
 with Gui;
@@ -293,6 +294,8 @@ package body Control is
         end;
       end if;
       case The_Data.Status is
+      when Telescope.Restarting =>
+        User.Show (The_Progress => Cdk_700.Startup_Progress);
       when Telescope.Homing | Telescope.Positioning | Telescope.Approaching =>
         declare
           Actual_Duration : Time.Ut := The_Data.Completion_Time - Time.Universal;

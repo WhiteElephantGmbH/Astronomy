@@ -4,6 +4,8 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with Network;
+
 package ENC_2302_Client is
 
   subtype Ip_Address is String; -- local 127.0.0.1
@@ -16,11 +18,11 @@ package ENC_2302_Client is
 
   All_Off : constant Switches := [others => Off];
 
-  function Switches_Of (Host : Ip_Address) return Switches;
+  function Switches_Of (Host : Network.Ip_Address) return Switches;
 
   procedure Set (The_Port   : Port;
                  The_Switch : Switch;
-                 Host       : Ip_Address);
+                 Host       : Network.Ip_Address);
 
   Not_Set : exception;
 

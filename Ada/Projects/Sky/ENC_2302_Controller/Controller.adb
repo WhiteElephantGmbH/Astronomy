@@ -8,6 +8,7 @@ with Ada.Command_Line;
 with Ada.Text_IO;
 with Exceptions;
 with ENC_2302_Client;
+with Network;
 
 package body Controller is
 
@@ -16,15 +17,15 @@ package body Controller is
   package ENC renames ENC_2302_Client;
 
 
-  procedure Control (Ip : String) is
+  procedure Control (Ip_Address : Network.Ip_Address) is
     The_Port    : ENC.Port;
     The_Switch  : ENC.Switch;
     Input_Error : exception;
   begin
-    IO.Put_Line ("Control Ports on Host with IP: " & Ip);
+    IO.Put_Line ("Control Ports on Host with IP: " & Network.Image_Of (Ip_Address));
     loop
       begin
-        IO.Put_Line ("Actual Switches: " & ENC.Switches_Of (Ip)'image);
+        IO.Put_Line ("Actual Switches: " & ENC.Switches_Of (Ip_Address)'image);
         IO.Put ("Port input: (1..4)] | ('q' | """") for quit > ");
         declare
           Input : constant String := IO.Get_Line;
@@ -45,7 +46,7 @@ package body Controller is
           raise Input_Error;
         end;
         IO.Put_Line ("Set " & The_Port'image & " to " & The_Switch'image);
-        ENC.Set (The_Port, The_Switch, Host => Ip);
+        ENC.Set (The_Port, The_Switch, Host => Ip_Address);
       exception
       when Input_Error =>
         null;
@@ -58,9 +59,9 @@ package body Controller is
     Nr_Of_Arguments : constant Natural := Ada.Command_Line.Argument_Count;
   begin
     if Nr_Of_Arguments = 0 then
-      Control ("192.168.10.160");
+      Control (Network.Ip_Address_Of ("192.168.10.160"));
     elsif Nr_Of_Arguments = 1 then
-      Control (Ada.Command_Line.Argument (1));
+      Control (Network.Ip_Address_Of (Ada.Command_Line.Argument (1)));
     else
       IO.Put_Line ("Incorrect number of parameters");
     end if;

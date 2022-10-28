@@ -18,6 +18,7 @@ pragma Style_White_Elephant;
 with Ada.Environment_Variables;
 with Ada.Text_IO;
 with Application;
+with Cdk_700;
 with Configuration;
 with Definite_Doubly_Linked_Lists;
 with Error;
@@ -43,6 +44,9 @@ package body Parameter is
   Localization_Id : constant String := "Localization";
   Language_Key    : constant String := "Language";
 
+  Controller_Id  : constant String := "Controller";
+  Ip_Address_Key : constant String := "IP Address";
+
   PWI_Id                : constant String := "PWI";
   Program_Key           : constant String := "Program";
   Settings_Key          : constant String := "Settings";
@@ -53,7 +57,6 @@ package body Parameter is
   M3_Default_Place_Key  : constant String := "M3 Default Place";
   M3_Ocular_Port_Key    : constant String := "M3 Ocular Port";
   Pointing_Model_Key    : constant String := "Pointing Model";
-  Ip_Address_Key        : constant String := "IP Address";
   Port_Key              : constant String := "Port";
   Moving_Speed_List_Key : constant String := "Moving Speed List";
   Cwe_Distance_Key      : constant String := "CWE Distance";
@@ -334,6 +337,9 @@ package body Parameter is
       Put (Strings.Bom_8 & "[" & Localization_Id & "]");
       Put (Language_Key & " = " & Strings.Legible_Of (Stellarium.Language'img));
       Put ("");
+      Put ("[" & Controller_Id & "]");
+      Put (Ip_Address_Key & " = 192.168.10.160");
+      Put ("");
       Put ("[" & PWI_Id & "]");
       Put (Program_Key & "           = " & PWI_Program_Files & "\PlaneWave interface\PWI.exe");
       Put (Settings_Key & "          = " & PWI_Mount_Folder & "settingsMount.xml");
@@ -381,6 +387,7 @@ package body Parameter is
       Lx200_Handle        : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Lx200_Id);
       Remote_Handle       : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Remote_Id);
       Stellarium_Handle   : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Stellarium_Id);
+      Controller_Handle   : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Controller_Id);
       Localization_Handle : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Localization_Id);
 
       procedure Define_Site_Parameters is
@@ -534,6 +541,9 @@ package body Parameter is
       Set (Localization_Handle);
       Standard.Language.Define (Language);
 
+      Set (Controller_Handle);
+      Cdk_700.Startup (Ip_Address_For (Controller_Id));
+
       Set (PWI_Handle);
       Define_Site_Parameters;
 
@@ -584,6 +594,8 @@ package body Parameter is
       end;
       Startup_Stellarium;
     exception
+    when Cdk_700.Startup_Failed =>
+      Error.Raise_With ("CDK 700 not started");
     when others =>
       if Is_In_Shutdown_Mode then
         PWI.Shutdown;

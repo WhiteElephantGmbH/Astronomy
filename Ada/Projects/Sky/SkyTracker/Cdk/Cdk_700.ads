@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2019 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                      *
+-- *                           (c) 2022 by White Elephant GmbH, Schaffhausen, Switzerland                              *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,15 +15,17 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-pragma Build (Description => "CDK700 Control Program",
-              Version     => (2, 2, 1, 5),
-              Kind        => Windows,
-              Libraries   => ("AWS64", "COLL64"),
-              Compiler    => "GNATPRO\23.0");
+with Network;
+with Progress;
 
-with Control;
+package Cdk_700 is
 
-procedure SkyTracker is
-begin
-  Control.Start;
-end SkyTracker;
+  procedure Startup (Ip_Address : Network.Ip_Address);
+    Startup_Failed : exception;
+
+  function Is_Started return Boolean;
+  -- Precondition: Startup must have been called
+
+  function Startup_Progress return Progress.Percent;
+
+end Cdk_700;

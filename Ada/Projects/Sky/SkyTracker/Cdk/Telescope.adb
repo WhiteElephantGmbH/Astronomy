@@ -16,6 +16,7 @@
 pragma Style_White_Elephant;
 
 with Ada.Real_Time;
+with Cdk_700;
 with Cwe;
 with Objects;
 with Parameter;
@@ -227,7 +228,7 @@ package body Telescope is
 
     subtype Mount_Startup is Event range Mount_Disconnected .. Mount_Synchronised;
 
-    The_State  : State := Disconnected;
+    The_State  : State := Unknown;
     The_Event  : Event := No_Event;
 
     Mount_Is_Stopped : Boolean := True;
@@ -796,6 +797,15 @@ package body Telescope is
       end case;
     end Unknown_State;
 
+    ----------------
+    -- Restarting --
+    ----------------
+
+    procedure Restarting_State is
+    begin
+      null;
+    end Restarting_State;
+
     ------------------
     -- Disconnected --
     ------------------
@@ -1276,7 +1286,11 @@ package body Telescope is
                     Parameter.Pointing_Model);
     end Start;
     Log.Write ("Started");
-    The_State := Disconnected;
+    if Cdk_700.Is_Started then
+      The_State := Disconnected;
+    else
+      The_State := Restarting;
+    end if;
     The_Next_Time := Ada.Real_Time.Clock;
     loop
       begin
@@ -1411,6 +1425,11 @@ package body Telescope is
           end case;
         or
           accept Get (The_Data : out Data) do
+            if The_State = Restarting then
+              if Cdk_700.Is_Started then
+                The_State := Disconnected;
+              end if;
+            end if;
             The_Data.Status := The_State;
             The_Data.Time_Adjustment := Time_Delta(The_Time_Adjustment);
             The_Data.Fans_State := The_Fans_State;
@@ -1472,6 +1491,7 @@ package body Telescope is
           Log.Write ("State => " & The_State'img & " - Event => " & The_Event'img);
           case The_State is
           when Unknown       => Unknown_State;
+          when Restarting    => Restarting_State;
           when Disconnected  => Disconnected_State;
           when Disconnecting => Disconnecting_State;
           when Mount_Error   => Error_State;

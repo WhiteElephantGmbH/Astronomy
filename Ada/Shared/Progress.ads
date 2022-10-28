@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2019 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                      *
+-- *                           (c) 2022 by White Elephant GmbH, Schaffhausen, Switzerland                              *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,15 +15,14 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-pragma Build (Description => "CDK700 Control Program",
-              Version     => (2, 2, 1, 5),
-              Kind        => Windows,
-              Libraries   => ("AWS64", "COLL64"),
-              Compiler    => "GNATPRO\23.0");
+package Progress is
 
-with Control;
+  type Percent is new Natural range 0 .. 100;
 
-procedure SkyTracker is
-begin
-  Control.Start;
-end SkyTracker;
+  procedure Start (The_Duration : Duration);
+
+  function In_Percent return Percent;
+
+  function Is_Active return Boolean;
+
+end Progress;

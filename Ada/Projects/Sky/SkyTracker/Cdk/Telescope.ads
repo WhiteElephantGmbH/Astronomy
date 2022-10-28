@@ -51,7 +51,8 @@ package Telescope is
 
   subtype Setup is Command range Decrease_Speed .. Set_Slewing_Rate;
 
-  type State is (Unknown, -- PWI server not available
+  type State is (Unknown,    -- PWI server not available
+                 Restarting, -- restarting CDK 700 PC
                  Disconnected,
                  Disconnecting,
                  Mount_Error,
