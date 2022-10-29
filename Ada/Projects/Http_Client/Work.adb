@@ -19,9 +19,12 @@ package body Work is
   end Put_Line;
 
 
-  procedure Client (Ip : String) is
+  procedure Client (Parameters : String := "1&cmd=1&p=3&s=1";
+                    Ip         : String := "192.168.10.160") is
 
-    Url : constant String := "http://" & Ip & "/statusjsn.js?components=513&cmd=1&p=3&s=1";
+    Ip_Address : constant String :=  (if Ip(Ip'first) = 'l' then "127.0.0.1" else Ip);
+
+    Url : constant String := "http://" & Ip_Address & "/statusjsn.js?components=" & Parameters;
 
     Result : constant String := AWS.Response.Message_Body (AWS.Client.Get (Url));
 
@@ -36,9 +39,11 @@ package body Work is
     Nr_Of_Arguments : constant Natural := Ada.Command_Line.Argument_Count;
   begin
     if Nr_Of_Arguments = 0 then
-      Client ("192.168.10.160");
+      Client;
     elsif Nr_Of_Arguments = 1 then
-      Client (Ada.Command_Line.Argument (1));
+      Client (Ada.Command_Line.Argument(1));
+    elsif Nr_Of_Arguments = 2 then
+      Client (Ada.Command_Line.Argument(1), Ada.Command_Line.Argument(2));
     else
       Put_Line ("Incorrect number of parameters");
     end if;

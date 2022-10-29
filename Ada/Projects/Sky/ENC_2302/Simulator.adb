@@ -25,30 +25,36 @@ package body Simulator is
 
 
   function Call_Back (Data : AWS.Status.Data) return AWS.Response.Data is
-  begin
+
+    function Parameter_For (Name : String) return String is
+      Value : constant String := AWS.Status.Parameter (Data, Name);
+    begin
+      IO.Put_Line ("Callback - " & Name & ": " & Value);
+      return Value;
+    end Parameter_For;
+
+  begin -- Call_Back
     IO.Put_Line ("Callback - Host: " & AWS.Status.Host (Data));
     IO.Put_Line ("Callback - Protocol: " & AWS.Status.Protocol (Data)'image);
     IO.Put_Line ("Callback - Methode: " & AWS.Status.Method (Data));
     IO.Put_Line ("Callback - URI: " & AWS.Status.URI (Data));
     IO.Put_Line ("Callback - URL: " & AWS.Status.URL (Data));
     IO.Put_Line ("Callback - User Agent: " & AWS.Status.User_Agent (Data));
-    IO.Put_Line ("Callback - Components: " & AWS.Status.Parameter (D => Data, Name => "components"));
-    IO.Put_Line ("Callback - Command: " & AWS.Status.Parameter (D => Data, Name => "cmd"));
     declare
-      P : constant String := AWS.Status.Parameter (D => Data, Name => "p");
-      S : constant String := AWS.Status.Parameter (D => Data, Name => "s");
+      Components : constant String := Parameter_For ("components");
+      Cmd        : constant String := Parameter_For ("cmd") with Unreferenced;
+      P          : constant String := Parameter_For ("p");
+      S          : constant String := Parameter_For ("s");
     begin
-      IO.Put_Line ("Callback - Port: " & P);
-      IO.Put_Line ("Callback - Switch: " & S);
       if P /= "" and S /= "" then
         The_Switches(ENC.Port'val(Integer'value(P) - 1)) := ENC.Switch'val(Integer'value(S));
       end if;
-    end;
-    declare
-      Reply : constant String := Response.Item (The_Switches);
-    begin
-      IO.Put_Line ("<<<" & Reply & ">>>");
-      return AWS.Response.Acknowledge (AWS.Messages.S200, Reply);
+      declare
+        Reply : constant String := Response.Item (The_Switches, Components);
+      begin
+        IO.Put_Line ("<<<" & Reply & ">>>");
+        return AWS.Response.Acknowledge (AWS.Messages.S200, Reply);
+      end;
     end;
   end Call_Back;
 

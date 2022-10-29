@@ -10,6 +10,7 @@ package Response is
 
   package ENC renames ENC_2302_Client;
 
-  function Item (With_Switches : ENC.Switches) return String;
+  function Item (With_Switches : ENC.Switches;
+                 Components    : String) return String;
 
 end Response;

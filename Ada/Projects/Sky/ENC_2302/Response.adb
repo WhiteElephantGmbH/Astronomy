@@ -8,7 +8,8 @@ with Strings;
 
 package body Response is
 
-  function Item (With_Switches : ENC.Switches) return String is
+  function Item (With_Switches : ENC.Switches;
+                 Components    : String) return String is
 
     function S (The_Port : ENC.Port) return String is
     begin
@@ -18,6 +19,7 @@ package body Response is
   begin
     return
       "{" &
+      (if Components in "512" | "513" then
       """hardware"":" &
         "{" &
         """num_powerports"":4," &
@@ -68,14 +70,21 @@ package body Response is
                     """errors"":{""read"":0,""write"":0}" &
                     "}," &
         """flash"":{""id"":522715137,""page_size"":256,""page_num"":32768}" &
-        "}," &
+        "},"
+      else
+        ""
+      ) &
+      (if Components in "1" | "513" then
       """outputs"":" &
         "[" &
         "{""name"":""PC"","             & S(ENC.Port_1) & ",""type"":2,""batch"":[0,0,0,0,0,0],""wdog"":[0,3,null]}," &
         "{""name"":""CDK700 ON\/OFF""," & S(ENC.Port_2) & ",""type"":2,""batch"":[0,0,0,0,0,0],""wdog"":[0,3,null]}," &
         "{""name"":""-"","              & S(ENC.Port_3) & ",""type"":2,""batch"":[0,0,0,0,0,0],""wdog"":[0,3,null]}," &
         "{""name"":""12V\/USB_HUB"","   & S(ENC.Port_4) & ",""type"":2,""batch"":[0,0,0,0,0,0],""wdog"":[0,3,null]}" &
-        "]," &
+        "],"
+      else
+        ""
+      ) &
       """eof"":1" &
       "}";
   end Item;
