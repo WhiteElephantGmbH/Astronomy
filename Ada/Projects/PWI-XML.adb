@@ -626,9 +626,24 @@ package body PWI.XML is
         Error_Message : constant String := Parsed_Text;
       begin
         if Error_Message /= "No error" then
-          The_Response.Mount.Flags.Has_Motor_Error := True;
-          Log.Error (Axis & "_Motor_Error: " & Error_Message);
+          Log.Write (Axis & "_Motor_Error: " & Error_Message);
         end if;
+      end Handle_Motor_Error;
+
+      procedure Handle_Motor_Error (The_Code : in out Error_Code) is
+        No_Error    : constant Error_Code := 0;
+        FBI_Timeout : constant Error_Code := 33072;
+      begin
+        The_Code := Error_Code_Of (Parsed_Text);
+        case The_Code is
+        when No_Error =>
+          null;
+        when FBI_Timeout =>
+          Log.Warning ("FBI timeout");
+        when others =>
+          Log.Error ("Motor error code:" & The_Code'image);
+          The_Response.Mount.Flags.Has_Motor_Error := True;
+        end case;
       end Handle_Motor_Error;
 
       function Pointing_Model_Has_Been_Set return Boolean is
@@ -692,9 +707,9 @@ package body PWI.XML is
           when T_Alt_Rms_Error_Arcsec =>
             The_Response.Mount.Alt_Rms_Error := Arc_Second_Of (Parsed_Text);
           when T_Azm_Motor_Error_Code =>
-            The_Response.Mount.Azm_Motor_Error_Code := Error_Code_Of (Parsed_Text);
+            Handle_Motor_Error (The_Response.Mount.Azm_Motor_Error_Code);
           when T_Alt_Motor_Error_Code =>
-            The_Response.Mount.Alt_Motor_Error_Code := Error_Code_Of (Parsed_Text);
+            Handle_Motor_Error (The_Response.Mount.Alt_Motor_Error_Code);
           when T_Azm_Motor_Error_Message =>
             Handle_Motor_Error ("Azm");
           when T_Alt_Motor_Error_Message =>
@@ -863,6 +878,7 @@ package body PWI.XML is
     end Turned_On;
 
   end Fans;
+
 
   package body Mount is
 

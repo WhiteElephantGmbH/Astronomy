@@ -21,8 +21,8 @@ package body ENC_2302_Client is
                        S    : String := "") return Switches is
 
     H   : constant String := Network.Image_Of (Host);
-    Url : constant String := (if P = "" then "http://" & H & "/statusjsn.js?components=513"
-                                        else "http://" & H & "/statusjsn.js?components=513&cmd=1&p=" & P & "&s=" & S);
+    Url : constant String := (if P = "" then "http://" & H & "/statusjsn.js?components=1"
+                                        else "http://" & H & "/statusjsn.js?components=1&cmd=1&p=" & P & "&s=" & S);
   begin
     Log.Write ("Client_Get");
     Log.Write ("URL: <<<" & Url & ">>>");

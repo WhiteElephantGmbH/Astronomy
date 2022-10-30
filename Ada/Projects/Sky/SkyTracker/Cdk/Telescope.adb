@@ -869,6 +869,8 @@ package body Telescope is
     procedure Connecting_State is
     begin
       case The_Event is
+      when Mount_Error =>
+        The_State := Mount_Error;
       when Mount_Connected =>
         Mount.Enable;
         The_State := Enabling;
@@ -914,6 +916,8 @@ package body Telescope is
     procedure Disabling_State is
     begin
       case The_Event is
+      when Mount_Error =>
+        The_State := Mount_Error;
       when Mount_Disconnected =>
         The_State := Disconnected;
       when Mount_Connected =>
@@ -932,6 +936,8 @@ package body Telescope is
     procedure Enabling_State is
     begin
       case The_Event is
+      when Mount_Error =>
+        The_State := Mount_Error;
       when Mount_Enabled =>
         Fans.Turn (To => Fans.Off);
         M3.Turn (To => Parameter.M3_Default_Place);
@@ -983,6 +989,8 @@ package body Telescope is
       use type M3.Position;
     begin
       case The_Event is
+      when Mount_Error =>
+        The_State := Mount_Error;
       when Mount_Synchronised =>
         if The_M3_Position = Parameter.M3_Default_Place then
           Mount.Set_Pointing_Model;
@@ -1027,6 +1035,8 @@ package body Telescope is
     procedure Initializing_State is
     begin
       case The_Event is
+      when Mount_Error =>
+        The_State := Mount_Error;
       when Mount_Stopped =>
         The_State := Stopped;
       when Halt =>
@@ -1403,7 +1413,6 @@ package body Telescope is
               end if;
               Mount_Is_Stopped := False;
             when Mount.Error =>
-              Mount.Stop;
               The_Event := Mount_Error;
             end case;
             Has_New_Data := True;
