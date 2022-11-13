@@ -60,7 +60,7 @@ package body GID.Decoding_PNM is
     begin
       for y in 0 .. Integer (image.height) - 1 loop
         Row_start(y);
-        for x in 0 .. Integer (image.width) - 1 loop
+        for Unused in 0 .. Integer (image.width) - 1 loop
           pix.color.red   := U8((1-Get_Integer(image.stream, single_char => True)) * 255);
           pix.color.green := pix.color.red;
           pix.color.blue  := pix.color.red;
@@ -78,7 +78,7 @@ package body GID.Decoding_PNM is
     begin
       for y in 0 .. Integer (image.height) - 1 loop
         Row_start(y);
-        for x in 0 .. Integer (image.width) - 1 loop
+        for Unused in 0 .. Integer (image.width) - 1 loop
           pix.color.red   := U8(Get_Integer(image.stream));
           pix.color.green := pix.color.red;
           pix.color.blue  := pix.color.red;
@@ -96,7 +96,7 @@ package body GID.Decoding_PNM is
     begin
       for y in 0 .. Integer (image.height) - 1 loop
         Row_start(y);
-        for x in 0 .. Integer (image.width) - 1 loop
+        for Unused in 0 .. Integer (image.width) - 1 loop
           pix.color.red   := U8(Get_Integer(image.stream));
           pix.color.green := U8(Get_Integer(image.stream));
           pix.color.blue  := U8(Get_Integer(image.stream));
@@ -137,7 +137,7 @@ package body GID.Decoding_PNM is
     begin
       for y in 0 .. Integer (image.height) - 1 loop
         Row_start(y);
-        for x in 0 .. Integer (image.width) - 1 loop
+        for Unused in 0 .. Integer (image.width) - 1 loop
           Get_Byte(image.buffer, pix.color.red);
           pix.color.green := pix.color.red;
           pix.color.blue  := pix.color.red;
@@ -155,7 +155,7 @@ package body GID.Decoding_PNM is
     begin
       for y in 0 .. Integer (image.height) - 1 loop
         Row_start(y);
-        for x in 0.. Integer (image.width) - 1 loop
+        for Unused in 0.. Integer (image.width) - 1 loop
           Get_Byte(image.buffer, pix.color.red);
           Get_Byte(image.buffer, pix.color.green);
           Get_Byte(image.buffer, pix.color.blue);

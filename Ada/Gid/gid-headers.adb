@@ -168,7 +168,7 @@ package body GID.Headers is
     m: Number_LE:= 1;
   begin
     n:= 0;
-    for i in 1..Number_LE'size/8 loop
+    for Unused in 1..Number_LE'size/8 loop
       U8'read(from_le, b);
       n:= n + m * Number_LE(b);
       m:= m * 256;
@@ -183,7 +183,7 @@ package body GID.Headers is
     b: U8;
   begin
     n:= 0;
-    for i in 1..Number_BE'size/8 loop
+    for Unused in 1..Number_BE'size/8 loop
       U8'read(from_be, b);
       n:= n * 256 + Number_BE(b);
     end loop;
@@ -197,7 +197,7 @@ package body GID.Headers is
     b: U8;
   begin
     n:= 0;
-    for i in 1..Number'size/8 loop
+    for Unused in 1..Number'size/8 loop
       Buffering.Get_Byte(from, b);
       n:= n * 256 + Number(b);
     end loop;
@@ -374,7 +374,7 @@ package body GID.Headers is
           Read_EXIF(image, Natural(sh.length));
         when others =>
           --  Skip segment data
-          for i in 1..sh.length loop
+          for Unused in 1..sh.length loop
             Get_Byte(image.buffer, b);
           end loop;
       end case;
@@ -501,7 +501,7 @@ package body GID.Headers is
             exit;
           when others =>
             --  Skip chunk data and CRC
-            for i in 1..ch.length + 4 loop
+            for Unused in 1..ch.length + 4 loop
               Get_Byte(image.buffer, b);
             end loop;
         end case;
@@ -650,7 +650,7 @@ package body GID.Headers is
     image.top_first:= (tga_image_descriptor and 32) /= 0;
     --  *** Image and color map data
     --  * Image ID
-    for i in 1..image_ID_length loop
+    for Unused in 1..image_ID_length loop
       U8'read( image.stream, dummy );
     end loop;
     --  * Color map data (palette)

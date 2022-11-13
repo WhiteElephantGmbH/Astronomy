@@ -120,7 +120,7 @@ package body GID.Decoding_BMP is
         when others =>
           null;
       end case;
-      for i in unpadded_line_size + 1 .. padded_line_size loop
+      for Unused in unpadded_line_size + 1 .. padded_line_size loop
         Get_Byte(image.buffer, b);
       end loop;
       y:= y + 1;

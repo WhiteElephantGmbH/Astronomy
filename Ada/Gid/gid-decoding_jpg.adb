@@ -46,7 +46,7 @@ package body GID.Decoding_JPG is
     b: U8;
   begin
     n:= 0;
-    for i in 1..Number'size/8 loop
+    for Unused in 1..Number'size/8 loop
       Get_Byte(from, b);
       n:= n * 256 + Number(b);
     end loop;
@@ -145,7 +145,7 @@ package body GID.Decoding_JPG is
     image.JPEG_stuff.max_samples_ver:= 0;
     id_base := 1;
     --  For each component: 3 bytes information: ID, sampling factors, quantization table number
-    for i in 1..image.subformat_id loop
+    for Unused in 1..image.subformat_id loop
       --  Component ID (1 = Y, 2 = Cb, 3 = Cr, 4 = I, 5 = Q)
       Get_Byte(image.buffer, b);
       if b = 0 then
@@ -272,9 +272,9 @@ package body GID.Decoding_JPG is
           if remain_vlc < 0 then
             raise error_in_image_data with "JPEG: DHT table too short for data";
           end if;
-          for i in reverse 1..currcnt loop
+          for Unused in reverse 1..currcnt loop
             Get_Byte(image.buffer, b);
-            for j in reverse 1..spread loop
+            for Unused_Inner in reverse 1..spread loop
               image.JPEG_stuff.vlc_defs(kind, ht_idx)(idx):=
                 (bits => U8(codelen), code => b);
               idx:= idx + 1;
@@ -347,7 +347,7 @@ package body GID.Decoding_JPG is
     end if;
     if data_length < 6 then
       --  Skip segment data
-      for i in 1..data_length loop
+      for Unused in 1..data_length loop
         Get_Byte(image.buffer, b);
       end loop;
     else
@@ -356,7 +356,7 @@ package body GID.Decoding_JPG is
         signature(i):= Character'val(b);
       end loop;
       if signature /= Exif_signature then
-        for i in 7..data_length loop -- Skip remaining of APP1 data
+        for Unused in 7..data_length loop -- Skip remaining of APP1 data
           Get_Byte(image.buffer, b); -- since we don't know how to use it.
         end loop;
         if some_trace then
@@ -369,7 +369,7 @@ package body GID.Decoding_JPG is
       if some_trace then
         Put_Line("APP1 is Exif; endianness is " & endianness);
       end if;
-      for i in 8..14 loop -- TIFF 6.0 header (2-8 of 8 bytes)
+      for Unused in 8..14 loop -- TIFF 6.0 header (2-8 of 8 bytes)
         Get_Byte(image.buffer, b);
       end loop;
       --  Number of IFD0 entries (2 bytes)
@@ -398,12 +398,12 @@ package body GID.Decoding_JPG is
         if some_trace then
           Put("IFD tag:"); Ada.Integer_Text_IO.Put(Natural(IFD_tag), Base => 16); New_Line;
         end if;
-        for i in 3..8 loop
+        for Unused in 3..8 loop
           Get_Byte(image.buffer, b);
         end loop;
         if endianness = 'I' then
           Get_Byte(image.buffer, orientation_value);
-          for i in 10..12 loop
+          for Unused in 10..12 loop
             Get_Byte(image.buffer, b);
           end loop;
         else
@@ -436,7 +436,7 @@ package body GID.Decoding_JPG is
         end if;
       end loop;
       --  Skip rest of data
-      for i in x..data_length loop
+      for Unused in x..data_length loop
         Get_Byte(image.buffer, b);
       end loop;
     end if;
@@ -886,7 +886,7 @@ package body GID.Decoding_JPG is
         raise error_in_image_data with "JPEG: components mismatch in Scan segment";
       end if;
       id_base := 1;
-      for i in 1..components loop
+      for Unused in 1..components loop
         Get_Byte(image.buffer, b);
         if b = 0 then
           --  Workaround for bugged encoder (see above)
@@ -961,18 +961,15 @@ package body GID.Decoding_JPG is
       begin
         macro_blocks_loop:
         loop
-          components_loop:
           for c in Component loop
             if image.JPEG_stuff.components(c) then
-              samples_y_loop:
               for sby in 1..info_A(c).samples_ver loop
-                samples_x_loop:
                 for sbx in 1..info_A(c).samples_hor loop
                   Decode_Block(c, mb(c, sbx, sby));
-                end loop samples_x_loop;
-              end loop samples_y_loop;
+                end loop;
+              end loop;
             end if;
-          end loop components_loop;
+          end loop;
           --  All components of the current macro-block are decoded.
           --  Step 4, 5, 6 happen here: Upsampling, color transformation, output
           Upsampling_and_output(mb, x0, y0);
@@ -1038,7 +1035,7 @@ package body GID.Decoding_JPG is
           exit;
         when others =>
           --  Skip segment data
-          for i in 1..sh.length loop
+          for Unused in 1..sh.length loop
             Get_Byte(image.buffer, b);
           end loop;
       end case;

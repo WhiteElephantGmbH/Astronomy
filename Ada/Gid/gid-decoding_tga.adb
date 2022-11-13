@@ -148,7 +148,7 @@ package body GID.Decoding_TGA is
     begin
       for y in 0 .. Integer (image.height) - 1 loop
         Row_start(y);
-        for x in 0 .. Integer (image.width) - 1 loop
+        for Unused in 0 .. Integer (image.width) - 1 loop
           Get_pixel_32;
           Output_Pixel;
         end loop;
@@ -161,7 +161,7 @@ package body GID.Decoding_TGA is
     begin
       for y in 0 .. Integer (image.height) - 1 loop
         Row_start(y);
-        for x in 0 .. Integer (image.width) - 1 loop
+        for Unused in 0 .. Integer (image.width) - 1 loop
           Get_pixel_24;
           Output_Pixel;
         end loop;
@@ -174,7 +174,7 @@ package body GID.Decoding_TGA is
     begin
       for y in 0 .. Integer (image.height) - 1 loop
         Row_start(y);
-        for x in 0 .. Integer (image.width) - 1 loop
+        for Unused in 0 .. Integer (image.width) - 1 loop
           Get_pixel_16;
           Output_Pixel;
         end loop;
@@ -187,7 +187,7 @@ package body GID.Decoding_TGA is
     begin
       for y in 0 .. Integer (image.height) - 1 loop
         Row_start(y);
-        for x in 0 .. Integer (image.width) - 1 loop
+        for Unused in 0 .. Integer (image.width) - 1 loop
           Get_pixel_15;
           Output_Pixel;
         end loop;
@@ -200,7 +200,7 @@ package body GID.Decoding_TGA is
     begin
       for y in 0 .. Integer (image.height) - 1 loop
         Row_start(y);
-        for x in 0 .. Integer (image.width) - 1 loop
+        for Unused in 0 .. Integer (image.width) - 1 loop
           Get_pixel_8;
           Output_Pixel;
         end loop;
@@ -213,7 +213,7 @@ package body GID.Decoding_TGA is
     begin
       for y in 0 .. Integer (image.height) - 1 loop
         Row_start(y);
-        for x in 0 .. Integer (image.width) - 1 loop
+        for Unused in 0 .. Integer (image.width) - 1 loop
           Get_pixel_palette;
           Output_Pixel;
         end loop;
@@ -231,34 +231,34 @@ package body GID.Decoding_TGA is
       for y in 0 .. Integer (image.height) - 1 loop
         Row_start(y);
         if image.palette /= null then
-          for x in 0 .. Integer (image.width) - 1 loop
+          for Unused in 0 .. Integer (image.width) - 1 loop
             RLE_pixel_palette;
             Output_Pixel;
           end loop;
         else
           case image.bits_per_pixel is
             when 32 =>
-              for x in 0..image.width-1 loop
+              for Unused in 0..image.width-1 loop
                 RLE_pixel_32;
                 Output_Pixel;
               end loop;
             when 24 =>
-              for x in 0..image.width-1 loop
+              for Unused in 0..image.width-1 loop
                 RLE_pixel_24;
                 Output_Pixel;
               end loop;
             when 16 =>
-              for x in 0..image.width-1 loop
+              for Unused in 0..image.width-1 loop
                 RLE_pixel_16;
                 Output_Pixel;
               end loop;
             when 15 =>
-              for x in 0..image.width-1 loop
+              for Unused in 0..image.width-1 loop
                 RLE_pixel_15;
                 Output_Pixel;
               end loop;
             when 8  =>
-              for x in 0..image.width-1 loop
+              for Unused in 0..image.width-1 loop
                 RLE_pixel_8;
                 Output_Pixel;
               end loop;

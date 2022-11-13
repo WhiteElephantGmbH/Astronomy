@@ -244,6 +244,9 @@ package body User.Input is
       end select;
     end loop;
     Log.Write ("Terminated");
+  exception
+  when Occurence: others =>
+    Log.Termination (Occurence);
   end Handler;
 
 

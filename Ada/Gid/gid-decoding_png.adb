@@ -36,7 +36,7 @@ package body GID.Decoding_PNG is
     b: U8;
   begin
     n:= 0;
-    for i in 1..Number'size/8 loop
+    for Unused in 1..Number'size/8 loop
       Buffering.Get_Byte(from, b);
       n:= n * 256 + Number(b);
     end loop;
@@ -99,7 +99,7 @@ package body GID.Decoding_PNG is
     begin
       for i in CRC32_Table'range loop
         l:= i;
-        for bit in 0..7 loop
+        for Unused in 0..7 loop
           if (l and 1) = 0 then
             l:= Shift_Right(l,1);
           else
@@ -917,7 +917,7 @@ package body GID.Decoding_PNG is
           if abs (index - source) < amount then
             --  if source >= index, the effect of copy is
             --  just like the non-overlapping case
-            for count in reverse 1..amount loop
+            for Unused in reverse 1..amount loop
               UnZ_Glob.slide(index):= UnZ_Glob.slide(source);
               index := index  + 1;
               source:= source + 1;
@@ -1181,7 +1181,7 @@ package body GID.Decoding_PNG is
               raise error_in_image_data
                 with "PNG: invalid data in Deflate dynamic compression structure (#1)";
             end if;
-            for c in reverse 1..amount loop
+            for Unused in reverse 1..amount loop
               Ll ( defined ) := Natural_M32(current_length);
               defined:= defined + 1;
             end loop;
@@ -1396,7 +1396,7 @@ package body GID.Decoding_PNG is
             --    minus both zlib header bytes.
             UnZ_Meth.Inflate;
             z_crc:= 0;
-            for i in 1..4 loop
+            for Unused in 1..4 loop
               begin
                 UnZ_IO.Read_raw_byte(b);
               exception
@@ -1420,7 +1420,7 @@ package body GID.Decoding_PNG is
             --  last IDAT chunk's CRC (then, on compressed data)
             --
           when tEXt => -- 11.3.4.3 tEXt Textual data
-            for i in 1..ch.length loop
+            for Unused in 1..ch.length loop
               Get_Byte(image.buffer, b);
               if some_trace then
                 if b=0 then -- separates keyword from message
@@ -1433,7 +1433,7 @@ package body GID.Decoding_PNG is
             Big_endian(image.buffer, dummy); -- chunk's CRC
           when others =>
             --  Skip chunk data and CRC
-            for i in 1..ch.length + 4 loop
+            for Unused in 1..ch.length + 4 loop
               Get_Byte(image.buffer, b);
             end loop;
         end case;

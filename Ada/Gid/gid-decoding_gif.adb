@@ -26,7 +26,7 @@ package body GID.Decoding_GIF is
     m: Number:= 1;
   begin
     n:= 0;
-    for i in 1..Number'size/8 loop
+    for Unused in 1..Number'size/8 loop
       GID.Buffering.Get_Byte(from, b);
       n:= n + m * Number(b);
       m:= m * 256;
@@ -102,7 +102,7 @@ package body GID.Decoding_GIF is
       code: Natural:= 0;
     begin
       --  Read the code, bit by bit
-      for Counter  in reverse  0..CurrSize - 1  loop
+      for Unused  in reverse  0..CurrSize - 1  loop
         --  Next bit
         bits_in:= bits_in + 1;
         --  Maybe, a new byte needs to be loaded with a further 8 bits
@@ -388,7 +388,7 @@ package body GID.Decoding_GIF is
         Get_Byte(image.buffer, temp ); -- load sub-block length byte
         exit sub_blocks_sequence when temp = 0;
         --  null sub-block = end of sub-block sequence
-        for i in 1..temp loop
+        for Unused in 1..temp loop
           Get_Byte(image.buffer, temp ); -- load sub-block byte
         end loop;
       end loop sub_blocks_sequence;
@@ -467,7 +467,7 @@ package body GID.Decoding_GIF is
                   Get_Byte(image.buffer, temp ); -- load sub-block length byte
                   exit sub_blocks_sequence when temp = 0;
                   --  null sub-block = end of sub-block sequence
-                  for i in 1..temp loop
+                  for Unused in 1..temp loop
                     Get_Byte(image.buffer, temp2);
                     c:= Character'val(temp2);
                     Ada.Text_IO.Put(c);

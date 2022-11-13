@@ -13,7 +13,7 @@ package body GID.Decoding_PNG.Huffman is
         curr:= root;
         code:= Unsigned_32(descr(i).code);
         mask:= Shift_Left(Unsigned_32'(1), descr(i).length-1);
-        for j in 0..descr(i).length-1 loop
+        for Unused in 0..descr(i).length-1 loop
           if (code and mask) /= 0 then
             if t.node(curr).one = nil then
               alloc:= alloc + 1;
