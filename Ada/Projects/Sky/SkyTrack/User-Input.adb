@@ -218,6 +218,9 @@ package body User.Input is
       end case;
     end loop;
     Log.Write ("Terminated");
+  exception
+  when Occurance: others =>
+    Log.Termination (Occurance);
   end Handler;
 
 
