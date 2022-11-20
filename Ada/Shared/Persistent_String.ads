@@ -15,7 +15,7 @@ package Persistent_String is
 
   package Characters is new Persistent_Definite_Doubly_Linked_Lists (Name, Character, Character_List);
 
-  type Data is new Characters.Data  with null record;
+  type Data is new Characters.Data with null record;
 
   function Item (The_Data : Data) return String;
 
