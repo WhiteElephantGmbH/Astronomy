@@ -2,9 +2,9 @@ pragma Restrictions (No_Elaboration_Code);
 
 private package Catalog.Quasars is
 
-  type Object_List  is array (1 .. 338) of Object;
+  type Object_List is array (1 .. 338) of Object;
 
-  Id : constant Object_List := (
+  Id : constant Object_List := [
       1 => Undefined,
       2 => Undefined,
       3 => Undefined,
@@ -342,7 +342,7 @@ private package Catalog.Quasars is
     335 => Undefined,
     336 => Undefined,
     337 => Undefined,
-    338 =>     14884);
+    338 =>     14884];
 
   Count : constant Natural := 3;
 

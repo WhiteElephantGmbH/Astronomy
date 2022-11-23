@@ -377,7 +377,7 @@ package body Network.Tcp is
     end if;
     if The_Size = 0 then
       declare
-        No_Elements : constant Elements(1..0) := (others => <>);
+        No_Elements : constant Elements(1..0) := [];
       begin
         return No_Elements;
       end;

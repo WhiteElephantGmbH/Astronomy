@@ -2,9 +2,9 @@ pragma Restrictions (No_Elaboration_Code);
 
 private package Catalog.Hip is
 
-  type Object_List  is array (1 .. 118322) of Object;
+  type Object_List is array (1 .. 118322) of Object;
 
-  Id : constant Object_List := (
+  Id : constant Object_List := [
          1 => Undefined,
          2 => Undefined,
          3 => Undefined,
@@ -118326,7 +118326,7 @@ private package Catalog.Hip is
     118319 => Undefined,
     118320 => Undefined,
     118321 => Undefined,
-    118322 =>      9339);
+    118322 =>      9339];
 
   Count : constant Natural := 8991;
 

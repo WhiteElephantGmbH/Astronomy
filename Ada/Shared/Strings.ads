@@ -275,6 +275,6 @@ private
 
   None : constant Item := (Count     => 0,
                            Length    => 0,
-                           Positions => (others => First_Index),
-                           Data      => (others => Ascii.Nul));
+                           Positions => [others => First_Index],
+                           Data      => [others => Ascii.Nul]);
 end Strings;

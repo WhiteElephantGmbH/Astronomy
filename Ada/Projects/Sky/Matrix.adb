@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2015 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2015 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -287,7 +287,7 @@ package body Matrix is
         use type Modular.Index_Range;
 
       begin -- Find_Neighbours
-        The_Distances := (others => Angle.Degrees'last);
+        The_Distances := [others => Angle.Degrees'last];
         Next_Index := +Next_Alt_Index;
         The_Count := 0;
         while The_Count < Natural(Neighbour_Range'last) loop

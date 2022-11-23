@@ -48,9 +48,9 @@ package body Moon is
 
     LMST := +Time.Lmst_Of (UT);
 
-    L := (X => RCPHI * CS (LMST),
+    L := [X => RCPHI * CS (LMST),
           Y => RCPHI * SN (LMST),
-          Z => RSPHI);
+          Z => RSPHI];
 
     T := G - L;
 

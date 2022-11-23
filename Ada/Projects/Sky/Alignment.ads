@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2015 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2015 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -23,7 +23,7 @@ package Alignment is
 
   type Offsets is array (Offset_Range) of Angle.Degrees;
 
-  Zero_Offset : constant Offsets := (0.0, 0.0);
+  Zero_Offset : constant Offsets := [0.0, 0.0];
 
   Failure : exception;
 

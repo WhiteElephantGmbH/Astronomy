@@ -2,9 +2,9 @@ pragma Restrictions (No_Elaboration_Code);
 
 private package Catalog.Caldwell is
 
-  type Object_List  is array (1 .. 109) of Object;
+  type Object_List is array (1 .. 109) of Object;
 
-  Id : constant Object_List := (
+  Id : constant Object_List := [
       1 =>       111,
       2 =>       112,
       3 =>       113,
@@ -113,7 +113,7 @@ private package Catalog.Caldwell is
     106 =>       216,
     107 =>       217,
     108 =>       218,
-    109 =>       219);
+    109 =>       219];
 
   Count : constant Natural := 109;
 

@@ -16,8 +16,8 @@
 pragma Style_White_Elephant;
 
 pragma Build (Description => "Generate Sky data",
-              Version     => (3, 1, 0, 3),
-              Kind        => Windows,
+              Version     => (3, 1, 0, 4),
+              Kind        => Console,
               Icon        => False,
               Compiler    => "GNATPRO\23.0");
 

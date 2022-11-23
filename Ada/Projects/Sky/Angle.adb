@@ -212,7 +212,7 @@ package body Angle is
 
   type Unit_List is array (In_Unit) of Unit_Images;
 
-  Unit_Table : constant Unit_List := (Degree_Symbol & "'""", "hms");
+  Unit_Table : constant Unit_List := [Degree_Symbol & "'""", "hms"];
 
   One_Degree  : constant := 3600.0;
   Full_Circle : constant := 360.0 * One_Degree;

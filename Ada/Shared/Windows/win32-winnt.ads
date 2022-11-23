@@ -1541,127 +1541,6 @@ package Win32.Winnt is
    end record;
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
    type anonymous4_t is record
       BaseMid : Win32.BYTE;
       Flags1  : Win32.BYTE;
@@ -1775,17 +1654,17 @@ package Win32.Winnt is
    type PSID_IDENTIFIER_AUTHORITY is access all SID_IDENTIFIER_AUTHORITY;
 
    SECURITY_NULL_SID_AUTHORITY    : constant SID_IDENTIFIER_AUTHORITY :=
-     (Value => (0, 0, 0, 0, 0, 0));
+     (Value => [0, 0, 0, 0, 0, 0]);
    SECURITY_WORLD_SID_AUTHORITY   : constant SID_IDENTIFIER_AUTHORITY :=
-     (Value => (0, 0, 0, 0, 0, 1));
+     (Value => [0, 0, 0, 0, 0, 1]);
    SECURITY_LOCAL_SID_AUTHORITY   : constant SID_IDENTIFIER_AUTHORITY :=
-     (Value => (0, 0, 0, 0, 0, 2));
+     (Value => [0, 0, 0, 0, 0, 2]);
    SECURITY_CREATOR_SID_AUTHORITY : constant SID_IDENTIFIER_AUTHORITY :=
-     (Value => (0, 0, 0, 0, 0, 3));
+     (Value => [0, 0, 0, 0, 0, 3]);
    SECURITY_NON_UNIQUE_AUTHORITY  : constant SID_IDENTIFIER_AUTHORITY :=
-     (Value => (0, 0, 0, 0, 0, 4));
+     (Value => [0, 0, 0, 0, 0, 4]);
    SECURITY_NT_AUTHORITY          : constant SID_IDENTIFIER_AUTHORITY :=
-     (Value => (0, 0, 0, 0, 0, 5));
+     (Value => [0, 0, 0, 0, 0, 5]);
 
    type SID is record
       Revision            : Win32.BYTE;

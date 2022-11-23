@@ -2,9 +2,9 @@ pragma Restrictions (No_Elaboration_Code);
 
 private package Catalog.Hr is
 
-  type Object_List  is array (1 .. 9602) of Object;
+  type Object_List is array (1 .. 9602) of Object;
 
-  Id : constant Object_List := (
+  Id : constant Object_List := [
        1 =>       281,
        2 =>       282,
        3 =>       283,
@@ -9606,7 +9606,7 @@ private package Catalog.Hr is
     9599 => Undefined,
     9600 => Undefined,
     9601 => Undefined,
-    9602 =>      9374);
+    9602 =>      9374];
 
   Count : constant Natural := 9099;
 

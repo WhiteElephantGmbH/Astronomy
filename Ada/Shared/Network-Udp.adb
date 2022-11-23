@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2016 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2016 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -23,7 +23,7 @@ package body Network.Udp is
 
   Unbound_Socket : Net.Socket_Type;
 
-  Null_Item : constant Data (1..0) := (others => Data_Item(0));
+  Null_Item : constant Data (1..0) := [others => Data_Item(0)];
 
   function Stream_Of (The_Address : System.Address;
                       The_Size    : Natural) return Data is

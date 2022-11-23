@@ -296,7 +296,7 @@ package body Telescope is
         Direction_Delta := Direction_After - Direction_Before;
         Ra_Speed := +Space.Ra_Of (Direction_Delta);
         Dec_Speed := +Space.Dec_Of (Direction_Delta);
-        return (Mount.D1 => Ra_Speed, Mount.D2 => Dec_Speed);
+        return [Mount.D1 => Ra_Speed, Mount.D2 => Dec_Speed];
       else
         Target_Is_Lost := True;
         raise Target_Lost;
@@ -379,7 +379,7 @@ package body Telescope is
              Encoder.Azm < (Limits.Azm_Lower_Goto + Azm_Wrap_Limit)
           then
             The_Home_Direction := Home_Direction;
-            Mount.Goto_Target (The_Home_Direction, (0, 0), The_Completion_Time);
+            Mount.Goto_Target (The_Home_Direction, [0, 0], The_Completion_Time);
             The_Completion_Time := The_Completion_Time + Homing_Time;
             The_State := Approaching;
             return;
@@ -705,15 +705,15 @@ package body Telescope is
     begin
       case The_User_Adjust is
       when Move_Left =>
-        Mount.Jog ((Mount.D1 => -Speed, Mount.D2 => 0));
+        Mount.Jog ([Mount.D1 => -Speed, Mount.D2 => 0]);
       when Move_Right =>
-        Mount.Jog ((Mount.D1 => +Speed, Mount.D2 => 0));
+        Mount.Jog ([Mount.D1 => +Speed, Mount.D2 => 0]);
       when Move_Up =>
-        Mount.Jog ((Mount.D1 => 0, Mount.D2 => +Speed));
+        Mount.Jog ([Mount.D1 => 0, Mount.D2 => +Speed]);
       when Move_Down =>
-        Mount.Jog ((Mount.D1 => 0, Mount.D2 => -Speed));
+        Mount.Jog ([Mount.D1 => 0, Mount.D2 => -Speed]);
       when End_Move =>
-        Mount.Jog ((0, 0));
+        Mount.Jog ([0, 0]);
       when Decrease_Time =>
         null;
       when Increase_Time =>
@@ -1224,7 +1224,7 @@ package body Telescope is
             then
               Log.Warning ("goto home direction again (simulation only?)");
               The_Start_Time := Time.Universal;
-              Mount.Goto_Target (The_Home_Direction, (0, 0), Unused);
+              Mount.Goto_Target (The_Home_Direction, [0, 0], Unused);
             else
               Mount.Goto_Target (Direction       => Target_Direction,
                                  With_Speed      => Target_Speed,

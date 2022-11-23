@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2019 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2019 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -119,7 +119,7 @@ package body Serial_Io.Usb is
       Unused_Data1 : Win32.ULONG  := 0;
       Unused_Data2 : Win32.USHORT := 0;
       Unused_Data3 : Win32.USHORT := 0;
-      Unused_Data4 : String(1..8) := (others => Ascii.Nul);
+      Unused_Data4 : String(1..8) := [others => Ascii.Nul];
     end record
     with Convention => C;
 

@@ -711,7 +711,7 @@ package body Device is
       use type Angle.Signed;
       use type Angle.Value;
     begin
-      if With_Speed = (0, 0) then
+      if With_Speed = [0, 0] then
         Log.Write ("Mount.Goto_Target " & Image_Of (Direction));
         Action.Move (Ra         => PWI.Mount.Hours(Angle.Hours'(+Space.Ra_Of (Direction))),
                      Dec        => PWI.Mount.Degrees(Angle.Degrees'(+Angle.Signed'(+Space.Dec_Of (Direction)))),

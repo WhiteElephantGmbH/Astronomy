@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2015 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2015 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -130,7 +130,7 @@ package body File is
     FS.Start_Search (Search    => Handle,
                      Directory => Directory,
                      Pattern   => "",
-                     Filter    => (FS.Directory => True, others => False));
+                     Filter    => [FS.Directory => True, others => False]);
     return FS.More_Entries (Handle);
   exception
   when others =>
@@ -161,7 +161,7 @@ package body File is
   begin -- Iterate_Over_Leaf_Directories
     FS.Search (Directory => From_Directory,
                Pattern   => "",
-               Filter    => (FS.Directory => True, others => False),
+               Filter    => [FS.Directory => True, others => False],
                Process   => Iterate_For'access);
     if The_Count = 0 then
       Iterator (From_Directory);
@@ -179,7 +179,7 @@ package body File is
     FS.Start_Search (Search    => The_Handle,
                      Directory => In_Directory,
                      Pattern   => "",
-                     Filter    => (FS.Directory => True, others => False));
+                     Filter    => [FS.Directory => True, others => False]);
     while FS.More_Entries (The_Handle) loop
       FS.Get_Next_Entry (The_Handle, The_Entry);
       declare
@@ -261,7 +261,7 @@ package body File is
     FS.Start_Search (Search    => Object.Container.Data.Position,
                      Directory => Object.Container.Name,
                      Pattern   => "",
-                     Filter    => (FS.Ordinary_File => True, others => False));
+                     Filter    => [FS.Ordinary_File => True, others => False]);
     return Next (Object, null);
   end First;
 

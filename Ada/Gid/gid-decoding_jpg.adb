@@ -57,7 +57,7 @@ package body GID.Decoding_JPG is
   procedure Read( image: in out Image_descriptor; sh: out Segment_head) is
     b: U8;
     id: constant array(JPEG_marker) of U8:=
-    ( SOI      => 16#D8#,
+    [ SOI      => 16#D8#,
       --
       SOF_0  => 16#C0#, SOF_1  => 16#C1#, SOF_2  => 16#C2#, SOF_3  => 16#C3#,
       SOF_5  => 16#C5#, SOF_6  => 16#C6#, SOF_7  => 16#C7#, SOF_8  => 16#C8#,
@@ -77,7 +77,7 @@ package body GID.Decoding_JPG is
       COM      => 16#FE#,
       SOS      => 16#DA#,
       EOI      => 16#D9#
-    );
+    ];
   begin
     Get_Byte(image.buffer, b);
     if b /= 16#FF# then
@@ -102,7 +102,7 @@ package body GID.Decoding_JPG is
   end Read;
 
   shift_arg: constant array(0..15) of Integer:=
-    (1 => 0, 2 => 1, 4 => 2, 8 => 3, others => -1);
+    [1 => 0, 2 => 1, 4 => 2, 8 => 3, others => -1];
 
   --  SOF - Start Of Frame (the real header)
   procedure Read_SOF(image: in out Image_descriptor; sh: Segment_head) is
@@ -575,11 +575,11 @@ package body GID.Decoding_JPG is
 
     --  Ordering within a 8x8 block, in zig-zag
     zig_zag: constant Block_8x8:=
-     ( 0,  1,  8, 16,  9,  2,  3, 10, 17, 24, 32, 25, 18,
+     [ 0,  1,  8, 16,  9,  2,  3, 10, 17, 24, 32, 25, 18,
       11,  4,  5, 12, 19, 26, 33, 40, 48, 41, 34, 27, 20,
       13,  6,  7, 14, 21, 28, 35, 42, 49, 56, 57, 50, 43,
       36, 29, 22, 15, 23, 30, 37, 44, 51, 58, 59, 52, 45,
-      38, 31, 39, 46, 53, 60, 61, 54, 47, 55, 62, 63 );
+      38, 31, 39, 46, 53, 60, 61, 54, 47, 55, 62, 63 ];
 
     procedure Decode_Block(c: Component; block: in out Block_8x8) is
       value, coef: Integer;
@@ -606,7 +606,7 @@ package body GID.Decoding_JPG is
         x7:= block(start + 3);
         if x1=0 and x2=0 and x3=0 and x4=0 and x5=0 and x6=0 and x7=0 then
           val:= block(start + 0) * 8;
-          block(start + 0 .. start + 7):= (others => val);
+          block(start + 0 .. start + 7):= [others => val];
         else
           x0:= (block(start + 0) * 2**11) + 128;
           x8:= W7 * (x4 + x5);
@@ -697,7 +697,7 @@ package body GID.Decoding_JPG is
       Get_VLC(image.JPEG_stuff.vlc_defs(DC, info_B(c).ht_idx_DC).all, code, value);
       --  First value in block (0: top left) uses a predictor.
       info_B(c).dcpred:= info_B(c).dcpred + value;
-      block:= (0 => info_B(c).dcpred * qt_local(0), others => 0);
+      block:= [0 => info_B(c).dcpred * qt_local(0), others => 0];
       coef:= 0;
       loop
         Get_VLC(image.JPEG_stuff.vlc_defs(AC, info_B(c).ht_idx_AC).all, code, value);

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2012 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2012 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -25,6 +25,10 @@ package body Data_Generator is
 
   Undefined : constant := 0;
 
+  Symbad_Folder : constant String := "H:\Source\Astronomy\Ada\Projects\Sky_Data\";
+
+  Sky_Data_Folder : constant String := "H:\Source\Astronomy\Ada\SkyData\";
+
   type Object is new Natural range Undefined .. 16400;
 
   type Object_Type is (Star, Double, Stars, Cluster, Galaxy, Nebula, Quasar, Unknown);
@@ -34,8 +38,8 @@ package body Data_Generator is
   type Magnitude is delta 0.001      digits 5;
 
   type Information is record
-    Name        : access constant String := new String'("");
-    Descriptor  : access constant String := new String'("");
+    Name        : access constant String := new String'[];
+    Descriptor  : access constant String := new String'[];
     Ra_J2000    : Degrees     := 0.0;
     Dec_J2000   : Degrees     := 0.0;
     Ra_Motion   : Motion      := 0.0;
@@ -51,13 +55,13 @@ package body Data_Generator is
 
   type Object_Array is array (Positive range <>) of Object;
 
-  The_Caldwell_Catalog : Object_Array(1..109)    := (others => Undefined);
-  The_Hr_Catalog       : Object_Array(1..9999)   := (others => Undefined);
-  The_Hip_Catalog      : Object_Array(1..118400) := (others => Undefined);
-  The_Messier_Catalog  : Object_Array(1..110)    := (others => Undefined);
-  The_Ngc_Catalog      : Object_Array(1..9999)   := (others => Undefined);
-  The_Ocl_Catalog      : Object_Array(1..1200)   := (others => Undefined);
-  The_Quasars_Catalog  : Object_Array(1..999)    := (others => Undefined);
+  The_Caldwell_Catalog : Object_Array(1..109)    := [others => Undefined];
+  The_Hr_Catalog       : Object_Array(1..9999)   := [others => Undefined];
+  The_Hip_Catalog      : Object_Array(1..118400) := [others => Undefined];
+  The_Messier_Catalog  : Object_Array(1..110)    := [others => Undefined];
+  The_Ngc_Catalog      : Object_Array(1..9999)   := [others => Undefined];
+  The_Ocl_Catalog      : Object_Array(1..1200)   := [others => Undefined];
+  The_Quasars_Catalog  : Object_Array(1..999)    := [others => Undefined];
 
   Unknown_Value : exception;
 
@@ -123,7 +127,7 @@ package body Data_Generator is
 
   procedure Read_Objects is
 
-    Filename : constant String := "S:\Pc\Sky_Data\simbad.txt";
+    Filename : constant String := Symbad_Folder & "simbad.txt";
 
     The_Object        : Object := Undefined;
     The_Actual_Object : Object := Undefined;
@@ -134,6 +138,7 @@ package body Data_Generator is
     Error : exception;
 
   begin -- Read_Objects
+    Ada.Text_IO.Put_Line ("Generate sky data from " & Filename);
     Ada.Text_IO.Open (File, Ada.Text_IO.In_File, Filename);
     while not Ada.Text_IO.End_Of_File (File) loop
       if The_Actual_Object = The_Object then
@@ -327,14 +332,14 @@ package body Data_Generator is
 
   procedure Create_Data_Base is
   begin
-    Ada.Text_IO.Create (File, Name => "W:\Pc\Sky\Catalog-Base.ads");
+    Ada.Text_IO.Create (File, Name => Sky_Data_Folder & "Catalog-Base.ads");
     Put ("pragma Restrictions (No_Elaboration_Code);");
     Put ("");
     Put ("private package Catalog.Base is");
     Put ("");
     Put ("  subtype Object_Index is Object range 0 .." & The_Last_Object'img & ";");
     Put ("");
-    Put ("  Table : constant Objects (Object_Index) := (");
+    Put ("  Table : constant Objects (Object_Index) := [");
     for Index in 0 .. The_Last_Object loop
       declare
 
@@ -343,7 +348,7 @@ package body Data_Generator is
         function Separator return String is
         begin
           if Index = The_Last_Object then
-            return ");";
+            return "];";
           else
             return ", ";
           end if;
@@ -406,14 +411,14 @@ package body Data_Generator is
     Last_Index : constant Natural := Last_Index_Of (The_Hr_Catalog);
     Index_Size : constant Natural := Size_Of(Last_Index) + 2;
   begin
-    Ada.Text_IO.Create (File, Name => "W:\Pc\Sky\Catalog-Hr.ads");
+    Ada.Text_IO.Create (File, Name => Sky_Data_Folder & "Catalog-Hr.ads");
     Put ("pragma Restrictions (No_Elaboration_Code);");
     Put ("");
     Put ("private package Catalog.Hr is");
     Put ("");
     Put ("  type Object_List is array (1 .." & Last_Index'img & ") of Object;");
     Put ("");
-    Put ("  Id : constant Object_List := (");
+    Put ("  Id : constant Object_List := [");
     The_Object_Count := 0;
     for Index in 1 .. Last_Index loop
       declare
@@ -421,7 +426,7 @@ package body Data_Generator is
         function Separator return String is
         begin
           if Index = Last_Index then
-            return ");";
+            return "];";
           else
             return ",";
           end if;
@@ -443,14 +448,14 @@ package body Data_Generator is
     Last_Index : constant Natural := Last_Index_Of (The_Caldwell_Catalog);
     Index_Size : constant Natural := Size_Of(Last_Index) + 2;
   begin
-    Ada.Text_IO.Create (File, Name => "W:\Pc\Sky\Catalog-Caldwell.ads");
+    Ada.Text_IO.Create (File, Name => Sky_Data_Folder & "Catalog-Caldwell.ads");
     Put ("pragma Restrictions (No_Elaboration_Code);");
     Put ("");
     Put ("private package Catalog.Caldwell is");
     Put ("");
     Put ("  type Object_List is array (1 .." & Last_Index'img & ") of Object;");
     Put ("");
-    Put ("  Id : constant Object_List := (");
+    Put ("  Id : constant Object_List := [");
     The_Object_Count := 0;
     for Index in 1 .. Last_Index loop
       declare
@@ -458,7 +463,7 @@ package body Data_Generator is
         function Separator return String is
         begin
           if Index = Last_Index then
-            return ");";
+            return "];";
           else
             return ",";
           end if;
@@ -480,14 +485,14 @@ package body Data_Generator is
     Last_Index : constant Natural := Last_Index_Of (The_Hip_Catalog);
     Index_Size : constant Natural := Size_Of(Last_Index) + 2;
   begin
-    Ada.Text_IO.Create (File, Name => "W:\Pc\Sky\Catalog-Hip.ads");
+    Ada.Text_IO.Create (File, Name => Sky_Data_Folder & "Catalog-Hip.ads");
     Put ("pragma Restrictions (No_Elaboration_Code);");
     Put ("");
     Put ("private package Catalog.Hip is");
     Put ("");
     Put ("  type Object_List is array (1 .." & Last_Index'img & ") of Object;");
     Put ("");
-    Put ("  Id : constant Object_List := (");
+    Put ("  Id : constant Object_List := [");
     The_Object_Count := 0;
     for Index in 1 .. Last_Index loop
       declare
@@ -495,7 +500,7 @@ package body Data_Generator is
         function Separator return String is
         begin
           if Index = Last_Index then
-            return ");";
+            return "];";
           else
             return ",";
           end if;
@@ -517,14 +522,14 @@ package body Data_Generator is
     Last_Index : constant Natural := Last_Index_Of (The_Messier_Catalog);
     Index_Size : constant Natural := Size_Of(Last_Index) + 2;
   begin
-    Ada.Text_IO.Create (File, Name => "W:\Pc\Sky\Catalog-Messier.ads");
+    Ada.Text_IO.Create (File, Name => Sky_Data_Folder & "Catalog-Messier.ads");
     Put ("pragma Restrictions (No_Elaboration_Code);");
     Put ("");
     Put ("private package Catalog.Messier is");
     Put ("");
     Put ("  type Object_List is array (1 .." & Last_Index'img & ") of Object;");
     Put ("");
-    Put ("  Id : constant Object_List := (");
+    Put ("  Id : constant Object_List := [");
     The_Object_Count := 0;
     for Index in 1 .. Last_Index loop
       declare
@@ -532,7 +537,7 @@ package body Data_Generator is
         function Separator return String is
         begin
           if Index = Last_Index then
-            return ");";
+            return "];";
           else
             return ",";
           end if;
@@ -554,14 +559,14 @@ package body Data_Generator is
     Last_Index : constant Natural := Last_Index_Of (The_Ngc_Catalog);
     Index_Size : constant Natural := Size_Of(Last_Index) + 2;
   begin
-    Ada.Text_IO.Create (File, Name => "W:\Pc\Sky\Catalog-Ngc.ads");
+    Ada.Text_IO.Create (File, Name => Sky_Data_Folder & "Catalog-Ngc.ads");
     Put ("pragma Restrictions (No_Elaboration_Code);");
     Put ("");
     Put ("private package Catalog.Ngc is");
     Put ("");
     Put ("  type Object_List is array (1 .." & Last_Index'img & ") of Object;");
     Put ("");
-    Put ("  Id : constant Object_List := (");
+    Put ("  Id : constant Object_List := [");
     The_Object_Count := 0;
     for Index in 1 .. Last_Index loop
       declare
@@ -569,7 +574,7 @@ package body Data_Generator is
         function Separator return String is
         begin
           if Index = Last_Index then
-            return ");";
+            return "];";
           else
             return ",";
           end if;
@@ -591,14 +596,14 @@ package body Data_Generator is
     Last_Index : constant Natural := Last_Index_Of (The_Ocl_Catalog);
     Index_Size : constant Natural := Size_Of(Last_Index) + 2;
   begin
-    Ada.Text_IO.Create (File, Name => "W:\Pc\Sky\Catalog-Ocl.ads");
+    Ada.Text_IO.Create (File, Name => Sky_Data_Folder & "Catalog-Ocl.ads");
     Put ("pragma Restrictions (No_Elaboration_Code);");
     Put ("");
     Put ("private package Catalog.Ocl is");
     Put ("");
     Put ("  type Object_List is array (1 .." & Last_Index'img & ") of Object;");
     Put ("");
-    Put ("  Id : constant Object_List := (");
+    Put ("  Id : constant Object_List := [");
     The_Object_Count := 0;
     for Index in 1 .. Last_Index loop
       declare
@@ -606,7 +611,7 @@ package body Data_Generator is
         function Separator return String is
         begin
           if Index = Last_Index then
-            return ");";
+            return "];";
           else
             return ",";
           end if;
@@ -628,14 +633,14 @@ package body Data_Generator is
     Last_Index : constant Natural := Last_Index_Of (The_Quasars_Catalog);
     Index_Size : constant Natural := Size_Of(Last_Index) + 2;
   begin
-    Ada.Text_IO.Create (File, Name => "W:\Pc\Sky\Catalog-Quasars.ads");
+    Ada.Text_IO.Create (File, Name => Sky_Data_Folder & "Catalog-Quasars.ads");
     Put ("pragma Restrictions (No_Elaboration_Code);");
     Put ("");
     Put ("private package Catalog.Quasars is");
     Put ("");
     Put ("  type Object_List is array (1 .." & Last_Index'img & ") of Object;");
     Put ("");
-    Put ("  Id : constant Object_List := (");
+    Put ("  Id : constant Object_List := [");
     The_Object_Count := 0;
     for Index in 1 .. Last_Index loop
       declare
@@ -643,7 +648,7 @@ package body Data_Generator is
         function Separator return String is
         begin
           if Index = Last_Index then
-            return ");";
+            return "];";
           else
             return ",";
           end if;
@@ -672,6 +677,7 @@ package body Data_Generator is
     Create_Catalog_Ngc;
     Create_Catalog_Ocl;
     Create_Catalog_Quasars;
+    Ada.Text_IO.Put_Line ("Complete");
   exception
   when Ada.IO_Exceptions.Name_Error =>
     Ada.Text_IO.Put_Line ("File not Found");

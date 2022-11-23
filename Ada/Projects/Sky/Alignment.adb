@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2015 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2015 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -478,7 +478,7 @@ package body Alignment is
 
     function Star_Synchronized_Offsets return Offsets is
     begin
-      return (Ra => The_Ra_Correction, Dec => The_Dec_Correction);
+      return [Ra => The_Ra_Correction, Dec => The_Dec_Correction];
     end Star_Synchronized_Offsets;
 
   end Control;

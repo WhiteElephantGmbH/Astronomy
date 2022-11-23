@@ -261,13 +261,13 @@ private
   end JPEG_defs;
 
   type JPEG_stuff_type is record
-    components       : JPEG_defs.Compo_set:= (others => False);
+    components       : JPEG_defs.Compo_set:= [others => False];
     color_space      : JPEG_defs.Supported_color_space;
     info             : JPEG_defs.Component_info_A;
     max_samples_hor  : Natural;
     max_samples_ver  : Natural;
     qt_list          : JPEG_defs.QT_list;
-    vlc_defs         : JPEG_defs.VLC_defs_type:= (others => (others => null));
+    vlc_defs         : JPEG_defs.VLC_defs_type:= [others => [others => null]];
     restart_interval : Natural; -- predictor restarts every... (0: never)
   end record;
 

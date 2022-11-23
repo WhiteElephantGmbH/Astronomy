@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2002 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2002 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -214,7 +214,7 @@ package body Serial_Io is
     procedure Check_Aborted (The_Port : Port);
     procedure Release (The_Port : Port);
   private
-    The_Data : Data_Pointers := (others => null);
+    The_Data : Data_Pointers := [others => null];
   end Port_Allocator;
 
   protected body Port_Allocator is

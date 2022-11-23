@@ -241,8 +241,8 @@ package body GID.Decoding_GIF is
       end Next_Pixel;
 
       --  The string table
-      Prefix : array ( 0..4096 ) of Natural:= (others => 0);
-      Suffix : array ( 0..4096 ) of Natural:= (others => 0);
+      Prefix : array ( 0..4096 ) of Natural:= [others => 0];
+      Suffix : array ( 0..4096 ) of Natural:= [others => 0];
       --  Top of Stack was 1024 until files from
       --    https://www.kaggle.com/c/carvana-image-masking-challenge
       --  broke it (July 2017)...

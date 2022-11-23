@@ -83,7 +83,7 @@ package body GID.Decoding_PNG.Huffman is
     b_maxp1: constant:= b_max + 1;
 
     --  bit length count table
-    count : array( 0 .. b_maxp1 ) of Integer:= (others=> 0);
+    count : array( 0 .. b_maxp1 ) of Integer:= [others=> 0];
 
     f   : Integer;                    -- i repeats in table every f entries
     g   : Integer;                    -- max. code length
@@ -103,7 +103,7 @@ package body GID.Decoding_PNG.Huffman is
 
     n_max : constant:= 288;
     --  values in order of bit length
-    v : array( 0..n_max ) of Integer:= (others=> 0);
+    v : array( 0..n_max ) of Integer:= [others=> 0];
     el_v, el_v_m_s: Integer;
 
     w : Natural:= 0;                        -- bits before this table

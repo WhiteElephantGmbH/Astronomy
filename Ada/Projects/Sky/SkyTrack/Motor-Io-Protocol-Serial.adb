@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2014 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2014 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -498,7 +498,7 @@ package body Motor.Io.Protocol.Serial is
 
   procedure Stop_All is
   begin
-    The_Control.Send ((1 => Terminator));
+    The_Control.Send ([1 => Terminator]);
   exception
   when Occurrence: others =>
     Log.Termination (Occurrence);

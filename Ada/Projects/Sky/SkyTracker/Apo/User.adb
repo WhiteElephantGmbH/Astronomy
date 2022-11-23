@@ -125,14 +125,14 @@ package body User is
 
     type Names is array (Selection) of Lexicon.Word;
 
-    Name_Of : constant Names := (All_Objects    => Lexicon.All_Objects,
+    Name_Of : constant Names := [All_Objects    => Lexicon.All_Objects,
                                  Solar_System   => Lexicon.Solar_System,
                                  Clusters       => Lexicon.Clusters,
                                  Open_Clusters  => Lexicon.Open_Clusters,
                                  Nebulas        => Lexicon.Nebulas,
                                  Galaxies       => Lexicon.Galaxies,
                                  Stars          => Lexicon.Stars,
-                                 Multiple_Stars => Lexicon.Multiple_Stars);
+                                 Multiple_Stars => Lexicon.Multiple_Stars];
   begin
     return Lexicon.Image_Of (Name_Of(The_Selection));
   end Image_Of;
@@ -499,8 +499,8 @@ package body User is
       begin
         Control_Page := Gui.Add_Page (The_Title  => "Control",
                                       The_Action => Enter_Control_Page'access,
-                                      The_Style  => (Gui.Buttons_Fill_Horizontally => True,
-                                                     Gui.Buttons_Fill_Vertically   => False));
+                                      The_Style  => [Gui.Buttons_Fill_Horizontally => True,
+                                                     Gui.Buttons_Fill_Vertically   => False]);
 
         Goto_Button := Gui.Create (Control_Page, "Goto", Handle_Goto'access);
         Gui.Disable (Goto_Button);
@@ -538,8 +538,8 @@ package body User is
       begin
         Display_Page := Gui.Add_Page (The_Title  => "Display",
                                       The_Action => Enter_Display_Page'access,
-                                      The_Style  => (Gui.Buttons_Fill_Horizontally => True,
-                                                     Gui.Buttons_Fill_Vertically   => False));
+                                      The_Style  => [Gui.Buttons_Fill_Horizontally => True,
+                                                     Gui.Buttons_Fill_Vertically   => False]);
 
         Target_Ra := Gui.Create (Display_Page, "Target RA", "",
                                  Is_Modifiable  => False,

@@ -2,9 +2,9 @@ pragma Restrictions (No_Elaboration_Code);
 
 private package Catalog.Messier is
 
-  type Object_List  is array (1 .. 110) of Object;
+  type Object_List is array (1 .. 110) of Object;
 
-  Id : constant Object_List := (
+  Id : constant Object_List := [
       1 =>         1,
       2 =>         2,
       3 =>         3,
@@ -114,7 +114,7 @@ private package Catalog.Messier is
     107 =>       107,
     108 =>       108,
     109 =>       109,
-    110 =>       110);
+    110 =>       110];
 
   Count : constant Natural := 110;
 

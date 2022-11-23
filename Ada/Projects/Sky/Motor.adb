@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2014 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2014 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -59,8 +59,8 @@ package body Motor is
   function "-" (Left, Right : Values) return Values is
     use type Value;
   begin
-    return (D1 => Left(D1) - Right(D1),
-            D2 => Left(D2) - Right(D2));
+    return [D1 => Left(D1) - Right(D1),
+            D2 => Left(D2) - Right(D2)];
   end "-";
 
 
@@ -505,8 +505,8 @@ package body Motor is
   function Time_When_Parked return Time.Ut is
   begin
     The_Movement := Parking;
-    return Time_For_Positioning (To => (D1 => PP(D1),
-                                        D2 => PP(D2)));
+    return Time_For_Positioning (To => [D1 => PP(D1),
+                                        D2 => PP(D2)]);
   end Time_When_Parked;
 
 
@@ -515,8 +515,8 @@ package body Motor is
     use type Angle.Value;
   begin
     The_Movement := Positioning;
-    return Time_For_Positioning (To => (D1 => +To.First,
-                                        D2 => +Angle.Signed'(+To.Second)));
+    return Time_For_Positioning (To => [D1 => +To.First,
+                                        D2 => +Angle.Signed'(+To.Second)]);
   end Time_When_Positioned;
 
 

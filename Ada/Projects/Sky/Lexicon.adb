@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2017 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2017 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -30,17 +30,17 @@ package body Lexicon is
               Italian : String;
               Spanish : String) return Name_Entry is
   begin
-    return (Language.English => new String'(English),
+    return [Language.English => new String'(English),
             Language.French  => new String'(French),
             Language.German  => new String'(German),
             Language.Greek   => new String'(Greek),
             Language.Italian => new String'(Italian),
-            Language.Spanish => new String'(Spanish));
+            Language.Spanish => new String'(Spanish)];
   end E;
 
   pragma Style_Checks ("M300");
 
-  Names : constant Name_Table := (
+  Names : constant Name_Table := [
   --                         English             French                      German                Greek                      Italian                        Spanish
     Albireo           => E ("Albireo",           "Albireo",                  "Albireo",            "Αλμπίρεο",                "Albireo",                     "Albireo"),
     Aldebaran         => E ("Aldebaran",         "Aldébaran",                "Aldebaran",          "Αλδεβαράν",               "Aldebaran",                   "Aldebarán"),
@@ -103,7 +103,7 @@ package body Lexicon is
     Venus             => E ("Venus",             "Vénus",                    "Venus",              "Αφροδίτη",                "Venere",                      "Venus"),
     West              => E ("W",                 "O",                        "W",                  "Δ",                       "O",                           "O"),
     Whirlpool_Galaxy  => E ("Whirlpool galaxy",  "Galaxy du Tourbillon",     "Strudelgalaxie",     "Γαλαξίας της Δίνης",      "Galassia Trottola",           "Galaxia del Remolino"),
-    Wild_Duck_Cluster => E ("Wild Duck cluster", "Amas du Canard Sauvage",   "Wildenten-Haufen",   "Σμήνος Αγριόπαπιας",      "Ammasso Anatra Selvatica",    "Cúmulo del Pato Salvaje"));
+    Wild_Duck_Cluster => E ("Wild Duck cluster", "Amas du Canard Sauvage",   "Wildenten-Haufen",   "Σμήνος Αγριόπαπιας",      "Ammasso Anatra Selvatica",    "Cúmulo del Pato Salvaje")];
 
     pragma Style_Checks ("M120");
 

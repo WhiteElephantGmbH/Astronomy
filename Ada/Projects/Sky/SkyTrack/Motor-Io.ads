@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2014 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2014 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -109,7 +109,7 @@ private
 
   type Action_List is array (Action_Range range <>) of Action;
 
-  No_Actions : constant Action_List(1..0) := (others => No_Action);
+  No_Actions : constant Action_List(1..0) := [others => No_Action];
 
   subtype Step_Position is Integer;
 

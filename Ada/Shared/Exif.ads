@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                               (c) 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                           (c) 2021 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                      *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -51,11 +51,11 @@ package Exif is
 
   subtype Values is Rational_Values(1..3);
 
-  Undefined_Values : constant Values := (others => <>);
+  Undefined_Values : constant Values := [others => <>];
 
   subtype Date is String(1..10); -- yyyy:mm:dd
 
-  Undefined_Date : constant Date := (others => ' ');
+  Undefined_Date : constant Date := [others => ' '];
 
   procedure Read (Filename : String);
 

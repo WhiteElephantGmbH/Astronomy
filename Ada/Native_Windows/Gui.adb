@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2002 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2002 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -157,7 +157,7 @@ package body Gui is
                       Check_Box_Child, Combo_Box_Child, Static_Child, List_View_Child,
                       Tree_View_Child, Text_View_Child);
 
-  Display_Priority : constant array (Child_Kind) of Positive := (Button_Child       => 10,
+  Display_Priority : constant array (Child_Kind) of Positive := [Button_Child       => 10,
                                                                  Progress_Bar_Child => 20,
                                                                  Track_Bar_Child    => 30,
                                                                  Edit_Box_Child     => 40,
@@ -166,7 +166,7 @@ package body Gui is
                                                                  Static_Child       => 60,
                                                                  List_View_Child    => 70,
                                                                  Tree_View_Child    => 70,
-                                                                 Text_View_Child    => 70);
+                                                                 Text_View_Child    => 70];
 
   type Child_Information is record
     The_Handle               : Win32.Windef.HWND := System.Null_Address;
@@ -204,7 +204,7 @@ package body Gui is
   type Page_Information is record
     Nr_Of_Children       : Win32.INT := 0;
     Nr_Of_Buddies        : Win32.INT := 0;
-    Population           : Population_Data := (others => 0);
+    Population           : Population_Data := [others => 0];
     First_Child          : Child_Information_Ptr := null;
     Total_Button_Width   : Win32.INT := 0;
     Last_Button_Width    : Win32.INT := 0;
@@ -689,7 +689,7 @@ package body Gui is
     Large_Object_Position : Win32.INT := 0;
     Vertical_Position     : Win32.INT := 0;
     Vertical_Increment    : Win32.INT;
-    Children_Drawn        : Population_Data := (others => 0);
+    Children_Drawn        : Population_Data := [others => 0];
     Nr_Of_Windows         : Win32.INT := 1;  -- The status bar
     The_Text_Size         : aliased Win32.Windef.SIZE;
     The_Min_Object_Width  : Win32.INT;

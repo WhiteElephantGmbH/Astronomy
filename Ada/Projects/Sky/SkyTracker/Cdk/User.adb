@@ -170,7 +170,7 @@ package body User is
 
     type Names is array (Selection) of Lexicon.Word;
 
-    Name_Of : constant Names := (All_Objects        => Lexicon.All_Objects,
+    Name_Of : constant Names := [All_Objects        => Lexicon.All_Objects,
                                  Solar_System       => Lexicon.Solar_System,
                                  Clusters           => Lexicon.Clusters,
                                  Open_Clusters      => Lexicon.Open_Clusters,
@@ -178,7 +178,7 @@ package body User is
                                  Galaxies           => Lexicon.Galaxies,
                                  Stars              => Lexicon.Stars,
                                  Multiple_Stars     => Lexicon.Multiple_Stars,
-                                 Near_Earth_Objects => Lexicon.Neos);
+                                 Near_Earth_Objects => Lexicon.Neos];
   begin
     return Lexicon.Image_Of (Name_Of(The_Selection));
   end Image_Of;
@@ -1040,8 +1040,8 @@ package body User is
       begin
         Control_Page := Gui.Add_Page (The_Title  => "Control",
                                       The_Action => Enter_Control_Page'access,
-                                      The_Style  => (Gui.Buttons_Fill_Horizontally => True,
-                                                     Gui.Buttons_Fill_Vertically   => False));
+                                      The_Style  => [Gui.Buttons_Fill_Horizontally => True,
+                                                     Gui.Buttons_Fill_Vertically   => False]);
 
         Left_Button := Gui.Create (Control_Page, "", Perform_Left'access);
         Gui.Disable (Left_Button);
@@ -1083,8 +1083,8 @@ package body User is
       begin
         Display_Page := Gui.Add_Page (The_Title  => "Display",
                                       The_Action => Enter_Display_Page'access,
-                                      The_Style  => (Gui.Buttons_Fill_Horizontally => True,
-                                                     Gui.Buttons_Fill_Vertically   => False));
+                                      The_Style  => [Gui.Buttons_Fill_Horizontally => True,
+                                                     Gui.Buttons_Fill_Vertically   => False]);
 
         Target_Ra := Gui.Create (Display_Page, "Target RA", "",
                                  Is_Modifiable  => False,
@@ -1215,8 +1215,8 @@ package body User is
       begin
         Setup_Page := Gui.Add_Page (The_Title  => "Setup",
                                     The_Action => Enter_Setup_Page'access,
-                                    The_Style  => (Gui.Buttons_Fill_Horizontally => True,
-                                                   Gui.Buttons_Fill_Vertically   => False));
+                                    The_Style  => [Gui.Buttons_Fill_Horizontally => True,
+                                                   Gui.Buttons_Fill_Vertically   => False]);
         Goto_Button := Gui.Create (Setup_Page, "Goto", Focuser_Move'access);
         Gui.Disable (Goto_Button);
         Focuser_Goto := Gui.Create (Setup_Page, "Focuser Goto", Focuser_Position_Image,

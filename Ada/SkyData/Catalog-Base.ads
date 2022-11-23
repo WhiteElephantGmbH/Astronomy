@@ -4,7 +4,7 @@ private package Catalog.Base is
 
   subtype Object_Index is Object range 0 .. 16356;
 
-  Table : constant Objects (Object_Index) := (
+  Table : constant Objects (Object_Index) := [
       0 => (new String'(""),
             new String'(""),
               0.00000000,   0.00000000,     0.00,     0.00,  0.000, Unknown), 
@@ -49075,6 +49075,6 @@ private package Catalog.Base is
             193.65040000, -12.56330000,     0.00,     0.00, 11.600,  Quasar), 
   16356 => (new String'(""),
             new String'("Quasar"),
-            187.27789633,   2.05240632,    -8.90,     7.83, 12.850,  Quasar));
+            187.27789633,   2.05240632,    -8.90,     7.83, 12.850,  Quasar)];
 
 end Catalog.Base;

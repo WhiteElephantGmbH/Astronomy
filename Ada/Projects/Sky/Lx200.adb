@@ -128,7 +128,7 @@ package body Lx200 is
 
   function Angle_Image_Of (Data       : String;
                            U1, U2, U3 : Character) return String is
-  begin                         
+  begin
     declare
       -- Extended     6543210
       -- format: "s*ddUddUddU
@@ -173,7 +173,7 @@ package body Lx200 is
 
     Digits_To_Insert : constant Natural := Image_Template'length + Front_Digits - The_Image'length;
 
-    Leading_Zeros : constant String(1..Digits_To_Insert) := (others => '0');
+    Leading_Zeros : constant String(1..Digits_To_Insert) := [others => '0'];
 
   begin -- Signed_Degrees_Of
     The_Image(The_Image'last - D_Offset) := D_Replace;
@@ -213,7 +213,7 @@ package body Lx200 is
 
     Digits_To_Insert : constant Natural := Image_Template'length - The_Image'length;
 
-    Leading_Zeros : constant String(1..Digits_To_Insert) := (others => '0');
+    Leading_Zeros : constant String(1..Digits_To_Insert) := [others => '0'];
 
   begin -- Hours_Of
     The_Image(The_Image'last - H_Offset) := H_Replace;

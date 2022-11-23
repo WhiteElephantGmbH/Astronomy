@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2012 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2012 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -171,10 +171,10 @@ package body Sky_Line is
     procedure Create_Horizon is
     begin
       if The_Element_List.Is_Empty then
-        The_Horizon := (others => Angle.Zero);
+        The_Horizon := [others => Angle.Zero];
         return;
       elsif The_Element_List.Count = 1 then
-        The_Horizon := (others => The_Element_List.First_Element.Altitude);
+        The_Horizon := [others => The_Element_List.First_Element.Altitude];
       else
         The_Last := The_Element_List.Last_Element;
         for The_Element of The_Element_List loop

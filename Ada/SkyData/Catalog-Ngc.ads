@@ -2,9 +2,9 @@ pragma Restrictions (No_Elaboration_Code);
 
 private package Catalog.Ngc is
 
-  type Object_List  is array (1 .. 7839) of Object;
+  type Object_List is array (1 .. 7839) of Object;
 
-  Id : constant Object_List := (
+  Id : constant Object_List := [
        1 =>      9375,
        2 =>      9376,
        3 =>      9377,
@@ -7843,7 +7843,7 @@ private package Catalog.Ngc is
     7836 =>     16289,
     7837 =>     16290,
     7838 =>     16291,
-    7839 =>     16292);
+    7839 =>     16292];
 
   Count : constant Natural := 7122;
 

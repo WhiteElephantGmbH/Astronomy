@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2002 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2002 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -282,7 +282,7 @@ package body Unsigned is
 
   function String_Of (The_Word : Word) return Byte_String is
   begin
-    return (Byte(The_Word mod 2**8), Byte(The_Word / 2**8));
+    return [Byte(The_Word mod 2**8), Byte(The_Word / 2**8)];
   end String_Of;
 
 
@@ -304,7 +304,7 @@ package body Unsigned is
 
   function String_Of (The_Longword : Longword) return Word_String is
   begin
-    return (Word(The_Longword mod 2**16), Word(The_Longword / 2**16));
+    return [Word(The_Longword mod 2**16), Word(The_Longword / 2**16)];
   end String_Of;
 
 
@@ -378,7 +378,7 @@ package body Unsigned is
 
   function String_Of (The_Quadword : Quadword) return Longword_String is
   begin
-    return (Least_Significant_Longword_Of (The_Quadword), Most_Significant_Longword_Of (The_Quadword));
+    return [Least_Significant_Longword_Of (The_Quadword), Most_Significant_Longword_Of (The_Quadword)];
   end String_Of;
 
 

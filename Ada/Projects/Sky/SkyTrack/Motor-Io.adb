@@ -353,10 +353,10 @@ package body Motor.Io is
   function Actual_Data return Information is
     D : constant Step_Information := Protocol.Stepper_Data;
   begin
-    return (Positions => (D1 => S_Of (D.Positions.M1, D1),
-                          D2 => S_Of (D.Positions.M2, D2)),
-            Offsets   => (D1 => S_Of (D.Offsets.M1, D1),
-                          D2 => S_Of (D.Offsets.M2, D2)));
+    return (Positions => [D1 => S_Of (D.Positions.M1, D1),
+                          D2 => S_Of (D.Positions.M2, D2)],
+            Offsets   => [D1 => S_Of (D.Offsets.M1, D1),
+                          D2 => S_Of (D.Offsets.M2, D2)]);
   end Actual_Data;
 
 

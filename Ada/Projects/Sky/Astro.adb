@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2012 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2012 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -23,12 +23,12 @@ package body Astro is
 
   function "+" (Left, Right : VECTOR) return VECTOR is
   begin
-    return (Left(X)+Right(X), Left(Y)+Right(Y), Left(Z)+Right(Z));
+    return [Left(X)+Right(X), Left(Y)+Right(Y), Left(Z)+Right(Z)];
   end "+";
 
   function "-" (Left, Right : VECTOR) return VECTOR is
   begin
-    return (Left(X)-Right(X), Left(Y)-Right(Y), Left(Z)-Right(Z));
+    return [Left(X)-Right(X), Left(Y)-Right(Y), Left(Z)-Right(Z)];
   end "-";
 
   package Numeric is new Ada.Numerics.Generic_Elementary_Functions (REAL);

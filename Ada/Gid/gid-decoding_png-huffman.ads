@@ -66,7 +66,7 @@ private package GID.Decoding_PNG.Huffman is
 
   type Length_array is array(Integer range <>) of Natural_M32;
 
-  empty : constant Length_array( 1..0 ):= ( others=> 0 );
+  empty : constant Length_array( 1..0 ):= [ others=> 0 ];
 
   --  Free huffman tables starting with table where t points to
   procedure HufT_free ( tl: in out p_Table_list );

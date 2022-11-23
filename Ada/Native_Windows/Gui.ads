@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2002 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2002 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -55,7 +55,7 @@ package Gui is
 
   type Information_Array is array (Natural range <>) of Information;
 
-  Empty_Information : constant Information_Array(1..0) := (others => No_Information);
+  Empty_Information : constant Information_Array(1..0) := [];
 
   type Window_Metrics is record
     X_Position : Integer;
@@ -130,7 +130,7 @@ package Gui is
 
   type Page_Style is array (Page_Styles'range) of Boolean;
 
-  Default_Page_Style : constant Page_Style := (others => False);
+  Default_Page_Style : constant Page_Style := [others => False];
 
   type Sound is (Standard_Sound, Asterisk, Exclamation, Hand, Question, Default);
 
@@ -645,7 +645,7 @@ package Gui is
 
   type Combo_Style is array (Combo_Styles'range) of Boolean;
 
-  Default_Combo_Style : constant Combo_Style := (Sorted => True, others => False);
+  Default_Combo_Style : constant Combo_Style := [Sorted => True, others => False];
 
   function Create  (Parent_Page        : Page;
                     The_Title          : String;

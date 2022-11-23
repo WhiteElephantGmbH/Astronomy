@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2013 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2013 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -264,9 +264,9 @@ package body Neo is
           Er   : constant REAL := Earth_Equatorial_Radius + (REAL(Site.Elevation) / 1000.0);
           Lmst : constant REAL := +The_Lmst;
         begin
-          The_Location_Vector := (X => Er * Rcphi * CS (Lmst),
+          The_Location_Vector := [X => Er * Rcphi * CS (Lmst),
                                   Y => Er * Rcphi * SN (Lmst),
-                                  Z => Er * Rsphi);
+                                  Z => Er * Rsphi];
         end;
         The_Topocentric_Vector := The_Geozentric_Vector - The_Location_Vector;
         POLAR (The_Topocentric_Vector, R, The_Dec, The_Ra);
@@ -404,7 +404,7 @@ package body Neo is
     if Ada.Directories.Exists (Neo.Directory) then
       Ada.Directories.Search (Directory => Neo.Directory,
                               Pattern   => "*." & Neo.Extension,
-                              Filter    => (Ada.Directories.Ordinary_File => True, others => False),
+                              Filter    => [Ada.Directories.Ordinary_File => True, others => False],
                               Process   => Process_File'access);
     end if;
   end Add_Objects;

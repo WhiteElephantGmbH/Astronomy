@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2002 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2002 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -31,7 +31,7 @@ package body Text is
   type Upper_Conversion_Table is array (Upper_Character) of Unsigned.Byte;
 
   Ecp437_To_Latin1_Map : constant Upper_Conversion_Table
-                       := (16#C7#, 16#FC#, 16#E9#, 16#E2#, 16#E4#, 16#E0#, 16#E5#, 16#E7#,
+                       := [16#C7#, 16#FC#, 16#E9#, 16#E2#, 16#E4#, 16#E0#, 16#E5#, 16#E7#,
                            16#EA#, 16#EB#, 16#E8#, 16#EF#, 16#EE#, 16#EC#, 16#C4#, 16#C5#,
                            16#C9#, 16#E6#, 16#C6#, 16#F4#, 16#F6#, 16#F2#, 16#FB#, 16#F9#,
                            16#FF#, 16#D6#, 16#DC#, 16#A2#, 16#A3#, 16#A5#, No_Map, No_Map,
@@ -46,10 +46,10 @@ package body Text is
                            No_Map, 16#DF#, No_Map, No_Map, No_Map, No_Map, 16#B5#, No_Map,
                            No_Map, No_Map, No_Map, No_Map, No_Map, No_Map, No_Map, No_Map,
                            No_Map, 16#B1#, No_Map, No_Map, No_Map, No_Map, 16#F7#, No_Map,
-                           16#B0#, No_Map, 16#B7#, No_Map, No_Map, 16#B2#, No_Map, 16#A0#);
+                           16#B0#, No_Map, 16#B7#, No_Map, No_Map, 16#B2#, No_Map, 16#A0#];
 
   Latin1_To_Ecp437_Map : constant G1_Conversion_Table
-                       := (16#FF#, 16#AD#, 16#9B#, 16#9C#, No_Map, 16#9D#, No_Map, No_Map,
+                       := [16#FF#, 16#AD#, 16#9B#, 16#9C#, No_Map, 16#9D#, No_Map, No_Map,
                            No_Map, No_Map, 16#A6#, 16#AE#, 16#AA#, No_Map, No_Map, No_Map,
                            16#F8#, 16#F1#, 16#FD#, No_Map, No_Map, 16#E6#, No_Map, 16#FA#,
                            No_Map, No_Map, 16#A7#, 16#AF#, 16#AC#, 16#AB#, No_Map, 16#A8#,
@@ -60,7 +60,7 @@ package body Text is
                            16#85#, 16#A0#, 16#83#, No_Map, 16#84#, 16#86#, 16#91#, 16#87#,
                            16#8a#, 16#82#, 16#88#, 16#89#, 16#8D#, 16#A1#, 16#8C#, 16#8B#,
                            No_Map, 16#A4#, 16#95#, 16#A2#, 16#93#, No_Map, 16#94#, 16#F6#,
-                           No_Map, 16#97#, 16#A3#, 16#96#, 16#81#, No_Map, No_Map, 16#98#);
+                           No_Map, 16#97#, 16#A3#, 16#96#, 16#81#, No_Map, No_Map, 16#98#];
 
 
   --*******************************************************************************************************************

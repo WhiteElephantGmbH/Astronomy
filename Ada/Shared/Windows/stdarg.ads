@@ -40,7 +40,7 @@ private
    type ArgVector is array (Integer range <>) of aliased C_Param;
 
    type ArgBlock is record
-      Vector      : ArgVector (1 .. MaxArguments) := (others => 0);
+      Vector      : ArgVector (1 .. MaxArguments) := [others => 0];
       RefCount    : Natural                       := 1;
       CurrentArgs : Natural                       := 0;
       FirstHole   : Natural                       := 0;

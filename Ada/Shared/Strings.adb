@@ -72,7 +72,7 @@ package body Strings is
                         The_Direction : Direction := Forward) return Natural is
   begin
     return Ada.Strings.Fixed.Index (Source  => In_String,
-                                    Pattern => (1 => The_Character),
+                                    Pattern => [1 => The_Character],
                                     Going   => Ada.Strings.Direction(The_Direction));
   end Location_Of;
 
@@ -502,7 +502,7 @@ package body Strings is
   begin
     return Item'(Count     => 2,
                  Length    => Left'length + Right'length,
-                 Positions => (First_Index, First_Index + Left'length),
+                 Positions => [First_Index, First_Index + Left'length],
                  Data      => Left & Right);
   end "+";
 

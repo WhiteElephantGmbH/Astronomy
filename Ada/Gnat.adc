@@ -1,1 +1,1 @@
-pragma Warnings (Off, "array aggregate using () is an obsolescent syntax*");
+--pragma Warnings (Off, "array aggregate using () is an obsolescent syntax*");

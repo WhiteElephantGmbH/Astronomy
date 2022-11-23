@@ -2,9 +2,9 @@ pragma Restrictions (No_Elaboration_Code);
 
 private package Catalog.Ocl is
 
-  type Object_List  is array (1 .. 1031) of Object;
+  type Object_List is array (1 .. 1031) of Object;
 
-  Id : constant Object_List := (
+  Id : constant Object_List := [
        1 => Undefined,
        2 => Undefined,
        3 => Undefined,
@@ -1035,7 +1035,7 @@ private package Catalog.Ocl is
     1028 =>         7,
     1029 => Undefined,
     1030 =>         6,
-    1031 =>     15099);
+    1031 =>     15099];
 
   Count : constant Natural := 275;
 
