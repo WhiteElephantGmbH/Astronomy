@@ -19,17 +19,11 @@ with Ada.Strings.Text_Buffers;
 
 generic
   type Element is (<>);
-  type Value is mod <>;
 package Discrete_Set with Pure is
 
   Outside : constant := -1;
 
   type List is array (Positive range <>) of Element;
-
-  type Slice is record
-    First : Element;
-    Last  : Element;
-  end record;
 
   subtype Position is Integer range Outside .. Element'pos(Element'last);
 
@@ -88,10 +82,6 @@ package Discrete_Set with Pure is
 
   function "<" (The_Set : Set;
                 In_Set  : Set) return Boolean with Inline;
-
-  function From (Item : Value) return Set with Inline, Pre => Set'size = Value'size;
-
-  function From (Item : Set) return Value with Inline, Pre => Set'size = Value'size;
 
   function From (Item : List) return Set;
 
