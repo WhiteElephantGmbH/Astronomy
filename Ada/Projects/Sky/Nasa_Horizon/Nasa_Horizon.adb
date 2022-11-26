@@ -8,7 +8,7 @@ pragma Build (Description => "Get ephimerides from NASA horizon",
               Version     => (1, 1, 0, 3),
               Kind        => Console,
               Icon        => False,
-              Libraries   => ("AWSS64"),
+              Libraries   => ("AWSS64", "COLL64"),
               Compiler    => "GNATPRO\23.0");
 with Request;
 
