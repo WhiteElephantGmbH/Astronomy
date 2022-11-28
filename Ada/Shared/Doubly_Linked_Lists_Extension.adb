@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2015 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                           (c) 2022 by White Elephant GmbH, Schaffhausen, Switzerland                              *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,21 +15,27 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Ada.Finalization;
-with Definite_Doubly_Linked_Lists;
+package body Doubly_Linked_Lists_Extension is
 
-generic
-  Name : String;
-  type Kind is private;
-  with package Definite_List is new Definite_Doubly_Linked_Lists (Kind);
-package Persistent_Definite_Doubly_Linked_Lists is
+  function Elements_Of (The_List : Container.List) return Elements is
+    The_Elements : Elements(1 .. Natural(The_List.Length));
+    The_Last     : Natural := 0;
+  begin
+    for The_Element of The_List loop
+      The_Last := @ + 1;
+      The_Elements(The_Last) := The_Element;
+    end loop;
+    return The_Elements;
+  end Elements_Of;
 
-  type Data is new Ada.Finalization.Limited_Controlled with record
-    List : Definite_List.Item;
-  end record;
 
-  overriding procedure Initialize (The_Data : in out Data);
+  function List_Of (The_Elements : Elements) return Container.List is
+    The_List : Container.List;
+  begin
+    for The_Element of The_Elements loop
+      The_List.Append (The_Element);
+    end loop;
+    return The_List;
+  end List_Of;
 
-  overriding procedure Finalize (The_Data : in out Data);
-
-end Persistent_Definite_Doubly_Linked_Lists;
+end Doubly_Linked_Lists_Extension;

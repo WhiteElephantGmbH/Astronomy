@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2013 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2013 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -20,7 +20,6 @@ with Ada.Text_IO;
 with File;
 with Norad;
 with Stellarium;
-with String_List;
 with Strings;
 with Text;
 with Traces;
@@ -227,11 +226,13 @@ package body Satellite is
     Handle_Number : access procedure := null;
     Handle_True   : access procedure := null;
 
+    subtype Name_List is Strings.List;
+
     Is_Satellites : Boolean := False;
     The_Name      : Text.String;
     The_Magnitude : Stellarium.Magnitude;
     The_Data      : Norad.Two_Line;
-    The_Names     : String_List.Item;
+    The_Names     : Name_List;
     Neo_File      : Ada.Text_IO.File_Type;
 
 
@@ -282,13 +283,12 @@ package body Satellite is
     procedure Add_Satellite is
       Filename  : constant String := Text.String_Of (The_Name);
       Full_Name : constant String := File.Composure (Directory, Filename, Extension);
-      use type String_List.Item;
       use type Stellarium.Magnitude;
     begin
       if The_Magnitude <= Stellarium.Magnitude_Maximum and then not The_Names.Contains (Filename) and then
         not Norad.Is_In_Deep_Space (The_Data)
       then
-        The_Names := The_Names + Filename;
+        The_Names.Append (Filename);
         Ada.Text_IO.Create (Neo_File, Name => Full_Name);
         Ada.Text_IO.Put_Line (Neo_File, The_Data(1));
         Ada.Text_IO.Put_Line (Neo_File, The_Data(2));

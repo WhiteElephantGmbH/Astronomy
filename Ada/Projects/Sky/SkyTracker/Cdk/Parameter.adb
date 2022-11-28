@@ -15,12 +15,13 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with Ada.Containers.Doubly_Linked_Lists;
 with Ada.Environment_Variables;
 with Ada.Text_IO;
 with Application;
 with Cdk_700;
 with Configuration;
-with Definite_Doubly_Linked_Lists;
+with Doubly_Linked_Lists_Extension;
 with Error;
 with File;
 with Language;
@@ -37,7 +38,7 @@ package body Parameter is
 
   use type Angle.Value;
 
-  package Angle_List is new Definite_Doubly_Linked_Lists (Angle.Value);
+  package Angles is new Ada.Containers.Doubly_Linked_Lists (Angle.Value);
 
   Filename : constant String := Application.Composure (Application.Name, "ini");
 
@@ -81,7 +82,7 @@ package body Parameter is
   Fans_On               : Boolean;
   The_Pointing_Model    : Text.String;
 
-  The_Moving_Speeds   : Angle_List.Item;
+  The_Moving_Speeds   : Angles.List;
   The_Cwe_Distance    : Angle.Degrees;
   The_PWI_Address     : Network.Ip_Address;
   The_PWI_Port        : Network.Port_Number;
@@ -175,10 +176,10 @@ package body Parameter is
 
   function Angles_Of (Key     : String;
                       Maximum : Natural; -- in degrees
-                      Unit    : String := "") return Angle_List.Item is
+                      Unit    : String := "") return Angles.List is
     Item     : constant String := String_Of (Key);
     Images   : constant Strings.Item := Strings.Item_Of (Item, ',');
-    The_List : Angle_List.Item;
+    The_List : Angles.List;
   begin
     Log.Write (Key & ": " & Item);
     for Index in Strings.First_Index .. Images.Count loop
@@ -186,10 +187,9 @@ package body Parameter is
         declare
           Image : constant String := Image_Of (Images(Index), Unit);
           Value : constant Angle.Value := Angle.Value_Of (Image);
-          use type Angle_List.Item;
         begin
           if Value < (Angle.Value'(+Angle.Degrees(Maximum)) + Angle.Epsilon) then
-            The_List := The_List + Value;
+            The_List.Append (Value);
           else
             Error.Raise_With ("value greater than" & Maximum'img & "°" & Unit);
           end if;
@@ -557,7 +557,7 @@ package body Parameter is
       Startup_PWI;
       PWI.Install (PWI_Socket'access);
       The_Moving_Speeds := Angles_Of (Moving_Speed_List_Key, Maximum_Speed, Speed_Unit);
-      if Natural(Angle_List.Length (The_Moving_Speeds)) < 2 then
+      if Natural(The_Moving_Speeds.Length) < 2 then
         Error.Raise_With ("The speed list must contain at least two values");
       end if;
       The_Cwe_Distance := Angle_Of (Cwe_Distance_Key);
@@ -684,8 +684,9 @@ package body Parameter is
 
 
   function Moving_Speeds return Angle.Values is
+    package Extension is new Doubly_Linked_Lists_Extension (Angle.Value, Angle.Values, Angles);
   begin
-    return Angle.Values(Angle_List.Elements (The_Moving_Speeds));
+    return Extension.Elements_Of (The_Moving_Speeds);
   end Moving_Speeds;
 
 

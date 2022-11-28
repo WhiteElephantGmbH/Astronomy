@@ -16,13 +16,17 @@
 pragma Style_White_Elephant;
 
 with Ada.Characters.Handling;
+with Ada.Containers.Indefinite_Doubly_Linked_Lists;
 with Ada.Iterator_Interfaces;
 with Ada.Strings.Equal_Case_Insensitive;
 with Ada.Strings.UTF_Encoding;
 with Ada.Text_IO;
-with String_List;
 
 package Strings is
+
+  package Linked_Strings is new Ada.Containers.Indefinite_Doubly_Linked_Lists (String);
+
+  subtype List is Linked_Strings.List;
 
   function Is_Equal (Left, Right : String) return Boolean renames Ada.Strings.Equal_Case_Insensitive;
 
@@ -101,7 +105,7 @@ package Strings is
   function Utf8_Of (Data : String) return String;
   -- if is not UTF8 encoded then it is converted to UTF8 without BOM
 
-  function Concatenation_Of (List      : String_List.Item;
+  function Concatenation_Of (The_List  : List;
                              Separator : String := " ") return String;
 
 
@@ -196,17 +200,17 @@ package Strings is
   -- Convert
 
 
-  function Length_At (List  : Item;
-                      Index : Element_Index) return Natural with Inline;
+  function Length_At (The_Item : Item;
+                      Index    : Element_Index) return Natural with Inline;
 
 
-  function First (List : Item) return String with Inline;
+  function First (The_Item : Item) return String with Inline;
 
 
-  function Last (List : Item) return String with Inline;
+  function Last (The_Item : Item) return String with Inline;
 
 
-  function Data_Of (List      : Item;
+  function Data_Of (The_Item  : Item;
                     Separator : String := "") return String with Inline;
 
 
@@ -217,27 +221,27 @@ package Strings is
   --   Example: Data = "," and Separator = ',' results in two empty strings.
 
 
-  function Purge_Of (List : Item) return Item;
+  function Purge_Of (The_Item : Item) return Item;
   -- Removes all empty strings.
 
 
-  function Item_Of (List      : Item;
+  function Item_Of (The_Item  : Item;
                     Selection : Slice) return Item;
   -- Exception: CONSTRAINT_ERROR: Index out of range.
 
 
-  function Found_In (List : Item;
-                     Name : String) return Boolean;
+  function Found_In (The_Item : Item;
+                     Name     : String) return Boolean;
 
 
-  function Data_Of (List      : String_List.Item;
+  function Data_Of (The_List  : List;
                     Separator : String := "") return String;
 
-  function Item_Of (List : String_List.Item) return Item;
+  function Item_Of (The_List : List) return Item;
 
-  function List_Of (List : Item) return String_List.Item;
+  function List_Of (The_Item : Item) return List;
 
-  function Trimmed_List_Of (List : Item) return String_List.Item;
+  function Trimmed_List_Of (The_Item : Item) return List;
 
 
   generic
@@ -257,7 +261,7 @@ package Strings is
 
   generic
      with function Mapped_String_Of (Data : String) return String;
-  function Creator_From (List : Item) return Item;
+  function Creator_From (The_Item : Item) return Item;
   -- Create a new string for each string in items.
 
 

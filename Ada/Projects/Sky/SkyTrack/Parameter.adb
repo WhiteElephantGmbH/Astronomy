@@ -15,11 +15,12 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with Ada.Containers.Doubly_Linked_Lists;
 with Ada.Text_IO;
 with Application;
 with Astap;
 with Configuration;
-with Definite_Doubly_Linked_Lists;
+with Doubly_Linked_Lists_Extension;
 with Error;
 with File;
 with Language;
@@ -40,7 +41,7 @@ package body Parameter is
 
   use type Angle.Value;
 
-  package Angle_List is new Definite_Doubly_Linked_Lists (Angle.Value);
+  package Angles is new Ada.Containers.Doubly_Linked_Lists (Angle.Value);
 
   Filename : constant String := Application.Composure (Application.Name, "ini");
 
@@ -92,7 +93,7 @@ package body Parameter is
   The_Park_Azimuth         : Angle.Value;
   The_Park_Altitude        : Angle.Value;
   The_Meridian_Flip_Offset : Angle.Value;
-  The_Moving_Speeds        : Angle_List.Item;
+  The_Moving_Speeds        : Angles.List;
   The_First_Acceleration   : Angle.Value;
   The_Second_Acceleration  : Angle.Value;
   The_Telescope_Connection : Connection;
@@ -216,10 +217,10 @@ package body Parameter is
 
 
   function Angles_Of (Key  : String;
-                      Unit : String := "") return Angle_List.Item is
+                      Unit : String := "") return Angles.List is
     Item     : constant String := String_Of (Key);
     Images   : constant Strings.Item := Strings.Item_Of (Item, ',');
-    The_List : Angle_List.Item;
+    The_List : Angles.List;
   begin
     Log.Write (Key & ": " & Item);
     for Index in Strings.First_Index .. Images.Count loop
@@ -227,10 +228,9 @@ package body Parameter is
         declare
           Image : constant String := Image_Of (Images(Index), Unit);
           Value : constant Angle.Value := Angle.Value_Of (Image);
-          use type Angle_List.Item;
         begin
           if Value < Angle.Semi_Circle then
-            The_List := The_List + Value;
+            The_List.Append (Value);
           else
             Error.Raise_With ("value too large");
           end if;
@@ -494,7 +494,7 @@ package body Parameter is
       The_Park_Altitude := Angle_Of (Park_Altitude_Key);
       The_Meridian_Flip_Offset := Angle_Of (Meridian_Flip_Offset_Key);
       The_Moving_Speeds := Angles_Of (Moving_Speed_List_Key, Speed_Unit);
-      if Natural(Angle_List.Length (The_Moving_Speeds)) < 2 then
+      if Natural(Angles.Length (The_Moving_Speeds)) < 2 then
         Error.Raise_With ("The speed list must contain at least two values");
       end if;
       The_First_Acceleration := Angle_Of (First_Acceleration_Key, Acceleration_Unit);
@@ -599,13 +599,14 @@ package body Parameter is
 
   function Maximum_Speed return Angle.Value is
   begin
-    return Angle_List.Last_Element (The_Moving_Speeds);
+    return The_Moving_Speeds.Last_Element;
   end Maximum_Speed;
 
 
   function Moving_Speeds return Angle.Values is
+    package Extension is new Doubly_Linked_Lists_Extension (Angle.Value, Angle.Values, Angles);
   begin
-    return Angle.Values(Angle_List.Elements (The_Moving_Speeds));
+    return Extension.Elements_Of (The_Moving_Speeds);
   end Moving_Speeds;
 
 

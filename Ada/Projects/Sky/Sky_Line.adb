@@ -15,11 +15,11 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with Ada.Containers.Doubly_Linked_Lists;
 with Ada.Directories;
 with Ada.Text_IO;
 with Angle;
 with Application;
-with Definite_Doubly_Linked_Lists;
 with Error;
 with File;
 with Objects;
@@ -67,13 +67,13 @@ package body Sky_Line is
   end Interpolation_Of;
 
 
-  package Element_List is new Definite_Doubly_Linked_Lists (Element);
+  package Elements is new Ada.Containers.Doubly_Linked_Lists (Element);
 
-  package Element_Sorting is new Element_List.Generic_Sorting;
+  package Element_Sorting is new Elements.Generic_Sorting;
 
-  procedure Sort (The_List : in out Element_List.Item) renames Element_Sorting.Sort;
+  procedure Sort (The_List : in out Elements.List) renames Element_Sorting.Sort;
 
-  The_Element_List : Element_List.Item;
+  The_Element_List : Elements.List;
 
   Directory : constant String := Application.Composure ("Sky Line");
   Extension : constant String := "csv";
@@ -173,7 +173,7 @@ package body Sky_Line is
       if The_Element_List.Is_Empty then
         The_Horizon := [others => Angle.Zero];
         return;
-      elsif The_Element_List.Count = 1 then
+      elsif Natural(The_Element_List.Length) = 1 then
         The_Horizon := [others => The_Element_List.First_Element.Altitude];
       else
         The_Last := The_Element_List.Last_Element;

@@ -15,6 +15,7 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with Ada.Containers.Doubly_Linked_Lists;
 with Ada.Real_Time;
 with Ada.Unchecked_Conversion;
 with Alignment;
@@ -23,7 +24,6 @@ with Application;
 with Astro;
 with Catalog;
 with Data;
-with Definite_Doubly_Linked_Lists;
 with Device;
 with Earth;
 with Gui.Enumeration_Menu_Of;
@@ -922,9 +922,9 @@ package body User is
 
   use type Name.Id;
 
-  package Star_List is new Definite_Doubly_Linked_Lists (Name.Id);
+  package Stars is new Ada.Containers.Doubly_Linked_Lists (Name.Id);
 
-  The_Next_Stars    : Star_List.Item;
+  The_Next_Stars    : Stars.List;
   The_Next_Altitude : Angle.Degrees;
   The_Next_Azimuth  : Angle.Degrees;
   The_Next_Width    : Angle.Degrees;

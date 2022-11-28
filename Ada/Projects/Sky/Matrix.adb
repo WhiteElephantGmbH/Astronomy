@@ -16,13 +16,17 @@
 pragma Style_White_Elephant;
 
 with Astro;
+with Doubly_Linked_Lists_Extension;
 with Error;
-with Persistent_Definite_Doubly_Linked_Lists;
+with Persistent_Doubly_Linked_Lists;
 with Traces;
 
 package body Matrix is
 
   package Log is new Traces ("Matrix");
+
+
+  --package
 
   Minimum_Data_Lists_Length : constant := 5;
 
@@ -39,13 +43,13 @@ package body Matrix is
 
   type Az_Data is array (Angle_Index) of Offsets;
 
-  package Corrections is new Definite_Doubly_Linked_Lists (Az_Data);
+  package Corrections is new Ada.Containers.Doubly_Linked_Lists (Az_Data);
 
-  package Persistent_Corrections is new Persistent_Definite_Doubly_Linked_Lists ("Matrix", Az_Data, Corrections);
+  package Persistent_Corrections is new Persistent_Doubly_Linked_Lists ("Matrix", Az_Data, Corrections);
 
   The_Persistent_Data : Persistent_Corrections.Data;
 
-  The_Correction_List : Corrections.Item renames The_Persistent_Data.List;
+  The_Correction_List : Corrections.List renames The_Persistent_Data.List;
 
   type Correction_Information is array (Angle_Index, Angle_Index) of Offsets;
 
@@ -58,7 +62,7 @@ package body Matrix is
     Alt_Index  : Angle_Index := Angle_Index'first;
     Is_Inverse : Boolean := False;
   begin
-    if The_Correction_List.Count /= (2 * Index_Count) then
+    if Natural(The_Correction_List.Length) /= (2 * Index_Count) then
       return False;
     end if;
     for Az_Offsets of The_Correction_List loop
@@ -97,7 +101,7 @@ package body Matrix is
   procedure Clear (The_Information : in out Data_Lists) is
   begin
     for The_Data_List of The_Information loop
-      Matrix.List.Clear (The_Data_List);
+      Matrix.Linked_Data.Clear (The_Data_List);
     end loop;
   end Clear;
 
@@ -129,8 +133,7 @@ package body Matrix is
 
   procedure Calculate (The_Information : in out Data_Lists) is
 
-    type Data_Array is array (List.Index range <>) of Data;
-
+    type Data_Array is array (Positive range <>) of Data;
 
     procedure Build_Matrix (The_Data : Data_Array) is
 
@@ -138,27 +141,28 @@ package body Matrix is
 
       type Index_Array is array (Index) of Index;
 
+
       function Index_Array_Of_Sorted_Az return Index_Array is
 
-        package Index_List is new Definite_Doubly_Linked_Lists (Index);
+        package Indices is new Ada.Containers.Doubly_Linked_Lists (Index);
+        type Element_Array is array (Positive range <>) of Index;
+        package Extension is new Doubly_Linked_Lists_Extension (Index, Element_Array, Indices);
 
         function Az_Is_Less_Than (Left, Right : Index) return Boolean is
         begin
           return The_Data(Left).Az < The_Data(Right).Az;
         end Az_Is_Less_Than;
 
-        package Az_Sorting is new Index_List.Generic_Sorting (Az_Is_Less_Than);
+        package Az_Sorting is new Indices.Generic_Sorting (Az_Is_Less_Than);
 
-        The_Index_List : Index_List.Item;
-
-        use type Index_List.Item;
+        The_Index_List : Indices.List;
 
       begin -- Index_Array_Of_Sorted_Az
         for The_Index in Index loop
-          The_Index_List := The_Index_List + The_Index;
+          The_Index_List.Append (The_Index);
         end loop;
         Az_Sorting.Sort (The_Index_List);
-        return Index_Array(Index_List.Elements(The_Index_List));
+        return Index_Array(Extension.Elements_Of (The_Index_List));
       end Index_Array_Of_Sorted_Az;
 
       Index_Of_Sorted_Az : constant Index_Array := Index_Array_Of_Sorted_Az;
@@ -323,12 +327,10 @@ package body Matrix is
         end loop;
       end Find_Neighbours;
 
-      use type Corrections.Item;
-
     begin --Build_Matrix
       if The_Data'length = 0 then
         for Unused_Index in Angle_Index loop
-          The_Correction_List := The_Correction_List + Az_Data'(others => Offsets'(others => <>));
+          The_Correction_List.Append (Az_Data'(others => Offsets'(others => <>)));
         end loop;
         Log.Write ("no data for build");
         return;
@@ -398,7 +400,7 @@ package body Matrix is
               end;
             end;
           end loop;
-          The_Correction_List := The_Correction_List + The_Az_Data;
+          The_Correction_List.Append (The_Az_Data);
         end;
       end loop;
     end Build_Matrix;
@@ -409,12 +411,14 @@ package body Matrix is
       return Left.Alt < Right.Alt;
     end Alt_Is_Less_Than;
 
-    package Alt_Sorting is new List.Generic_Sorting (Alt_Is_Less_Than);
+    package Alt_Sorting is new Linked_Data.Generic_Sorting (Alt_Is_Less_Than);
+
+    package Convert is new Doubly_Linked_Lists_Extension (Data, Data_Array, Linked_Data);
 
   begin -- Calculate
-    for Index in The_Information'range loop
-      Alt_Sorting.Sort (The_Information(Index));
-      Build_Matrix (Data_Array(List.Elements(The_Information(Index))));
+    for The_List of The_Information loop
+      Alt_Sorting.Sort (The_List);
+      Build_Matrix (Convert.Elements_Of (The_List));
     end loop;
     Offsets_Are_Available := Calculated_Offsets_Available;
   exception

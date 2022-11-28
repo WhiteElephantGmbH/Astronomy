@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2015 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2015 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -16,7 +16,7 @@
 pragma Style_White_Elephant;
 
 with Angle;
-with Definite_Doubly_Linked_Lists;
+with Ada.Containers.Doubly_Linked_Lists;
 with Earth;
 
 package Matrix is
@@ -32,9 +32,9 @@ package Matrix is
     Offset : Offsets;
   end record;
 
-  package List is new Definite_Doubly_Linked_Lists (Data);
+  package Linked_Data is new Ada.Containers.Doubly_Linked_Lists (Data);
 
-  type Data_Lists is array (Boolean) of List.Item;
+  type Data_Lists is array (Boolean) of Linked_Data.List;
 
   function Is_Available return Boolean;
 

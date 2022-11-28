@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2002 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2015 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,54 +15,21 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Ada.Containers.Indefinite_Doubly_Linked_Lists;
+with Ada.Finalization;
+with Ada.Containers.Doubly_Linked_Lists;
 
 generic
-  type Element (<>) is private;
+  Name : String;
+  type Kind is private;
+  with package Container is new Ada.Containers.Doubly_Linked_Lists (Kind);
+package Persistent_Doubly_Linked_Lists is
 
-  with function "=" (Left, Right : Element) return Boolean is <>;
+  type Data is new Ada.Finalization.Limited_Controlled with record
+    List : Container.List;
+  end record;
 
-package Indefinite_Doubly_Linked_Lists is
-  pragma Preelaborate;
+  overriding procedure Initialize (The_Data : in out Data);
 
-  package Private_Lists is new Ada.Containers.Indefinite_Doubly_Linked_Lists (Element_Type => Element);
+  overriding procedure Finalize (The_Data : in out Data);
 
-  type Item is new Private_Lists.List with private;
-
-  Empty : constant Item;
-
-  function "+" (Data : Element) return Item with Inline;
-
-  function "+" (Left  : Item;
-                Right : Element) return Item with Inline;
-
-  function "+" (Left  : Element;
-                Right : Item) return Item with Inline;
-
-  function "+" (Left  : Item;
-                Right : Item) return Item with Inline;
-
-  function "-" (Left  : Item;
-                Right : Element) return Item with Inline;
-
-  function Count (List : Item) return Natural with Inline;
-
-  generic
-      with function "<" (Left, Right : Element) return Boolean is <>;
-  package Generic_Sorting is
-
-    function Is_Sorted (List : Item) return Boolean;
-
-    procedure Sort (List : in out Item);
-
-    procedure Merge (Target, Source : in out Item);
-
-  end Generic_Sorting;
-
-private
-
-  type Item is new Private_Lists.List with null record;
-
-  Empty : constant Item := (Private_Lists.Empty_List with null record);
-
-end Indefinite_Doubly_Linked_Lists;
+end Persistent_Doubly_Linked_Lists;

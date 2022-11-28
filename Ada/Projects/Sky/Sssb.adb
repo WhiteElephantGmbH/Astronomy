@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2013 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2013 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,11 +15,11 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with Ada.Containers.Doubly_Linked_Lists;
 with Ada.Text_IO;
 with Angle;
 with Application;
 with Data;
-with Definite_Doubly_Linked_Lists;
 with Error;
 with File;
 with Strings;
@@ -36,16 +36,16 @@ package body Sssb is
     Dec : Angle.Degrees := 0.0;
   end record;
 
-  package List is new Definite_Doubly_Linked_Lists (Place);
+  package Places is new Ada.Containers.Doubly_Linked_Lists (Place);
 
   type Object is record
     Id        : access String;
-    Ephemeris : List.Item;
+    Ephemeris : Places.List;
   end record;
 
-  package Object_List is new Definite_Doubly_Linked_Lists (Object);
+  package Objects is new Ada.Containers.Doubly_Linked_Lists (Object);
 
-  The_Objects : Object_List.Item;
+  The_Objects : Objects.List;
 
 
   procedure Read (Target   : String;
@@ -69,8 +69,6 @@ package body Sssb is
     Has_Place_Before : Boolean := False;
 
     The_Object : Object;
-
-    use type Object_List.Item;
 
   begin -- Read_Objects
     Log.Write ("Read " & Target & " from file " & Filename);
@@ -98,25 +96,24 @@ package body Sssb is
             Ut  : constant Time.Ut       := Time.Ut_Of (Image_Of (Julian_Date));
             Ra  : constant Angle.Degrees := Angle.Degrees'value(Image_Of (Right_Ascension));
             Dec : constant Angle.Degrees := Angle.Degrees'value(Image_Of (Declination));
-            use type List.Item;
           begin
             if Ut >= Start_Time then
               if Has_Place_Before then
-                The_Object.Ephemeris := + The_Place_Before;
+                The_Object.Ephemeris := [The_Place_Before];
               end if;
-              The_Object.Ephemeris := The_Object.Ephemeris + Place'(Ut => Ut, Ra => Ra, Dec => Dec);
+              The_Object.Ephemeris.Append (Place'(Ut => Ut, Ra => Ra, Dec => Dec));
             else
               The_Place_Before := (Ut => Ut, Ra => Ra, Dec => Dec);
               Has_Place_Before := True;
             end if;
           end;
         elsif Line'length > 0 and then Line(Line'first) = '>' then
-          exit when not List.Is_Empty (The_Object.Ephemeris);
+          exit when not Places.Is_Empty (The_Object.Ephemeris);
         end if;
       end;
     end loop;
     The_Object.Id := new String'(Target);
-    The_Objects := The_Objects + The_Object;
+    The_Objects.Append (The_Object);
     Ada.Text_IO.Close (The_File);
   exception
   when Error.Occurred =>

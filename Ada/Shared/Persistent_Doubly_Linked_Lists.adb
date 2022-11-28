@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2015 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2015 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -21,7 +21,7 @@ with Application;
 with File;
 with Log;
 
-package body Persistent_Definite_Doubly_Linked_Lists is
+package body Persistent_Doubly_Linked_Lists is
 
   package IO renames Ada.Streams.Stream_IO;
 
@@ -44,7 +44,7 @@ package body Persistent_Definite_Doubly_Linked_Lists is
     end;
     The_Stream := IO.Stream (The_File);
     begin
-      The_Data.List := Definite_List.Item'input(The_Stream);
+      The_Data.List := Container.List'input(The_Stream);
       IO.Close (The_File);
       Log.Write (Name & " data initialized");
     exception
@@ -75,7 +75,7 @@ package body Persistent_Definite_Doubly_Linked_Lists is
     end;
     IO.Reset (The_File);
     The_Stream := IO.Stream (The_File);
-    Definite_List.Item'output(The_Stream, The_Data.List);
+    Container.List'output(The_Stream, The_Data.List);
     IO.Close (The_File);
     Log.Write (Name & " data finalized");
   exception
@@ -83,4 +83,4 @@ package body Persistent_Definite_Doubly_Linked_Lists is
     Log.Write ("Persistent_Definite_Doubly_Linked_Lists.Finalize", Item);
   end Finalize;
 
-end Persistent_Definite_Doubly_Linked_Lists;
+end Persistent_Doubly_Linked_Lists;

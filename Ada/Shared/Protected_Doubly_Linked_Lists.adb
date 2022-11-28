@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2016 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2016 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,12 +15,12 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Definite_Doubly_Linked_Lists;
+with Ada.Containers.Doubly_Linked_Lists;
 
-package body Protected_Definite_Doubly_Linked_Lists is
+package body Protected_Doubly_Linked_Lists is
 
-  package List is new Definite_Doubly_Linked_Lists (Element);
-  The_Event_List : List.Item;
+  package List is new Ada.Containers.Doubly_Linked_Lists (Element);
+  The_Event_List : List.List;
 
   protected Control is
     entry Next_Event (The_Item : out Element);
@@ -96,5 +96,4 @@ package body Protected_Definite_Doubly_Linked_Lists is
 
   end Control;
 
-
-end Protected_Definite_Doubly_Linked_Lists;
+end Protected_Doubly_Linked_Lists;

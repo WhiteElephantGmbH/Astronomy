@@ -4,22 +4,26 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with Doubly_Linked_Lists_Extension;
+
 package body Persistent_String is
 
+  package Extension is new Doubly_Linked_Lists_Extension (Character, String, Character_List);
+
   function Item (The_Data : Data) return String is
+
   begin
     if The_Data.List.Is_Empty then
       return "";
     else
-      return String(The_Data.List.Elements);
+      return Extension.Elements_Of (The_Data.List);
     end if;
   end Item;
 
   procedure Store (The_Data : in out Data;
                    Value    :        String) is
-    use type Character_List.Element_List;
   begin
-    The_Data.List := +Character_List.Element_List(Value);
+    The_Data.List := Extension.List_Of (Value);
   end Store;
 
 end Persistent_String;

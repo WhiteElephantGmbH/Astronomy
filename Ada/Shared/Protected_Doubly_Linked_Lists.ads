@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2013 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2016 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,6 +15,18 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Indefinite_Doubly_Linked_Lists;
+generic
+  type Element is private;
+package Protected_Doubly_Linked_Lists is
 
-package String_List is new Indefinite_Doubly_Linked_Lists (String);
+  function Is_Empty return Boolean;
+
+  procedure Append  (Item : Element);
+
+  procedure Clear;
+
+  procedure Clear_And_Append (Item : Element);
+
+  function Next return Element;
+
+end Protected_Doubly_Linked_Lists;

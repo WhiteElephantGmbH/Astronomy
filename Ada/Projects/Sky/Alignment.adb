@@ -317,7 +317,6 @@ package body Alignment is
     procedure Add_Correction is
 
       use type Angle.Signed;
-      use type Matrix.List.Item;
 
       Offsets : constant Matrix.Offsets := (Alt => +Earth.Alt_Of (The_Offset),
                                             Az  => +Earth.Az_Of (The_Offset));
@@ -325,10 +324,9 @@ package body Alignment is
       Index : constant Boolean := Earth.Direction_Is_Inverse (The_Direction);
 
     begin
-      The_Correction_Data(Index) := The_Correction_Data(Index)
-                                    + Matrix.Data'(Alt    => Earth.Alt_Of (The_Direction) - Offsets.Alt,
-                                                   Az     => Earth.Az_Of (The_Direction) - Offsets.Az,
-                                                   Offset => Offsets);
+      The_Correction_Data(Index).Append (Matrix.Data'(Alt    => Earth.Alt_Of (The_Direction) - Offsets.Alt,
+                                                      Az     => Earth.Az_Of (The_Direction) - Offsets.Az,
+                                                      Offset => Offsets));
     end Add_Correction;
 
 
@@ -768,8 +766,6 @@ package body Alignment is
           Error.Raise_With ("Incorrect Offset for " & Item'img & " in line <" & Line & "> of " & Alignment_Filename);
         end Value_Of;
 
-        use type Matrix.List.Item;
-
       begin
         if Parts.Count /= (Element'pos(Element'last) + 1) then
           Error.Raise_With ("Incorrect Line <" & Line & "> in " & Alignment_Filename);
@@ -781,7 +777,7 @@ package body Alignment is
                                                                   Az  => Value_Of (Azimuth_Offset)));
           Index : constant Boolean := Is_Inverse (Kind);
         begin
-          The_Data_Lists(Index) := The_Data_Lists(Index) + Matrix_Correction;
+          The_Data_Lists(Index).Append (Matrix_Correction);
         end;
       end;
     end loop;

@@ -24,12 +24,13 @@ with Exceptions;
 with File;
 with Os;
 with Strings;
-with String_List;
 with System;
 
 package body Log is
 
   package Io renames Ada.Text_IO;
+
+  subtype List is Strings.List;
 
   File_Section_Name   : constant String := "File";
   Name_Item           : constant String := "Name";
@@ -138,7 +139,7 @@ package body Log is
   private
     Flush_After_Write : Boolean := Default_Flush_After_Write;
     Multiple_Files    : Boolean := Default_Multiple_Files;
-    Category_Names    : String_List.Item;
+    Category_Names    : Strings.List;
   end Guarded;
 
 
@@ -166,26 +167,25 @@ package body Log is
         end if;
       end Derived_Filename_From;
 
-      function Reduced_List_Of (List : String_List.Item) return String_List.Item is
-        The_List : String_List.Item;
+      function Reduced_List_Of (The_List : List) return List is
+        Reduced_List : List;
       begin
-        for The_Name of List loop
+        for The_Name of The_List loop
           declare
             Name : constant String := Strings.Legible_Of (The_Name);
-            use type String_List.Item;
           begin
             if Name /= No_Categories_Id then
               if Name = All_Categories_Id then
-                return +Name;
-              elsif not The_List.Contains (Name) then
-                if The_List.Count < Max_Number_Of_Categories then
-                  The_List := The_List + Name;
+                return [Name];
+              elsif not Reduced_List.Contains (Name) then
+                if Natural(Reduced_List.Length) < Max_Number_Of_Categories then
+                  Reduced_List.Append (Name);
                 end if;
               end if;
             end if;
           end;
         end loop;
-        return The_List;
+        return Reduced_List;
       end Reduced_List_Of;
 
       Date_And_Time : constant String := Date_Time.Image;
@@ -236,7 +236,7 @@ package body Log is
       end;
       Category_Names := Reduced_List_Of (Configuration.Value_Of (Filter_Section, Categories_Item));
       declare
-        Enabled_Categories : constant Natural := String_List.Count (Category_Names);
+        Enabled_Categories : constant Natural := Natural(Category_Names.Length);
       begin
         if Category_Names.Contains (All_Categories_Id) then
           Categories := All_Categories;

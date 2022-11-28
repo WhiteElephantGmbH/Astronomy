@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2016 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2016 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,9 +15,9 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with Ada.Containers.Doubly_Linked_Lists;
 with Ada.Exceptions;
 with Ada.Unchecked_Deallocation;
-with Definite_Doubly_Linked_Lists;
 with Traces;
 
 package body Network.Tcp.Servers is
@@ -81,9 +81,9 @@ package body Network.Tcp.Servers is
 
     procedure Deallocate is new Ada.Unchecked_Deallocation (Reader, Reader_Access);
 
-    package Client_List is new Definite_Doubly_Linked_Lists (Client);
+    package Clients is new Ada.Containers.Doubly_Linked_Lists (Client);
 
-    The_List : Client_List.Item;
+    The_List : Clients.List;
 
     The_Terminating_Client : Client;
 
@@ -91,8 +91,6 @@ package body Network.Tcp.Servers is
     begin
       Log.Write ("Clients " & The_Message);
     end Log_Write;
-
-    use type Client_List.Item;
 
     Is_Closing : Boolean := False;
 
@@ -106,7 +104,7 @@ package body Network.Tcp.Servers is
           begin
             The_Client := (new Reader, The_Socket);
             The_Client.The_Reader.Start (The_Socket);
-            The_List := The_List + The_Client;
+            The_List.Append (The_Client);
           end;
         end Add;
       or
@@ -123,7 +121,11 @@ package body Network.Tcp.Servers is
           delay 0.01;
         end loop;
         Deallocate (The_Terminating_Client.The_Reader);
-        The_List := The_List - The_Terminating_Client;
+        declare
+          The_Cursor : Clients.Cursor := The_List.Find (The_Terminating_Client);
+        begin
+          The_List.Delete (The_Cursor);
+        end;
         exit when Is_Closing and then The_List.Is_Empty;
       or
         accept Send_To_All (The_Message : Outgoing) do

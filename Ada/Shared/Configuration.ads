@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2002 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2002 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,10 +15,12 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Definite_Doubly_Linked_Lists;
-with String_List;
+with Ada.Containers.Doubly_Linked_Lists;
+with Strings;
 
 package Configuration is
+
+  subtype List is Strings.List;
 
   type File_Handle is limited private;
 
@@ -37,7 +39,7 @@ package Configuration is
 
   function Value_Of (The_Section : Section_Handle;
                      Key         : String;
-                     Default     : String_List.Item := String_List.Empty) return String_List.Item;
+                     Default     : List := []) return List;
 
   function Value_Of (The_Section : Section_Handle;
                      Key         : String;
@@ -58,9 +60,9 @@ private
 
   type Item is access Item_Data;
 
-  package Item_List is new Definite_Doubly_Linked_Lists (Item);
+  package Items is new Ada.Containers.Doubly_Linked_Lists (Item);
 
-  type Section_Handle is access Item_List.Item;
+  type Section_Handle is access Items.List;
 
   type Section_Data (Name_Length : Natural) is record
     Name  : String (1..Name_Length);
@@ -69,8 +71,8 @@ private
 
   type Section is access Section_Data;
 
-  package Section_List is new Definite_Doubly_Linked_Lists (Section);
+  package Sections is new Ada.Containers.Doubly_Linked_Lists (Section);
 
-  type File_Handle is access Section_List.Item;
+  type File_Handle is access Sections.List;
 
 end Configuration;

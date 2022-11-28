@@ -4,16 +4,16 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Definite_Doubly_Linked_Lists;
-with Persistent_Definite_Doubly_Linked_Lists;
+with Ada.Containers.Doubly_Linked_Lists;
+with Persistent_Doubly_Linked_Lists;
 
 generic
   Name : String;
 package Persistent_String is
 
-  package Character_List is new Definite_Doubly_Linked_Lists (Character);
+  package Character_List is new Ada.Containers.Doubly_Linked_Lists (Character);
 
-  package Characters is new Persistent_Definite_Doubly_Linked_Lists (Name, Character, Character_List);
+  package Characters is new Persistent_Doubly_Linked_Lists (Name, Character, Character_List);
 
   type Data is new Characters.Data with null record;
 
