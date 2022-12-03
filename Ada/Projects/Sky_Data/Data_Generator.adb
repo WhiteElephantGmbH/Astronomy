@@ -158,7 +158,7 @@ package body Data_Generator is
         function Parts_Of (Item : Header) return Strings.Item is
           Image : constant String := Image_Of (Item);
         begin
-          return Strings.Purge_Of (Strings.Item_Of (Image, ' '));
+          return Strings.Item_Of (Image, ' ', Purge => True);
         end Parts_Of;
 
         procedure Get_Actual_For (Id  : Header) is

@@ -251,7 +251,7 @@ package body Log is
       elsif Categories = No_Categories then
         Io.Put_Line (The_File, "Logging disabled");
       else
-        Io.Put_Line (The_File, "Logging categories = " & Strings.Data_Of (Category_Names,","));
+        Io.Put_Line (The_File, "Logging categories = " & Category_Names.To_Data (","));
       end if;
       Is_Started := True;
     exception

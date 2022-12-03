@@ -19,6 +19,7 @@ with Ada.Characters.Handling;
 with Ada.Containers.Indefinite_Doubly_Linked_Lists;
 with Ada.Iterator_Interfaces;
 with Ada.Strings.Equal_Case_Insensitive;
+with Ada.Strings.Text_Buffers;
 with Ada.Strings.UTF_Encoding;
 with Ada.Text_IO;
 
@@ -26,7 +27,7 @@ package Strings is
 
   package Linked_Strings is new Ada.Containers.Indefinite_Doubly_Linked_Lists (String);
 
-  subtype List is Linked_Strings.List;
+  type List is new Linked_Strings.List with null record;
 
   function Is_Equal (Left, Right : String) return Boolean renames Ada.Strings.Equal_Case_Insensitive;
 
@@ -144,8 +145,8 @@ package Strings is
 
 ------------------------------------------------------------------------------------------------------------------------
 
-  Max_Count       : constant := 2**16-1;
-  Max_Data_Length : constant := 2**24-1;
+  Max_Count       : constant := 2**8-1;
+  Max_Data_Length : constant := 2**12-1;
 
   First_Index : constant := 1;
 
@@ -159,16 +160,22 @@ package Strings is
 
   subtype Data_Length is Natural range 0 .. Max_Data_Length;
 
-  type Item (Count  : Element_Count;
-             Length : Data_Length) is tagged private --String of 'Standard.STRING'
+  type Item is tagged private --String of 'Standard.STRING'
   with
+    Aggregate => (Empty       => None,
+                  Add_Unnamed => Append),
     Constant_Indexing => Constant_Reference,
     Default_Iterator  => Iterate,
-    Iterator_Element  => String;
+    Iterator_Element  => String,
+    Relaxed_Initialization;
 
-  type Item_Access is access Item;
+  None : constant Item;
 
-  None : constant Item; -- no strings
+  procedure Append (The_Item : in out Item;
+                    Data     :        String)
+    with
+      Inline,
+      Pre => Data'length < The_Item.Free_Space and The_Item.Count < Max_Count;
 
   No_Element : constant Element_Count := 0;
 
@@ -176,29 +183,15 @@ package Strings is
 
   package List_Iterator_Interfaces is new Ada.Iterator_Interfaces (Element_Count, Has_Element);
 
-  function Constant_Reference (The_List : aliased Item;
+  function Constant_Reference (The_Item : aliased Item;
                                Index    : Element_Count) return String with Inline;
 
   function Iterate (The_List : Item) return List_Iterator_Interfaces.Reversible_Iterator'class;
 
 
-  function "+" (Left  : String;
-                Right : String) return Item;
+  function Count (The_Item : Item) return Natural;
 
-  function "+" (Left  : Item;
-                Right : String) return Item;
-
-  function "+" (Left  : String;
-                Right : Item) return Item;
-
-  function "+" (Left  : Item;
-                Right : Item) return Item;
-  -- Concatenate
-
-
-  function "+" (Data : String) return Item;
-  -- Convert
-
+  function Free_Space (The_Item : Item) return Natural;
 
   function Length_At (The_Item : Item;
                       Index    : Element_Index) return Natural with Inline;
@@ -210,75 +203,57 @@ package Strings is
   function Last (The_Item : Item) return String with Inline;
 
 
-  function Data_Of (The_Item  : Item;
+  function To_Data (The_Item  : Item;
                     Separator : String := "") return String with Inline;
 
+  function To_Data (The_List  : List;
+                    Separator : String := "") return String;
 
   function Item_Of (Data      : String;
                     Separator : Character;
+                    Purge     : Boolean := False;
                     Symbols   : String := "") return Item;
   -- Returns the splitted strings from Data.
   --   Example: Data = "," and Separator = ',' results in two empty strings.
+  -- Purge = True => empty strings are removed.
+  -- Symbols are added to the result.
 
 
-  function Purge_Of (The_Item : Item) return Item;
-  -- Removes all empty strings.
-
-
-  function Item_Of (The_Item  : Item;
-                    Selection : Slice) return Item;
+  function Part (The_Item  : Item;
+                 Selection : Slice) return Item;
   -- Exception: CONSTRAINT_ERROR: Index out of range.
 
 
-  function Found_In (The_Item : Item;
+  function Contains (The_Item : Item;
                      Name     : String) return Boolean;
 
+  function To_List (The_Item : Item'class) return List;
 
-  function Data_Of (The_List  : List;
-                    Separator : String := "") return String;
-
-  function Item_Of (The_List : List) return Item;
-
-  function List_Of (The_Item : Item) return List;
-
-  function Trimmed_List_Of (The_Item : Item) return List;
-
-
-  generic
-    Count : Element_Count;
-    with function Next_Length return Data_Length;
-    with function Next_String return String;
-  function Creator return Item;
-
-
-  generic
-    From : Element_Index;
-    To   : Element_Count;
-    with function Next_Length (Index : Element_Index) return Data_Length;
-    with function Next_String (Index : Element_Index) return String;
-  function Indexed_Creator return Item;
-
-
-  generic
-     with function Mapped_String_Of (Data : String) return String;
-  function Creator_From (The_Item : Item) return Item;
-  -- Create a new string for each string in items.
-
+  function To_Trimmed_List (The_Item : Item'class) return List;
 
 private
+
   type Position is new Data_Length range First_Index .. Data_Length'last;
 
-  type Element_Positions is array (Element_Count range <>) of Position with Pack;
+  type Element_Positions is array (Element_Index) of Position with Pack, Suppress_Initialization;
 
-  type Item (Count  : Element_Count;
-             Length : Data_Length) is tagged
-  record
-    Positions : Element_Positions(First_Index..Count);
-    Data      : aliased String(First_Index..Length);
-  end record;
+  subtype String_Data is String (First_Index .. Max_Data_Length) with Suppress_Initialization;
 
-  None : constant Item := (Count     => 0,
-                           Length    => 0,
-                           Positions => [others => First_Index],
-                           Data      => [others => Ascii.Nul]);
+  type Item is tagged record
+    Count     : Element_Count := 0;
+    Length    : Data_Length := 0;
+    Positions : Element_Positions;
+    Data      : String_Data;
+  end record
+  with Put_Image => Put_Image;
+
+  procedure Put_Image (S : in out Ada.Strings.Text_Buffers.Root_Buffer_Type'class;
+                       V : Item);
+
+  None : constant Item := (Count => 0, Length => 0, others => <>);
+
+  function Count (The_Item : Item) return Natural is (The_Item.Count);
+
+  function Free_Space (The_Item : Item) return Natural is (Max_Data_Length - The_Item.Length);
+
 end Strings;

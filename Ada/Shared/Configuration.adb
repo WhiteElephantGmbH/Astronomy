@@ -167,8 +167,7 @@ package body Configuration is
                      Key         : String;
                      Default     : List := []) return List is
   begin
-    return Strings.Trimmed_List_Of (Strings.Purge_Of (Strings.Item_Of (Data      => Found_Item (Key, The_Section).Value,
-                                                                       Separator => ',')));
+    return Strings.Item_Of (Found_Item (Key, The_Section).Value, Separator => ',', Purge => True).To_Trimmed_List;
   exception
   when others =>
     return Default;

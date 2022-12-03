@@ -95,7 +95,7 @@ package body Neo is
         declare
 
           Line  : constant String := Strings.Trimmed (Ada.Text_IO.Get_Line (The_File));
-          Parts : constant Strings.Item := Strings.Item_Of (Line, ',');
+          Parts : constant Strings.Item := Strings.Item_Of (Line, Separator => ',');
 
           function Image_Of (Item : Header) return String is
           begin

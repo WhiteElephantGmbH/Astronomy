@@ -51,7 +51,7 @@ package Configuration is
 
 private
 
-  type Item_Data (Key_Length  : Natural;
+  type Item_Data (Key_Length   : Natural;
                   Value_Length : Natural) is
   record
     Key   : String (1..Key_Length);

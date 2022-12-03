@@ -418,7 +418,7 @@ package body Name is
       function Stored (Line   : String;
                        Number : Positive) return Boolean is
 
-        Parts : constant Strings.Item := Strings.Purge_Of (Strings.Item_Of (Strings.Trimmed (Line), '|'));
+        Parts : constant Strings.Item := Strings.Item_Of (Strings.Trimmed (Line), Separator => '|', Purge => True);
 
         function Part_For (Index : Strings.Element_Index) return String is
         begin
@@ -433,7 +433,7 @@ package body Name is
         end if;
         declare
           Part_1  : constant String := Part_For (Strings.First_Index);
-          Parts_1 : constant Strings.Item := Strings.Purge_Of (Strings.Item_Of (Part_1, ' '));
+          Parts_1 : constant Strings.Item := Strings.Item_Of (Part_1, Separator => ' ', Purge => True);
 
           function Pixels_Of (The_Value : Angle.Value) return Integer is
             use type Angle.Value;
@@ -447,9 +447,8 @@ package body Name is
           begin
             if Parts.Count = 3 then
               declare
-                Words : constant Strings.Item := Strings.Item_Of (Parts_1, (First => Strings.First_Index + 1,
-                                                                            Last  => Parts_1.Count));
-                Position_Name : constant String := Strings.Data_Of (Words, Separator => " ");
+                Words         : constant Strings.Item := Parts_1.Part ((Strings.First_Index + 1, Parts_1.Count));
+                Position_Name : constant String := Words.To_Data (Separator => " ");
                 Ra_Image      : constant String := Part_For (Strings.First_Index + 1);
                 Dec_Image     : constant String := Part_For (Strings.First_Index + 2);
               begin
@@ -478,9 +477,8 @@ package body Name is
           begin
             if Parts.Count = 3 then
               declare
-                Words : constant Strings.Item := Strings.Item_Of (Parts_1, (First => Strings.First_Index + 1,
-                                                                            Last  => Parts_1.Count));
-                Mark_Name : constant String := Strings.Data_Of (Words, Separator => " ");
+                Words     : constant Strings.Item := Parts_1.Part ((Strings.First_Index + 1, Parts_1.Count));
+                Mark_Name : constant String := Words.To_Data (Separator => " ");
                 Az_Image  : constant String := Part_For (Strings.First_Index + 1);
                 Alt_Image : constant String := Part_For (Strings.First_Index + 2);
               begin
@@ -532,8 +530,8 @@ package body Name is
               end;
             else
               declare
-                Object_Id    : constant String := Part_For (Strings.First_Index);
-                Object_Parts : constant Strings.Item := Strings.Purge_Of (Strings.Item_Of (Object_Id, ' '));
+                Object_Id    : constant String       := Part_For (Strings.First_Index);
+                Object_Parts : constant Strings.Item := Strings.Item_Of (Object_Id, Separator => ' ', Purge => True);
               begin
                 if Object_Parts.Count = 0 then
                   Error.Raise_With ("No Object defined in " & Line);

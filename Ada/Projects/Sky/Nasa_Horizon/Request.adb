@@ -194,8 +194,8 @@ package body Request is
         return;
       end if;
       declare
-        use type Os.Horizon.Arguments;
-        Result : constant String := Os.Horizon.Result_Of_Get_With (Target + Home + Start + Stop + Steps );
+        Url    : constant Strings.Item := [Target, Home, Start, Stop, Steps];
+        Result : constant String := Os.Horizon.Result_Of_Get_With (Url);
       begin
         Evaluate (Result);
       end;

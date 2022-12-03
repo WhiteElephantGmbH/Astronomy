@@ -54,12 +54,11 @@ package body Request is
   begin -- Handle
     Ada.Text_IO.Put_Line ("Get Request for: " & Target);
     declare
-      use type Os.Horizon.Arguments;
       Site   : constant String := "8.60986388888,47.70550277777,0.54";
       Start  : constant String := "2022-02-28";
       Stop   : constant String := "2022-03-06";
       Step   : constant String := "60m";
-      Result : constant String := Os.Horizon.Result_Of_Get_With (Target + Site + Start + Stop + Step);
+      Result : constant String := Os.Horizon.Result_Of_Get_With ([Target, Site, Start, Stop, Step]);
     begin
       Ada.Text_IO.Put_Line ("<<< result >>>");
       Ada.Text_IO.Put_Line (Result);

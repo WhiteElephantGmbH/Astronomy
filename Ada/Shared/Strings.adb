@@ -194,9 +194,9 @@ package body Strings is
 
     The_Index : Natural := Data'first;
 
-    function Has_Utf8_Data (Count : Positive) return Boolean is
+    function Has_Utf8_Data (The_Count : Positive) return Boolean is
     begin
-      for Index in The_Index + 1 .. The_Index + Count loop
+      for Index in The_Index + 1 .. The_Index + The_Count loop
         if Index > Data'last or else (Convert (Data(Index)) and 16#C0#) /= 16#80# then
           return False;
         end if;
@@ -214,11 +214,11 @@ package body Strings is
           The_Bits : constant Bits := Convert (Data(The_Index));
         begin
           if (The_Bits and 16#E0#) = 16#C0# then
-            return Has_Utf8_Data (Count => 1);
+            return Has_Utf8_Data (The_Count => 1);
           elsif (The_Bits and 16#F0#) = 16#E0# then
-            return Has_Utf8_Data (Count => 2);
+            return Has_Utf8_Data (The_Count => 2);
           elsif (The_Bits and 16#F8#) = 16#F0# then
-            return Has_Utf8_Data (Count => 3);
+            return Has_Utf8_Data (The_Count => 3);
           end if;
         end;
       end if;
@@ -392,6 +392,16 @@ package body Strings is
 
 -------------------------------------------------------------------------------
 
+  procedure Append (The_Item : in out Item;
+                    Data     :        String) is
+    First_Position : constant Natural := The_Item.Length + 1;
+  begin
+    The_Item.Count := @ + 1;
+    The_Item.Length := @ + Data'length;
+    The_Item.Positions(The_Item.Count) := Position(First_Position);
+    The_Item.Data(First_Position .. The_Item.Length) := Data;
+  end Append;
+
   type List_Access is access all Item;
   for List_Access'storage_size use 0;
 
@@ -455,16 +465,16 @@ package body Strings is
   end Previous;
 
 
-  function Constant_Reference (The_List : aliased Item;
+  function Constant_Reference (The_Item : aliased Item;
                                Index    : Element_Count) return String is
   begin
     declare
-      List_Position : constant Natural := Natural(The_List.Positions(Index));
+      The_Position : constant Position := The_Item.Positions(Index);
     begin
-      if Index < The_List.Count then
-        return The_List.Data(List_Position .. Natural(The_List.Positions(Index + 1) - 1));
+      if Index < The_Item.Count then
+        return The_Item.Data(Positive(The_Position) .. Positive(The_Item.Positions(Index + 1)) - 1);
       end if;
-      return The_List.Data(List_Position .. The_List.Data'last);
+      return The_Item.Data(Positive(The_Position) .. The_Item.Length);
     end;
   exception
   when others =>
@@ -484,66 +494,11 @@ package body Strings is
   end Iterate;
 
 
-  function "+" (Left  : Element_Positions;
-                Right : Natural) return Element_Positions with Inline is -- incremented Positions
-
-    The_Positions : Element_Positions := Left;
-
+  procedure Put_Image (S : in out Ada.Strings.Text_Buffers.Root_Buffer_Type'class;
+                       V : Item) is
   begin
-     for Index in The_Positions'range loop
-       The_Positions(Index) := Position(Natural(The_Positions(Index)) + Right);
-     end loop;
-     return The_Positions;
-  end "+";
-
-
-  function "+" (Left  : String;
-                Right : String) return Item is
-  begin
-    return Item'(Count     => 2,
-                 Length    => Left'length + Right'length,
-                 Positions => [First_Index, First_Index + Left'length],
-                 Data      => Left & Right);
-  end "+";
-
-
-  function "+" (Left  : Item;
-                Right : String) return Item is
-  begin
-    return Item'(Length    => Left.Length + Right'length,
-                 Count     => Left.Count + 1,
-                 Positions => Left.Positions & Position(First_Index + Left.Length),
-                 Data      => Left.Data & Right);
-  end "+";
-
-
-  function "+" (Left  : String;
-                Right : Item) return Item is
-  begin
-    return Item'(Length    => Left'length + Right.Length,
-                 Count     => Right.Count + 1,
-                 Positions => First_Index & (Right.Positions + Left'length),
-                 Data      => Left & Right.Data);
-  end "+";
-
-
-  function "+" (Left  : Item;
-                Right : Item) return Item is
-  begin
-    return Item'(Length    => Left.Length + Right.Length,
-                 Count     => Left.Count + Right.Count,
-                 Positions => Left.Positions & (Right.Positions + Left.Length),
-                 Data      => Left.Data & Right.Data);
-  end "+";
-
-
-  function "+" (Data : String) return Item is
-  begin
-    return Item'(Count     => 1,
-                 Length    => Data'length,
-                 Positions => Element_Positions'(1 => First_Index),
-                 Data      => Data);
-  end "+";
+    S.Put ('[' & V.To_Data (Separator => ", ") & ']');
+  end Put_Image;
 
 
   function Length_At (The_Item : Item;
@@ -571,34 +526,31 @@ package body Strings is
   end Last;
 
 
-  function Data_Of (The_Item  : Item;
+  function To_Data (The_Item  : Item;
                     Separator : String := "") return String is
   begin
     if The_Item.Count = 0 then
       return "";
-    elsif The_Item.Count = 1 then
-      return The_Item.Data;
     else
       declare
         The_Data     : String(1 .. (The_Item.Count - 1) * Separator'length + The_Item.Length);
-        The_Position : Natural := First_Index;
+        The_Position : Positive := First_Index;
       begin
-        for Index in The_Item.Positions'first .. The_Item.Positions'last - 1 loop
+        for Element of The_Item loop
           declare
-            Data : constant String := The_Item(Index) & Separator;
+            Data : constant String := (if The_Position = First_Index then "" else Separator) & Element;
           begin
             The_Data(The_Position .. The_Position + Data'length - 1) := Data;
             The_Position := The_Position + Data'length;
           end;
         end loop;
-        The_Data(The_Position .. The_Data'last) := The_Item(The_Item.Count);
         return The_Data;
       end;
     end if;
-  end Data_Of;
+  end To_Data;
 
 
-  function Data_Of (The_List  : List;
+  function To_Data (The_List  : List;
                     Separator : String := "") return String is
     The_Length : Natural := Natural(The_List.Length);
   begin
@@ -626,111 +578,52 @@ package body Strings is
         return The_Data(The_Data'first .. The_Length - Separator'length);
       end;
     end if;
-  end Data_Of;
+  end To_Data;
 
 
   function Item_Of (Data      : String;
                     Separator : Character;
+                    Purge     : Boolean := False;
                     Symbols   : String := "") return Item is
-      The_Count  : Element_Count := 1;
-      The_Length : Natural := 0;
-   begin
-     for Character of Data loop
-       if Character = Separator then
-         The_Count := Element_Count'succ(The_Count);
-       else
-         if Found (Character, Symbols) then
-           The_Count := The_Count + 2;
-         end if;
-         The_Length := Natural'succ(The_Length);
-       end if;
-     end loop;
-     declare
-       The_Index    : Element_Index := First_Index;
-       The_Position : Position := First_Index;
-       The_Strings  : Item(Count  => The_Count,
-                           Length => The_Length);
-     begin
-       The_Strings.Positions(The_Index) := The_Position;
-       for Index in Data'range loop
-         if Data(Index) = Separator then
-           The_Index := Element_Index'succ(The_Index);
-           The_Strings.Positions(The_Index) := The_Position;
-         elsif Found (Data(Index), Symbols) then
-           The_Index := Element_Index'succ(The_Index);
-           The_Strings.Positions(The_Index) := The_Position;
-           The_Strings.Data(Natural(The_Position)) := Data(Index);
-           The_Position := Position'succ(The_Position);
-           The_Index := Element_Index'succ(The_Index);
-           The_Strings.Positions(The_Index) := The_Position;
-         else
-           The_Strings.Data(Natural(The_Position)) := Data(Index);
-           The_Position := Position'succ(The_Position);
-         end if;
-       end loop;
-       return The_Strings;
-     end;
-   end Item_Of;
-
-
-  function Purge_Of (The_Item : Item) return Item is
-    The_Count    : Natural := The_Item.Count;
+    The_Item  : Item;
+    The_First : Natural := Data'first;
   begin
-    for Index in First_Index .. The_Item.Count loop
-      if The_Item.Length_At (Index) = 0 then
-        The_Count := The_Count - 1;
+    for Index in Data'range loop
+      if Data(Index) = Separator then
+        if not Purge or else Index /= The_First then
+          The_Item.Append (Data(The_First .. Index - 1));
+        end if;
+        The_First := Index + 1;
+      elsif Found (Data(Index), Symbols) then
+        if not Purge or else Index /= The_First then
+          The_Item.Append (Data(The_First .. Index - 1));
+        end if;
+        The_Item.Append (Data(Index .. Index));
+        The_First := Index + 1;
       end if;
     end loop;
-    declare
-      The_Index   : Natural := First_Index;
-      The_Strings : Item(Count  => The_Count,
-                         Length => The_Item.Length);
-    begin
-      for Index in First_Index .. The_Item.Count loop
-        if The_Item.Length_At (Index) /= 0 then
-          The_Strings.Positions(The_Index) := The_Item.Positions(Index);
-          The_Index := The_Index + 1;
-        end if;
-      end loop;
-      The_Strings.Data := The_Item.Data;
-      return The_Strings;
-    end;
-  end Purge_Of;
+    if not Purge or else The_First <= Data'last then
+      The_Item.Append (Data(The_First .. Data'last));
+    end if;
+    return The_Item;
+  end Item_Of;
 
 
-  function Item_Of (The_Item  : Item;
-                    Selection : Slice) return Item is
-    The_Length : Natural;
+  function Part (The_Item  : Item;
+                 Selection : Slice) return Item is
+    New_Item : Item;
   begin
     if Selection.Last < Selection.First then
       return None;
     end if;
-    if Selection.Last = The_Item.Count then
-      The_Length := The_Item.Length + First_Index - Natural(The_Item.Positions(Selection.First));
-    else
-      The_Length := Natural(The_Item.Positions(Selection.Last + 1) - The_Item.Positions(Selection.First));
-    end if;
-    declare
-      Count        : constant Element_Count := Selection.Last + 1 - Selection.First;
-      The_Position : Position := First_Index;
-      The_Strings  : Item(Count  => Count,
-                          Length => The_Length);
-    begin
-      for Index in Selection.First .. Selection.Last loop
-        declare
-          Data : constant String := The_Item(Index);
-        begin
-          The_Strings.Data(Natural(The_Position) .. Natural(The_Position) + Data'length - 1) := Data;
-          The_Strings.Positions(Index + 1 - Selection.First) := The_Position;
-          The_Position := The_Position + Data'length;
-        end;
-      end loop;
-      return The_Strings;
-    end;
-  end Item_Of;
+    for Index in Selection.First .. Selection.Last loop
+      New_Item.Append (The_Item(Index));
+    end loop;
+    return New_Item;
+  end Part;
 
 
-  function Found_In (The_Item : Item;
+  function Contains (The_Item : Item;
                      Name     : String) return Boolean is
   begin
     for The_Name of The_Item loop
@@ -739,108 +632,26 @@ package body Strings is
       end if;
     end loop;
     return False;
-  end Found_In;
+  end Contains;
 
 
-  function Item_Of (The_List : List) return Item is
-    The_Length : Natural := 0;
-  begin
-    for Text of The_List loop
-      The_Length := The_Length + Text'length;
-    end loop;
-    declare
-      The_Position : Position := First_Index;
-      The_Index    : Natural := First_Index;
-      The_Strings  : Item(Count  => Element_Count(The_List.Length),
-                          Length => The_Length);
-    begin
-      for Text of The_List loop
-        The_Strings.Data(Natural(The_Position) .. Natural(The_Position) + Text'length - 1) := Text;
-        The_Strings.Positions(The_Index) := The_Position;
-        The_Index := The_Index + 1;
-        The_Position := The_Position + Text'length;
-      end loop;
-      return The_Strings;
-    end;
-  end Item_Of;
-
-  function List_Of (The_Item : Item) return List is
+  function To_List (The_Item : Item'class) return List is
     The_List : List;
   begin
     for Name of The_Item loop
       The_List.Append (Name);
     end loop;
     return The_List;
-  end List_Of;
+  end To_List;
 
 
-  function Trimmed_List_Of (The_Item : Item) return List is
+  function To_Trimmed_List (The_Item : Item'class) return List is
     The_List : List;
   begin
     for Name of The_Item loop
       The_List.Append (Trimmed (Name));
     end loop;
     return The_List;
-  end Trimmed_List_Of;
-
-
-  function Creator return Item is
-    The_Length : Natural := 0;
-  begin
-    for Unused in 1 .. Count loop
-      The_Length := The_Length + Next_Length;
-    end loop;
-    declare
-      The_Strings  : Item(Count  => Count,
-                          Length => The_Length);
-      The_Position : Position := First_Index;
-    begin
-      for Index in 1 .. Count loop
-        declare
-          Data : constant String := Next_String;
-        begin
-          The_Strings.Data(Natural(The_Position) .. Natural(The_Position) + Data'length - 1) := Data;
-          The_Strings.Positions(Index) := The_Position;
-          The_Position := The_Position + Data'length;
-        end;
-      end loop;
-      return The_Strings;
-    end;
-  end Creator;
-
-
-  function Indexed_Creator return Item is
-    The_Length : Natural := 0;
-  begin
-    for Index in From .. To loop
-      The_Length := The_Length + Next_Length (Index);
-    end loop;
-    declare
-      The_Strings  : Item(Count  => To - From + 1,
-                          Length => The_Length);
-      The_Position : Position := First_Index;
-    begin
-      for Index in From .. To loop
-        declare
-          Data : constant String := Next_String (Index);
-        begin
-          The_Strings.Data(Natural(The_Position) .. Natural(The_Position) + Data'length - 1) := Data;
-          The_Strings.Positions(The_Strings.Positions'first - From + Index) := The_Position;
-          The_Position := The_Position + Data'length;
-        end;
-      end loop;
-      return The_Strings;
-    end;
-  end Indexed_Creator;
-
-
-  function Creator_From (The_Item : Item) return Item is
-    The_List : List;
-  begin
-    for The_String of The_Item loop
-      The_List.Append (Mapped_String_Of (The_String));
-    end loop;
-    return Item_Of (The_List);
-  end Creator_From;
+  end To_Trimmed_List;
 
 end Strings;
