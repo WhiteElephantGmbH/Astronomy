@@ -447,7 +447,7 @@ package body Name is
           begin
             if Parts.Count = 3 then
               declare
-                Words         : constant Strings.Item := Parts_1.Part ((Strings.First_Index + 1, Parts_1.Count));
+                Words         : constant Strings.Item := Parts_1.Part (Strings.First_Index + 1, Parts_1.Count);
                 Position_Name : constant String := Words.To_Data (Separator => " ");
                 Ra_Image      : constant String := Part_For (Strings.First_Index + 1);
                 Dec_Image     : constant String := Part_For (Strings.First_Index + 2);
@@ -477,7 +477,7 @@ package body Name is
           begin
             if Parts.Count = 3 then
               declare
-                Words     : constant Strings.Item := Parts_1.Part ((Strings.First_Index + 1, Parts_1.Count));
+                Words     : constant Strings.Item := Parts_1.Part (Strings.First_Index + 1, Parts_1.Count);
                 Mark_Name : constant String := Words.To_Data (Separator => " ");
                 Az_Image  : constant String := Part_For (Strings.First_Index + 1);
                 Alt_Image : constant String := Part_For (Strings.First_Index + 2);

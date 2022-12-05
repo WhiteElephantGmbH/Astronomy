@@ -33,6 +33,13 @@ package body Strings is
   White_Space : constant Map.Character_Set := Map.To_Set (Space & Ascii.Ht & Ascii.Cr & Ascii.Lf);
 
 
+  procedure Put_Image (S : in out Ada.Strings.Text_Buffers.Root_Buffer_Type'class;
+                       V : List) is
+  begin
+    S.Put ((if V.Is_Empty then "[]" else "[""" & V.To_Data (Separator => """, """) & """]"));
+  end Put_Image;
+
+
   function Is_Lowercase (The_String : String) return Boolean is
   begin
     for The_Index in The_String'range loop
@@ -497,7 +504,7 @@ package body Strings is
   procedure Put_Image (S : in out Ada.Strings.Text_Buffers.Root_Buffer_Type'class;
                        V : Item) is
   begin
-    S.Put ('[' & V.To_Data (Separator => ", ") & ']');
+    S.Put ((if V.Count = 0 then "[]" else "[""" & V.To_Data (Separator => """, """) & """]"));
   end Put_Image;
 
 
@@ -535,14 +542,16 @@ package body Strings is
       declare
         The_Data     : String(1 .. (The_Item.Count - 1) * Separator'length + The_Item.Length);
         The_Position : Positive := First_Index;
+        Is_First     : Boolean := True;
       begin
         for Element of The_Item loop
           declare
-            Data : constant String := (if The_Position = First_Index then "" else Separator) & Element;
+            Data : constant String := (if Is_First then "" else Separator) & Element;
           begin
             The_Data(The_Position .. The_Position + Data'length - 1) := Data;
             The_Position := The_Position + Data'length;
           end;
+          Is_First := False;
         end loop;
         return The_Data;
       end;
@@ -610,13 +619,14 @@ package body Strings is
 
 
   function Part (The_Item  : Item;
-                 Selection : Slice) return Item is
+                 From      : Element_Index;
+                 To        : Element_Count) return Item is
     New_Item : Item;
   begin
-    if Selection.Last < Selection.First then
+    if To < From then
       return None;
     end if;
-    for Index in Selection.First .. Selection.Last loop
+    for Index in From .. To loop
       New_Item.Append (The_Item(Index));
     end loop;
     return New_Item;

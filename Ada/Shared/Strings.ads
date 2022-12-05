@@ -27,7 +27,11 @@ package Strings is
 
   package Linked_Strings is new Ada.Containers.Indefinite_Doubly_Linked_Lists (String);
 
-  type List is new Linked_Strings.List with null record;
+  type List is new Linked_Strings.List with null record
+    with Put_Image => Put_Image;
+
+  procedure Put_Image (S : in out Ada.Strings.Text_Buffers.Root_Buffer_Type'class;
+                       V : List);
 
   function Is_Equal (Left, Right : String) return Boolean renames Ada.Strings.Equal_Case_Insensitive;
 
@@ -219,9 +223,10 @@ package Strings is
   -- Symbols are added to the result.
 
 
-  function Part (The_Item  : Item;
-                 Selection : Slice) return Item;
-  -- Exception: CONSTRAINT_ERROR: Index out of range.
+  function Part (The_Item : Item;
+                 From     : Element_Index;
+                 To       : Element_Count) return Item
+    with Pre => To <= The_Item.Count and then To - From + 1 >= 0;
 
 
   function Contains (The_Item : Item;
@@ -245,7 +250,7 @@ private
     Positions : Element_Positions;
     Data      : String_Data;
   end record
-  with Put_Image => Put_Image;
+    with Put_Image => Put_Image;
 
   procedure Put_Image (S : in out Ada.Strings.Text_Buffers.Root_Buffer_Type'class;
                        V : Item);

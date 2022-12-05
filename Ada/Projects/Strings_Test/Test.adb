@@ -43,7 +43,7 @@ package body Test is
     IO.Put_Line ("");
     IO.Put_Line ("C = A -> " & C'image & Equal (A, C));
     IO.Put_Line ("");
-    IO.Put_Line ("Empty => " & D'image);
+    IO.Put_Line ("Empty => " & D'image & Equal (D'image, "[]"));
     for Unused of D loop
       raise Program_Error;
     end loop;
@@ -52,10 +52,48 @@ package body Test is
     D.Append ("Tree");
     IO.Put_Line ("D -> " & D'image);
     for E of reverse D when E /= "Two" loop
-      IO.Put_Line ("-> " & E'image);
+      IO.Put_Line ("-> " & E);
     end loop;
-    IO.Put_Line ("D.First -> " & D.First'image & Equal (D.First, "One"));
-    IO.Put_Line ("D.Last -> " & D.Last'image & Equal (D.Last, "Tree"));
+    IO.Put_Line ("D.First -> " & D.First & Equal (D.First, "One"));
+    IO.Put_Line ("D.Last -> " & D.Last & Equal (D.Last, "Tree"));
+    IO.Put_Line ("");
+    declare
+      Table : constant Strings.Item := ["A", "BB", "CCC", "DDDD", "EEEEE", "FFFFF"];
+      Part  : Strings.Item;
+      List  : Strings.List;
+    begin
+      Part := Table.Part(2, 4);
+      List := Part.To_List;
+      IO.Put_Line ("List: " & List'image);
+      for S of List loop
+       IO.Put_Line ("-> " & S);
+      end loop;
+      IO.Put_Line ("");
+      List.Delete_First;
+      Part := [List.First_Element, List.Last_Element];
+      declare
+        Image  : constant String := "  " & Part'image & "  ";
+        Tokens : Strings.Item;
+      begin
+        IO.Put_Line ("Part: " & Image);
+        Tokens := Strings.Item_Of (Image, Separator => ' ', Symbols => "[,]", Purge => True);
+        for T of Tokens loop
+         IO.Put_Line ("-> " & T);
+        end loop;
+        IO.Put_Line ("Tokens: " & Tokens.To_Data & Equal (Tokens.To_Data, "[""CCC"",""DDDD""]"));
+      end;
+    end;
+    IO.Put_Line ("");
+    declare
+      Parameter : constant String := ",,,";
+      Arguments : constant Strings.Item := Strings.Item_Of (Parameter, Separator => ',');
+    begin
+      IO.Put_Line ("Arguments for " & Parameter);
+      for A of Arguments loop
+        IO.Put_Line ("-> " & A);
+      end loop;
+      IO.Put_Line ("Parameter: " & Arguments'image & Equal (Arguments'image, "["""", """", """", """"]"));
+    end;
     IO.Put_Line ("");
     begin
       declare
@@ -70,6 +108,7 @@ package body Test is
     when Ada.Assertions.Assertion_Error =>
       IO.Put_Line ("Precontition checked");
     end;
+    IO.Put_Line ("");
     IO.Put_Line ("Test Complete : " & Test_Ok'image);
   exception
   when Occurrence: others =>
