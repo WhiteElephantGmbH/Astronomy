@@ -27,8 +27,15 @@ package Strings is
 
   package Linked_Strings is new Ada.Containers.Indefinite_Doubly_Linked_Lists (String);
 
-  type List is new Linked_Strings.List with null record
-    with Put_Image => Put_Image;
+  type List is new Linked_Strings.List with private
+    with Put_Image => Put_Image,
+         Aggregate => (Empty       => Empty,
+                       Add_Unnamed => Append);
+
+  Empty : constant List;
+
+  overriding procedure Append (Container : in out List;
+                               New_Item  :        String) with Inline;
 
   procedure Put_Image (S : in out Ada.Strings.Text_Buffers.Root_Buffer_Type'class;
                        V : List);
@@ -237,6 +244,10 @@ package Strings is
   function To_Trimmed_List (The_Item : Item'class) return List;
 
 private
+
+  type List is new Linked_Strings.List with null record;
+
+  Empty : constant List := (Linked_Strings.Empty_List with null record);
 
   type Position is new Data_Length range First_Index .. Data_Length'last;
 

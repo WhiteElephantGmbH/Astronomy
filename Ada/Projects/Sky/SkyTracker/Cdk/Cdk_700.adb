@@ -37,6 +37,8 @@ package body Cdk_700 is
   begin
     return ENC.Switches_Of (The_Ip_Address);
   exception
+  when ENC_2302_Client.Not_Available =>
+    raise;
   when others =>
     return ENC.All_Off;
   end Switches;
@@ -61,6 +63,8 @@ package body Cdk_700 is
       end if;
     end;
   exception
+  when ENC.Not_Available =>
+    raise ENC_Not_Available;
   when others =>
     raise Startup_Failed;
   end Startup;

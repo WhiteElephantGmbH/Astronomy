@@ -8,7 +8,7 @@ pragma Build (Description => "ENC 2302 Simulator",
               Version     => (1, 0, 0, 0),
               Kind        => Console,
               Icon        => False,
-              Libraries   => ("AWS64"),
+              Libraries   => ("AWS64", "COLL64"),
               Compiler    => "GNATPRO\23.0");
 with Simulator;
 

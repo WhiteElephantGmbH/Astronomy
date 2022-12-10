@@ -27,6 +27,7 @@ with Os;
 with Picture;
 with Stellarium;
 with Strings;
+with Targets;
 with Traces;
 
 package body Parameter is
@@ -115,18 +116,6 @@ package body Parameter is
   end String_Of;
 
 
-  function Image_Of (Item : String;
-                     Unit : String := "") return String is
-  begin
-    if Unit /= "" then
-      if Item(Item'last - Unit'length + 1 .. Item'last) /= Unit then
-        raise Error.Occurred;
-      end if;
-    end if;
-    return Item(Item'first .. Item'last - Unit'length);
-  end Image_Of;
-
-
   function Language return Language.Kind is
     Image : constant String := String_Value_Of (Language_Key);
   begin
@@ -143,19 +132,16 @@ package body Parameter is
   end Language;
 
 
-  function Angle_Of (Key : String) return Angle.Degrees is
+  function Degrees_Of (Key     : String;
+                       Maximum : Angle.Degrees) return Angle.Degrees is
     Item : constant String := String_Of (Key);
   begin
-    declare
-      Image : constant String := Image_Of (Item, Degree_Unit);
-    begin
-      Log.Write (Key & ": " & Item);
-      return Angle.Degrees'value(Image);
-    end;
+    Log.Write (Key & ": " & Item);
+    return Angle.Degrees_Of (Item, Maximum);
   exception
   when others =>
-    Error.Raise_With ("Incorrect " & Key & ": <" & Item & ">");
-  end Angle_Of;
+    Error.Raise_With ("Incorrect value of " & Key & ": <" & Item & ">");
+  end Degrees_Of;
 
 
   function Filename_Of (Key : String) return String is
@@ -168,11 +154,10 @@ package body Parameter is
   end Filename_Of;
 
 
-  function Value_Of (Key  : String;
-                     Unit : String := "") return Integer is
+  function Value_Of (Key  : String) return Integer is
     Item : constant String := String_Of (Key);
   begin
-    return Integer'value(Image_Of(Item, Unit));
+    return Integer'value(Item);
   exception
   when others =>
     Error.Raise_With ("Incorrect " & Key & ": <" & Item & ">");
@@ -279,8 +264,8 @@ package body Parameter is
       Set (Picture_Handle);
       Astap.Define (Executable => Filename_Of (Astap_Key));
       Picture.Define (Name   => String_Of (Filename_Key),
-                      Height => Angle_Of (Height_Key),
-                      Width  => Angle_Of (Width_Key));
+                      Height => Degrees_Of (Height_Key, Picture.Maximum_Heigth),
+                      Width  => Degrees_Of (Width_Key, Picture.Maximum_Width));
 
       Set (Stellarium_Handle);
       begin
@@ -290,7 +275,7 @@ package body Parameter is
       when others =>
         Error.Raise_With ("Stellarium port number out of range");
       end;
-      The_Search_Tolerance := Angle_Of (Search_Tolerance_Key);
+      The_Search_Tolerance := Degrees_Of (Search_Tolerance_Key, Maximum => Targets.Maximum_Search_Tolerance);
       Startup_Stellarium;
     end Read_Values;
 

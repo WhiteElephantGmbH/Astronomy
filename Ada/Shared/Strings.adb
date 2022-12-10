@@ -33,6 +33,13 @@ package body Strings is
   White_Space : constant Map.Character_Set := Map.To_Set (Space & Ascii.Ht & Ascii.Cr & Ascii.Lf);
 
 
+  procedure Append (Container : in out List;
+                    New_Item  :        String) is
+  begin
+    Linked_Strings.List(Container).Append (New_Item);
+  end Append;
+
+
   procedure Put_Image (S : in out Ada.Strings.Text_Buffers.Root_Buffer_Type'class;
                        V : List) is
   begin

@@ -16,15 +16,31 @@ package body Test is
   Test_Ok : Boolean := True;
 
 
-  function Equal (A, R : String) return String is
+  procedure Check (Ok : Boolean) is
   begin
-    if A = R then
+    if not Ok then
+      Test_Ok := False;
+    end if;
+  end Check;
+
+
+  function Equal (Left, Right : String) return String is
+  begin
+    if Left = Right then
       return " -> Ok";
     else
-      Test_Ok := False;
+      Check (False);
       return " -> Error";
     end if;
   end Equal;
+
+
+  Titel_Part_1 : constant String := "S T R I N G   ";
+  Titel_Part_2 : constant String := "T E S T";
+
+  Titel_List : constant Strings.List := [Titel_Part_1, Titel_Part_2];
+
+  Titel : constant String := Titel_List.To_Data;
 
 
   procedure Execute is
@@ -33,7 +49,9 @@ package body Test is
     C : constant String := B.To_Data (Separator => " ");
     D : Strings.Item := [];
   begin
-    IO.Put_Line ("String Test");
+    IO.Put_Line (Titel);
+    Check (Titel = Titel_Part_1 & Titel_Part_2);
+    IO.Put_Line ("");
     IO.Put_Line ("A -> " & A'image);
     IO.Put_Line ("");
     IO.Put_Line ("B -> " & B'image);
@@ -103,7 +121,7 @@ package body Test is
         S.Append (Big_String);
       end;
       IO.Put_Line ("Precontition check failed");
-      Test_Ok := False;
+      Check (False);
     exception
     when Ada.Assertions.Assertion_Error =>
       IO.Put_Line ("Precontition checked");

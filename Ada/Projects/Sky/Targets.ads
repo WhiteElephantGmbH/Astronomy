@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2021 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2021 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -19,6 +19,8 @@ with Name;
 with Space;
 
 package Targets is
+
+  Maximum_Search_Tolerance : constant := 0.5; -- degrees
 
   type Selection is (All_Objects, Solar_System, Clusters, Open_Clusters, Nebulas, Galaxies, Stars, Multiple_Stars,
                      Near_Earth_Objects);

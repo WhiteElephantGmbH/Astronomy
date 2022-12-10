@@ -41,7 +41,7 @@ package Log is
 
 private
 
-  Max_Number_Of_Categories : constant := 31;
+  Max_Number_Of_Categories : constant := 63;
 
   type Category is mod 2 ** (Max_Number_Of_Categories + 1);
 

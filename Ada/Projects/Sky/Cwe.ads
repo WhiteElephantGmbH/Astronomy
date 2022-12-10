@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2019 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2019 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -19,12 +19,14 @@ with Earth;
 
 package Cwe is
 
+  Maximum_Distance : constant := 2.0; -- degrees
+
   type Mode is (Off, On);
 
   procedure Set (To : Mode);
-  
+
   procedure New_Offset;
-  
+
   function Adjustment return Earth.Direction;
 
 end Cwe;

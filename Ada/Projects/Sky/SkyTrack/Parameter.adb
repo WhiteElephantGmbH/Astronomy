@@ -29,6 +29,7 @@ with Os;
 with Picture;
 with Site;
 with Strings;
+with Targets;
 with Text;
 with Traces;
 with User;
@@ -201,19 +202,16 @@ package body Parameter is
   end Angle_Of;
 
 
-  function Angle_Of (Key : String) return Angle.Degrees is
+  function Degrees_Of (Key     : String;
+                       Maximum : Angle.Degrees) return Angle.Degrees is
     Item : constant String := String_Of (Key);
   begin
-    declare
-      Image : constant String := Image_Of (Item, Degree_Unit);
-    begin
-      Log.Write (Key & ": " & Item);
-      return Angle.Degrees'value(Image);
-    end;
+    Log.Write (Key & ": " & Item);
+    return Angle.Degrees_Of (Item, Maximum);
   exception
   when others =>
-    Error.Raise_With ("Incorrect " & Key & ": <" & Item & ">");
-  end Angle_Of;
+    Error.Raise_With ("Incorrect value of " & Key & ": <" & Item & ">");
+  end Degrees_Of;
 
 
   function Angles_Of (Key  : String;
@@ -513,8 +511,8 @@ package body Parameter is
       Set (Picture_Handle);
       Astap.Define (Executable => Filename_Of (Astap_Key));
       Picture.Define (Name   => String_Of (Filename_Key),
-                      Height => Angle_Of (Height_Key),
-                      Width  => Angle_Of (Width_Key));
+                      Height => Degrees_Of (Height_Key, Picture.Maximum_Heigth),
+                      Width  => Degrees_Of (Width_Key, Picture.Maximum_Width));
 
       Set (Stellarium_Handle);
       begin
@@ -524,7 +522,7 @@ package body Parameter is
       when others =>
         Error.Raise_With ("Stellarium port number out of range");
       end;
-      The_Search_Tolerance := Angle_Of (Search_Tolerance_Key);
+      The_Search_Tolerance := Degrees_Of (Search_Tolerance_Key, Targets.Maximum_Search_Tolerance);
       declare
         Image     : constant String := String_Value_Of (Magnitude_Key);
         Magnitude : Stellarium.Magnitude;

@@ -21,6 +21,7 @@ with Ada.Text_IO;
 with Application;
 with Cdk_700;
 with Configuration;
+with Cwe;
 with Doubly_Linked_Lists_Extension;
 with Error;
 with File;
@@ -29,6 +30,7 @@ with Network.Tcp;
 with PWI.Settings;
 with Stellarium;
 with Strings;
+with Targets;
 with Text;
 with Traces;
 
@@ -203,28 +205,16 @@ package body Parameter is
   end Angles_Of;
 
 
-  function Angle_Of (Key  : String;
-                     Unit : String := "") return Angle.Degrees is
+  function Degrees_Of (Key     : String;
+                       Maximum : Angle.Degrees) return Angle.Degrees is
     Item : constant String := String_Of (Key);
   begin
     Log.Write (Key & ": " & Item);
-    begin
-      declare
-        Image : constant String := Image_Of (Item, Unit);
-        Value : constant Angle.Degrees := +Angle.Value_Of (Image);
-        use type Angle.Degrees;
-      begin
-        if Value <= 2.0 then
-          return Value;
-        else
-          Error.Raise_With ("value > 2 degrees");
-        end if;
-      end;
-    exception
-    when others =>
-      Error.Raise_With ("Incorrect value of " & Key & ": <" & Item & ">");
-    end;
-  end Angle_Of;
+    return Angle.Degrees_Of (Item, Maximum);
+  exception
+  when others =>
+    Error.Raise_With ("Incorrect value of " & Key & ": <" & Item & ">");
+  end Degrees_Of;
 
 
   function Duration_Of (Key : String) return Duration is
@@ -560,7 +550,7 @@ package body Parameter is
       if Natural(The_Moving_Speeds.Length) < 2 then
         Error.Raise_With ("The speed list must contain at least two values");
       end if;
-      The_Cwe_Distance := Angle_Of (Cwe_Distance_Key);
+      The_Cwe_Distance := Degrees_Of (Cwe_Distance_Key, Cwe.Maximum_Distance);
       The_Time_Adjustment := Duration_Of (Time_Adjustment_Key);
 
       Set (Lx200_Handle);
@@ -576,7 +566,7 @@ package body Parameter is
 
       Set (Stellarium_Handle);
       The_Stellarium_Port :=  Port_For (Stellarium_Id);
-      The_Search_Tolerance := Angle_Of (Search_Tolerance_Key);
+      The_Search_Tolerance := Degrees_Of (Search_Tolerance_Key, Targets.Maximum_Search_Tolerance);
       declare
         Image     : constant String := String_Value_Of (Magnitude_Key);
         Magnitude : Stellarium.Magnitude;
@@ -596,6 +586,8 @@ package body Parameter is
     exception
     when Cdk_700.Startup_Failed =>
       Error.Raise_With ("CDK 700 not started");
+    when Cdk_700.ENC_Not_Available =>
+      Error.Raise_With ("ENC-2302 not available");
     when others =>
       if Is_In_Shutdown_Mode then
         PWI.Shutdown;

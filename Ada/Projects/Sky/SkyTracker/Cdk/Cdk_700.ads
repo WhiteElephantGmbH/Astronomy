@@ -21,7 +21,8 @@ with Progress;
 package Cdk_700 is
 
   procedure Startup (Ip_Address : Network.Ip_Address);
-    Startup_Failed : exception;
+    ENC_Not_Available : exception;
+    Startup_Failed    : exception;
 
   function Is_Started return Boolean;
   -- Precondition: Startup must have been called

@@ -407,7 +407,7 @@ package body Angle is
       The_State := At_Minutes;
     when 'h' =>
       if The_Unit = In_Degrees then
-        Error.Raise_With ("°, ' or "" expected");
+        Error.Raise_With (Degree & ", ' or "" expected");
       end if;
       The_Seconds :=  Seconds(The_Number * A_Degree);
       The_Unit := In_Hours;
@@ -424,7 +424,7 @@ package body Angle is
       The_State := At_Seconds;
     when 'm' =>
       if The_Unit = In_Hours then
-        Error.Raise_With ("°, ' or "" expected");
+        Error.Raise_With ((Degree & ", ' or "" expected"));
       end if;
       The_Seconds := Seconds(The_Number * A_Minute);
       The_Unit := In_Hours;
@@ -440,13 +440,13 @@ package body Angle is
       The_State := At_End;
     when 's' =>
       if The_Unit = In_Hours then
-        Error.Raise_With ("°, ' or "" expected");
+        Error.Raise_With (Degree & ", ' or "" expected");
       end if;
       The_Seconds := Seconds(The_Number);
       The_Unit := In_Hours;
       The_State := At_End;
     when others =>
-      Error.Raise_With ("unexpected: " & Image(The_Next - 1));
+      Error.Raise_With ("unexpected character " & Strings.Utf8_Of ("" & Image(The_Next - 1)));
     end case;
     Skip_Spaces;
     if The_State = At_Minutes then
@@ -486,7 +486,7 @@ package body Angle is
         The_Unit := In_Hours;
         The_State := At_End;
       when others =>
-        Error.Raise_With ("unexpected: " & Image(The_Next));
+        Error.Raise_With ("unexpected character in minutes " & Strings.Utf8_Of ("" & Image(The_Next - 1)));
       end case;
     end if;
     Skip_Spaces;
@@ -510,12 +510,12 @@ package body Angle is
         The_Seconds := @ + Seconds(The_Number);
         The_Unit := In_Hours;
       when others =>
-        Error.Raise_With ("unexpected: " & Image(The_Next));
+        Error.Raise_With ("unexpected character in seconds " & Strings.Utf8_Of ("" & Image(The_Next - 1)));
       end case;
     end if;
     Skip_Spaces;
     if The_State /= At_End then
-      Error.Raise_With ("unexpected: " & Image(The_Next..Image'last));
+      Error.Raise_With ("unexpected end " & Strings.Utf8_Of (Image(The_Next..Image'last)));
     end if;
     if Is_Negative then
       The_Seconds := -@;
@@ -537,7 +537,7 @@ package body Angle is
   when Error.Occurred =>
     raise;
   when others =>
-    Error.Raise_With ("illegal value: " & Image);
+    Error.Raise_With ("illegal value: " & The_Image);
   end Value_Of;
 
 
@@ -561,6 +561,45 @@ package body Angle is
   begin
     return Unsigned_Degrees(Degrees'(+Item))'img;
   end Unsigned_Degrees_Image_Of;
+
+
+  function Degrees_Of (The_Image : String;
+                       Limit     : Degrees) return Degrees is
+
+    Image : constant String := Strings.Ansi_Of (Strings.Trimmed(The_Image));
+    Unit  : constant Character := (if Image'length > 0 then Image(Image'last) else Ascii.Nul);
+    Last  : constant Natural := (if Unit in '°' | ''' | '"' then Image'last - 1 else Image'last);
+
+    type Image_Type is delta 10.0**(-2) range 0.0 .. 360.0;
+
+    The_Value : Degrees;
+
+    use type Degrees;
+
+    function Limit_Image return String is
+    begin
+      if Limit >= 1.0 then
+        return Image_Type(Limit)'image & Degree;
+      else
+        return Image_Type(Limit * 60.0)'image & ''';
+      end if;
+    end Limit_Image;
+
+  begin -- Degrees_Of
+    The_Value := Degrees(Image_Type'value (Image(Image'first .. Last)));
+    case Unit is
+    when ''' =>
+      The_Value := @ / 60.0;
+    when '"' =>
+      The_Value := @ / 3600.0;
+    when others =>
+      null;
+    end case;
+    if The_Value > Limit then
+      Error.Raise_With ("value >" & Limit_Image);
+    end if;
+    return The_Value;
+  end Degrees_Of;
 
 
   function "+" (Left  : String;

@@ -4,6 +4,7 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with Ada.IO_Exceptions;
 with AWS.Client;
 with AWS.Response;
 with GNATCOLL.JSON;
@@ -53,6 +54,10 @@ package body ENC_2302_Client is
         return The_Switches;
       end;
     end;
+  exception
+  when Ada.IO_Exceptions.Device_Error =>
+    Log.Warning ("device not available");
+    raise Not_Available;
   end Client_Get;
 
 

@@ -29,6 +29,9 @@ package Picture is
   Not_Solved      : exception renames Astap.Not_Solved;
   Undefined_Value : exception;
 
+  Maximum_Heigth : constant Angle.Degrees := 5.0;
+  Maximum_Width  : constant Angle.Degrees := 5.0;
+
   procedure Define (Name   : String;
                     Height : Angle.Degrees;
                     Width  : Angle.Degrees);

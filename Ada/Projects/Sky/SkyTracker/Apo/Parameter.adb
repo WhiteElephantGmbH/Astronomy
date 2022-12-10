@@ -24,6 +24,7 @@ with File;
 with Language;
 with Stellarium;
 with Strings;
+with Targets;
 with Text;
 with Traces;
 
@@ -158,29 +159,16 @@ package body Parameter is
   end Port_For;
 
 
-  function Angle_Of (Key  : String;
-                     Unit : String := "") return Angle.Degrees is
+  function Degrees_Of (Key     : String;
+                       Maximum : Angle.Degrees) return Angle.Degrees is
     Item : constant String := String_Of (Key);
-    use type Angle.Value;
   begin
     Log.Write (Key & ": " & Item);
-    begin
-      declare
-        Image : constant String := Image_Of (Item, Unit);
-        Value : constant Angle.Degrees := +Angle.Value_Of (Image);
-        use type Angle.Degrees;
-      begin
-        if Value <= 2.0 then
-          return Value;
-        else
-          Error.Raise_With ("value > 2 degrees");
-        end if;
-      end;
-    exception
-    when others =>
-      Error.Raise_With ("Incorrect value of " & Key & ": <" & Item & ">");
-    end;
-  end Angle_Of;
+    return Angle.Degrees_Of (Item, Maximum);
+  exception
+  when others =>
+    Error.Raise_With ("Incorrect value of " & Key & ": <" & Item & ">");
+  end Degrees_Of;
 
 
   procedure Read is
@@ -271,7 +259,7 @@ package body Parameter is
 
       Set (Stellarium_Handle);
       The_Stellarium_Port := Port_For (Stellarium_Id);
-      The_Search_Tolerance := Angle_Of (Search_Tolerance_Key);
+      The_Search_Tolerance := Degrees_Of (Search_Tolerance_Key, Targets.Maximum_Search_Tolerance);
       Startup_Stellarium;
     end Read_Values;
 

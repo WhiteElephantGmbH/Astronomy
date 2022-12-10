@@ -20,6 +20,8 @@ package ENC_2302_Client is
 
   function Switches_Of (Host : Network.Ip_Address) return Switches;
 
+  Not_Available : exception;
+
   procedure Set (The_Port   : Port;
                  The_Switch : Switch;
                  Host       : Network.Ip_Address);
