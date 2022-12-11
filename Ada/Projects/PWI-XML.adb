@@ -4,7 +4,6 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Text;
 with Traces;
 with Strings;
 
@@ -652,7 +651,7 @@ package body PWI.XML is
         if Pointing_Model = "" then
           return False;
         end if;
-        return Text.Is_Equal (Pointing_Model, Mount.Defined_Pointing_Model);
+        return Strings.Is_Equal (Pointing_Model, Mount.Defined_Pointing_Model);
       end Pointing_Model_Has_Been_Set;
 
     begin -- Parse_Mount
@@ -882,17 +881,19 @@ package body PWI.XML is
 
   package body Mount is
 
-    The_Pointing_Model : Text.String;
+    The_Pointing_Model : Strings.Element;
+
+    use type Strings.Element;
 
     procedure Define_Pointing_Model (Filename : String) is
     begin
-      The_Pointing_Model := Text.String_Of (Filename);
+      The_Pointing_Model := [Filename];
     end Define_Pointing_Model;
 
 
     function Defined_Pointing_Model return String is
     begin
-      return Text.String_Of (The_Pointing_Model);
+      return +The_Pointing_Model;
     end Defined_Pointing_Model;
 
 

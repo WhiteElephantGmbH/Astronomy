@@ -21,7 +21,6 @@ with File;
 with Norad;
 with Stellarium;
 with Strings;
-with Text;
 with Traces;
 
 package body Satellite is
@@ -229,7 +228,7 @@ package body Satellite is
     subtype Name_List is Strings.List;
 
     Is_Satellites : Boolean := False;
-    The_Name      : Text.String;
+    The_Name      : Strings.Element;
     The_Magnitude : Stellarium.Magnitude;
     The_Data      : Norad.Two_Line;
     The_Names     : Name_List;
@@ -255,7 +254,7 @@ package body Satellite is
 
     procedure Add_Name is
     begin
-      The_Name := Text.String_Of (Neo_Filename_Of (Token_Image));
+      The_Name := [Neo_Filename_Of (Token_Image)];
     end Add_Name;
 
 
@@ -281,7 +280,8 @@ package body Satellite is
 
 
     procedure Add_Satellite is
-      Filename  : constant String := Text.String_Of (The_Name);
+      use type Strings.Element;
+      Filename  : constant String := +The_Name;
       Full_Name : constant String := File.Composure (Directory, Filename, Extension);
       use type Stellarium.Magnitude;
     begin

@@ -11,7 +11,7 @@ with Network.Tcp;
 with Objects;
 with Picture;
 with Site;
-with Text;
+with Strings;
 with Time;
 with Traces;
 
@@ -46,7 +46,7 @@ package body M_Zero is
   The_Alignment   : Alignment;
   The_Target_Kind : Target_Kind;
 
-  The_Error : Text.String;
+  The_Error : Strings.Element;
 
   procedure Set_Status (Item : State) is
   begin
@@ -63,7 +63,7 @@ package body M_Zero is
 
   procedure Set_Error (Message : String) is
   begin
-    The_Error := Text.String_Of (Message);
+    The_Error := [Message];
     Log.Error (Message);
     Set_Status (Error);
   end Set_Error;
@@ -85,12 +85,13 @@ package body M_Zero is
 
 
   function Error_Message return String is
-    Message : constant String := Text.String_Of (The_Error);
+    use type Strings.Element;
+    Message : constant String := +The_Error;
   begin
     if Message = "" then
       return "No Error";
     end if;
-    Text.Clear (The_Error);
+    Strings.Clear (The_Error);
     Set_Status (Last_State);
     return Message;
   end Error_Message;

@@ -31,7 +31,6 @@ with PWI.Settings;
 with Stellarium;
 with Strings;
 with Targets;
-with Text;
 with Traces;
 
 package body Parameter is
@@ -41,6 +40,8 @@ package body Parameter is
   use type Angle.Value;
 
   package Angles is new Ada.Containers.Doubly_Linked_Lists (Angle.Value);
+
+  use type Strings.Element;
 
   Filename : constant String := Application.Composure (Application.Name, "ini");
 
@@ -82,7 +83,7 @@ package body Parameter is
   The_M3_Default_Place  : Device.M3.Place;
   The_M3_Ocular_Port    : PWI.Port;
   Fans_On               : Boolean;
-  The_Pointing_Model    : Text.String;
+  The_Pointing_Model    : Strings.Element;
 
   The_Moving_Speeds   : Angles.List;
   The_Cwe_Distance    : Angle.Degrees;
@@ -94,7 +95,7 @@ package body Parameter is
   The_Lx200_Port : Network.Port_Number;
 
   --Remote
-  The_Telescope_Name : Text.String;
+  The_Telescope_Name : Strings.Element;
   The_Remote_Address : Network.Ip_Address;
   The_Remote_Port    : Network.Port_Number;
 
@@ -521,7 +522,7 @@ package body Parameter is
         if not File.Exists (Model_File) then
           Error.Raise_With ("Pointing Model """ & Model_File & """ not found");
         end if;
-        The_Pointing_Model := Text.String_Of (Model_Name);
+        The_Pointing_Model := [Model_Name];
         Log.Write ("Pointing_Model: " & Model_Name);
       end Define_Pointing_Model;
 
@@ -557,7 +558,7 @@ package body Parameter is
       The_Lx200_Port := Port_For (Lx200_Id);
 
       Set (Remote_Handle);
-      The_Telescope_Name := Text.String_Of (String_Value_Of (Telescope_Key));
+      The_Telescope_Name := [String_Value_Of (Telescope_Key)];
       if Remote_Configured then
         Log.Write ("Telescope Name: " & Telescope_Name);
         The_Remote_Address := Ip_Address_For (Remote_Id);
@@ -659,7 +660,7 @@ package body Parameter is
 
   function Pointing_Model return String is
   begin
-    return Text.String_Of (The_Pointing_Model);
+    return +The_Pointing_Model;
   end Pointing_Model;
 
 
@@ -710,13 +711,13 @@ package body Parameter is
 
   function Remote_Configured return Boolean is
   begin
-    return not (Text.Is_Equal (Telescope_Name, "none") or Telescope_Name = "");
+    return not (Strings.Is_Equal (Telescope_Name, "none") or Telescope_Name = "");
   end Remote_Configured;
 
 
   function Telescope_Name return String is
   begin
-    return Text.String_Of (The_Telescope_Name);
+    return +The_Telescope_Name;
   end Telescope_Name;
 
 

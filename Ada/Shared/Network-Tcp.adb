@@ -7,8 +7,8 @@ pragma Style_White_Elephant;
 with Ada.Calendar;
 with Ada.Unchecked_Conversion;
 with Log;
+with Strings;
 with System;
-with Text;
 
 package body Network.Tcp is
 
@@ -461,6 +461,7 @@ package body Network.Tcp is
                             Terminator      : Character;
                             Receive_Timeout : Duration := Use_Socket_Timeout) return String is
     use type Ada.Calendar.Time;
+    use type Strings.Element;
     The_Timeout  : Duration;
     The_Deadline : Ada.Calendar.Time;
   begin
@@ -480,7 +481,7 @@ package body Network.Tcp is
     declare
       The_Data      : Data (1..1);
       The_Character : Character;
-      The_String    : Text.String;
+      The_String    : Strings.Element;
       function Convert is new Ada.Unchecked_Conversion (Data_Item, Character);
     begin
       loop
@@ -492,10 +493,10 @@ package body Network.Tcp is
           raise Timeout;
         end if;
         The_Character := Convert(The_Data(The_Data'first));
-        Text.Append_To (The_String, The_Character);
+        Strings.Append (The_String, The_Character);
         exit when The_Character = Terminator;
       end loop;
-      return Text.String_Of (The_String);
+      return +The_String;
     end;
   end Raw_String_From;
 

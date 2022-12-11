@@ -30,7 +30,6 @@ with Picture;
 with Site;
 with Strings;
 with Targets;
-with Text;
 with Traces;
 with User;
 
@@ -86,7 +85,7 @@ package body Parameter is
   --Telescope
   Datagram_Port : constant := 44422;
 
-  The_Telescope_Name       : Text.String;
+  The_Telescope_Name       : Strings.Element;
   Is_Synch_On_Targets      : Boolean;
   Is_Expert_Mode           : Boolean;
   The_Steps_Per_Revolution : Device.Steps_Per_Revolution;
@@ -458,7 +457,7 @@ package body Parameter is
           Error.Raise_With ("The steps per revolution are defined more then once");
         end if;
         if The_Telescope_Connection.Kind = Is_Simulated then
-          Text.Append_To (The_Telescope_Name, " Simulation");
+          Strings.Append (The_Telescope_Name, " Simulation");
           Log.Write ("Telescope Simulation");
         end if;
         Motor.Connect_Communication;
@@ -484,7 +483,7 @@ package body Parameter is
       Standard.Language.Define (Language);
 
       Set (Telescope_Handle);
-      The_Telescope_Name := Text.String_Of (String_Value_Of ("Name"));
+      The_Telescope_Name := [String_Value_Of ("Name")];
       Log.Write ("Name: " & Telescope_Name);
       Is_Expert_Mode := Strings.Lowercase_Of (String_Of (Expert_Mode_Key)) = "true";
       Connect_Telescope;
@@ -554,8 +553,9 @@ package body Parameter is
   ---------------
 
   function Telescope_Name return String is
+    use type Strings.Element;
   begin
-    return Text.String_Of (The_Telescope_Name);
+    return +The_Telescope_Name;
   end Telescope_Name;
 
 

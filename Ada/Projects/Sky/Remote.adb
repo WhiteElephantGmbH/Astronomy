@@ -19,7 +19,6 @@ with AWS.Client;
 with AWS.Response;
 with Persistent_String;
 with Strings;
-with Text;
 with Traces;
 
 package body Remote is
@@ -133,13 +132,15 @@ package body Remote is
 
   task body Handler is
 
-     The_Telescope_Name : Text.String;
+     The_Telescope_Name : Strings.Element;
      The_Remote_Address : Network.Ip_Address;
      The_Remote_Port    : Network.Port_Number;
 
+     use type Strings.Element;
+
     procedure Send (Info : String) is
 
-      Telescope_Name : constant String := Text.String_Of (The_Telescope_Name);
+      Telescope_Name : constant String := +The_Telescope_Name;
       Remote_Address : constant String := Network.Image_Of (The_Remote_Address);
       Remote_Port    : constant String := Network.Image_Of (The_Remote_Port);
       Parameters     : constant String := "?tele=" & Telescope_Name & "&" & Info;
@@ -185,14 +186,14 @@ package body Remote is
     The_State          : Telescope_State := Unknown;
     Is_Cleared         : Boolean := True;
     The_Actual_Command : Command;
-    The_Actual_Target  : Text.String;
+    The_Actual_Target  : Strings.Element;
 
     procedure Send_Actual (Clear : Boolean := False) is
     begin
       if The_State = On_Target then
         if Clear or Is_Cleared then
           Is_Cleared := False;
-          Send ("target=" & Text.String_Of (The_Actual_Target));
+          Send ("target=" & The_Actual_Target);
         end if;
       elsif Clear then
         Send ("target=");
@@ -205,7 +206,7 @@ package body Remote is
                   Ip_Address     : Network.Ip_Address;
                   Port           : Network.Port_Number)
     do
-      The_Telescope_Name := Text.String_Of (Telescope_Name);
+      The_Telescope_Name := [Telescope_Name];
       The_Remote_Address := Ip_Address;
       The_Remote_Port := Port;
     end Start;
@@ -230,7 +231,7 @@ package body Remote is
         Send_Actual;
       or
         accept Define (Target : String) do
-          The_Actual_Target := Text.String_Of (Target);
+          The_Actual_Target := [Target];
         end Define;
       or
         accept Close;

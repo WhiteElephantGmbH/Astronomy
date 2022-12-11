@@ -16,7 +16,6 @@
 pragma Style_White_Elephant;
 
 with Ada.Text_IO;
-with Text;
 
 package body Configuration is
 
@@ -24,7 +23,7 @@ package body Configuration is
                           In_File : File_Handle) return Section is
   begin
     for The_Section of In_File.all loop
-      if Text.Is_Equal (The_Section.Name, Name) then
+      if Strings.Is_Equal (The_Section.Name, Name) then
         return The_Section;
       end if;
     end loop;
@@ -39,7 +38,7 @@ package body Configuration is
                        In_Section : Section_Handle) return Item is
   begin
     for The_Item of In_Section.all loop
-      if Text.Is_Equal (The_Item.Key, Key) then
+      if Strings.Is_Equal (The_Item.Key, Key) then
         return The_Item;
       end if;
     end loop;
@@ -99,9 +98,9 @@ package body Configuration is
                 The_Handle.Append (The_Section);
               end if;
               declare
-                Separator_Index : constant Natural := Text.Location_Of ('=', Line);
+                Separator_Index : constant Natural := Strings.Location_Of ('=', Line);
               begin
-                if Separator_Index = Text.Not_Found then
+                if Separator_Index = Strings.Not_Found then
                   exit;
                 else
                   declare

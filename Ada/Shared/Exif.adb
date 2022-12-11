@@ -18,16 +18,17 @@ pragma Style_White_Elephant;
 with GNAT.OS_Lib;
 with System;
 with Strings;
-with Text;
 with Traces;
 
 package body Exif is
 
   package Log is new Traces ("Exif");
 
+  use type Strings.Element;
+
   The_Orientation : Image_Orientation := Undefined;
 
-  The_Date_Time_Digitized : Text.String;
+  The_Date_Time_Digitized : Strings.Element;
 
   The_Image_Width  : Size := Undefined_Size;
   The_Image_Height : Size := Undefined_Size;
@@ -113,7 +114,7 @@ package body Exif is
 
   function Date_Time_Digitized return String is
   begin
-    return Text.String_Of (The_Date_Time_Digitized);
+    return +The_Date_Time_Digitized;
   end Date_Time_Digitized;
 
 
@@ -423,7 +424,7 @@ package body Exif is
             declare
               Date_Time : constant String := String_Of (Sub_Entry);
             begin
-              The_Date_Time_Digitized := Text.String_Of (Date_Time);
+              The_Date_Time_Digitized := [Date_Time];
               Log.Write ("Date Time    : " & Date_Time);
             end;
           when Exif_Image_Width_Tag =>
@@ -582,7 +583,7 @@ package body Exif is
       The_Longitude := Undefined_Values;
       The_Time_Stamp := Undefined_Values;
       The_Date_Stamp := Undefined_Date;
-      Text.Clear (The_Date_Time_Digitized);
+      Strings.Clear (The_Date_Time_Digitized);
       if File = OS.Invalid_FD then
         raise File_Not_Found;
       end if;

@@ -13,7 +13,6 @@ with Os.Horizon;
 with Site;
 with Stellarium; pragma Unreferenced (Stellarium); -- imported to define site location
 with Strings;
-with Text;
 with Traces;
 
 package body Request is
@@ -112,37 +111,38 @@ package body Request is
           return Data(The_First..Data'last);
         end Next_Line;
 
-        The_Target_Name : Text.String;
+        The_Target_Name : Strings.Element;
 
         procedure Evaluate_Target_Name (Item : String) is
           Is_Natural : Boolean := False;
         begin
-          Text.Clear (The_Target_Name);
+          Strings.Clear (The_Target_Name);
           for The_Character of Item loop
             case The_Character is
             when '0' .. '9' =>
               Is_Natural := True;
-              Text.Append_To (The_Target_Name, The_Character);
+              Strings.Append (The_Target_Name, The_Character);
             when ' ' =>
               if Is_Natural then
                 Is_Natural := False;
-                Text.Clear (The_Target_Name);
+                Strings.Clear (The_Target_Name);
               else
                 exit;
               end if;
             when '/' =>
               Is_Natural := False;
-              Text.Append_To (The_Target_Name, '-');
+              Strings.Append (The_Target_Name, '-');
             when others =>
               Is_Natural := False;
-              Text.Append_To (The_Target_Name, The_Character);
+              Strings.Append (The_Target_Name, The_Character);
             end case;
           end loop;
         end Evaluate_Target_Name;
 
         function Filename return String is
+          use type Strings.Element;
         begin
-          return Text.String_Of (The_Target_Name) & ".sssb";
+          return The_Target_Name & ".sssb";
         end Filename;
 
         The_File : IO.File_Type;

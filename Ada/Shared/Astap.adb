@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                               (c) 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                           (c) 2021 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                      *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -18,15 +18,17 @@ pragma Style_White_Elephant;
 with Configuration;
 with File;
 with Os.Process;
-with Text;
+with Strings;
 with Traces;
 
 package body Astap is
 
   package Log is new Traces ("Astap");
 
-  The_Executable : Text.String;
-  The_Filename   : Text.String; -- without extension
+  use type Strings.Element;
+
+  The_Executable : Strings.Element;
+  The_Filename   : Strings.Element; -- without extension
   The_Process_Id : Os.Process.Id;
 
   Is_Solving : Boolean := False;
@@ -43,19 +45,19 @@ package body Astap is
 
   function Fits_Filename return String is
   begin
-    return Text.String_Of (The_Filename) & ".CR2.fits";
+    return The_Filename & ".CR2.fits";
   end Fits_Filename;
 
 
   function Result_Filename return String is
   begin
-    return Text.String_Of (The_Filename) & ".ini";
+    return The_Filename & ".ini";
   end Result_Filename;
 
 
   function Wcs_Filename return String is
   begin
-    return Text.String_Of (The_Filename) & ".wcs";
+    return The_Filename & ".wcs";
   end Wcs_Filename;
 
 
@@ -72,7 +74,7 @@ package body Astap is
 
   procedure Define (Executable : String) is
   begin
-    The_Executable := Text.String_Of (Executable);
+    The_Executable := [Executable];
   end Define;
 
 
@@ -104,7 +106,7 @@ package body Astap is
     end Spd_Image;
 
     Height_Image : constant String := Value(Height)'image;
-    Executable   : constant String := Text.String_Of (The_Executable);
+    Executable   : constant String := +The_Executable;
     Parameters   : constant String
       := "-f " & Filename & " -ra" & Ra_Image & " -spd" & Spd_Image & " -fov" & Height_Image & " -r 180 -o " & Filename;
 
@@ -114,7 +116,7 @@ package body Astap is
       raise Not_Solved;
     end if;
     Log.Write ("Parameters: " & Parameters);
-    The_Filename := Text.String_Of (Name);
+    The_Filename := [Name];
     Cleanup;
     The_Process_Id := Os.Process.Created (Executable     => Executable,
                                           Parameters     => Parameters,

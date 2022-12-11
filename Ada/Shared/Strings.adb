@@ -33,6 +33,45 @@ package body Strings is
   White_Space : constant Map.Character_Set := Map.To_Set (Space & Ascii.Ht & Ascii.Cr & Ascii.Lf);
 
 
+  procedure Set (The_Element : in out Element;
+                 New_Item    :        String) is
+  begin
+    The_Element := To_Unbounded_String (New_Item);
+  end Set;
+
+
+  function Is_Null (The_Element : Element) return Boolean is
+  begin
+    return The_Element = Empty_Element;
+  end Is_Null;
+
+
+  procedure Clear (The_Element : in out Element) is
+  begin
+    The_Element := Empty_Element;
+  end Clear;
+
+
+  function "+" (The_Element : Element) return String is
+  begin
+    return To_String (The_Element);
+  end "+";
+
+
+  function "&" (Left  : String;
+                Right : Element) return String is
+  begin
+    return Left & To_String (Right);
+  end "&";
+
+
+  function "&" (Left  : Element;
+                Right : String) return String is
+  begin
+    return To_String (Left) & Right;
+  end "&";
+
+
   procedure Append (Container : in out List;
                     New_Item  :        String) is
   begin

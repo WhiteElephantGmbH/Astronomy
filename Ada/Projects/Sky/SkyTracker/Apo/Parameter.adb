@@ -25,7 +25,6 @@ with Language;
 with Stellarium;
 with Strings;
 with Targets;
-with Text;
 with Traces;
 
 package body Parameter is
@@ -56,7 +55,7 @@ package body Parameter is
   The_10_Micron_Port       : Network.Port_Number;
 
   --Remote
-  The_Telescope_Name : Text.String;
+  The_Telescope_Name : Strings.Element;
   The_Remote_Address : Network.Ip_Address;
   The_Remote_Port    : Network.Port_Number;
 
@@ -250,7 +249,7 @@ package body Parameter is
       The_10_Micron_Port := Port_For (Ten_Micron_Id);
 
       Set (Remote_Handle);
-      The_Telescope_Name := Text.String_Of (String_Value_Of (Telescope_Key));
+      The_Telescope_Name := [String_Value_Of (Telescope_Key)];
       if Remote_Configured then
         Log.Write ("Telescope Name: " & Telescope_Name);
         The_Remote_Address := Ip_Address_For (Remote_Id);
@@ -299,13 +298,14 @@ package body Parameter is
 
   function Remote_Configured return Boolean is
   begin
-    return not (Text.Is_Equal (Telescope_Name, "none") or Telescope_Name = "");
+    return not (Strings.Is_Equal (Telescope_Name, "none") or Telescope_Name = "");
   end Remote_Configured;
 
 
   function Telescope_Name return String is
+    use type Strings.Element;
   begin
-    return Text.String_Of (The_Telescope_Name);
+    return +The_Telescope_Name;
   end Telescope_Name;
 
 

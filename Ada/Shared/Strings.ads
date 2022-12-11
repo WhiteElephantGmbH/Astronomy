@@ -20,10 +20,33 @@ with Ada.Containers.Indefinite_Doubly_Linked_Lists;
 with Ada.Iterator_Interfaces;
 with Ada.Strings.Equal_Case_Insensitive;
 with Ada.Strings.Text_Buffers;
+with Ada.Strings.Unbounded;
 with Ada.Strings.UTF_Encoding;
 with Ada.Text_IO;
 
 package Strings is
+
+  type Element is new Ada.Strings.Unbounded.Unbounded_String
+    with Aggregate => (Empty       => Empty_Element,
+                       Add_Unnamed => Set);
+
+  Empty_Element : constant Element;
+
+  procedure Set (The_Element : in out Element;
+                 New_Item    :        String) with Inline;
+
+  function Is_Null (The_Element : Element) return Boolean with Inline;
+
+  procedure Clear (The_Element : in out Element) with Inline;
+
+  function "+" (The_Element : Element) return String with Inline;
+
+  function "&" (Left  : String;
+                Right : Element) return String with Inline;
+
+  function "&" (Left  : Element;
+                Right : String) return String with Inline;
+
 
   package Linked_Strings is new Ada.Containers.Indefinite_Doubly_Linked_Lists (String);
 
@@ -39,6 +62,7 @@ package Strings is
 
   procedure Put_Image (S : in out Ada.Strings.Text_Buffers.Root_Buffer_Type'class;
                        V : List);
+
 
   function Is_Equal (Left, Right : String) return Boolean renames Ada.Strings.Equal_Case_Insensitive;
 
@@ -244,6 +268,8 @@ package Strings is
   function To_Trimmed_List (The_Item : Item'class) return List;
 
 private
+
+  Empty_Element : constant Element := Element(Ada.Strings.Unbounded.Null_Unbounded_String);
 
   type List is new Linked_Strings.List with null record;
 

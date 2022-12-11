@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                               (c) 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                           (c) 2021 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                      *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -19,14 +19,14 @@ with Ada.Calendar;
 with Astro;
 with File;
 with Site;
-with Text;
+with Strings;
 with Traces;
 
 package body Picture is
 
   package Log is new Traces ("Picture");
 
-  The_Filename : Text.String;
+  The_Filename : Strings.Element;
   The_Height   : Angle.Degrees;
   The_Width    : Angle.Degrees;
 
@@ -35,15 +35,16 @@ package body Picture is
                     Height : Angle.Degrees;
                     Width  : Angle.Degrees) is
   begin
-    The_Filename := Text.String_Of (Name);
+    The_Filename := [Name];
     The_Height := Height;
     The_Width := Width;
   end Define;
 
 
   function Filename return String is
+    use type Strings.Element;
   begin
-    return Text.String_Of (The_Filename);
+    return +The_Filename;
   end Filename;
 
 

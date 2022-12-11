@@ -18,7 +18,6 @@ pragma Style_White_Elephant;
 with Ada.Unchecked_Conversion;
 with Error;
 with Strings;
-with Text;
 
 package body Angle is
 
@@ -226,6 +225,7 @@ package body Angle is
                      Show_Signed : Boolean := False) return String is
 
     use type Degrees;
+    use type Strings.Element;
 
     Factor : constant Seconds := Seconds(Degrees'(10.0 ** Natural(Decimals)));
 
@@ -238,7 +238,7 @@ package body Angle is
     Half_Circle : constant := Full_Circle / 2;
 
     The_Seconds  : Seconds := Seconds(Degrees'(+The_Value) * One_Degree);
-    The_Text     : Text.String;
+    The_Text     : Strings.Element;
     The_Number   : Natural;
     The_Minutes  : Natural;
     The_Fraction : Seconds;
@@ -247,9 +247,9 @@ package body Angle is
     if Show_Signed then
       if The_Seconds > Half_Circle then
         The_Seconds := Full_Circle - The_Seconds;
-        Text.Append_To (The_Text, '-');
+        Strings.Append (The_Text, '-');
       else
-        Text.Append_To (The_Text, '+');
+        Strings.Append (The_Text, '+');
       end if;
     end if;
     if Unit = In_Hours then
@@ -262,26 +262,26 @@ package body Angle is
     The_Number := @ / 60;
     The_Minutes := The_Number mod 60;
     The_Number := @ / 60;
-    Text.Append_To (The_Text, Text.Trimmed(The_Number'img) & Actual_Units(First));
+    Strings.Append (The_Text, Strings.Trimmed(The_Number'img) & Actual_Units(First));
     if The_Minutes < 10 then
-      Text.Append_To (The_Text, '0');
+      Strings.Append (The_Text, '0');
     end if;
-    Text.Append_To (The_Text, Text.Trimmed(The_Minutes'img) & Actual_Units(Minute));
+    Strings.Append (The_Text, Strings.Trimmed(The_Minutes'img) & Actual_Units(Minute));
     if The_Seconds < 10.0 then
-      Text.Append_To (The_Text, '0');
+      Strings.Append (The_Text, '0');
     end if;
     case Decimals is
     when 0 =>
-      Text.Append_To (The_Text, String'(Text.Trimmed(Natural(The_Seconds)'img)));
+      Strings.Append (The_Text, String'(Strings.Trimmed(Natural(The_Seconds)'img)));
     when 1 =>
-      Text.Append_To (The_Text, String'(Text.Trimmed(Decimals_1'image(The_Seconds))));
+      Strings.Append (The_Text, String'(Strings.Trimmed(Decimals_1'image(The_Seconds))));
     when 2 =>
-      Text.Append_To (The_Text, String'(Text.Trimmed(Decimals_2'image(The_Seconds))));
+      Strings.Append (The_Text, String'(Strings.Trimmed(Decimals_2'image(The_Seconds))));
     when 3 =>
-      Text.Append_To (The_Text, String'(Text.Trimmed(Decimals_3'image(The_Seconds))));
+      Strings.Append (The_Text, String'(Strings.Trimmed(Decimals_3'image(The_Seconds))));
     end case;
-    Text.Append_To (The_Text, Actual_Units(Second));
-    return Strings.Utf8_Of (Text.String_Of (The_Text));
+    Strings.Append (The_Text, Actual_Units(Second));
+    return Strings.Utf8_Of (+The_Text);
   end Image_Of;
 
 

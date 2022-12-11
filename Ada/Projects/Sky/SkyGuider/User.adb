@@ -36,7 +36,6 @@ with Site;
 with Space;
 with Strings;
 with Targets;
-with Text;
 with Time;
 with Traces;
 
@@ -89,7 +88,9 @@ package body User is
     Temperature  : Refraction.Celsius;
   end record;
 
-  The_Error_Text : Text.String;
+  The_Error_Text : Strings.Element;
+
+  use type Strings.Element;
 
   package Persistent_Setup is new Persistent (Setup_Data_Storage, "Setup");
 
@@ -226,14 +227,14 @@ package body User is
 
   procedure Show_Error (The_Text : String := Error.Message) is
   begin
-    The_Error_Text := Text.String_Of (The_Text);
+    The_Error_Text := [The_Text];
     Gui.Beep;
   end Show_Error;
 
 
   procedure Clear_Error is
   begin
-    Text.Clear (The_Error_Text);
+    Strings.Clear (The_Error_Text);
   end Clear_Error;
 
 
@@ -327,10 +328,10 @@ package body User is
     use type Telescope.State;
 
   begin -- Show
-    if not Text.Is_Null (The_Error_Text) then
+    if not Strings.Is_Null (The_Error_Text) then
       Gui.Set_Text (First_Control_Button, "Reset");
       Gui.Set_Text (Clear_Button, "Reset");
-      Gui.Set_Status_Line ("ERROR - " & Text.String_Of (The_Error_Text));
+      Gui.Set_Status_Line ("ERROR - " & The_Error_Text);
       Gui.Enable (First_Control_Button);
       Gui.Enable (Clear_Button);
       return;

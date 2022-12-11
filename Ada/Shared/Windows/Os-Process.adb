@@ -16,7 +16,7 @@
 pragma Style_White_Elephant;
 
 with Log;
-with Text;
+with Strings;
 with Win32.Winbase;
 with Win32.Winerror;
 with Win32.Winnt;
@@ -221,7 +221,7 @@ package body Os.Process is
     The_Data     : String (1..1000);
     The_Length   : aliased Win32.DWORD;
     Unused       : Win32.BOOL;
-    The_Result   : Text.String;
+    The_Result   : Strings.Element;
 
     use type Win32.BOOL;
     use type Win32.DWORD;
@@ -244,7 +244,9 @@ package body Os.Process is
       end if;
     end Standard_Output;
 
-  begin
+    use type Strings.Element;
+
+  begin -- Execution_Of
     Security.nLength             := Win32.DWORD (Base.SECURITY_ATTRIBUTES'size / 8);
     Security.lpSecurityDescriptor:= System.Null_Address;
     Security.bInheritHandle      := Win32.TRUE;
@@ -289,11 +291,11 @@ package body Os.Process is
         Log.Write ("!!! Process.Readfile Error =" & Win32.DWORD'image(Base.GetLastError));
         raise Execution_Failed;
       else
-        Text.Append_To (The_Result, The_Data (The_Data'first .. The_Data'first + Natural(The_Length) - 1));
+        Strings.Append (The_Result, The_Data (The_Data'first .. The_Data'first + Natural(The_Length) - 1));
       end if;
     end loop;
     Unused := Base.CloseHandle (Inbound); -- No longer used
-    return Text.String_Of(The_Result);
+    return +The_Result;
 
   exception
   when Execution_Failed =>

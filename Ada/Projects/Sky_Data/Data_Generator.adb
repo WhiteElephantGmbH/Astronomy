@@ -19,7 +19,6 @@ with Ada.IO_Exceptions;
 with Ada.Text_IO;
 with GNAT.Traceback.Symbolic;
 with Strings;
-with Text;
 
 package body Data_Generator is
 
@@ -131,7 +130,7 @@ package body Data_Generator is
 
     The_Object        : Object := Undefined;
     The_Actual_Object : Object := Undefined;
-    The_Name          : Text.String;
+    The_Name          : Strings.Element;
 
     type Header is (Id_1, Id_2, Id_3, Id_4, Id_5, Id_6, Object_Kind, Loc_J2000, Pm, Vmag);
 
@@ -181,17 +180,17 @@ package body Data_Generator is
             return Value_Of (Actual_Parts(Strings.First_Index + 1));
           end Index;
 
-        begin
+        begin -- Get_Actual_For
           if Actual_Parts.Count > 1 then
             declare
               Catalog : constant String := Strings.Trimmed (Actual_Parts(Strings.First_Index));
             begin
               if Catalog = "NAME" then
-                Text.Clear (The_Name);
+                Strings.Clear (The_Name);
                 for The_Index in Strings.First_Index + 1 .. Actual_Parts.Count loop
-                  Text.Append_To (The_Name, Strings.Legible_Of (Actual_Parts(The_Index)));
+                  Strings.Append (The_Name, Strings.Legible_Of (Actual_Parts(The_Index)));
                   if The_Index < Actual_Parts.Count then
-                    Text.Append_To (The_Name, ' ');
+                    Strings.Append (The_Name, ' ');
                   end if;
                 end loop;
               elsif Actual_Parts.Count = 2 then
@@ -232,7 +231,7 @@ package body Data_Generator is
             raise Unknown_Index;
           end Index;
 
-        begin
+        begin -- Handle
           if The_Parts.Count = 2 then
             declare
               Catalog : constant String := Strings.Trimmed (The_Parts(Strings.First_Index));
@@ -273,8 +272,10 @@ package body Data_Generator is
           return Strings.Location_Of (Item, Strings.Lowercase_Of (Description)) /= Strings.Not_Found;
         end Found;
 
+        use type Strings.Element;
+
       begin
-        Text.Clear (The_Name);
+        Strings.Clear (The_Name);
         Get_Actual_For (Id_1);
         Get_Actual_For (Id_2);
         Get_Actual_For (Id_3);
@@ -283,7 +284,7 @@ package body Data_Generator is
         Get_Actual_For (Id_6);
         if The_Actual_Object = Undefined then -- new Object
           The_Actual_Object := The_Object;
-          Object_Info.Name := new String'(Text.String_Of (The_Name));
+          Object_Info.Name := new String'(+The_Name);
           Object_Info.Descriptor := new String'(Description);
           Object_Info.Ra_J2000 := Degrees'value((Loc_Parts(Strings.First_Index)));
           Object_Info.Dec_J2000 := Degrees'value((Loc_Parts(Strings.First_Index + 1)));
