@@ -64,7 +64,7 @@ package body M_Zero is
   procedure Set_Error (Message : String) is
   begin
     The_Error := [Message];
-    Log.Error (Message);
+    Log.Warning (Message);
     Set_Status (Error);
   end Set_Error;
 
@@ -331,8 +331,11 @@ package body M_Zero is
                                               The_Protocol    => Socket_Protocol,
                                               Receive_Timeout => Receive_Timeout);
       exception
+      when Network.Not_Found =>
+        Raise_Error ("M-Zero not connected");
       when Item: others =>
-        Raise_Error ("M-Zero " & Network.Exception_Kind (Item)'image);
+        Log.Termination (Item);
+        Raise_Error (Network.Exception_Kind (Item)'image);
       end;
       if Reply_For (Lx200.Get_Product_Name) = Product_Name and then
          Reply_For (Lx200.Get_Firmware_Number) = Firmware_Number

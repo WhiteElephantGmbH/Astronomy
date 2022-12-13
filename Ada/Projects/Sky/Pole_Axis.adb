@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2021 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2021 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -48,6 +48,8 @@ package body Pole_Axis is
       raise Picture_Not_Solved;
     end if;
   exception
+  when Picture_Not_Solved =>
+    raise;
   when Picture.File_Not_Found =>
     raise Picture_Not_Found;
   when Picture.Not_Solved =>

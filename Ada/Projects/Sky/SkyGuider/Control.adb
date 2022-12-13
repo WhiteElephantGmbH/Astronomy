@@ -494,6 +494,7 @@ package body Control is
     User.Execute (Startup'access,
                   User_Action_Handler'access,
                   Termination'access);
+    Stellarium.Shutdown;
   exception
   when Occurrence: others =>
     Log.Termination (Occurrence);

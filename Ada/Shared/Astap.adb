@@ -74,6 +74,7 @@ package body Astap is
 
   procedure Define (Executable : String) is
   begin
+    Log.Write ("Executable: " & Executable);
     The_Executable := [Executable];
   end Define;
 
@@ -127,6 +128,10 @@ package body Astap is
     Cleanup;
     Log.Warning ("Not solution for " & Filename);
     raise;
+  when Os.Process.Creation_Failure =>
+    Cleanup;
+    Log.Error ("Process creation failed for " & Executable);
+    raise Not_Solved;
   when Item: others =>
     Log.Termination (Item);
     raise Not_Solved;

@@ -433,15 +433,16 @@ package body User is
       end if;
       Gui.Set_Text (Moving_Rate, Strings.Legible_Of (Information.Actual_Moving_Rate'image));
     when Is_Setup =>
-      if Site.Is_Defined then
+      begin
         Gui.Set_Text (Longitude, Angle.Image_Of (Site.Longitude));
         Gui.Set_Text (Latitude, Angle.Image_Of (Site.Latitude, Show_Signed => True));
         Gui.Set_Text (Elevation, Strings.Trimmed (Site.Elevation'img) & 'm');
-      else
+      exception
+      when Site.Not_Defined =>
         Gui.Set_Text (Longitude, "");
         Gui.Set_Text (Latitude, "");
         Gui.Set_Text (Elevation, "");
-      end if;
+      end;
       if Information.Cone_Error = Angle.Zero then
         Gui.Set_Text (Cone_Error, "");
       else
