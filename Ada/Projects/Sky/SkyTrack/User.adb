@@ -35,7 +35,6 @@ with Motor;
 with Objects;
 with Parameter;
 with Persistent;
-with Picture;
 with Pole_Axis;
 with Refraction;
 with Sky_Line;
@@ -1114,13 +1113,13 @@ package body User is
   begin -- Handle_First_Setup_Button
     case The_Operation is
     when Get_Pole_Top =>
-      Pole_Axis.Evaluate_Pole_Top;
+      Pole_Axis.Evaluate_Top;
       Gui.Enable (Second_Setup_Button);
     when Get_Pole_Left =>
-      Pole_Axis.Evaluate_Pole_Left;
+      Pole_Axis.Evaluate_Left;
       Gui.Enable (Second_Setup_Button);
     when Get_Pole_Right =>
-      Pole_Axis.Evaluate_Pole_Right;
+      Pole_Axis.Evaluate_Right;
       Gui.Enable (Second_Setup_Button);
     when Set_Sky_Line =>
       Sky_Line.Add (The_Actual_Direction);
@@ -1189,10 +1188,6 @@ package body User is
       Gui.Disable (First_Setup_Button);
     end case;
   exception
-  when Pole_Axis.Picture_Not_Found =>
-    Show_Error ("Picture " & Picture.Filename & " not found");
-  when Pole_Axis.Picture_Not_Solved =>
-    Show_Error ("Picture not solved");
   when others =>
     Log.Error ("Handle_First_Setup_Button");
   end Handle_First_Setup_Button;
@@ -1274,7 +1269,6 @@ package body User is
     Catalog_Menu.Enable;
     Selection_Menu.Enable;
     Gui.Enable_Key_Handler;
-    Gui.Clear_Focus;
   end Enter_Control_Page;
 
 
@@ -1284,7 +1278,6 @@ package body User is
     Catalog_Menu.Disable;
     Selection_Menu.Disable;
     Gui.Enable_Key_Handler;
-    Gui.Clear_Focus;
   exception
   when others =>
     Log.Error ("Enter_Display_Page failed");
@@ -1727,7 +1720,6 @@ package body User is
         Define_Setup_Page;
       end if;
       Gui.Enable_Key_Handler;
-      Gui.Show;
       The_Startup_Handler.all;
     exception
     when Item: others =>

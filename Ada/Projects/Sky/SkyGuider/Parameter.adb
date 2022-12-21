@@ -43,16 +43,15 @@ package body Parameter is
   Search_Tolerance_Key : constant String := "Search Tolerance";
 
   M_Zero_Id      : constant String := "M-Zero";
-  Picture_Id     : constant String := "Picture";
   Ip_Address_Key : constant String := "IP Address";
   Port_Key       : constant String := "Port";
+  Program_Key    : constant String := "Program";
+
+  Picture_Id     : constant String := "Picture";
   Astap_Key      : constant String := "ASTAP";
   Filename_Key   : constant String := "Filename";
   Height_Key     : constant String := "Height";
   Width_Key      : constant String := "Width";
-  Program_Key    : constant String := "Program";
-
-  Degree_Unit : constant String := "°";
 
   The_Section : Configuration.Section_Handle;
 
@@ -192,8 +191,8 @@ package body Parameter is
       Put ("[" & Picture_Id & "]");
       Put (Astap_Key & "    = " & Default_Astap_Executable);
       Put (Filename_Key & " = " & Default_Picture_Filename);
-      Put (Height_Key & "   = 2.97" & Degree_Unit);
-      Put (Width_Key & "    = 4.46" & Degree_Unit);
+      Put (Height_Key & "   = 2.97" & Angle.Degree);
+      Put (Width_Key & "    = 4.46" & Angle.Degree);
       Put ("");
       Put ("[" & Stellarium_Id & "]");
       Put (Port_Key & "             = 10001");
@@ -261,6 +260,7 @@ package body Parameter is
       when others =>
         Error.Raise_With ("M-Zero port number out of range");
       end;
+
       Set (Picture_Handle);
       Astap.Define (Executable => Filename_Of (Astap_Key));
       Picture.Define (Name   => String_Of (Filename_Key),

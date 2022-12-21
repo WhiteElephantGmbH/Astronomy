@@ -15,6 +15,8 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with Angle;
+with Earth;
 with Name;
 with Space;
 with Ten_Micron;
@@ -31,6 +33,9 @@ package Telescope is
     Target_Direction   : Space.Direction;
     Actual_Direction   : Space.Direction;
     Actual_Position    : Space.Direction;
+    Picture_Direction  : Space.Direction;
+    Cone_Error         : Angle.Value := Angle.Zero;
+    Pole_Offsets       : Earth.Direction;
     Universal_Time     : Time.Ut;
   end record;
 
@@ -42,7 +47,15 @@ package Telescope is
 
   procedure Define_Space_Access (Get_Direction : Get_Space_Access;
                                  The_Id        : Name.Id);
+  procedure Align;
+
   procedure Go_To;
+
+  procedure Go_To_Left;
+
+  procedure Go_To_Right;
+
+  procedure Go_To_Top;
 
   procedure Park;
 

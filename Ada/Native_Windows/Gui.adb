@@ -556,18 +556,6 @@ package body Gui is
   end Set_Window_Metrics;
 
 
-  procedure Clear_Focus is
-  begin
-    null;
-  end Clear_Focus;
-
-
-  procedure Show is
-  begin
-    null;
-  end Show;
-
-
   --
   -- Routines and definitions missing from Win32.Winuser
   --

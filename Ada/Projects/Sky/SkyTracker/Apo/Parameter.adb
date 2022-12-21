@@ -18,10 +18,12 @@ pragma Style_White_Elephant;
 with Ada.Text_IO;
 with Angle;
 with Application;
+with Astap;
 with Configuration;
 with Error;
 with File;
 with Language;
+with Picture;
 with Stellarium;
 with Strings;
 with Targets;
@@ -47,6 +49,12 @@ package body Parameter is
   Ip_Address_Key  : constant String := "IP Address";
   Port_Key        : constant String := "Port";
 
+  Astap_Key      : constant String := "ASTAP";
+  Filename_Key   : constant String := "Filename";
+  Picture_Id     : constant String := "Picture";
+  Height_Key     : constant String := "Height";
+  Width_Key      : constant String := "Width";
+
   The_Section : Configuration.Section_Handle;
 
   -- 10micron
@@ -62,6 +70,18 @@ package body Parameter is
   -- Stellarium
   The_Stellarium_Port  : Network.Port_Number;
   The_Search_Tolerance : Space.Distance;
+
+
+  function Default_Astap_Executable return String is
+  begin
+    return "C:\Program Files\astap\astap.exe";
+  end Default_Astap_Executable;
+
+
+  function Default_Picture_Filename return String is
+  begin
+    return "D:\temp\Picture.jpeg";
+  end Default_Picture_Filename;
 
 
   procedure Set (Section : Configuration.Section_Handle) is
@@ -170,6 +190,16 @@ package body Parameter is
   end Degrees_Of;
 
 
+  function Filename_Of (Key : String) return String is
+    Name : constant String := String_Of (Key);
+  begin
+    if not File.Exists (Name) then
+      Error.Raise_With ("Filename " & Name & " not found for " & Key);
+    end if;
+    return Name;
+  end Filename_Of;
+
+
   procedure Read is
 
     procedure Create_Default_Parameters is
@@ -201,6 +231,12 @@ package body Parameter is
       Put (Ip_Address_Key & " = 217.160.64.198");
       Put (Port_Key & "       = 5000");
       Put ("");
+      Put ("[" & Picture_Id & "]");
+      Put (Astap_Key & "    = " & Default_Astap_Executable);
+      Put (Filename_Key & " = " & Default_Picture_Filename);
+      Put (Height_Key & "   = 2.97" & Angle.Degree);
+      Put (Width_Key & "    = 4.46" & Angle.Degree);
+      Put ("");
       Put ("[" & Stellarium_Id & "]");
       Put (Port_Key & "             = 10001");
       Put (Program_Key & "          = C:\Program Files\Stellarium\Stellarium.exe");
@@ -220,6 +256,7 @@ package body Parameter is
 
       Handle              : constant Configuration.File_Handle    := Configuration.Handle_For (Filename);
       Ten_Micron_Handle   : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Ten_Micron_Id);
+      Picture_Handle      : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Picture_Id);
       Remote_Handle       : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Remote_Id);
       Stellarium_Handle   : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Stellarium_Id);
       Localization_Handle : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Localization_Id);
@@ -255,6 +292,12 @@ package body Parameter is
         The_Remote_Address := Ip_Address_For (Remote_Id);
         The_Remote_Port := Port_For (Remote_Id);
       end if;
+
+      Set (Picture_Handle);
+      Astap.Define (Executable => Filename_Of (Astap_Key));
+      Picture.Define (Name   => String_Of (Filename_Key),
+                      Height => Degrees_Of (Height_Key, Picture.Maximum_Heigth),
+                      Width  => Degrees_Of (Width_Key, Picture.Maximum_Width));
 
       Set (Stellarium_Handle);
       The_Stellarium_Port := Port_For (Stellarium_Id);

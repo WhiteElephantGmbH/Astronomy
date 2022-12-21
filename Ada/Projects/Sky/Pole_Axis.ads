@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2021 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2021 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -17,17 +17,14 @@ pragma Style_White_Elephant;
 
 package Pole_Axis is
 
-  Picture_Not_Found  : exception;
-  Picture_Not_Solved : exception;
-
   procedure Clear;
 
   function Has_Values return Boolean;
 
-  procedure Evaluate_Pole_Top;
+  procedure Evaluate_Top;
 
-  procedure Evaluate_Pole_Left;
+  procedure Evaluate_Left;
 
-  procedure Evaluate_Pole_Right;
+  procedure Evaluate_Right;
 
 end Pole_Axis;

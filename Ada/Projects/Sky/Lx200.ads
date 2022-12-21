@@ -16,6 +16,8 @@ package Lx200 is
 
   Slew_Ok : constant String := "0";
 
+  Synch_Ok : constant String := "Coordinates   matched    ";
+
   type Extended_Command is (
     Get_Alignment_Status,
     Get_Product_Name,

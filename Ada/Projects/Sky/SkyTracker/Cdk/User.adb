@@ -837,7 +837,6 @@ package body User is
     Catalog_Menu.Enable;
     Selection_Menu.Enable;
     Gui.Enable_Key_Handler;
-    Gui.Clear_Focus;
   end Enter_Control_Page;
 
 
@@ -847,7 +846,6 @@ package body User is
     Catalog_Menu.Disable;
     Selection_Menu.Disable;
     Gui.Enable_Key_Handler;
-    Gui.Clear_Focus;
   exception
   when others =>
     Log.Error ("Enter_Display_Page failed");
@@ -1272,7 +1270,6 @@ package body User is
         Define_Setup_Page;
       end if;
       Gui.Enable_Key_Handler;
-      Gui.Show;
       if Focuser_In_Use then
         Focuser.Set (The_Focuser_Position);
       end if;

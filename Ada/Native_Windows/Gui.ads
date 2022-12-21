@@ -189,12 +189,6 @@ package Gui is
                                 Window_Width  : Natural;
                                 Window_Height : Natural);
 
-  procedure Clear_Focus;
-  -- Dummy
-
-  procedure Show;
-  -- Dummy
-
   function Is_Visible (X_Position : Integer;
                        Y_Position : Integer;
                        Width      : Natural := 0;

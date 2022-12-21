@@ -29,6 +29,8 @@ with Objects;
 with Os;
 with Parameter;
 with Persistent;
+with Pole_Axis;
+with Refraction;
 with Remote;
 with Site;
 with Space;
@@ -44,8 +46,10 @@ package body User is
   Application_Name : constant String := Application.Name;
   Version          : constant String := Application.Main_Version;
 
+  Setup_Object_Key : constant String := "Setup Object";
+
   Control_Page   : Gui.Page;
-  Goto_Button    : Gui.Button;
+  Action_Button  : Gui.Button;
   Control_Button : Gui.Button;
   Target         : Gui.Plain_Edit_Box;
   Description    : Gui.Plain_Edit_Box;
@@ -63,7 +67,29 @@ package body User is
   Lmst         : Gui.Plain_Edit_Box;
   Local_Time   : Gui.Plain_Edit_Box;
 
-  type Page is (Is_Control, Is_Display);
+  Setup_Page           : Gui.Page;
+  Setup_Action_Button  : Gui.Button;
+  Setup_Control_Button : Gui.Button;
+  Air_Pressure         : Gui.Plain_Edit_Box;
+  Temperature          : Gui.Plain_Edit_Box;
+  Setup_Control        : Gui.Plain_Combo_Box;
+  Cone_Error           : Gui.Plain_Edit_Box;
+  Az_Offset            : Gui.Plain_Edit_Box;
+  Alt_Offset           : Gui.Plain_Edit_Box;
+
+  type Setup_Data_Storage is record
+    Air_Pressure : Refraction.Hectopascal;
+    Temperature  : Refraction.Celsius;
+  end record;
+
+  package Persistent_Setup is new Persistent (Setup_Data_Storage, "Setup");
+
+  The_Setup_Data : Persistent_Setup.Data;
+
+  The_Air_Pressure : Refraction.Hectopascal renames The_Setup_Data.Storage.Air_Pressure;
+  The_Temperature  : Refraction.Celsius     renames The_Setup_Data.Storage.Temperature;
+
+  type Page is (Is_Control, Is_Display, Is_Setup);
 
   Is_Expert_Mode : Boolean := False;
 
@@ -74,9 +100,18 @@ package body User is
   The_Target_Selection  : Target_Selection := No_Target;
   Last_Target_Selection : Target_Selection := Target_Object;
 
+  Align_On_Picture_Change     : Boolean := False;
+  Align_On_Picture_Is_Enabled : Boolean := False;
+
+  The_Setup_Object : Setup_Object := Pole_Left;
+
   subtype State is Telescope.State;
 
   use all type State;
+
+  subtype Error is State range Inconsistent .. Failure;
+
+  subtype Warning is State range Inhibited .. Outside;
 
   The_Status : State := Disconnected;
 
@@ -229,36 +264,228 @@ package body User is
   end Perform_Stop;
 
 
-  Perform_Parking : not null access procedure := Perform_Unpark'access;
+  procedure Perform_Align is
+  begin
+    Signal_Action (Align);
+    Align_On_Picture_Is_Enabled := False;
+  end Perform_Align;
+
+
+  procedure Perform_Goto is
+  begin
+    Signal_Action (Go_To);
+  end Perform_Goto;
+
+
+  procedure Perform_Goto_Pol is
+
+    function Identifier_Of (Item : String) return String is
+      The_Image : String := Strings.Trimmed (Item);
+    begin
+      for Index in The_Image'range loop
+        if The_Image(Index) = ' ' then
+          The_Image(Index) := '_';
+        end if;
+      end loop;
+      return The_Image;
+    end Identifier_Of;
+
+    Setup_Object_Image : constant String := Identifier_Of (Gui.Contents_Of (Setup_Control));
+
+  begin -- Perform_Goto_Pol
+    The_Setup_Object := Setup_Object'value(Setup_Object_Image);
+    Log.Write ("Setup Object - " & Setup_Object_Image);
+    case The_Setup_Object is
+    when Pole_Left =>
+      Signal_Action (Go_To_Left);
+    when Pole_Right =>
+      Signal_Action (Go_To_Right);
+    when Pole_Top =>
+      Signal_Action (Go_To_Top);
+    end case;
+  exception
+  when others =>
+    Log.Error ("Perform_Goto_Pol");
+  end Perform_Goto_Pol;
+
+
+  procedure Perform_Clear is
+  begin
+    Pole_Axis.Clear;
+  end Perform_Clear;
+
+
+  procedure No_Operation is
+  begin
+    null;
+  end No_Operation;
+
+
+  type Procedure_Access is not null access procedure;
+
+  Perform_Action : Procedure_Access := No_Operation'access;
+
+  Perform_Control : Procedure_Access := No_Operation'access;
+
+  Perform_Setup_Action : Procedure_Access := No_Operation'access;
+
+  Perform_Setup_Control : Procedure_Access := No_Operation'access;
 
   The_Actual_Direction : Earth.Direction; -- used for Skyline
 
 
   procedure Show (Information : Telescope.Data) is
 
-    procedure Set_Goto_Button is
+    procedure Disable (The_Button : Gui.Button) is
     begin
-      if The_Target_Selection = No_Target then
-        Gui.Disable (Goto_Button);
-      else
-        Gui.Enable (Goto_Button);
-      end if;
-    end Set_Goto_Button;
+      Gui.Set_Text (The_Button, "");
+      Gui.Disable (The_Button);
+    end Disable;
 
-    procedure Define_Control_Button is
+    procedure Enable (The_Button : Gui.Button;
+                      The_Text   : String) is
+    begin
+      Gui.Set_Text (The_Button, The_Text);
+      Gui.Enable (The_Button);
+    end Enable;
+
+    procedure Define_Control_Buttons is
+
+      procedure Disable_Action is
+      begin
+        Disable (Action_Button);
+        Perform_Action := No_Operation'access;
+      end Disable_Action;
+
+      procedure Disable_Control is
+      begin
+        Disable (Control_Button);
+        Perform_Control := No_Operation'access;
+      end Disable_Control;
+
+      procedure Enable_Action (The_Text   : String;
+                               The_Action : Procedure_Access) is
+      begin
+        Enable (Action_Button, The_Text);
+        Perform_Action := The_Action;
+      end Enable_Action;
+
+      procedure Enable_Control (The_Text    : String;
+                                The_Control : Procedure_Access) is
+      begin
+        Enable (Control_Button, The_Text);
+        Perform_Control := The_Control;
+      end Enable_Control;
+
+      procedure Enable_Goto is
+      begin
+        if The_Target_Selection = No_Target then
+          Disable_Action;
+        else
+          Enable_Action ("Goto", Perform_Goto'access);
+        end if;
+      end Enable_Goto;
+
+      procedure Enable_Stop is
+      begin
+        Enable_Control ("Stop", Perform_Stop'access);
+      end Enable_Stop;
+
+    begin -- Define_Control_Buttons
+      case Information.Status is
+      when Disconnected | Error | Unparking =>
+        Align_On_Picture_Is_Enabled := False;
+        Disable_Action;
+        Disable_Control;
+      when Parked =>
+        Disable_Action;
+        Enable_Control ("Unpark", Perform_Unpark'access);
+      when Slewing | Parking | Homing | Following | Positioned =>
+        Align_On_Picture_Is_Enabled := False;
+        Enable_Goto;
+        Enable_Stop;
+      when Stopped | Warning =>
+        Enable_Goto;
+        Enable_Control ("Park", Perform_Park'access);
+      when Tracking =>
+        if Align_On_Picture_Is_Enabled then
+          Enable_Action ("Align", Perform_Align'access);
+        else
+          Enable_Goto;
+        end if;
+        Enable_Stop;
+      when Solving =>
+        Disable_Action;
+        Enable_Stop;
+      end case;
+    end Define_Control_Buttons;
+
+
+    procedure Define_Setup_Buttons is
+
+      procedure Disable_Action is
+      begin
+        Disable (Setup_Action_Button);
+        Perform_Setup_Action := No_Operation'access;
+      end Disable_Action;
+
+      procedure Disable_Control is
+      begin
+        Disable (Setup_Control_Button);
+        Perform_Setup_Control := No_Operation'access;
+      end Disable_Control;
+
+      procedure Enable_Action (The_Text   : String;
+                               The_Action : Procedure_Access) is
+      begin
+        Enable (Setup_Action_Button, The_Text);
+        Perform_Setup_Action := The_Action;
+      end Enable_Action;
+
+      procedure Enable_Control (The_Text    : String;
+                                The_Control : Procedure_Access) is
+      begin
+        Enable (Setup_Control_Button, The_Text);
+        Perform_Setup_Control := The_Control;
+      end Enable_Control;
+
+      procedure Enable_Goto is
+      begin
+        Enable_Action ("Goto", Perform_Goto_Pol'access);
+      end Enable_Goto;
+
+      procedure Enable_Stop is
+      begin
+        Enable_Control ("Stop", Perform_Stop'access);
+      end Enable_Stop;
+
     begin
       case Information.Status is
+      when Disconnected | Error | Unparking =>
+        Disable_Action;
+        Disable_Control;
       when Parked =>
-        Gui.Set_Text (Control_Button, "Unpark");
-        Perform_Parking := Perform_Unpark'access;
-      when Slewing | Parking =>
-        Gui.Set_Text (Control_Button, "Stop");
-        Perform_Parking := Perform_Stop'access;
-      when others =>
-        Gui.Set_Text (Control_Button, "Park");
-        Perform_Parking := Perform_Park'access;
+        Disable_Action;
+        Enable_Control ("Unpark", Perform_Unpark'access);
+      when Slewing | Parking | Homing | Following | Positioned =>
+        Enable_Goto;
+        if Pole_Axis.Has_Values then
+          Enable_Control ("Clear", Perform_Clear'access);
+        else
+          Enable_Stop;
+        end if;
+      when Stopped | Warning =>
+        Enable_Goto;
+        Enable_Control ("Park", Perform_Park'access);
+      when Tracking =>
+        Enable_Goto;
+        Enable_Stop;
+      when Solving =>
+        Disable_Action;
+        Enable_Stop;
       end case;
-    end Define_Control_Button;
+    end Define_Setup_Buttons;
+
 
     procedure Clear_Actual_Values is
     begin
@@ -269,39 +496,20 @@ package body User is
       The_Actual_Direction := Earth.Unknown_Direction;
     end Clear_Actual_Values;
 
+    use type Angle.Value;
+
   begin -- Show
     if (The_Status /= Information.Status)
       or (Last_Target_Selection /= The_Target_Selection)
+      or Align_On_Picture_Change
     then
+      Align_On_Picture_Change := False;
       The_Status := Information.Status;
       Last_Target_Selection := The_Target_Selection;
-      Define_Control_Button;
-      case The_Status is
-      when Disconnected
-         | Failure
-         | Homing
-         | Inconsistent
-         | Inhibited
-         | Unknown
-         | Unparking
-      =>
-        Gui.Disable (Goto_Button);
-        Gui.Disable (Control_Button);
-      when Parked
-         | Parking
-      =>
-        Gui.Enable (Control_Button);
-        Gui.Disable (Goto_Button);
-      when Tracking
-         | Stopped
-         | Slewing
-         | Positioned
-         | Outside
-         | Following
-      =>
-        Set_Goto_Button;
-        Gui.Enable (Control_Button);
-      end case;
+      Define_Control_Buttons;
+      if Is_Expert_Mode then
+        Define_Setup_Buttons;
+      end if;
       Gui.Set_Status_Line (Information.Status'img);
     end if;
     if Space.Direction_Is_Known (Information.Actual_Direction) then
@@ -348,6 +556,27 @@ package body User is
         end if;
         Gui.Set_Text (Local_Time, Time.Image_Of (Information.Universal_Time, Time_Only => True));
       end if;
+    when Is_Setup =>
+      if Information.Cone_Error = Angle.Zero then
+        Gui.Set_Text (Cone_Error, "");
+      else
+        Gui.Set_Text (Cone_Error, Angle.Image_Of (Information.Cone_Error, Show_Signed => True));
+      end if;
+      if Earth.Direction_Is_Known (Information.Pole_Offsets) then
+        if Earth.Az_Of (Information.Pole_Offsets) = Angle.Zero then
+          Gui.Set_Text (Az_Offset, "");
+        else
+          Gui.Set_Text (Az_Offset, Earth.Az_Offset_Image_Of (Information.Pole_Offsets));
+        end if;
+        if Earth.Alt_Of (Information.Pole_Offsets) = Angle.Zero then
+          Gui.Set_Text (Alt_Offset, "");
+        else
+          Gui.Set_Text (Alt_Offset, Earth.Alt_Offset_Image_Of (Information.Pole_Offsets));
+        end if;
+      else
+        Gui.Set_Text (Az_Offset, "");
+        Gui.Set_Text (Alt_Offset, "");
+      end if;
     end case;
   end Show;
 
@@ -366,27 +595,28 @@ package body User is
   end Clear_Target;
 
 
-  procedure Perform_Goto is
+  procedure Handle_Action is
   begin
-    Signal_Action (Go_To);
-  end Perform_Goto;
+    Perform_Action.all;
+  end Handle_Action;
 
 
-  procedure Handle_Goto is
+  procedure Handle_Control is
   begin
-    case The_Target_Selection is
-    when Target_Object =>
-      Perform_Goto;
-    when No_Target =>
-      raise Program_Error;
-    end case;
-  end Handle_Goto;
+    Perform_Control.all;
+  end Handle_Control;
 
 
-  procedure Handle_Parking is
+  procedure Handle_Setup_Action is
   begin
-    Perform_Parking.all;
-  end Handle_Parking;
+    Perform_Setup_Action.all;
+  end Handle_Setup_Action;
+
+
+  procedure Handle_Setup_Control is
+  begin
+    Perform_Setup_Control.all;
+  end Handle_Setup_Control;
 
 
   function Target_Name return String is
@@ -407,6 +637,63 @@ package body User is
   end Show_Error;
 
 
+  function Image_Of (The_Value : Refraction.Hectopascal) return String is
+  begin
+    return Strings.Trimmed (The_Value'img) & "hPa";
+  end Image_Of;
+
+
+  procedure Define_Air_Pressure is
+  begin
+    loop
+      declare
+        Value : constant String := Strings.Trimmed (Gui.Contents_Of (Air_Pressure));
+        Last  : Natural := Value'last;
+      begin
+        loop
+          exit when Value(Last) in '0'..'9';
+          Last := Last - 1;
+        end loop;
+        The_Air_Pressure := Refraction.Hectopascal'value(Value(Value'first .. Last));
+        Refraction.Set (The_Air_Pressure);
+      exception
+      when others =>
+        Show_Error ("Incorrect Air Pressure: " & Value);
+      end;
+      Gui.Set_Text (Air_Pressure, Image_Of (The_Air_Pressure));
+    end loop;
+  exception
+  when others =>
+    Log.Error ("Define_Air_Pressure");
+  end Define_Air_Pressure;
+
+
+  function Image_Of (The_Value : Refraction.Celsius) return String is
+  begin
+    return Strings.Trimmed (The_Value'img) & "°C";
+  end Image_Of;
+
+
+  procedure Define_Temperature is
+  begin
+    declare
+      Value : constant String := Strings.Trimmed (Gui.Contents_Of (Temperature));
+      Last  : Natural := Value'last;
+    begin
+      loop
+        exit when Value(Last) in '0'..'9';
+        Last := Last - 1;
+      end loop;
+      The_Temperature := Refraction.Celsius'value(Value(Value'first .. Last));
+      Refraction.Set (The_Temperature);
+    exception
+    when others =>
+      Show_Error ("Incorrect Temperature: " & Value);
+    end;
+    Gui.Set_Text (Temperature, Image_Of (The_Temperature));
+  end Define_Temperature;
+
+
   The_Targets : Name.Id_List_Access;
 
   procedure Enter_Control_Page is
@@ -415,7 +702,6 @@ package body User is
     Catalog_Menu.Enable;
     Selection_Menu.Enable;
     Gui.Enable_Key_Handler;
-    Gui.Clear_Focus;
   end Enter_Control_Page;
 
 
@@ -425,11 +711,22 @@ package body User is
     Catalog_Menu.Disable;
     Selection_Menu.Disable;
     Gui.Enable_Key_Handler;
-    Gui.Clear_Focus;
   exception
   when others =>
     Log.Error ("Enter_Display_Page failed");
   end Enter_Display_Page;
+
+
+  procedure Enter_Setup_Page is
+  begin
+    The_Page := Is_Setup;
+    Catalog_Menu.Disable;
+    Selection_Menu.Disable;
+    Gui.Disable_Key_Handler;
+  exception
+  when others =>
+    Log.Error ("Enter_Setup_Page");
+  end Enter_Setup_Page;
 
 
   function Convertion is new Ada.Unchecked_Conversion (Gui.Information, Name.Id_Access);
@@ -502,9 +799,9 @@ package body User is
                                       The_Style  => [Gui.Buttons_Fill_Horizontally => True,
                                                      Gui.Buttons_Fill_Vertically   => False]);
 
-        Goto_Button := Gui.Create (Control_Page, "Goto", Handle_Goto'access);
-        Gui.Disable (Goto_Button);
-        Control_Button := Gui.Create (Control_Page, "Unpark", Handle_Parking'access);
+        Action_Button := Gui.Create (Control_Page, "", Handle_Action'access);
+        Gui.Disable (Action_Button);
+        Control_Button := Gui.Create (Control_Page, "", Handle_Control'access);
         Gui.Disable (Control_Button);
 
         Target := Gui.Create (Control_Page, Title, "", The_Title_Size => Title_Size, Is_Modifiable  => False);
@@ -588,6 +885,54 @@ package body User is
                                   The_Title_Size => Title_Size);
       end Define_Display_Page;
 
+      procedure Define_Setup_Page is
+
+        -- largest texts
+        Air_Pressure_Text : constant String := "Air Pressure";
+
+        Title_Size : constant Natural := Gui.Text_Size_Of (Air_Pressure_Text) + Separation;
+        Text_Size  : constant Natural := Gui.Text_Size_Of ("20h58m58.58s") + Separation;
+      begin
+        Setup_Page := Gui.Add_Page (The_Title  => "Setup",
+                                    The_Action => Enter_Setup_Page'access,
+                                    The_Style  => [Gui.Buttons_Fill_Horizontally => True,
+                                                   Gui.Buttons_Fill_Vertically   => False]);
+
+        Setup_Action_Button := Gui.Create (Setup_Page, "", Handle_Setup_Action'access);
+        Gui.Disable (Setup_Action_Button);
+        Setup_Control_Button := Gui.Create (Setup_Page, "", Handle_Setup_Control'access);
+        Gui.Disable (Setup_Control_Button);
+
+        Air_Pressure := Gui.Create (Setup_Page, Air_Pressure_Text, Image_Of (The_Air_Pressure),
+                                    The_Action_Routine => Define_Air_Pressure'access,
+                                    The_Size           => Text_Size,
+                                    The_Title_Size     => Title_Size);
+        Temperature := Gui.Create (Setup_Page, "Temperature", Image_Of (The_Temperature),
+                                   The_Action_Routine => Define_Temperature'access,
+                                   The_Size           => Text_Size,
+                                   The_Title_Size     => Title_Size);
+
+        Setup_Control := Gui.Create (Setup_Page, Setup_Object_Key,
+                                     The_Size           => Text_Size,
+                                     The_Title_Size     => Title_Size);
+        for Value in Setup_Object'range loop
+          Gui.Add_Text (Setup_Control, Strings.Legible_Of (Value'img));
+        end loop;
+        Gui.Select_Text (Setup_Control, Strings.Legible_Of (The_Setup_Object'img));
+        Cone_Error := Gui.Create (Setup_Page, "Cone Error", "",
+                                  Is_Modifiable  => False,
+                                  The_Size       => Text_Size,
+                                  The_Title_Size => Title_Size);
+        Az_Offset := Gui.Create (Setup_Page, "Az Offset", "",
+                                 Is_Modifiable  => False,
+                                 The_Size       => Text_Size,
+                                 The_Title_Size => Title_Size);
+        Alt_Offset := Gui.Create (Setup_Page, "Alt Offset", "",
+                                  Is_Modifiable  => False,
+                                  The_Size       => Text_Size,
+                                  The_Title_Size => Title_Size);
+      end Define_Setup_Page;
+
     begin -- Create_Interface
       Selection_Menu.Create (Lexicon.Image_Of (Lexicon.Selection), Selection_Handler'access);
       Targets.Set (The_Selection => All_Objects);
@@ -597,12 +942,18 @@ package body User is
         Demo_21_Menu.Create ("Demo 21", Demo_21_Handler'access);
       end if;
       Define_Control_Page;
+      if Persistent_Setup.Storage_Is_Empty then
+        The_Air_Pressure := 0;
+        The_Temperature := 10;
+      end if;
+      Refraction.Set (The_Air_Pressure);
+      Refraction.Set (The_Temperature);
       Is_Expert_Mode := Parameter.Is_Expert_Mode;
       if Is_Expert_Mode then
         Define_Display_Page;
+        Define_Setup_Page;
       end if;
       Gui.Enable_Key_Handler;
-      Gui.Show;
       The_Startup_Handler.all;
     exception
     when Item: others =>
@@ -673,5 +1024,23 @@ package body User is
   begin -- Update
     Name.Update (The_Targets, Remove_Target'access, Insert_Target'access);
   end Update_Targets;
+
+
+  procedure Enable_Align_On_Picture is
+  begin
+    Align_On_Picture_Is_Enabled := True;
+    Align_On_Picture_Change := True;
+  end Enable_Align_On_Picture;
+
+
+  function In_Setup_Mode return Boolean is
+  begin
+    case The_Page is
+    when Is_Setup =>
+      return True;
+    when others =>
+      return False;
+    end case;
+  end In_Setup_Mode;
 
 end User;

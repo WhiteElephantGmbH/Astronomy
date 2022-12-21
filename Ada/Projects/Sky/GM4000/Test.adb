@@ -241,6 +241,9 @@ package body Test is
             Put_Line ("Slew to Target Object");
             Send ("0"); -- OK
             Send_Delay := Delay_Counter;
+          elsif Command = ":CM" then
+            Put_Line ("Synchronize to Target Object");
+            Send ("Coordinates   matched    #"); -- OK
           else
             Put_Line ("Unknown Command " & Data);
           end if;

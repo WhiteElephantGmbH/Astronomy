@@ -29,7 +29,7 @@ with Objects;
 with Os;
 with Persistent;
 with Picture;
-with Pole_Axis;
+with Pole;
 with Refraction;
 with Sky_Line;
 with Site;
@@ -269,7 +269,7 @@ package body User is
         end if;
       when Get_Pole =>
         Gui.Set_Text (First_Setup_Button, "Get");
-        if Pole_Axis.Has_Values then
+        if Pole.Has_Values then
           Gui.Enable (Clear_Button);
         else
           Gui.Disable (Clear_Button);
@@ -683,7 +683,7 @@ package body User is
         Sky_Line.Clear;
         Gui.Disable (Clear_Button);
       when Get_Pole =>
-        Pole_Axis.Clear;
+        Pole.Clear;
         Gui.Disable (Clear_Button);
       end case;
     end case;
@@ -699,11 +699,11 @@ package body User is
     when Telescope.Stopped | Telescope.Tracking =>
       case The_Setup_Object is
       when Pole_Top =>
-        Pole_Axis.Evaluate_Pole_Top;
+        Pole.Evaluate_Top;
       when Pole_Left =>
-        Pole_Axis.Evaluate_Pole_Left;
+        Pole.Evaluate_Left;
       when Pole_Right =>
-        Pole_Axis.Evaluate_Pole_Right;
+        Pole.Evaluate_Right;
       when Skyline =>
         Sky_Line.Add (The_Actual_Direction);
       end case;
@@ -714,9 +714,9 @@ package body User is
       null;
     end case;
   exception
-  when Pole_Axis.Picture_Not_Found =>
+  when Pole.Picture_Not_Found =>
     Telescope.Set_Error ("Picture " & Picture.Filename & " not found");
-  when Pole_Axis.Picture_Not_Solved =>
+  when Pole.Picture_Not_Solved =>
     Telescope.Set_Error ("Picture not solved");
   when Item: others =>
     Log.Termination (Item);
@@ -729,7 +729,6 @@ package body User is
     Catalog_Menu.Enable;
     Selection_Menu.Enable;
     Gui.Enable_Key_Handler;
-    Gui.Clear_Focus;
   end Enter_Control_Page;
 
 
@@ -739,7 +738,6 @@ package body User is
     Catalog_Menu.Disable;
     Selection_Menu.Disable;
     Gui.Enable_Key_Handler;
-    Gui.Clear_Focus;
   exception
   when others =>
     Log.Error ("Enter_Display_Page failed");
@@ -1069,7 +1067,6 @@ package body User is
       Define_Display_Page;
       Define_Setup_Page;
       Gui.Enable_Key_Handler;
-      Gui.Show;
       The_Startup_Handler.all;
     exception
     when Item: others =>

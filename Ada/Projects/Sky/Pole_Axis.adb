@@ -18,51 +18,17 @@ pragma Style_White_Elephant;
 with Alignment;
 with Angle;
 with Earth;
-with M_Zero;
 with Picture;
 with Site;
-with Space;
 with Traces;
 
 package body Pole_Axis is
 
   package Log is new Traces ("Pole_Axis");
 
-  procedure Evaluate_Direction (The_Direction : in out Earth.Direction) is
-    The_Count : Natural := 0;
-  begin
-    if Picture.Solve (Search_From => Space.North_Pole) then
-      M_Zero.Start_Solving;
-      while not Picture.Solved loop
-        delay 0.5;
-        The_Count := The_Count + 1;
-        if The_Count = 40 then
-          Picture.Stop_Solving;
-          Log.Write ("Evaluation timeout");
-          raise Picture_Not_Solved;
-        end if;
-      end loop;
-      The_Direction := Picture.Direction;
-      M_Zero.End_Solving;
-    else
-      raise Picture_Not_Solved;
-    end if;
-  exception
-  when Picture_Not_Solved =>
-    raise;
-  when Picture.File_Not_Found =>
-    raise Picture_Not_Found;
-  when Picture.Not_Solved =>
-    raise Picture_Not_Solved;
-  when Item: others =>
-    Log.Termination (Item);
-    raise Picture_Not_Solved;
-  end Evaluate_Direction;
-
-
-  The_Pol_Top   : Earth.Direction;
-  The_Pol_Left  : Earth.Direction;
-  The_Pol_Right : Earth.Direction;
+  The_Pole_Top   : Earth.Direction;
+  The_Pole_Left  : Earth.Direction;
+  The_Pole_Right : Earth.Direction;
 
 
   procedure Set_Alignment is
@@ -73,19 +39,19 @@ package body Pole_Axis is
     The_Right_Az   : Angle.Signed;
     use type Angle.Signed;
   begin
-    if Earth.Direction_Is_Known (The_Pol_Top) then
-      The_Alt := +Earth.Alt_Of (The_Pol_Top);
+    if Earth.Direction_Is_Known (The_Pole_Top) then
+      The_Alt := +Earth.Alt_Of (The_Pole_Top);
     end if;
-    if Earth.Direction_Is_Known (The_Pol_Left) and Earth.Direction_Is_Known (The_Pol_Right) then
-      The_Left_Az := +Earth.Az_Of (The_Pol_Left);
-      The_Right_Az := +Earth.Az_Of (The_Pol_Right);
+    if Earth.Direction_Is_Known (The_Pole_Left) and Earth.Direction_Is_Known (The_Pole_Right) then
+      The_Left_Az := +Earth.Az_Of (The_Pole_Left);
+      The_Right_Az := +Earth.Az_Of (The_Pole_Right);
       The_Az := The_Right_Az + The_Left_Az;
       The_Az := The_Az / 2;
       The_Cone_Error := (The_Az - The_Left_Az);
-    elsif Earth.Direction_Is_Known (The_Pol_Right) then
-      The_Az := +Earth.Az_Of (The_Pol_Right);
-    elsif Earth.Direction_Is_Known (The_Pol_Left) then
-      The_Az := +Earth.Az_Of (The_Pol_Left);
+    elsif Earth.Direction_Is_Known (The_Pole_Right) then
+      The_Az := +Earth.Az_Of (The_Pole_Right);
+    elsif Earth.Direction_Is_Known (The_Pole_Left) then
+      The_Az := +Earth.Az_Of (The_Pole_Left);
     end if;
     if (The_Az = 0) and (The_Alt = 0) then
       Alignment.Set (The_Pole_Offsets => Earth.Unknown_Direction);
@@ -102,9 +68,9 @@ package body Pole_Axis is
   procedure Clear is
   begin
     Log.Write ("Clear");
-    The_Pol_Top   := Earth.Unknown_Direction;
-    The_Pol_Left  := Earth.Unknown_Direction;
-    The_Pol_Right := Earth.Unknown_Direction;
+    The_Pole_Top   := Earth.Unknown_Direction;
+    The_Pole_Left  := Earth.Unknown_Direction;
+    The_Pole_Right := Earth.Unknown_Direction;
     Set_Alignment;
   end Clear;
 
@@ -116,27 +82,27 @@ package body Pole_Axis is
   end Has_Values;
 
 
-  procedure Evaluate_Pole_Top is
-  begin
-    Log.Write ("Evaluate_Pole_Top");
-    Evaluate_Direction (The_Pol_Top);
-    Set_Alignment;
-  end Evaluate_Pole_Top;
-
-
-  procedure Evaluate_Pole_Left is
+  procedure Evaluate_Left is
   begin
     Log.Write ("Evaluate_Pole_Left");
-    Evaluate_Direction (The_Pol_Left);
+    The_Pole_Left := Picture.Direction;
     Set_Alignment;
-  end Evaluate_Pole_Left;
+  end Evaluate_Left;
 
 
-  procedure Evaluate_Pole_Right is
+  procedure Evaluate_Right is
   begin
     Log.Write ("Evaluate_Pole_Right");
-    Evaluate_Direction (The_Pol_Right);
+    The_Pole_Right := Picture.Direction;
     Set_Alignment;
-  end Evaluate_Pole_Right;
+  end Evaluate_Right;
+
+
+  procedure Evaluate_Top is
+  begin
+    Log.Write ("Evaluate_Pole_Top");
+    The_Pole_Top := Picture.Direction;
+    Set_Alignment;
+  end Evaluate_Top;
 
 end Pole_Axis;

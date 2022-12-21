@@ -15,49 +15,19 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Name;
-with Telescope;
+package Pole is
 
-package User is
+  Picture_Not_Found  : exception;
+  Picture_Not_Solved : exception;
 
-  type Action is (Define_Catalog, Define_Target, Update,
-                  Go_To, Go_To_Left, Go_To_Right, Go_To_Top, Align, Park, Stop, Unpark,
-                  Close);
+  procedure Clear;
 
-  subtype Command_Action is Action range Go_To .. Close;
+  function Has_Values return Boolean;
 
-  subtype Button_Action is Action range Go_To .. Unpark;
+  procedure Evaluate_Top;
 
-  type Action_Handler is access procedure (The_Action : Action);
+  procedure Evaluate_Left;
 
-  type Setup_Object is (Pole_Top, Pole_Left, Pole_Right);
+  procedure Evaluate_Right;
 
-  procedure Show (Information : Telescope.Data);
-
-  procedure Set (The_Target : Name.Id);
-
-  procedure Clear_Target;
-
-  procedure Execute (The_Startup_Handler     : not null access procedure;
-                     The_Action_Handler      : Action_Handler;
-                     The_Termination_Handler : not null access procedure);
-
-  procedure Perform_Goto;
-
-  procedure Clear_Targets;
-
-  procedure Define (New_Targets : Name.Id_List_Access);
-
-  procedure Update_Targets;
-
-  procedure Enable_Align_On_Picture;
-
-  function In_Setup_Mode return Boolean;
-
-  function Target_Name return String;
-
-  procedure Show_Description (Image : String);
-
-  procedure Show_Error (Image : String);
-
-end User;
+end Pole;

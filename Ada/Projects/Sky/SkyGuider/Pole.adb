@@ -15,49 +15,75 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Name;
-with Telescope;
+with M_Zero;
+with Picture;
+with Space;
+with Traces;
+with Pole_Axis;
 
-package User is
+package body Pole is
 
-  type Action is (Define_Catalog, Define_Target, Update,
-                  Go_To, Go_To_Left, Go_To_Right, Go_To_Top, Align, Park, Stop, Unpark,
-                  Close);
+  package Log is new Traces ("Pole");
 
-  subtype Command_Action is Action range Go_To .. Close;
+  procedure Evaluate_Direction is
+    The_Count : Natural := 0;
+  begin
+    Log.Write ("evaluate direction");
+    if Picture.Solve (Search_From => Space.North_Pole) then
+      M_Zero.Start_Solving;
+      while not Picture.Solved loop
+        delay 0.5;
+        The_Count := The_Count + 1;
+        if The_Count = 40 then
+          Picture.Stop_Solving;
+          Log.Write ("Evaluation timeout");
+          raise Picture_Not_Solved;
+        end if;
+      end loop;
+      M_Zero.End_Solving;
+    else
+      raise Picture_Not_Solved;
+    end if;
+  exception
+  when Picture_Not_Solved =>
+    raise;
+  when Picture.File_Not_Found =>
+    raise Picture_Not_Found;
+  when Picture.Not_Solved =>
+    raise Picture_Not_Solved;
+  when Item: others =>
+    Log.Termination (Item);
+    raise Picture_Not_Solved;
+  end Evaluate_Direction;
 
-  subtype Button_Action is Action range Go_To .. Unpark;
 
-  type Action_Handler is access procedure (The_Action : Action);
+  procedure Clear is
+  begin
+    Pole_Axis.Clear;
+  end Clear;
 
-  type Setup_Object is (Pole_Top, Pole_Left, Pole_Right);
 
-  procedure Show (Information : Telescope.Data);
+  function Has_Values return Boolean is (Pole_Axis.Has_Values);
 
-  procedure Set (The_Target : Name.Id);
 
-  procedure Clear_Target;
+  procedure Evaluate_Left is
+  begin
+    Evaluate_Direction;
+    Pole_Axis.Evaluate_Left;
+  end Evaluate_Left;
 
-  procedure Execute (The_Startup_Handler     : not null access procedure;
-                     The_Action_Handler      : Action_Handler;
-                     The_Termination_Handler : not null access procedure);
 
-  procedure Perform_Goto;
+  procedure Evaluate_Right is
+  begin
+    Evaluate_Direction;
+    Pole_Axis.Evaluate_Right;
+  end Evaluate_Right;
 
-  procedure Clear_Targets;
 
-  procedure Define (New_Targets : Name.Id_List_Access);
+  procedure Evaluate_Top is
+  begin
+    Evaluate_Direction;
+    Pole_Axis.Evaluate_Top;
+  end Evaluate_Top;
 
-  procedure Update_Targets;
-
-  procedure Enable_Align_On_Picture;
-
-  function In_Setup_Mode return Boolean;
-
-  function Target_Name return String;
-
-  procedure Show_Description (Image : String);
-
-  procedure Show_Error (Image : String);
-
-end User;
+end Pole;

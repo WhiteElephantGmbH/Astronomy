@@ -35,7 +35,6 @@ package body Test is
                                      " So it has to go and on. Not quite forever but long enough for a test");
     Gui.Append_Line_To (The_Display, "Size of Gui.Information is" & Gui.Information'size'img);
     Gui.Append_Line_To (The_Display, "Name of Application is " & Gui.Name_Of_Application);
-    Gui.Show;
   end Create_User_Interface;
 
 

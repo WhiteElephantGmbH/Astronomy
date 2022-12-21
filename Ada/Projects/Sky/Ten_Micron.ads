@@ -23,6 +23,7 @@ package Ten_Micron is
                  Inconsistent,  -- user intervention needed
                  Unknown,       -- unknown mount status
                  Failure,       -- error
+                 Solving,       -- picture solving
                  Disconnected); -- no connection to mount
 
   type Target_Kind is (Axis_Position, Other_Targets);
@@ -38,6 +39,12 @@ package Ten_Micron is
 
   procedure Slew_To (Location : Space.Direction;
                      Target   : Target_Kind := Other_Targets);
+
+  procedure Synch_To (Location : Space.Direction);
+
+  procedure Start_Solving;
+
+  procedure End_Solving;
 
   procedure Park;
 

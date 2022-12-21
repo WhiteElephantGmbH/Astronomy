@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2014 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2014 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -25,7 +25,9 @@ package Space is
 
   Unknown_Direction : constant Direction;
 
-  North_Pole : constant Direction;
+  North_Pole       : constant Direction;
+  North_Pole_Left  : constant Direction;
+  North_Pole_Right : constant Direction;
 
   function Direction_Of (Dec : Angle.Value;
                          Ra  : Angle.Value) return Direction with Inline;
@@ -70,5 +72,13 @@ private
   North_Pole : constant Direction := (Dec      => Angle.Quadrant,
                                       Ra       => Angle.Zero,
                                       Is_Known => True);
+
+  North_Pole_Left : constant Direction := (Dec      => Angle.Quadrant,
+                                           Ra       => Angle.Quadrant,
+                                           Is_Known => True);
+
+  North_Pole_Right : constant Direction := (Dec      => Angle.Quadrant,
+                                            Ra       => Angle.Negative_Quadrant,
+                                            Is_Known => True);
 
 end Space;

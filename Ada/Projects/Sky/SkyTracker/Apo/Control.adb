@@ -47,7 +47,11 @@ package body Control is
 
   type Command is (Define_Catalog,
                    Define_Target,
+                   Align,
                    Go_To,
+                   Go_To_Left,
+                   Go_To_Right,
+                   Go_To_Top,
                    Park,
                    Stop,
                    Unpark,
@@ -173,8 +177,16 @@ package body Control is
         Has_New_Telescope_Data := False;
       else
         case Next_Command is
+        when User.Align =>
+          The_Command := Align;
         when User.Go_To =>
           The_Command := Go_To;
+        when User.Go_To_Left =>
+          The_Command := Go_To_Left;
+        when User.Go_To_Right =>
+          The_Command := Go_To_Right;
+        when User.Go_To_Top =>
+          The_Command := Go_To_Top;
         when User.Park =>
           The_Command := Park;
         when User.Stop =>
@@ -258,6 +270,7 @@ package body Control is
          | Outside
          | Stopped
          | Tracking
+         | Solving
       =>
         User.Perform_Goto;
       end case;
@@ -283,6 +296,7 @@ package body Control is
          | Stopped
          | Parked
          | Tracking
+         | Solving
          | Homing
          | Parking
          | Unparking
@@ -339,8 +353,16 @@ package body Control is
             null;
           end if;
         end;
+      when Align =>
+        Telescope.Align;
       when Go_To =>
         Telescope.Go_To;
+      when Go_To_Left =>
+        Telescope.Go_To_Left;
+      when Go_To_Right =>
+        Telescope.Go_To_Right;
+      when Go_To_Top =>
+        Telescope.Go_To_Top;
       when Park =>
         Telescope.Park;
       when Stop =>

@@ -26,10 +26,23 @@ package body Ten_Micron is
 
   The_Socket : Network.Tcp.Socket;
   The_Status : State := Disconnected;
+  Last_State : State := Disconnected;
 
 
   procedure Set_Status (Item : State) is
   begin
+    Last_State := Item;
+    case The_Status is
+    when Solving =>
+      case Item is
+      when Positioned | Tracking =>
+        return;
+      when others =>
+        null;
+      end case;
+    when others =>
+      null;
+    end case;
     if The_Status /= Item then
       The_Status := Item;
       Log.Write ("Status: " & Item'image);
@@ -197,6 +210,7 @@ package body Ten_Micron is
          | Get_Azimuth
          | Set_Latitude
          | Set_Longitude
+         | Synchronize
        =>
         return Received_String (Log_Enabled);
       when Set_Ultra_Precision_Mode
@@ -207,7 +221,6 @@ package body Ten_Micron is
         return "";
       when Set_Polar_Alignment
          | Set_Alt_Az_Alignment
-         | Synchronize
          | Move_East
          | Move_North
          | Move_South
@@ -350,6 +363,35 @@ package body Ten_Micron is
   when Error.Occurred =>
     Log.Error (Error.Message);
   end Slew_To;
+
+
+  procedure Synch_To (Location : Space.Direction) is
+    use all type Lx200.Command;
+  begin
+    if Not_Connected then
+      return;
+    end if;
+    Execute (Set_Right_Ascension, Lx200.Hours_Of (Space.Ra_Of (Location)), Expected => "1");
+    Execute (Set_Declination, Lx200.Signed_Degrees_Of (Space.Dec_Of (Location)), Expected => "1");
+    Execute (Synchronize, Expected => Lx200.Synch_Ok);
+  exception
+  when Error.Occurred =>
+    Log.Error (Error.Message);
+  end Synch_To;
+
+
+  procedure Start_Solving is
+  begin
+    Log.Write ("start solving");
+    The_Status := Solving;
+  end Start_Solving;
+
+
+  procedure End_Solving is
+  begin
+    Log.Write ("end solving");
+    The_Status := Last_State;
+  end End_Solving;
 
 
   procedure Park is
