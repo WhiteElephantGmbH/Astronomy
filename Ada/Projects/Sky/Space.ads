@@ -25,9 +25,11 @@ package Space is
 
   Unknown_Direction : constant Direction;
 
-  North_Pole       : constant Direction;
-  North_Pole_Left  : constant Direction;
-  North_Pole_Right : constant Direction;
+  North_Pole : constant Direction;
+
+  Axis_Pole_Left  : constant Direction;
+  Axis_Pole_Right : constant Direction;
+  Axis_Pole_Top   : constant Direction;
 
   function Direction_Of (Dec : Angle.Value;
                          Ra  : Angle.Value) return Direction with Inline;
@@ -73,12 +75,16 @@ private
                                       Ra       => Angle.Zero,
                                       Is_Known => True);
 
-  North_Pole_Left : constant Direction := (Dec      => Angle.Quadrant,
-                                           Ra       => Angle.Quadrant,
+  Axis_Pole_Left : constant Direction := (Dec      => Angle.Zero,
+                                          Ra       => Angle.Semi_Circle,
+                                          Is_Known => True);
+
+  Axis_Pole_Right : constant Direction := (Dec      => Angle.Zero,
+                                           Ra       => Angle.Zero,
                                            Is_Known => True);
 
-  North_Pole_Right : constant Direction := (Dec      => Angle.Quadrant,
-                                            Ra       => Angle.Negative_Quadrant,
-                                            Is_Known => True);
+  Axis_Pole_Top : constant Direction := (Dec      => Angle.Zero,
+                                         Ra       => Angle.Quadrant,
+                                         Is_Known => True);
 
 end Space;

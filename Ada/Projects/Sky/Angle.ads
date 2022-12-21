@@ -37,8 +37,6 @@ package Angle is
 
   Semi_Circle : constant Value; -- 180 degrees
 
-  Negative_Quadrant : constant Value; -- 270 degrees
-
   One_Minute : constant Value;
 
   Maximum : constant Value; -- just before zero (cyclic)
@@ -139,9 +137,8 @@ private
 
   Epsilon : constant Value := 1;
 
-  Quadrant          : constant Value := 16#4000_0000#; -- 90 degrees
-  Semi_Circle       : constant Value := 16#8000_0000#; -- 180 degrees
-  Negative_Quadrant : constant Value := 16#C000_0000#; -- 270 degrees
-  One_Minute        : constant Value := Quadrant / (90 * 60);
+  Quadrant    : constant Value := 16#4000_0000#; -- 90 degrees
+  Semi_Circle : constant Value := 16#8000_0000#; -- 180 degrees
+  One_Minute  : constant Value := Quadrant / (90 * 60);
 
 end Angle;

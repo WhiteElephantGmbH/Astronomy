@@ -303,17 +303,17 @@ package body Telescope is
         or
           accept Go_To_Left do
             Evatuate_Pole_Axis := Pole_Axis.Evaluate_Left'access;
-            Position_To (Space.North_Pole_Left);
+            Position_To (Space.Axis_Pole_Left);
           end Go_To_Left;
         or
           accept Go_To_Right do
             Evatuate_Pole_Axis := Pole_Axis.Evaluate_Right'access;
-            Position_To (Space.North_Pole_Right);
+            Position_To (Space.Axis_Pole_Right);
           end Go_To_Right;
         or
           accept Go_To_Top do
             Evatuate_Pole_Axis := Pole_Axis.Evaluate_Top'access;
-            Position_To (Space.North_Pole);
+            Position_To (Space.Axis_Pole_Top);
           end Go_To_Top;
         or
           accept Park do
