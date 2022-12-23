@@ -19,13 +19,24 @@ with Angle;
 
 package Refraction is
 
-  type Celsius is new Integer range -273 .. Integer'last;
+  type Celsius is delta  10.0**(-1) range -999.9 .. +999.9;
 
-  type Hectopascal is new Integer range 0 .. 1100;
+  type Hectopascal is delta 10.0**(-1) range 0000.0 .. 9999.9;
 
-  procedure Set (Temperatur : Celsius);
+  Undefined_Temperature  : constant Celsius := Celsius'last;
+  Undefined_Air_Pressure : constant Hectopascal := Hectopascal'last;
 
-  procedure Set (Air_Pressure : Hectopascal);
+  procedure Set (The_Air_Pressure : Hectopascal);
+
+  function New_Air_Pressure return Boolean;
+
+  function Air_Pressure return Hectopascal;
+  
+  procedure Set (The_Temperature : Celsius);
+
+  function New_Temperature return Boolean;
+
+  function Temperature return Celsius;
 
   procedure Correct (Alt : in out Angle.Degrees);
 

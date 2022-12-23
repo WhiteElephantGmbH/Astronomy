@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2017 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2017 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -16,27 +16,58 @@
 pragma Style_White_Elephant;
 
 with Astro;
-with Traces;
 
 package body Refraction is
 
-  package Log is new Traces ("Refraction");
+  P : Hectopascal := Undefined_Air_Pressure;
+  T : Celsius     := Undefined_Temperature;
 
-  T : Celsius     := 10;
-  P : Hectopascal := 1019;
+  New_P : Boolean := False;
+  New_T : Boolean := False;
 
-  procedure Set (Temperatur : Celsius) is
+
+  procedure Set (The_Air_Pressure : Hectopascal) is
   begin
-    Log.Write ("Temperature =>" & Temperatur'img);
-    T := Temperatur;
+    if The_Air_Pressure /= P then
+      New_P := True;
+    end if;
+    P := The_Air_Pressure;
   end Set;
 
 
-  procedure Set (Air_Pressure : Hectopascal) is
+  function New_Air_Pressure return Boolean is
   begin
-    Log.Write ("Air_Pressure =>" & Air_Pressure'img);
-    P := Air_Pressure;
+    if New_P then
+      New_P := False;
+      return True;
+    end if;
+    return False;
+  end New_Air_Pressure;
+
+
+  function Air_Pressure return Hectopascal is (P);
+
+
+  procedure Set (The_Temperature : Celsius) is
+  begin
+    if The_Temperature /= T then
+      New_T := True;
+    end if;
+    T := The_Temperature;
   end Set;
+
+
+  function New_Temperature return Boolean is
+  begin
+    if New_T then
+      New_T := False;
+      return True;
+    end if;
+    return False;
+  end New_Temperature;
+
+
+  function Temperature return Celsius is (T);
 
 
   use Astro.MATLIB;

@@ -97,7 +97,7 @@ package body Ten_Micron is
   exception
   when Network.Tcp.No_Client =>
     Disconnect_Device ("no network client");
-  when  Network.Transmission_Error =>
+  when Network.Transmission_Error =>
     Disconnect_Device ("network transmission error");
   end Send;
 
@@ -165,8 +165,12 @@ package body Ten_Micron is
                       Parameter : String := "") return String is
     use all type Lx200.Command;
 
-    Log_Enabled : constant Boolean
-      := not (Command in Get_Declination | Get_Right_Ascension | Get_Axis_Dec_Position | Get_Axis_RA_Position);
+    Log_Enabled : constant Boolean := not (Command in Get_Declination
+                                                    | Get_Right_Ascension
+                                                    | Get_Axis_Dec_Position
+                                                    | Get_Axis_RA_Position
+                                                    | Get_Air_Pressure
+                                                    | Get_Temperature);
 
   begin
     Send (Lx200.String_Of (Command, Parameter), Log_Enabled);
@@ -192,9 +196,12 @@ package body Ten_Micron is
          | Set_Axis_Dec_Position
          | Set_Right_Ascension
          | Set_Declination
+         | Set_Air_Pressure
+         | Set_Temperature
       =>
         return Received_Character;
-      when Get_Product_Name
+      when Get_Alignment_Information
+         | Get_Product_Name
          | Get_Firmware_Number
          | Get_Firmware_Date
          | Get_Alignment_Status
@@ -204,10 +211,17 @@ package body Ten_Micron is
          | Get_Status
          | Get_Axis_RA_Position
          | Get_Axis_Dec_Position
+         | Get_Air_Pressure
+         | Get_Temperature
+         | Get_Number_Of_Alignment_Stars
+         | Get_Pointing_State
          | Get_Right_Ascension
          | Get_Declination
          | Get_Altitude
          | Get_Azimuth
+         | New_Alignment_Start
+         | New_Alignment_Point
+         | New_Alignment_End
          | Set_Latitude
          | Set_Longitude
          | Synchronize
@@ -252,6 +266,11 @@ package body Ten_Micron is
       Log.Termination (Item);
       Disconnect_Device ("Reply_For - unknown error");
     end;
+  exception
+  when Error.Occurred =>
+    raise;
+  when others =>
+    Error.Raise_With ("Send Error");
   end Reply_For;
 
 
@@ -322,6 +341,44 @@ package body Ten_Micron is
   end Actual_Position;
 
 
+  procedure Define (The_Air_Pressure : Refraction.Hectopascal) is
+  begin
+    Execute (Lx200.Set_Air_Pressure, Lx200.Air_Pressure_Of (The_Air_Pressure), Expected => "1");
+  exception
+  when Error.Occurred =>
+    Log.Error (Error.Message);
+  end Define;
+
+
+  procedure Define (The_Temperature : Refraction.Celsius) is
+  begin
+    Execute (Lx200.Set_Temperature, Lx200.Temperature_Of (The_Temperature), Expected => "1");
+  exception
+  when Error.Occurred =>
+    Log.Error (Error.Message);
+  end Define;
+
+
+  function Air_Pressure return Refraction.Hectopascal is
+  begin
+    return Refraction.Hectopascal'value (Reply_For (Lx200.Get_Air_Pressure));
+  exception
+  when others =>
+    Log.Error ("invalid air pressure");
+    return Refraction.Undefined_Air_Pressure;
+  end Air_Pressure;
+
+
+  function Temperature return Refraction.Celsius is
+  begin
+    return Refraction.Celsius'value (Reply_For (Lx200.Get_Temperature));
+  exception
+  when others =>
+    Log.Error ("invalid temperature");
+    return Refraction.Undefined_Temperature;
+  end Temperature;
+
+
   function Get return Information is
     The_Information : Information;
   begin
@@ -330,6 +387,8 @@ package body Ten_Micron is
       The_Information.Status := The_Status;
       The_Information.Direction := Actual_Direction;
       The_Information.Position := Actual_Position;
+      Refraction.Set (Air_Pressure);
+      Refraction.Set (Temperature);
     end if;
     return The_Information;
   exception
@@ -397,18 +456,27 @@ package body Ten_Micron is
   procedure Park is
   begin
     Execute (Lx200.Slew_To_Park_Position);
+  exception
+  when Error.Occurred =>
+    Log.Error (Error.Message);
   end Park;
 
 
   procedure Stop is
   begin
     Execute (Lx200.Stop);
+  exception
+  when Error.Occurred =>
+    Log.Error (Error.Message);
   end Stop;
 
 
   procedure Unpark is
   begin
     Execute (Lx200.Unpark);
+  exception
+  when Error.Occurred =>
+    Log.Error (Error.Message);
   end Unpark;
 
 

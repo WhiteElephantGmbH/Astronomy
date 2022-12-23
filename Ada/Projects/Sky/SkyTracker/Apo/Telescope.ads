@@ -18,6 +18,7 @@ pragma Style_White_Elephant;
 with Angle;
 with Earth;
 with Name;
+with Refraction;
 with Space;
 with Ten_Micron;
 with Time;
@@ -47,6 +48,11 @@ package Telescope is
 
   procedure Define_Space_Access (Get_Direction : Get_Space_Access;
                                  The_Id        : Name.Id);
+
+  procedure Define (The_Air_Pressure : Refraction.Hectopascal);
+
+  procedure Define (The_Temperature : Refraction.Celsius);
+
   procedure Align;
 
   procedure Go_To;

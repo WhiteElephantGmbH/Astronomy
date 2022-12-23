@@ -111,6 +111,18 @@ package body Lx200 is
       return Command_For ("SaXa" & Parameter);
     when Set_Axis_Dec_Position =>
       return Command_For ("SaXb" & Parameter);
+    when Get_Number_Of_Alignment_Stars =>
+      return Command_For ("getalst");
+    when Get_Alignment_Information =>
+      return Command_For ("getali" & Parameter);
+    when Get_Pointing_State =>
+      return Command_For ("pS");
+    when New_Alignment_Start =>
+      return Command_For ("newalig");
+    when New_Alignment_Point =>
+      return Command_For ("newalpt" & Parameter);
+     when New_Alignment_End =>
+      return Command_For ("endalig");
     when Set_Ultra_Precision_Mode =>
       Has_Ultra_Precision := True;
       return Command_For ("U2");
@@ -118,6 +130,14 @@ package body Lx200 is
       return Command_For ("MaX");
     when Slew_To_Park_Position =>
       return Command_For ("KA");
+    when Get_Air_Pressure =>
+      return Command_For ("GRPRS");
+    when Get_Temperature =>
+      return Command_For ("GRTMP");
+    when Set_Air_Pressure =>
+      return Command_For ("SRPRS" & Parameter);
+    when Set_Temperature =>
+      return Command_For ("SRTMP" & Parameter);
     when Stop =>
       return Command_For ("STOP");
     when Unpark =>
@@ -260,5 +280,21 @@ package body Lx200 is
     Log.Error ("Position_Of failed with " & Item);
     raise Protocol_Error;
   end Position_Of;
+
+
+  function Air_Pressure_Of (Item : Refraction.Hectopascal) return String is
+    Image : constant String := "000" & Strings.Trimmed (Item'image);
+  begin
+    return Image(Image'last - 5 .. Image'last);
+  end Air_Pressure_Of;
+
+
+  function Temperature_Of (Item : Refraction.Celsius) return String is
+    use type Refraction.Celsius;
+    Value : constant Refraction.Celsius := abs Item;
+    Image : constant String := "00" & Strings.Trimmed (Value'image);
+  begin
+    return (if Item < 0.0 then '-' else '+') & Image (Image'last - 4 .. Image'last);
+  end Temperature_Of;
 
 end Lx200;

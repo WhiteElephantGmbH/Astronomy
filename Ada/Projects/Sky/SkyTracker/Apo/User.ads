@@ -16,11 +16,12 @@
 pragma Style_White_Elephant;
 
 with Name;
+with Refraction;
 with Telescope;
 
 package User is
 
-  type Action is (Define_Catalog, Define_Target, Update,
+  type Action is (Define_Catalog, Define_Target, Define_Air_Pressure, Define_Temperature, Update,
                   Go_To, Go_To_Left, Go_To_Right, Go_To_Top, Align, Park, Stop, Unpark,
                   Close);
 
@@ -55,6 +56,10 @@ package User is
   function In_Setup_Mode return Boolean;
 
   function Target_Name return String;
+
+  function Air_Pressure return Refraction.Hectopascal;
+
+  function Temperature return Refraction.Celsius;
 
   procedure Show_Description (Image : String);
 

@@ -1706,8 +1706,8 @@ package body User is
       if Persistent_Setup.Storage_Is_Empty then
         The_Image_Orientation := Telescope.Correct;
         The_Autoguiding_Rate := 0;
-        The_Air_Pressure := 0;
-        The_Temperature := 10;
+        The_Air_Pressure := 0.0;
+        The_Temperature := 10.0;
         Max_Magnitude := 4.0;
       end if;
       Signal_Action (Set_Orientation);

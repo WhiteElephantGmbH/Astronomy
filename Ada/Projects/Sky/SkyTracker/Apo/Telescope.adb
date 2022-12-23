@@ -30,6 +30,10 @@ package body Telescope is
 
   task type Control_Task is
 
+    entry Define (The_Air_Pressure : Refraction.Hectopascal);
+
+    entry Define (The_Temperature : Refraction.Celsius);
+
     entry Align;
 
     entry Go_To;
@@ -65,6 +69,18 @@ package body Telescope is
     Signal_Information_Update := Update_Handler;
     Control := new Control_Task;
   end Start;
+
+
+  procedure Define (The_Air_Pressure : Refraction.Hectopascal) is
+  begin
+    Control.Define (The_Air_Pressure);
+  end Define;
+
+
+  procedure Define (The_Temperature : Refraction.Celsius) is
+  begin
+    Control.Define (The_Temperature);
+  end Define;
 
 
   procedure Align is
@@ -280,6 +296,14 @@ package body Telescope is
         select
           accept Close;
           exit;
+        or
+          accept Define (The_Air_Pressure : Refraction.Hectopascal) do
+            Ten_Micron.Define (The_Air_Pressure);
+          end Define;
+        or
+          accept Define (The_Temperature : Refraction.Celsius) do
+            Ten_Micron.Define (The_Temperature);
+          end Define;
         or
           accept Align do
             Synch_On_Picture;

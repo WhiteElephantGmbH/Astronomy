@@ -1059,8 +1059,8 @@ package body User is
       Catalog_Handler (Data.Favorites);
       Define_Control_Page;
       if Persistent_Setup.Storage_Is_Empty then
-        The_Air_Pressure := 0;
-        The_Temperature := 10;
+        The_Air_Pressure := 0.0;
+        The_Temperature := 10.0;
       end if;
       Refraction.Set (The_Air_Pressure);
       Refraction.Set (The_Temperature);

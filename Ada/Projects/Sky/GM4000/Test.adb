@@ -67,6 +67,9 @@ package body Test is
     RA_Axis_Image  : String := RA_Park_Axis_Image;
     Dec_Axis_Image : String := Dec_Park_Axis_Image;
 
+    Air_Pressure_Image : String := "1013.0#";
+    Temperature_Image  : String := "+010.0#";
+
     procedure Message_Handler (Data : String) is
 
       procedure Send (Item :  String) is
@@ -104,6 +107,8 @@ package body Test is
           Image            : constant String := Data(Data'first + 3 .. Data'last);
           Extended_Command : constant String := (if Data'length > 5 then Data(Data'first .. Data'first + 4) else None);
           Extended_Image   : constant String := (if Data'length > 5 then Data(Data'first + 5 .. Data'last) else "");
+          Large_Command    : constant String := (if Data'length > 6 then Data(Data'first .. Data'first + 5) else None);
+          Large_Image      : constant String := (if Data'length > 6 then Data(Data'first + 6 .. Data'last) else "");
         begin
           if Data = ":Gstat#" then
             Put_Line ("Get Status");
@@ -153,6 +158,12 @@ package body Test is
               null;
             end case;
             Send (Dec_Axis_Image);
+          elsif Data = ":GRPRS#" then
+            Put_Line ("Get Air Pressure");
+            Send (Air_Pressure_Image);
+          elsif Data = ":GRTMP#" then
+            Put_Line ("Get Temperature");
+            Send (Temperature_Image);
           elsif Data = ":MaX#" then
             The_State := Positioning;
             Put_Line ("Slew to Axis Position");
@@ -165,6 +176,14 @@ package body Test is
           elsif Extended_Command = ":SaXb" then
             Put_Line ("Set Dec Axis Angle");
             Dec_Axis_Image := Extended_Image;
+            Send ("1");
+          elsif Large_Command = ":SRPRS" then
+            Put_Line ("Set Air Pressure: " & Large_Image);
+            Air_Pressure_Image := Large_Image;
+            Send ("1");
+          elsif Large_Command = ":SRTMP" then
+            Put_Line ("Set Temperature: " & Large_Image);
+            Temperature_Image := Large_Image;
             Send ("1");
           elsif Command = ":GV" then
             case Data(Data'first + 3) is
@@ -243,7 +262,7 @@ package body Test is
             Send_Delay := Delay_Counter;
           elsif Command = ":CM" then
             Put_Line ("Synchronize to Target Object");
-            Send ("Coordinates   matched    #"); -- OK
+            Send ("Coordinates     matched        #"); -- OK
           else
             Put_Line ("Unknown Command " & Data);
           end if;
@@ -272,7 +291,7 @@ package body Test is
             Is_Available  : Boolean;
           begin
             exit Main when Command = "";
-            if Command in ":Gstat#" | ":GD#" | ":GR#" | ":GaXa#" | ":GaXb#" then
+            if Command in ":Gstat#" | ":GD#" | ":GR#" | ":GaXa#" | ":GaXb#" | ":GRPRS#" | ":GRTMP#" then
               if not Hiding and not Log_All then
                 Start_Hiding := True;
               end if;

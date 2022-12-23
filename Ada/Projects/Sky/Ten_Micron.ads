@@ -5,6 +5,7 @@
 pragma Style_White_Elephant;
 
 with Network;
+with Refraction;
 with Space;
 
 package Ten_Micron is
@@ -36,6 +37,10 @@ package Ten_Micron is
 
   procedure Startup (Server_Address : Network.Ip_Address;
                      Server_Port    : Network.Port_Number);
+
+  procedure Define (The_Air_Pressure : Refraction.Hectopascal);
+
+  procedure Define (The_Temperature : Refraction.Celsius);
 
   procedure Slew_To (Location : Space.Direction;
                      Target   : Target_Kind := Other_Targets);

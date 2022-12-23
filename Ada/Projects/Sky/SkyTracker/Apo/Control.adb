@@ -47,6 +47,8 @@ package body Control is
 
   type Command is (Define_Catalog,
                    Define_Target,
+                   Define_Air_Pressure,
+                   Define_Temperature,
                    Align,
                    Go_To,
                    Go_To_Left,
@@ -78,14 +80,16 @@ package body Control is
 
   private
     The_New_Direction        : Space.Direction;
-    Next_Command             : User.Command_Action;
-    Has_New_Telescope_Data   : Boolean := False;
-    Has_New_Goto_Direction   : Boolean := False;
-    Define_Catalog_Pending   : Boolean := False;
-    Define_Target_Pending    : Boolean := False;
-    Update_Pending           : Boolean := False;
-    Command_Is_Pending       : Boolean := False;
-    Termination_Is_Enabled   : Boolean := False;
+    Next_Command                : User.Command_Action;
+    Has_New_Telescope_Data      : Boolean := False;
+    Has_New_Goto_Direction      : Boolean := False;
+    Define_Catalog_Pending      : Boolean := False;
+    Define_Target_Pending       : Boolean := False;
+    Define_Air_Pressure_Pending : Boolean := False;
+    Define_Temperature_Pending  : Boolean := False;
+    Update_Pending              : Boolean := False;
+    Command_Is_Pending          : Boolean := False;
+    Termination_Is_Enabled      : Boolean := False;
   end Action_Handler;
 
 
@@ -121,6 +125,10 @@ package body Control is
         Define_Catalog_Pending := True;
       when User.Define_Target =>
         Define_Target_Pending := True;
+      when User.Define_Air_Pressure =>
+        Define_Air_Pressure_Pending := True;
+       when User.Define_Temperature =>
+        Define_Temperature_Pending := True;
       when User.Update =>
         Update_Pending := True;
       when User.Command_Action =>
@@ -163,6 +171,12 @@ package body Control is
       elsif Define_Catalog_Pending then
         The_Command := Define_Catalog;
         Define_Catalog_Pending := False;
+      elsif Define_Air_Pressure_Pending then
+        The_Command := Define_Air_Pressure;
+        Define_Air_Pressure_Pending := False;
+      elsif Define_Temperature_Pending then
+        The_Command := Define_Temperature;
+        Define_Temperature_Pending := False;
       elsif Update_Pending then
         The_Command := Update;
         Update_Pending := False;
@@ -353,6 +367,10 @@ package body Control is
             null;
           end if;
         end;
+      when Define_Air_Pressure =>
+        Telescope.Define (User.Air_Pressure);
+      when Define_Temperature =>
+        Telescope.Define (User.Temperature);
       when Align =>
         Telescope.Align;
       when Go_To =>

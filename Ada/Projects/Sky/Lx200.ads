@@ -5,6 +5,7 @@
 pragma Style_White_Elephant;
 
 with Angle;
+with Refraction;
 
 package Lx200 is
 
@@ -14,9 +15,11 @@ package Lx200 is
 
   Flush_Input : String := "" & Terminator;
 
+  Add_Alignment_Point_Ok : constant String := "V";
+
   Slew_Ok : constant String := "0";
 
-  Synch_Ok : constant String := "Coordinates   matched    ";
+  Synch_Ok : constant String := "Coordinates     matched        ";
 
   type Extended_Command is (
     Get_Alignment_Status,
@@ -56,11 +59,21 @@ package Lx200 is
     Set_Finding_Rate,
     Set_Slewing_Rate, -- last normal command
 
-    Get_Status,
+    Get_Alignment_Information,
     Get_Axis_RA_Position,
     Get_Axis_Dec_Position,
+    Get_Air_Pressure,
+    Get_Temperature,
+    Get_Number_Of_Alignment_Stars,
+    Get_Pointing_State,
+    Get_Status,
+    New_Alignment_Start,
+    New_Alignment_Point,
+    New_Alignment_End,
     Set_Axis_RA_Position,
     Set_Axis_Dec_Position,
+    Set_Air_Pressure,
+    Set_Temperature,
     Set_Ultra_Precision_Mode,
     Slew_To_Axis_Position,
     Slew_To_Park_Position,
@@ -86,5 +99,9 @@ package Lx200 is
   function Position_Of (Item : Angle.Value) return String;
 
   function Position_Of (Item : String) return Angle.Value;
+
+  function Air_Pressure_Of (Item : Refraction.Hectopascal) return String;
+
+  function Temperature_Of (Item : Refraction.Celsius) return String;
 
 end Lx200;
