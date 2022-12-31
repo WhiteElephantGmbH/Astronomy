@@ -73,7 +73,7 @@ package body Data is
   function Table_Of (Id : Object) return Catalog.Information with Inline is
   begin
     if Id <= Catalog.Last_Index then
-      return Catalog.Table_Of (Id);
+      return Catalog.Data_Of (Id);
     else
       return The_Extension_Table(Id);
     end if;

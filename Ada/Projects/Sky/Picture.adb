@@ -187,8 +187,8 @@ package body Picture is
     end if;
     Astap.Solve (Filename => Filename,
                  Height   => Actual_Height,
-                 Ra       => Astap.Degrees(Angle.Degrees'(+Space.Ra_Of (Search_From))),
-                 Dec      => Astap.Degrees(Angle.Degrees'(+Space.Dec_Of (Search_From))));
+                 Start    => [Astap.Degrees(Angle.Degrees'(+Space.Ra_Of (Search_From))),
+                              Astap.Degrees(Angle.Degrees'(+Space.Dec_Of (Search_From)))]);
     Is_Solving := True;
     return True;
   exception
@@ -204,7 +204,7 @@ package body Picture is
 
   function Solved return Boolean is
   begin
-    Is_Solved := Astap.Solved (Ra => The_Ra, Dec => The_Dec);
+    Is_Solved := Astap.Solved (The_Ra, The_Dec);
     if Is_Solved then
       Is_Solving := False;
       File.Delete (Filename);

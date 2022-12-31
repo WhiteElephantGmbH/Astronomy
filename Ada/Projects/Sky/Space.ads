@@ -25,7 +25,7 @@ package Space is
 
   Unknown_Direction : constant Direction;
 
-  North_Pole : constant Direction;
+  Pole_Search_Direction : constant Direction;
 
   Axis_Pole_Left  : constant Direction;
   Axis_Pole_Right : constant Direction;
@@ -71,9 +71,11 @@ private
 
   Unknown_Direction : constant Direction := (others => <>);
 
-  North_Pole : constant Direction := (Dec      => Angle.Quadrant,
-                                      Ra       => Angle.Zero,
-                                      Is_Known => True);
+  use type Angle.Value;
+
+  Pole_Search_Direction : constant Direction := (Dec      => +Angle.Degrees(88.0),
+                                                 Ra       => Angle.Zero,
+                                                 Is_Known => True);
 
   Axis_Pole_Left : constant Direction := (Dec      => Angle.Zero,
                                           Ra       => Angle.Semi_Circle,

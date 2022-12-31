@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2012 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2012 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -38,7 +38,9 @@ package Catalog is
     Kind        : Object_Type := Unknown;
   end record;
 
-  function Table_Of (Id : Object) return Information with Inline;
+  function Data_Of (Id : Object) return Information with Inline;
+
+  function Id_Of (Name : String) return Object;
 
   function Last_Index return Object with Inline;
 

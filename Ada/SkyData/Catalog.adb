@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2012 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2012 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -23,13 +23,54 @@ with Catalog.Ocl;
 with Catalog.Messier;
 with Catalog.Ngc;
 with Catalog.Quasars;
+with Strings;
 
 package body Catalog is
 
-  function Table_Of (Id : Object) return Information is
+  function Data_Of (Id : Object) return Information is
   begin
     return Base.Table(Id);
-  end Table_Of;
+  end Data_Of;
+
+
+  function Id_Of (Name : String) return Object is
+
+    function Number return Natural is
+    begin
+      for Index in Name'range loop
+        if Name(Index) in '0' .. '9' then
+          return Integer'value (Name(Index .. Name'last));
+        end if;
+      end loop;
+      return Undefined;
+    end Number;
+
+    Value : constant Natural := Number;
+
+  begin -- Id_Of
+    if Value /= Undefined then
+      case Strings.Lowercase_Of (Name(Name'first)) is
+      when 'c' =>
+        return Caldwell.Id(Value);
+      when 'h' =>
+        return Hip.Id(Value);
+      when 'm' =>
+        return Messier.Id(Value);
+      when 'n' =>
+        return Ngc.Id(Value);
+      when 'o' =>
+        return Ocl.Id(Value);
+      when 'q' =>
+        return Quasars.Id(Value);
+      when others =>
+        null;
+      end case;
+    end if;
+    return Undefined;
+  exception
+  when others =>
+    return Undefined;
+  end Id_Of;
 
 
   function Caldwell_Id (Item : Positive) return Object is

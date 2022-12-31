@@ -18,7 +18,6 @@ pragma Style_White_Elephant;
 with Configuration;
 with File;
 with Os.Process;
-with Strings;
 with Traces;
 
 package body Astap is
@@ -81,8 +80,7 @@ package body Astap is
 
   procedure Solve (Filename : String;
                    Height   : Degrees;
-                   Ra       : Degrees;
-                   Dec      : Degrees) is
+                   Start    : Location) is
 
     Directory : constant String := File.Containing_Directory_Of (Filename);
     Base_Name : constant String := File.Base_Name_Of (Filename);
@@ -90,7 +88,7 @@ package body Astap is
 
     function Ra_Image return String is
       type Ra_Value is delta 0.001 range 0.0 .. 24.0;
-      Value : constant Degrees := Ra / 15.0;
+      Value : constant Degrees := Start(Ra) / 15.0;
     begin
       return Ra_Value(Value)'img;
     end Ra_Image;
@@ -98,7 +96,7 @@ package body Astap is
     type Value is delta 0.01 range 0.0 .. 360.0;
 
     function Spd_Image return String is
-      Spd : Degrees := Dec + 90.0;
+      Spd : Degrees := Start(Dec) + 90.0;
     begin
       if Spd > 360.0 then
         Spd := Spd - 360.0;
@@ -138,15 +136,34 @@ package body Astap is
   end Solve;
 
 
-  function Solved (Ra  : out Degrees;
-                   Dec : out Degrees) return Boolean is
+  function Solved (The_Ra  : out Degrees;
+                   The_Dec : out Degrees) return Boolean is
+    CRVAL : Location;
+    Unused_CD : Matrix;
+    Unused_Size : Pixels;
+    Result : constant Boolean := Solved (CRVAL, Unused_CD, Unused_Size);
+  begin
+    The_Ra := CRVAL(Ra);
+    The_Dec := CRVAL(Dec);
+    return Result;
+  end Solved;
+
+
+  function Solved (CRVAL : out Location;
+                   CD    : out Matrix;
+                   Size  : out Pixels) return Boolean is
 
     procedure Handle_Result is
 
       Result_Handle : constant Configuration.File_Handle := Configuration.Handle_For (Result_Filename);
       Null_Section  : constant Configuration.Section_Handle := Configuration.Handle_For (Result_Handle);
-      Ra_2000       : constant String := Configuration.Value_Of (Null_Section, "CRVAL1");
-      Dec_2000      : constant String := Configuration.Value_Of (Null_Section, "CRVAL2");
+      CRVAL1        : constant String := Configuration.Value_Of (Null_Section, "CRVAL1");
+      CRVAL2        : constant String := Configuration.Value_Of (Null_Section, "CRVAL2");
+      CD1_1         : constant String := Configuration.Value_Of (Null_Section, "CD1_1");
+      CD1_2         : constant String := Configuration.Value_Of (Null_Section, "CD1_2");
+      CD2_1         : constant String := Configuration.Value_Of (Null_Section, "CD2_1");
+      CD2_2         : constant String := Configuration.Value_Of (Null_Section, "CD2_2");
+      Dimensions    : constant String := Configuration.Value_Of (Null_Section, "DIMENSIONS");
       Error         : constant String := Configuration.Value_Of (Null_Section, "ERROR");
       Warning       : constant String := Configuration.Value_Of (Null_Section, "WARNING");
 
@@ -158,8 +175,13 @@ package body Astap is
       if Warning /= "" then
         Log.Warning (Warning);
       end if;
-      Ra := Degrees'value(Ra_2000);
-      Dec := Degrees'value(Dec_2000);
+      CRVAL := [Degrees'value(CRVAL1), Degrees'value(CRVAL2)];
+      CD := [[Degrees'value(CD1_1), Degrees'value(CD1_2)], [Degrees'value(CD2_1), Degrees'value(CD2_2)]];
+      declare
+        Dimension_Images : constant Strings.Item := Strings.Item_Of (Dimensions, Separator => 'x');
+      begin
+        Size := [Positive'value(Dimension_Images(Ra)), Positive'value(Dimension_Images(Dec))];
+      end;
     exception
     when others =>
       raise Not_Solved;
@@ -195,7 +217,9 @@ package body Astap is
   procedure Stop is
   begin
     if Is_Solving then
+      Log.Write ("Stop");
       Terminate_Process;
+      Cleanup;
       Is_Solving := False;
     end if;
   end Stop;

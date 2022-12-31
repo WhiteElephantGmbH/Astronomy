@@ -161,7 +161,7 @@ package body Telescope is
   function Actual_Target_Direction return Space.Direction is
   begin
     if User.In_Setup_Mode then
-      return Space.North_Pole;
+      return Space.Pole_Search_Direction;
     elsif Next_Get_Direction = null then
       return Space.Unknown_Direction;
     else
@@ -347,6 +347,9 @@ package body Telescope is
         or
           accept Stop do
             Remote.Define (Target => "");
+            if The_Information.Status = Solving then
+              Picture.Stop_Solving;
+            end if;
             Ten_Micron.Stop;
           end Stop;
         or

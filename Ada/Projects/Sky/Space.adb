@@ -28,7 +28,6 @@ package body Space is
 
   function Direction_Of (Dec : Angle.Degrees;
                          Ra  : Angle.Degrees) return Direction is
-    use type Angle.Value;
   begin
     return (Dec      => +Dec,
             Ra       => +Ra,
@@ -94,7 +93,6 @@ package body Space is
 
 
   function "-" (Left, Right : Direction) return Direction is
-    use type Angle.Value;
   begin
     return (Dec      => Left.Dec - Right.Dec,
             Ra       => Left.Ra - Right.Ra,
@@ -104,7 +102,6 @@ package body Space is
 
   function "-" (Left, Right : Direction) return Distance is
     Diff : constant Direction := Left - Right;
-    use type Angle.Value;
     use type Angle.Signed;
     use type Angle.Degrees;
   begin

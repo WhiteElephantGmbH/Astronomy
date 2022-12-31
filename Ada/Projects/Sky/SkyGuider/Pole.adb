@@ -29,7 +29,7 @@ package body Pole is
     The_Count : Natural := 0;
   begin
     Log.Write ("evaluate direction");
-    if Picture.Solve (Search_From => Space.North_Pole) then
+    if Picture.Solve (Search_From => Space.Pole_Search_Direction) then
       M_Zero.Start_Solving;
       while not Picture.Solved loop
         delay 0.5;
