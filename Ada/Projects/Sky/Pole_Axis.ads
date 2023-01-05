@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2021 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2021 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,6 +15,9 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with Angle;
+with Earth;
+
 package Pole_Axis is
 
   procedure Clear;
@@ -26,5 +29,9 @@ package Pole_Axis is
   procedure Evaluate_Left;
 
   procedure Evaluate_Right;
+
+  function Cone_Error return Angle.Value;
+
+  function Offsets return Earth.Direction;
 
 end Pole_Axis;

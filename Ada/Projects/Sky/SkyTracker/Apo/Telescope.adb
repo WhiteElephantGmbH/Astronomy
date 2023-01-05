@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2022 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2022 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,7 +15,6 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Alignment;
 with Parameter;
 with Picture;
 with Pole_Axis;
@@ -364,8 +363,8 @@ package body Telescope is
             The_Data.Actual_Direction := The_Information.Direction;
             The_Data.Actual_Position := The_Information.Position;
             The_Data.Universal_Time := Time.Universal;
-            The_Data.Cone_Error := Alignment.Cone_Error;
-            The_Data.Pole_Offsets := Alignment.Pole_Offsets;
+            The_Data.Cone_Error := Pole_Axis.Cone_Error;
+            The_Data.Pole_Offsets := Pole_Axis.Offsets;
           end Get;
         or delay Update_Delay;
           Signal_Information_Update.all;

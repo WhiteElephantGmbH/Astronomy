@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2021 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2021 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,9 +15,6 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Alignment;
-with Angle;
-with Earth;
 with Picture;
 with Site;
 with Traces;
@@ -30,13 +27,16 @@ package body Pole_Axis is
   The_Pole_Left  : Earth.Direction;
   The_Pole_Right : Earth.Direction;
 
+  The_Cone_Error   : Angle.Value := Angle.Zero;
+  The_Pole_Offsets : Earth.Direction;
+
 
   procedure Set_Alignment is
-    The_Alt        : Angle.Signed := 0;
-    The_Az         : Angle.Signed := 0;
-    The_Cone_Error : Angle.Signed := 0;
-    The_Left_Az    : Angle.Signed;
-    The_Right_Az   : Angle.Signed;
+    The_Alt      : Angle.Signed := 0;
+    The_Az       : Angle.Signed := 0;
+    The_Coning   : Angle.Signed := 0;
+    The_Left_Az  : Angle.Signed;
+    The_Right_Az : Angle.Signed;
     use type Angle.Signed;
   begin
     if Earth.Direction_Is_Known (The_Pole_Top) then
@@ -47,21 +47,21 @@ package body Pole_Axis is
       The_Right_Az := +Earth.Az_Of (The_Pole_Right);
       The_Az := The_Right_Az + The_Left_Az;
       The_Az := The_Az / 2;
-      The_Cone_Error := (The_Az - The_Left_Az);
+      The_Coning := (The_Az - The_Left_Az);
     elsif Earth.Direction_Is_Known (The_Pole_Right) then
       The_Az := +Earth.Az_Of (The_Pole_Right);
     elsif Earth.Direction_Is_Known (The_Pole_Left) then
       The_Az := +Earth.Az_Of (The_Pole_Left);
     end if;
     if (The_Az = 0) and (The_Alt = 0) then
-      Alignment.Set (The_Pole_Offsets => Earth.Unknown_Direction);
+      The_Pole_Offsets := Earth.Unknown_Direction;
     else
       if The_Alt /= 0 then
-        The_Alt := The_Alt - Angle.Signed'(+Site.Latitude) - The_Cone_Error;
+        The_Alt := The_Alt - Angle.Signed'(+Site.Latitude) - The_Coning;
       end if;
-      Alignment.Set (The_Pole_Offsets => Earth.Direction_Of (Alt => +The_Alt, Az => +The_Az));
+      The_Pole_Offsets := Earth.Direction_Of (Alt => +The_Alt, Az => +The_Az);
     end if;
-    Alignment.Set (The_Cone_Error => Angle.Value'(+The_Cone_Error));
+    The_Cone_Error := Angle.Value'(+The_Coning);
   end Set_Alignment;
 
 
@@ -78,7 +78,7 @@ package body Pole_Axis is
   function Has_Values return Boolean is
     use type Angle.Value;
   begin
-    return Earth.Direction_Is_Known (Alignment.Pole_Offsets) or (Alignment.Cone_Error /= Angle.Zero);
+    return Earth.Direction_Is_Known (Offsets) or (Cone_Error /= Angle.Zero);
   end Has_Values;
 
 
@@ -104,5 +104,17 @@ package body Pole_Axis is
     The_Pole_Top := Picture.Direction;
     Set_Alignment;
   end Evaluate_Top;
+
+
+  function Cone_Error return Angle.Value is
+  begin
+    return The_Cone_Error;
+  end Cone_Error;
+
+
+  function Offsets return Earth.Direction is
+  begin
+    return The_Pole_Offsets;
+  end Offsets;
 
 end Pole_Axis;
