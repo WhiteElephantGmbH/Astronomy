@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2021 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                      *
+-- *                           (c) 2021 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                      *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -288,8 +288,9 @@ package body Picture is
 
   use Astro;
 
-  procedure Evaluate_Actual (Ra  : out REAL;
-                             Dec : out REAL) is
+  procedure Evaluate_Actual (Ra   : out REAL;
+                             Dec  : out REAL;
+                             Lmst : out Time.Value) is
 
     use Astro.PNULIB;
     use Astro.SPHLIB;
@@ -307,10 +308,12 @@ package body Picture is
       TS := Time_Stamp;
       Log.Write ("Time Stamp: " & Time.Image_Of (TS));
       T := Time.Tut_Of (TS);
+      Lmst := Time.Lmst_Of (TS);
     exception
     when Undefined_Value =>
       Log.Warning ("Undefined Picture Time_Stamp (used actual time)");
       T := Time.Tut;
+      Lmst := Time.Lmst;
     end;
     Ra := REAL(The_Ra);
     Dec := REAL(The_Dec);
@@ -320,24 +323,19 @@ package body Picture is
   end Evaluate_Actual;
 
 
-  function Actual_Direction return Space.Direction is
+  procedure Evaluate (Center : out Space.Direction;
+                      Lmst   : out Time.Value) is
     Ra, Dec : REAL;
   begin
-    Evaluate_Actual (Ra => Ra, Dec => Dec);
-    return Space.Direction_Of (Ra  => Angle.Degrees(Ra),
-                               Dec => Angle.Degrees(Dec));
-  end Actual_Direction;
+    Evaluate_Actual (Ra => Ra,
+                     Dec => Dec,
+                     Lmst => Lmst);
+    Center := Space.Direction_Of (Ra  => Ra,
+                                  Dec => Dec);
+  end Evaluate;
 
 
   function Direction return Earth.Direction is
-
-    function Lmst return Time.Value is
-    begin
-      return Time.Lmst_Of (Time_Stamp);
-    exception
-    when Undefined_Value =>
-      return Time.Lmst;
-    end Lmst;
 
     function Phy return Angle.Value is
     begin
@@ -350,11 +348,15 @@ package body Picture is
 
     Ra, Dec, Alt, Az : REAL;
 
+    Lmst : Time.Value;
+
     use Astro.SPHLIB;
     use type Angle.Value;
 
   begin -- Direction
-    Evaluate_Actual (Ra => Ra, Dec => Dec);
+    Evaluate_Actual (Ra   => Ra,
+                     Dec  => Dec,
+                     Lmst => Lmst);
     EQUHOR (DEC => +Dec,
             TAU => +(Lmst - Ra),
             PHI => +Phy,

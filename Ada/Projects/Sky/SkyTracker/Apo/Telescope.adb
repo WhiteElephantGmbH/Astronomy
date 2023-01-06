@@ -15,6 +15,7 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with Alignment;
 with Parameter;
 with Picture;
 with Pole_Axis;
@@ -42,6 +43,8 @@ package body Telescope is
     entry Go_To_Right;
 
     entry Go_To_Top;
+
+    entry Go_To_Next;
 
     entry Park;
 
@@ -112,6 +115,12 @@ package body Telescope is
   end Go_To_Top;
 
 
+  procedure Go_To_Next is
+  begin
+    Control.Go_To_Next;
+  end Go_To_Next;
+
+
   procedure Park is
   begin
     Control.Park;
@@ -132,6 +141,7 @@ package body Telescope is
 
   Next_Id            : Name.Id;
   Next_Get_Direction : Get_Space_Access := null;
+  The_Next_Star      : Space.Direction;
 
 
   function Target_Kind return Ten_Micron.Target_Kind is
@@ -160,7 +170,11 @@ package body Telescope is
   function Actual_Target_Direction return Space.Direction is
   begin
     if User.In_Setup_Mode then
-      return Space.Pole_Search_Direction;
+      if Space.Direction_Is_Known (The_Next_Star) then
+        return The_Next_Star;
+      else
+        return Space.Pole_Search_Direction;
+      end if;
     elsif Next_Get_Direction = null then
       return Space.Unknown_Direction;
     else
@@ -192,8 +206,9 @@ package body Telescope is
     The_Information : Ten_Micron.Information;
 
     The_Picture_Direction : Space.Direction;
+    The_Picture_Lmst      : Time.Value;
 
-    Evatuate_Pole_Axis : access procedure;
+    Evaluate_Pole_Setup : access procedure;
 
 
     procedure Get_Information is
@@ -206,9 +221,8 @@ package body Telescope is
 
 
     function Solve_Picture return Boolean is
-      Actual_Direction : constant Space.Direction := Actual_Target_Direction;
     begin
-      if not Picture.Solve (Actual_Direction) then
+      if not Picture.Solve (Actual_Target_Direction) then
         Log.Warning ("Picture not solved");
         return False;
       end if;
@@ -247,8 +261,7 @@ package body Telescope is
           Ten_Micron.Start_Solving;
         end if;
       when Tracking =>
-        if not User.In_Setup_Mode
-          and then not Aligning_Enabled
+        if not Aligning_Enabled
           and then Picture.Exists
           and then Solve_Picture
         then
@@ -257,10 +270,17 @@ package body Telescope is
       when Solving =>
         if Picture_Solved then
           Ten_Micron.End_Solving;
+          Picture.Evaluate (Center => The_Picture_Direction,
+                            Lmst   => The_Picture_Lmst);
           if User.In_Setup_Mode then
-            Evatuate_Pole_Axis.all;
+            if Evaluate_Pole_Setup /= null then
+              Evaluate_Pole_Setup.all;
+            else
+              Alignment.Define (Direction => The_Picture_Direction,
+                                Lmst      => The_Picture_Lmst,
+                                Pier_Side => The_Information.Pier_Side);
+            end if;
           else
-            The_Picture_Direction := Picture.Actual_Direction;
             User.Enable_Align_On_Picture;
             Aligning_Enabled := True;
           end if;
@@ -285,6 +305,8 @@ package body Telescope is
 
     procedure Position_To (The_Direction : Space.Direction) is
     begin
+      Alignment.Clear;
+      The_Next_Star := Space.Unknown_Direction;
       Ten_Micron.Slew_To (The_Direction, Ten_Micron.Axis_Position);
       Remote.Define (Target => "");
     end Position_To;
@@ -305,12 +327,17 @@ package body Telescope is
           end Define;
         or
           accept Align do
-            Synch_On_Picture;
-            Ten_Micron.Slew_To (Actual_Target_Direction, Target_Kind);
+            if Alignment.Star_Count > 0 then
+              Alignment.Generate;
+            else
+              Synch_On_Picture;
+              Ten_Micron.Slew_To (Actual_Target_Direction, Target_Kind);
+            end if;
           end Align;
         or
           accept Go_To do
-            Evatuate_Pole_Axis := null;
+            Evaluate_Pole_Setup := null;
+            Alignment.Clear;
             Ten_Micron.Slew_To (Actual_Target_Direction, Target_Kind);
             if Name.Is_Known (Next_Id) then
               case Name.Kind_Of (Next_Id) is
@@ -325,19 +352,30 @@ package body Telescope is
           end Go_To;
         or
           accept Go_To_Left do
-            Evatuate_Pole_Axis := Pole_Axis.Evaluate_Left'access;
+            Evaluate_Pole_Setup := Pole_Axis.Evaluate_Left'access;
             Position_To (Space.Axis_Pole_Left);
           end Go_To_Left;
         or
           accept Go_To_Right do
-            Evatuate_Pole_Axis := Pole_Axis.Evaluate_Right'access;
+            Evaluate_Pole_Setup := Pole_Axis.Evaluate_Right'access;
             Position_To (Space.Axis_Pole_Right);
           end Go_To_Right;
         or
           accept Go_To_Top do
-            Evatuate_Pole_Axis := Pole_Axis.Evaluate_Top'access;
+            Evaluate_Pole_Setup := Pole_Axis.Evaluate_Top'access;
             Position_To (Space.Axis_Pole_Top);
           end Go_To_Top;
+        or
+          accept Go_To_Next do
+            Evaluate_Pole_Setup := null;
+            The_Picture_Direction := Space.Unknown_Direction;
+            The_Next_Star := Alignment.Next_Star;
+            if Space.Direction_Is_Known (The_Next_Star) then
+              Ten_Micron.Slew_To (The_Next_Star);
+            else
+              Ten_Micron.Stop;
+            end if;
+          end Go_To_Next;
         or
           accept Park do
             Remote.Define (Target => "");
@@ -362,7 +400,10 @@ package body Telescope is
             The_Data.Target_Direction := Actual_Target_Direction;
             The_Data.Actual_Direction := The_Information.Direction;
             The_Data.Actual_Position := The_Information.Position;
+            The_Data.Picture_Direction := The_Picture_Direction;
+            The_Data.Mount_Pier_Side := The_Information.Pier_Side;
             The_Data.Universal_Time := Time.Universal;
+            The_Data.Align_Points := Alignment.Star_Count;
             The_Data.Cone_Error := Pole_Axis.Cone_Error;
             The_Data.Pole_Offsets := Pole_Axis.Offsets;
           end Get;

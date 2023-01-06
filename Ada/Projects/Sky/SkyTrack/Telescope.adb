@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2011 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2011 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -158,9 +158,13 @@ package body Telescope is
 
 
   function Synch_On_Picture_Complete return Boolean is
+    The_Direction : Space.Direction;
+    Unused        : Time.Value;
   begin
     if Picture.Solved then
-      Motor.Update_Offsets (To => Numerics.Position_Of (Direction => Picture.Actual_Direction,
+      Picture.Evaluate (Center => The_Direction,
+                        Lmst   => Unused);
+      Motor.Update_Offsets (To => Numerics.Position_Of (Direction => The_Direction,
                                                         Rotations => Alignment.Corrections,
                                                         At_Time   => Time.Universal));
       User.Enable_Align_On_Picture;

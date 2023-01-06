@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                               (c) 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                           (c) 2021 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                      *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -54,11 +54,13 @@ package Picture is
   function Direction return Space.Direction;
   -- returns the center of the picture in J2000 coordinates.
 
-  function Actual_Direction return Space.Direction;
-  -- return the center of the picture in actual coordinates.
+  procedure Evaluate (Center : out Space.Direction;
+                      Lmst   : out Time.Value);
+  -- PRECONDITION: The site must be defined (persistent type in package Site) or the camera must provide the location.
+  -- evaluate the center of the picture in actual coordinates and the sideral time when the picture was taken.
 
   function Direction return Earth.Direction;
-  -- PRECONDITION: The site must be defined (persistent type in package Site).
+  -- PRECONDITION: The site must be defined (persistent type in package Site) or the camera must provide the location.
   -- returns the center of the picture in alt/az coordinates.
 
 end Picture;

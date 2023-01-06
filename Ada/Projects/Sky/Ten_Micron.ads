@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2022 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2022 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
@@ -7,6 +7,7 @@ pragma Style_White_Elephant;
 with Network;
 with Refraction;
 with Space;
+with Time;
 
 package Ten_Micron is
 
@@ -33,6 +34,7 @@ package Ten_Micron is
     Status    : State := Disconnected;
     Direction : Space.Direction;
     Position  : Space.Direction;
+    Pier_Side : Character;
   end record;
 
   procedure Startup (Server_Address : Network.Ip_Address;
@@ -58,6 +60,16 @@ package Ten_Micron is
   procedure Unpark;
 
   function Get return Information;
+
+  procedure Start_Alignment;
+
+  procedure Add_Alignment_Point (Mount   :     Space.Direction;
+                                 Picture :     Space.Direction;
+                                 Side    :     Character;
+                                 Lmst    :     Time.Value;
+                                 Points  : out Natural);
+
+  function End_Alignment return Boolean;
 
   procedure Disconnect;
 

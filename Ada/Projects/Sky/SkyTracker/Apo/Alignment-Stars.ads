@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2022 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                           (c) 2023 by White Elephant GmbH, Schaffhausen, Switzerland                              *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,66 +15,78 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Angle;
-with Earth;
-with Name;
-with Refraction;
-with Space;
-with Ten_Micron;
-with Time;
+with Data;
+with Discrete_Set;
 
-package Telescope is
+private package Alignment.Stars is
 
-  subtype State is Ten_Micron.State;
+  type Id is (
+    Albireo,
+    Aldebaran,
+    Alderamin,
+    Algenib,
+    Alkaid,
+    Alpha_Cam,
+    Alpha_Fornacis,
+    Alpha_Lyncis,
+    Alphard,
+    Alpheratz,
+    Altair,
+    Alula_Borealis,
+    Antares,
+    Arcturus,
+    Beta_Aqr,
+    Betelgeuse,
+    Capella,
+    Caph,
+    Castor,
+    Cor_Caroli,
+    Deneb,
+    Denebola,
+    Diphda,
+    Dubhe,
+    Eltanin,
+    Enif,
+    Gamm_Cas,
+    Gemma,
+    Gienah_Ghurab,
+    Hamal,
+    Kochab,
+    Lambda_Aqr,
+    Menkar,
+    Menkent,
+    Mirach,
+    Mirfak,
+    Muscida,
+    Nu_Ophiuchi,
+    Omega_Cap,
+    Pi_Herculis,
+    Polaris,
+    Pollux,
+    Procyon,
+    Rasalhague,
+    Regulus,
+    Rho_Puppis,
+    Rigel,
+    Scheat,
+    Sirius,
+    Spica,
+    Unukalhai,
+    Vega,
+    Vindemiatrix,
+    Zaurak,
+    Zeta_Herculis,
+    Zeta_Persei,
+    Zuben_El_Genubi);
 
-  use all type State;
+  subtype Count is Natural range 0 .. Id'pos(Id'last) - Id'pos(Id'first) + 1;
 
-  type Data is record
-    Status             : State := Disconnected;
-    Target_Direction   : Space.Direction;
-    Actual_Direction   : Space.Direction;
-    Actual_Position    : Space.Direction;
-    Picture_Direction  : Space.Direction;
-    Mount_Pier_Side    : Character;
-    Align_Points       : Natural;
-    Cone_Error         : Angle.Value := Angle.Zero;
-    Pole_Offsets       : Earth.Direction;
-    Universal_Time     : Time.Ut;
-  end record;
+  package Ids is new Discrete_Set (Id);
 
-  type Information_Update_Handler is access procedure;
+  subtype Set is Ids.Set;
 
-  procedure Start (Update_Handler : Information_Update_Handler);
+  function Object_Of (The_Id : Id) return Data.Object;
 
-  type Get_Space_Access is new Name.Get_Space_Access;
+  function Image_Of (The_Id : Id) return String;
 
-  procedure Define_Space_Access (Get_Direction : Get_Space_Access;
-                                 The_Id        : Name.Id);
-
-  procedure Define (The_Air_Pressure : Refraction.Hectopascal);
-
-  procedure Define (The_Temperature : Refraction.Celsius);
-
-  procedure Align;
-
-  procedure Go_To;
-
-  procedure Go_To_Left;
-
-  procedure Go_To_Right;
-
-  procedure Go_To_Top;
-
-  procedure Go_To_Next;
-
-  procedure Park;
-
-  procedure Stop;
-
-  procedure Unpark;
-
-  function Information return Data;
-
-  procedure Close;
-
-end Telescope;
+end Alignment.Stars;

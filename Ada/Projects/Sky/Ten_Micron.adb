@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2022 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2022 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
@@ -170,7 +170,8 @@ package body Ten_Micron is
                                                     | Get_Axis_Dec_Position
                                                     | Get_Axis_RA_Position
                                                     | Get_Air_Pressure
-                                                    | Get_Temperature);
+                                                    | Get_Temperature
+                                                    | Get_Pointing_State);
 
   begin
     Send (Lx200.String_Of (Command, Parameter), Log_Enabled);
@@ -369,6 +370,27 @@ package body Ten_Micron is
   end Air_Pressure;
 
 
+  function Pier_Side return Character is
+  begin
+    declare
+      Reply : constant String := Reply_For (Lx200.Get_Pointing_State);
+    begin
+      if Reply = "East" then
+        return 'E';
+      elsif Reply = "West" then
+        return 'W';
+      else
+        Log.Error ("unknown pier side");
+        return ' ';
+      end if;
+    end;
+  exception
+  when others =>
+    Log.Error ("invalid pier side");
+    return ' ';
+  end Pier_Side;
+
+
   function Temperature return Refraction.Celsius is
   begin
     return Refraction.Celsius'value (Reply_For (Lx200.Get_Temperature));
@@ -387,6 +409,7 @@ package body Ten_Micron is
       The_Information.Status := The_Status;
       The_Information.Direction := Actual_Direction;
       The_Information.Position := Actual_Position;
+      The_Information.Pier_Side := Pier_Side;
       Refraction.Set (Air_Pressure);
       Refraction.Set (Temperature);
     end if;
@@ -478,6 +501,55 @@ package body Ten_Micron is
   when Error.Occurred =>
     Log.Error (Error.Message);
   end Unpark;
+
+
+  procedure Start_Alignment is
+  begin
+    Execute (Lx200.New_Alignment_Start, Expected => "V");
+  exception
+  when Error.Occurred =>
+    Log.Error (Error.Message);
+  end Start_Alignment;
+
+
+  procedure Add_Alignment_Point (Mount   :     Space.Direction;
+                                 Picture :     Space.Direction;
+                                 Side    :     Character;
+                                 Lmst    :     Time.Value;
+                                 Points  : out Natural) is
+  begin
+    declare
+      Mra       : constant String := Lx200.Hours_Of (Space.Ra_Of (Mount));
+      Mdec      : constant String := Lx200.Signed_Degrees_Of (Space.Dec_Of (Mount));
+      Pra       : constant String := Lx200.Hours_Of (Space.Ra_Of (Picture));
+      Pdec      : constant String := Lx200.Signed_Degrees_Of (Space.Dec_Of (Picture));
+      Sid_Time  : constant String := Lx200.Hours_Of (Lmst);
+      Parameter : constant String := Mra & ',' & Mdec & ',' & Side & ',' & Pra & ',' & Pdec & ',' & Sid_Time;
+      Reply     : constant String := Reply_For (Lx200.New_Alignment_Point, Parameter);
+    begin
+      if Reply = "E" then
+        Log.Warning ("add alignment not valid");
+        Points := 0;
+      else
+        Points := Natural'value(Reply);
+      end if;
+    end;
+  exception
+  when Error.Occurred =>
+    Log.Error (Error.Message);
+    Points := 0;
+  end Add_Alignment_Point;
+
+
+  function End_Alignment return Boolean is
+  begin
+    Execute (Lx200.New_Alignment_End, Expected => "V");
+    return True;
+  exception
+  when Error.Occurred =>
+    Log.Error (Error.Message);
+    return False;
+  end End_Alignment;
 
 
   procedure Disconnect is

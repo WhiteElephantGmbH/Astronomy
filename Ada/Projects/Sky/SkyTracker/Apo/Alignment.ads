@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2022 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                           (c) 2023 by White Elephant GmbH, Schaffhausen, Switzerland                              *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,66 +15,21 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Angle;
-with Earth;
-with Name;
-with Refraction;
 with Space;
-with Ten_Micron;
 with Time;
 
-package Telescope is
+package Alignment is
 
-  subtype State is Ten_Micron.State;
+  procedure Clear;
 
-  use all type State;
+  function Next_Star return Space.Direction;
 
-  type Data is record
-    Status             : State := Disconnected;
-    Target_Direction   : Space.Direction;
-    Actual_Direction   : Space.Direction;
-    Actual_Position    : Space.Direction;
-    Picture_Direction  : Space.Direction;
-    Mount_Pier_Side    : Character;
-    Align_Points       : Natural;
-    Cone_Error         : Angle.Value := Angle.Zero;
-    Pole_Offsets       : Earth.Direction;
-    Universal_Time     : Time.Ut;
-  end record;
+  function Star_Count return Natural;
 
-  type Information_Update_Handler is access procedure;
+  procedure Define (Direction : Space.Direction;
+                    Lmst      : Time.Value;
+                    Pier_Side : Character);
 
-  procedure Start (Update_Handler : Information_Update_Handler);
+  procedure Generate;
 
-  type Get_Space_Access is new Name.Get_Space_Access;
-
-  procedure Define_Space_Access (Get_Direction : Get_Space_Access;
-                                 The_Id        : Name.Id);
-
-  procedure Define (The_Air_Pressure : Refraction.Hectopascal);
-
-  procedure Define (The_Temperature : Refraction.Celsius);
-
-  procedure Align;
-
-  procedure Go_To;
-
-  procedure Go_To_Left;
-
-  procedure Go_To_Right;
-
-  procedure Go_To_Top;
-
-  procedure Go_To_Next;
-
-  procedure Park;
-
-  procedure Stop;
-
-  procedure Unpark;
-
-  function Information return Data;
-
-  procedure Close;
-
-end Telescope;
+end Alignment;

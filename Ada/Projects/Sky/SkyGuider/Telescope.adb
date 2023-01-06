@@ -294,6 +294,7 @@ package body Telescope is
 
     procedure Update_Handling is
       Last_Status : constant State := The_Status;
+      Unused      : Time.Value;
     begin
       Get_Information;
       if Last_Status = Approaching and then The_Status = Tracking then -- start tracking
@@ -310,7 +311,8 @@ package body Telescope is
         end if;
       when Solving =>
         if not User.In_Setup_Mode and then Picture_Solved then
-          The_Picture_Direction := Picture.Actual_Direction;
+          Picture.Evaluate (Center => The_Picture_Direction,
+                            Lmst   => Unused);
           User.Enable_Align_On_Picture;
           Aligning_Enabled := True;
           M_Zero.End_Solving;

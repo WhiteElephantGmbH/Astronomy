@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2022 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                           (c) 2023 by White Elephant GmbH, Schaffhausen, Switzerland                              *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
@@ -9,6 +9,7 @@ with Ada.Text_IO;
 with Exceptions;
 with Log;
 with Network.Tcp;
+with Strings;
 
 package body Test is
 
@@ -70,6 +71,16 @@ package body Test is
     Air_Pressure_Image : String := "1013.0#";
     Temperature_Image  : String := "+010.0#";
 
+    The_Points_Count : Natural := 0;
+
+
+    function Points_Image return String is
+      Image : constant String := "00" & Strings.Trimmed (The_Points_Count'image);
+    begin
+      return Image(Image'last - 2 .. Image'last);
+    end Points_Image;
+
+
     procedure Message_Handler (Data : String) is
 
       procedure Send (Item :  String) is
@@ -109,6 +120,7 @@ package body Test is
           Extended_Image   : constant String := (if Data'length > 5 then Data(Data'first + 5 .. Data'last) else "");
           Large_Command    : constant String := (if Data'length > 6 then Data(Data'first .. Data'first + 5) else None);
           Large_Image      : constant String := (if Data'length > 6 then Data(Data'first + 6 .. Data'last) else "");
+          Huge_Command     : constant String := (if Data'length > 8 then Data(Data'first .. Data'first + 7) else None);
         begin
           if Data = ":Gstat#" then
             Put_Line ("Get Status");
@@ -185,6 +197,18 @@ package body Test is
             Put_Line ("Set Temperature: " & Large_Image);
             Temperature_Image := Large_Image;
             Send ("1");
+          elsif Huge_Command = ":newalig" then
+            The_Points_Count := 0;
+            Put_Line ("Start Alignment");
+            Send ("V#");
+          elsif Huge_Command = ":newalpt" then
+            The_Points_Count := @ + 1;
+            Put_Line ("New Alignment Point");
+            Send (Points_Image & "#");
+          elsif Huge_Command = ":endalig" then
+            The_Points_Count := 0;
+            Put_Line ("End Alignment");
+            Send ("V#");
           elsif Command = ":GV" then
             case Data(Data'first + 3) is
             when 'P' => -- GVP
@@ -238,6 +262,14 @@ package body Test is
           elsif Command = ":GZ" then
             Put_Line ("Get Azimuth");
             Send ("179:59:59.00#");
+          elsif Command = ":pS" then
+            declare
+              Ra   : constant Natural := Natural'value (Ra_Image(Ra_Image'first .. Ra_Image'first + 1));
+              Side : constant String := (if Ra > 12 then "West#" else "East#");
+            begin
+              Put_Line ("Get_Pointing_State");
+              Send (Side);
+            end;
           elsif Command = ":Sr" then
             Ra_Image := Image;
             Put_Line ("Set Object RA " & Image);
@@ -291,7 +323,7 @@ package body Test is
             Is_Available  : Boolean;
           begin
             exit Main when Command = "";
-            if Command in ":Gstat#" | ":GD#" | ":GR#" | ":GaXa#" | ":GaXb#" | ":GRPRS#" | ":GRTMP#" then
+            if Command in ":Gstat#" | ":GD#" | ":GR#" | ":GaXa#" | ":GaXb#" | ":GRPRS#" | ":GRTMP#" | ":pS#" then
               if not Hiding and not Log_All then
                 Start_Hiding := True;
               end if;

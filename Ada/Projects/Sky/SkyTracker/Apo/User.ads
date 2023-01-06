@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2022 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2022 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -22,7 +22,7 @@ with Telescope;
 package User is
 
   type Action is (Define_Catalog, Define_Target, Define_Air_Pressure, Define_Temperature, Update,
-                  Go_To, Go_To_Left, Go_To_Right, Go_To_Top, Align, Park, Stop, Unpark,
+                  Go_To, Go_To_Left, Go_To_Right, Go_To_Top, Go_To_Next, Align, Park, Stop, Unpark,
                   Close);
 
   subtype Command_Action is Action range Go_To .. Close;
@@ -31,7 +31,7 @@ package User is
 
   type Action_Handler is access procedure (The_Action : Action);
 
-  type Setup_Object is (Pole_Top, Pole_Left, Pole_Right);
+  type Setup_Object is (Pole_Top, Pole_Left, Pole_Right, Align_Next);
 
   procedure Show (Information : Telescope.Data);
 

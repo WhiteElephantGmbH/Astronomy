@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                            (c) 2022 by White Elephant GmbH, Schaffhausen, Switzerland                             *
+-- *                        (c) 2022 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                         *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -19,6 +19,7 @@ with Angle;
 with Ada.Real_Time;
 with Ada.Unchecked_Conversion;
 with Application;
+with Alignment;
 with Data;
 with Earth;
 with Gui.Enumeration_Menu_Of;
@@ -61,6 +62,7 @@ package body User is
   Actual_Dec   : Gui.Plain_Edit_Box;
   Actual_Alt   : Gui.Plain_Edit_Box;
   Actual_Az    : Gui.Plain_Edit_Box;
+  Pier_Side    : Gui.Plain_Edit_Box;
   Ra_Axis      : Gui.Plain_Edit_Box;
   Dec_Axis     : Gui.Plain_Edit_Box;
   Lmst         : Gui.Plain_Edit_Box;
@@ -72,6 +74,9 @@ package body User is
   Air_Pressure_Box     : Gui.Plain_Edit_Box;
   Temperature_Box      : Gui.Plain_Edit_Box;
   Setup_Control        : Gui.Plain_Combo_Box;
+  Align_Points         : Gui.Plain_Edit_Box;
+  Picture_Ra           : Gui.Plain_Edit_Box;
+  Picture_Dec          : Gui.Plain_Edit_Box;
   Cone_Error           : Gui.Plain_Edit_Box;
   Az_Offset            : Gui.Plain_Edit_Box;
   Alt_Offset           : Gui.Plain_Edit_Box;
@@ -87,7 +92,8 @@ package body User is
   The_Target_Selection  : Target_Selection := No_Target;
   Last_Target_Selection : Target_Selection := Target_Object;
 
-  Align_On_Picture_Change     : Boolean := False;
+  The_Alignment_Points        : Natural := 0;
+  Align_Change                : Boolean := False;
   Align_On_Picture_Is_Enabled : Boolean := False;
 
   The_Setup_Object : Setup_Object := Pole_Left;
@@ -267,7 +273,7 @@ package body User is
   end Perform_Goto;
 
 
-  procedure Perform_Goto_Pol is
+  procedure Perform_Setup_Goto is
 
     function Identifier_Of (Item : String) return String is
       The_Image : String := Strings.Trimmed (Item);
@@ -282,10 +288,12 @@ package body User is
 
     Setup_Object_Image : constant String := Identifier_Of (Gui.Contents_Of (Setup_Control));
 
-  begin -- Perform_Goto_Pol
+  begin -- Perform_Setup_Goto
     The_Setup_Object := Setup_Object'value(Setup_Object_Image);
     Log.Write ("Setup Object - " & Setup_Object_Image);
     case The_Setup_Object is
+    when Align_Next =>
+      Signal_Action (Go_To_Next);
     when Pole_Left =>
       Signal_Action (Go_To_Left);
     when Pole_Right =>
@@ -295,13 +303,14 @@ package body User is
     end case;
   exception
   when others =>
-    Log.Error ("Perform_Goto_Pol");
-  end Perform_Goto_Pol;
+    Log.Error ("Perform_Setup_Goto");
+  end Perform_Setup_Goto;
 
 
   procedure Perform_Clear is
   begin
     Pole_Axis.Clear;
+    Alignment.Clear;
   end Perform_Clear;
 
 
@@ -453,7 +462,7 @@ package body User is
 
       procedure Enable_Goto is
       begin
-        Enable_Action ("Goto", Perform_Goto_Pol'access);
+        Enable_Action ("Goto", Perform_Setup_Goto'access);
       end Enable_Goto;
 
       procedure Enable_Stop is
@@ -478,8 +487,16 @@ package body User is
           Enable_Stop;
         end if;
       when Stopped | Warning =>
-        Enable_Goto;
-        Enable_Control ("Park", Perform_Park'access);
+        if Alignment.Star_Count > 2 then
+          Enable_Action ("Align", Perform_Align'access);
+          Enable_Control ("Clear", Perform_Clear'access);
+        elsif Alignment.Star_Count > 0 then
+          Enable_Goto;
+          Enable_Control ("Clear", Perform_Clear'access);
+        else
+          Enable_Goto;
+          Enable_Control ("Park", Perform_Park'access);
+        end if;
       when Tracking =>
         Enable_Goto;
         Enable_Stop;
@@ -509,7 +526,8 @@ package body User is
       Gui.Set_Text (Actual_Ra, "");
       Gui.Set_Text (Actual_Alt, "");
       Gui.Set_Text (Actual_Az, "");
-      The_Actual_Direction := Earth.Unknown_Direction;
+      Gui.Set_Text (Pier_Side, "");
+     The_Actual_Direction := Earth.Unknown_Direction;
     end Clear_Actual_Values;
 
     use type Angle.Value;
@@ -517,9 +535,9 @@ package body User is
   begin -- Show
     if (The_Status /= Information.Status)
       or (Last_Target_Selection /= The_Target_Selection)
-      or Align_On_Picture_Change
+      or Align_Change
     then
-      Align_On_Picture_Change := False;
+      Align_Change := False;
       The_Status := Information.Status;
       Last_Target_Selection := The_Target_Selection;
       Define_Control_Buttons;
@@ -552,6 +570,7 @@ package body User is
         Gui.Set_Text (Actual_Ra, Space.Ra_Image_Of (Information.Actual_Direction));
         Gui.Set_Text (Actual_Alt, Earth.Alt_Image_Of (The_Actual_Direction));
         Gui.Set_Text (Actual_Az, Earth.Az_Image_Of (The_Actual_Direction));
+        Gui.Set_Text (Pier_Side, "" & Information.Mount_Pier_Side);
       else
         Clear_Actual_Values;
       end if;
@@ -579,6 +598,20 @@ package body User is
       end if;
       if Refraction.New_Temperature then
         Gui.Set_Text (Temperature_Box, Image_Of (Refraction.Temperature));
+      end if;
+      Align_Change := The_Alignment_Points /= Information.Align_Points;
+      The_Alignment_Points := Information.Align_Points;
+      if The_Alignment_Points = 0 then
+        Gui.Set_Text (Align_Points, "");
+      else
+        Gui.Set_Text (Align_Points, Strings.Trimmed (Information.Align_Points'image));
+      end if;
+      if Space.Direction_Is_Known (Information.Picture_Direction) then
+        Gui.Set_Text (Picture_Dec, Space.Dec_Image_Of (Information.Picture_Direction));
+        Gui.Set_Text (Picture_Ra, Space.Ra_Image_Of (Information.Picture_Direction));
+      else
+        Gui.Set_Text (Picture_Dec, "");
+        Gui.Set_Text (Picture_Ra, "");
       end if;
       if Information.Cone_Error = Angle.Zero then
         Gui.Set_Text (Cone_Error, "");
@@ -888,6 +921,11 @@ package body User is
                                  The_Size       => Text_Size,
                                  The_Title_Size => Title_Size);
 
+        Pier_Side := Gui.Create (Display_Page, "Pier Side", "",
+                                 Is_Modifiable  => False,
+                                 The_Size       => Text_Size,
+                                 The_Title_Size => Title_Size);
+
         Ra_Axis := Gui.Create (Display_Page, "RA Axis", "",
                                Is_Modifiable  => False,
                                The_Size       => Text_Size,
@@ -912,7 +950,6 @@ package body User is
 
         -- largest texts
         Air_Pressure_Text : constant String := "Air Pressure";
-
         Title_Size : constant Natural := Gui.Text_Size_Of (Air_Pressure_Text) + Separation;
         Text_Size  : constant Natural := Gui.Text_Size_Of ("20h58m58.58s") + Separation;
       begin
@@ -944,6 +981,21 @@ package body User is
           Gui.Add_Text (Setup_Control, Strings.Legible_Of (Value'img));
         end loop;
         Gui.Select_Text (Setup_Control, Strings.Legible_Of (The_Setup_Object'img));
+
+        Align_Points := Gui.Create (Setup_Page, "Align Points", "",
+                                    Is_Modifiable  => False,
+                                    The_Size       => Text_Size,
+                                    The_Title_Size => Title_Size);
+
+        Picture_Ra := Gui.Create (Setup_Page, "Picture RA", "",
+                                  Is_Modifiable  => False,
+                                  The_Size       => Text_Size,
+                                  The_Title_Size => Title_Size);
+        Picture_Dec := Gui.Create (Setup_Page, "Picture DEC", "",
+                                   Is_Modifiable  => False,
+                                   The_Size       => Text_Size,
+                                   The_Title_Size => Title_Size);
+
         Cone_Error := Gui.Create (Setup_Page, "Cone Error", "",
                                   Is_Modifiable  => False,
                                   The_Size       => Text_Size,
@@ -1048,7 +1100,7 @@ package body User is
   procedure Enable_Align_On_Picture is
   begin
     Align_On_Picture_Is_Enabled := True;
-    Align_On_Picture_Change := True;
+    Align_Change := True;
   end Enable_Align_On_Picture;
 
 

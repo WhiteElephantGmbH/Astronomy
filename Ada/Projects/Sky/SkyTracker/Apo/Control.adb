@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                               (c) 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                           (c) 2022 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                      *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -54,6 +54,7 @@ package body Control is
                    Go_To_Left,
                    Go_To_Right,
                    Go_To_Top,
+                   Go_To_Next,
                    Park,
                    Stop,
                    Unpark,
@@ -201,6 +202,8 @@ package body Control is
           The_Command := Go_To_Right;
         when User.Go_To_Top =>
           The_Command := Go_To_Top;
+        when User.Go_To_Next =>
+          The_Command := Go_To_Next;
         when User.Park =>
           The_Command := Park;
         when User.Stop =>
@@ -381,6 +384,8 @@ package body Control is
         Telescope.Go_To_Right;
       when Go_To_Top =>
         Telescope.Go_To_Top;
+      when Go_To_Next =>
+        Telescope.Go_To_Next;
       when Park =>
         Telescope.Park;
       when Stop =>
