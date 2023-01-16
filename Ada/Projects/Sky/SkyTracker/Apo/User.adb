@@ -74,9 +74,18 @@ package body User is
   Air_Pressure_Box     : Gui.Plain_Edit_Box;
   Temperature_Box      : Gui.Plain_Edit_Box;
   Setup_Control        : Gui.Plain_Combo_Box;
-  Align_Points         : Gui.Plain_Edit_Box;
   Picture_Ra           : Gui.Plain_Edit_Box;
   Picture_Dec          : Gui.Plain_Edit_Box;
+  Align_Points         : Gui.Plain_Edit_Box;
+  Az_Pole_Box          : Gui.Plain_Edit_Box;
+  Alt_Pole_Box         : Gui.Plain_Edit_Box;
+  Pole_Error_Box       : Gui.Plain_Edit_Box;
+  Pole_Angle_Box       : Gui.Plain_Edit_Box;
+  Ortho_Error_Box      : Gui.Plain_Edit_Box;
+  Az_Knob_Left_Box     : Gui.Plain_Edit_Box;
+  Alt_Knob_Down_Box    : Gui.Plain_Edit_Box;
+  Modeling_Terms_Box   : Gui.Plain_Edit_Box;
+  Rms_Error_Box        : Gui.Plain_Edit_Box;
   Cone_Error           : Gui.Plain_Edit_Box;
   Az_Offset            : Gui.Plain_Edit_Box;
   Alt_Offset           : Gui.Plain_Edit_Box;
@@ -487,7 +496,7 @@ package body User is
           Enable_Stop;
         end if;
       when Stopped | Warning =>
-        if Alignment.Star_Count > 2 then
+        if Alignment.Star_Count > 1 then
           Enable_Action ("Align", Perform_Align'access);
           Enable_Control ("Clear", Perform_Clear'access);
         elsif Alignment.Star_Count > 0 then
@@ -529,6 +538,16 @@ package body User is
       Gui.Set_Text (Pier_Side, "");
      The_Actual_Direction := Earth.Unknown_Direction;
     end Clear_Actual_Values;
+
+    function Image_Of (Item         : String;
+                       No_Value_For : String := "") return String is
+      Image : constant String := Strings.Trimmed (Item);
+    begin
+      if Image = No_Value_For then
+        return "";
+      end if;
+      return Image;
+    end Image_Of;
 
     use type Angle.Value;
 
@@ -599,13 +618,6 @@ package body User is
       if Refraction.New_Temperature then
         Gui.Set_Text (Temperature_Box, Image_Of (Refraction.Temperature));
       end if;
-      Align_Change := The_Alignment_Points /= Information.Align_Points;
-      The_Alignment_Points := Information.Align_Points;
-      if The_Alignment_Points = 0 then
-        Gui.Set_Text (Align_Points, "");
-      else
-        Gui.Set_Text (Align_Points, Strings.Trimmed (Information.Align_Points'image));
-      end if;
       if Space.Direction_Is_Known (Information.Picture_Direction) then
         Gui.Set_Text (Picture_Dec, Space.Dec_Image_Of (Information.Picture_Direction));
         Gui.Set_Text (Picture_Ra, Space.Ra_Image_Of (Information.Picture_Direction));
@@ -613,6 +625,34 @@ package body User is
         Gui.Set_Text (Picture_Dec, "");
         Gui.Set_Text (Picture_Ra, "");
       end if;
+      Align_Change := The_Alignment_Points /= Information.Align_Points;
+      The_Alignment_Points := Information.Align_Points;
+      Gui.Set_Text (Align_Points, Image_Of (The_Alignment_Points'image, No_Value_For => "0"));
+      declare
+        Info : Alignment.Information renames Information.Alignment_Info;
+      begin
+        if Earth.Direction_Is_Known (Info.Ra_Axis_Direction) then
+          Gui.Set_Text (Az_Pole_Box, Earth.Az_Offset_Image_Of (Info.Ra_Axis_Direction));
+          Gui.Set_Text (Alt_Pole_Box, Earth.Alt_Offset_Image_Of (Info.Ra_Axis_Direction));
+          Gui.Set_Text (Pole_Error_Box, Image_Of (Info.Polar_Align_Error'image));
+          Gui.Set_Text (Pole_Angle_Box, Image_Of (Info.Ra_Axis_Angle'image));
+          Gui.Set_Text (Ortho_Error_Box, Image_Of (Info.Orthogonality_Error'image, No_Value_For => "0.0000"));
+          Gui.Set_Text (Az_Knob_Left_Box, Image_Of (Info.Az_Knob_Turns_Left'image));
+          Gui.Set_Text (Alt_Knob_Down_Box, Image_Of (Info.Alt_Knob_Turns_Down'image));
+          Gui.Set_Text (Modeling_Terms_Box, Image_Of (Info.Modeling_Terms'image, No_Value_For => "0"));
+          Gui.Set_Text (Rms_Error_Box, Image_Of (Info.Rms_Error'image, No_Value_For => "0.0"));
+        else
+          Gui.Set_Text (Az_Pole_Box, "");
+          Gui.Set_Text (Alt_Pole_Box, "");
+          Gui.Set_Text (Pole_Error_Box, "");
+          Gui.Set_Text (Pole_Angle_Box, "");
+          Gui.Set_Text (Ortho_Error_Box, "");
+          Gui.Set_Text (Az_Knob_Left_Box, "");
+          Gui.Set_Text (Alt_Knob_Down_Box, "");
+          Gui.Set_Text (Modeling_Terms_Box, "");
+          Gui.Set_Text (Rms_Error_Box, "");
+        end if;
+      end;
       if Information.Cone_Error = Angle.Zero then
         Gui.Set_Text (Cone_Error, "");
       else
@@ -982,11 +1022,6 @@ package body User is
         end loop;
         Gui.Select_Text (Setup_Control, Strings.Legible_Of (The_Setup_Object'img));
 
-        Align_Points := Gui.Create (Setup_Page, "Align Points", "",
-                                    Is_Modifiable  => False,
-                                    The_Size       => Text_Size,
-                                    The_Title_Size => Title_Size);
-
         Picture_Ra := Gui.Create (Setup_Page, "Picture RA", "",
                                   Is_Modifiable  => False,
                                   The_Size       => Text_Size,
@@ -995,6 +1030,48 @@ package body User is
                                    Is_Modifiable  => False,
                                    The_Size       => Text_Size,
                                    The_Title_Size => Title_Size);
+
+        Align_Points := Gui.Create (Setup_Page, "Align Points", "",
+                                    Is_Modifiable  => False,
+                                    The_Size       => Text_Size,
+                                    The_Title_Size => Title_Size);
+
+        Az_Pole_Box := Gui.Create (Setup_Page, "Az Pole", "",
+                                   Is_Modifiable  => False,
+                                   The_Size       => Text_Size,
+                                   The_Title_Size => Title_Size);
+        Alt_Pole_Box := Gui.Create (Setup_Page, "Alt Pole", "",
+                                    Is_Modifiable  => False,
+                                    The_Size       => Text_Size,
+                                    The_Title_Size => Title_Size);
+        Pole_Error_Box := Gui.Create (Setup_Page, "Pole Error", "",
+                                      Is_Modifiable  => False,
+                                      The_Size       => Text_Size,
+                                      The_Title_Size => Title_Size);
+        Pole_Angle_Box := Gui.Create (Setup_Page, "Pole Angle", "",
+                                      Is_Modifiable  => False,
+                                      The_Size       => Text_Size,
+                                      The_Title_Size => Title_Size);
+        Ortho_Error_Box := Gui.Create (Setup_Page, "Cone Error", "",
+                                       Is_Modifiable  => False,
+                                       The_Size       => Text_Size,
+                                       The_Title_Size => Title_Size);
+        Az_Knob_Left_Box := Gui.Create (Setup_Page, "Knob Turns <", "",
+                                        Is_Modifiable  => False,
+                                        The_Size       => Text_Size,
+                                        The_Title_Size => Title_Size);
+        Alt_Knob_Down_Box := Gui.Create (Setup_Page, "Knob Turns v", "",
+                                         Is_Modifiable  => False,
+                                         The_Size       => Text_Size,
+                                         The_Title_Size => Title_Size);
+        Modeling_Terms_Box := Gui.Create (Setup_Page, "Model Terms", "",
+                                          Is_Modifiable  => False,
+                                          The_Size       => Text_Size,
+                                          The_Title_Size => Title_Size);
+        Rms_Error_Box := Gui.Create (Setup_Page, "RMS Error", "",
+                                     Is_Modifiable  => False,
+                                     The_Size       => Text_Size,
+                                     The_Title_Size => Title_Size);
 
         Cone_Error := Gui.Create (Setup_Page, "Cone Error", "",
                                   Is_Modifiable  => False,

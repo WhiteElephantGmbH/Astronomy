@@ -15,7 +15,6 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Alignment;
 with Parameter;
 with Picture;
 with Pole_Axis;
@@ -404,6 +403,7 @@ package body Telescope is
             The_Data.Mount_Pier_Side := The_Information.Pier_Side;
             The_Data.Universal_Time := Time.Universal;
             The_Data.Align_Points := Alignment.Star_Count;
+            The_Data.Alignment_Info := Alignment.Info;
             The_Data.Cone_Error := Pole_Axis.Cone_Error;
             The_Data.Pole_Offsets := Pole_Axis.Offsets;
           end Get;

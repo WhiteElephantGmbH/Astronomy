@@ -4,9 +4,11 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with Angle;
 with Error;
 with Lx200;
 with Network.Tcp;
+with Strings;
 with Traces;
 
 package body Ten_Micron is
@@ -550,6 +552,45 @@ package body Ten_Micron is
     Log.Error (Error.Message);
     return False;
   end End_Alignment;
+
+
+  function Alignment_Info return Alignment_Data is
+    No_Information : constant Alignment_Data := (others => <>);
+  begin
+    declare
+      Reply : constant String := Reply_For (Lx200.Get_Alignment_Information);
+      Data  : constant Strings.Item := Strings.Item_Of (Reply, Separator => ',');
+
+      function Parameter (Index   : Positive;
+                          Default : String := "0.0") return String is
+        Image : constant String := Data(Index);
+      begin
+        if Image = "E" then
+          return Default;
+        end if;
+        return Image;
+      end Parameter;
+
+      use type Angle.Value;
+    begin
+      if Reply = "E" then
+        return No_Information;
+      end if;
+      return (Ra_Axis_Direction => Earth.Direction_Of (Az  => +Angle.Degrees'value(Parameter(1)),
+                                                       Alt => +Angle.Degrees'value(Parameter(2))),
+              Polar_Align_Error   => Polar_Error'value(Parameter(3)),
+              Ra_Axis_Angle       => Axis_Angle'value(Parameter(4)),
+              Orthogonality_Error => Orthogonality'value(Parameter(5)),
+              Az_Knob_Turns_Left  => Knob_Turns'value(Parameter(6)),
+              Alt_Knob_Turns_Down => Knob_Turns'value(Parameter(7)),
+              Modeling_Terms      => Natural'value(Parameter(8, "0")),
+              Rms_Error           => Arc_Seconds'value(Parameter(9)));
+    end;
+  exception
+  when Item: others =>
+    Log.Termination (Item);
+    return No_Information;
+  end Alignment_Info;
 
 
   procedure Disconnect is

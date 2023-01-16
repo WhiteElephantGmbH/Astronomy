@@ -15,13 +15,12 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Alignment.Stars;
 with Angle;
+with Alignment.Stars;
 with Data;
 with Earth;
 with Objects;
 with Sky_Line;
-with Ten_Micron;
 with Traces;
 
 package body Alignment is
@@ -68,6 +67,8 @@ package body Alignment is
   The_Star_Count : Stars.Count := 0;
   The_Points     : Points;
   The_Stars      : Stars.Set := [];
+
+  The_Alignment_Info : Information;
 
 
   procedure Clear is
@@ -193,9 +194,16 @@ package body Alignment is
     end loop;
     if Ten_Micron.End_Alignment then
       Clear;
+      The_Alignment_Info := Ten_Micron.Alignment_Info;
     else
       Log.Warning ("alignment computation failed");
     end if;
   end Generate;
+
+
+  function Info return Information is
+  begin
+    return The_Alignment_Info;
+  end Info;
 
 end Alignment;

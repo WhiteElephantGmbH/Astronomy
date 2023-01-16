@@ -15,6 +15,7 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with Ten_Micron;
 with Space;
 with Time;
 
@@ -31,5 +32,9 @@ package Alignment is
                     Pier_Side : Character);
 
   procedure Generate;
+
+  subtype Information is Ten_Micron.Alignment_Data;
+
+  function Info return Information;
 
 end Alignment;

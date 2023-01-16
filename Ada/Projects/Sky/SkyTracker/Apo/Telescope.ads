@@ -15,6 +15,7 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with Alignment;
 with Angle;
 with Earth;
 with Name;
@@ -37,6 +38,7 @@ package Telescope is
     Picture_Direction  : Space.Direction;
     Mount_Pier_Side    : Character;
     Align_Points       : Natural;
+    Alignment_Info     : Alignment.Information;
     Cone_Error         : Angle.Value := Angle.Zero;
     Pole_Offsets       : Earth.Direction;
     Universal_Time     : Time.Ut;

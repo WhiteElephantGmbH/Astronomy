@@ -71,8 +71,12 @@ package body Test is
     Air_Pressure_Image : String := "1013.0#";
     Temperature_Image  : String := "+010.0#";
 
-    The_Points_Count : Natural := 0;
+    Alignment_Information_2 : constant String := "000.0002,+47.6668,00.0002,322.82,E,+00.00,+00.00,E,E#";
+    Alignment_Information_3 : constant String := "000.0002,+47.6668,00.0002,322.82,-00.0001,+00.00,+00.00,E,E#";
+    Alignment_Information   : constant String := "000.0002,+47.6668,00.0002,322.82,-00.0001,+00.00,+00.00,02,00000.5#";
 
+    The_Points_Count   : Natural := 0;
+    Last_Points_Count : Natural := 0;
 
     function Points_Image return String is
       Image : constant String := "00" & Strings.Trimmed (The_Points_Count'image);
@@ -176,6 +180,27 @@ package body Test is
           elsif Data = ":GRTMP#" then
             Put_Line ("Get Temperature");
             Send (Temperature_Image);
+          elsif Data = ":newalig#" then
+            The_Points_Count := 0;
+            Put_Line ("Start Alignment");
+            Send ("V#");
+          elsif Data = ":endalig#" then
+            Last_Points_Count := The_Points_Count;
+            The_Points_Count := 0;
+            Put_Line ("End Alignment");
+            Send ("V#");
+          elsif Data = ":getali#" then
+            Put_Line ("Get Alignment Information");
+            case Last_Points_Count is
+            when 0 | 1 =>
+              Send ("E#");
+            when 2 =>
+              Send (Alignment_Information_2);
+            when 3 =>
+              Send (Alignment_Information_3);
+            when others =>
+              Send (Alignment_Information);
+            end case;
           elsif Data = ":MaX#" then
             The_State := Positioning;
             Put_Line ("Slew to Axis Position");
@@ -197,18 +222,10 @@ package body Test is
             Put_Line ("Set Temperature: " & Large_Image);
             Temperature_Image := Large_Image;
             Send ("1");
-          elsif Huge_Command = ":newalig" then
-            The_Points_Count := 0;
-            Put_Line ("Start Alignment");
-            Send ("V#");
           elsif Huge_Command = ":newalpt" then
             The_Points_Count := @ + 1;
             Put_Line ("New Alignment Point");
             Send (Points_Image & "#");
-          elsif Huge_Command = ":endalig" then
-            The_Points_Count := 0;
-            Put_Line ("End Alignment");
-            Send ("V#");
           elsif Command = ":GV" then
             case Data(Data'first + 3) is
             when 'P' => -- GVP

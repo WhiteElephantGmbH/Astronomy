@@ -4,6 +4,7 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with Earth;
 with Network;
 with Refraction;
 with Space;
@@ -35,6 +36,29 @@ package Ten_Micron is
     Direction : Space.Direction;
     Position  : Space.Direction;
     Pier_Side : Character;
+  end record;
+
+  type Polar_Error is delta 0.01 range 0.0 .. 99.9999;
+
+  type Axis_Angle is delta 0.01 range 0.0 .. 999.99;
+
+  type Orthogonality is delta 0.0001 range -99.9999 .. 99.9999;
+
+  type Knob_Turns is delta 0.01 range -99.99 .. 99.99;
+
+  type Arc_Seconds is delta 0.1 range 0.0 .. 99999.9;
+
+  No_Data : constant := 0.0;
+
+  type Alignment_Data is record
+    Ra_Axis_Direction   : Earth.Direction;
+    Polar_Align_Error   : Polar_Error   := No_Data;
+    Ra_Axis_Angle       : Axis_Angle    := No_Data;
+    Orthogonality_Error : Orthogonality := No_Data;
+    Az_Knob_Turns_Left  : Knob_Turns    := No_Data;
+    Alt_Knob_Turns_Down : Knob_Turns    := No_Data;
+    Modeling_Terms      : Natural       := 0;
+    Rms_Error           : Arc_Seconds   := No_Data;
   end record;
 
   procedure Startup (Server_Address : Network.Ip_Address;
@@ -70,6 +94,8 @@ package Ten_Micron is
                                  Points  : out Natural);
 
   function End_Alignment return Boolean;
+
+  function Alignment_Info return Alignment_Data;
 
   procedure Disconnect;
 
