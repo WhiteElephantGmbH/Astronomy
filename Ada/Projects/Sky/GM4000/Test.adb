@@ -189,7 +189,7 @@ package body Test is
             The_Points_Count := 0;
             Put_Line ("End Alignment");
             Send ("V#");
-          elsif Data = ":getali#" then
+          elsif Data = ":getain#" then
             Put_Line ("Get Alignment Information");
             case Last_Points_Count is
             when 0 | 1 =>

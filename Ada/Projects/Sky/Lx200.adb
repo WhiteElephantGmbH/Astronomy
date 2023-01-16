@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2021 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2021 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
@@ -114,7 +114,7 @@ package body Lx200 is
     when Get_Number_Of_Alignment_Stars =>
       return Command_For ("getalst");
     when Get_Alignment_Information =>
-      return Command_For ("getali" & Parameter);
+      return Command_For ("getain");
     when Get_Pointing_State =>
       return Command_For ("pS");
     when New_Alignment_Start =>

@@ -330,6 +330,22 @@ package body Ten_Micron is
   end Execute;
 
 
+  function Execute (Command   : Lx200.Extended_Command;
+                    Parameter : String := "";
+                    Ok        : String;
+                    Failed    : String) return Boolean is
+    Reply : constant String := Reply_For (Command, Parameter);
+  begin
+    if Reply = Ok then
+      return True;
+    elsif Reply = Failed then
+      return False;
+    else
+      Error.Raise_With ("command " & Command'image & " failed with " & Reply);
+    end if;
+  end Execute;
+
+
   function Actual_Direction return Space.Direction is
   begin
     return Space.Direction_Of (Ra  => Lx200.Hours_Of (Reply_For (Lx200.Get_Right_Ascension)),
@@ -545,8 +561,7 @@ package body Ten_Micron is
 
   function End_Alignment return Boolean is
   begin
-    Execute (Lx200.New_Alignment_End, Expected => "V");
-    return True;
+    return Execute (Lx200.New_Alignment_End, Ok => "V", Failed => "E");
   exception
   when Error.Occurred =>
     Log.Error (Error.Message);
