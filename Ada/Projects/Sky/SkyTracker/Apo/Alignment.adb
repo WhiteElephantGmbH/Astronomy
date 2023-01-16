@@ -67,6 +67,7 @@ package body Alignment is
   The_Star_Count : Stars.Count := 0;
   The_Points     : Points;
   The_Stars      : Stars.Set := [];
+  Had_Error      : Boolean := False;
 
   The_Alignment_Info : Information;
 
@@ -75,6 +76,7 @@ package body Alignment is
   begin
     The_Stars := [];
     The_Star_Count := 0;
+    Had_Error := False;
     Ideal_Ra := Angle.Zero;
     Ideal_Dec := Angle.Zero;
   end Clear;
@@ -150,6 +152,7 @@ package body Alignment is
       end;
       Ideal_Ra := Angle.Value'(Space.Ra_Of (Best_Direction) - Ra_North);
       Ideal_Dec := Space.Dec_Of (Best_Direction);
+      Had_Error := False;
     end if;
     return Best_Direction;
   end Next_Star;
@@ -169,6 +172,12 @@ package body Alignment is
     P.Sideral_Time := Lmst;
     P.Mount_Pier_Side := Pier_Side;
   end Define;
+
+
+  function Ready return Boolean is
+  begin
+    return The_Star_Count > 0 and not Had_Error;
+  end Ready;
 
 
   procedure Generate is
@@ -196,6 +205,7 @@ package body Alignment is
       Clear;
       The_Alignment_Info := Ten_Micron.Alignment_Info;
     else
+      Had_Error := True;
       Log.Warning ("alignment computation failed");
     end if;
   end Generate;

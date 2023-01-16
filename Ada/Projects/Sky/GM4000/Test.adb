@@ -185,10 +185,14 @@ package body Test is
             Put_Line ("Start Alignment");
             Send ("V#");
           elsif Data = ":endalig#" then
-            Last_Points_Count := The_Points_Count;
-            The_Points_Count := 0;
             Put_Line ("End Alignment");
-            Send ("V#");
+            Last_Points_Count := The_Points_Count;
+            if The_Points_Count > 1 then
+              The_Points_Count := 0;
+              Send ("V#");
+            else
+              Send ("E#");
+            end if;
           elsif Data = ":getain#" then
             Put_Line ("Get Alignment Information");
             case Last_Points_Count is

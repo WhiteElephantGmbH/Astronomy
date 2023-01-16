@@ -102,6 +102,7 @@ package body User is
   Last_Target_Selection : Target_Selection := Target_Object;
 
   The_Alignment_Points        : Natural := 0;
+  Alignment_Is_Ready          : Boolean := False;
   Align_Change                : Boolean := False;
   Align_On_Picture_Is_Enabled : Boolean := False;
 
@@ -496,14 +497,14 @@ package body User is
           Enable_Stop;
         end if;
       when Stopped | Warning =>
-        if Alignment.Star_Count > 1 then
+        if Alignment.Ready then
           Enable_Action ("Align", Perform_Align'access);
-          Enable_Control ("Clear", Perform_Clear'access);
-        elsif Alignment.Star_Count > 0 then
-          Enable_Goto;
-          Enable_Control ("Clear", Perform_Clear'access);
         else
           Enable_Goto;
+        end if;
+        if Alignment.Star_Count > 0 then
+          Enable_Control ("Clear", Perform_Clear'access);
+        else
           Enable_Control ("Park", Perform_Park'access);
         end if;
       when Tracking =>
@@ -625,7 +626,8 @@ package body User is
         Gui.Set_Text (Picture_Dec, "");
         Gui.Set_Text (Picture_Ra, "");
       end if;
-      Align_Change := The_Alignment_Points /= Information.Align_Points;
+      Align_Change := The_Alignment_Points /= Information.Align_Points or Alignment.Ready /= Alignment_Is_Ready;
+      Alignment_Is_Ready := Alignment.Ready;
       The_Alignment_Points := Information.Align_Points;
       Gui.Set_Text (Align_Points, Image_Of (The_Alignment_Points'image, No_Value_For => "0"));
       declare

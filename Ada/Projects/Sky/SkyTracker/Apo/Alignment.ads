@@ -31,6 +31,8 @@ package Alignment is
                     Lmst      : Time.Value;
                     Pier_Side : Character);
 
+  function Ready return Boolean;
+
   procedure Generate;
 
   subtype Information is Ten_Micron.Alignment_Data;
