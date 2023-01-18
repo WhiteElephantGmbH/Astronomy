@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2013 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2013 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -123,10 +123,22 @@ package body Sssb is
   end Read;
 
 
-  function Exists (Target : String) return Boolean is
-    Filename : constant String := Application.Composure (Target, "sssb");
+  function Filename_Of (Target_Name : String) return String is
+    The_Name : String := Target_Name;
   begin
+    if The_Name (The_Name'first + 1) = '/' then
+      The_Name (The_Name'first + 1) := '-';
+    end if;
+    return The_Name;
+  end Filename_Of;
+
+
+  function Exists (Target : String) return Boolean is
+    Filename : constant String := Application.Composure (Filename_Of (Target), "sssb");
+  begin
+    Log.Write ("XXX Target: " & Target);
     if File.Exists (Filename) then
+      Log.Write ("XXX Filename: " & Filename);
       Read (Target, Filename);
       return True;
     end if;

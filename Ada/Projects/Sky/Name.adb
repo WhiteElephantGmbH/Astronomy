@@ -540,6 +540,14 @@ package body Name is
                   Item : constant String := Object_Parts(Strings.First_Index);
                 begin
                   The_Element.Name := To_Unbounded_String (Part_For (Parts.Count));
+                  if Sssb.Exists (Object_Id) then
+                    The_Element.Kind := Small_Solar_System_Body;
+                    return;
+                  elsif Support_Neos and then Neo.Exists (Object_Id) then
+                    The_Element.Kind := Near_Earth_Object;
+                    The_Element.Object := Data.Neo_Object_Of (Object_Id);
+                    return;
+                  end if;
                   if Object_Parts.Count = 1 then
                     if Lexicon.Found (Item, Lexicon.Sun) then
                       The_Element.Kind := Sun;
@@ -561,11 +569,6 @@ package body Name is
                       The_Element.Kind := Planet;
                     elsif Lexicon.Found (Item, Lexicon.Pluto) then
                       The_Element.Kind := Planet;
-                    elsif Sssb.Exists (Object_Id) then
-                      The_Element.Kind := Small_Solar_System_Body;
-                    elsif Support_Neos and then Neo.Exists (Object_Id) then
-                      The_Element.Kind := Near_Earth_Object;
-                      The_Element.Object := Data.Neo_Object_Of (Object_Id);
                     elsif (Item(Item'first) = 'C') or (Item(Item'first) = 'M') then
                       The_Element.Kind := Sky_Object;
                       if Parts.Count > 1 then
@@ -598,11 +601,6 @@ package body Name is
                           The_Element.Object := Data.Object_Of (Value, Data.Ocl);
                         elsif Item = "3C" then
                           The_Element.Object := Data.Object_Of (Value, Data.Quasars);
-                        elsif Sssb.Exists (Object_Id) then
-                          The_Element.Kind := Small_Solar_System_Body;
-                        elsif Support_Neos and then Neo.Exists (Object_Id) then
-                          The_Element.Kind := Near_Earth_Object;
-                          The_Element.Object := Data.Neo_Object_Of (Object_Id);
                         else
                           Error.Raise_With (Object_Id & " unknown in " & Filename);
                         end if;
