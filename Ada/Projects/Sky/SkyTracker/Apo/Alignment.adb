@@ -66,7 +66,9 @@ package body Alignment is
 
   The_Star_Count : Stars.Count := 0;
   The_Points     : Points;
+  Actual_Star    : Stars.Id;
   The_Stars      : Stars.Set := [];
+  Visited_Stars  : Stars.Set := [];
   Had_Error      : Boolean := False;
 
   The_Alignment_Info : Information;
@@ -75,6 +77,7 @@ package body Alignment is
   procedure Clear is
   begin
     The_Stars := [];
+    Visited_Stars := [];
     The_Star_Count := 0;
     Had_Error := False;
     Ideal_Ra := Angle.Zero;
@@ -125,35 +128,38 @@ package body Alignment is
   begin -- Next_Star
     Ideal_Ra := @ + Ideal_Delta.Ra;
     Ideal_Dec := @ + Ideal_Delta.Dec;
-    for The_Star in Stars.Id loop
-      if not (The_Star < The_Stars) then
+    loop
+      for The_Star in Stars.Id loop
+        if not (The_Star < Visited_Stars) then
+          declare
+            Direction : constant Space.Direction := Data.Direction_Of (Stars.Object_Of(The_Star), Time.Universal);
+           begin
+            if Sky_Line.Is_Above (Direction, Time.Lmst) then
+              Evaluate_Quality_Of (The_Star, Direction);
+            end if;
+          end;
+        end if;
+      end loop;
+      if Space.Direction_Is_Known (Best_Direction) then
+        Log.Write ("Next_Star " & Stars.Image_Of (Best_Star) & " at " & Space.Image_Of (Best_Direction));
+        Actual_Star := Best_Star;
+        Visited_Stars := @ + Actual_Star;
         declare
-          Direction : constant Space.Direction := Data.Direction_Of (Stars.Object_Of(The_Star), Time.Universal);
-         begin
-          if Sky_Line.Is_Above (Direction, Time.Lmst) then
-            Evaluate_Quality_Of (The_Star, Direction);
-          end if;
+          P : Point renames The_Points(The_Star_Count + 1);
+        begin
+          P.Star := Best_Star;
+          P.Mount_Direction := Best_Direction;
+          P.Mount_Pier_Side := Pear_Side_Undefined;
         end;
+        Ideal_Ra := Angle.Value'(Space.Ra_Of (Best_Direction) - Ra_North);
+        Ideal_Dec := Space.Dec_Of (Best_Direction);
+        Had_Error := False;
+        exit;
+      else
+        exit when Visited_Stars = The_Stars;
+        Visited_Stars := The_Stars;
       end if;
     end loop;
-    if Space.Direction_Is_Known (Best_Direction) then
-      Log.Write ("Next_Star " & Stars.Image_Of (Best_Star) & " at " & Space.Image_Of (Best_Direction));
-      if The_Star_Count = 0 or else The_Points(The_Star_Count).Mount_Pier_Side /= Pear_Side_Undefined then
-        -- previous point defined
-        The_Stars := @ + Best_Star;
-        The_Star_Count := @ + 1;
-      end if;
-      declare
-        P : Point renames The_Points(The_Star_Count);
-      begin
-        P.Star := Best_Star;
-        P.Mount_Direction := Best_Direction;
-        P.Mount_Pier_Side := Pear_Side_Undefined;
-      end;
-      Ideal_Ra := Angle.Value'(Space.Ra_Of (Best_Direction) - Ra_North);
-      Ideal_Dec := Space.Dec_Of (Best_Direction);
-      Had_Error := False;
-    end if;
     return Best_Direction;
   end Next_Star;
 
@@ -164,10 +170,12 @@ package body Alignment is
   procedure Define (Direction : Space.Direction;
                     Lmst      : Time.Value;
                     Pier_Side : Character) is
-    P : Point renames The_Points(The_Star_Count);
+    P : Point renames The_Points(The_Star_Count + 1);
   begin
     Log.Write ("Define " & Stars.Image_Of (P.Star) & " at " & Space.Image_Of (Direction)
                          & " (Lmst:" & Time.Image_Of (Lmst) & ")");
+    The_Stars := @ + Actual_Star;
+    The_Star_Count := @ + 1;
     P.Picture_Direction := Direction;
     P.Sideral_Time := Lmst;
     P.Mount_Pier_Side := Pier_Side;

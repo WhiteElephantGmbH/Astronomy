@@ -136,9 +136,7 @@ package body Sssb is
   function Exists (Target : String) return Boolean is
     Filename : constant String := Application.Composure (Filename_Of (Target), "sssb");
   begin
-    Log.Write ("XXX Target: " & Target);
     if File.Exists (Filename) then
-      Log.Write ("XXX Filename: " & Filename);
       Read (Target, Filename);
       return True;
     end if;
