@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2002 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2002 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -26,9 +26,12 @@ with Ada.Text_IO;
 
 package Strings is
 
+  type Direction is new Ada.Strings.Direction;
+
   type Element is new Ada.Strings.Unbounded.Unbounded_String
-    with Aggregate => (Empty       => Empty_Element,
-                       Add_Unnamed => Set);
+  with
+    Aggregate => (Empty       => Empty_Element,
+                  Add_Unnamed => Set);
 
   Empty_Element : constant Element;
 
@@ -47,21 +50,32 @@ package Strings is
   function "&" (Left  : Element;
                 Right : String) return String with Inline;
 
+  function Location_Of (The_String    : String;
+                        In_String     : Element;
+                        The_Direction : Direction := Forward) return Natural;
+  function Location_Of (The_String    : String;
+                        In_String     : Element;
+                        From          : Positive;
+                        The_Direction : Direction := Forward) return Natural;
+  -- The procedure returns the position of the match or in case of no match Not_Found.
 
   package Linked_Strings is new Ada.Containers.Indefinite_Doubly_Linked_Lists (String);
 
   type List is new Linked_Strings.List with private
-    with Put_Image => Put_Image,
-         Aggregate => (Empty       => Empty,
-                       Add_Unnamed => Append);
+  with
+    Aggregate => (Empty       => Empty,
+                  Add_Unnamed => Append);
 
   Empty : constant List;
 
-  overriding procedure Append (Container : in out List;
-                               New_Item  :        String) with Inline;
+  function "+" (Left  : String;
+                Right : List) return List;
 
-  procedure Put_Image (S : in out Ada.Strings.Text_Buffers.Root_Buffer_Type'class;
-                       V : List);
+  function "-" (Left  : List;
+                Right : String) return List;
+  -- remove string (Constraint_Error if not in List)
+
+  function Count (The_List : List) return Natural is (Natural(Length (The_List))) with Inline;
 
 
   function Is_Equal (Left, Right : String) return Boolean renames Ada.Strings.Equal_Case_Insensitive;
@@ -97,15 +111,21 @@ package Strings is
 
   Not_Found : constant Natural := 0;
 
-  type Direction is new Ada.Strings.Direction;
-
   function Location_Of (The_Character : Character;
                         In_String     : String;
+                        The_Direction : Direction := Forward) return Natural;
+  function Location_Of (The_Character : Character;
+                        In_String     : String;
+                        From          : Positive;
                         The_Direction : Direction := Forward) return Natural;
   function Location_Of (The_String    : String;
                         In_String     : String;
                         The_Direction : Direction := Forward) return Natural;
-  -- The procedure returns the position of the match or in case of no match zero.
+  function Location_Of (The_String    : String;
+                        In_String     : String;
+                        From          : Positive;
+                        The_Direction : Direction := Forward) return Natural;
+  -- The procedure returns the position of the match or in case of no match Not_Found.
 
 
   function Trimmed (Data : String) return String;
@@ -116,6 +136,10 @@ package Strings is
 
   function Trimmed_Trailing (Data : String) return String;
   -- Trims right whitespace.
+
+  function Trimmed (Data : String;
+                    What : Character) return String;
+  -- Removes left and right one character.
 
   function Purge_Of (Data : String) return String;
   -- Removes all whitespace.
@@ -165,17 +189,17 @@ package Strings is
 
 
   generic
-    type Element is (<>);
-  function Image_Of (The_Value : Element) return String;
+    type Kind is (<>);
+  function Image_Of (The_Value : Kind) return String;
 
   generic
-    type Element is (<>);
-  function Legible_Image_Of (The_Value : Element) return String;
+    type Kind is (<>);
+  function Legible_Image_Of (The_Value : Kind) return String;
 
   Usage_Error : exception;
   generic
-    type Element is (<>);
-  function Padded_Image_Of (The_Value : Element;
+    type Kind is (<>);
+  function Padded_Image_Of (The_Value : Kind;
                             Padding   : Character := '0') return String;
 
 ------------------------------------------------------------------------------------------------------------------------
@@ -187,11 +211,6 @@ package Strings is
 
   subtype Element_Count is Natural range 0 .. Max_Count;
   subtype Element_Index is Element_Count range First_Index .. Element_Count'last;
-
-  type Slice is record
-    First : Element_Index;
-    Last  : Element_Count;
-  end record;
 
   subtype Data_Length is Natural range 0 .. Max_Data_Length;
 
@@ -208,9 +227,9 @@ package Strings is
 
   procedure Append (The_Item : in out Item;
                     Data     :        String)
-    with
-      Inline,
-      Pre => Data'length < The_Item.Free_Space and The_Item.Count < Max_Count;
+  with
+    Inline,
+    Pre => Data'length <= The_Item.Free_Space and The_Item.Count < Max_Count;
 
   No_Element : constant Element_Count := 0;
 
@@ -246,11 +265,11 @@ package Strings is
 
   function Item_Of (Data      : String;
                     Separator : Character;
-                    Purge     : Boolean := False;
+                    Purge     : Boolean := True;
                     Symbols   : String := "") return Item;
   -- Returns the splitted strings from Data.
-  --   Example: Data = "," and Separator = ',' results in two empty strings.
-  -- Purge = True => empty strings are removed.
+  --   Example: Data = "," and Separator = ',' and Purge = False results in two empty strings.
+  -- Per default (Purge = True) empty strings are removed.
   -- Symbols are added to the result.
 
 
@@ -259,6 +278,17 @@ package Strings is
                  To       : Element_Count) return Item
     with Pre => To <= The_Item.Count and then To - From + 1 >= 0;
 
+
+  function "+" (Left  : Item;
+                Right : Item) return Item
+  with
+    Pre => (Left.Count + Right.Count) <= Max_Count and then (Left.Free_Space + Right.Free_Space) >= Max_Data_Length;
+  -- Concatenate
+
+  procedure Prepend (The_Item : in out Item;
+                     Data     :        String)
+  with
+    Pre => Data'length <= The_Item.Free_Space and The_Item.Count < Max_Count;
 
   function Contains (The_Item : Item;
                      Name     : String) return Boolean;
@@ -271,7 +301,11 @@ private
 
   Empty_Element : constant Element := Element(Ada.Strings.Unbounded.Null_Unbounded_String);
 
-  type List is new Linked_Strings.List with null record;
+  type List is new Linked_Strings.List with null record
+  with Put_Image => Put_List_Image;
+
+  procedure Put_List_Image (S : in out Ada.Strings.Text_Buffers.Root_Buffer_Type'class;
+                            V : List);
 
   Empty : constant List := (Linked_Strings.Empty_List with null record);
 
@@ -287,10 +321,10 @@ private
     Positions : Element_Positions;
     Data      : String_Data;
   end record
-    with Put_Image => Put_Image;
+  with Put_Image => Put_Item_Image;
 
-  procedure Put_Image (S : in out Ada.Strings.Text_Buffers.Root_Buffer_Type'class;
-                       V : Item);
+  procedure Put_Item_Image (S : in out Ada.Strings.Text_Buffers.Root_Buffer_Type'class;
+                            V : Item);
 
   None : constant Item := (Count => 0, Length => 0, others => <>);
 

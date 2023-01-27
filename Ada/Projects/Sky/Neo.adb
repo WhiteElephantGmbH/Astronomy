@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2013 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2013 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -95,7 +95,7 @@ package body Neo is
         declare
 
           Line  : constant String := Strings.Trimmed (Ada.Text_IO.Get_Line (The_File));
-          Parts : constant Strings.Item := Strings.Item_Of (Line, Separator => ',');
+          Parts : constant Strings.Item := Strings.Item_Of (Line, Separator => ',', Purge => False);
 
           function Image_Of (Item : Header) return String is
           begin

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2012 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2012 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -147,7 +147,7 @@ package body Data_Generator is
       declare
 
         Line  : constant String := Ada.Text_IO.Get_Line (File);
-        Parts : constant Strings.Item := Strings.Item_Of (Line, '|');
+        Parts : constant Strings.Item := Strings.Item_Of (Line, '|', Purge => False);
 
         function Image_Of (Item : Header) return String is
         begin
@@ -157,7 +157,7 @@ package body Data_Generator is
         function Parts_Of (Item : Header) return Strings.Item is
           Image : constant String := Image_Of (Item);
         begin
-          return Strings.Item_Of (Image, ' ', Purge => True);
+          return Strings.Item_Of (Image, ' ');
         end Parts_Of;
 
         procedure Get_Actual_For (Id  : Header) is
@@ -683,14 +683,7 @@ package body Data_Generator is
   when Ada.IO_Exceptions.Name_Error =>
     Ada.Text_IO.Put_Line ("File not Found");
   when Occurrence: others =>
-    declare
-      Exception_Info : constant String := GNAT.Traceback.Symbolic.Symbolic_Traceback (Occurrence);
-      Lines          : constant Strings.Item := Strings.Item_Of (Exception_Info, Ascii.Lf);
-    begin
-      for Line of Lines loop
-        Ada.Text_IO.Put_Line (Line);
-      end loop;
-    end;
+    Ada.Text_IO.Put (GNAT.Traceback.Symbolic.Symbolic_Traceback (Occurrence));
   end Execute;
 
 end Data_Generator;

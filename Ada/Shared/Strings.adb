@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2002 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2002 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -72,18 +72,31 @@ package body Strings is
   end "&";
 
 
-  procedure Append (Container : in out List;
-                    New_Item  :        String) is
+  function "+" (Left  : String;
+                Right : List) return List is
+    The_List : List := Right;
   begin
-    Linked_Strings.List(Container).Append (New_Item);
-  end Append;
+    The_List.Prepend (Left);
+    return The_List;
+  end "+";
 
 
-  procedure Put_Image (S : in out Ada.Strings.Text_Buffers.Root_Buffer_Type'class;
-                       V : List) is
+  function "-" (Left  : List;
+                Right : String) return List is
+    The_List   : List := Left;
+    The_Cursor : Linked_Strings.Cursor;
+  begin
+    The_Cursor := Find (The_List, Right);
+    Delete (The_List, The_Cursor);
+    return The_List;
+  end "-";
+
+
+  procedure Put_List_Image (S : in out Ada.Strings.Text_Buffers.Root_Buffer_Type'class;
+                            V : List) is
   begin
     S.Put ((if V.Is_Empty then "[]" else "[""" & V.To_Data (Separator => """, """) & """]"));
-  end Put_Image;
+  end Put_List_Image;
 
 
   function Is_Lowercase (The_String : String) return Boolean is
@@ -130,6 +143,18 @@ package body Strings is
   end Location_Of;
 
 
+  function Location_Of (The_Character : Character;
+                        In_String     : String;
+                        From          : Positive;
+                        The_Direction : Direction := Forward) return Natural is
+  begin
+    return Ada.Strings.Fixed.Index (Source  => In_String,
+                                    Pattern => [1 => The_Character],
+                                    From    => From,
+                                    Going   => Ada.Strings.Direction(The_Direction));
+  end Location_Of;
+
+
   function Location_Of (The_String    : String;
                         In_String     : String;
                         The_Direction : Direction := Forward) return Natural is
@@ -137,6 +162,40 @@ package body Strings is
     return Ada.Strings.Fixed.Index (Source  => In_String,
                                     Pattern => The_String,
                                     Going   => Ada.Strings.Direction(The_Direction));
+  end Location_Of;
+
+
+  function Location_Of (The_String    : String;
+                        In_String     : String;
+                        From          : Positive;
+                        The_Direction : Direction := Forward) return Natural is
+  begin
+    return Ada.Strings.Fixed.Index (Source  => In_String,
+                                    Pattern => The_String,
+                                    From    => From,
+                                    Going   => Ada.Strings.Direction(The_Direction));
+  end Location_Of;
+
+
+  function Location_Of (The_String    : String;
+                        In_String     : Element;
+                        The_Direction : Direction := Forward) return Natural is
+  begin
+    return Strings.Index (Source  => In_String,
+                          Pattern => The_String,
+                          Going   => Ada.Strings.Direction(The_Direction));
+  end Location_Of;
+
+
+  function Location_Of (The_String    : String;
+                        In_String     : Element;
+                        From          : Positive;
+                        The_Direction : Direction := Forward) return Natural is
+  begin
+    return Strings.Index (Source  => In_String,
+                          Pattern => The_String,
+                          From    => From,
+                          Going   => Ada.Strings.Direction(The_Direction));
   end Location_Of;
 
 
@@ -191,6 +250,29 @@ package body Strings is
     end loop;
     return Data(Data'first .. The_Last);
   end Trimmed_Trailing;
+
+
+  function Trimmed (Data : String;
+                    What : Character) return String is
+    The_First : Natural;
+    The_Last  : Natural;
+  begin
+    if Data = "" then
+      return "";
+    end if;
+    The_First := Data'first;
+    The_Last  := Data'last;
+    if The_First <= The_Last and then Data(The_First) = What then
+      The_First := The_First + 1;
+    end if;
+    if The_First > The_Last then
+      return "";
+    end if;
+    if Data(The_Last) = What then
+      The_Last := The_Last - 1;
+    end if;
+    return Data(The_First .. The_Last);
+  end Trimmed;
 
 
   function Purge_Of (Data : String) return String is
@@ -404,31 +486,30 @@ package body Strings is
   end Reduced;
 
 
-  function Image_Of (The_Value : Element) return String is
+  function Image_Of (The_Value : Kind) return String is
   begin
     return Trimmed (The_Value'img);
   end Image_Of;
 
 
-  function Legible_Image_Of (The_Value : Element) return String is
+  function Legible_Image_Of (The_Value : Kind) return String is
   begin
     return Legible_Of (The_Value'img);
   end Legible_Image_Of;
 
 
-  function Padded_Image_Of (The_Value : Element;
+  function Padded_Image_Of (The_Value : Kind;
                             Padding   : Character := '0') return String is
-    pragma Warnings (Off); -- !!! allow hiding of Element
-    function Image is new Image_Of (Element);
-    pragma Warnings (On);
 
-    Element_Image : constant String  := Image(The_Value);
+    function Image is new Image_Of (Kind);
 
-  begin
-    if The_Value < Element'val(0) then
+    The_Image : constant String  := Image(The_Value);
+
+  begin -- Padded_Image_Of
+    if The_Value < Kind'val(0) then
       raise Usage_Error;
     end if;
-    return Ada.Strings.Fixed."*"(Element'width - Element_Image'length - 1, Padding) & Element_Image;
+    return Ada.Strings.Fixed."*"(Kind'width - The_Image'length - 1, Padding) & The_Image;
   end Padded_Image_Of;
 
 
@@ -547,11 +628,11 @@ package body Strings is
   end Iterate;
 
 
-  procedure Put_Image (S : in out Ada.Strings.Text_Buffers.Root_Buffer_Type'class;
-                       V : Item) is
+  procedure Put_Item_Image (S : in out Ada.Strings.Text_Buffers.Root_Buffer_Type'class;
+                            V : Item) is
   begin
     S.Put ((if V.Count = 0 then "[]" else "[""" & V.To_Data (Separator => """, """) & """]"));
-  end Put_Image;
+  end Put_Item_Image;
 
 
   function Length_At (The_Item : Item;
@@ -607,7 +688,7 @@ package body Strings is
 
   function To_Data (The_List  : List;
                     Separator : String := "") return String is
-    The_Length : Natural := Natural(The_List.Length);
+    The_Length : Natural := The_List.Count;
   begin
     if The_Length = 0 then
       return "";
@@ -638,7 +719,7 @@ package body Strings is
 
   function Item_Of (Data      : String;
                     Separator : Character;
-                    Purge     : Boolean := False;
+                    Purge     : Boolean := True;
                     Symbols   : String := "") return Item is
     The_Item  : Item;
     The_First : Natural := Data'first;
@@ -677,6 +758,30 @@ package body Strings is
     end loop;
     return New_Item;
   end Part;
+
+
+  function "+" (Left  : Item;
+                Right : Item) return Item is
+    New_Item : Item := Left;
+  begin
+    New_Item.Positions(Left.Count + 1 .. Left.Count + Right.Count) := Right.Positions(First_Index .. Right.Count);
+    for Index in Left.Count + 1 .. Left.Count + Right.Count loop
+      New_Item.Positions(Index) := @ + Position(Left.Length);
+    end loop;
+    New_Item.Data(Left.Length + 1 .. Left.Length + Right.Length) := Right.Data (First_Index .. Right.Length);
+    New_Item.Count := Left.Count + Right.Count;
+    New_Item.Length := Left.Length + Right.Length;
+    return New_Item;
+  end "+";
+
+
+  procedure Prepend (The_Item : in out Item;
+                     Data     :        String) is
+    Data_Item : Item;
+  begin
+    Append (Data_Item, Data);
+    The_Item := Data_Item + The_Item;
+  end Prepend;
 
 
   function Contains (The_Item : Item;

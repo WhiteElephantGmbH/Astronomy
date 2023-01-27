@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2002 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2002 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -236,7 +236,7 @@ package body Log is
       end;
       Category_Names := Reduced_List_Of (Configuration.Value_Of (Filter_Section, Categories_Item));
       declare
-        Enabled_Categories : constant Natural := Natural(Category_Names.Length);
+        Enabled_Categories : constant Natural := Category_Names.Count;
       begin
         if Category_Names.Contains (All_Categories_Id) then
           Categories := All_Categories;
@@ -251,7 +251,7 @@ package body Log is
       elsif Categories = No_Categories then
         Io.Put_Line (The_File, "Logging disabled");
       else
-        Io.Put_Line (The_File, "Logging categories = " & Category_Names.To_Data (","));
+        Io.Put_Line (The_File, "Logging categories = " & Category_Names'image);
       end if;
       Is_Started := True;
     exception

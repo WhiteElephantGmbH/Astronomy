@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2011 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2011 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -418,7 +418,7 @@ package body Name is
       function Stored (Line   : String;
                        Number : Positive) return Boolean is
 
-        Parts : constant Strings.Item := Strings.Item_Of (Strings.Trimmed (Line), Separator => '|', Purge => True);
+        Parts : constant Strings.Item := Strings.Item_Of (Strings.Trimmed (Line), Separator => '|');
 
         function Part_For (Index : Strings.Element_Index) return String is
         begin
@@ -433,7 +433,7 @@ package body Name is
         end if;
         declare
           Part_1  : constant String := Part_For (Strings.First_Index);
-          Parts_1 : constant Strings.Item := Strings.Item_Of (Part_1, Separator => ' ', Purge => True);
+          Parts_1 : constant Strings.Item := Strings.Item_Of (Part_1, Separator => ' ');
 
           function Pixels_Of (The_Value : Angle.Value) return Integer is
             use type Angle.Value;
@@ -531,7 +531,7 @@ package body Name is
             else
               declare
                 Object_Id    : constant String       := Part_For (Strings.First_Index);
-                Object_Parts : constant Strings.Item := Strings.Item_Of (Object_Id, Separator => ' ', Purge => True);
+                Object_Parts : constant Strings.Item := Strings.Item_Of (Object_Id, Separator => ' ');
               begin
                 if Object_Parts.Count = 0 then
                   Error.Raise_With ("No Object defined in " & Line);

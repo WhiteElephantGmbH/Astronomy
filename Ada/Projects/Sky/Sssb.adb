@@ -77,7 +77,7 @@ package body Sssb is
       declare
 
         Line  : constant String := Strings.Trimmed (Ada.Text_IO.Get_Line (The_File));
-        Parts : constant Strings.Item := Strings.Item_Of (Line, Separator => ',');
+        Parts : constant Strings.Item := Strings.Item_Of (Line, Separator => ',', Purge => False);
 
         function Image_Of (Item : Header) return String is
         begin
@@ -92,6 +92,7 @@ package body Sssb is
         elsif Line = "$$EOE" then
           In_Data_Part := False;
         elsif In_Data_Part and then Parts.Count = (Header'pos(Header'last) + 1) then
+          Log.Write ("Data: " & Parts'image);
           declare
             Ut  : constant Time.Ut       := Time.Ut_Of (Image_Of (Julian_Date));
             Ra  : constant Angle.Degrees := Angle.Degrees'value(Image_Of (Right_Ascension));

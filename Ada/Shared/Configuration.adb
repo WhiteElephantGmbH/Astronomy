@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2002 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2002 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -166,7 +166,7 @@ package body Configuration is
                      Key         : String;
                      Default     : List := []) return List is
   begin
-    return Strings.Item_Of (Found_Item (Key, The_Section).Value, Separator => ',', Purge => True).To_Trimmed_List;
+    return Strings.Item_Of (Found_Item (Key, The_Section).Value, Separator => ',').To_Trimmed_List;
   exception
   when others =>
     return Default;

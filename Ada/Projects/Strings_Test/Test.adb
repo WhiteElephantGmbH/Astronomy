@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2022 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                        (c) 2022 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                         *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
@@ -94,7 +94,7 @@ package body Test is
         Tokens : Strings.Item;
       begin
         IO.Put_Line ("Part: " & Image);
-        Tokens := Strings.Item_Of (Image, Separator => ' ', Symbols => "[,]", Purge => True);
+        Tokens := Strings.Item_Of (Image, Separator => ' ', Symbols => "[,]");
         for T of Tokens loop
          IO.Put_Line ("-> " & T);
         end loop;
@@ -104,7 +104,7 @@ package body Test is
     IO.Put_Line ("");
     declare
       Parameter : constant String := ",,,";
-      Arguments : constant Strings.Item := Strings.Item_Of (Parameter, Separator => ',');
+      Arguments : constant Strings.Item := Strings.Item_Of (Parameter, Separator => ',', Purge => False);
     begin
       IO.Put_Line ("Arguments for " & Parameter);
       for A of Arguments loop
@@ -127,7 +127,12 @@ package body Test is
       IO.Put_Line ("Precontition checked");
     end;
     IO.Put_Line ("");
-    IO.Put_Line ("Test Complete : " & Test_Ok'image);
+    declare
+      Test_Complete : constant Strings.Element := ["Test Complete : "];
+      use type Strings.Element;
+    begin
+      IO.Put_Line (String'(+Test_Complete) & Test_Ok'image);
+    end;
   exception
   when Occurrence: others =>
     IO.Put_Line (Exceptions.Information_Of (Occurrence));
