@@ -138,7 +138,7 @@ package body Strings is
                         The_Direction : Direction := Forward) return Natural is
   begin
     return Ada.Strings.Fixed.Index (Source  => In_String,
-                                    Pattern => [1 => The_Character],
+                                    Pattern => [The_Character],
                                     Going   => Ada.Strings.Direction(The_Direction));
   end Location_Of;
 
@@ -149,7 +149,7 @@ package body Strings is
                         The_Direction : Direction := Forward) return Natural is
   begin
     return Ada.Strings.Fixed.Index (Source  => In_String,
-                                    Pattern => [1 => The_Character],
+                                    Pattern => [The_Character],
                                     From    => From,
                                     Going   => Ada.Strings.Direction(The_Direction));
   end Location_Of;

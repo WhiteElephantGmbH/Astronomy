@@ -498,7 +498,7 @@ package body Motor.Io.Protocol.Serial is
 
   procedure Stop_All is
   begin
-    The_Control.Send ([1 => Terminator]);
+    The_Control.Send ([Terminator]);
   exception
   when Occurrence: others =>
     Log.Termination (Occurrence);
