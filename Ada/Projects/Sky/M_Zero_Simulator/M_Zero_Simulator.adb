@@ -7,7 +7,6 @@ pragma Style_White_Elephant;
 pragma Build (Description => "M-Zero Simulator",
               Version     => (1, 3, 0, 3),
               Kind        => Console,
-              Icon        => False,
               Compiler    => "GNATPRO\23.0");
 with Test;
 
