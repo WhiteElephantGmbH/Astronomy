@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2014 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2014 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -27,6 +27,8 @@ with Traces;
 package body Motor.Io.Protocol.Serial is
 
   package Log is new Traces ("Serial");
+
+  use type Time.Ut;
 
   type Command is (Unused_Next_Action_1, Unused_Next_Action_2,
                    Set_Initial_Count_1, Set_Initial_Count_2,
@@ -430,7 +432,7 @@ package body Motor.Io.Protocol.Serial is
   procedure Synchronize_Start_Time (The_Time : out Time.Ut) is
   begin
     The_Time := Time.Synchronized_Universal (Base => Time_Delta);
-    delay (abs(The_Time - Time.Universal));
+    delay (abs Duration(The_Time - Time.Universal));
     Send (Synchronize);
   exception
   when Occurrence: others =>

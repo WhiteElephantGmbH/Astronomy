@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2019 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2019 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -265,6 +265,7 @@ package body Telescope is
 
 
     function Target_Direction (At_Time : Time.Ut := Time.Universal) return Space.Direction is
+      use type Time.Ut;
       Adjusted_Time : constant Time.Ut := At_Time + The_Time_Adjustment;
       Direction     : constant Space.Direction := Get_Direction (Id, Adjusted_Time);
       The_Direction : Earth.Direction;
@@ -284,8 +285,10 @@ package body Telescope is
 
 
     function Target_Speed (At_Time : Time.Ut := Time.Universal) return Mount.Speed is
-      Direction_Before : constant Space.Direction := Get_Direction (Id, At_Time - 0.5);
-      Direction_After  : constant Space.Direction := Get_Direction (Id, At_Time + 0.5);
+      use type Time.Ut;
+      Delta_Time : constant Duration := 0.5;
+      Direction_Before : constant Space.Direction := Get_Direction (Id, At_Time - Delta_Time);
+      Direction_After  : constant Space.Direction := Get_Direction (Id, At_Time + Delta_Time);
       Direction_Delta  : Space.Direction;
       Ra_Speed         : Angle.Signed;
       Dec_Speed        : Angle.Signed;
@@ -361,6 +364,8 @@ package body Telescope is
                                              Alt => Earth.Alt_Of (The_Direction));
         return Objects.Direction_Of (The_Direction, The_Start_Time);
       end Home_Direction;
+
+      use type Time.Ut;
 
     begin -- Goto_Target
       if Get_Direction = null then
@@ -460,6 +465,8 @@ package body Telescope is
 
         Home_Position : Earth.Direction;
 
+        use type Time.Ut;
+
       begin -- Goto_Home_Or_Waiting
         if Travel_Distance < -180.0 then
           Travel_Distance := Travel_Distance + 360.0;
@@ -496,16 +503,18 @@ package body Telescope is
                                                Alt => Earth.Alt_Of (Arrival_Position));
           The_Waiting_Position := Arrival_Position;
           Mount.Goto_Mark (Home_Position, The_Completion_Time);
-          The_Completion_Time := The_Completion_Time + Homing_Time;
+          The_Completion_Time := @ + Homing_Time;
         else
           The_Waiting_Position := Earth.Unknown_Direction;
           Mount.Goto_Mark (Arrival_Position, The_Completion_Time);
         end if;
       end Goto_Home_Or_Waiting;
 
+      use type Time.Ut;
+
     begin -- Goto_Waiting_Position
       The_Arrival_Time := The_Next_Tracking_Period.Arrival_Time;
-      if (The_Arrival_Time - Time.Universal) < Homing_Time then
+      if Duration(The_Arrival_Time - Time.Universal) < Homing_Time then
         return False;
       end if;
       Goto_Home_Or_Waiting;
@@ -560,6 +569,7 @@ package body Telescope is
     procedure Increment_Offset is
       The_Adjusting_Time : Time.Ut;
       use type Angle.Degrees;
+      use type Time.Ut;
     begin
       if The_Adjusting_Start_Time /= Time.In_The_Future then
         if The_Adjusting_End_Time = Time.In_The_Future then
@@ -585,10 +595,11 @@ package body Telescope is
     procedure Update_Target_Position is
       Now    : constant Time.Ut := Time.Universal;
       Unused : Time.Ut;
+      use type Time.Ut;
     begin
       if Get_Direction /= null then
         if Space.Direction_Is_Known (The_Home_Direction) then
-          if Now - The_Start_Time < Homing_Time then
+          if Duration(Now - The_Start_Time) < Homing_Time then
             return;
           else
             The_Home_Direction := Space.Unknown_Direction;
@@ -612,9 +623,10 @@ package body Telescope is
     procedure Update_Preparing_Position is
       Now    : constant Time.Ut := Time.Universal;
       Unused : Time.Ut;
+      use type Time.Ut;
     begin
       if Earth.Direction_Is_Known (The_Waiting_Position) then
-        if Now - The_Start_Time < Homing_Time then
+        if Duration(Now - The_Start_Time) < Homing_Time then
           return;
         else
           The_Start_Time := Time.Universal;
@@ -1149,6 +1161,7 @@ package body Telescope is
     ---------------
     procedure Preparing_State is
       use type Earth.Direction;
+      use type Time.Ut;
     begin
       case The_Event is
       when Mount_Startup =>
@@ -1178,6 +1191,7 @@ package body Telescope is
     -- Waiting --
     --------------
     procedure Waiting_State is
+      use type Time.Ut;
     begin
       case The_Event is
       when Mount_Startup =>
@@ -1286,6 +1300,7 @@ package body Telescope is
     The_Next_Time : Ada.Real_Time.Time;
 
     use type Ada.Real_Time.Time;
+    use type Time.Ut;
 
   begin -- Control_Task
     Reset_Adjustments;

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2014 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2014 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -23,6 +23,8 @@ with Traces;
 package body Motor.Io is
 
   use all type Device.Drive;
+
+  use type Time.Ut;
 
   package Log is new Traces ("Stepper");
 
@@ -49,7 +51,7 @@ package body Motor.Io is
   end Nspr_Of;
 
 
-  function C_Of (T : Time.Ut) return Natural is
+  function C_Of (T : Duration) return Natural is
   begin
     return Natural(Freq * T);
   end C_Of;
@@ -714,7 +716,7 @@ package body Motor.Io is
       Log.Termination (Item);
     end Append;
 
-    Delta_Time : constant Time.Ut := Time_Delta / Actions_Per_Update;
+    Delta_Time : constant Duration := Time_Delta / Actions_Per_Update;
 
     subtype Update_List is Action_List (1 .. Actions_Per_Update);
 

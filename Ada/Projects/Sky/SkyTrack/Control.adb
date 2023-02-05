@@ -308,11 +308,12 @@ package body Control is
           Tracking_Period : constant Time.Period := Neo.Tracking_Period_Of (The_Neo_Target);
           Arriving_In     : Time.Ut;
           use type Time.Period;
+          use type Time.Long_Duration;
         begin
           if Tracking_Period /= Time.Undefined then
             Arriving_In := Tracking_Period.Arrival_Time - Time.Universal;
             if Arriving_In >= 0.0 then
-              User.Show (Arriving_In);
+              User.Show (Duration(Arriving_In));
             end if;
           end if;
         end;
@@ -328,6 +329,7 @@ package body Control is
         return;
       when Telescope.Approaching | Telescope.Parking | Telescope.Positioning | Telescope.Preparing =>
         declare
+          use type Time.Ut;
           Actual_Duration : Time.Ut := The_Data.Arriving_Time - Time.Universal;
         begin
           if Actual_Duration < 0.0 then

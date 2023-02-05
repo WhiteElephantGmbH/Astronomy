@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2019 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2019 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -271,6 +271,7 @@ package body Control is
 
     procedure Handle_Telescope_Information is
       use type Telescope.State;
+      use type Time.Ut;
     begin
       The_Data := Telescope.Information;
       User.Show (The_Data);
@@ -286,7 +287,7 @@ package body Control is
           use type Time.Period;
         begin
           if Neo_Tracking_Period /= Time.Undefined then
-            Arriving_In := Neo_Tracking_Period.Arrival_Time - Time.Universal;
+            Arriving_In := Duration(Neo_Tracking_Period.Arrival_Time - Time.Universal);
             if Arriving_In >= 0.0 then
               User.Show (Arriving_In);
             end if;

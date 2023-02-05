@@ -30,6 +30,8 @@ package body Sssb is
 
   package Log is new Traces ("Sssb");
 
+  use type Time.Ut;
+
   type Place is record
     Ut  : Time.Ut       := 0.0;
     Ra  : Angle.Degrees := 0.0;

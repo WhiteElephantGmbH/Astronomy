@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2015 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2015 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -22,6 +22,8 @@ with Traces;
 package body Motor.Io.Protocol.Simulation is
 
   package Log is new Traces ("Simulation");
+
+  use type Time.Ut;
 
   task type Simulation_Task with Priority => System.Max_Priority is
 
@@ -122,7 +124,7 @@ package body Motor.Io.Protocol.Simulation is
   begin
     The_Time := Time.Synchronized_Universal (Base => Motor.Time_Delta);
     Log.Write ("start time => " & Time.Image_Of (The_Time));
-    delay (abs(The_Time - Time.Universal));
+    delay (abs Duration(The_Time - Time.Universal));
     The_Simulation.Start_Updating;
   end Synchronize_Start_Time;
 

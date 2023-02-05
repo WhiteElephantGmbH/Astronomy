@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2012 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2012 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -17,8 +17,23 @@ pragma Style_White_Elephant;
 
 with Ada.Calendar.Time_Zones;
 with Site;
+with Strings;
 
 package body Time is
+
+  function "+" (Left  : Long_Duration;
+                Right : Duration) return Long_Duration is
+  begin
+    return Left + Long_Duration(Right);
+  end "+";
+
+
+  function "-" (Left  : Long_Duration;
+                Right : Duration) return Long_Duration is
+  begin
+    return Left - Long_Duration(Right);
+  end "-";
+
 
   function Image_Of (Item : Value) return String is
   begin
@@ -89,6 +104,43 @@ package body Time is
   end Local_Year;
 
 
+  function Calendar_Value_Of (Image : String) return Calendar_Value is
+  begin
+    declare
+      Images      : constant Strings.Item := Strings.Item_Of (Image, Separator => ' ');
+      Date_Image  : constant Strings.Item := Strings.Item_Of (Images(1), Separator => '.', Purge => False);
+      Time_Image  : constant Strings.Item := Strings.Item_Of (Images(2), Separator => ':', Purge => False);
+      Year_Image  : constant String := Date_Image(3);
+      The_Year    : constant Integer := Integer'value(Year_Image);
+      The_Seconds : Duration;
+    begin
+      if not (The_Year in Year) then
+        raise Out_Of_Range;
+      elsif Images.Count = 2 and then Date_Image.Count = 3 and then Time_Image.Count in 2 .. 3 then
+        The_Seconds := Natural'value(Time_Image(1)) * One_Hour + Natural'value(Time_Image(2)) * One_Minute;
+        if Time_Image.Count = 3 then
+          begin
+            The_Seconds := @ + Duration(Natural'value(Time_Image(3)));
+          exception
+          when others =>
+            The_Seconds := @ + Duration'value(Time_Image(3));
+          end;
+        end if;
+        return Ada.Calendar.Time_Of (Year    => Year'value(Date_Image(3)),
+                                     Month   => Month'value(Date_Image(2)),
+                                     Day     => Day'value(Date_Image(1)),
+                                     Seconds => The_Seconds);
+      end if;
+      raise Illegal;
+    end;
+  exception
+  when Out_Of_Range =>
+    raise;
+  when others =>
+    raise Illegal;
+  end Calendar_Value_Of;
+
+
   --------------------------
   -- Modified Julian Date --
   --------------------------
@@ -156,7 +208,7 @@ package body Time is
     return Ada.Calendar.Time_Of (Year    => The_Year,
                                  Month   => The_Month,
                                  Day     => The_Day,
-                                 Seconds => Duration(The_Hours) * 3600.0);
+                                 Seconds => Duration(The_Hours) * One_Hour);
   end Local_Of;
 
 
@@ -172,20 +224,20 @@ package body Time is
   end Universal;
 
 
-  function Nearest_Universal (Base : Ut) return Ut is
+  function Nearest_Universal (Base : Duration) return Ut is
   begin
     return Ut(Long_Long_Integer(Universal / Base)) * Base;
   end Nearest_Universal;
 
 
   function Synchronized_Universal_Of (Item : Ut;
-                                      Base : Ut) return Ut is
+                                      Base : Duration) return Ut is
   begin
     return Ut(Long_Long_Integer((Item + Base) / Base)) * Base;
   end Synchronized_Universal_Of;
 
 
-  function Synchronized_Universal (Base : Ut) return Ut is
+  function Synchronized_Universal (Base : Duration) return Ut is
   begin
     return Synchronized_Universal_Of (Universal, Base);
   end Synchronized_Universal;
@@ -211,7 +263,7 @@ package body Time is
     use Astro;
     use TIMLIB;
 
-    TS : constant Duration := Time_Shift (Local_Of (Item));
+    TS : constant Long_Duration := Long_Duration(Time_Shift (Local_Of (Item)));
 
     Modjd : constant Astro.REAL :=  Astro.REAL((Item + TS) / One_Day) + MJD_Offset;
 
@@ -294,7 +346,7 @@ package body Time is
 
   JD_Offset : constant Astro.REAL := 2451545.0;
 
-  function Julian_Date_Of (Utime : Duration) return Astro.REAL is
+  function Julian_Date_Of (Utime : Long_Duration) return Astro.REAL is
   begin
      return Astro.REAL(Utime / One_Day) + JD_Offset;
   end Julian_Date_Of;

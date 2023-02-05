@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2019 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2019 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -28,6 +28,9 @@ with System;
 package body Device is
 
   package Log is new Traces ("Device");
+
+  Completion_Duration : constant Duration := 22.0;
+  Homing_Duration     : constant Duration := 140.0;
 
   type Fan_Action is (No_Action,
                       Turn_On,
@@ -690,10 +693,11 @@ package body Device is
 
 
     procedure Find_Home (Completion_Time : out Time.Ut) is
+      use type Time.Ut;
     begin
       Log.Write ("Mount.Find_Home");
       Action.Put (Mount_Action'(Find_Home));
-      Completion_Time := Time.Universal + 140.0;
+      Completion_Time := Time.Universal + Homing_Duration;
     end Find_Home;
 
 
@@ -710,6 +714,7 @@ package body Device is
       use type Angle.Degrees;
       use type Angle.Signed;
       use type Angle.Value;
+      use type Time.Ut;
     begin
       if With_Speed = [0, 0] then
         Log.Write ("Mount.Goto_Target " & Image_Of (Direction));
@@ -724,19 +729,20 @@ package body Device is
                      Dec_Rate   => PWI.Mount.Speed(Angle.Degrees'(+With_Speed(D2)) * 3600.0),
                      From_J2000 => False);
       end if;
-      Completion_Time := Time.Universal + 22.0;
+      Completion_Time := Time.Universal + Completion_Duration;
     end Goto_Target;
 
 
     procedure Goto_Mark (Direction       :     Earth.Direction;
                          Completion_Time : out Time.Ut) is
       use type Angle.Value;
+      use type Time.Ut;
     begin
       Log.Write ("Mount.Goto_Mark " & Image_Of (Direction));
       pragma Assert (Earth.Direction_Is_Known (Direction));
       Action.Move (Alt => PWI.Mount.Degrees(Angle.Degrees'(+Earth.Alt_Of (Direction))),
                    Azm => PWI.Mount.Degrees(Angle.Degrees'(+Earth.Az_Of (Direction))));
-      Completion_Time := Time.Universal + 25.0;
+      Completion_Time := Time.Universal + Completion_Duration;
     end Goto_Mark;
 
 

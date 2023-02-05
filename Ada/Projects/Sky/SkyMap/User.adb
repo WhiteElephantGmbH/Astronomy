@@ -15,7 +15,6 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Ada.Calendar;
 with Angle;
 with Application;
 with Error;
@@ -23,6 +22,8 @@ with Gui.Registered;
 with Map;
 with Site;
 with Star;
+with Strings;
+with Time;
 with Traces;
 
 package body User is
@@ -36,9 +37,16 @@ package body User is
   Generate_Button : Gui.Button;
   Longitude       : Gui.Plain_Edit_Box;
   Latitude        : Gui.Plain_Edit_Box;
+  Date_Time       : Gui.Plain_Edit_Box;
 
-  Default_Latitude  : constant String := "+47" & Angle.Degree & "40'0.06""";
-  Default_Longitude : constant String := "+008" & Angle.Degree & "44'30.28""";
+  Default_Latitude  : constant String := "+47" & Angle.Degree & "42'43.09""";
+  Default_Longitude : constant String := "+008" & Angle.Degree & "38'07.94""";
+
+
+  function Image_Of (Item : Angle.Value) return String is
+  begin
+    return Angle.Image_Of (Item, Decimals => 2, Show_Signed => True);
+  end Image_Of;
 
 
   procedure Generate is
@@ -48,21 +56,43 @@ package body User is
     function Value_Of (Box     : in out Gui.Plain_Edit_Box;
                        Default :        String) return Angle.Value is
     begin
-      return Angle.Value_Of (Gui.Contents_Of (Box));
+      declare
+        Value : constant Angle.Value := Angle.Value_Of (Gui.Contents_Of (Box));
+      begin
+        Gui.Set_Text (Box, Image_Of (Value));
+        return Value;
+      end;
     exception
     when others =>
-      Gui.Set_Text (Longitude, Default);
+      Gui.Set_Text (Box, Default);
       Error.Raise_With ("Value Error -> Default " & Default & " set");
     end Value_Of;
 
-  begin
+    function Time_Value return Time.Calendar_Value is
+      Image      : constant String := Strings.Trimmed (Gui.Contents_Of (Date_Time));
+      Local_Time : constant String := Time.Image_Of (Time.Universal);
+    begin
+      if Image = "" then
+        return Time.Calendar_Now;
+      end if;
+      return Time.Calendar_Value_Of (Image);
+    exception
+    when Time.Illegal =>
+      Gui.Set_Text (Date_Time, Local_Time);
+      Error.Raise_With ("Incorrect Date Time -> Local Time Set");
+    when Time.Out_Of_Range =>
+      Gui.Set_Text (Date_Time, Local_Time);
+      Error.Raise_With ("Year not in" & Time.Year'first'image & " .." & Time.Year'last'image & " -> Local Time Set");
+    end Time_Value;
+
+  begin -- Generate
     Set_Status ("");
     Generate_Button.Disable;
     Site.Define (Site.Data'(Latitude  => Value_Of (Latitude, Default_Latitude),
                             Longitude => Value_Of (Longitude, Default_Longitude),
                             Elevation => 0));
 
-    Star.Read (Ada.Calendar.Clock);
+    Star.Read (Time_Value);
     Map.Draw (Size          => 1000.0,
               Margin        => 10.0,
               Star_Min      => 1.0,
@@ -72,8 +102,12 @@ package body User is
     Generate_Button.Enable;
   exception
   when Error.Occurred =>
+    Gui.Beep;
     Set_Status (Error.Message);
     Generate_Button.Enable;
+  when Item: others =>
+    Log.Termination (Item);
+    Set_Status ("### Internal Error ###");
   end Generate;
 
 
@@ -84,11 +118,11 @@ package body User is
 
     procedure Create_Interface is
 
-      Separation     : constant := 6;
+      Separation     : constant := 12;
       Longitude_Text : constant String := "Longitude"; -- largest text
 
       Title_Size : constant Natural := Gui.Text_Size_Of (Longitude_Text) + Separation;
-      Text_Size  : constant Natural := Gui.Text_Size_Of (Default_Longitude) + Separation;
+      Text_Size  : constant Natural := Gui.Text_Size_Of ("31.12.2399 23:59:59.9") + Separation;
 
     begin -- Create_Interface
       Generator_Page := Gui.Add_Page (The_Title  => "Main",
@@ -105,12 +139,16 @@ package body User is
                               The_Size       => Text_Size,
                               The_Title_Size => Title_Size);
       if Site.Is_Defined then
-        Gui.Set_Text (Longitude, Angle.Image_Of (Site.Longitude, Decimals => 2, Show_Signed => True));
-        Gui.Set_Text (Latitude, Angle.Image_Of (Site.Latitude, Decimals => 2, Show_Signed => True));
+        Gui.Set_Text (Longitude, Image_Of (Site.Longitude));
+        Gui.Set_Text (Latitude, Image_Of (Site.Latitude));
       else
         Gui.Set_Text (Longitude, Default_Longitude);
         Gui.Set_Text (Latitude, Default_Latitude);
       end if;
+      Date_Time := Gui.Create (Generator_Page, "Date Time", "",
+                               Is_Modifiable  => True,
+                               The_Size       => Text_Size,
+                               The_Title_Size => Title_Size);
     exception
     when Item: others =>
       Log.Termination (Item);

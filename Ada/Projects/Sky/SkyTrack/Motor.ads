@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2014 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2014 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -27,7 +27,7 @@ package Motor is
 
   Time_Divider : constant := 2;
 
-  Time_Delta : constant Time.Ut := Time.One_Second / Time_Divider;
+  Time_Delta : constant Duration := Time.One_Second / Time_Divider;
 
   type State is (Disconnected, Fault, Startup, Ready, Parked,
                  Parking, Directing, Positioned, Positioning, Update, Terminated);

@@ -36,6 +36,8 @@ package body Neo is
 
   package Log is new Traces ("Neo");
 
+  use type Time.Ut;
+
   Directory : constant String := Satellite.Directory;
   Extension : constant String := Satellite.Extension;
 
@@ -281,11 +283,11 @@ package body Neo is
                                                      " - DEC: " & Angle.Signed_Degrees_Image_Of (Item.Dec));
       end Log_Image_Of;
 
-      Search_Step   : constant Time.Ut := Time.One_Second * 12.0;
-      Maximum_Pause : constant Time.Ut := Time.One_Minute * 3.0;
+      Search_Step   : constant Duration := Time.One_Second * 12.0;
+      Maximum_Pause : constant Duration := Time.One_Minute * 3.0;
 
-      The_Step  : Time.Ut;
-      The_Pause : Time.Ut;
+      The_Step  : Duration;
+      The_Pause : Duration;
 
     begin -- Find_Norad_Entries
       if Log.Is_Enabled then
@@ -455,7 +457,7 @@ package body Neo is
       end if;
       Data := new List'(The_List(1..The_Last));
     end if;
-    return Data(Data'first).Ut < Time.Universal + 15.0 * Time.One_Minute;
+    return Data(Data'first).Ut < Time.Universal + Time.One_Minute * 15;
   end Is_Arriving;
 
 

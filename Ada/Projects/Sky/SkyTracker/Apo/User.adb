@@ -551,6 +551,7 @@ package body User is
     end Image_Of;
 
     use type Angle.Value;
+    use type Time.Ut;
 
   begin -- Show
     if (The_Status /= Information.Status)

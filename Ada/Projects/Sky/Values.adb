@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2019 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2019 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -48,6 +48,7 @@ package body Values is
                                 V1, V2 : Angle.Value) return Angle.Value is
     use type Angle.Degrees;
     use type Angle.Value;
+    use type Time.Ut;
     DT : constant Angle.Degrees := Angle.Degrees(T2 - T1);
     DV : constant Angle.Degrees := V2 - V1;
   begin

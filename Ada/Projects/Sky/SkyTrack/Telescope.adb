@@ -31,6 +31,7 @@ package body Telescope is
 
   package Log is new Traces ("Telescope");
 
+  use type Time.Ut;
 
   task type Control_Task with Priority => System.Max_Priority is
 
@@ -307,10 +308,10 @@ package body Telescope is
             return True;
           end if;
           Log.Warning ("approach failed");
-          At_Time := At_Time + 10.0; -- Try in future
+          At_Time := @ + Duration(10.0); -- Try in future
         end if;
         if The_Arriving_Time = Time.In_The_Future then
-          At_Time := At_Time + 3.0;
+          At_Time := @ + Duration(3.0);
         else
           At_Time := The_Arriving_Time;
         end if;
@@ -323,7 +324,7 @@ package body Telescope is
           raise;
         when others =>
           Log.Warning ("speed too high (try later)");
-          At_Time := At_Time + 3.0;
+          At_Time := @ + Duration(3.0);
           The_Arriving_Time := Motor.Arriving_Time (At_Position => Position_At (At_Time),
                                                     With_Speed  => Position_At (At_Time + Motor.Time_Delta) -
                                                                    Position_At (At_Time - Motor.Time_Delta));

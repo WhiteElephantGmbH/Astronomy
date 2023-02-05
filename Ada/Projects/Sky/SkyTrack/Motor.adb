@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2014 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2014 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -33,6 +33,8 @@ package body Motor is
   Epsilon : Values;
 
   use all type Device.Drive;
+
+  use type Time.Ut;
 
 
   function Is_Equal (Left, Right : Value;
@@ -466,7 +468,7 @@ package body Motor is
         return Time.Ut (2.0 * SQRT (S /AM(D)));
       end if;
     end Time_For;
-
+    
   begin -- Time_For_Positioning
     Log.Write ("Time_For_Positioning To - M1:" & To(D1)'img & " - M2:" & To(D2)'img);
     Log.Write ("                     AP - M1:" & AP(D1)'img & " - M2:" & AP(D2)'img);

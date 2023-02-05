@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2011 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2011 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -49,6 +49,8 @@ with User.Input;
 package body User is
 
   package Log is new Traces ("User");
+
+  use type Time.Ut;
 
   Application_Name : constant String := Application.Name;
   Version          : constant String := Application.Version;

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2021 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2021 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -326,6 +326,7 @@ package body User is
     use type Angle.Value;
     use type Space.Direction;
     use type Telescope.State;
+    use type Time.Ut;
 
   begin -- Show
     if not Strings.Is_Null (The_Error_Text) then

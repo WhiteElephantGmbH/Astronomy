@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2015 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2015 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -28,6 +28,8 @@ with Traces;
 package body Motor.Io.Protocol.Udp is
 
   package Log is new Traces ("Udp");
+
+  use type Time.Ut;
 
   type Command is (Initialize,
                    Get_Data,

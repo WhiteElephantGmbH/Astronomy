@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2012 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2012 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -32,14 +32,23 @@ package Time is
 
   function Image_Of (Item : Value) return String;
 
+  subtype Day   is Ada.Calendar.Day_Number;
+  subtype Month is Ada.Calendar.Month_Number;
+  subtype Year  is Ada.Calendar.Year_Number;
+
+  subtype Calendar_Value is Ada.Calendar.Time;
+
+  function Calendar_Value_Of (Image : String) return Calendar_Value;
+  -- Item -> [d]d.[m]m.yyyy [h]h:[m]m[:[s]s[.s]]
+  Illegal      : exception;
+  Out_Of_Range : exception;
+
+  function Calendar_Now return Calendar_Value is (Ada.Calendar.Clock);
+
 
   -------------------------
   -- local date and time --
   -------------------------
-
-  subtype Day     is Ada.Calendar.Day_Number;
-  subtype Month   is Ada.Calendar.Month_Number;
-  subtype Year    is Ada.Calendar.Year_Number;
 
   function Local_Time return Value;
 
@@ -54,7 +63,19 @@ package Time is
   -- universal time --
   --------------------
 
-  subtype Ut is Duration; -- in seconds since year 2000
+  Delta_Time : constant := 10.0**(-6);
+
+  type Long_Duration is delta Delta_Time range -(2**63 * Delta_Time) .. +((2**63 - 1) * Delta_Time);
+  for Long_Duration'size use 64;
+  for Long_Duration'small use Delta_Time;
+
+  subtype Ut is Long_Duration; -- in seconds since year 2000 (can be negative)
+
+  function "+" (Left  : Long_Duration;
+                Right : Duration) return Long_Duration;
+
+  function "-" (Left  : Long_Duration;
+                Right : Duration) return Long_Duration;
 
   In_The_Past   : constant Ut := 0.0;
   In_The_Future : constant Ut := Ut'last;
@@ -66,18 +87,18 @@ package Time is
 
   Undefined : constant Period := (others => <>);
 
-  function Local_Of (Item : Ut) return Ada.Calendar.Time;
+  function Local_Of (Item : Ut) return Calendar_Value;
 
-  function Universal_Of (Time_Local : Ada.Calendar.Time) return Ut;
+  function Universal_Of (Time_Local : Calendar_Value) return Ut;
 
   function Universal return Ut;
 
-  function Nearest_Universal (Base : Ut) return Ut;
+  function Nearest_Universal (Base : Duration) return Ut;
 
   function Synchronized_Universal_Of (Item : Ut;
-                                      Base : Ut) return Ut;
+                                      Base : Duration) return Ut;
 
-  function Synchronized_Universal (Base : Ut) return Ut;
+  function Synchronized_Universal (Base : Duration) return Ut;
 
   function Universal_Of (Ut_Year  : Year;
                          Ut_Month : Month;
@@ -121,7 +142,7 @@ package Time is
   -- Julian Date --
   -----------------
 
-  function Julian_Date_Of (Utime : Duration) return Astro.REAL;
+  function Julian_Date_Of (Utime : Long_Duration) return Astro.REAL;
 
   function Ut_Of (Jd : String) return Ut;
 
