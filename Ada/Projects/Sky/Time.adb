@@ -21,17 +21,17 @@ with Strings;
 
 package body Time is
 
-  function "+" (Left  : Long_Duration;
-                Right : Duration) return Long_Duration is
+  function "+" (Left  : Ut;
+                Right : Duration) return Ut is
   begin
-    return Left + Long_Duration(Right);
+    return Left + Ut(Right);
   end "+";
 
 
-  function "-" (Left  : Long_Duration;
-                Right : Duration) return Long_Duration is
+  function "-" (Left  : Ut;
+                Right : Duration) return Ut is
   begin
-    return Left - Long_Duration(Right);
+    return Left - Ut(Right);
   end "-";
 
 
@@ -43,7 +43,7 @@ package body Time is
 
   function Time_Shift (Now : Ada.Calendar.Time) return Duration is
   begin
-    return Duration (Ada.Calendar.Time_Zones.UTC_Time_Offset (Now)) * 60.0;
+    return Duration(Ada.Calendar.Time_Zones.UTC_Time_Offset (Now)) * 60.0;
   end Time_Shift;
 
 
@@ -263,7 +263,7 @@ package body Time is
     use Astro;
     use TIMLIB;
 
-    TS : constant Long_Duration := Long_Duration(Time_Shift (Local_Of (Item)));
+    TS : constant Duration := Time_Shift (Local_Of (Item));
 
     Modjd : constant Astro.REAL :=  Astro.REAL((Item + TS) / One_Day) + MJD_Offset;
 
@@ -346,7 +346,7 @@ package body Time is
 
   JD_Offset : constant Astro.REAL := 2451545.0;
 
-  function Julian_Date_Of (Utime : Long_Duration) return Astro.REAL is
+  function Julian_Date_Of (Utime : Ut) return Astro.REAL is
   begin
      return Astro.REAL(Utime / One_Day) + JD_Offset;
   end Julian_Date_Of;

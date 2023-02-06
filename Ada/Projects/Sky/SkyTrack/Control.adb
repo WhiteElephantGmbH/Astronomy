@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2011 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2011 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -306,14 +306,14 @@ package body Control is
       if Name.Is_Known (The_Neo_Target) then
         declare
           Tracking_Period : constant Time.Period := Neo.Tracking_Period_Of (The_Neo_Target);
-          Arriving_In     : Time.Ut;
+          Arriving_In     : Duration;
           use type Time.Period;
-          use type Time.Long_Duration;
+          use type Time.Ut;
         begin
           if Tracking_Period /= Time.Undefined then
-            Arriving_In := Tracking_Period.Arrival_Time - Time.Universal;
+            Arriving_In := Duration(Tracking_Period.Arrival_Time - Time.Universal);
             if Arriving_In >= 0.0 then
-              User.Show (Duration(Arriving_In));
+              User.Show (Arriving_In);
             end if;
           end if;
         end;

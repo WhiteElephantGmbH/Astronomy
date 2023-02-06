@@ -63,19 +63,17 @@ package Time is
   -- universal time --
   --------------------
 
-  Delta_Time : constant := 10.0**(-6);
+  Delta_Time : constant := 10.0**(-8);
 
-  type Long_Duration is delta Delta_Time range -(2**63 * Delta_Time) .. +((2**63 - 1) * Delta_Time);
-  for Long_Duration'size use 64;
-  for Long_Duration'small use Delta_Time;
+  type Ut is delta Delta_Time range -(2**63 * Delta_Time) .. +((2**63 - 1) * Delta_Time);
+  for Ut'size use 64;
+  for Ut'small use Delta_Time;
 
-  subtype Ut is Long_Duration; -- in seconds since year 2000 (can be negative)
+  function "+" (Left  : Ut;
+                Right : Duration) return Ut;
 
-  function "+" (Left  : Long_Duration;
-                Right : Duration) return Long_Duration;
-
-  function "-" (Left  : Long_Duration;
-                Right : Duration) return Long_Duration;
+  function "-" (Left  : Ut;
+                Right : Duration) return Ut;
 
   In_The_Past   : constant Ut := 0.0;
   In_The_Future : constant Ut := Ut'last;
@@ -142,7 +140,7 @@ package Time is
   -- Julian Date --
   -----------------
 
-  function Julian_Date_Of (Utime : Long_Duration) return Astro.REAL;
+  function Julian_Date_Of (Utime : Ut) return Astro.REAL;
 
   function Ut_Of (Jd : String) return Ut;
 
