@@ -20,6 +20,7 @@ with Angle;
 with Constellation;
 with Earth;
 with Error;
+with Solar_System;
 with Traces;
 with User;
 
@@ -151,6 +152,19 @@ package body Map is
       end loop;
     end Draw_Stars;
 
+    procedure Draw_Sun is
+      Radius    : constant Eps.Value := Size / 120.0;
+      Direction : constant Earth.Direction := Solar_System.Direction_Of (Solar_System.Sun, Star.Ut);
+    begin
+      if not Earth.Is_Below_Horizon (Direction) then
+        Eps.Set_Color (Eps.Yellow);
+        Eps.Set_Line (Eps.Solid);
+        Eps.Add_Circle (To        => Position_Of (Direction),
+                        Radius    => Radius,
+                        Is_Filled => True);
+      end if;
+    end Draw_Sun;
+
   begin -- Draw
     if Size > Eps.Value'last - Margin then
       Error.Raise_With ("'Map Size' + 'Margin' must be smaller then" & Eps.Value'image(Eps.Value'last));
@@ -158,9 +172,10 @@ package body Map is
     Eps.Create ("SkyMap.Eps",
                 Lower_Left  => (X => Margin,   Y => Margin),
                 Upper_Right => (X => Size + Margin, Y => Size + Margin));
-    Draw_Border;
     Draw_Constellations;
     Draw_Stars;
+    Draw_Sun;
+    Draw_Border;
     Eps.Close;
     User.Set_Status ("Map generated");
   exception

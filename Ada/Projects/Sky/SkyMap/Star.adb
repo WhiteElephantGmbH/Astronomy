@@ -17,7 +17,6 @@ pragma Style_White_Elephant;
 
 with Data;
 with Objects;
-with Time;
 with Traces;
 
 package body Star is
@@ -42,9 +41,9 @@ package body Star is
   end Location_Of;
 
 
-  procedure Read (At_Time : Ada.Calendar.Time) is
+  The_Ut : Time.Ut := Time.In_The_Future;
 
-    Ut : constant Time.Ut := Time.Universal_Of (At_Time);
+  procedure Read (At_Time : Ada.Calendar.Time) is
 
     The_Id : Natural := 0;
 
@@ -61,6 +60,7 @@ package body Star is
     The_Direction : Earth.Direction;
 
   begin -- Read
+    The_Ut := Time.Universal_Of (At_Time);
     The_Directions := [others => Earth.Unknown_Direction];
     The_Last := 0;
     Log.Write ("Read - Time => " & Time.Image_Of (Ut));
@@ -80,5 +80,8 @@ package body Star is
   when Item : others =>
     Log.Termination (Item);
   end Read;
+
+
+  function Ut return Time.Ut is (The_Ut);
 
 end Star;

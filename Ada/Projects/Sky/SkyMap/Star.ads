@@ -18,6 +18,7 @@ pragma Style_White_Elephant;
 with Ada.Calendar;
 with Catalog;
 with Earth;
+with Time;
 
 package Star is
 
@@ -40,5 +41,7 @@ package Star is
   function Location_Of (Id : Number) return Direction;
 
   procedure Read (At_Time : Ada.Calendar.Time);
+  
+  function Ut return Time.Ut;
 
 end Star;

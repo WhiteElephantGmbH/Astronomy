@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2012 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2012 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -16,16 +16,81 @@
 pragma Style_White_Elephant;
 
 with Astro;
-with Traces;
 with Lexicon;
+with Objects;
+with Traces;
 
 package body Solar_System is
 
   package Log is new Traces ("Solar_System");
 
   use Astro;
-
   use SPHLIB, PLALIB, PNULIB, MATLIB, SUNLIB;
+
+
+  function Direction_Of (P  : PLANET;
+                         Ut : Time.Ut) return Space.Direction is
+
+    T : constant REAL := Time.Tet_Of (Ut);
+
+    LS, BS, RS, L, B , R, XP, YP, ZP, XS, YS, ZS, X, Y, Z, DELTA0, DELT, DEC, RA: REAL;
+
+    package Solar renames PLALIB;
+
+  begin
+    SUN200 (T,LS,BS,RS);
+
+    -- heliozentrische ekliptikale Planetenkoordinaten
+
+    case P is
+    when Solar.Mercury =>
+      MER200 (T,L,B,R);
+    when Solar.Venus =>
+      VEN200 (T,L,B,R);
+    when Solar.Mars =>
+      MAR200 (T,L,B,R);
+    when Solar.Jupiter =>
+      JUP200 (T,L,B,R);
+    when Solar.Saturn =>
+      SAT200 (T,L,B,R);
+    when Solar.Uranus =>
+      URA200 (T,L,B,R);
+    when Solar.Neptune =>
+      NEP200 (T,L,B,R);
+    when Solar.Pluto =>
+      PLU200(T,L,B,R);
+    when Solar.Sun =>
+      L := 0.0;
+      B := 0.0;
+      R := 0.0;
+    when Solar.Earth =>
+      raise Program_Error;
+    end case;
+
+    -- geozentrische ekliptikale PLanetenkoordinaten (retardiert)
+
+    GEOCEN (T, L, B, R, LS, BS, RS, P, Apparent, XP, YP, ZP, XS, YS, ZS, X, Y, Z, DELTA0);
+
+    -- Praezession, aequat. Koord., Nutation
+
+    ECLEQU (T, X, Y, Z);
+    NUTEQU (T, X, Y, Z);
+
+    -- Polarkoordinaten
+
+    POLAR (X, Y, Z, DELT, DEC, RA);
+    return Space.Direction_Of (Dec => DEC,
+                               Ra  => RA);
+  end Direction_Of;
+
+
+  function Direction_Of (Item : Body_Name;
+                         Ut   : Time.Ut) return Earth.Direction is
+  begin
+    return Objects.Direction_Of (Direction => Direction_Of (PLANET'value(Item'image), Ut),
+                                 Lmst      => Time.Lmst_Of (Ut));
+  end Direction_Of;
+
 
   function Direction_Of (Item : Name.Id;
                          Ut   : Time.Ut) return Space.Direction is
@@ -34,52 +99,8 @@ package body Solar_System is
     declare
       E : constant Lexicon.Word := Lexicon.Word_Of (Planet_Name);
       P : constant PLANET := PLANET'value(E'img);
-      T : constant REAL := Time.Tet_Of (Ut);
-      LS, BS, RS, L, B , R, XP, YP, ZP, XS, YS, ZS, X, Y, Z, DELTA0, DELT, DEC, RA: REAL;
     begin
-      SUN200 (T,LS,BS,RS);
-
-      -- heliozentrische ekliptikale Planetenkoordinaten
-
-      case P is
-      when Mercury =>
-        MER200 (T,L,B,R);
-      when Venus =>
-        VEN200 (T,L,B,R);
-      when Mars =>
-        MAR200 (T,L,B,R);
-      when Jupiter =>
-        JUP200 (T,L,B,R);
-      when Saturn =>
-        SAT200 (T,L,B,R);
-      when Uranus =>
-        URA200 (T,L,B,R);
-      when Neptune =>
-        NEP200 (T,L,B,R);
-      when Pluto =>
-        PLU200(T,L,B,R);
-      when Sun =>
-        L := 0.0;
-        B := 0.0;
-        R := 0.0;
-      when Earth =>
-        raise Program_Error;
-      end case;
-
-      -- geozentrische ekliptikale PLanetenkoordinaten (retardiert)
-
-      GEOCEN (T, L, B, R, LS, BS, RS, P, Apparent, XP, YP, ZP, XS, YS, ZS, X, Y, Z, DELTA0);
-
-      -- Praezession, aequat. Koord., Nutation
-
-      ECLEQU (T, X, Y, Z);
-      NUTEQU (T, X, Y, Z);
-
-      -- Polarkoordinaten
-
-      POLAR (X, Y, Z, DELT, DEC, RA);
-      return Space.Direction_Of (Dec => DEC,
-                                 Ra  => RA);
+      return Direction_Of (P, Ut);
     end;
   exception
   when others =>
