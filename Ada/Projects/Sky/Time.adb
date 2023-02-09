@@ -177,13 +177,12 @@ package body Time is
   end Lmst;
 
 
-  MJD_Offset : constant Astro.REAL := 51544.5;
-
   function Lmst_Of (Item : Ut) return Value is
-    Modjd : constant Astro.REAL := Astro.REAL(Item / One_Day) + MJD_Offset;
+    use Astro;
+    Modjd : constant REAL := REAL(Item / One_Day) + TIMLIB.MJD_OFFSET;
     use all type Angle.Value;
   begin
-    return +Astro.TIMLIB.LMST (Modjd, - (+Lambda));
+    return +TIMLIB.LMST (Modjd, - (+Lambda));
   end Lmst_Of;
 
 
@@ -196,7 +195,7 @@ package body Time is
     use Astro;
     use TIMLIB;
 
-    Modjd : constant Astro.REAL :=  Astro.REAL((Item) / One_Day) + MJD_Offset;
+    Modjd : constant REAL :=  REAL((Item) / One_Day) + MJD_OFFSET;
 
     The_Day          : Natural;
     The_Month        : Natural;
@@ -214,13 +213,13 @@ package body Time is
 
   function Universal_Of (Time_Local : Ada.Calendar.Time) return Ut is
   begin
-    return Ut(Mod_Jd_Of (Time_Local) - MJD_Offset) * One_Day;
+    return Ut(Mod_Jd_Of (Time_Local) -Astro.TIMLIB.MJD_OFFSET) * One_Day;
   end Universal_Of;
 
 
   function Universal return Ut is
   begin
-    return Ut(Mod_Jd - MJD_Offset) * One_Day;
+    return Ut(Mod_Jd - Astro.TIMLIB.MJD_OFFSET) * One_Day;
   end Universal;
 
 
@@ -253,62 +252,69 @@ package body Time is
                                                    YEAR  => Ut_Year,
                                                    HOUR  => Astro.TIMLIB.HOURS(Ut_Hour));
   begin
-    return Ut(Mjd - MJD_Offset) * One_Day;
+    return Ut(Mjd - Astro.TIMLIB.MJD_OFFSET) * One_Day;
   end Universal_Of;
 
 
   function Image_Of (Item      : Ut;
                      Time_Only : Boolean := False) return String is
 
-    use Astro;
-    use TIMLIB;
-
-    TS : constant Duration := Time_Shift (Local_Of (Item));
-
-    Modjd : constant Astro.REAL :=  Astro.REAL((Item + TS) / One_Day) + MJD_Offset;
-
-    function Image_Of (Number : Natural) return String is
-      Image : constant String := Number'img;
-    begin
-      return Image(Image'first + 1 .. Image'last);
-    end Image_Of;
-
-    function Filed_Image_Of (Number : Natural) return String is
-      Image : constant String := "0" & Image_Of(Number);
-    begin
-      return Image(Image'last - 1 .. Image'last);
-    end Filed_Image_Of;
-
-    The_Day          : Natural;
-    The_Month        : Natural;
-    The_Year         : Natural;
-    The_Hours        : HOURS;
-    The_Hour         : Natural;
-    The_Minutes      : Natural;
-    The_Seconds      : Natural;
-    The_Deci_Seconds : Natural;
-
   begin
-    CALDAT (Modjd, The_Day, The_Month, The_Year, The_Hours);
-    The_Deci_Seconds := Natural (The_Hours * 36000.0);
-    The_Hour := The_Deci_Seconds / 36000;
-    The_Deci_Seconds := The_Deci_Seconds - The_Hour * 36000;
-    The_Minutes := The_Deci_Seconds / 600;
-    The_Deci_Seconds := The_Deci_Seconds - The_Minutes * 600;
-    The_Seconds := The_Deci_Seconds / 10;
-    The_Deci_Seconds := The_Deci_Seconds - The_Seconds * 10;
     declare
-      Time_Image : constant String := Filed_Image_Of (The_Hour) & ":" & Filed_Image_Of (The_Minutes) & ":" &
-                                      Filed_Image_Of (The_Seconds) & '.' & Image_Of (The_Deci_Seconds);
+
+      use Astro;
+      use TIMLIB;
+
+      TS : constant Duration := Time_Shift (Local_Of (Item));
+
+      Modjd : constant Astro.REAL :=  Astro.REAL((Item + TS) / One_Day) + MJD_OFFSET;
+
+      function Image_Of (Number : Natural) return String is
+        Image : constant String := Number'img;
+      begin
+        return Image(Image'first + 1 .. Image'last);
+      end Image_Of;
+
+      function Filed_Image_Of (Number : Natural) return String is
+        Image : constant String := "0" & Image_Of(Number);
+      begin
+        return Image(Image'last - 1 .. Image'last);
+      end Filed_Image_Of;
+
+      The_Day          : Natural;
+      The_Month        : Natural;
+      The_Year         : Natural;
+      The_Hours        : HOURS;
+      The_Hour         : Natural;
+      The_Minutes      : Natural;
+      The_Seconds      : Natural;
+      The_Deci_Seconds : Natural;
+
     begin
-      if Time_Only then
-        return Time_Image;
-      elsif Item = In_The_Past then
-        return "<undefined>";
-      else
-        return Image_Of (The_Day) & '.' & Image_Of (The_Month) & "." & Image_Of (The_Year) & " " & Time_Image;
-      end if;
+      CALDAT (Modjd, The_Day, The_Month, The_Year, The_Hours);
+      The_Deci_Seconds := Natural (The_Hours * 36000.0);
+      The_Hour := The_Deci_Seconds / 36000;
+      The_Deci_Seconds := The_Deci_Seconds - The_Hour * 36000;
+      The_Minutes := The_Deci_Seconds / 600;
+      The_Deci_Seconds := The_Deci_Seconds - The_Minutes * 600;
+      The_Seconds := The_Deci_Seconds / 10;
+      The_Deci_Seconds := The_Deci_Seconds - The_Seconds * 10;
+      declare
+        Time_Image : constant String := Filed_Image_Of (The_Hour) & ":" & Filed_Image_Of (The_Minutes) & ":" &
+                                        Filed_Image_Of (The_Seconds) & '.' & Image_Of (The_Deci_Seconds);
+      begin
+        if Time_Only then
+          return Time_Image;
+        elsif Item = In_The_Past then
+          return "<undefined>";
+        else
+          return Image_Of (The_Day) & '.' & Image_Of (The_Month) & "." & Image_Of (The_Year) & " " & Time_Image;
+        end if;
+      end;
     end;
+  exception
+  when others =>
+    return "<undefined>";
   end Image_Of;
 
 
@@ -330,7 +336,11 @@ package body Time is
     Utime : constant T := Tut_Of (Item);
   begin
     ETMINUT (Utime, DT, Is_Ok);
-    return DT * T_Second + Utime;
+    if Is_Ok then
+      return DT * T_Second + Utime;
+    else
+      return Utime;
+    end if;
   end Tet_Of;
 
 

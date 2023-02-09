@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2012 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2012 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -16,6 +16,15 @@
 pragma Style_White_Elephant;
 
 package Astro is
+
+-- ********************************************************************
+-- *   developed by:                                                  *
+-- *      Oliver Montenbruck and Thomas Pfleger                       *
+-- *   original source from:                                          *
+-- *      Astronomie mit dem Personal Computer (Zweite Ausgabe 1994)  *
+-- *   translated to Ada by:                                          *
+-- *      Urs Maurer, White Elephant GmbH                             *
+-- ********************************************************************
 
   type REAL is new Long_Float;
 
@@ -545,6 +554,19 @@ package Astro is
                           N:                          Integer;
                           RA_POLY,DE_POLY,R_POLY: out TPOLYNOM);
 
+    ------------------------------------------------------------------------
+    -- IMPROVE verbessert eine Naeherung T fuer die Zeit des Neumondes und
+    -- bestimmt die ungefaehre ekliptikale Breite B des Mondes.
+    -- ( T in julian. Jahrh. seit J2000, T = (JD-2451545)/36525)
+    ------------------------------------------------------------------------
+    D1 : constant := 1236.853086; -- Aenderung der Differenz der mittleren
+                                  -- Laengen von Mond und Sonne
+                                  -- dD/dT = 1236.85 Umlaeufe/Jahrhundert
+    D0 : constant := 0.827361;    -- Diff. der mittl. Laengen von Mond und
+                                  -- Sonne fuer J2000 (in Umlaeufen)                              
+    procedure IMPROVE (T : in out REAL;
+                       B :    out REAL);
+
   end MOOLIB;
 
 
@@ -606,6 +628,8 @@ package Astro is
   -- TIMLIB: Zeit- und Kalenderrechnung
   ---------------------------------------
   package TIMLIB is
+
+    MJD_OFFSET : constant REAL := 51544.5;
 
     type HOURS is new REAL;
 

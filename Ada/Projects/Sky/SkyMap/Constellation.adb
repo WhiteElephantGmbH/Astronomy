@@ -15,9 +15,24 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with Ada.Containers.Indefinite_Ordered_Maps;
+with Traces;
+
 package body Constellation is
 
-  Data : constant List := [
+  package Log is new Traces ("Constellation");
+
+  type Part is record
+    From  : Star.Number;
+    To    : Star.Number;
+    Const : Item;
+  end record;
+
+  type Part_List is array (Positive range <>) of Part;
+
+  Max_Parts_Per_Item : constant := 50;
+
+  Data : constant Part_List := [
     (  15,  165, Anr), -- 21 alpha
     ( 165,  337, Anr), -- 31 delta
     ( 337,  603, Anr), -- 43 beta
@@ -187,6 +202,12 @@ package body Constellation is
 
     (4730, 4763, Cru), --    alpha^1
     (4853, 4656, Cru), --    beta
+
+    (4623, 4630, Crv), --  1 alpha
+    (4630, 4662, Crv), --  2 epsilon
+    (4662, 4757, Crv), --  4 gamma
+    (4757, 4786, Crv), --  7 delta
+    (4786, 4630, Crv), --  9 beta
 
     (4915, 4785, Cvn), -- 12 alpha^2
 
@@ -474,14 +495,6 @@ package body Constellation is
     (1083, 1247, Ret), --    kappa
     (1247, 1336, Ret), --    delta
 
-    (5881, 5892, Ser), -- 32 mu
-    (5892, 5854, Ser), -- 37 epsilon
-    (5854, 5789, Ser), -- 24 alpha
-    (5789, 5867, Ser), -- 13 delta
-    (5867, 5879, Ser), -- 28 beta
-    (5879, 5933, Ser), -- 35 kappa
-    (5933, 5867, Ser), -- 41 gamma
-
     (6527, 6580, Sco), -- 35 lambda
     (6580, 6553, Sco), --    kappa
     (6553, 6380, Sco), --    theta
@@ -501,10 +514,6 @@ package body Constellation is
     (5953, 5984, Sco), --  7 delta
     (5984, 6027, Sco), --  8 beta^1
 
-    (6561, 6698, Ser), -- 55 xi
-    (6698, 6869, Ser), -- 64 nu
-    (6869, 7141, Ser), -- 58 eta
-
     (7635, 7536, Sge), -- 12 gamma
     (7536, 7488, Sge), --  7 delta
     (7479, 7536, Sge), --  5 alpha
@@ -519,6 +528,18 @@ package body Constellation is
     (7150, 7217, Sgr), -- 37 xi^2
     (7194, 7121, Sgr), -- 38 zeta
     (6746, 6859, Sgr), -- 10 gamma
+
+    (5881, 5892, Srh), -- 32 mu (Ser - head)
+    (5892, 5854, Srh), -- 37 epsilon
+    (5854, 5789, Srh), -- 24 alpha
+    (5789, 5867, Srh), -- 13 delta
+    (5867, 5879, Srh), -- 28 beta
+    (5879, 5933, Srh), -- 35 kappa
+    (5933, 5867, Srh), -- 41 gamma
+
+    (6561, 6698, Srt), -- 55 xi (Ser - tail)
+    (6698, 6869, Srt), -- 64 nu
+    (6869, 7141, Srt), -- 58 eta
 
     (1910, 1457, Tau), -- 23 zeta
     (1457, 1411, Tau), -- 87 alpha
@@ -562,58 +583,90 @@ package body Constellation is
     (3347, 3223, Vol), --    beta
     (3223, 2803, Vol), --    epsilon
     (3223, 2736, Vol), --    epsilon
-    (3223, 3024, Vol), --    epsilon
+    (3223, 3024, Vol)];--    epsilon
 
-    (4623, 4630, Crv), --  1 alpha
-    (4630, 4662, Crv), --  2 epsilon
-    (4662, 4757, Crv), --  4 gamma
-    (4757, 4786, Crv), --  7 delta
-    (4786, 4630, Crv)];--  9 beta
+
+  The_Visible_Items : List(1 .. Item'pos(Item'last) + 1);
+  Last_Visible_Item : Natural := 0;
+
+
+  function Visible return List is
+  begin
+    return The_Visible_Items (1 .. Last_Visible_Item);
+  end Visible;
+
+
+  package Constellations is new Ada.Containers.Indefinite_Ordered_Maps (Key_Type     => Item,
+                                                                        Element_Type => Lines);
+  The_Visible_Data : Constellations.Map;
+
+
+  function Visible_Lines_Of (The_Item : Item) return Lines is
+  begin
+    return The_Visible_Data.Element (Key => The_Item);
+  end Visible_Lines_Of;
+
 
   type Star_Set is array (Star.Number) of Boolean with Pack;
 
-  function Stars_In_Data return Star_Set is
-    The_Stars : Star_Set := [others => False];
-  begin
-    for The_Part of Data loop
-      The_Stars (The_Part.From) := True;
-      The_Stars (The_Part.To) := True;
-    end loop;
-    return The_Stars;
-  end Stars_In_Data;
-
-  Used_Stars : constant Star_Set := Stars_In_Data;
-
-  The_Index : Positive;
-
-
-  procedure Start is
-  begin
-    The_Index := 1;
-  end Start;
-
-
-  function At_End return Boolean is
-  begin
-    return The_Index > Data'length;
-  end At_End;
-
-
-  function Next return List is
-    First    : constant Positive := The_Index;
-    The_Kind : constant Kind := Data(The_Index).Const;
-  begin
-    loop
-      The_Index := @ + 1;
-      exit when At_End or else The_Kind /= Data(The_Index).Const;
-    end loop;
-    return Data(First .. The_Index-1);    
-  end Next;  
+  The_Used_Stars : Star_Set;
 
 
   function Is_Used (Id : Star.Number) return Boolean is
   begin
-    return Used_Stars (Id);
+    return The_Used_Stars (Id);
   end Is_Used;
+
+
+  procedure Prepare is
+
+    The_Actual_Item : Item := Data(Data'first).Const;
+
+    The_Lines : Lines(1 .. Max_Parts_Per_Item);
+    Last_Line : Natural := 0;
+
+    function Actual_Lines return Lines is
+    begin
+      return The_Lines(1 .. Last_Line);
+    end Actual_Lines;
+
+    procedure Insert_Visible_Actual is
+    begin
+      for The_Line of Actual_Lines loop
+        if Earth.Is_Below_Horizon (The_Line.From.Direction) then
+          return;
+        elsif Earth.Is_Below_Horizon (The_Line.To.Direction) then
+          return;
+        end if;
+      end loop;
+      Last_Visible_Item := @ + 1;
+      The_Visible_Items(Last_Visible_Item) := The_Actual_Item;
+      Log.Write ("Insert " & The_Actual_Item'image);
+      The_Visible_Data.Insert (The_Actual_Item, Actual_Lines);
+      for The_Line of Actual_Lines loop
+        The_Used_Stars (The_Line.From.Id) := True;
+        The_Used_Stars (The_Line.To.Id) := True;
+      end loop;
+   end Insert_Visible_Actual;
+
+  begin -- Prepare
+    Last_Visible_Item := 0;
+    The_Visible_Data.Clear;
+    The_Used_Stars := [others => False];
+    for The_Part of Data loop
+      if The_Part.Const /= The_Actual_Item then
+        Insert_Visible_Actual;
+        The_Actual_Item := The_Part.Const;
+        Last_Line := 0;
+      end if;
+      Last_Line := @ + 1;
+      The_Lines(Last_Line) := (From => (Id        => The_Part.From,
+                                        Direction => Star.Location_Of (The_Part.From)),
+                               To   => (Id        => The_Part.To,
+                                        Direction => Star.Location_Of (The_Part.To)));
+    end loop;
+    Insert_Visible_Actual;
+  end Prepare;
+
 
 end Constellation;

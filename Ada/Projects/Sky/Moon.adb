@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2012 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2012 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,16 +15,19 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Angle;
+with Ada.Calendar;
 with Astro;
 with Site;
+with Traces;
 
 package body Moon is
+
+  package Log is new Traces ("Moon");
 
   use Astro;
   use MATLIB;
 
-  function Direction_Of (Id : Name.Id;
+  function Direction_Of (Id : Name.Id := Name.No_Id;
                          UT : Time.Ut) return Space.Direction is
 
     DEC, RA, R, RSPHI, RCPHI, LMST : REAL;
@@ -34,7 +37,7 @@ package body Moon is
     use all type Angle.Value;
     pragma Unreferenced (Id);
 
-  begin
+  begin -- Direction_Of
     MOOLIB.MOONEQU (T   => Time.Tet_Of (UT),
                     RA  => RA,
                     DEC => DEC,
@@ -59,5 +62,56 @@ package body Moon is
     return Space.Direction_Of (Dec => DEC,
                                Ra  => RA);
   end Direction_Of;
+
+
+  procedure Get_New_Phase (Around    :     Time.Ut;
+                           Before    : out Time.Ut;
+                           After     : out Time.Ut) is
+    Unused : Angle.Degrees;
+  begin
+    Get_New_Phase (Around    => Around,
+                   Before    => Before,
+                   After     => After,
+                   Libration => Unused);
+  end Get_New_Phase;
+
+
+  procedure Get_New_Phase (Around    :     Time.Ut;
+                           Before    : out Time.Ut;
+                           After     : out Time.Ut;
+                           Libration : out Angle.Degrees) is
+
+    use TIMLIB;
+
+    The_Year       : constant Integer := Ada.Calendar.Year (Time.Local_Of (Around));
+    First_Lunation : constant Integer := Integer(REAL'truncation(MOOLIB.D1 * REAL(The_Year - 2000) / 100.0));
+
+    The_Lunation : Integer := First_Lunation;
+    T_NEW_MOON   : REAL;
+    MJD_NEW_MOON : REAL;
+
+    use type Time.Ut;
+    use type Angle.Value;
+
+  begin -- Get_New_Phase
+    After := Time.Ut'last;
+    loop
+      T_NEW_MOON := (REAL(The_Lunation) - MOOLIB.D0) / MOOLIB.D1;
+      for Unused in 1 .. 6 loop
+        MOOLIB.IMPROVE (T_NEW_MOON, Libration);
+      end loop;
+      MJD_NEW_MOON := 36525.0 * T_NEW_MOON + 51544.5;
+      Before := After;
+      After := Time.Ut(MJD_NEW_MOON - MJD_OFFSET) * Time.One_Day;
+      exit when After > Around;
+      The_Lunation := @ + 1;
+      if The_Lunation > First_Lunation + 14 then
+        raise Program_Error;
+      end if;
+    end loop;
+    Log.Write ("new phase - before " & Time.Image_Of (Before) &
+                        " - after " & Time.Image_Of (After) &
+                        " - libration " & Angle.Image_Of (+Libration, Show_Signed => True));
+  end Get_New_Phase;
 
 end Moon;

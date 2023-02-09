@@ -17,10 +17,12 @@ pragma Style_White_Elephant;
 
 with Angle;
 with Application;
+with Constellation;
 with Error;
 with Gui.Registered;
 with Map;
 with Site;
+with Solar;
 with Star;
 with Strings;
 with Time;
@@ -85,6 +87,16 @@ package body User is
       Error.Raise_With ("Year not in" & Time.Year'first'image & " .." & Time.Year'last'image & " -> Local Time Set");
     end Time_Value;
 
+    procedure Prepare_For (Time_Value : Time.Calendar_Value) is
+      Ut : constant Time.Ut := Time.Universal_Of (Time_Value);
+    begin
+      Log.Write ("Time => " & Time.Image_Of (Ut));
+      Star.Read (Ut);
+      Solar.Prepare (Ut);
+      Constellation.Prepare;
+    end Prepare_For;
+
+
   begin -- Generate
     Set_Status ("");
     Generate_Button.Disable;
@@ -92,7 +104,7 @@ package body User is
                             Longitude => Value_Of (Longitude, Default_Longitude),
                             Elevation => 0));
 
-    Star.Read (Time_Value);
+    Prepare_For (Time_Value);
     Map.Draw (Size          => 1000.0,
               Margin        => 10.0,
               Star_Min      => 1.0,

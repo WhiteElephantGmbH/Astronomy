@@ -20,7 +20,7 @@ with Angle;
 with Constellation;
 with Earth;
 with Error;
-with Solar_System;
+with Solar;
 with Traces;
 with User;
 
@@ -66,9 +66,7 @@ package body Map is
         raise Below_Horizon;
       end if;
       Alt := +Earth.Alt_Of (Item);
-      Log.Write ("Alt: " & Earth.Alt_Image_Of (Item));
       Az := +Earth.Az_Of (Item);
-      Log.Write ("Az : " & Earth.Az_Image_Of (Item));
       D := (90.0 - Alt) / 90.0;
       X := Math.Cos (90.0 - Az, Cycle => 360.0) * D;
       Y := Math.Sin (90.0 - Az, Cycle => 360.0) * D;
@@ -104,36 +102,16 @@ package body Map is
 
 
     procedure Draw_Constellations is
-      function Position_Of (Id : Star.Number) return Eps.Location is (Position_Of (Star.Location_Of (Id)));
     begin
+      Log.Write ("Draw Constellations");
       Eps.Set_Color (Eps.Magenta);
       Eps.Set_Line (Width => 1.0);
       Eps.Set_Line (Eps.Solid);
-      Constellation.Start;
-      while not Constellation.At_End loop
-        declare
-          Next_Constellation : constant Constellation.List := Constellation.Next;
-          Is_Complete        : Boolean := True;
-        begin
-          for Part of Next_Constellation loop
-            declare
-              Unused : Eps.Location;
-            begin
-              Unused := Position_Of (Part.From);
-              Unused := Position_Of (Part.To);
-            exception
-            when Below_Horizon =>
-              Is_Complete := False;
-              exit;
-            end;
-          end loop;
-          if Is_Complete then
-            for Part of Next_Constellation loop
-              Eps.Add_Line (From => Position_Of (Part.From),
-                            To   => Position_Of (Part.To));
-            end loop;
-          end if;
-        end;
+      for The_Constellation of Constellation.Visible loop
+        for Line of Constellation.Visible_Lines_Of (The_Constellation)loop
+          Eps.Add_Line (From => Position_Of (Line.From.Direction),
+                        To   => Position_Of (Line.To.Direction));
+        end loop;
       end loop;
     end Draw_Constellations;
 
@@ -152,11 +130,13 @@ package body Map is
       end loop;
     end Draw_Stars;
 
+
     procedure Draw_Sun is
       Radius    : constant Eps.Value := Size / 120.0;
-      Direction : constant Earth.Direction := Solar_System.Direction_Of (Solar_System.Sun, Star.Ut);
+      Direction : constant Earth.Direction := Solar.Sun_Direction;
     begin
       if not Earth.Is_Below_Horizon (Direction) then
+        Log.Write ("Draw Sun");
         Eps.Set_Color (Eps.Yellow);
         Eps.Set_Line (Eps.Solid);
         Eps.Add_Circle (To        => Position_Of (Direction),
@@ -164,6 +144,106 @@ package body Map is
                         Is_Filled => True);
       end if;
     end Draw_Sun;
+
+
+    procedure Draw_Moon is
+      Direction : constant Earth.Direction := Solar.Moon_Direction;
+    begin
+      if not Earth.Is_Below_Horizon (Direction) then
+        Log.Write ("Draw Moon");
+        declare
+          Center : constant Eps.Location := Position_Of (Direction);
+          Phase  : constant Solar.Phase := Solar.Moon_Phase;
+          B      : constant Eps.Value := Size / 60.0;
+          A      : constant Eps.Value := abs (B * Eps.Value(Math.Cos (Angle.Degrees(Solar.Moon_Phase * 3.6), 360.0)));
+          Radius : constant Eps.Value := B / 2.0;
+          use type Solar.Phase;
+        begin
+          Log.Write ("A" & A'image);
+          Log.Write ("B" & B'image);
+          Log.Write ("P" & Phase'image);
+          Eps.Set_Color (Eps.Dark);
+          Eps.Set_Line (Eps.Solid);
+          Eps.Add_Circle (To        => Center,
+                          Radius    => Radius,
+                          Is_Filled => True);
+          Eps.Set_Color (Eps.Silver);
+          Eps.Set_Line (Eps.Solid);
+          if Phase = 0.0 or Phase = 100.0 then
+            Log.Write ("new moon");
+          elsif Phase < 25.0 then
+            Log.Write ("moon increasing to half");
+            Eps.Start_Elliptical_Arc (Center => Center,
+                                      A      => A,
+                                      B      => B,
+                                      From   => 270.0,
+                                      To     => 90.0);
+            Eps.Continue_Arc_N (Center => Center,
+                                Radius => Radius,
+                                From   => 90.0,
+                                To     => 270.0);
+            Eps.Fill;
+          elsif Phase = 25.0 then
+            Log.Write ("half moon increasing");
+            Eps.Add_Arc (Center    => Center,
+                         Radius    => Radius,
+                         From      => 270.0,
+                         To        => 90.0,
+                         Is_Filled => True);
+          elsif Phase < 50.0 then
+            Log.Write ("moon increasing to full");
+            Eps.Start_Elliptical_Arc (Center => Center,
+                                      A      => A,
+                                      B      => B,
+                                      From   => 90.0,
+                                      To     => 270.0);
+            Eps.Continue_Arc (Center => Center,
+                              Radius => Radius,
+                              From   => 270.0,
+                              To     => 90.0);
+            Eps.Fill;
+          elsif Phase = 50.0 then
+            Log.Write ("full moon");
+            Eps.Add_Circle (To        => Center,
+                            Radius    => Radius,
+                            Is_Filled => True);
+          elsif Phase < 75.0 then
+            Log.Write ("moon decreasing to half");
+            Eps.Start_Elliptical_Arc (Center => Center,
+                                      A      => A,
+                                      B      => B,
+                                      From   => 270.0,
+                                      To     => 90.0);
+            Eps.Continue_Arc (Center => Center,
+                              Radius => Radius,
+                              From   => 90.0,
+                              To     => 270.0);
+            Eps.Fill;
+          elsif Phase = 75.0 then
+            Log.Write ("half moon decreasing");
+            Eps.Add_Arc (Center    => Center,
+                         Radius    => Radius,
+                         From      => 90.0,
+                         To        => 270.0,
+                         Is_Filled => True);
+          elsif Phase < 100.0 then
+            Log.Write ("moon decreesing to new");
+            Eps.Start_Elliptical_Arc (Center => Center,
+                                      A      => A,
+                                      B      => B,
+                                      From   => 90.0,
+                                      To     => 270.0);
+            Eps.Continue_Arc_N (Center => Center,
+                                Radius => Radius,
+                                From   => 270.0,
+                                To     => 90.0);
+            Eps.Fill;
+          else
+            raise Program_Error;
+          end if;
+        end;
+      end if;
+    end Draw_Moon;
 
   begin -- Draw
     if Size > Eps.Value'last - Margin then
@@ -175,6 +255,7 @@ package body Map is
     Draw_Constellations;
     Draw_Stars;
     Draw_Sun;
+    Draw_Moon;
     Draw_Border;
     Eps.Close;
     User.Set_Status ("Map generated");

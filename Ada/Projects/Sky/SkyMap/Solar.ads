@@ -15,66 +15,19 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Data;
-with Objects;
-with Traces;
+with Earth;
+with Time;
 
-package body Star is
+package Solar is
 
-  package Log is new Traces ("Star");
+  type Phase is delta 0.01 range 0.0 .. 100.0;
 
-  The_List : List(Number);
-  The_Last : Natural := 0;
+  function Sun_Direction return Earth.Direction;
 
-  The_Directions : array (Number) of Direction;
+  function Moon_Direction return Earth.Direction;
 
+  function Moon_Phase return Phase;
 
-  function Data_List return List is
-  begin
-    return The_List(1..The_Last);
-  end Data_List;
+  procedure Prepare (Ut : Time.Ut);
 
-
-  function Location_Of (Id : Number) return Direction is
-  begin
-    return The_Directions (Id);
-  end Location_Of;
-
-
-  procedure Read (Ut : Time.Ut) is
-
-    The_Id : Natural := 0;
-
-    function Next return Boolean is
-    begin
-      The_Id := Data.Next_Of (The_Id, Data.Hr);
-      return True;
-    exception
-    when Data.End_Of_List =>
-      return False;
-    end Next;
-
-    The_Object    : Data.Object;
-    The_Direction : Earth.Direction;
-
-  begin -- Read
-    The_Directions := [others => Earth.Unknown_Direction];
-    The_Last := 0;
-    while Next loop
-      The_Object := Data.Object_Of (The_Id, Data.Hr);
-      The_Direction := Objects.Direction_Of (Data.Direction_Of (The_Object, Ut), Time.Lmst_Of (Ut));
-      if not Earth.Is_Below_Horizon (The_Direction) then
-        The_Last := @ + 1;
-        The_List(The_Last) := (Id  => The_Id,
-                               Mag => Magnitude(Data.Magnitude_Of (The_Object)),
-                               Loc => The_Direction);
-      end if;
-      The_Directions(The_Id) := The_Direction;
-    end loop;
-    Log.Write ("Read" & The_Last'image & " visible stars");
-  exception
-  when Item : others =>
-    Log.Termination (Item);
-  end Read;
-
-end Star;
+end Solar;

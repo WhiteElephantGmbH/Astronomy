@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2012 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2012 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -2296,6 +2296,43 @@ package body Astro is
       T_FIT_LBR (MOONEQU'access,TA,TB,N,RA_POLY,DE_POLY,R_POLY);
     end T_FIT_MOON;
 
+    ------------------------------------------------------------------------
+    -- IMPROVE verbessert eine Naeherung T fuer die Zeit des Neumondes und
+    -- bestimmt die ungefaehre ekliptikale Breite B des Mondes.
+    -- ( T in julian. Jahrh. seit J2000, T = (JD-2451545)/36525)
+    ------------------------------------------------------------------------
+    procedure IMPROVE (T : in out REAL;
+                       B :    out REAL) is
+
+      ARC : constant := 206264.8062; -- Bogensekunden pro radian
+
+      L, LS, D, F, DLM, DLS, DLAMBDA : REAL;
+      -- evtl. TRUNC fuer T<-24 durch LONG_TRUNC oder INT ersetzen!
+
+    begin
+      -- mittlere Elemente L,LS,D,F der Mondbahn
+      L  := P2*FRAC(0.374897+1325.552410*T); -- mittl. Anomalie des Mondes
+      LS := P2*FRAC(0.993133+  99.997361*T); -- mittl. Anomalie Sonne
+      D  := P2*(FRAC(0.5+D0+D1*T)-0.5);      -- mit.Diff.Laenge Mond-Sonne
+      F  := P2*FRAC(0.259086+1342.227825*T); -- Knotenabstand
+
+      -- periodische Stoerungen der Laengen von Mond und Sonne (in ")
+      DLM := + 22640.0*SIN(L) - 4586.0*SIN(L-2.0*D) + 2370.0*SIN(2.0*D) + 769.0*SIN(2.0*L)
+             - 668.0*SIN(LS) - 412.0*SIN(2.0*F) - 212.0*SIN(2.0*L-2.0*D) 
+             - 206.0*SIN(L+LS-2.0*D) + 192.0*SIN(L+2.0*D) - 165.0*SIN(LS-2.0*D)
+             - 125.0*SIN(D) - 110.0*SIN(L+LS) + 148.0*SIN(L-LS) - 55.0*SIN(2.0*F-2.0*D);
+      DLS := + 6893.0*SIN(LS) + 72.0*SIN(2.0*LS);
+
+      -- Differenz der wahren Laengen von Mond und Sonne (in Umlaeufen)
+      DLAMBDA  := D / P2   +   ( DLM - DLS) / 1296000.0;
+      
+      -- Korrektur der Neumondzeit
+      T   := T  - DLAMBDA / D1;
+      
+      -- ekliptikale Breite B des Mondes (in Grad)
+      B  := ( + 18520.0*SIN(F+DLM/ARC) - 526.0*SIN(F-2.0*D) ) / 3600.0; 
+    end IMPROVE;
+  
   end MOOLIB;
 
 

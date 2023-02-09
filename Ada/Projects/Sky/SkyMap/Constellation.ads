@@ -15,29 +15,36 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with Earth;
 with Star;
 
 package Constellation is
 
-  type Kind is (Anr, Aql, Aqr, Ara, Ari, Aur, Boo, Cam, Cap, Car, Cas, Cen, Cep, Cet, Cir, Cma, Cmi, Cnc, Col, Crb, Crt,
+  type Item is (Anr, Aql, Aqr, Ara, Ari, Aur, Boo, Cam, Cap, Car, Cas, Cen, Cep, Cet, Cir, Cma, Cmi, Cnc, Col, Crb, Crt,
                 Cru, Crv, Cvn, Cyg, Del, Dra, Dor, Equ, Eri, Frm, Gem, Gru, Hyi, Her, Hya, Ind, Lac, Leo, Lep, Lib, Lmi,
-                Lup, Lyn, Lyr, Mon, Oct, Oph, Opt, Ori, Pav, Peg, Per, Phe, Pic, Psa, Psc, Pup, Pyx, Ret, Sco, Ser, Sge,
-                Sgr, Tau, Tra, Uma, Umi, Vir, Vol);
+                Lup, Lyn, Lyr, Mon, Oct, Oph, Opt, Ori, Pav, Peg, Per, Phe, Pic, Psa, Psc, Pup, Pyx, Ret, Sco, Sge, Sgr,
+                Srh, Srt, Tau, Tra, Uma, Umi, Vir, Vol);
 
-  type Part is record
-    From  : Star.Number;
-    To    : Star.Number;
-    Const : Kind;
+  procedure Prepare;
+
+  type List is array (Positive range <>) of Item;
+
+  function Visible return List;
+
+  type Point is record
+    Id        : Star.Number;
+    Direction : Earth.Direction;
   end record;
 
-  type List is array (Positive range <>) of Part;
+  type Line is record
+    From : Point;
+    To   : Point;
+  end record;
 
-  procedure Start;
+  type Lines is array (Positive range <>) of Line;
 
-  function At_End return Boolean;
-  
-  function Next return List;
-  
+  function Visible_Lines_Of (The_Item : Item) return Lines;
+
   function Is_Used (Id : Star.Number) return Boolean;
 
 end Constellation;
