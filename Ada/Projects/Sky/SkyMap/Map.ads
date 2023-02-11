@@ -20,8 +20,12 @@ with Star;
 
 package Map is
 
-  procedure Draw (Size          : Eps.Value;
-                  Margin        : Eps.Value;
+  type Paper_Format is (A0, A1, A2, A3, A4, A5, A6);
+
+  procedure Draw (Header_Text   : String;
+                  Footer_Text   : String;
+                  Format        : Paper_Format;
+                  Line_Size     : Eps.Value;
                   Star_Min      : Eps.Value;
                   Star_Max      : Eps.Value;
                   Magnitude_Min : Star.Magnitude;

@@ -40,6 +40,7 @@ package body User is
   Longitude       : Gui.Plain_Edit_Box;
   Latitude        : Gui.Plain_Edit_Box;
   Date_Time       : Gui.Plain_Edit_Box;
+  Paper_Format    : Gui.Plain_Combo_Box;
 
   Default_Latitude  : constant String := "+47" & Angle.Degree & "42'43.09""";
   Default_Longitude : constant String := "+008" & Angle.Degree & "38'07.94""";
@@ -67,7 +68,7 @@ package body User is
     exception
     when others =>
       Gui.Set_Text (Box, Default);
-      Error.Raise_With ("Value Error -> Default " & Default & " set");
+      Error.Raise_With ("Eingabefehler -> " & Default & " gesetzt", Clear_Rest => True);
     end Value_Of;
 
     function Time_Value return Time.Calendar_Value is
@@ -81,37 +82,42 @@ package body User is
     exception
     when Time.Illegal =>
       Gui.Set_Text (Date_Time, Local_Time);
-      Error.Raise_With ("Incorrect Date Time -> Local Time Set");
+      Error.Raise_With ("Falsche Datumeingabe -> Lokalzeit gesetzt");
     when Time.Out_Of_Range =>
       Gui.Set_Text (Date_Time, Local_Time);
-      Error.Raise_With ("Year not in" & Time.Year'first'image & " .." & Time.Year'last'image & " -> Local Time Set");
+      Error.Raise_With ("Jahr nicht" & Time.Year'first'image & " .." & Time.Year'last'image & " -> Localzeit gesetzt");
     end Time_Value;
 
-    procedure Prepare_For (Time_Value : Time.Calendar_Value) is
-      Ut : constant Time.Ut := Time.Universal_Of (Time_Value);
+    procedure Prepare_For (Ut : Time.Ut) is
     begin
-      Log.Write ("Time => " & Time.Image_Of (Ut));
       Star.Read (Ut);
       Solar.Prepare (Ut);
       Constellation.Prepare;
     end Prepare_For;
 
-
   begin -- Generate
-    Set_Status ("");
-    Generate_Button.Disable;
-    Site.Define (Site.Data'(Latitude  => Value_Of (Latitude, Default_Latitude),
-                            Longitude => Value_Of (Longitude, Default_Longitude),
-                            Elevation => 0));
+    declare
+      Ut         : constant Time.Ut := Time.Universal_Of (Time_Value);
+      Time_Image : constant String  := Time.Image_Of (Ut);
+    begin -- Generate
+      Log.Write ("Generate at " & Time_Image);
+      Set_Status ("");
+      Generate_Button.Disable;
+      Site.Define (Site.Data'(Latitude  => Value_Of (Latitude, Default_Latitude),
+                              Longitude => Value_Of (Longitude, Default_Longitude),
+                              Elevation => 0));
 
-    Prepare_For (Time_Value);
-    Map.Draw (Size          => 1000.0,
-              Margin        => 10.0,
-              Star_Min      => 1.0,
-              Star_Max      => 5.0,
-              Magnitude_Min => -1.0,
-              Magnitude_Max => 6.0);
-    Generate_Button.Enable;
+      Prepare_For (Ut);
+      Map.Draw (Header_Text   => "Sternkarte",
+                Footer_Text   => "Datum: " & Time_Image,
+                Format        => Map.Paper_Format'value(Gui.Contents_Of (Paper_Format)),
+                Line_Size     => 1.0,
+                Star_Min      => 1.0,
+                Star_Max      => 5.0,
+                Magnitude_Min => -1.0,
+                Magnitude_Max => 6.0);
+      Generate_Button.Enable;
+    end;
   exception
   when Error.Occurred =>
     Gui.Beep;
@@ -130,23 +136,23 @@ package body User is
 
     procedure Create_Interface is
 
-      Separation     : constant := 12;
-      Longitude_Text : constant String := "Longitude"; -- largest text
+      Separation    : constant := 12;
+      Date_And_Time : constant String := "Datum und Zeit"; -- largest text
 
-      Title_Size : constant Natural := Gui.Text_Size_Of (Longitude_Text) + Separation;
+      Title_Size : constant Natural := Gui.Text_Size_Of (Date_And_Time) + Separation;
       Text_Size  : constant Natural := Gui.Text_Size_Of ("31.12.2399 23:59:59.9") + Separation;
 
     begin -- Create_Interface
       Generator_Page := Gui.Add_Page (The_Title  => "Main",
                                       The_Style  => [Gui.Buttons_Fill_Horizontally => True,
                                                      Gui.Buttons_Fill_Vertically   => False]);
-      Generate_Button := Gui.Create (Generator_Page, "Generate", Generate'access);
-      Longitude := Gui.Create (Generator_Page, Longitude_Text, "",
+      Generate_Button := Gui.Create (Generator_Page, "Generiere Sternkarte", Generate'access);
+      Longitude := Gui.Create (Generator_Page, "Längengrad", "",
                                Is_Modifiable  => True,
                                The_Size       => Text_Size,
                                The_Title_Size => Title_Size);
 
-      Latitude := Gui.Create (Generator_Page, "Latitude", "",
+      Latitude := Gui.Create (Generator_Page, "Breitengrad", "",
                               Is_Modifiable  => True,
                               The_Size       => Text_Size,
                               The_Title_Size => Title_Size);
@@ -157,10 +163,17 @@ package body User is
         Gui.Set_Text (Longitude, Default_Longitude);
         Gui.Set_Text (Latitude, Default_Latitude);
       end if;
-      Date_Time := Gui.Create (Generator_Page, "Date Time", "",
+      Date_Time := Gui.Create (Generator_Page, Date_And_Time, "",
                                Is_Modifiable  => True,
                                The_Size       => Text_Size,
                                The_Title_Size => Title_Size);
+      Paper_Format := Gui.Create (Generator_Page, "Papier Format",
+                                  The_Size       => Text_Size,
+                                  The_Title_Size => Title_Size);
+      for Value in Map.Paper_Format'range loop
+        Gui.Add_Text (Paper_Format, Value'image);
+      end loop;
+      Gui.Select_Text (Paper_Format, "A3");
     exception
     when Item: others =>
       Log.Termination (Item);

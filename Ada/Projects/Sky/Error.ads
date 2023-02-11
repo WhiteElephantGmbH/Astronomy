@@ -19,7 +19,8 @@ package Error is
 
   Occurred : exception;
 
-  procedure Raise_With (Item : String)
+  procedure Raise_With (Item       : String;
+                        Clear_Rest : Boolean := False)
   with No_Return;
 
   function Message return String;

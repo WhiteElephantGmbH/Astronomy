@@ -15,11 +15,15 @@ package Eps is
 
   type Value is delta 0.00001 range -10000.0 .. +10000.0;
 
-  type Location is record -- default lower left corner
+  type Location is record -- default: lower left corner
     X : Value := 0.0;
     Y : Value := 0.0;
   end record;
 
+  type Dimension is record
+    Height : Value;
+    Width  : Value;
+  end record;
 
   type Color_Value is delta 0.01 range 0.00 .. 1.001; -- .001 aonix bug ?
 
@@ -39,9 +43,10 @@ package Eps is
   Green : constant Color := (C => 1.0, M => 0.0, Y => 1.0, K => 0.0);
   Blue  : constant Color := (C => 1.0, M => 1.0, Y => 0.0, K => 0.0);
 
-  Light_Blue : constant Color := (C => 0.8, M => 0.4, Y => 0.0, K => 0.0);
-  Dark       : constant Color := (C => 0.0, M => 0.0, Y => 0.0, K => 0.95);
-  Silver     : constant Color := (C => 0.0, M => 0.0, Y => 0.1, K => 0.1);
+  Light_Blue  : constant Color := (C => 0.80, M => 0.40, Y => 0.00, K => 0.00);
+  Light_Green : constant Color := (C => 0.42, M => 0.00, Y => 0.82, K => 0.00);
+  Dark        : constant Color := (C => 0.00, M => 0.00, Y => 0.00, K => 0.90);
+  Silver      : constant Color := (C => 0.00, M => 0.00, Y => 0.10, K => 0.10);
 
   type Line_Style is (Solid, Dashed);
 
@@ -54,9 +59,8 @@ package Eps is
   type Text_Size is range 0..99;
 
 
-  procedure Create (Filename    : String;
-                    Lower_Left  : Location;
-                    Upper_Right : Location);
+  procedure Create (Filename : String;
+                    Format   : Dimension);
 
   procedure Set_Gray;
 
@@ -80,6 +84,14 @@ package Eps is
                             P2 : Location;
                             To : Location);
 
+  procedure Start_Arc (Center : Location;
+                       Radius : Value;
+                       From   : Angle;
+                       To     : Angle);
+
+  procedure Start_Circle (To     : Location;
+                          Radius : Value);
+
   procedure Start_Elliptical_Arc (Center : Location;
                                   A      : Value;
                                   B      : Value;
@@ -95,6 +107,8 @@ package Eps is
                             Radius : Value;
                             From   : Angle;
                             To     : Angle);
+  procedure Clip;
+
   procedure Fill;
 
   procedure Stroke;
@@ -132,9 +146,9 @@ package Eps is
 
   procedure Add_Text (Item         : String;
                       Center       : Location;
-                      Rotation     : Angle;
-                      X_Correction : Value;
-                      Y_Correction : Value);
+                      Rotation     : Angle := 0.0;
+                      X_Correction : Value := 0.0;
+                      Y_Correction : Value := 0.0);
 
   procedure Save;
 

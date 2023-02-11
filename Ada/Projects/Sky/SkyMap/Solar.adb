@@ -41,6 +41,12 @@ package body Solar is
   end Sun_Direction;
 
 
+  function Is_Day_Light return Boolean is
+  begin
+    return not Earth.Is_Below_Horizon (The_Sun_Direction);
+  end Is_Day_Light;
+
+
   function Moon_Direction return Earth.Direction is
   begin
     return The_Moon_Direction;

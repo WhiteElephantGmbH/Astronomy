@@ -631,19 +631,30 @@ package body Constellation is
     end Actual_Lines;
 
     procedure Insert_Visible_Actual is
+
+      The_Visible_Lines : Lines(1 .. Max_Parts_Per_Item);
+      Last_Visible_Line : Natural := 0;
+
     begin
       for The_Line of Actual_Lines loop
-        if Earth.Is_Below_Horizon (The_Line.From.Direction) then
-          return;
-        elsif Earth.Is_Below_Horizon (The_Line.To.Direction) then
-          return;
+        if not Earth.Is_Below_Horizon (The_Line.From.Direction) and then
+           not Earth.Is_Below_Horizon (The_Line.To.Direction)
+        then
+          Last_Visible_Line := @ + 1;
+          The_Visible_Lines(Last_Visible_Line) := The_Line;
         end if;
       end loop;
+      if Last_Line = Last_Visible_Line then
+        Log.Write ("Insert " & The_Actual_Item'image);
+      elsif Last_Visible_Line >= 3 then -- minimum partial parts
+        Log.Write ("Insert partial " & The_Actual_Item'image);
+      else
+        return;
+      end if;
       Last_Visible_Item := @ + 1;
       The_Visible_Items(Last_Visible_Item) := The_Actual_Item;
-      Log.Write ("Insert " & The_Actual_Item'image);
-      The_Visible_Data.Insert (The_Actual_Item, Actual_Lines);
-      for The_Line of Actual_Lines loop
+      The_Visible_Data.Insert (The_Actual_Item, The_Visible_Lines(1..Last_Visible_Line));
+      for The_Line of The_Visible_Lines(1..Last_Visible_Line) loop
         The_Used_Stars (The_Line.From.Id) := True;
         The_Used_Stars (The_Line.To.Id) := True;
       end loop;

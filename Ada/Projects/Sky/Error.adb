@@ -24,9 +24,10 @@ package body Error is
   use type Strings.Element;
 
 
-  procedure Raise_With (Item : String) is
+  procedure Raise_With (Item       : String;
+                        Clear_Rest : Boolean := False) is
   begin
-    if Strings.Is_Null (The_Message) then
+    if Strings.Is_Null (The_Message) or Clear_Rest then
       The_Message := [Item];
     else
       The_Message := Item & " (" & The_Message & ")";

@@ -23,6 +23,8 @@ package Solar is
   type Phase is delta 0.01 range 0.0 .. 100.0;
 
   function Sun_Direction return Earth.Direction;
+  
+  function Is_Day_Light return Boolean;
 
   function Moon_Direction return Earth.Direction;
 

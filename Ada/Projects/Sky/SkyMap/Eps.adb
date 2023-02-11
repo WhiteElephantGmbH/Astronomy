@@ -61,19 +61,14 @@ package body Eps is
   end Image_Of;
 
 
-  X_Offset : Value;
-  Y_Offset : Value;
-
-
   function X_Y_Of (Item : Location) return String is
   begin
-    return Image_Of (Item.X + X_Offset) & Image_Of (Item.Y + Y_Offset);
+    return Image_Of (Item.X) & Image_Of (Item.Y);
   end X_Y_Of;
 
 
-  procedure Create (Filename    : String;
-                    Lower_Left  : Location;
-                    Upper_Right : Location) is
+  procedure Create (Filename : String;
+                    Format   : Dimension) is
 
     function Img (Item : Value) return String is
     begin
@@ -81,11 +76,9 @@ package body Eps is
     end Img;
 
   begin
-    X_Offset := Lower_Left.X;
-    Y_Offset := Lower_Left.Y;
     Ada.Text_IO.Create (File, Name => Filename);
     Write ("%!PS-Adobe-3.0 EPSF-3.0");
-    Write ("%%BoundingBox: 0 0" & Img(Upper_Right.X + X_Offset) & Img(Upper_Right.Y + Y_Offset));
+    Write ("%%BoundingBox: 0 0" & Img(Format.Width) & Img(Format.Height));
     Write ("/Arc {");
     Write ("  newpath");
     Write ("  arc");
@@ -212,7 +205,10 @@ package body Eps is
                      To        : Angle;
                      Is_Filled : Boolean := False) is
   begin
-    Write (" " & X_Y_Of (Center) & Image_Of (Radius) & Image_Of (From) & Image_Of (To) &  " Arc");
+    Start_Arc (Center => Center,
+               Radius => Radius,
+               From   => From,
+               To     => To);
     if Is_Filled then
       Fill;
     else
@@ -342,6 +338,25 @@ package body Eps is
   end Continue_Curve;
 
 
+  procedure Start_Arc (Center : Location;
+                       Radius : Value;
+                       From   : Angle;
+                       To     : Angle) is
+  begin
+    Write (" " & X_Y_Of (Center) & Image_Of (Radius) & Image_Of (From) & Image_Of (To) &  " Arc");
+  end Start_Arc;
+
+
+  procedure Start_Circle (To     : Location;
+                          Radius : Value) is
+  begin
+    Start_Arc (Center => To,
+               Radius => Radius,
+               From   => 0.0,
+               To     => 360.0);
+  end Start_Circle;
+
+
   procedure Start_Elliptical_Arc (Center : Location;
                                   A      : Value;
                                   B      : Value;
@@ -380,6 +395,12 @@ package body Eps is
   end Continue_Arc_N;
 
 
+  procedure Clip is
+  begin
+    Write ("  clip");
+  end Clip;
+
+
   procedure Stroke is
   begin
     Write ("  stroke");
@@ -402,9 +423,9 @@ package body Eps is
 
   procedure Add_Text (Item         : String;
                       Center       : Location;
-                      Rotation     : Angle;
-                      X_Correction : Value;
-                      Y_Correction : Value) is
+                      Rotation     : Angle := 0.0;
+                      X_Correction : Value := 0.0;
+                      Y_Correction : Value := 0.0) is
   begin
     Write ("  (" & Item & ")"
                  & Image_Of (Rotation)
