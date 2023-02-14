@@ -15,20 +15,13 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Eps;
-with Star;
+with Time;
 
 package Map is
 
   type Paper_Format is (A0, A1, A2, A3, A4, A5, A6);
 
-  procedure Draw (Header_Text   : String;
-                  Footer_Text   : String;
-                  Format        : Paper_Format;
-                  Line_Size     : Eps.Value;
-                  Star_Min      : Eps.Value;
-                  Star_Max      : Eps.Value;
-                  Magnitude_Min : Star.Magnitude;
-                  Magnitude_Max : Star.Magnitude);
+  procedure Draw (Ut     : Time.Ut;
+                  Format : Paper_Format);
 
 end Map;

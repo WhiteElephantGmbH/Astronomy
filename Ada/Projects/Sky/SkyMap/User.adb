@@ -17,13 +17,10 @@ pragma Style_White_Elephant;
 
 with Angle;
 with Application;
-with Constellation;
 with Error;
 with Gui.Registered;
 with Map;
 with Site;
-with Solar;
-with Star;
 with Strings;
 with Time;
 with Traces;
@@ -54,8 +51,6 @@ package body User is
 
   procedure Generate is
 
-    use type Star.Magnitude;
-
     function Value_Of (Box     : in out Gui.Plain_Edit_Box;
                        Default :        String) return Angle.Value is
     begin
@@ -71,14 +66,17 @@ package body User is
       Error.Raise_With ("Eingabefehler -> " & Default & " gesetzt", Clear_Rest => True);
     end Value_Of;
 
-    function Time_Value return Time.Calendar_Value is
+    function Universal_Time return Time.Ut is
       Image      : constant String := Strings.Trimmed (Gui.Contents_Of (Date_Time));
       Local_Time : constant String := Time.Image_Of (Time.Universal);
+      Time_Value : Time.Calendar_Value;
     begin
       if Image = "" then
-        return Time.Calendar_Now;
+        Time_Value := Time.Calendar_Now;
+      else
+        Time_Value := Time.Calendar_Value_Of (Image);
       end if;
-      return Time.Calendar_Value_Of (Image);
+      return Time.Universal_Of (Time_Value);
     exception
     when Time.Illegal =>
       Gui.Set_Text (Date_Time, Local_Time);
@@ -86,38 +84,20 @@ package body User is
     when Time.Out_Of_Range =>
       Gui.Set_Text (Date_Time, Local_Time);
       Error.Raise_With ("Jahr nicht" & Time.Year'first'image & " .." & Time.Year'last'image & " -> Localzeit gesetzt");
-    end Time_Value;
-
-    procedure Prepare_For (Ut : Time.Ut) is
-    begin
-      Star.Read (Ut);
-      Solar.Prepare (Ut);
-      Constellation.Prepare;
-    end Prepare_For;
+    when Time.Ut_Range_Error =>
+      Gui.Set_Text (Date_Time, Local_Time);
+      Error.Raise_With ("Weltzeit nicht im erlaubten Bereich -> Lokalzeit gesetzt");
+    end Universal_Time;
 
   begin -- Generate
-    declare
-      Ut         : constant Time.Ut := Time.Universal_Of (Time_Value);
-      Time_Image : constant String  := Time.Image_Of (Ut);
-    begin -- Generate
-      Log.Write ("Generate at " & Time_Image);
-      Set_Status ("");
-      Generate_Button.Disable;
-      Site.Define (Site.Data'(Latitude  => Value_Of (Latitude, Default_Latitude),
-                              Longitude => Value_Of (Longitude, Default_Longitude),
-                              Elevation => 0));
-
-      Prepare_For (Ut);
-      Map.Draw (Header_Text   => "Sternkarte",
-                Footer_Text   => "Datum: " & Time_Image,
-                Format        => Map.Paper_Format'value(Gui.Contents_Of (Paper_Format)),
-                Line_Size     => 1.0,
-                Star_Min      => 1.0,
-                Star_Max      => 5.0,
-                Magnitude_Min => -1.0,
-                Magnitude_Max => 6.0);
-      Generate_Button.Enable;
-    end;
+    Set_Status ("");
+    Generate_Button.Disable;
+    Site.Define (Site.Data'(Latitude  => Value_Of (Latitude, Default_Latitude),
+                            Longitude => Value_Of (Longitude, Default_Longitude),
+                            Elevation => 0));
+    Map.Draw (Ut     => Universal_Time,
+              Format => Map.Paper_Format'value(Gui.Contents_Of (Paper_Format)));
+    Generate_Button.Enable;
   exception
   when Error.Occurred =>
     Gui.Beep;

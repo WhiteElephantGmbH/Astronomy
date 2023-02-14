@@ -157,6 +157,9 @@ package body Time is
                         Day     => D,
                         Seconds => S);
     return MJD (D, M, Y, HOURS(S) / 3600.0);
+  exception
+  when others =>
+    raise Ut_Range_Error;
   end Mod_Jd_Of;
 
 

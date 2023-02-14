@@ -63,6 +63,8 @@ package Time is
   -- universal time --
   --------------------
 
+  Ut_Range_Error : exception;
+
   Delta_Time : constant := 10.0**(-8);
 
   type Ut is delta Delta_Time range -(2**63 * Delta_Time) .. +((2**63 - 1) * Delta_Time);

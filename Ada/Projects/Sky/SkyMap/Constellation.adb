@@ -16,7 +16,6 @@
 pragma Style_White_Elephant;
 
 with Ada.Containers.Indefinite_Ordered_Maps;
-with Angle;
 with Traces;
 
 package body Constellation is
@@ -619,7 +618,11 @@ package body Constellation is
   end Is_Used;
 
 
-  procedure Prepare is
+  procedure Prepare (Margin : Angle.Degrees) is
+
+    use type Angle.Value;
+
+    Horizon_Margin : constant Angle.Value := Angle.Quadrant + Margin;
 
     The_Actual_Item : Item := Data(Data'first).Const;
 
@@ -636,35 +639,29 @@ package body Constellation is
       The_Visible_Lines : Lines(1 .. Max_Parts_Per_Item);
       Last_Visible_Line : Natural := 0;
 
-      procedure Update (From : in out Earth.Direction;
-                        To   :        Earth.Direction) is
+      procedure Update (From_Alt : in out Angle.Value;
+                        From_Az  : in out Angle.Value;
+                        To_Alt   :        Angle.Value;
+                        To_Az    :        Angle.Value) is
 
         use type Angle.Signed;
-        use type Angle.Value;
         use type Angle.Degrees;
-
-        From_Alt : constant Angle.Value := Angle.Quadrant - Earth.Alt_Of (From); -- Zenit => 0, Horizon => 90 degrees
-        To_Alt   : constant Angle.Value := Angle.Quadrant - Earth.Alt_Of (To);
-        From_Az  : constant Angle.Value := Earth.Az_Of (From);
-        To_Az    : constant Angle.Value := Earth.Az_Of (To);
 
         Delta_Az      : constant Angle.Degrees := +Angle.Signed'(To_Az - From_Az);
         Delta_Alt     : constant Angle.Degrees := +Angle.Signed'(From_Alt - To_Alt);
         New_Delta_Alt : constant Angle.Degrees := +Angle.Signed'(Angle.Quadrant - To_Alt);
 
         New_Delta_Az : Angle.Degrees;
-        New_From_Az : Angle.Value;
 
       begin -- Update
-        Log.Write ("From_Alt:" & Angle.Image_Of (From_Alt));
-        Log.Write ("To_Alt  :" & Angle.Image_Of (To_Alt));
-        Log.Write ("From_Az :" & Angle.Image_Of (From_Az));
-        Log.Write ("To_Az   :" & Angle.Image_Of (To_Az));
+        Log.Write ("  From_Alt : " & Angle.Image_Of (From_Alt));
+        Log.Write ("  To_Alt   : " & Angle.Image_Of (To_Alt));
+        Log.Write ("  From_Az  : " & Angle.Image_Of (From_Az));
+        Log.Write ("  To_Az    : " & Angle.Image_Of (To_Az));
         New_Delta_Az := Delta_Az * New_Delta_Alt / Delta_Alt;
-        New_From_Az := From_Az + New_Delta_Az;
-        Log.Write ("new From_Az  :" & Angle.Image_Of (New_From_Az));
-        From := Earth.Direction_Of (Alt => Angle.Zero,
-                                    Az  => New_From_Az);
+        From_Az := From_Az + New_Delta_Az;
+        From_Alt := Horizon_Margin;
+        Log.Write ("new From_Az: " & Angle.Image_Of (From_Az));
       end Update;
 
     begin -- Insert_Visible_Actual
@@ -672,36 +669,50 @@ package body Constellation is
         if not Earth.Is_Below_Horizon (The_Line.From.Direction) or else
            not Earth.Is_Below_Horizon (The_Line.To.Direction)
         then
-          Last_Visible_Line := @ + 1;
-          The_Visible_Lines(Last_Visible_Line) := The_Line;
+          declare
+            From_Alt : Angle.Value := Angle.Quadrant - Earth.Alt_Of (The_Line.From.Direction); -- Zenit => 0
+            To_Alt   : Angle.Value := Angle.Quadrant - Earth.Alt_Of (The_Line.To.Direction);
+            From_Az  : Angle.Value := Earth.Az_Of (The_Line.From.Direction);
+            To_Az    : Angle.Value := Earth.Az_Of (The_Line.To.Direction);
+          begin
+            if From_Alt < Horizon_Margin then
+              The_Used_Stars (The_Line.From.Id) := True;
+            else
+              Log.Write ("From Update");
+              Update (From_Alt => From_Alt,
+                      From_Az  => From_Az,
+                      To_Alt   => To_Alt,
+                      To_Az    => To_Az);
+            end if;
+            if To_Alt < Horizon_Margin then
+              The_Used_Stars (The_Line.To.Id) := True;
+            else
+              Log.Write ("To Update");
+              Update (From_Alt => To_Alt,
+                      From_Az  => To_Az,
+                      To_Alt   => From_Alt,
+                      To_Az    => From_Az);
+            end if;
+            From_Alt := Angle.Quadrant - From_Alt;
+            To_Alt := Angle.Quadrant - To_Alt;
+            Last_Visible_Line := @ + 1;
+            The_Visible_Lines(Last_Visible_Line)
+              := (From => (Direction => Earth.Direction_Of (Alt => From_Alt, Az  => From_Az),
+                           Id        => The_Line.From.Id),
+                  To   => (Direction => Earth.Direction_Of (Alt => To_Alt, Az  => To_Az),
+                           Id        => The_Line.To.Id));
+          end;
         end if;
       end loop;
-      if Last_Line = Last_Visible_Line then
-        Log.Write ("Insert " & The_Actual_Item'image);
-      elsif Last_Visible_Line > 0 then
-        Log.Write ("Insert partial " & The_Actual_Item'image);
-      else
-        Log.Write ("Not inserted " & The_Actual_Item'image);
-        return;
+      if Last_Visible_Line > 0 then
+        The_Visible_Data.Insert (The_Actual_Item, The_Visible_Lines(1..Last_Visible_Line));
+        Last_Visible_Item := @ + 1;
+        The_Visible_Items(Last_Visible_Item) := The_Actual_Item;
       end if;
-      for The_Line of The_Visible_Lines(1..Last_Visible_Line) loop
-        if Earth.Is_Below_Horizon (The_Line.From.Direction) then
-          Update (The_Line.From.Direction, The_Line.To.Direction);
-        else
-          The_Used_Stars (The_Line.From.Id) := True;
-        end if;
-        if Earth.Is_Below_Horizon (The_Line.To.Direction) then
-          Update (The_Line.To.Direction, The_Line.From.Direction);
-        else
-          The_Used_Stars (The_Line.To.Id) := True;
-        end if;
-      end loop;
-      The_Visible_Data.Insert (The_Actual_Item, The_Visible_Lines(1..Last_Visible_Line));
-      Last_Visible_Item := @ + 1;
-      The_Visible_Items(Last_Visible_Item) := The_Actual_Item;
    end Insert_Visible_Actual;
 
   begin -- Prepare
+    Log.Write ("Margin: " & Margin'image);
     Last_Visible_Item := 0;
     The_Visible_Data.Clear;
     The_Used_Stars := [others => False];

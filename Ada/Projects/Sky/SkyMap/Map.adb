@@ -20,7 +20,10 @@ with Angle;
 with Constellation;
 with Earth;
 with Error;
+with Eps;
+with Parameter;
 with Solar;
+with Star;
 with Traces;
 with User;
 
@@ -35,14 +38,8 @@ package body Map is
   package Math is new Ada.Numerics.Generic_Elementary_Functions (Value);
 
 
-  procedure Draw (Header_Text   : String;
-                  Footer_Text   : String;
-                  Format        : Paper_Format;
-                  Line_Size     : Eps.Value;
-                  Star_Min      : Eps.Value;
-                  Star_Max      : Eps.Value;
-                  Magnitude_Min : Star.Magnitude;
-                  Magnitude_Max : Star.Magnitude) is
+  procedure Draw (Ut     : Time.Ut;
+                  Format : Paper_Format) is
 
     use type Eps.Value;
 
@@ -57,12 +54,18 @@ package body Map is
       A5 => (Width =>  420.0, Height =>  595.0),
       A6 => (Width =>  298.0, Height =>  420.0)];
 
+    Time_Image  : constant String := Time.Image_Of (Ut);
+    Header_Text : constant String := "Sternkarte";
+    Footer_Text : constant String := "Datum: " & Time_Image;
+
     Dimension    : constant Eps.Dimension := Dimensions(Format);
     Margin       : constant Eps.Value := Eps.Value(Natural(Dimension.Width / 24)) / 2;
     Size         : constant Eps.Value := Dimension.Width - 2 * Margin;
     Earth_Radius : constant Eps.Value := Size / 2;
     X_Offset     : constant Eps.Value := Margin + Earth_Radius;
     Y_Offset     : constant Eps.Value := Dimension.Height / 2;
+
+    Horizon_Margin : constant Angle.Degrees := Angle.Degrees(Margin / Earth_Radius) * 90.0;
 
     Format_Factor : constant Float := Float(Dimension.Width) / Float(Dimensions(A4).Width);
 
@@ -74,7 +77,7 @@ package body Map is
     Top_Center_Text    : constant Eps.Location := (X => X_Offset, Y => Header_Offset);
     Bottom_Center_Text : constant Eps.Location := (X => X_Offset, Y => Footer_Offset);
 
-    subtype Position is Value range -1.0 .. 1.0;
+    subtype Position is Value range -2.0 .. 2.0;
 
     function Scaled (Item : Position) return Eps.Value is (Eps.Value(Value(Item) * Value(Earth_Radius)));
 
@@ -88,12 +91,13 @@ package body Map is
     function Position_Of (Item : Star.Direction) return Eps.Location is
       Alt, Az, D : Value;
       X, Y       : Position;
+      use type Angle.Signed;
       use type Angle.Value;
     begin
       if not Earth.Direction_Is_Known (Item) then
         raise Below_Horizon;
       end if;
-      Alt := +Earth.Alt_Of (Item);
+      Alt := +Angle.Signed'(+Earth.Alt_Of (Item));
       Az := +Earth.Az_Of (Item);
       D := (90.0 - Alt) / 90.0;
       X := Math.Cos (90.0 - Az, Cycle => 360.0) * D;
@@ -104,15 +108,15 @@ package body Map is
 
     function Size_Of (Magnitude  : Star.Magnitude) return Eps.Value is
       M    : constant Float := Float(Magnitude);
-      Mmin : constant Float := Float(Magnitude_Min);
-      Mmax : constant Float := Float(Magnitude_Max);
-      Bmin : constant Float := Float(Star_Min) * Format_Factor;
-      Bmax : constant Float := Float(Star_Max) * Format_Factor;
+      Mmin : constant Float := Float(Parameter.Magnitude_Min);
+      Mmax : constant Float := Float(Parameter.Magnitude_Max);
+      Bmin : constant Float := Float(Parameter.Star_Min) * Format_Factor;
+      Bmax : constant Float := Float(Parameter.Star_Max) * Format_Factor;
     begin
       if M <= Mmin then
-        return Star_Max;
+        return Eps.Value(Bmax);
       elsif M >= Mmax then
-        return Star_Min;
+        return Eps.Value(Bmin);
       end if;
       return Eps.Value(Bmin + ((Bmax - Bmin) / (Mmin - Mmax)) * (M - Mmax));
     end Size_Of;
@@ -121,18 +125,6 @@ package body Map is
     procedure Draw_Border is
       Center : constant Eps.Location := (X => X_Of(0.0), Y => Y_Of (0.0));
     begin
-      --Tansparent for Earth, white outside (problems with visualisation!!!)
-      --Eps.Start_Line ((0.0, 0.0));
-      --Eps.Continue_Line ((Dimension.Width, 0.0));
-      --Eps.Continue_Line ((Dimension.Width, Dimension.Height));
-      --Eps.Continue_Line ((0.0, Dimension.Height));
-      --Eps.Continue_Line ((0.0, 0.0));
-      --Eps.Continue_Arc_N (Center => Center,
-      --                    Radius => Earth_Radius,
-      --                    From   => 360.0,
-      --                    To     => 0.0);
-      --Eps.Set_White;
-      --Eps.Fill;
       Eps.Set_Color (Eps.Light_Green);
       Eps.Add_Circle (To        => Center,
                       Radius    => Earth_Radius * 2,
@@ -166,7 +158,7 @@ package body Map is
     begin
       Log.Write ("Draw Constellations");
       Eps.Set_Color (Eps.Magenta);
-      Eps.Set_Line (Width => Line_Size * Eps.Value(Format_Factor));
+      Eps.Set_Line (Width => Parameter.Line_Size * Eps.Value(Format_Factor));
       Eps.Set_Line (Eps.Solid);
       for The_Constellation of Constellation.Visible loop
         for Line of Constellation.Visible_Lines_Of (The_Constellation)loop
@@ -183,7 +175,7 @@ package body Map is
       Eps.Set_Color (Eps.Yellow);
       Eps.Set_Line (Eps.Solid);
       for The_Star of Star.Data_List loop
-        if The_Star.Mag <= Magnitude_Max or else Constellation.Is_Used (The_Star.Id) then
+        if The_Star.Mag <= Parameter.Magnitude_Max or else Constellation.Is_Used (The_Star.Id) then
           Eps.Add_Circle (To        => Position_Of (The_Star.Loc),
                           Radius    => Size_Of (The_Star.Mag) / 2.0,
                           Is_Filled => True);
@@ -304,9 +296,13 @@ package body Map is
     end Draw_Moon;
 
   begin -- Draw
+    Log.Write ("Draw at " & Time_Image);
     if Size > Eps.Value'last - Margin then
       Error.Raise_With ("'Map Size' + 'Margin' must be smaller then" & Eps.Value'image(Eps.Value'last));
     end if;
+    Star.Read (Ut);
+    Solar.Prepare (Ut);
+    Constellation.Prepare (Horizon_Margin);
     Eps.Create ("SkyMap.Eps", Dimension);
     Draw_Border;
     Draw_Constellations;

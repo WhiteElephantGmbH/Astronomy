@@ -15,37 +15,21 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Angle;
-with Earth;
+with Eps;
 with Star;
 
-package Constellation is
+package Parameter is
 
-  type Item is (Anr, Aql, Aqr, Ara, Ari, Aur, Boo, Cam, Cap, Car, Cas, Cen, Cep, Cet, Cir, Cma, Cmi, Cnc, Col, Crb, Crt,
-                Cru, Crv, Cvn, Cyg, Del, Dra, Dor, Equ, Eri, Frm, Gem, Gru, Hyi, Her, Hya, Ind, Lac, Leo, Lep, Lib, Lmi,
-                Lup, Lyn, Lyr, Mon, Oct, Oph, Opt, Ori, Pav, Peg, Per, Phe, Pic, Psa, Psc, Pup, Pyx, Ret, Sco, Sge, Sgr,
-                Srh, Srt, Tau, Tra, Uma, Umi, Vir, Vol);
+  type Paper_Format is (A0, A1, A2, A3, A4, A5, A6);
 
-  procedure Prepare (Margin : Angle.Degrees);
+  function Line_Size return Eps.Value;
 
-  type List is array (Positive range <>) of Item;
+  function Star_Min return Eps.Value;
 
-  function Visible return List;
+  function Star_Max return Eps.Value;
 
-  type Point is record
-    Id        : Star.Number;
-    Direction : Earth.Direction;
-  end record;
+  function Magnitude_Min return Star.Magnitude;
 
-  type Line is record
-    From : Point;
-    To   : Point;
-  end record;
+  function Magnitude_Max return Star.Magnitude;
 
-  type Lines is array (Positive range <>) of Line;
-
-  function Visible_Lines_Of (The_Item : Item) return Lines;
-
-  function Is_Used (Id : Star.Number) return Boolean;
-
-end Constellation;
+end Parameter;
