@@ -20,7 +20,7 @@ with Star;
 
 package Parameter is
 
-  type Paper_Format is (A0, A1, A2, A3, A4, A5, A6);
+  procedure Read;
 
   function Line_Size return Eps.Value;
 

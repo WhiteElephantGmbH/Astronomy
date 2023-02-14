@@ -20,6 +20,7 @@ with Application;
 with Error;
 with Gui.Registered;
 with Map;
+with Parameter;
 with Site;
 with Strings;
 with Time;
@@ -91,6 +92,7 @@ package body User is
 
   begin -- Generate
     Set_Status ("");
+    Parameter.Read;
     Generate_Button.Disable;
     Site.Define (Site.Data'(Latitude  => Value_Of (Latitude, Default_Latitude),
                             Longitude => Value_Of (Longitude, Default_Longitude),
