@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2019 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2019 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -48,9 +48,6 @@ package body Parameter is
   Localization_Id : constant String := "Localization";
   Language_Key    : constant String := "Language";
 
-  Controller_Id  : constant String := "Controller";
-  Ip_Address_Key : constant String := "IP Address";
-
   PWI_Id                : constant String := "PWI";
   Program_Key           : constant String := "Program";
   Settings_Key          : constant String := "Settings";
@@ -65,6 +62,9 @@ package body Parameter is
   Moving_Speed_List_Key : constant String := "Moving Speed List";
   Cwe_Distance_Key      : constant String := "CWE Distance";
   Time_Adjustment_Key   : constant String := "Time Adjustment";
+
+  Controller_Id  : constant String := "Controller";
+  Ip_Address_Key : constant String := "IP Address";
 
   Lx200_Id : constant String := "Lx200";
 
@@ -328,9 +328,6 @@ package body Parameter is
       Put (Strings.Bom_8 & "[" & Localization_Id & "]");
       Put (Language_Key & " = " & Strings.Legible_Of (Stellarium.Language'img));
       Put ("");
-      Put ("[" & Controller_Id & "]");
-      Put (Ip_Address_Key & " = 192.168.10.160");
-      Put ("");
       Put ("[" & PWI_Id & "]");
       Put (Program_Key & "           = " & PWI_Program_Files & "\PlaneWave interface\PWI.exe");
       Put (Settings_Key & "          = " & PWI_Mount_Folder & "settingsMount.xml");
@@ -346,6 +343,9 @@ package body Parameter is
       Put (Moving_Speed_List_Key & " = 30""/s, 3'/s, 20'/s, 2°/s");
       Put (Cwe_Distance_Key & "      = 30'");
       Put (Time_Adjustment_Key & "   = 0.5s");
+      Put ("");
+      Put ("[" & Controller_Id & "]");
+      Put (Ip_Address_Key & " = 192.168.10.160");
       Put ("");
       Put ("[" & Lx200_Id & "]");
       Put (Port_Key & " = 4030");
@@ -532,9 +532,6 @@ package body Parameter is
       Set (Localization_Handle);
       Standard.Language.Define (Language);
 
-      Set (Controller_Handle);
-      Cdk_700.Startup (Ip_Address_For (Controller_Id));
-
       Set (PWI_Handle);
       Define_Site_Parameters;
 
@@ -553,6 +550,11 @@ package body Parameter is
       end if;
       The_Cwe_Distance := Degrees_Of (Cwe_Distance_Key, Cwe.Maximum_Distance);
       The_Time_Adjustment := Duration_Of (Time_Adjustment_Key);
+
+      Set (Controller_Handle);
+      if not Is_In_Simulation_Mode or else Is_In_Expert_Mode then
+        Cdk_700.Startup (Ip_Address_For (Controller_Id));
+      end if;
 
       Set (Lx200_Handle);
       The_Lx200_Port := Port_For (Lx200_Id);
