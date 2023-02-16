@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2014 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2014 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -288,7 +288,7 @@ package body Angle is
   function Value_Of (The_Image  : String;
                      With_Units : Units := Default_Degrees) return Value is
 
-    Image : constant String := Strings.Ansi_Of (The_Image);
+    Image : constant String := Strings.Trimmed (Strings.Ansi_Of (The_Image));
 
     type State is (At_Begin, At_Minutes, At_Seconds, At_End);
 
@@ -386,7 +386,14 @@ package body Angle is
     Per_Unit : constant := 1.0 / 3600.0;
 
   begin -- Value_Of
-    Skip_Spaces;
+    if Image(Image'last) in '°' | 'd' then
+      if The_Unit in In_Hours then
+        Error.Raise_With ("h, m or s expected");
+      end if;
+      return +Angle.Degrees'value(Image(Image'first .. Image'last - 1));
+    elsif Image(Image'last) in '0' .. '9' and then The_Unit in Default_Degrees then
+      return +Angle.Degrees'value(Image);
+    end if;
     case Next_Character is
     when '-' =>
       Is_Negative := True;
