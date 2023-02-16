@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2022 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                           (c) 2023 by White Elephant GmbH, Schaffhausen, Switzerland                              *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
@@ -8,6 +8,7 @@ with Ada.Command_Line;
 with Ada.Text_IO;
 with Astap;
 with Catalog;
+with File;
 with Strings;
 with Traces;
 
@@ -25,10 +26,29 @@ package body Nebulae is
   end Error;
 
 
-  procedure Evaluate (Object_Name    : String;
+  procedure Evaluate (Name           : String;
                       Picture_Height : Astap.Degrees) is
 
-    Filename : constant String := Object_Name & ".png";
+    File_Extension : constant String := "png";
+
+    function Object_Name_Of (Item : String) return String is
+    begin
+      declare
+        Extension : constant String := File.Extension_Of (Item);
+        Base_Name : constant String := File.Base_Name_Of (Item);
+      begin
+        if Extension in File_Extension | "" then
+          return Base_Name;
+        end if;
+        return "";
+      end;
+    exception
+    when others =>
+      return "";
+    end Object_Name_Of;
+
+    Object_Name : constant String := Object_Name_Of (Name);
+    Filename    : constant String := Object_Name & '.' & File_Extension;
 
     procedure Write_Textures (C00, C01, C10, C11 : Astap.Location) is
 
@@ -123,7 +143,10 @@ package body Nebulae is
     use type Catalog.Object;
 
   begin -- Evaluate
-    if Id = Catalog.Undefined then
+    if Object_Name = "" then
+      Error ("File " & Name & " is not a *.png file");
+      return;
+    elsif Id = Catalog.Undefined then
       Error ("Object " & Object_Name & " unknown");
       return;
     end if;
