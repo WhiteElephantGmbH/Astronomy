@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2020 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2020 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -21,7 +21,12 @@ package Alpha is
 
   type Row is new Natural;
 
-  type Limits is array (Column range <>) of Row;
+  type Limit is record
+    Lower : Row;
+    Upper : Row;
+  end record;
+
+  type Limits is array (Column range <>) of Limit;
 
   function Last_Row return Row;
 

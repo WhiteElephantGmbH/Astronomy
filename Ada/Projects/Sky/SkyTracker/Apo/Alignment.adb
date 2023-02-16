@@ -134,7 +134,7 @@ package body Alignment is
           declare
             Direction : constant Space.Direction := Data.Direction_Of (Stars.Object_Of(The_Star), Time.Universal);
            begin
-            if Sky_Line.Is_Above (Direction, Time.Lmst) then
+            if Sky_Line.Is_Above (Direction, Time.Lmst, Use_Upper => True) then
               Evaluate_Quality_Of (The_Star, Direction);
             end if;
           end;

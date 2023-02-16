@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2020 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2020 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -61,11 +61,12 @@ package body Alpha is
 
         Row_Offset    : constant Row := Row(Height) / 2;
         Undefined_Row : constant Row := Row'last;
+        Undefined     : constant Limit := (Undefined_Row, Undefined_Row);
 
         New_Position : Boolean;
         The_Column   : Column;
         The_Row      : Row;
-        The_Limits   : Actual_Limits := (others => Undefined_Row);
+        The_Limits   : Actual_Limits := (others => Undefined);
 
         procedure Set_X_Y (X, Y: Natural) is
         begin
@@ -82,15 +83,23 @@ package body Alpha is
           if not New_Position then
             The_Column := The_Column + 1;
           end if;
-          if The_Row < Row_Offset then
-            if The_Limits(The_Column) = Undefined_Row then
-              The_Limits(The_Column) := 0; -- not below zero horizon
+          if The_Row < Row_Offset then -- Below zero horizon
+            if The_Limits(The_Column).Lower = Undefined_Row then
+              The_Limits(The_Column).Lower := 0; -- force to zero
+            end if;
+            if The_Limits(The_Column).Upper = Undefined_Row then
+              The_Limits(The_Column).Upper := 0; -- force to zero
             end if;
           else
             if Alpha_Value < Color_Range'last - 10 then
-              The_Limits(The_Column) := Undefined_Row;
-            elsif The_Limits(The_Column) = Undefined_Row then
-              The_Limits(The_Column) := The_Row - Row_Offset + 1;
+              The_Limits(The_Column).Lower := Undefined_Row;
+            else
+              if The_Limits(The_Column).Lower = Undefined_Row then
+                The_Limits(The_Column).Lower := The_Row - Row_Offset + 1;
+              end if;
+              if The_Limits(The_Column).Upper = Undefined_Row then
+                The_Limits(The_Column).Upper := The_Row - Row_Offset + 1;
+              end if;
             end if;
           end if;
           New_Position := False;

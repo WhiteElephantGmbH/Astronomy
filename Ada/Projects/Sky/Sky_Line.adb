@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2012 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2012 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -18,7 +18,6 @@ pragma Style_White_Elephant;
 with Ada.Containers.Doubly_Linked_Lists;
 with Ada.Directories;
 with Ada.Text_IO;
-with Angle;
 with Application;
 with Error;
 with File;
@@ -32,8 +31,9 @@ package body Sky_Line is
   package Log is new Traces ("Sky_Line");
 
   type Element is record
-    Azimuth  : Angle.Value;
-    Altitude : Angle.Value;
+    Azimuth      : Angle.Value;
+    Altitude     : Angle.Value;
+    Top_Altitude : Angle.Value;
   end record;
 
   Angle_Divisor : constant := 2**12;
@@ -46,7 +46,8 @@ package body Sky_Line is
 
   Azimuth_Increment : constant Angle.Value := +Angle.Unsigned(2**32 / Angle_Divisor);
 
-  The_Horizon : Horizon;
+  The_Lower_Horizon : Horizon;
+  The_Upper_Horizon : Horizon;
 
 
   function "<" (Left, Right : Element) return Boolean is
@@ -55,16 +56,28 @@ package body Sky_Line is
   end "<";
 
 
-  function Interpolation_Of (Azimuth : Angle.Value;
-                             First   : Element;
-                             Second  : Element) return Angle.Value is
+  function Lower_Interpolation (Azimuth : Angle.Value;
+                                First   : Element;
+                                Second  : Element) return Angle.Value is
   begin
     return Values.Interpolation_Of (Az   => Azimuth,
                                     Az1  => First.Azimuth,
                                     Alt1 => First.Altitude,
                                     Az2  => Second.Azimuth,
                                     Alt2 => Second.Altitude);
-  end Interpolation_Of;
+  end Lower_Interpolation;
+
+
+  function Upper_Interpolation (Azimuth : Angle.Value;
+                                First   : Element;
+                                Second  : Element) return Angle.Value is
+  begin
+    return Values.Interpolation_Of (Az   => Azimuth,
+                                    Az1  => First.Azimuth,
+                                    Alt1 => First.Top_Altitude,
+                                    Az2  => Second.Azimuth,
+                                    Alt2 => Second.Top_Altitude);
+  end Upper_Interpolation;
 
 
   package Elements is new Ada.Containers.Doubly_Linked_Lists (Element);
@@ -142,8 +155,9 @@ package body Sky_Line is
         return Strings.Trimmed(Line(First .. The_Last));
       end Next;
 
-      The_Azimuth  : Angle.Value;
-      The_Altitude : Angle.Value;
+      The_Azimuth      : Angle.Value;
+      The_Altitude     : Angle.Value;
+      The_Top_Altitude : Angle.Value;
 
     begin -- Store
       if Strings.Trimmed (Line) /= "" then
@@ -159,8 +173,21 @@ package body Sky_Line is
         when others =>
           Error.Raise_With ("Incorrect altitude in " & Filename & ": " & Line);
         end;
-        The_Element_List.Append (Element'(Azimuth => The_Azimuth,
-                                          Altitude => The_Altitude));
+        declare
+          Top_Altitude_Image : constant String := Next;
+        begin
+          if Top_Altitude_Image = "" then
+            The_Top_Altitude := The_Altitude;
+          else
+            The_Top_Altitude := Angle.Value_Of (Top_Altitude_Image);
+          end if;
+        exception
+        when others =>
+          Error.Raise_With ("Incorrect top altitude in " & Filename & ": " & Line);
+        end;
+        The_Element_List.Append (Element'(Azimuth      => The_Azimuth,
+                                          Altitude     => The_Altitude,
+                                          Top_Altitude => The_Top_Altitude));
       end if;
     end Store;
 
@@ -171,15 +198,18 @@ package body Sky_Line is
     procedure Create_Horizon is
     begin
       if The_Element_List.Is_Empty then
-        The_Horizon := [others => Angle.Zero];
+        The_Lower_Horizon := [others => Angle.Zero];
+        The_Upper_Horizon := [others => Angle.Zero];
         return;
       elsif Natural(The_Element_List.Length) = 1 then
-        The_Horizon := [others => The_Element_List.First_Element.Altitude];
+        The_Lower_Horizon := [others => The_Element_List.First_Element.Altitude];
+        The_Upper_Horizon := [others => The_Element_List.First_Element.Top_Altitude];
       else
         The_Last := The_Element_List.Last_Element;
         for The_Element of The_Element_List loop
           while The_Azimuth < The_Element.Azimuth loop
-            The_Horizon(The_Index) := Interpolation_Of (The_Azimuth, The_Last, The_Element);
+            The_Lower_Horizon(The_Index) := Lower_Interpolation (The_Azimuth, The_Last, The_Element);
+            The_Upper_Horizon(The_Index) := Upper_Interpolation (The_Azimuth, The_Last, The_Element);
             The_Index := The_Index + 1;
             if The_Index = Index'first then
               return;
@@ -189,7 +219,8 @@ package body Sky_Line is
           The_Last := The_Element;
         end loop;
         loop
-          The_Horizon(The_Index) := Interpolation_Of (The_Azimuth, The_Last, The_Element_List.First_Element);
+          The_Lower_Horizon(The_Index) := Lower_Interpolation (The_Azimuth, The_Last, The_Element_List.First_Element);
+          The_Upper_Horizon(The_Index) := Upper_Interpolation (The_Azimuth, The_Last, The_Element_List.First_Element);
           The_Index := The_Index + 1;
           exit when The_Index = Index'first;
           The_Azimuth := The_Azimuth + Azimuth_Increment;
@@ -232,9 +263,11 @@ package body Sky_Line is
   end Create;
 
 
-  procedure Append (Direction : Earth.Direction) is
+  procedure Append (Direction : Earth.Direction;
+                    Top_Alt   : Angle.Value := No_Top_Altitude) is
   begin
-    Put (Earth.Az_Image_Of (Direction) & ", " & Earth.Alt_Image_Of (Direction));
+    Put (Earth.Az_Image_Of (Direction) & ", " & Earth.Alt_Image_Of (Direction)
+         & (if Top_Alt = No_Top_Altitude then "" else ", " & Angle.Image_Of (Top_Alt)));
   end Append;
 
 
@@ -276,7 +309,8 @@ package body Sky_Line is
   end Is_Defined;
 
 
-  function Is_Above (Direction : Earth.Direction) return Boolean is
+  function Is_Above (Direction : Earth.Direction;
+                     Use_Upper : Boolean := False) return Boolean is
     use type Angle.Unsigned;
   begin
     if Earth.Is_Below_Horizon (Direction) then
@@ -286,12 +320,14 @@ package body Sky_Line is
       Az    : constant Angle.Value    := Earth.Az_Of (Direction);
       Inc   : constant Angle.Unsigned := +Azimuth_Increment;
       I1    : constant Index          := Index(Angle.Unsigned'(+Az) / Inc);
+      I2    : constant Index          := I1 + 1;
       Az1   : constant Angle.Value    := +(Angle.Unsigned(I1) * Inc);
-      Limit : constant Angle.Value    := Values.Interpolation_Of (Az   => Az,
-                                                                  Az1  => Az1,
-                                                                  Alt1 => The_Horizon(I1),
-                                                                  Az2  => Az1 + Azimuth_Increment,
-                                                                  Alt2 => The_Horizon(I1 + 1));
+      Limit : constant Angle.Value
+        := Values.Interpolation_Of (Az   => Az,
+                                    Az1  => Az1,
+                                    Alt1 => (if Use_Upper then The_Upper_Horizon(I1) else The_Lower_Horizon(I1)),
+                                    Az2  => Az1 + Azimuth_Increment,
+                                    Alt2 => (if Use_Upper then The_Upper_Horizon(I2) else The_Lower_Horizon(I2)));
     begin
       return Limit < Earth.Alt_Of (Direction);
     end;
@@ -299,9 +335,10 @@ package body Sky_Line is
 
 
   function Is_Above (Direction : Space.Direction;
-                     Lmst      : Time.Value) return Boolean is
+                     Lmst      : Time.Value;
+                     Use_Upper : Boolean := False) return Boolean is
   begin
-    return Is_Above (Objects.Direction_Of (Direction, Lmst));
+    return Is_Above (Objects.Direction_Of (Direction, Lmst), Use_Upper);
   end Is_Above;
 
 end Sky_Line;

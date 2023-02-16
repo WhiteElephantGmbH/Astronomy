@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2012 .. 2020 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2012 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -34,6 +34,7 @@ package body Horizon is
 
     Rotation : constant Angle.Degrees := Stellarium.Landscape_Rotation;
 
+    Altitude_Limit : constant Angle.Degrees := 2.0;
 
     procedure Build_Sky_Line is
 
@@ -60,14 +61,22 @@ package body Horizon is
       end Row_Angle;
 
       procedure Process_Row_Of (Column : Alpha.Column)is
-        The_Altitude : Angle.Degrees := Row_Angle (Alpha_Limits(Column));
+        The_Altitude : Angle.Degrees := Row_Angle (Alpha_Limits(Column).Lower);
+        Top_Altitude : Angle.Degrees := Row_Angle (Alpha_Limits(Column).Upper);
         use type Angle.Value;
       begin
-        if The_Altitude < 2.0 then
-          The_Altitude := 2.0;
+        if The_Altitude < Altitude_Limit then
+          The_Altitude := Altitude_Limit;
         end if;
-        Sky_Line.Append (Earth.Direction_Of (Az  => +Column_Angle (Column),
-                                             Alt => +The_Altitude));
+        if Top_Altitude < Altitude_Limit then
+          Top_Altitude := Altitude_Limit;
+        end if;
+        if Top_Altitude = The_Altitude then
+          Top_Altitude := +Sky_Line.No_Top_Altitude;
+        end if;
+        Sky_Line.Append (Direction => Earth.Direction_Of (Az  => +Column_Angle (Column),
+                                                          Alt => +The_Altitude),
+                         Top_Alt => +Top_Altitude);
       end Process_Row_Of;
 
     begin -- Build_Sky_Line

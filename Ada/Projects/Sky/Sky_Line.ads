@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2012 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2012 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,17 +15,21 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with Angle;
 with Earth;
 with Space;
 with Time;
 
 package Sky_Line is
 
+  No_Top_Altitude : constant Angle.Value := Angle.Zero;
+
   procedure Read;
 
   procedure Create;
 
-  procedure Append (Direction : Earth.Direction);
+  procedure Append (Direction : Earth.Direction;
+                    Top_Alt   : Angle.Value := No_Top_Altitude);
 
   procedure Close;
 
@@ -35,8 +39,10 @@ package Sky_Line is
 
   function Is_Defined return Boolean;
 
-  function Is_Above (Direction : Earth.Direction) return Boolean;
+  function Is_Above (Direction : Earth.Direction;
+                     Use_Upper : Boolean := False) return Boolean;
 
   function Is_Above (Direction : Space.Direction;
-                     Lmst      : Time.Value) return Boolean;
+                     Lmst      : Time.Value;
+                     Use_Upper : Boolean := False) return Boolean;
 end Sky_Line;
