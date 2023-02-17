@@ -713,7 +713,7 @@ package body Parameter is
 
   function Remote_Configured return Boolean is
   begin
-    return not (Strings.Is_Equal (Telescope_Name, "none") or Telescope_Name = "");
+    return not (Strings.Is_Equal (Telescope_Name, "none") or Telescope_Name = "" or Is_Simulation_Mode);
   end Remote_Configured;
 
 
