@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2013 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2013 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -242,8 +242,6 @@ package body Satellite is
         case The_Filename(Index) is
         when '\' | '/' | '|' | ':' | '*' | '?' | '<' | '>' =>
           The_Filename(Index) := '-';
-        when '(' =>
-          return Strings.Trimmed (The_Filename(The_Filename'first .. Index - 1));
         when others =>
           null;
         end case;
