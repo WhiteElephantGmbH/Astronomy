@@ -9,6 +9,7 @@ with Ada.Text_IO;
 with Astap;
 with Catalog;
 with File;
+with Os.System;
 with Strings;
 with Traces;
 
@@ -151,7 +152,7 @@ package body Nebulae is
       return;
     end if;
     Data := Catalog.Data_Of (Id);
-    Astap.Define ("C:\Program Files\astap\astap.exe");
+    Astap.Define (Os.System.Program_Files_Folder & "astap\astap.exe");
     Astap.Solve (Filename => Filename,
                  Height   => Picture_Height,
                  Start    => [Astap.Degrees(Data.Ra_J2000), Astap.Degrees(Data.Dec_J2000)]);

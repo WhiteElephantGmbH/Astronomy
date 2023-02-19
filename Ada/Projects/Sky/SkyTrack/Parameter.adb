@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2013 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2013 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -25,7 +25,8 @@ with Error;
 with File;
 with Language;
 with Motor;
-with Os;
+with Os.System;
+with Os.User;
 with Picture;
 with Site;
 with Strings;
@@ -112,7 +113,7 @@ package body Parameter is
     when Os.Osx =>
       return "/Applications/ASTAP.app/Contents/MacOS/astap";
     when Os.Windows =>
-      return "C:\Program Files\astap\astap.exe";
+      return Os.System.Program_Files_Folder & "astap\astap.exe";
     when Os.Linux =>
       return "astap.exe";
     end case;
@@ -123,7 +124,7 @@ package body Parameter is
   begin
     case Os.Family is
     when Os.Osx =>
-      return "/Users/" & Os.User_Name & "/Downloads/getframe.php.jpeg";
+      return Os.User.Downloads_Folder & "getframe.php.jpeg";
     when Os.Windows =>
       return "D:\temp\Picture.jpeg";
     when Os.Linux =>
@@ -353,7 +354,7 @@ package body Parameter is
       Put (Port_Key & "             = 10001");
       case Os.Family is
       when Os.Windows =>
-        Put (Program_Key & "          = C:\Program Files\Stellarium\Stellarium.exe");
+        Put (Program_Key & "          = " & Os.System.Program_Files_Folder & "Stellarium\Stellarium.exe");
       when Os.Osx =>
         Put (Program_Key & "          = /Applications/Stellarium.app/Contents/MacOS/stellarium");
       when Os.Linux =>

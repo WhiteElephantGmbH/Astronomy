@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2002 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                           (c) 2023 by White Elephant GmbH, Schaffhausen, Switzerland                              *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,79 +15,42 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with GNAT.Sockets;
-with Win32.Winbase;
-with Win32.Winuser;
+with Ada.Characters.Handling;
+with System;
+with Win32.Winnt;
+with Win32.Winerror;
+with Log;
 
-package body Os is
+package body ShlObj is
 
-  function Computer_Name return String is
+  type Wide_String_Access is access Wide_String(1..255);
+
+  function SH_Get_Known_Folder_Path (Id      : access constant GUID;
+                                     Dwflags : Win32.DWORD;
+                                     Htoken  : Win32.Winnt.HANDLE;
+                                     Pszpath : out Wide_String_Access) return Win32.LRESULT
+  with
+    Import,
+    Convention    => Stdcall,
+    External_Name => "SHGetKnownFolderPath";
+
+
+  function Folder_Path_For (Id : access constant GUID) return String is
+    Result : Win32.LRESULT;
+    Data   : aliased Wide_String_Access;
+    use type Win32.LRESULT;
   begin
-    return GNAT.Sockets.Host_Name;
-  end Computer_Name;
-
-
-  function Hex_Digit_Of (The_Nibble : Win32.DWORD) return Character is
-    use type Win32.DWORD;
-  begin
-    if The_Nibble < 10 then
-      return Character'val (Character'pos('0') + The_Nibble);
-    elsif  The_Nibble < 16 then
-      return Character'val (Character'pos('A') + The_Nibble - 10);
-    else
-      return '?';
+    Result := SH_Get_Known_Folder_Path (Id, 0, System.Null_Address, Data);
+    if Result /= Win32.Winerror.S_OK then
+      Log.Write ("Os.User.SH_Get_Known_Folder_Path - Result:" & Result'image);
+      raise Constraint_Error;
     end if;
-  end Hex_Digit_Of;
-
-
-  function Hex_Image_Of (The_Dword : Win32.DWORD) return String is
-    The_Result : String (1..8) := (others => '0');
-    The_Value  : Win32.DWORD := The_Dword;
-    use type Win32.DWORD;
-  begin
-    for Character of reverse The_Result loop
-      exit when The_Value = 0;
-      Character := Hex_Digit_Of (The_Value mod 16);
-      The_Value := The_Value / 16;
+    for The_Index in Data'range loop
+      if Data(The_Index) = Wide_Character'first then
+        return Ada.Characters.Handling.To_String (Data(Data'first .. The_Index - 1)) & '\';
+      end if;
     end loop;
-    return The_Result;
-  end Hex_Image_Of;
+    raise Program_Error;
+  end Folder_Path_For;
 
-
-  function Thread_Id return String is
-  begin
-    return Hex_Image_Of (Win32.Winbase.GetCurrentThreadId);
-  end Thread_Id;
-
-
-  function Is_Shutting_Down return Boolean is
-    use type Win32.INT;
-  begin
-    return Win32.Winuser.GetSystemMetrics (Win32.Winuser.SM_SHUTTINGDOWN) /= 0;
-  end Is_Shutting_Down;
-
-
-  function Family return Family_Name is
-  begin
-    return Windows;
-  end Family;
-
-
-  function Is_Linux return Boolean is
-  begin
-    return False;
-  end Is_Linux;
-
-
-  function Is_Osx return Boolean is
-  begin
-    return False;
-  end Is_Osx;
-
-
-  function Is_Windows return Boolean is
-  begin
-    return True;
-  end Is_Windows;
-
-end Os;
+end ShlObj;

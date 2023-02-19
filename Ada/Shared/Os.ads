@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2002 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2002 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -20,8 +20,6 @@ package Os is
   type Family_Name is (Linux, Osx, Windows);
 
   function Computer_Name return String;
-
-  function User_Name return String;
 
   function Thread_Id return String;
   -- Returns a fixed length string that uniquely identifies the current thread.

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2002 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                           (c) 2023 by White Elephant GmbH, Schaffhausen, Switzerland                              *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,79 +15,54 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with GNAT.Sockets;
+with Ada.Unchecked_Conversion;
+with System;
 with Win32.Winbase;
-with Win32.Winuser;
+with ShlObj;
 
-package body Os is
+package body Os.User is
 
-  function Computer_Name return String is
-  begin
-    return GNAT.Sockets.Host_Name;
-  end Computer_Name;
+  function Name return String is
 
+    type Dword_Access is access all Win32.DWORD;
 
-  function Hex_Digit_Of (The_Nibble : Win32.DWORD) return Character is
+    Max_Username_Size : constant := 100;
+    Username_Size     : aliased Win32.DWORD := Max_Username_Size;
+    Name_Size_Access  : constant Dword_Access := Username_Size'access;
+    The_Username      : aliased String (1..Max_Username_Size);
+
+    function Convert is new Ada.Unchecked_Conversion (System.Address, Win32.PSTR);
+    function Convert is new Ada.Unchecked_Conversion (Dword_Access, Win32.LPDWORD);
+
     use type Win32.DWORD;
-  begin
-    if The_Nibble < 10 then
-      return Character'val (Character'pos('0') + The_Nibble);
-    elsif  The_Nibble < 16 then
-      return Character'val (Character'pos('A') + The_Nibble - 10);
+    use type Win32.BOOL;
+
+  begin -- Name
+    if Win32.Winbase.GetUserName (Convert(The_Username(The_Username'first)'address), Convert(Name_Size_Access))
+       = Win32.TRUE
+    then
+      return The_Username (1..Natural(Username_Size) - 1);
     else
-      return '?';
+      return "";
     end if;
-  end Hex_Digit_Of;
+  end Name;
 
 
-  function Hex_Image_Of (The_Dword : Win32.DWORD) return String is
-    The_Result : String (1..8) := (others => '0');
-    The_Value  : Win32.DWORD := The_Dword;
-    use type Win32.DWORD;
+  function Desktop_Folder return String is
   begin
-    for Character of reverse The_Result loop
-      exit when The_Value = 0;
-      Character := Hex_Digit_Of (The_Value mod 16);
-      The_Value := The_Value / 16;
-    end loop;
-    return The_Result;
-  end Hex_Image_Of;
+    return ShlObj.Folder_Path_For (ShlObj.Desktop'access);
+  end Desktop_Folder;
 
 
-  function Thread_Id return String is
+  function Documents_Folder return String is
   begin
-    return Hex_Image_Of (Win32.Winbase.GetCurrentThreadId);
-  end Thread_Id;
+    return ShlObj.Folder_Path_For (ShlObj.Documents'access);
+  end Documents_Folder;
 
 
-  function Is_Shutting_Down return Boolean is
-    use type Win32.INT;
+  function Downloads_Folder return String is
   begin
-    return Win32.Winuser.GetSystemMetrics (Win32.Winuser.SM_SHUTTINGDOWN) /= 0;
-  end Is_Shutting_Down;
+    return ShlObj.Folder_Path_For (ShlObj.Downloads'access);
+  end Downloads_Folder;
 
-
-  function Family return Family_Name is
-  begin
-    return Windows;
-  end Family;
-
-
-  function Is_Linux return Boolean is
-  begin
-    return False;
-  end Is_Linux;
-
-
-  function Is_Osx return Boolean is
-  begin
-    return False;
-  end Is_Osx;
-
-
-  function Is_Windows return Boolean is
-  begin
-    return True;
-  end Is_Windows;
-
-end Os;
+end Os.User;

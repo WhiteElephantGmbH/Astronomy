@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2022 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2022 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -23,6 +23,7 @@ with Configuration;
 with Error;
 with File;
 with Language;
+with Os.System;
 with Picture;
 with Stellarium;
 with Strings;
@@ -74,7 +75,7 @@ package body Parameter is
 
   function Default_Astap_Executable return String is
   begin
-    return "C:\Program Files\astap\astap.exe";
+    return Os.System.Program_Files_Folder & "astap\astap.exe";
   end Default_Astap_Executable;
 
 
@@ -239,7 +240,7 @@ package body Parameter is
       Put ("");
       Put ("[" & Stellarium_Id & "]");
       Put (Port_Key & "             = 10001");
-      Put (Program_Key & "          = C:\Program Files\Stellarium\Stellarium.exe");
+      Put (Program_Key & "          = " & Os.System.Program_Files_Folder & "Stellarium\Stellarium.exe");
       Put (Search_Tolerance_Key & " = 6'");
       Ada.Text_IO.Close (The_File);
     exception

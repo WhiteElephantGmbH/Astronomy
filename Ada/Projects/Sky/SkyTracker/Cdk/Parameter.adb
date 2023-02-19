@@ -16,7 +16,6 @@
 pragma Style_White_Elephant;
 
 with Ada.Containers.Doubly_Linked_Lists;
-with Ada.Environment_Variables;
 with Ada.Text_IO;
 with Application;
 with Cdk_700;
@@ -27,6 +26,8 @@ with Error;
 with File;
 with Language;
 with Network.Tcp;
+with Os.System;
+with Os.User;
 with PWI.Settings;
 with Stellarium;
 with Strings;
@@ -296,17 +297,9 @@ package body Parameter is
 
   procedure Read is
 
-    function Value (Item : String) return String is
-    begin
-      return Ada.Environment_Variables.Value (Item);
-    exception
-    when others =>
-      Error.Raise_With ("Environment Variable " & Item & " not found");
-    end Value;
-
     Company_Name      : constant String := "PlaneWave Instruments";
-    PWI_Program_Files : constant String := Value ("ProgramFiles(x86)") & "\" & Company_Name;
-    PWI_Documents     : constant String := Value ("HomeDrive") & Value ("HomePath") & "\Documents\" & Company_Name;
+    PWI_Program_Files : constant String := Os.System.Program_Files_X86_Folder & Company_Name;
+    PWI_Documents     : constant String := Os.User.Documents_Folder & Company_Name;
     PWI_Mount_Folder  : constant String := PWI_Documents & "\PWI2\Mount\";
 
     procedure Create_Default_Parameters is
@@ -357,7 +350,7 @@ package body Parameter is
       Put ("");
       Put ("[" & Stellarium_Id & "]");
       Put (Port_Key & "             = 10001");
-      Put (Program_Key & "          = " & Value ("ProgramFiles") & "\Stellarium\Stellarium.exe");
+      Put (Program_Key & "          = " & Os.System.Program_Files_Folder & "Stellarium\Stellarium.exe");
       Put (Search_Tolerance_Key & " = 6'");
       Put (Magnitude_Key & "        = 8.0");
       Ada.Text_IO.Close (The_File);
