@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2002 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2002 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -19,7 +19,6 @@ with Ada.Strings.UTF_Encoding.Wide_Strings;
 with Ada.Unchecked_Conversion;
 with Ada.Unchecked_Deallocation;
 with Log;
-with Os.Application;
 with Semaphore;
 with Win32.Commctrl;
 with Win32.Commdlg;
@@ -30,6 +29,10 @@ with Win32.Winnt;
 with System.Address_To_Access_Conversions;
 
 package body Gui is
+
+  function Convert is new Ada.Unchecked_Conversion (Long_Long_Integer, Win32.LPCSTR);
+
+  Icon_Resource : constant Win32.LPCSTR := Convert (1);
 
   package Utf renames Ada.Strings.UTF_Encoding.Wide_Strings;
 
@@ -1567,19 +1570,22 @@ package body Gui is
                             The_Callback : Win32.Winuser.WNDPROC;
                             The_Icon     : Win32.Windef.HICON) is
     Unused     : Win32.Windef.ATOM;
-    Class_Spec : constant Win32.Winuser.ac_WNDCLASSA_t := new Win32.Winuser.WNDCLASSA;
+    Class_Spec : constant Win32.Winuser.ac_WNDCLASSEXA_t := new Win32.Winuser.WNDCLASSEXA;
+    use type Win32.UINT;
   begin
+    Class_Spec.cbSize := Win32.Winuser.WNDCLASSEXA'size / 8;
     Class_Spec.style := 0;
     Class_Spec.lpfnWndProc   := The_Callback;
     Class_Spec.cbClsExtra    := 0;
     Class_Spec.cbWndExtra    := 0;
     Class_Spec.hInstance     := Our_Instance;
     Class_Spec.hIcon         := The_Icon;
+    Class_Spec.hIconSm       := The_Icon;
     Class_Spec.hCursor       := Win32.Winuser.LoadCursor (System.Null_Address, Win32.LPCSTR(Win32.Winuser.IDC_ARROW));
     Class_Spec.hbrBackground := Convert(Win32.Winuser.COLOR_BACKGROUND);
     Class_Spec.lpszMenuName  := null;
     Class_Spec.lpszClassName := Win32.Addr(Class_Name);
-    Unused := Win32.Winuser.RegisterClassA (Class_Spec);
+    Unused := Win32.Winuser.RegisterClassExA (Class_Spec);
   end Register_Class;
 
 
@@ -1664,19 +1670,18 @@ package body Gui is
   task body Display is
     Unused   : Win32.BOOL;
     The_Icon : Win32.Windef.HICON;
-  use type Win32.Windef.HWND;
+    use type Win32.Windef.HWND;
   begin
     accept Create (Application_Name  : String;
                    Window_Width      : Win32.INT;
                    Window_Height     : Win32.INT;
                    Window_X_Position : Win32.INT;
                    Window_Y_Position : Win32.INT;
-                   Always_Topmost    : Boolean) do
+                   Always_Topmost    : Boolean)
+    do
       The_Application_Name := new Wide_String'(To_Wide(Application_Name) & Wide_Nul);
-      declare
-        Icon : aliased constant String := Os.Application.Name & Nul;
       begin
-        The_Icon := Win32.Winuser.LoadIcon(Our_Instance, Win32.Addr(Icon));
+        The_Icon := Win32.Winuser.LoadImageA (Our_Instance, Icon_Resource, 1, 0, 0, Win32.Winuser.LR_DEFAULT_SIZE);
         The_Application_Class_Name := new String'(Application_Name & Nul);
         Register_Class (The_Application_Class_Name.all, Mainwindowproc'access, The_Icon);
         if Is_Visible (X_Position => Win32.LONG(Window_X_Position),

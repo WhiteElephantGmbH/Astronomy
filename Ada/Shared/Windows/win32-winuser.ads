@@ -15,7 +15,7 @@
 --
 --  Copyright (C) 2000-2012, AdaCore
 --
---  Modified 2019 by White Elephant GmbH, Schaffhausen, Switzerland
+--  Modified 2023 by White Elephant GmbH, Schaffhausen, Switzerland
 -------------------------------------------------------------------------------
 
 with Ada.Unchecked_Conversion;
@@ -842,6 +842,7 @@ package Win32.Winuser is
    SC_HOTKEY                  : constant := 16#f150#;
    SC_ICON                    : constant := 16#f020#;
    SC_ZOOM                    : constant := 16#f030#;
+   LR_DEFAULT_SIZE            : constant := 16#40#;
    IDC_ARROW                  : constant LPSTR;
    IDC_IBEAM                  : constant LPSTR;
    IDC_WAIT                   : constant LPSTR;
@@ -1574,6 +1575,21 @@ package Win32.Winuser is
       lpszClassName : Win32.LPCSTR;
    end record;
 
+   type WNDCLASSEXA is record
+      cbSize        : Win32.UINT;
+      style         : Win32.UINT;
+      lpfnWndProc   : WNDPROC;
+      cbClsExtra    : Win32.INT;
+      cbWndExtra    : Win32.INT;
+      hInstance     : Win32.Windef.HINSTANCE;
+      hIcon         : Win32.Windef.HICON;
+      hCursor       : Win32.Windef.HCURSOR;
+      hbrBackground : Win32.Windef.HBRUSH;
+      lpszMenuName  : Win32.LPCSTR;
+      lpszClassName : Win32.LPCSTR;
+      hIconSm       : Win32.Windef.HICON;
+   end record;
+
    type WNDCLASSW is record
       style         : Win32.UINT;
       lpfnWndProc   : WNDPROC;
@@ -1894,6 +1910,7 @@ package Win32.Winuser is
 
    type ac_MSG_t is access all MSG;
    type ac_WNDCLASSA_t is access all WNDCLASSA;
+   type ac_WNDCLASSEXA_t is access all WNDCLASSEXA;
    type ac_WNDCLASSW_t is access all WNDCLASSW;
    type ac_WINDOWPLACEMENT_t is access all WINDOWPLACEMENT;
    type LPCDLGTEMPLATEA is access all DLGTEMPLATE;
@@ -2334,6 +2351,10 @@ package Win32.Winuser is
 
    function RegisterClassA
      (lpWndClass : ac_WNDCLASSA_t)
+      return Win32.Windef.ATOM;
+
+   function RegisterClassExA
+     (lpWndClass : ac_WNDCLASSEXA_t)
       return Win32.Windef.ATOM;
 
    function RegisterClass
@@ -4599,6 +4620,15 @@ package Win32.Winuser is
 
    function DestroyIcon (hIcon : Win32.Windef.HICON) return Win32.BOOL;
 
+   function LoadImageA
+     (hInstance  : Win32.Windef.HINSTANCE;
+      lpName     : Win32.LPCSTR;
+      nType      : Win32.UINT;
+      nCx        : Win32.INT;
+      nCy        : Win32.INT;
+      fuLoad     : Win32.UINT)
+      return Win32.Winnt.HANDLE;
+
    function LookupIconIdFromDirectory
      (presbits : Win32.PBYTE;
       fIcon    : Win32.BOOL)
@@ -4907,6 +4937,7 @@ private
    pragma Convention (C, DEBUGHOOKINFO);
    pragma Convention (C, MOUSEHOOKSTRUCT);
    pragma Convention (C, WNDCLASSA);
+   pragma Convention (C, WNDCLASSEXA);
    pragma Convention (C, WNDCLASSW);
    pragma Convention (C, MSG);
    pragma Convention (C, MINMAXINFO);
@@ -5068,6 +5099,7 @@ private
    pragma Import (Stdcall, GetDoubleClickTime, "GetDoubleClickTime");
    pragma Import (Stdcall, SetDoubleClickTime, "SetDoubleClickTime");
    pragma Import (Stdcall, RegisterClassA, "RegisterClassA");
+   pragma Import (Stdcall, RegisterClassExA, "RegisterClassExA");
    pragma Import (Stdcall, RegisterClassW, "RegisterClassW");
    pragma Import (Stdcall, UnregisterClassA, "UnregisterClassA");
    pragma Import (Stdcall, UnregisterClassW, "UnregisterClassW");
@@ -5448,6 +5480,7 @@ private
    pragma Import (Stdcall, LoadIconW, "LoadIconW");
    pragma Import (Stdcall, CreateIcon, "CreateIcon");
    pragma Import (Stdcall, DestroyIcon, "DestroyIcon");
+   pragma Import (Stdcall, LoadImageA, "LoadImageA");
    pragma Import
      (Stdcall,
       LookupIconIdFromDirectory,
