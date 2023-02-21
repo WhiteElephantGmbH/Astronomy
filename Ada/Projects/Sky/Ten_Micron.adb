@@ -30,6 +30,9 @@ package body Ten_Micron is
   The_Status : State := Disconnected;
   Last_State : State := Disconnected;
 
+  Has_New_Alignment : Boolean := False;
+  Is_Legacy         : Boolean := False;
+
 
   procedure Set_Status (Item : State) is
   begin
@@ -54,6 +57,7 @@ package body Ten_Micron is
 
   procedure Disconnect_Device (Message : String) with No_Return is
   begin
+    Has_New_Alignment := False;
     Network.Tcp.Close (The_Socket);
     Set_Status (Disconnected);
     Error.Raise_With (Message);
@@ -304,9 +308,11 @@ package body Ten_Micron is
           if Reply_For (Lx200.Get_Firmware_Number) /= Firmware_GM4000 then
             Error.Raise_With ("expected version GM4000HPS " & Firmware_GM4000);
           end if;
+          Is_Legacy := True;
         else
           Error.Raise_With ("Incorrect 10micron product name " & Product);
         end if;
+        Has_New_Alignment := True;
       end;
       Set_Ultra_Precision_Mode;
       Set_Device_Status;
@@ -523,6 +529,7 @@ package body Ten_Micron is
 
   procedure Start_Alignment is
   begin
+    Has_New_Alignment := False;
     Execute (Lx200.New_Alignment_Start, Expected => "V");
   exception
   when Error.Occurred =>
@@ -561,6 +568,7 @@ package body Ten_Micron is
 
   function End_Alignment return Boolean is
   begin
+    Has_New_Alignment := True;
     return Execute (Lx200.New_Alignment_End, Ok => "V", Failed => "E");
   exception
   when Error.Occurred =>
@@ -569,9 +577,23 @@ package body Ten_Micron is
   end End_Alignment;
 
 
+  function Has_New_Alignment_Info return Boolean is
+  begin
+    if Has_New_Alignment then
+      if Is_Legacy then
+        Execute (Lx200.New_Alignment_Start, Expected => "V");
+        Execute (Lx200.New_Alignment_End, Expected => "E");
+      end if;
+      return True;
+    end if;
+    return False;
+  end Has_New_Alignment_Info;
+
+
   function Alignment_Info return Alignment_Data is
     No_Information : constant Alignment_Data := (others => <>);
   begin
+    Has_New_Alignment := False;
     declare
       Reply : constant String := Reply_For (Lx200.Get_Alignment_Information);
       Data  : constant Strings.Item := Strings.Item_Of (Reply, Separator => ',');

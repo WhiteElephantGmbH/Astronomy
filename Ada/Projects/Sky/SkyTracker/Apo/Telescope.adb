@@ -216,6 +216,9 @@ package body Telescope is
         Ten_Micron.Startup (Parameter.Ten_Micron_Ip_Address, Parameter.Ten_Micron_Port);
       end if;
       The_Information := Ten_Micron.Get;
+      if User.In_Setup_Mode then
+        Alignment.Update_Info;
+      end if;
     end Get_Information;
 
 

@@ -219,6 +219,14 @@ package body Alignment is
   end Generate;
 
 
+  procedure Update_Info is
+  begin
+    if Ten_Micron.Has_New_Alignment_Info then
+      The_Alignment_Info := Ten_Micron.Alignment_Info;
+    end if;
+  end Update_Info;
+
+
   function Info return Information is
   begin
     return The_Alignment_Info;

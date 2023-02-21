@@ -95,6 +95,8 @@ package Ten_Micron is
 
   function End_Alignment return Boolean;
 
+  function Has_New_Alignment_Info return Boolean;
+
   function Alignment_Info return Alignment_Data;
 
   procedure Disconnect;

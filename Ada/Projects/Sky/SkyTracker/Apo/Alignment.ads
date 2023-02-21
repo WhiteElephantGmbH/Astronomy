@@ -37,6 +37,8 @@ package Alignment is
 
   subtype Information is Ten_Micron.Alignment_Data;
 
+  procedure Update_Info;
+
   function Info return Information;
 
 end Alignment;
