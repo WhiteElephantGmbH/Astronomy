@@ -17,7 +17,9 @@ pragma Style_White_Elephant;
 
 with Win32;
 
-package ShlObj is
+package Shlobj is
+
+  subtype UTF_8_String is String;
 
   type BYTES8 is array (1 .. 8) of Win32.BYTE with Pack;
 
@@ -59,6 +61,6 @@ package ShlObj is
         Data3 => 16#4bfc#,
         Data4 => [16#87#, 16#4a#, 16#c0#, 16#f2#, 16#e0#, 16#b9#, 16#fa#, 16#8e#]);
 
-  function Folder_Path_For (Id : access constant GUID) return String;
+  function Folder_Path_For (Id : access constant GUID) return UTF_8_String;
 
-end ShlObj;
+end Shlobj;

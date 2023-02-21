@@ -15,15 +15,14 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Ada.Characters.Handling;
+with Ada.Strings.UTF_Encoding.Wide_Strings;
 with System;
 with Win32.Winnt;
 with Win32.Winerror;
-with Log;
 
-package body ShlObj is
+package body Shlobj is
 
-  type Wide_String_Access is access Wide_String(1..255);
+  type Wide_String_Access is access Wide_String(1..4096); -- big egnough to hold any folder path name
 
   function SH_Get_Known_Folder_Path (Id      : access constant GUID;
                                      Dwflags : Win32.DWORD;
@@ -42,15 +41,14 @@ package body ShlObj is
   begin
     Result := SH_Get_Known_Folder_Path (Id, 0, System.Null_Address, Data);
     if Result /= Win32.Winerror.S_OK then
-      Log.Write ("Os.User.SH_Get_Known_Folder_Path - Result:" & Result'image);
       raise Constraint_Error;
     end if;
     for The_Index in Data'range loop
       if Data(The_Index) = Wide_Character'first then
-        return Ada.Characters.Handling.To_String (Data(Data'first .. The_Index - 1)) & '\';
+        return Ada.Strings.UTF_Encoding.Wide_Strings.Encode (Data(Data'first .. The_Index - 1)) & '\';
       end if;
     end loop;
     raise Program_Error;
   end Folder_Path_For;
 
-end ShlObj;
+end Shlobj;
