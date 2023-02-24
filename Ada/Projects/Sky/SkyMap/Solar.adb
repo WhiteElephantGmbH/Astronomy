@@ -17,7 +17,7 @@ pragma Style_White_Elephant;
 
 with Moon;
 with Objects;
-with Solar_System;
+with Strings;
 with Traces;
 
 package body Solar is
@@ -27,6 +27,10 @@ package body Solar is
   The_Sun_Direction  : Earth.Direction;
   The_Moon_Direction : Earth.Direction;
   The_Moon_Phase     : Phase := 0.0;
+
+  type Planet_Direction is array (Planet) of Earth.Direction;
+
+  The_Planet_Direction : Planet_Direction;
 
 
   function Image_Of (Direction : Earth.Direction) return String is
@@ -53,6 +57,18 @@ package body Solar is
   end Moon_Direction;
 
 
+  function Direction_For (Item : Planet) return Earth.Direction is
+  begin
+    return The_Planet_Direction(Item);
+  end Direction_For;
+
+
+  function Image_Of (Item : Planet) return String is
+  begin
+    return Strings.Legible_Of (Item'image);
+  end Image_Of;
+
+
   function Moon_Phase return Phase is
   begin
     return The_Moon_Phase;
@@ -75,6 +91,11 @@ package body Solar is
                         After     => After);
     The_Moon_Phase := Phase((Ut - Before) * 100 / (After - Before));
     Log.Write ("Moon Phase :" & The_Moon_Phase'image & '%');
+
+    for The_Planet in Planet'range loop
+      The_Planet_Direction(The_Planet) := Solar_System.Direction_Of (The_Planet, Ut);
+      Log.Write (Image_Of (The_Planet) & Image_Of (The_Planet_Direction(The_Planet)));
+    end loop;
   end Prepare;
 
 end Solar;

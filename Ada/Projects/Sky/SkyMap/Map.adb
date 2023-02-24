@@ -54,9 +54,11 @@ package body Map is
       A5 => (Width =>  420.0, Height =>  595.0),
       A6 => (Width =>  298.0, Height =>  420.0)];
 
-    Time_Image  : constant String := Time.Image_Of (Ut);
-    Header_Text : constant String := "Sternkarte";
-    Footer_Text : constant String := "Datum: " & Time_Image;
+    Time_Image : constant String := Time.Image_Of (Ut);
+    Title      : constant String := "Sternkarte";
+    Date_Time  : constant String := "Datum: " & Time_Image;
+
+    function Moon_Phase return String is ("Mond Phase:" & Solar.Moon_Phase'image & '%');
 
     Dimension    : constant Eps.Dimension := Dimensions(Format);
     Margin       : constant Eps.Value := Eps.Value(Natural(Dimension.Width / 24)) / 2;
@@ -69,13 +71,17 @@ package body Map is
 
     Format_Factor : constant Float := Float(Dimension.Width) / Float(Dimensions(A4).Width);
 
-    Header_Text_Size   : constant Eps.Text_Size := Eps.Text_Size (24.75 * Format_Factor);
-    Footer_Text_Size   : constant Eps.Text_Size := Eps.Text_Size (15.0 * Format_Factor);
-    Text_Offset        : constant Eps.Value := (Dimension.Height - Size) / 4;
-    Header_Offset      : constant Eps.Value := Dimension.Height - Text_Offset - Eps.Value(Header_Text_Size) / 2;
-    Footer_Offset      : constant Eps.Value := Text_Offset - Eps.Value(Footer_Text_Size) / 2;
-    Top_Center_Text    : constant Eps.Location := (X => X_Offset, Y => Header_Offset);
-    Bottom_Center_Text : constant Eps.Location := (X => X_Offset, Y => Footer_Offset);
+    Radius_Factor : constant Eps.Value := Eps.Value(Float(Dimension.Width) / Float(Dimensions(A4).Width)) / 2;
+
+    Header_Text_Size     : constant Eps.Text_Size := Eps.Text_Size (24.75 * Format_Factor);
+    Footer_Text_Size     : constant Eps.Text_Size := Eps.Text_Size (15.0 * Format_Factor);
+    Text_Offset          : constant Eps.Value := (Dimension.Height - Size) / 4;
+    Header_Offset        : constant Eps.Value := Dimension.Height - Text_Offset - Eps.Value(Header_Text_Size) / 2;
+    Footer_Offset_1      : constant Eps.Value := Text_Offset - Eps.Value(Footer_Text_Size) * 3 / 2;
+    Footer_Offset_2      : constant Eps.Value := Text_Offset + Eps.Value(Footer_Text_Size) / 2;
+    Top_Center_Text      : constant Eps.Location := (X => X_Offset, Y => Header_Offset);
+    Bottom_Center_Text_1 : constant Eps.Location := (X => X_Offset, Y => Footer_Offset_1);
+    Bottom_Center_Text_2 : constant Eps.Location := (X => X_Offset, Y => Footer_Offset_2);
 
     subtype Position is Value range -2.0 .. 2.0;
 
@@ -125,14 +131,14 @@ package body Map is
     procedure Draw_Border is
       Center : constant Eps.Location := (X => X_Of(0.0), Y => Y_Of (0.0));
     begin
-      Eps.Set_Color (Eps.Light_Green);
+      Eps.Set_Color (Parameter.Earth_Color);
       Eps.Add_Circle (To        => Center,
                       Radius    => Earth_Radius * 2,
                       Is_Filled => True);
       if Solar.Is_Day_Light then
-        Eps.Set_Color (Eps.Light_Blue);
+        Eps.Set_Color (Parameter.Day_Sky_Color);
       else
-        Eps.Set_Black;
+        Eps.Set_Color (Parameter.Night_Sky_Color);
       end if;
       Eps.Add_Circle (To        => Center,
                       Radius    => Earth_Radius,
@@ -140,13 +146,15 @@ package body Map is
 
       Eps.Set_Black;
       Eps.Define_Font ("Helvetica", Header_Text_Size);
-      Eps.Add_Text (Item   => Header_Text,
+      Eps.Add_Text (Item   => Title,
                     Center => Top_Center_Text);
 
       Eps.Set_Black;
       Eps.Define_Font ("Helvetica", Footer_Text_Size);
-      Eps.Add_Text (Item   => Footer_Text,
-                    Center => Bottom_Center_Text);
+      Eps.Add_Text (Item   => Moon_Phase,
+                    Center => Bottom_Center_Text_1);
+      Eps.Add_Text (Item   => Date_Time,
+                    Center => Bottom_Center_Text_2);
 
       Eps.Start_Circle (To     => Center,
                         Radius => Earth_Radius);
@@ -157,7 +165,7 @@ package body Map is
     procedure Draw_Constellations is
     begin
       Log.Write ("Draw Constellations");
-      Eps.Set_Color (Eps.Magenta);
+      Eps.Set_Color (Parameter.Line_Color);
       Eps.Set_Line (Width => Parameter.Line_Size * Eps.Value(Format_Factor));
       Eps.Set_Line (Eps.Solid);
       for The_Constellation of Constellation.Visible loop
@@ -172,7 +180,7 @@ package body Map is
     procedure Draw_Stars is
       use type Star.Magnitude;
     begin
-      Eps.Set_Color (Eps.Yellow);
+      Eps.Set_Color (Parameter.Star_Color);
       Eps.Set_Line (Eps.Solid);
       for The_Star of Star.Data_List loop
         if The_Star.Mag <= Parameter.Magnitude_Max or else Constellation.Is_Used (The_Star.Id) then
@@ -184,14 +192,31 @@ package body Map is
     end Draw_Stars;
 
 
+    procedure Draw_Planets is
+    begin
+      for The_Planet in Solar.Planet loop
+        declare
+          Direction : constant Earth.Direction := Solar.Direction_For (The_Planet);
+        begin
+          if not Earth.Is_Below_Horizon (Direction) then
+            Log.Write ("Draw " & Solar.Image_Of (The_Planet));
+            Eps.Set_Color (Parameter.Color_Of (The_Planet));
+            Eps.Add_Circle (To        => Position_Of (Direction),
+                            Radius    => Radius_Factor * Parameter.Size_Of (The_Planet),
+                            Is_Filled => True);
+          end if;
+        end;
+      end loop;
+    end Draw_Planets;
+
+
     procedure Draw_Sun is
-      Radius : constant Eps.Value := Size / 120.0;
     begin
       if Solar.Is_Day_Light then
         Log.Write ("Draw Sun");
-        Eps.Set_Color (Eps.Yellow);
+        Eps.Set_Color (Parameter.Sun_Color);
         Eps.Add_Circle (To        => Position_Of (Solar.Sun_Direction),
-                        Radius    => Radius,
+                        Radius    => Radius_Factor * Parameter.Sun_Size,
                         Is_Filled => True);
       end if;
     end Draw_Sun;
@@ -205,20 +230,20 @@ package body Map is
         declare
           Center : constant Eps.Location := Position_Of (Direction);
           Phase  : constant Solar.Phase := Solar.Moon_Phase;
-          B      : constant Eps.Value := Size / 60.0;
+          B      : constant Eps.Value := Radius_Factor * Parameter.Moon_Size * 2;
           A      : constant Eps.Value := abs (B * Eps.Value(Math.Cos (Angle.Degrees(Solar.Moon_Phase * 3.6), 360.0)));
           Radius : constant Eps.Value := B / 2.0;
           use type Solar.Phase;
         begin
           if Solar.Is_Day_Light then
-            Eps.Set_Color (Eps.Light_Blue);
+            Eps.Set_Color (Parameter.Day_Sky_Color);
           else
-            Eps.Set_Color (Eps.Dark);
+            Eps.Set_Color (Parameter.Dark_Moon_Color);
           end if;
           Eps.Add_Circle (To        => Center,
                           Radius    => Radius,
                           Is_Filled => True);
-          Eps.Set_Color (Eps.Silver);
+          Eps.Set_Color (Parameter.Bright_Moon_Color);
           if Phase = 0.0 or Phase = 100.0 then
             Log.Write ("new moon");
           elsif Phase < 25.0 then
@@ -295,6 +320,7 @@ package body Map is
       end if;
     end Draw_Moon;
 
+
   begin -- Draw
     Log.Write ("Draw at " & Time_Image);
     if Size > Eps.Value'last - Margin then
@@ -307,6 +333,7 @@ package body Map is
     Draw_Border;
     Draw_Constellations;
     Draw_Stars;
+    Draw_Planets;
     Draw_Sun;
     Draw_Moon;
     Eps.Close;

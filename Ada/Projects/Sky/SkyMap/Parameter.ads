@@ -16,13 +16,24 @@
 pragma Style_White_Elephant;
 
 with Eps;
+with Solar;
 with Star;
 
 package Parameter is
 
   procedure Read;
 
+  function Earth_Color return Eps.Color;
+
+  function Day_Sky_Color return Eps.Color;
+
+  function Night_Sky_Color return Eps.Color;
+
+  function Line_Color return Eps.Color;
+
   function Line_Size return Eps.Value;
+
+  function Star_Color return Eps.Color;
 
   function Star_Min return Eps.Value;
 
@@ -31,5 +42,19 @@ package Parameter is
   function Magnitude_Min return Star.Magnitude;
 
   function Magnitude_Max return Star.Magnitude;
+
+  function Sun_Color return Eps.Color;
+
+  function Sun_Size return Eps.Value;
+
+  function Bright_Moon_Color return Eps.Color;
+
+  function Dark_Moon_Color return Eps.Color;
+
+  function Moon_Size return Eps.Value;
+
+  function Color_Of (The_Planet : Solar.Planet) return Eps.Color;
+
+  function Size_Of (The_Planet : Solar.Planet) return Eps.Value;
 
 end Parameter;

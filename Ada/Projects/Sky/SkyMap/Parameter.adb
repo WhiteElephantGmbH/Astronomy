@@ -29,6 +29,21 @@ package body Parameter is
 
   Filename : constant String := Application.Composure (Application.Name, "ini");
 
+  Color_Key : constant String := "Color";
+  Size_Key  : constant String := "Size";
+
+  Sky_Id          : constant String := "Sky";
+  Day_Color_Key   : constant String := "Day Color";
+  Night_Color_Key : constant String := "Night Color";
+
+  Earth_Id : constant String := "Earth";
+
+  Moon_Id          : constant String := "Moon";
+  Dark_Color_Key   : constant String := "Dark_Color";
+  Bright_Color_Key : constant String := "Bright_Color";
+
+  Sun_Id : constant String := "Sun";
+
   Stars_Id          : constant String := "Stars";
   Min_Size_Key      : constant String := "Min Size";
   Max_Size_Key      : constant String := "Max Size";
@@ -36,18 +51,56 @@ package body Parameter is
   Max_Magnitude_Key : constant String := "Max Magnitude";
 
   Constellations_Id : constant String := "Constellations";
-  Line_Size_Key     : constant String := "Line Size";
+
+  Planets_Id : constant String := "Planets";
+
+  function Color_Key_Of (Item : Solar.Planet) return String is (Solar.Image_Of (Item) & " Color");
+  function Size_Key_Of (Item : Solar.Planet) return String is (Solar.Image_Of (Item) & " Size");
 
   The_Section : Configuration.Section_Handle;
 
+  -- Sky
+  The_Night_Sky_Color : Eps.Color;
+  The_Day_Sky_Color   : Eps.Color;
+
+  -- Earth
+  The_Earth_Color : Eps.Color;
+
+  -- Moon
+  The_Bright_Moon_Color : Eps.Color;
+  The_Dark_Moon_Color   : Eps.Color;
+  The_Moon_Size         : Eps.Value;
+
+  -- Sun
+  The_Sun_Color : Eps.Color;
+  The_Sun_Size  : Eps.Value;
+
   -- Stars
+  The_Star_Color     : Eps.Color;
   The_Stars_Min_Size : Eps.Value;
   The_Stars_Max_Size : Eps.Value;
   The_Min_Magnitude  : Star.Magnitude;
   The_Max_Magnitude  : Star.Magnitude;
 
   -- Constellations
-  The_Line_Size : Eps.Value;
+  The_Line_Color : Eps.Color;
+  The_Line_Size  : Eps.Value;
+
+  -- Planets
+
+  type Planet_Color is array (Solar.Planet) of Eps.Color;
+  type Planet_Size is array (Solar.Planet) of Eps.Value;
+
+  The_Planet_Color : Planet_Color;
+  The_Planet_Size  : Planet_Size;
+
+  function Adjusted (Item   : String;
+                     Within : String) return String is
+    Result : String := Within;
+  begin
+    Result(Result'first .. Result'first + Item'length - 1) := Item;
+    return Result;
+  end Adjusted;
 
 
   procedure Set (Section : Configuration.Section_Handle) is
@@ -95,9 +148,111 @@ package body Parameter is
   end Value_Of;
 
 
+  function Value_Of (Key : String) return Eps.Color is
+
+    Line  : constant String := String_Of (Key);
+    Parts : constant Strings.Item := Strings.Item_Of (Line, Separator => '|');
+
+    The_Color : Eps.Color := (others => 0.0);
+
+  begin
+    if Parts.Count = 0 then
+      Error.Raise_With ("No color parts in " & Key);
+    elsif Parts.Count > 4 then
+      Error.Raise_With ("Too many color parts in " & Key & ": <" & Line & ">");
+    end if;
+    for Part of Parts loop
+      declare
+        Items : constant Strings.Item := Strings.Item_Of (Part, Separator => ' ');
+
+        function Value return Eps.Color_Value is
+        begin
+          return Eps.Color_Value'value(Items(2));
+        exception
+        when others =>
+          Error.Raise_With ("Incorrect color value in " & Key & ": <" & Part & ">");
+        end Value;
+
+      begin
+        if Items.Count /= 2 or else Items(1)'length /= 1 then
+          Error.Raise_With ("Incorrect color part in " & Key & ": <" & Part & ">");
+        end if;
+        declare
+          Id : constant String := Items(1);
+        begin
+          case Id(Id'first) is
+          when 'C' => The_Color.C := Value;
+          when 'M' => The_Color.M := Value;
+          when 'Y' => The_Color.Y := Value;
+          when 'K' => The_Color.K := Value;
+          when others =>
+            Error.Raise_With ("Unknown color id '" & Id & "' in " & Key & ": <" & Part & ">");
+          end case;
+        end;
+      end;
+    end loop;
+    return The_Color;
+  end Value_Of;
+
+
+  function Color_Value_Of (The_Planet : Solar.Planet) return Eps.Color is
+  begin
+    return Value_Of (Color_Key_Of (The_Planet));
+  end Color_Value_Of;
+
+
+  function Size_Value_Of (The_Planet : Solar.Planet) return Eps.Value is
+  begin
+    return Value_Of (Size_Key_Of (The_Planet));
+  end Size_Value_Of;
+
+
+  function Image_Of (Item : Eps.Color) return String is
+  begin
+    return " C" & Item.C'image & " | M" & Item.M'image & " | Y" & Item.Y'image & " | K" & Item.K'image;
+  end Image_Of;
+
+
   procedure Read is
 
     procedure Create_Default_Parameters is
+
+      function Color_Image_Of (The_Planet : Solar.Planet) return String is
+
+        use all type Solar.Planet;
+
+        Default_Planet_Color : constant Planet_Color := [
+          Mercury => (C => 0.44, M => 0.44, Y => 0.52, K => 0.08),
+          Venus   => (C => 0.00, M => 0.00, Y => 0.10, K => 0.00),
+          Mars    => (C => 0.00, M => 0.78, Y => 0.75, K => 0.00),
+          Jupiter => (C => 0.00, M => 0.38, Y => 0.89, K => 0.00),
+          Saturn  => (C => 0.17, M => 0.17, Y => 0.76, K => 0.00),
+          Uranus  => (C => 0.65, M => 0.12, Y => 0.23, K => 0.00),
+          Neptune => (C => 0.79, M => 0.65, Y => 0.00, K => 0.00),
+          Pluto   => (C => 0.40, M => 0.61, Y => 0.47, K => 0.11)];
+
+      begin
+        return Image_Of (Default_Planet_Color (The_Planet));
+      end Color_Image_Of;
+
+
+      function Size_Image_Of (The_Planet : Solar.Planet) return String is
+
+        use all type Solar.Planet;
+
+        Default_Planet_Size : constant Planet_Size := [
+          Mercury => 2.0,
+          Venus   => 6.0,
+          Mars    => 5.0,
+          Jupiter => 7.0,
+          Saturn  => 6.0,
+          Uranus  => 3.0,
+          Neptune => 2.0,
+          Pluto   => 1.0];
+
+      begin
+        return Default_Planet_Size (The_Planet)'image;
+      end Size_Image_Of;
 
       The_File : Ada.Text_IO.File_Type;
 
@@ -113,14 +268,40 @@ package body Parameter is
       when others =>
         Error.Raise_With ("Can't create " & Filename);
       end;
-      Put (Strings.Bom_8 & "[" & Stars_Id & "]");
-      Put (Min_Size_Key & "      = 1.0");
-      Put (Max_Size_Key & "      = 5.0");
+      Put (Strings.Bom_8 & "[" & Sky_Id & "]");
+      Put (Day_Color_Key & "   = C 0.80 | M 0.40 | Y 0.00 | K 0.00");
+      Put (Night_Color_Key & " = C 0.00 | M 0.00 | Y 0.00 | K 1.00");
+      Put ("");
+      Put ("[" & Earth_Id & "]");
+      Put (Color_Key & " = C 0.42 | M 0.00 | Y 0.82 | K 0.00");
+      Put ("");
+      Put ("[" & Moon_Id & "]");
+      Put (Bright_Color_Key & " = C 0.00 | M 0.00 | Y 0.10 | K 0.10");
+      Put (Dark_Color_Key & "   = C 0.00 | M 0.00 | Y 0.00 | K 0.90");
+      Put (Size_Key & "         = 12.0");
+      Put ("");
+      Put ("[" & Sun_Id & "]");
+      Put (Color_Key & " = C 0.00 | M 0.00 | Y 1.00 | K 0.00");
+      Put (Size_Key & "  = 12.0");
+      Put ("");
+      Put ("[" & Stars_Id & "]");
+      Put (Color_Key & "         = C 0.00 | M 0.00 | Y 1.00 | K 0.00");
+      Put (Min_Size_Key & "      = 0.5");
+      Put (Max_Size_Key & "      = 3.5");
       Put (Min_Magnitude_Key & " =-1.0");
-      Put (Max_Magnitude_Key & " = 6.0");
+      Put (Max_Magnitude_Key & " = 7.0");
+      Put ("");
+      Put ("[" & Planets_Id & "]");
+      for The_Planet in Solar.Planet'range loop
+        Put (Adjusted (Color_Key_Of (The_Planet), "              = ") & Color_Image_Of (The_Planet));
+      end loop;
+      for The_Planet in Solar.Planet'range loop
+        Put (Adjusted (Size_Key_Of (The_Planet), "              = ") & Size_Image_Of (The_Planet));
+      end loop;
       Put ("");
       Put ("[" & Constellations_Id & "]");
-      Put (Line_Size_Key & " = 1.0");
+      Put (Color_Key & " = C 0.00 | M 1.00 | Y 0.00 | K 0.00");
+      Put (Size_Key & "  = 0.5");
       Ada.Text_IO.Close (The_File);
     exception
     when Error.Occurred =>
@@ -135,12 +316,46 @@ package body Parameter is
     procedure Read_Values is
 
       Handle         : constant Configuration.File_Handle    := Configuration.Handle_For (Filename);
+      Sky            : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Sky_Id);
+      Earth          : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Earth_Id);
+      Moon           : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Moon_Id);
+      Sun            : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Sun_Id);
       Stars          : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Stars_Id);
+      Planets        : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Planets_Id);
       Constellations : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Constellations_Id);
 
     begin -- Read_Values
+      Set (Sky);
+      Log.Write ("Sky");
+      The_Day_Sky_Color := Value_Of (Day_Color_Key);
+      Log.Write ("  Day Color   :" & Image_Of (The_Day_Sky_Color));
+      The_Night_Sky_Color := Value_Of (Night_Color_Key);
+      Log.Write ("  Night Color :" & Image_Of (The_Night_Sky_Color));
+
+      Set (Earth);
+      Log.Write ("Earth");
+      The_Earth_Color := Value_Of (Color_Key);
+      Log.Write ("  Color :" & Image_Of (The_Earth_Color));
+
+      Set (Moon);
+      Log.Write ("Moon");
+      The_Bright_Moon_Color := Value_Of (Bright_Color_Key);
+      Log.Write ("  Bright Color :" & Image_Of (The_Dark_Moon_Color));
+      The_Dark_Moon_Color := Value_Of (Dark_Color_Key);
+      Log.Write ("  Dark Color   :" & Image_Of (The_Dark_Moon_Color));
+      The_Moon_Size := Value_Of (Size_Key);
+      Log.Write ("  Size         :" & The_Moon_Size'image);
+
+      Set (Sun);
+      Log.Write ("Sun");
+      The_Sun_Color := Value_Of (Color_Key);
+      Log.Write ("  Color :" & Image_Of (The_Sun_Color));
+      The_Sun_Size := Value_Of (Size_Key);
+      Log.Write ("  Size  :" & The_Sun_Size'image);
+
       Set (Stars);
       Log.Write ("Stars");
+      The_Star_Color := Value_Of (Color_Key);
       The_Stars_Min_Size := Value_Of (Min_Size_Key);
       Log.Write ("  Min Size      :" & The_Stars_Min_Size'image);
       The_Stars_Max_Size := Value_Of (Max_Size_Key);
@@ -150,10 +365,20 @@ package body Parameter is
       The_Max_Magnitude := Value_Of (Max_Magnitude_Key);
       Log.Write ("  Max Magnitude :" & The_Max_Magnitude'image);
 
+      Set (Planets);
+      for The_Planet in Solar.Planet'range loop
+        The_Planet_Color(The_Planet) := Color_Value_Of (The_Planet);
+      end loop;
+      for The_Planet in Solar.Planet'range loop
+        The_Planet_Size(The_Planet) := Size_Value_Of (The_Planet);
+      end loop;
+
       Set (Constellations);
       Log.Write ("Constellation");
-      The_Line_Size := Value_Of (Line_Size_Key);
-      Log.Write ("  Line Size :" & The_Line_Size'image);
+      The_Line_Color := Value_Of (Color_Key);
+      Log.Write ("  Line Color :" & Image_Of (The_Line_Color));
+      The_Line_Size := Value_Of (Size_Key);
+      Log.Write ("  Line Size  :" & The_Line_Size'image);
     end Read_Values;
 
    begin -- Read
@@ -164,8 +389,17 @@ package body Parameter is
     Read_Values;
   end Read;
 
+  function Earth_Color return Eps.Color is (The_Earth_Color);
+
+  function Day_Sky_Color return Eps.Color is (The_Day_Sky_Color);
+
+  function Night_Sky_Color return Eps.Color is (The_Night_Sky_Color);
+
+  function Line_Color return Eps.Color is (The_Line_Color);
 
   function Line_Size return Eps.Value is (The_Line_Size);
+
+  function Star_Color return Eps.Color is (The_Star_Color);
 
   function Star_Min return Eps.Value is (The_Stars_Min_Size);
 
@@ -174,5 +408,19 @@ package body Parameter is
   function Magnitude_Min return Star.Magnitude is (The_Min_Magnitude);
 
   function Magnitude_Max return Star.Magnitude is (The_Max_Magnitude);
+
+  function Sun_Color return Eps.Color is (The_Sun_Color);
+
+  function Sun_Size return Eps.Value is (The_Sun_Size);
+
+  function Bright_Moon_Color return Eps.Color is (The_Bright_Moon_Color);
+
+  function Dark_Moon_Color return Eps.Color is (The_Dark_Moon_Color);
+
+  function Moon_Size return Eps.Value is (The_Moon_Size);
+
+  function Color_Of (The_Planet : Solar.Planet) return Eps.Color is (The_Planet_Color (The_Planet));
+
+  function Size_Of (The_Planet : Solar.Planet) return Eps.Value is (The_Planet_Size (The_Planet));
 
 end Parameter;

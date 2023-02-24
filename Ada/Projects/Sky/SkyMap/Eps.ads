@@ -13,7 +13,8 @@ package Eps is
   function "-" (Left, Right : Angle) return Angle;
 
 
-  type Value is delta 0.00001 range -10000.0 .. +10000.0;
+  Delta_Value : constant := 0.00001;
+  type Value is delta Delta_Value range -10000.0 .. +10000.0 with Small => Delta_Value;
 
   type Location is record -- default: lower left corner
     X : Value := 0.0;
@@ -25,7 +26,8 @@ package Eps is
     Width  : Value;
   end record;
 
-  type Color_Value is delta 0.01 range 0.00 .. 1.001; -- .001 aonix bug ?
+  Delta_Color : constant := 0.01;
+  type Color_Value is delta Delta_Color range 0.0 .. 1.0 with Small => Delta_Color;
 
   type Color is record -- default lower left corner
     C : Color_Value;

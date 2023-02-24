@@ -16,9 +16,14 @@
 pragma Style_White_Elephant;
 
 with Earth;
+with Solar_System;
 with Time;
 
 package Solar is
+
+  use all type Solar_System.Body_Name;
+  
+  subtype Planet is Solar_System.Body_Name range Mercury .. Pluto;
 
   type Phase is delta 0.01 range 0.0 .. 100.0;
 
@@ -27,6 +32,10 @@ package Solar is
   function Is_Day_Light return Boolean;
 
   function Moon_Direction return Earth.Direction;
+
+  function Direction_For (Item : Planet) return Earth.Direction;
+  
+  function Image_Of (Item : Planet) return String;
 
   function Moon_Phase return Phase;
 

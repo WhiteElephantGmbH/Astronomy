@@ -67,9 +67,10 @@ package Time is
 
   Delta_Time : constant := 10.0**(-8);
 
-  type Ut is delta Delta_Time range -(2**63 * Delta_Time) .. +((2**63 - 1) * Delta_Time);
-  for Ut'size use 64;
-  for Ut'small use Delta_Time;
+  type Ut is delta Delta_Time range -(2**63 * Delta_Time) .. +((2**63 - 1) * Delta_Time)
+  with
+    Small => Delta_Time,
+    Size  => 64;
 
   function "+" (Left  : Ut;
                 Right : Duration) return Ut;
