@@ -1,0 +1,242 @@
+REORGANIZED LIST OF OBJECTS TYPES (generated online on Feb 26, 2023 at 11:40:12 AM in Strasbourg)
+
+    [] : New objects type that will be created
+    {} : Unmaintained objects type
+
+JOKERS :
+
+    *** = *,Ma*,bC*,sg*,s*r,s*y,s*b,WR*,N*,Psr,Y*O,Or*,TT*,Ae*,out,HH,MS*,Be*,BS*,SX*,gD*,dS*,Ev*,RG*,HS*,HB*,RR*,WV*,Ce*,cC*,C*,S*,AB*,Mi*,OH*,pA*,RV*,PN,WD*,Pe*,a2*,RC*,**,El*,EB*,SB*,BY*,RS*,Sy*,XB*,LXB,HXB,CV*,No*,SN*,LM*,BD*,V*,Ir*,Er*,Ro*,Pu*,LP*,Em*,PM*,HV*
+
+    AIM = ISM,SFR,HII,Cld,GNe,RNe,MoC,DNe,glb,CGb,HVC,cor,bub,SNR,sh,flt
+
+    ASG = IG,PaG,GrG,CGG,ClG,SCG,vid
+
+    ASS = Cl*,GlC,OpC,As*,St*,MGr
+
+    AVS = V*,bC*,Or*,SX*,gD*,dS*,RR*,WV*,Ce*,cC*,LP*,Mi*,RV*,a2*,RC*,El*,EB*,BY*,RS*,CV*,No*,Ir*,Er*,Ro*,Pu*
+
+    GGG = G,LSB,bCG,SBG,H2G,EmG,AGN,SyG,Sy1,Sy2,rG,LIN,QSO,Bla,BLL,GiP,GiG,GiC,BiC
+
+=====================================================================================================================================================================================================
+ OBJECT        CANDI  DESCRIPTION                                       COMMENTS                                                HIERARCHY                                                            
+ TYPE          DATE                                                                                                             For selection criteria on maintypes/otypes                           
+ CODE          CODE                                                                                                             For Simbad display in Aladin                                         
+=====================================================================================================================================================================================================
+
+---------------------1. TAXONOMY OF STARS------------------------------------------------------------------------------------------------------------------------------------------------------------
+ *                    Star                                                                                                      ***                                                                  
+.....................Massive Stars and their Remnants................................................................................................................................................
+   Ma*         Ma?    Massive Star                                      Initial mass > 8-10 Mo                                  Ma*,bC*,sg*,s*r,s*y,s*b,WR*,N*,Psr                                   
+     bC*       bC?    beta Cep Variable                                                                                         bC*                                                                  
+     sg*       sg?    Evolved Supergiant                                Luminosity type 0,Ia,Iab,(I). Includes A-type SG        sg*,s*r,s*y,s*b,WR*                                                  
+       s*r     s?r    Red Supergiant                                    SpT like K/M 0,Ia,Iab,(I)                               s*r                                                                  
+       s*y     s?y    Yellow Supergiant                                 SpT like F/G 0,Ia,Iab,(I)                               s*y                                                                  
+       s*b     s?b    Blue Supergiant                                   SpT like O/B 0,Ia,Iab,(I)                               s*b,WR*                                                              
+         WR*   WR?    Wolf-Rayet                                        SpT like W                                              WR*                                                                  
+         ..2          LBV=Luminous Blue Variable                        Maintype = s*b and SpT like LBV                                                                                              
+     N*        N*?    Neutron Star                                                                                              N*,Psr                                                               
+       Psr            Pulsar                                                                                                    Psr                                                                  
+.....................Young Stellar Objects (Pre-Main Sequence Stars).................................................................................................................................
+   ..1                {pr*} Pre-Main Sequence Star                      = Y*O                                                                                                                        
+   Y*O         Y*?    Young Stellar Object                              Pre-Main Sequence                                       Y*O,Or*,TT*,Ae*,out,HH                                               
+     Or*              Orion Variable                                                                                            Or*                                                                  
+       ..3            {FU*} FU Ori Variable                             See Or*                                                                                                                      
+     TT*       TT?    T Tauri Star                                      Includes classical and weak-line T Tauri                TT*                                                                  
+     Ae*       Ae?    Herbig Ae/Be Star                                                                                         Ae*                                                                  
+     out       of?    Outflow                                                                                                   out,HH                                                               
+       HH             Herbig-Haro Object                                                                                        HH                                                                   
+.....................Main Sequence Stars.............................................................................................................................................................
+   MS*         MS?    Main Sequence Star                                Main Sequence                                           MS*,Be*,BS*,SX*,gD*,dS*                                              
+     Be*       Be?    Be Star                                                                                                   Be*                                                                  
+     BS*       BS?    Blue Straggler                                                                                            BS*,SX*                                                              
+       SX*            SX Phe Variable                                   See Pu* for candidate                                   SX*                                                                  
+     gD*              gamma Dor Variable                                See Pu* for candidate                                   gD*                                                                  
+     dS*              delta Sct Variable                                See Pu* for candidate                                   dS*                                                                  
+.....................Evolved Stars...................................................................................................................................................................
+   Ev*         Ev?    Evolved Star                                      Post-Main Sequence                                      Ev*,RG*,HS*,HB*,RR*,WV*,Ce*,cC*,C*,S*,LP*,AB*,Mi*,OH*,pA*,RV*,PN,WD* 
+     RG*       RB?    Red Giant Branch star                                                                                     RG*                                                                  
+     HS*       HS?    Hot Subdwarf                                      SpT like sdB, sdO                                       HS*                                                                  
+     HB*       HB?    Horizontal Branch Star                                                                                    HB*,RR*                                                              
+       RR*     RR?    RR Lyrae Variable                                                                                         RR*                                                                  
+       ..4            Red Clump Star                                    See HB*                                                                                                                      
+     WV*       WV?    Type II Cepheid Variable                          Includes W Wir and BL Her subtypes                      WV*                                                                  
+     Ce*       Ce?    Cepheid Variable                                  Includes anomalous Cepheids                             Ce*,cC*                                                              
+       cC*            Classical Cepheid Variable                        delta Cep type                                          cC*                                                                  
+     C*        C*?    Carbon Star                                       Mostly AGB or RGB. SpT like C,N,R C-N,C-R, or C-rich    C*                                                                   
+     S*        S*?    S Star                                            Mostly AGB or RGB. SpT like S,SC,MS                     S*                                                                   
+     LP*       LP?    Long-Period Variable                              AB*, RG*, or s*r. Includes L, SR, and OSARG             LP*,Mi*                                                              
+       ..5            {sr*} Semi-Regular Variable                       Check LP* and V* measurements                                                                                                
+     AB*       AB?    Asymptotic Giant Branch Star                                                                              AB*,Mi*                                                              
+       Mi*     Mi?    Mira Variable                                                                                             Mi*                                                                  
+       ..6            O-rich AGB Star                                   Maintype = AB* and SpT like M or O-rich                                                                                      
+     OH*       OH?    OH/IR Star                                        O-rich AGB or PAGB, doubled-peaked OH maser profile     OH*                                                                  
+     pA*       pA?    Post-AGB Star                                                                                             pA*                                                                  
+     RV*       RV?    RV Tauri Variable                                                                                         RV*                                                                  
+     PN        PN?    Planetary Nebula                                  Includes the progenitor Star when knwon                 PN                                                                   
+     WD*       WD?    White Dwarf                                       SpT like D and PG1159                                   WD*                                                                  
+       ..7            {ZZ*} Pulsating White Dwarf                       Maintype = WD*, secondary type = Pu*                                                                                         
+       ..8            ELMWD=Extremely Low Mass White Dwarf              In binaries; SpT like ELMD                                                                                                   
+.....................Chemically Peculiar Stars.......................................................................................................................................................
+   Pe*         Pe?    Chemically Peculiar Star                          Includes metal-poor stars                               Pe*,a2*,RC*                                                          
+     a2*       a2?    alpha2 CVn Variable                               Ap stars; magnetic                                      a2*                                                                  
+     RC*       RC?    R CrB Variable                                                                                            RC*                                                                  
+     ..9              CH Star                                           Check the SpT                                                                                                                
+     ..10             Barium Star                                       Check the SpT                                                                                                                
+     ..11             Dwarf Carbon Star                                 Maintype = Pe* and SpT like dC                                                                                               
+     ..12             Carbon-Enhanced Metal Poor Star                   Maintype = Pe* and SpT like CEMP                                                                                             
+.....................Interacting Binaries and close Common Proper Motion Systems.....................................................................................................................
+   **          **?    Double or Multiple Star                           Interacting binaries and close CPM systems              **,El*,EB*,SB*,BY*,RS*,Sy*,XB*,LXB,HXB,CV*,No*                       
+     El*       El?    Ellipsoidal Variable                                                                                      El*                                                                  
+     EB*       EB?    Eclipsing Binary                                                                                          EB*                                                                  
+       ..13           {Al*} Eclipsing Binary of Algol type              Check biblio or V* measurements                                                                                              
+       ..14           {bL*}Eclipsing Binary of beta Lyr type            Check biblio or V* measurements                                                                                              
+       ..15           {WU*} Eclipsing Binary of W UMa type              Check biblio or V* measurements                                                                                              
+     SB*       SB?    Spectroscopic Binary                                                                                      SB*                                                                  
+     BY*       BY?    BY Dra Variable                                                                                           BY*                                                                  
+     RS*       RS?    RS CVn Variable                                                                                           RS*                                                                  
+     Sy*       Sy?    Symbiotic Star                                                                                            Sy*                                                                  
+     XB*       XB?    X-ray Binary                                                                                              XB*,LXB,HXB                                                          
+       LXB     LX?    Low Mass X-ray Binary                                                                                     LXB                                                                  
+       HXB     HX?    High Mass X-ray Binary                                                                                    HXB                                                                  
+     CV*       CV?    Cataclysmic Binary                                                                                        CV*,No*                                                              
+       No*     No?    Classical Nova                                                                                            No*                                                                  
+         ..16         {NL*} Nova-like Binary                            Check biblio or V* measurements                                                                                              
+         ..17         {DN*} Dwarf Nova                                  Check biblio or V* measurements                                                                                              
+         ..18         {DQ*} CV of DQ Her type  Intermediate polar.      Check biblio or V* measurements                                                                                              
+         ..19         {AM*} CV of AM CVn type                           Check biblio or V* measurements                                                                                              
+.....................SuperNovae......................................................................................................................................................................
+   SN*         SN?    SuperNova                                                                                                 SN*                                                                  
+.....................Low mass Stars and substellar Objects...........................................................................................................................................
+   LM*         LM?    Low-mass Star                                     M ~< 1 Mo                                               LM*,BD*                                                              
+     BD*       BD?    Brown Dwarf                                       SpT L,T or Y                                            BD*                                                                  
+   Pl          Pl?    Extra-solar Planet                                                                                        Pl                                                                   
+.....................Properties . variability. spectral. kinematic or environment....................................................................................................................
+   V*          V*?    Variable Star                                                                                             AVS                                                                  
+     Ir*              Irregular Variable                                                                                        Ir*                                                                  
+       ..20           Irregular Variable with rapid variations          Check biblio or V* measurements                                                                                              
+     Er*       Er?    Eruptive Variable                                                                                         RC*,RS*,CV*,No*,Er*                                                  
+       ..21           {Fl*} Flare Star                                  See Er*                                                                                                                      
+     Ro*       Ro?    Rotating Variable                                                                                         a2*,El*,BY*,Ro*                                                      
+     Pu*       Pu?    Pulsating Variable                                Non LPV Pulsating Star                                  bC*,SX*,gD*,dS*,RR*,WV*,Ce*,cC*,Pu*                                  
+     ..22             Star showing Eclipses by its Planet               See EB* and V* measurements                                                                                                  
+.....................Spectral properties.............................................................................................................................................................
+   Em*                Emission-line Star                                Can be sg*, YSO, Be*, AB*, Sy*, etc...                  Em*                                                                  
+.....................Kinematic and Environment Properties............................................................................................................................................
+   PM*                High Proper Motion Star                           Total proper motion >= 50 mas/yr                        PM*                                                                  
+   HV*                High Velocity Star                                                                                        HV*                                                                  
+   ..23               {*iC} Star towards a Cluster                      Check hierarchical links                                                                                                     
+   ..24               {*iA} Star towards an Association                 Check hierarchical links                                                                                                     
+   ..25               {*iN} Star towards a Nebula                       Check hierarchical links                                                                                                     
+   ..26               {*i*} Star in double system                       Check hierarchical links                                                                                                     
+
+
+---------------------2. SETS OF STARS----------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Cl*           Cl?    Cluster of Stars                                                                                          Cl*,GlC,OpC                                                          
+   GlC         Gl?    Globular Cluster                                                                                          GlC                                                                  
+   OpC                Open Cluster                                                                                              OpC                                                                  
+ As*           As?    Association of Stars                                                                                      As*,St*,MGr                                                          
+   St*                Stellar Stream                                                                                            St*                                                                  
+   MGr                Moving Group                                                                                              MGr                                                                  
+
+
+---------------------3. INTERSTELLAR MEDIUM----------------------------------------------------------------------------------------------------------------------------------------------------------
+ ISM                  Interstellar Medium Object                                                                                AIM                                                                  
+   SFR                Star Forming Region                                                                                       SFR                                                                  
+   HII                HII Region                                                                                                HII                                                                  
+   Cld                Cloud                                                                                                     Cld,GNe,RNe,MoC,DNe,glb,CGb,HVC                                      
+     GNe              Nebula                                                                                                    GNe,RNe                                                              
+       RNe            Reflection Nebula                                                                                         RNe                                                                  
+     MoC              Molecular Cloud                                                                                           MoC                                                                  
+     DNe              Dark Cloud (nebula)                                                                                       DNe                                                                  
+     glb              Globule (low-mass dark cloud)                                                                             glb                                                                  
+     CGb              Cometary Globule / Pillar                                                                                 CGb                                                                  
+     HVC              High-velocity Cloud                               Vlsr > ~90 km/s                                         HVC                                                                  
+   cor                Dense Core                                        N(H) > ~1D23 at/cm2, or detection of NH3,HCN,CS,HCO,..  cor                                                                  
+   bub                Bubble                                                                                                    bub                                                                  
+   SNR         SR?    SuperNova Remnant                                                                                         SNR                                                                  
+   sh                 Interstellar Shell                                                                                        sh                                                                   
+   flt                Interstellar Filament                                                                                     flt                                                                  
+
+
+---------------------4. TAXONOMY OF GALAXIES---------------------------------------------------------------------------------------------------------------------------------------------------------
+ G             G?     Galaxy                                                                                                    GGG                                                                  
+   LSB                Low Surface Brightness Galaxy                                                                             LSB                                                                  
+   bCG                Blue Compact Galaxy                                                                                       bCG                                                                  
+   SBG                Starburst Galaxy                                                                                          SBG                                                                  
+   H2G                HII Galaxy                                                                                                H2G                                                                  
+   EmG                Emission-line galaxy                                                                                      EmG                                                                  
+   AGN         AG?    Active Galaxy Nucleus                                                                                     AGN,SyG,Sy1,Sy2,rG,LIN,QSO,Bla,BLL                                   
+     SyG              Seyfert Galaxy                                                                                            SyG,Sy1,Sy2                                                          
+       Sy1            Seyfert 1 Galaxy                                                                                          Sy1                                                                  
+       Sy2            Seyfert 2 Galaxy                                                                                          Sy2                                                                  
+     rG               Radio Galaxy                                                                                              rG                                                                   
+     LIN              LINER-type Active Galaxy Nucleus                                                                          LIN                                                                  
+     QSO       Q?     Quasar                                                                                                    QSO,Bla,BLL                                                          
+       Bla     Bz?    Blazar                                                                                                    Bla,BLL                                                              
+         BLL   BL?    BL Lac                                                                                                    BLL                                                                  
+   ..28               {HzG} Galaxy with high redshift                   Redundant with the redshift value                                                                                            
+   ..29               {ERO} ERO/VRO, Extremely/Very Red Object          Check biblio or SED                                                                                                          
+   ..30               ULIRG, Ultra Luninous Infrared Galaxy             Check biblio or SED                                                                                                          
+   ..31               {LyA, DLA, mAL, LLS, BAL} Absorption Line System  Check biblio or SED                                                                                                          
+.....................Environment properties..........................................................................................................................................................
+   GiP                Galaxy in Pair of Galaxies                                                                                GiP                                                                  
+   GiG                Galaxy towards a Group of Galaxies                Check hierarchical links                                GiG                                                                  
+   GiC                Galaxy towards a Cluster of Galaxies              Check hierarchical links                                GiC,BiC                                                              
+     BiC              Brightest Galaxy in a Cluster (BCG)                                                                       BiC                                                                  
+
+
+---------------------5. SETS OF GALAXIES-------------------------------------------------------------------------------------------------------------------------------------------------------------
+ IG                   Interacting Galaxies                                                                                      IG                                                                   
+ PaG                  Pair of Galaxies                                                                                          PaG                                                                  
+ GrG           Gr?    Group of Galaxies                                                                                         GrG,CGG                                                              
+   CGG                Compact Group of Galaxies                                                                                 CGG                                                                  
+ ClG           C?G    Cluster of Galaxies                                                                                       ClG                                                                  
+ PCG           PCG?   Proto Cluster of Galaxies                                                                                 PCG                                                                  
+ SCG           SC?    Supercluster of Galaxies                                                                                  SCG                                                                  
+ vid                  Underdense Region of the Universe                                                                         vid                                                                  
+
+
+---------------------6. GRAVITATION------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ grv                  Gravitational Source                                                                                      grv,Lev,gLS,gLe,LeI,LeG,LeQ,BH,GWE                                   
+   Lev                (Micro)Lensing Event                                                                                      Lev                                                                  
+   gLS         LS?    Gravitational Lens System (lens+images)                                                                   gLS,gLe,LeI,LeG,LeQ                                                  
+     gLe       Le?    Gravitational Lens                                                                                        gLe                                                                  
+     LeI       LI?    Gravitationally Lensed Image                                                                              LeI,LeG,LeQ                                                          
+       LeG            Gravitationally Lensed Image of a Galaxy                                                                  LeG                                                                  
+       LeQ            Gravitationally Lensed Image of a Quasar                                                                  LeQ                                                                  
+   BH          BH?    Black Hole                                                                                                BH                                                                   
+   GWE                Gravitational Wave Event                                                                                  GWE                                                                  
+
+
+---------------------7. GENERAL SPECTRAL PROPERTIES--------------------------------------------------------------------------------------------------------------------------------------------------
+ ev                   Transient Event                                                                                           ev                                                                   
+ Rad                  Radio Source                                                                                              Rad,mR,cm,mm,smm,HI,rB,Mas                                           
+   mR                 Metric Radio Source                                                                                       mR                                                                   
+   cm                 Centimetric Radio Source                                                                                  cm                                                                   
+   mm                 Millimetric Radio Source                                                                                  mm                                                                   
+   smm                Sub-Millimetric Source                                                                                    smm                                                                  
+   HI                 HI (21cm) Source                                                                                          HI                                                                   
+   rB                 Radio Burst                                                                                               rB                                                                   
+   Mas                Maser                                                                                                     Mas                                                                  
+ IR                   Infra-Red Source                                                                                          IR,FIR,MIR,NIR                                                       
+   FIR                Far-IR source (λ >= 30 µm)                        e.g. IRAS 60/100, AKARI-FIS, Hershel                    FIR                                                                  
+   MIR                Mid-IR Source (3 to 30 µm)                        e.g. IRAS 12/25, AKARI-IRC, WISE, Spitzer-IRAC-MIPS     MIR                                                                  
+   NIR                Near-IR Source (λ < 3 µm)                         JHK, 2MASS, UKIDSS, ...                                 NIR                                                                  
+   ..32               {red} Very Red Source                                                                                                                                                          
+ Opt                  Optical Source                                    Corresponding to BVRI range                             Opt,EmO,blu                                                          
+   EmO                Emission Object                                   Mostly YSO, Em*, PNe, WR*, Sy*, Galaxies, AGN, QSO      EmO                                                                  
+   blu                Blue Object                                       Mostly WD*, HS*, blue HB*, QSO                          blu                                                                  
+ UV                   UV-emission Source                                                                                        UV                                                                   
+ X                    X-ray Source                                                                                              X,ULX                                                                
+   ULX         UX?    Ultra-luminous X-ray Source                                                                               ULX                                                                  
+ gam                  Gamma-ray Source                                                                                          gam,gB                                                               
+   gB                 Gamma-ray Burst                                                                                           gB                                                                   
+
+
+---------------------8. BLENDS, ERRORS, NOT WELL DEFINED OBJECTS-------------------------------------------------------------------------------------------------------------------------------------
+ mul                  Composite Object, Blend                                                                                   mul                                                                  
+ err                  Not an Object (Error, Artefact, ...)                                                                      err                                                                  
+ PoC                  Part of Cloud                                                                                             PoC                                                                  
+ PoG                  Part of a Galaxy                                                                                          PoG                                                                  
+ ?                    Object of Unknown Nature                                                                                  ?                                                                    
+ reg                  Region defined in the Sky                                                                                 reg                                                                  
