@@ -17,14 +17,14 @@ pragma Style_White_Elephant;
 
 with Ada.Containers.Doubly_Linked_Lists;
 with Ada.Text_IO;
-with Object;
+with Database;
 with Strings;
 
 package body Generator.Stars is
 
   subtype Otype_Id is String (1..3);
 
-  function Otype_Of (Item : Otype_Id) return Object.Kind is
+  function Otype_Of (Item : Otype_Id) return Database.Star_Type is
   -- * Star
   --    Ma*         Ma?    Massive Star
   --     bC*       bC?    beta Cep Variable
@@ -129,7 +129,7 @@ package body Generator.Stars is
   --   ..25               {*in} Star towards a Nebula
   --   ..26               {*i*} Star in double system
 
-    use all type Object.Kind;
+    use all type Database.Star_Type;
 
   begin -- Otype_Of
     if Item in "a2*" | "a2?" then
@@ -254,7 +254,7 @@ package body Generator.Stars is
   end Otype_Of;
 
 
-  function Stype_Of (Item : String) return Object.Spec_Type is
+  function Stype_Of (Item : String) return Database.Star_Spec_Type is
 
   -- O, B, A, F, G, K, M plus sub-type (0, 1, etc), and sometimes intermediate sub-type (for example F7.2, F7.5, F7.7):
   --   for the spectral types of `normal stars';
@@ -275,13 +275,13 @@ package body Generator.Stars is
     Image : constant String := Strings.Trimmed (Item) & "               "; -- no index errors
     Index : Natural := Image'first;
 
-    The_Spec_Type        : Object.Spec_Kind;
-    The_Sub_Type         : Object.Sub_Type;
-    The_Luminosity_Class : Object.Luminosity_Class;
+    The_Class            : Database.Star_Class;
+    The_Subclass         : Database.Star_Subclass;
+    The_Luminosity_Class : Database.Star_Luminosity_Class;
 
-    use all type Object.Spec_Kind;
-    use all type Object.Sub_Type;
-    use all type Object.Luminosity_Class;
+    use all type Database.Star_Class;
+    use all type Database.Star_Subclass;
+    use all type Database.Star_Luminosity_Class;
 
   begin -- Stype_Of
     while not (Image(Index) in 'O' | 'B' | 'A' | 'F' | 'G' | 'K' | 'M' | 'R' | 'S' | 'N' | 'C' | 'D' | 'W' | ' ') loop
@@ -289,38 +289,38 @@ package body Generator.Stars is
     end loop;
     case Image(Index) is
     when 'O' =>
-      The_Spec_Type := O;
+      The_Class := O;
     when 'B' =>
-      The_Spec_Type := B;
+      The_Class := B;
     when 'A' =>
-      The_Spec_Type := A;
+      The_Class := A;
     when 'F' =>
-      The_Spec_Type := F;
+      The_Class := F;
     when 'G' =>
-      The_Spec_Type := G;
+      The_Class := G;
     when 'K' =>
-      The_Spec_Type := K;
+      The_Class := K;
     when 'M' =>
-      The_Spec_Type := M;
+      The_Class := M;
     when 'R' =>
-      The_Spec_Type := R;
+      The_Class := R;
     when 'S' =>
-      The_Spec_Type := S;
+      The_Class := S;
     when 'N' =>
-      The_Spec_Type := N;
+      The_Class := N;
     when 'C' =>
-      The_Spec_Type := C;
+      The_Class := C;
     when 'D' =>
       Index := @ + 1;
       case Image(Index) is
       when 'A' =>
-        The_Spec_Type := DA;
+        The_Class := DA;
       when 'B' =>
-        The_Spec_Type := DB;
+        The_Class := DB;
       when 'F' =>
-        The_Spec_Type := DF;
+        The_Class := DF;
       when 'G' =>
-        The_Spec_Type := DG;
+        The_Class := DG;
       when others =>
         Error ("Unknown White Dwarf type: " & Image(Index - 1.. Index));
       end case;
@@ -328,11 +328,11 @@ package body Generator.Stars is
       Index := @ + 1;
       case Image(Index) is
       when 'R' =>
-        The_Spec_Type := WR;
+        The_Class := WR;
       when 'N' =>
-        The_Spec_Type := WN;
+        The_Class := WN;
       when 'C' =>
-        The_Spec_Type := WC;
+        The_Class := WC;
       when others =>
         Error ("Unknown Wolf-Rayet type: " & Image(Index - 1 .. Index));
       end case;
@@ -341,10 +341,10 @@ package body Generator.Stars is
     end case;
     Index := @ + 1;
     if Image(Index) in '1' .. '9' then
-      The_Sub_Type := Object.Sub_Type'val(Character'pos(Image(Index)) - Character'pos('0'));
+      The_Subclass := Database.Star_Subclass'val(Character'pos(Image(Index)) - Character'pos('0'));
       Index := @ + 1;
     else
-      The_Sub_Type := None;
+      The_Subclass := S0;
     end if;
     while not (Image(Index) in 'I' | 'V' | ' ') loop
       Index := @ + 1;
@@ -386,27 +386,48 @@ package body Generator.Stars is
     when 'V' =>
       The_Luminosity_Class := V;
     when others =>
-      The_Luminosity_Class := None;
+      The_Luminosity_Class := NO;
     end case;
-    return (Kind     => The_Spec_Type,
-            Sub_Kind => The_Sub_Type,
-            Class    => The_Luminosity_Class);
+    return (Class      => The_Class,
+            Subclass   => The_Subclass,
+            Luminosity => The_Luminosity_Class);
   end Stype_Of;
 
 
-  use type Object.Star_Information;
+  type Id is new Natural;
 
-  package Star_Data is new Ada.Containers.Doubly_Linked_Lists (Object.Star_Information);
+  Unknown_Id : constant := Database.Unknown_Id;
 
-  use type Object.Magnitude;
+  Undefined : constant Character := '~';
 
-  function "<" (Left, Right : Object.Star_Information) return Boolean is (Left.Vmag < Right.Vmag);
+  type Information is record
+    Name   : Strings.Element;
+    Hip_Id : Id := Unknown_Id;
+    Hr_Id  : Id := Unknown_Id;
+    Hd_Id  : Id := Unknown_Id;
+    Data   : Database.Star_Information;
+  end record;
+
+  function "=" (Left, Right : Information) return Boolean is
+    ((Left.Hip_Id = Right.Hip_Id) and (Left.Hd_Id = Right.Hd_Id) and (Left.Hr_Id = Right.Hr_Id));
+
+
+  package Star_Data is new Ada.Containers.Doubly_Linked_Lists (Information);
+
+  use type Database.Magnitude;
+
+  function "<" (Left, Right : Information) return Boolean is (Left.Data.Vmag < Right.Data.Vmag);
 
   package Data is new Star_Data.Generic_Sorting ("<" => "<");
 
 
   The_Stars : Star_Data.List;
 
+  HD_Last  : Id := Id'first;
+  HIP_Last : Id := Id'first;
+  HR_Last  : Id := Id'first;
+
+  Name_Count : Natural := 0;
 
   procedure Read is
 
@@ -415,7 +436,7 @@ package body Generator.Stars is
 
     procedure Add_Next_Object is
 
-      The_Object : Object.Star_Information;
+      The_Star : Information;
 
       procedure Evaluate_Next_Id (Part : String) is
 
@@ -427,10 +448,9 @@ package body Generator.Stars is
         Image : constant String := Strings.Trimmed (Part);
         Items : constant Strings.Item := Strings.Item_Of (Image, Separator => ' ');
 
-        procedure Add_Id (Id      : in out Object.Id;
+        procedure Add_Id (The_Id  : in out Id;
                           Item_Id : String) is
-          use type Object.Id;
-          New_Id : Object.Id;
+          New_Id : Id;
         begin
          if Items.Count /= 2 then
             Error ("Incorrect " & Item_Id & "Id");
@@ -439,16 +459,16 @@ package body Generator.Stars is
             Number_Image : constant String := Items(2);
           begin
             if Number_Image(Number_Image'last) in '0' .. '9' then
-              New_Id := Object.Id'value(Number_Image);
+              New_Id := Id'value(Number_Image);
             else
-              New_Id := Object.Id'value(Number_Image(Number_Image'first .. Number_Image'last - 1));
+              New_Id := Id'value(Number_Image(Number_Image'first .. Number_Image'last - 1));
             end if;
           exception
           when others =>
             Error ("Invalid Id: " & Number_Image);
           end;
-          if Id = Object.Unknown_Id then
-            Id := New_Id;
+          if The_Id = Unknown_Id then
+            The_Id := New_Id;
           end if;
         end Add_Id;
 
@@ -465,20 +485,40 @@ package body Generator.Stars is
             Item : constant String := Items(1);
           begin
             if Item = Name_Id then
-              if The_Object.Name /= "" then
+              if The_Star.Name /= "" then
                 Error ("Multiple " & Name_Id & " definitions");
               end if;
-              The_Object.Name := [Strings.Trimmed (Image(Image'first + Name_Id'length .. Image'last))];
+              The_Star.Name := [Strings.Trimmed (Image(Image'first + Name_Id'length .. Image'last))];
             elsif Item = HD_Id then
-              Add_Id (The_Object.Hd_Id, HD_Id);
+              Add_Id (The_Star.Hd_Id, HD_Id);
             elsif Item = HIP_ID then
-              Add_Id (The_Object.Hip_Id, HIP_ID);
+              Add_Id (The_Star.Hip_Id, HIP_ID);
             elsif Item = HR_ID then
-              Add_Id (The_Object.Hr_Id, HR_ID);
+              Add_Id (The_Star.Hr_Id, HR_ID);
             end if;
           end;
         end case;
       end Evaluate_Next_Id;
+
+
+      procedure Process_Ids is
+        HD  : Id renames The_Star.Hd_Id;
+        HIP : Id renames The_Star.Hip_Id;
+        HR  : Id renames The_Star.Hr_Id;
+      begin
+        if HD /= Unknown_Id and then HD > HD_Last then
+          HD_Last := HD;
+        end if;
+        if HIP /= Unknown_Id and then HIP > HIP_Last then
+          HIP_Last := HIP;
+        end if;
+        if HR /= Unknown_Id and then HR > HR_Last then
+          HR_Last := HR;
+        end if;
+        if not Strings.Is_Null (The_Star.Name) then
+          Name_Count := @ + 1;
+        end if;
+      end Process_Ids;
 
 
       procedure Evaluate_Coordinate (Part : String) is
@@ -489,8 +529,8 @@ package body Generator.Stars is
         if Items.Count /= 2 then
           raise Error_Occured;
         end if;
-        The_Object.Ra_J2000 := Object.Degrees_Ra'value(Items(1));
-        The_Object.Dec_J2000 := Object.Degrees_Dec'value(Items(2));
+        The_Star.Data.Ra_J2000 := Database.Degrees_Ra'value(Items(1));
+        The_Star.Data.Dec_J2000 := Database.Degrees_Dec'value(Items(2));
       exception
       when others =>
         Error ("Incorrect coordinate <" & Strings.Trimmed (Part) & ">");
@@ -501,13 +541,13 @@ package body Generator.Stars is
 
         Items : constant Strings.Item := Strings.Item_Of (Part, Separator => ' ');
 
-        function Motion_Of (Item : String) return Object.Motion is
+        function Motion_Of (Item : String) return Database.Motion is
           Image : constant String := Strings.Trimmed (Item);
         begin
-          if Image = [Object.Undefined] then
+          if Image = [Undefined] then
             return 0.0;
           end if;
-          return Object.Motion'value(Image);
+          return Database.Motion'value(Image);
         exception
         when others =>
           Error ("Incorrect Proper Motion: " & Image);
@@ -517,18 +557,18 @@ package body Generator.Stars is
         if Items.Count /= 2 then
           Error ("Incorrect number of Proper Motion definitions");
         end if;
-        The_Object.Ra_Pm := Motion_Of (Items(1));
-        The_Object.Dec_Pm := Motion_Of (Items(2));
+        The_Star.Data.Ra_Pm := Motion_Of (Items(1));
+        The_Star.Data.Dec_Pm := Motion_Of (Items(2));
       end Evaluate_Motion;
 
 
       procedure Evaluate_Parallax (Part : String) is
         Image : constant String := Strings.Trimmed (Part);
       begin
-        if Image = [Object.Undefined] then
-          The_Object.Plx := Object.Undefined_Parallax;
+        if Image = [Undefined] then
+          The_Star.Data.Plx := Database.Undefined_Parallax;
         else
-          The_Object.Plx := Object.Parallax'value(Image);
+          The_Star.Data.Plx := Database.Parallax'value(Image);
         end if;
       exception
       when others =>
@@ -537,21 +577,21 @@ package body Generator.Stars is
 
 
       function Magnitude_Of (Item      : String;
-                             Is_Visual : Boolean := False) return Object.Magnitude is
+                             Is_Visual : Boolean := False) return Database.Magnitude is
 
         Image : constant String := Strings.Trimmed (Item);
 
       begin
-        if Image = [Object.Undefined] then
+        if Image = [Undefined] then
           if Is_Visual then
             Error ("Undefined Magnitude");
           end if;
-          return Object.Undefined_Magnitude;
+          return Database.Undefined_Magnitude;
         end if;
         if Is_Visual then
-          return Object.Visual_Magnitude'(Object.Magnitude'value(Image));
+          return Database.Visual_Magnitude'(Database.Magnitude'value(Image));
         else
-          return Object.Magnitude'value(Image);
+          return Database.Magnitude'value(Image);
         end if;
       exception
       when Error_Occured =>
@@ -578,17 +618,18 @@ package body Generator.Stars is
         Evaluate_Next_Id (Part (Id_2));
         Evaluate_Next_Id (Part (Id_3));
         Evaluate_Next_Id (Part (Id_4));
-        The_Object.Otype := Otype_Of (Part (Otype));
+        Process_Ids;
+        The_Star.Data.Otype := Otype_Of (Part (Otype));
         Evaluate_Coordinate (Part (Coord_J2000));
         Evaluate_Motion (Part (Pm));
         Evaluate_Parallax (Part (Plx));
-        The_Object.Umag := Magnitude_Of (Part (Mag_U));
-        The_Object.Bmag := Magnitude_Of (Part (Mag_B));
-        The_Object.Vmag := Magnitude_Of (Part (Mag_V), Is_Visual => True);
-        The_Object.Rmag := Magnitude_Of (Part (Mag_R));
-        The_Object.Imag := Magnitude_Of (Part (Mag_I));
-        The_Object.Stype := Stype_Of (Part (Stype));
-        The_Stars.Append (The_Object);
+        The_Star.Data.Umag := Magnitude_Of (Part (Mag_U));
+        The_Star.Data.Bmag := Magnitude_Of (Part (Mag_B));
+        The_Star.Data.Vmag := Magnitude_Of (Part (Mag_V), Is_Visual => True);
+        The_Star.Data.Rmag := Magnitude_Of (Part (Mag_R));
+        The_Star.Data.Imag := Magnitude_Of (Part (Mag_I));
+        The_Star.Data.Stype := Stype_Of (Part (Stype));
+        The_Stars.Append (The_Star);
       end if;
     end Add_Next_Object;
 
@@ -606,6 +647,10 @@ package body Generator.Stars is
     Ada.Text_IO.Close (File);
     Data.Sort (The_Stars);
     Put_Line ("Done - Star count:" & The_Stars.Length'image);
+    Put_Line ("     - Name count:" & Name_Count'image);
+    Put_Line ("     - Last HD   :" & HD_Last'image);
+    Put_Line ("     - Last HIP  :" & HIP_Last'image);
+    Put_Line ("     - Last HR   :" & HR_Last'image);
   exception
   when others =>
     Ada.Text_IO.Close (File);
