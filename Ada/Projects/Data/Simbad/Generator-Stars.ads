@@ -19,4 +19,6 @@ package Generator.Stars is
 
   procedure Read;
 
+  procedure Generate_Database;
+
 end Generator.Stars;

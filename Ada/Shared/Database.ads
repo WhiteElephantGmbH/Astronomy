@@ -18,11 +18,12 @@ pragma Style_White_Elephant;
 package Database is
 
   Unknown_Id : constant := 0;
-  First_Id   : constant := Unknown_Id + 1;
 
-  type Name_List is array (Positive range <>) of access constant String;
+  NI : constant := Unknown_Id; -- no information
 
-  function "+" (Item : String) return access constant String is (new String'(Item));
+  type Name is access constant String;
+
+  function "+" (Item : String) return Name is (new String'(Item));
 
 
   type Star_Type is (Alpha2_Cvn_Variable_Star,
@@ -84,64 +85,64 @@ package Database is
                      Yellow_Supergiant_Star,
                      Young_Stellar_Object_Star);
 
-  OT01 : constant Star_Type := Alpha2_Cvn_Variable_Star;
-  OT02 : constant Star_Type := Asymptotic_Giant_Branch_Star;
-  OT03 : constant Star_Type := Be_Star;
-  OT04 : constant Star_Type := Beta_Cep_Variable_Star;
-  OT05 : constant Star_Type := Blue_Straggler;
-  OT06 : constant Star_Type := Blue_Supergiant_Star;
-  OT07 : constant Star_Type := BY_Dra_Variable_Star;
-  OT08 : constant Star_Type := Carbon_Star;
-  OT09 : constant Star_Type := Cataclysmic_Binary_Star;
-  OT10 : constant Star_Type := Cepheid_Variable_Star;
-  OT12 : constant Star_Type := Chemically_Peculiar_Star;
-  OT13 : constant Star_Type := Classical_Cepheid_Variable_Star;
-  OT14 : constant Star_Type := Classical_Nova_Star;
-  OT15 : constant Star_Type := Delta_Sct_Variable_Star;
-  OT16 : constant Star_Type := Double_Or_Multiple_Star;
-  OT17 : constant Star_Type := Eclipsing_Binary_Star;
-  OT18 : constant Star_Type := Ellipsoidal_Variable_Star;
-  OT19 : constant Star_Type := Emission_Line_Star;
-  OT20 : constant Star_Type := Eruptive_Variable_Star;
-  OT21 : constant Star_Type := Evolved_Supergiant_Star;
-  OT22 : constant Star_Type := Gamma_Dor_Variable_Star;
-  OT23 : constant Star_Type := Herbig_Ae_Be_Star;
-  OT24 : constant Star_Type := High_Mass_X_Ray_Binary_Star;
-  OT25 : constant Star_Type := High_Proper_Motion_Star;
-  OT26 : constant Star_Type := High_Velocity_Star;
-  OT27 : constant Star_Type := Horizontal_Branch_Star;
-  OT28 : constant Star_Type := Hot_Subdwarf_Star;
-  OT29 : constant Star_Type := Irregular_Variable_Star;
-  OT30 : constant Star_Type := Long_Period_Variable_Star;
-  OT31 : constant Star_Type := Low_Mass_Star;
-  OT32 : constant Star_Type := Low_Mass_X_Ray_Binary_Star;
-  OT33 : constant Star_Type := Main_Sequence_Star;
-  OT34 : constant Star_Type := Mira_Variable_Star;
-  OT35 : constant Star_Type := OH_IR_Star;
-  OT36 : constant Star_Type := Orion_Variable_Star;
-  OT37 : constant Star_Type := Planetary_Nebula_Star;
-  OT38 : constant Star_Type := Post_AGB_Star;
-  OT39 : constant Star_Type := Pulsating_Variable_Star;
-  OT40 : constant Star_Type := R_Crb_Variable_Star;
-  OT41 : constant Star_Type := Red_Giant_Branch_Star;
-  OT42 : constant Star_Type := Red_Supergiant_Star;
-  OT43 : constant Star_Type := Rotating_Variable_Star;
-  OT44 : constant Star_Type := RR_Lyrae_Variable_Star;
-  OT45 : constant Star_Type := RS_Cvn_Variable_Star;
-  OT46 : constant Star_Type := RV_Tauri_Variable_Star;
-  OT47 : constant Star_Type := S_Star;
-  OT48 : constant Star_Type := Spectroscopic_Binary_Star;
-  OT49 : constant Star_Type := Star;
-  OT50 : constant Star_Type := SX_Phe_Variable;
-  OT51 : constant Star_Type := Symbiotic_Star;
-  OT52 : constant Star_Type := T_Tauri_Star;
-  OT53 : constant Star_Type := Type_II_Cepheid_Variable_Star;
-  OT54 : constant Star_Type := Variable_Star;
-  OT55 : constant Star_Type := White_Dwarf_Star;
-  OT56 : constant Star_Type := Wolf_Rayet_Star;
-  OT57 : constant Star_Type := X_Ray_Binary_Star;
-  OT58 : constant Star_Type := Yellow_Supergiant_Star;
-  OT59 : constant Star_Type := Young_Stellar_Object_Star;
+  OT00 : constant Star_Type := Alpha2_Cvn_Variable_Star;
+  OT01 : constant Star_Type := Asymptotic_Giant_Branch_Star;
+  OT02 : constant Star_Type := Be_Star;
+  OT03 : constant Star_Type := Beta_Cep_Variable_Star;
+  OT04 : constant Star_Type := Blue_Straggler;
+  OT05 : constant Star_Type := Blue_Supergiant_Star;
+  OT06 : constant Star_Type := BY_Dra_Variable_Star;
+  OT07 : constant Star_Type := Carbon_Star;
+  OT08 : constant Star_Type := Cataclysmic_Binary_Star;
+  OT09 : constant Star_Type := Cepheid_Variable_Star;
+  OT10 : constant Star_Type := Chemically_Peculiar_Star;
+  OT11 : constant Star_Type := Classical_Cepheid_Variable_Star;
+  OT12 : constant Star_Type := Classical_Nova_Star;
+  OT13 : constant Star_Type := Delta_Sct_Variable_Star;
+  OT14 : constant Star_Type := Double_Or_Multiple_Star;
+  OT15 : constant Star_Type := Eclipsing_Binary_Star;
+  OT16 : constant Star_Type := Ellipsoidal_Variable_Star;
+  OT17 : constant Star_Type := Emission_Line_Star;
+  OT18 : constant Star_Type := Eruptive_Variable_Star;
+  OT19 : constant Star_Type := Evolved_Supergiant_Star;
+  OT20 : constant Star_Type := Gamma_Dor_Variable_Star;
+  OT21 : constant Star_Type := Herbig_Ae_Be_Star;
+  OT22 : constant Star_Type := High_Mass_X_Ray_Binary_Star;
+  OT23 : constant Star_Type := High_Proper_Motion_Star;
+  OT24 : constant Star_Type := High_Velocity_Star;
+  OT25 : constant Star_Type := Horizontal_Branch_Star;
+  OT26 : constant Star_Type := Hot_Subdwarf_Star;
+  OT27 : constant Star_Type := Irregular_Variable_Star;
+  OT28 : constant Star_Type := Long_Period_Variable_Star;
+  OT29 : constant Star_Type := Low_Mass_Star;
+  OT30 : constant Star_Type := Low_Mass_X_Ray_Binary_Star;
+  OT31 : constant Star_Type := Main_Sequence_Star;
+  OT32 : constant Star_Type := Mira_Variable_Star;
+  OT33 : constant Star_Type := OH_IR_Star;
+  OT34 : constant Star_Type := Orion_Variable_Star;
+  OT35 : constant Star_Type := Planetary_Nebula_Star;
+  OT36 : constant Star_Type := Post_AGB_Star;
+  OT37 : constant Star_Type := Pulsating_Variable_Star;
+  OT38 : constant Star_Type := R_Crb_Variable_Star;
+  OT39 : constant Star_Type := Red_Giant_Branch_Star;
+  OT40 : constant Star_Type := Red_Supergiant_Star;
+  OT41 : constant Star_Type := Rotating_Variable_Star;
+  OT42 : constant Star_Type := RR_Lyrae_Variable_Star;
+  OT43 : constant Star_Type := RS_Cvn_Variable_Star;
+  OT44 : constant Star_Type := RV_Tauri_Variable_Star;
+  OT45 : constant Star_Type := S_Star;
+  OT46 : constant Star_Type := Spectroscopic_Binary_Star;
+  OT47 : constant Star_Type := Star;
+  OT48 : constant Star_Type := SX_Phe_Variable;
+  OT49 : constant Star_Type := Symbiotic_Star;
+  OT50 : constant Star_Type := T_Tauri_Star;
+  OT51 : constant Star_Type := Type_II_Cepheid_Variable_Star;
+  OT52 : constant Star_Type := Variable_Star;
+  OT53 : constant Star_Type := White_Dwarf_Star;
+  OT54 : constant Star_Type := Wolf_Rayet_Star;
+  OT55 : constant Star_Type := X_Ray_Binary_Star;
+  OT56 : constant Star_Type := Yellow_Supergiant_Star;
+  OT57 : constant Star_Type := Young_Stellar_Object_Star;
 
   Delta_Degrees   : constant := 0.0000000000001;
   Delta_Motion    : constant := 0.001;
@@ -159,6 +160,9 @@ package Database is
 
   Undefined_Parallax  : constant := Parallax'first;
   Undefined_Magnitude : constant := Magnitude'last;
+
+  No_Plx : constant := Undefined_Parallax;
+  No_Mag : constant := Undefined_Magnitude;
 
   type Star_Class is (O, B, A, F, G, K, M, R, S, N, C, DB, DA, DF, DG, WR, WN, WC);
 
@@ -185,6 +189,6 @@ package Database is
     Rmag       : Database.Magnitude;
     Imag       : Database.Magnitude;
     Stype      : Database.Star_Spec_Type;
-  end record;
+  end record with Pack;
 
 end Database;

@@ -23,6 +23,7 @@ package body Generator is
   procedure Execute is
   begin
     Stars.Read;
+    Stars.Generate_Database;
   exception
   when Error_Occured =>
     null;

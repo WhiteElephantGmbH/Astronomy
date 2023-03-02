@@ -28,6 +28,7 @@ private
   procedure Put_Line (Text : String) renames IO.Put_Line;
 
   Simbad_Folder : constant String := "H:\Source\Astronomy\Simbad\";
+  Data_Folder   : constant String := "H:\Source\Astronomy\Ada\SkyData\";
 
   The_Line_Number : Natural;
 

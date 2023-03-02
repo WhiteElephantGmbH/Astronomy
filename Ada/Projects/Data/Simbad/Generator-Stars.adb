@@ -397,15 +397,16 @@ package body Generator.Stars is
   type Id is new Natural;
 
   Unknown_Id : constant := Database.Unknown_Id;
+  First_Id   : constant Id := Unknown_Id + 1;
 
   Undefined : constant Character := '~';
 
   type Information is record
-    Name   : Strings.Element;
-    Hip_Id : Id := Unknown_Id;
-    Hr_Id  : Id := Unknown_Id;
-    Hd_Id  : Id := Unknown_Id;
-    Data   : Database.Star_Information;
+    Name_Id : Id := Unknown_Id;
+    Hd_Id   : Id := Unknown_Id;
+    Hip_Id  : Id := Unknown_Id;
+    Hr_Id   : Id := Unknown_Id;
+    Data    : Database.Star_Information;
   end record;
 
   function "=" (Left, Right : Information) return Boolean is
@@ -420,14 +421,15 @@ package body Generator.Stars is
 
   package Data is new Star_Data.Generic_Sorting ("<" => "<");
 
+  Source_Text : Strings.Element;
 
   The_Stars : Star_Data.List;
+  The_Names : Strings.List;
 
   HD_Last  : Id := Id'first;
   HIP_Last : Id := Id'first;
   HR_Last  : Id := Id'first;
 
-  Name_Count : Natural := 0;
 
   procedure Read is
 
@@ -440,7 +442,7 @@ package body Generator.Stars is
 
       procedure Evaluate_Next_Id (Part : String) is
 
-        Name_Id : constant String := "NAME";
+        NAME_Id : constant String := "NAME";
         HD_Id   : constant String := "HD";
         HIP_ID  : constant String := "HIP";
         HR_ID   : constant String := "HR";
@@ -472,8 +474,6 @@ package body Generator.Stars is
           end if;
         end Add_Id;
 
-        use type Strings.Element;
-
       begin -- Evaluate_Next_Id
         case Items.Count is
         when 0 =>
@@ -484,11 +484,12 @@ package body Generator.Stars is
           declare
             Item : constant String := Items(1);
           begin
-            if Item = Name_Id then
-              if The_Star.Name /= "" then
-                Error ("Multiple " & Name_Id & " definitions");
+            if Item = NAME_Id then
+              if The_Star.Name_Id /= Unknown_Id then
+                Error ("Multiple " & NAME_Id & " definitions");
               end if;
-              The_Star.Name := [Strings.Trimmed (Image(Image'first + Name_Id'length .. Image'last))];
+              The_Names.Append (Strings.Trimmed (Image(Image'first + NAME_Id'length .. Image'last)));
+              The_Star.Name_Id := Id(The_Names.Count);
             elsif Item = HD_Id then
               Add_Id (The_Star.Hd_Id, HD_Id);
             elsif Item = HIP_ID then
@@ -499,6 +500,15 @@ package body Generator.Stars is
           end;
         end case;
       end Evaluate_Next_Id;
+
+
+      function Has_Id return Boolean is
+        HD  : Id renames The_Star.Hd_Id;
+        HIP : Id renames The_Star.Hip_Id;
+        HR  : Id renames The_Star.Hr_Id;
+      begin
+        return HD /= Unknown_Id or HIP /= Unknown_Id or HR /= Unknown_Id;
+      end Has_Id;
 
 
       procedure Process_Ids is
@@ -514,9 +524,6 @@ package body Generator.Stars is
         end if;
         if HR /= Unknown_Id and then HR > HR_Last then
           HR_Last := HR;
-        end if;
-        if not Strings.Is_Null (The_Star.Name) then
-          Name_Count := @ + 1;
         end if;
       end Process_Ids;
 
@@ -610,7 +617,14 @@ package body Generator.Stars is
       function Part (Item : Header) return String is (Parts(Header'pos(Item) + Strings.First_Index));
 
     begin -- Add_Next_Object
-      if Count > 1 then
+      case Count is
+      when 0 =>
+        null;
+      when 1 =>
+        if Strings.Is_Null (Source_Text) then
+          Source_Text := [Line];
+        end if;
+      when others =>
         if Count /= Strings.First_Index + Header'pos(Header'last) then
           Error ("Not enough parts (actual:" & Parts.Count'image & ")");
         end if;
@@ -618,19 +632,21 @@ package body Generator.Stars is
         Evaluate_Next_Id (Part (Id_2));
         Evaluate_Next_Id (Part (Id_3));
         Evaluate_Next_Id (Part (Id_4));
-        Process_Ids;
-        The_Star.Data.Otype := Otype_Of (Part (Otype));
-        Evaluate_Coordinate (Part (Coord_J2000));
-        Evaluate_Motion (Part (Pm));
-        Evaluate_Parallax (Part (Plx));
-        The_Star.Data.Umag := Magnitude_Of (Part (Mag_U));
-        The_Star.Data.Bmag := Magnitude_Of (Part (Mag_B));
-        The_Star.Data.Vmag := Magnitude_Of (Part (Mag_V), Is_Visual => True);
-        The_Star.Data.Rmag := Magnitude_Of (Part (Mag_R));
-        The_Star.Data.Imag := Magnitude_Of (Part (Mag_I));
-        The_Star.Data.Stype := Stype_Of (Part (Stype));
-        The_Stars.Append (The_Star);
-      end if;
+        if Has_Id then
+          Process_Ids;
+          The_Star.Data.Otype := Otype_Of (Part (Otype));
+          Evaluate_Coordinate (Part (Coord_J2000));
+          Evaluate_Motion (Part (Pm));
+          Evaluate_Parallax (Part (Plx));
+          The_Star.Data.Umag := Magnitude_Of (Part (Mag_U));
+          The_Star.Data.Bmag := Magnitude_Of (Part (Mag_B));
+          The_Star.Data.Vmag := Magnitude_Of (Part (Mag_V), Is_Visual => True);
+          The_Star.Data.Rmag := Magnitude_Of (Part (Mag_R));
+          The_Star.Data.Imag := Magnitude_Of (Part (Mag_I));
+          The_Star.Data.Stype := Stype_Of (Part (Stype));
+          The_Stars.Append (The_Star);
+        end if;
+      end case;
     end Add_Next_Object;
 
     Filename : constant String := Simbad_Folder & "Stars.dat";
@@ -646,8 +662,11 @@ package body Generator.Stars is
     Put_Line ("Sort...");
     Ada.Text_IO.Close (File);
     Data.Sort (The_Stars);
+    --for Unused in 1 .. 10000 loop
+    --  The_Stars.Delete_Last;
+    --end loop;
     Put_Line ("Done - Star count:" & The_Stars.Length'image);
-    Put_Line ("     - Name count:" & Name_Count'image);
+    Put_Line ("     - Name count:" & The_Names.Length'image);
     Put_Line ("     - Last HD   :" & HD_Last'image);
     Put_Line ("     - Last HIP  :" & HIP_Last'image);
     Put_Line ("     - Last HR   :" & HR_Last'image);
@@ -656,5 +675,279 @@ package body Generator.Stars is
     Ada.Text_IO.Close (File);
     raise;
   end Read;
+
+
+  procedure Generate_Database is
+
+    Filename : constant String := Data_Folder & "Database-Stars.ads";
+
+    File : IO.File_Type;
+
+    Star_Index : Natural := 0;
+
+    procedure Output (Line : String := "") is
+    begin
+      IO.Put_Line (File, Line);
+    end Output;
+
+    type Name_Map is array (Id range <>) of Id;
+
+    The_Name_Map : Name_Map(First_Id .. Id(The_Names.Length)) := [others => Unknown_Id];
+
+    type Name_Association is record
+      Name : Strings.Element;
+      Key  : Id;
+    end record;
+
+    package Name_Associations is new Ada.Containers.Doubly_Linked_Lists (Name_Association);
+
+    The_Name_Associations : Name_Associations.List;
+
+    Max_Name_Length : Natural := 0;
+
+
+    procedure Sort_Names is
+
+      use type Strings.Element;
+
+      function "<" (Left, Right : Name_Association) return Boolean is (Left.Name < Right.Name);
+
+      package Data_Handler is new Name_Associations.Generic_Sorting;
+
+      The_Id : Id;
+
+    begin -- Sort_Names
+      The_Id := 0;
+      for The_Name of The_Names loop
+        if Max_Name_Length < The_Name'length then
+          Max_Name_Length := The_Name'length;
+        end if;
+        The_Id := @ + 1;
+        The_Name_Associations.Append (([The_Name], The_Id));
+      end loop;
+      Data_Handler.Sort (The_Name_Associations);
+      The_Id := 0;
+      for The_Associoaten of The_Name_Associations loop
+        The_Id := @ + 1;
+        The_Name_Map (The_Associoaten.Key) := The_Id;
+      end loop;
+      for Key of The_Name_Map loop
+        if Key = Unknown_Id then
+          Error ("No name defined for key" & Key'image);
+        end if;
+      end loop;
+    end Sort_Names;
+
+
+    function Left_Adjusted (Text       : String;
+                             Field_Size : Positive) return String is
+      Postfix : constant String(1 .. Field_Size - Text'length) := [others => ' '];
+    begin
+      return Text & Postfix;
+    end Left_Adjusted;
+
+
+    function Right_Adjusted (Text       : String;
+                             Field_Size : Positive) return String is
+      Prefix : constant String(1 .. Field_Size - Text'length) := [others => ' '];
+    begin
+      return Prefix & Text;
+    end Right_Adjusted;
+
+
+    pragma Style_Checks ("M173");
+
+    procedure Put_Header is
+      use type Strings.Element;
+    begin
+      Output ("-- *********************************************************************************************************************");
+      Output ("-- *                           (c) 2023 by White Elephant GmbH, Schaffhausen, Switzerland                              *");
+      Output ("-- *                                               www.white-elephant.ch                                               *");
+      Output ("-- *********************************************************************************************************************");
+      Output ("-- Generated Star information from the Astronomical Database - Université de Strasbourg");
+      Output (+Source_Text);
+      Output;
+      Output ("pragma Style_White_Elephant;");
+      Output;
+      Output ("package Database.Stars is");
+      Output;
+      Output ("  pragma Style_Checks (""M174"");");
+      Output;
+      Output ("  type Data_Range is range 1 .." & The_Stars.Length'image & ";");
+      Output;
+      Output ("  type Name_Id is range Unknown_Id .." & The_Names.Length'image & ";");
+      Output ("  type HD_Id   is range Unknown_Id .." & HD_Last'image & ";");
+      Output ("  type HIP_Id  is range Unknown_Id .." & HIP_Last'image & ";");
+      Output ("  type HR_Id   is range Unknown_Id .." & HR_Last'image & ";");
+      Output;
+      Output ("  type Information is record");
+      Output ("    Name_Index : Name_Id;");
+      Output ("    HD_Number  : HD_Id;");
+      Output ("    HIP_Number : HIP_Id;");
+      Output ("    HR_Number  : HR_Id;");
+      Output ("    Info       : Star_Information;");
+      Output ("  end record with Pack;");
+      Output;
+      Output ("  type Name_List is array (Name_Id range Unknown_Id + 1 .. Name_Id'last) of Name;");
+      Output;
+      Output ("  Names : constant Name_List := [");
+      for The_Association of The_Name_Associations loop
+        declare
+          Name_Id    : constant Id := The_Name_Map(The_Association.Key);
+          Prefix     : constant String := "    +""";
+          Postfix    : constant String := (if Name_Id = Id(The_Names.Length) then """  " else """, ");
+          Field_Size : constant Natural := Prefix'length + Postfix'length + Max_Name_Length;
+        begin
+          Output (Left_Adjusted (Prefix & (+The_Association.Name) & Postfix, Field_Size) & "--" & Name_Id'image);
+        end;
+      end loop;
+      Output ("  ];");
+      Output;
+      Output ("  type Data is array (Data_Range) of Information;");
+      Output;
+      Output ("  List : constant Data := [");
+      Output ("--  Name      HD     HIP    HR  Otype           Ra J2000          Dec J2000      Ra PM     Dec PM       PLX    MagU    MagB    MagV    MagR    MagI   Stype");
+    end Put_Header;
+
+    procedure Put (The_Star : Information;
+                   Is_Last  : Boolean) is
+
+      No_Information : constant String := "NI";
+      No_Magnitude   : constant String := "No_Mag";
+      No_Parallax    : constant String := "No_Plx";
+      Separator      : constant String := ", ";
+
+      Name_Field_Size  : constant := 3;
+      Hd_Field_Size    : constant := 6;
+      Hip_Field_Size   : constant := 6;
+      Hr_Field_Size    : constant := 4;
+      Ra_Field_Size    : constant := 17;
+      Dec_Field_Size   : constant := 17;
+      Pm_Field_Size    : constant := 9;
+      Plx_Field_Size   : constant := 8;
+      Mag_Field_Size   : constant := 6;
+      Stype_Field_Size : constant := 16;
+
+      function Image_Of (Item       : Id;
+                         Field_Size : Positive) return String is
+        Image : constant String := (if Item = Unknown_Id then No_Information else Strings.Trimmed(Item'image));
+      begin
+        return Right_Adjusted (Image, Field_Size);
+      end Image_Of;
+
+      function Image_Of (Item : Database.Star_Luminosity_Class) return String is
+        Image : String := Item'image;
+      begin
+        for The_Character of Image loop
+          case The_Character is
+          when 'A' =>
+            The_Character := 'a';
+          when 'B' =>
+            The_Character := 'b';
+          when others =>
+            null;
+          end case;
+        end loop;
+        return Image;
+      end Image_Of;
+
+      function Name return String is
+        Name_Id  : constant Id := The_Star.Name_Id;
+        Name_Key : constant Id := (if Name_Id = Unknown_Id then Unknown_Id else The_Name_Map(Name_Id));
+      begin
+        return Image_Of (Name_Key, Name_Field_Size) & Separator;
+      end Name;
+
+      function Hd return String is (Image_Of (The_Star.Hd_Id, Hd_Field_Size) & Separator);
+
+      function Hip return String is (Image_Of (The_Star.Hip_Id, Hip_Field_Size) & Separator);
+
+      function Hr return String is (Image_Of (The_Star.Hr_Id, Hr_Field_Size) & Separator);
+
+      function Otype return String is
+        Kind  : constant Database.Star_Type := The_Star.Data.Otype;
+        Image : constant String := '0' & Strings.Trimmed (Database.Star_Type'pos(Kind)'image);
+      begin
+        return "(OT" & Image(Image'last - 1 .. Image'last) & Separator;
+      end Otype;
+
+      function Value_Item (Image      : String;
+                           Fiels_Size : Natural) return String is
+      begin
+        return Right_Adjusted (Strings.Trimmed (Image), Fiels_Size) & Separator;
+      end Value_Item;
+
+      function Ra_J2000 return String is (Value_Item (The_Star.Data.Ra_J2000'image, Ra_Field_Size));
+
+      function Dec_J2000 return String is (Value_Item (The_Star.Data.Dec_J2000'image, Dec_Field_Size));
+
+      function Ra_Pm return String is (Value_Item (The_Star.Data.Ra_Pm'image, Pm_Field_Size));
+
+      function Dec_Pm return String is (Value_Item (The_Star.Data.Dec_Pm'image, Pm_Field_Size));
+
+      function Plx return String is
+        use type Database.Parallax;
+        Value : constant Database.Parallax := The_Star.Data.Plx;
+        Image : constant String := (if Value = Database.Undefined_Parallax then No_Parallax else Value'image);
+      begin
+        return Value_Item (Image, Plx_Field_Size);
+      end Plx;
+
+      function Magnitude (Value      : Database.Magnitude;
+                          Field_Size : Positive) return String is
+        Image : constant String := (if Value = Database.Undefined_Magnitude then No_Magnitude else Value'image);
+      begin
+        return Value_Item (Image, Field_Size);
+      end Magnitude;
+
+      function Umag return String is (Magnitude (The_Star.Data.Umag, Mag_Field_Size));
+      function Bmag return String is (Magnitude (The_Star.Data.Bmag, Mag_Field_Size));
+      function Vmag return String is (Magnitude (The_Star.Data.Vmag, Mag_Field_Size));
+      function Rmag return String is (Magnitude (The_Star.Data.Rmag, Mag_Field_Size));
+      function Imag return String is (Magnitude (The_Star.Data.Imag, Mag_Field_Size));
+
+      function Stype return String is
+        Kind       : constant Database.Star_Spec_Type := The_Star.Data.Stype;
+        Class      : constant String := Kind.Class'image;
+        Subclass   : constant String := Kind.Subclass'image;
+        Luminosity : constant String := Image_Of (Kind.Luminosity);
+        Image      : constant String := "(" & Class & ", " & Subclass & ", " & Luminosity & ")))";
+      begin
+        return Left_Adjusted (Image & (if Is_Last then "" else ","), Stype_Field_Size);
+      end Stype;
+
+      function Star_Id return String is
+      begin
+        Star_Index := @ + 1;
+        return "--" & Star_Index'image;
+      end Star_Id;
+
+    begin
+      Output ("    (" & Name & Hd & Hip & Hr & Otype & Ra_J2000 & Dec_J2000 & Ra_Pm & Dec_Pm & Plx & Umag & Bmag & Vmag & Rmag & Imag & Stype & Star_Id);
+    end Put;
+
+    procedure Put_Footer is
+    begin
+      Output ("  ];");
+      Output;
+      Output ("end Database.Stars;");
+    end Put_Footer;
+
+  begin -- Generate_Database
+    Put_Line ("Create " & Filename);
+    IO.Create (File, Name => Filename);
+    Sort_Names;
+    Put_Header;
+    for The_Star of The_Stars loop
+      Put (The_Star, Is_Last => The_Star = The_Stars.Last_Element);
+    end loop;
+    Put_Footer;
+    IO.Close (File);
+    Put_Line (Filename & " created");
+  exception
+  when others =>
+    IO.Close (File);
+    raise;
+  end Generate_Database;
 
 end Generator.Stars;
