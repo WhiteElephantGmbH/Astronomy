@@ -15,7 +15,6 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Data;
 with Objects;
 with Traces;
 
@@ -31,7 +30,7 @@ package body Star is
 
   function Data_List return List is
   begin
-    return The_List(1..The_Last);
+    return The_List(Number'first .. Number(The_Last));
   end Data_List;
 
 
@@ -43,31 +42,19 @@ package body Star is
 
   procedure Read (Ut : Time.Ut) is
 
-    The_Id : Natural := 0;
-
-    function Next return Boolean is
-    begin
-      The_Id := Data.Next_Of (The_Id, Data.Hr);
-      return True;
-    exception
-    when Data.End_Of_List =>
-      return False;
-    end Next;
-
-    The_Object    : Data.Object;
     The_Direction : Earth.Direction;
 
   begin -- Read
     The_Directions := [others => Earth.Unknown_Direction];
     The_Last := 0;
-    while Next loop
-      The_Object := Data.Object_Of (The_Id, Data.Hr);
-      The_Direction := Objects.Direction_Of (Data.Direction_Of (The_Object, Ut), Time.Lmst_Of (Ut));
+    Object.Set (Ut);
+    for The_Id in Number loop
+      The_Direction := Objects.Direction_Of (Object.Star.Direction_Of (The_Id), Time.Lmst_Of (Ut));
       if not Earth.Is_Below_Horizon (The_Direction) then
         The_Last := @ + 1;
-        The_List(The_Last) := (Id  => The_Id,
-                               Mag => Magnitude(Data.Magnitude_Of (The_Object)),
-                               Loc => The_Direction);
+        The_List(Number(The_Last)) := (Id  => The_Id,
+                                       Mag => Magnitude(Object.Star.Magnitude_Of (The_Id)),
+                                       Loc => The_Direction);
       end if;
       The_Directions(The_Id) := The_Direction;
     end loop;

@@ -16,6 +16,7 @@
 pragma Style_White_Elephant;
 
 with Ada.Containers.Indefinite_Ordered_Maps;
+with Object.Catalog;
 with Traces;
 
 package body Constellation is
@@ -23,8 +24,8 @@ package body Constellation is
   package Log is new Traces ("Constellation");
 
   type Part is record
-    From  : Star.Number;
-    To    : Star.Number;
+    From  : Object.Catalog.HR;
+    To    : Object.Catalog.HR;
     Const : Item;
   end record;
 
@@ -723,13 +724,17 @@ package body Constellation is
         Last_Line := 0;
       end if;
       Last_Line := @ + 1;
-      The_Lines(Last_Line) := (From => (Id        => The_Part.From,
-                                        Direction => Star.Location_Of (The_Part.From)),
-                               To   => (Id        => The_Part.To,
-                                        Direction => Star.Location_Of (The_Part.To)));
+      declare
+        From : constant Object.Catalog.Star := Object.Catalog.Star_Of (The_Part.From);
+        To   : constant Object.Catalog.Star := Object.Catalog.Star_Of (The_Part.To);
+      begin
+        The_Lines(Last_Line) := (From => (Id        => From,
+                                          Direction => Star.Location_Of (From)),
+                                 To   => (Id        => To,
+                                          Direction => Star.Location_Of (To)));
+      end;
     end loop;
     Insert_Visible_Actual;
   end Prepare;
-
 
 end Constellation;

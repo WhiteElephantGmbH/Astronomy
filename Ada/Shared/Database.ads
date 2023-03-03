@@ -176,6 +176,8 @@ package Database is
     Luminosity : Star_Luminosity_Class;
   end record;
 
+  Undefined_Spec_Type : constant Star_Spec_Type := (G, S0, NO);
+
   type Star_Information is record
     Otype      : Database.Star_Type;
     Ra_J2000   : Database.Degrees_Ra;

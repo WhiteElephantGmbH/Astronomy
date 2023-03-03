@@ -15,15 +15,15 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Catalog;
+with Object.Star;
 with Earth;
 with Time;
 
 package Star is
 
-  subtype Number is Positive range 1 .. 10000;
+  subtype Number is Object.Star.Id;
 
-  subtype Magnitude is Catalog.Magnitude;
+  subtype Magnitude is Object.Magnitude;
 
   subtype Direction is Earth.Direction;
 
@@ -33,7 +33,7 @@ package Star is
     Loc : Direction;
   end record;
 
-  type List is array (Positive range <>) of Information;
+  type List is array (Number range <>) of Information;
 
   function Data_List return List;
 

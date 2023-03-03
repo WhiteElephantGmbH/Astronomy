@@ -19,8 +19,11 @@ with Ada.Containers.Doubly_Linked_Lists;
 with Ada.Text_IO;
 with Database;
 with Strings;
+with Traces;
 
 package body Generator.Stars is
+
+  package Log is new Traces ("Generator.Stars");
 
   subtype Otype_Id is String (1..3);
 
@@ -284,6 +287,10 @@ package body Generator.Stars is
     use all type Database.Star_Luminosity_Class;
 
   begin -- Stype_Of
+    if Strings.Trimmed(Image) = "~" then
+      Log.Warning ("Undefined Spec Type in Line " & The_Line_Number'image);
+      return Database.Undefined_Spec_Type;
+    end if;
     while not (Image(Index) in 'O' | 'B' | 'A' | 'F' | 'G' | 'K' | 'M' | 'R' | 'S' | 'N' | 'C' | 'D' | 'W' | ' ') loop
       Index := @ + 1;
     end loop;
@@ -401,6 +408,8 @@ package body Generator.Stars is
 
   Undefined : constant Character := '~';
 
+  Undefined_Magnitude : constant Database.Visual_Magnitude := Database.Visual_Magnitude'last;
+
   type Information is record
     Name_Id : Id := Unknown_Id;
     Hd_Id   : Id := Unknown_Id;
@@ -426,6 +435,7 @@ package body Generator.Stars is
   The_Stars : Star_Data.List;
   The_Names : Strings.List;
 
+  Last_HD  : Id := Unknown_Id;
   HD_Last  : Id := Id'first;
   HIP_Last : Id := Id'first;
   HR_Last  : Id := Id'first;
@@ -439,6 +449,8 @@ package body Generator.Stars is
     procedure Add_Next_Object is
 
       The_Star : Information;
+
+      Duplicate_HD_Id : exception;
 
       procedure Evaluate_Next_Id (Part : String) is
 
@@ -460,12 +472,24 @@ package body Generator.Stars is
           declare
             Number_Image : constant String := Items(2);
           begin
-            if Number_Image(Number_Image'last) in '0' .. '9' then
+            case Number_Image(Number_Image'last) is
+            when '0' .. '9' =>
               New_Id := Id'value(Number_Image);
-            else
+            when 'A' =>
               New_Id := Id'value(Number_Image(Number_Image'first .. Number_Image'last - 1));
-            end if;
+              if Item_Id = HD_Id then
+                if Last_HD = New_Id then
+                  raise Duplicate_HD_Id;
+                end if;
+              end if;
+            when 'B' | 'C' | 'D' | 'G' | 'J' | 'M' =>
+              New_Id := Unknown_Id;
+            when others =>
+              Error ("Unknown Id: " & Number_Image);
+            end case;
           exception
+          when Duplicate_HD_Id =>
+            raise;
           when others =>
             Error ("Invalid Id: " & Number_Image);
           end;
@@ -591,7 +615,8 @@ package body Generator.Stars is
       begin
         if Image = [Undefined] then
           if Is_Visual then
-            Error ("Undefined Magnitude");
+            Log.Warning ("Undefined Magnitude");
+            return Undefined_Magnitude;
           end if;
           return Database.Undefined_Magnitude;
         end if;
@@ -645,8 +670,12 @@ package body Generator.Stars is
           The_Star.Data.Imag := Magnitude_Of (Part (Mag_I));
           The_Star.Data.Stype := Stype_Of (Part (Stype));
           The_Stars.Append (The_Star);
+          Last_HD := The_Star.Hd_Id;
         end if;
       end case;
+    exception
+    when Duplicate_HD_Id =>
+      Log.Warning ("Duplicate: " & Line(Line'first .. Line'first + 100) & "...");
     end Add_Next_Object;
 
     Filename : constant String := Simbad_Folder & "Stars.dat";
@@ -662,9 +691,6 @@ package body Generator.Stars is
     Put_Line ("Sort...");
     Ada.Text_IO.Close (File);
     Data.Sort (The_Stars);
-    --for Unused in 1 .. 10000 loop
-    --  The_Stars.Delete_Last;
-    --end loop;
     Put_Line ("Done - Star count:" & The_Stars.Length'image);
     Put_Line ("     - Name count:" & The_Names.Length'image);
     Put_Line ("     - Last HD   :" & HD_Last'image);
@@ -755,6 +781,19 @@ package body Generator.Stars is
     end Right_Adjusted;
 
 
+    function Star_Of (The_Key : Id) return Id is
+      The_Star_Id : Id := 0;
+    begin
+      for The_Star of The_Stars loop
+        The_Star_Id := @ + 1;
+        if The_Star.Name_Id = The_Key then
+          return The_Star_Id;
+        end if;
+      end loop;
+      raise Program_Error;
+    end Star_Of;
+
+
     pragma Style_Checks ("M173");
 
     procedure Put_Header is
@@ -788,17 +827,25 @@ package body Generator.Stars is
       Output ("    Info       : Star_Information;");
       Output ("  end record with Pack;");
       Output;
-      Output ("  type Name_List is array (Name_Id range Unknown_Id + 1 .. Name_Id'last) of Name;");
+      Output ("  type Name_Map is record");
+      Output ("    Item : Name;");
+      Output ("    Star : Data_Range;");
+      Output ("  end record;");
+      Output;
+      Output ("  type Name_List is array (Name_Id range Unknown_Id + 1 .. Name_Id'last) of Name_Map;");
       Output;
       Output ("  Names : constant Name_List := [");
       for The_Association of The_Name_Associations loop
         declare
-          Name_Id    : constant Id := The_Name_Map(The_Association.Key);
-          Prefix     : constant String := "    +""";
-          Postfix    : constant String := (if Name_Id = Id(The_Names.Length) then """  " else """, ");
-          Field_Size : constant Natural := Prefix'length + Postfix'length + Max_Name_Length;
+          Name_Id         : constant Id := The_Name_Map(The_Association.Key);
+          Prefix          : constant String := "    (+""";
+          Postfix         : constant String := """,";
+          Name_Field_Size : constant Natural := Prefix'length + Max_Name_Length + Postfix'length;
+          Star_Id         : constant String := Star_Of (The_Association.Key)'image;
+          Line_End        : constant String := (if Name_Id = Id(The_Names.Length) then ") " else "),");
         begin
-          Output (Left_Adjusted (Prefix & (+The_Association.Name) & Postfix, Field_Size) & "--" & Name_Id'image);
+          Output (Left_Adjusted (Prefix & (+The_Association.Name) & Postfix, Name_Field_Size) &
+                  Right_Adjusted (Star_Id, 7) & Line_End & " --" & Name_Id'image);
         end;
       end loop;
       Output ("  ];");
