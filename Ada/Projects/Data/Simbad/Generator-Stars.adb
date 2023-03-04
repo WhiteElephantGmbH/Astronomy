@@ -781,24 +781,26 @@ package body Generator.Stars is
     end Right_Adjusted;
 
 
-    function Star_Of (The_Key : Id) return Id is
-      The_Star_Id : Id := 0;
-    begin
-      for The_Star of The_Stars loop
-        The_Star_Id := @ + 1;
-        if The_Star.Name_Id = The_Key then
-          return The_Star_Id;
-        end if;
-      end loop;
-      raise Program_Error;
-    end Star_Of;
-
-
     pragma Style_Checks ("M173");
 
     procedure Put_Header is
+
+      The_Star_Id_For_Name : array (First_Id .. Id(The_Names.Length)) of Id;
+
+      procedure Evaluate_Star_Id_For_Names is
+        The_Star_Id : Id := 0;
+      begin
+        for The_Star of The_Stars loop
+          The_Star_Id := @ + 1;
+          if The_Star.Name_Id /= Unknown_Id then
+            The_Star_Id_For_Name(The_Name_Map(The_Star.Name_Id)) := The_Star_Id;
+          end if;
+        end loop;
+      end Evaluate_Star_Id_For_Names;
+
       use type Strings.Element;
-    begin
+
+    begin -- Put_Header
       Output ("-- *********************************************************************************************************************");
       Output ("-- *                           (c) 2023 by White Elephant GmbH, Schaffhausen, Switzerland                              *");
       Output ("-- *                                               www.white-elephant.ch                                               *");
@@ -835,13 +837,14 @@ package body Generator.Stars is
       Output ("  type Name_List is array (Name_Id range Unknown_Id + 1 .. Name_Id'last) of Name_Map;");
       Output;
       Output ("  Names : constant Name_List := [");
+      Evaluate_Star_Id_For_Names;
       for The_Association of The_Name_Associations loop
         declare
           Name_Id         : constant Id := The_Name_Map(The_Association.Key);
           Prefix          : constant String := "    (+""";
           Postfix         : constant String := """,";
           Name_Field_Size : constant Natural := Prefix'length + Max_Name_Length + Postfix'length;
-          Star_Id         : constant String := Star_Of (The_Association.Key)'image;
+          Star_Id         : constant String := The_Star_Id_For_Name(Name_Id)'image;
           Line_End        : constant String := (if Name_Id = Id(The_Names.Length) then ") " else "),");
         begin
           Output (Left_Adjusted (Prefix & (+The_Association.Name) & Postfix, Name_Field_Size) &
