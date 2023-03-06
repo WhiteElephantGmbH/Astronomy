@@ -54,9 +54,6 @@ package body Parameter is
 
   Planets_Id : constant String := "Planets";
 
-  function Color_Key_Of (Item : Solar.Planet) return String is (Solar.Image_Of (Item) & " Color");
-  function Size_Key_Of (Item : Solar.Planet) return String is (Solar.Image_Of (Item) & " Size");
-
   The_Section : Configuration.Section_Handle;
 
   -- Sky
@@ -76,7 +73,7 @@ package body Parameter is
   The_Sun_Size  : Eps.Value;
 
   -- Stars
-  The_Star_Color     : Eps.Color;
+  The_Star_Colors    : Star.Colors;
   The_Stars_Min_Size : Eps.Value;
   The_Stars_Max_Size : Eps.Value;
   The_Min_Magnitude  : Star.Magnitude;
@@ -93,6 +90,21 @@ package body Parameter is
 
   The_Planet_Color : Planet_Color;
   The_Planet_Size  : Planet_Size;
+
+
+  function Color_Key_Of (Item : Solar.Planet) return String is (Solar.Image_Of (Item) & " Color");
+
+  function Size_Key_Of (Item : Solar.Planet) return String is (Solar.Image_Of (Item) & " Size");
+
+
+  function Star_Color_Key (Item : Star.Color_Range) return String is
+
+    Class : constant Star.Spectral_Class := Star.Spectral_Class'val(Natural(Item) - Natural(Star.Color_Range'first));
+    Image : constant String := Class'image & ' ';
+  begin
+    return Image(Image'first .. Image'first + 1) & " Class Color";
+  end Star_Color_Key;
+
 
   function Adjusted (Item   : String;
                      Within : String) return String is
@@ -217,6 +229,34 @@ package body Parameter is
 
     procedure Create_Default_Parameters is
 
+      function Color_Image_Of (The_Class : Star.Color_Range) return String is
+
+        Default_Star_Color : constant Star.Colors := [
+          (C => 0.67, M => 0.52, Y => 0.00, K => 0.00), -- O
+          (C => 0.46, M => 0.35, Y => 0.00, K => 0.00), -- B
+          (C => 0.18, M => 0.15, Y => 0.00, K => 0.00), -- A
+          (C => 0.00, M => 0.00, Y => 0.00, K => 0.00), -- F
+          (C => 0.02, M => 0.00, Y => 0.69, K => 0.00), -- G
+          (C => 0.02, M => 0.37, Y => 0.72, K => 0.00), -- K
+          (C => 0.02, M => 0.68, Y => 0.71, K => 0.00), -- M
+          (C => 1.00, M => 0.00, Y => 1.00, K => 0.00), -- R
+          (C => 1.00, M => 0.00, Y => 1.00, K => 0.00), -- S
+          (C => 1.00, M => 0.00, Y => 1.00, K => 0.00), -- N
+          (C => 0.00, M => 1.00, Y => 1.00, K => 0.00), -- C
+          (C => 1.00, M => 0.00, Y => 1.00, K => 0.00), -- DB
+          (C => 1.00, M => 0.00, Y => 1.00, K => 0.00), -- DA
+          (C => 1.00, M => 0.00, Y => 1.00, K => 0.00), -- DF
+          (C => 1.00, M => 0.00, Y => 1.00, K => 0.00), -- DG
+          (C => 1.00, M => 0.00, Y => 1.00, K => 0.00), -- WR
+          (C => 1.00, M => 0.00, Y => 1.00, K => 0.00), -- WN
+          (C => 1.00, M => 0.00, Y => 1.00, K => 0.00)  -- WC
+        ];
+
+      begin
+        return Image_Of (Default_Star_Color (The_Class));
+      end Color_Image_Of;
+
+
       function Color_Image_Of (The_Planet : Solar.Planet) return String is
 
         use all type Solar.Planet;
@@ -285,7 +325,9 @@ package body Parameter is
       Put (Size_Key & "  = 12.0");
       Put ("");
       Put ("[" & Stars_Id & "]");
-      Put (Color_Key & "         = C 0.00 | M 0.00 | Y 1.00 | K 0.00");
+      for The_Class in Star.Color_Range loop
+        Put (Star_Color_Key (The_Class) & " = " & Color_Image_Of (The_Class));
+      end loop;
       Put (Min_Size_Key & "      = 0.5");
       Put (Max_Size_Key & "      = 3.5");
       Put (Min_Magnitude_Key & " =-1.0");
@@ -355,15 +397,17 @@ package body Parameter is
 
       Set (Stars);
       Log.Write ("Stars");
-      The_Star_Color := Value_Of (Color_Key);
+      for The_Class in Star.Color_Range loop
+        The_Star_Colors(The_Class) := Value_Of (Star_Color_Key (The_Class));
+      end loop;
       The_Stars_Min_Size := Value_Of (Min_Size_Key);
-      Log.Write ("  Min Size      :" & The_Stars_Min_Size'image);
+      Log.Write ("  Min Size       :" & The_Stars_Min_Size'image);
       The_Stars_Max_Size := Value_Of (Max_Size_Key);
-      Log.Write ("  Max Size      :" & The_Stars_Max_Size'image);
+      Log.Write ("  Max Size       :" & The_Stars_Max_Size'image);
       The_Min_Magnitude := Value_Of (Min_Magnitude_Key);
-      Log.Write ("  Min Magnitude :" & The_Min_Magnitude'image);
+      Log.Write ("  Min Magnitude  :" & The_Min_Magnitude'image);
       The_Max_Magnitude := Value_Of (Max_Magnitude_Key);
-      Log.Write ("  Max Magnitude :" & The_Max_Magnitude'image);
+      Log.Write ("  Max Magnitude  :" & The_Max_Magnitude'image);
 
       Set (Planets);
       for The_Planet in Solar.Planet'range loop
@@ -399,7 +443,7 @@ package body Parameter is
 
   function Line_Size return Eps.Value is (The_Line_Size);
 
-  function Star_Color return Eps.Color is (The_Star_Color);
+  function Star_Colors return Star.Colors is (The_Star_Colors);
 
   function Star_Min return Eps.Value is (The_Stars_Min_Size);
 

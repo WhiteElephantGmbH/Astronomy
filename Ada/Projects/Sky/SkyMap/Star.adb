@@ -52,9 +52,10 @@ package body Star is
       The_Direction := Objects.Direction_Of (Object.Star.Direction_Of (The_Id), Time.Lmst_Of (Ut));
       if not Earth.Is_Below_Horizon (The_Direction) then
         The_Last := @ + 1;
-        The_List(Number(The_Last)) := (Id  => The_Id,
-                                       Mag => Magnitude(Object.Star.Magnitude_Of (The_Id)),
-                                       Loc => The_Direction);
+        The_List(Number(The_Last)) := (Id    => The_Id,
+                                       Mag   => Magnitude(Object.Star.Magnitude_Of (The_Id)),
+                                       Class => Object.Star.Class_Of (The_Id),
+                                       Loc   => The_Direction);
       end if;
       The_Directions(The_Id) := The_Direction;
     end loop;

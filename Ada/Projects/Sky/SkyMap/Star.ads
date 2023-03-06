@@ -17,6 +17,7 @@ pragma Style_White_Elephant;
 
 with Object.Star;
 with Earth;
+with Eps;
 with Time;
 
 package Star is
@@ -25,12 +26,19 @@ package Star is
 
   subtype Magnitude is Object.Magnitude;
 
+  subtype Spectral_Class is Object.Star.Class;
+
   subtype Direction is Earth.Direction;
 
+  subtype Color_Range is Eps.Color_Class;
+
+  type Colors is array (Color_Range) of Eps.Color;
+
   type Information is record
-    Id  : Number;
-    Mag : Magnitude;
-    Loc : Direction;
+    Id    : Number;
+    Mag   : Magnitude;
+    Class : Spectral_Class;
+    Loc   : Direction;
   end record;
 
   type List is array (Number range <>) of Information;

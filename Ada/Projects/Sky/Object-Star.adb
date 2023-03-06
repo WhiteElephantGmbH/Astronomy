@@ -31,4 +31,16 @@ package body Object.Star is
     return Object.Catalog.V_Mag_Of (Item);
   end Magnitude_Of;
 
+
+  function Spectral_Type_Of (Item : Id) return Spectral_Type is
+  begin
+    return Object.Catalog.Spec_Type_Of (Item);
+  end Spectral_Type_Of;
+
+
+  function Class_Of (Item : Id) return Class is
+  begin
+    return Spectral_Type_Of (Item).Class;
+  end Class_Of;
+
 end Object.Star;

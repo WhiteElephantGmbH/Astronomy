@@ -24,6 +24,10 @@ package Object.Catalog is
 
   type Star_Id is range Unknown_Id .. Database.Stars.Data_Range'last;
 
+  subtype Star_Spec_Type is Database.Star_Spec_Type;
+
+  subtype Star_Class is Database.Star_Class;
+
   subtype Star is Star_Id range First_Id .. Star_Id'last;
 
   type HD_Id is new Database.Stars.HD_Id;
@@ -53,5 +57,7 @@ package Object.Catalog is
   function Dec_Motion_Of (Id : Star) return Angle.Degrees with Inline;
 
   function V_Mag_Of (Id : Star) return Magnitude with Inline;
+
+  function Spec_Type_Of (Id : Star) return Star_Spec_Type with Inline;
 
 end Object.Catalog;

@@ -177,16 +177,22 @@ package body Map is
     end Draw_Constellations;
 
 
+    function Color_Class_Of (Class : Star.Spectral_Class) return Eps.Color_Class is
+      use type Eps.Color_Class;
+    begin
+      return Eps.Color_Class'first + Eps.Color_Class (Star.Spectral_Class'pos(Class));
+    end Color_Class_Of;
+
+
     procedure Draw_Stars is
       use type Star.Magnitude;
     begin
-      Eps.Set_Color (Parameter.Star_Color);
       Eps.Set_Line (Eps.Solid);
       for The_Star of Star.Data_List loop
         if The_Star.Mag <= Parameter.Magnitude_Max or else Constellation.Is_Used (The_Star.Id) then
-          Eps.Add_Circle (To        => Position_Of (The_Star.Loc),
-                          Radius    => Size_Of (The_Star.Mag) / 2.0,
-                          Is_Filled => True);
+          Eps.Add_Filled_Circle (To     => Position_Of (The_Star.Loc),
+                                 Radius => Size_Of (The_Star.Mag) / 2.0,
+                                 Class  => Color_Class_Of (The_Star.Class));
         end if;
       end loop;
     end Draw_Stars;
@@ -329,7 +335,7 @@ package body Map is
     Star.Read (Ut);
     Solar.Prepare (Ut);
     Constellation.Prepare (Horizon_Margin);
-    Eps.Create ("SkyMap.Eps", Dimension);
+    Eps.Create ("SkyMap.Eps", Dimension, Eps.Class_Colors(Parameter.Star_Colors));
     Draw_Border;
     Draw_Constellations;
     Draw_Stars;

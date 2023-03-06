@@ -5,6 +5,7 @@
 -->Style: White_Elephant
 
 with Ada.Text_IO;
+with Strings;
 
 package body Eps is
 
@@ -67,8 +68,15 @@ package body Eps is
   end X_Y_Of;
 
 
+  procedure Set_Color (Item : Color) is
+  begin
+    Write (" " & Image_Of(Item.C)  & Image_Of(Item.M) & Image_Of(Item.Y) & Image_Of(Item.K) & " setcmykcolor");
+  end Set_Color;
+
+
   procedure Create (Filename : String;
-                    Format   : Dimension) is
+                    Format   : Dimension;
+                    Colors   : Class_Colors) is
 
     function Img (Item : Value) return String is
     begin
@@ -94,6 +102,15 @@ package body Eps is
     Write ("  0 setlinewidth");
     Write ("  fill");
     Write ("} def");
+    for The_Class in Colors'range loop
+      Write ("/Filled_Circle_" & Strings.Trimmed(The_Class'image) & " {");
+      Set_Color (Colors(The_Class));
+      Write ("  newpath");
+      Write ("  0 360 arc");
+      Write ("  0 setlinewidth");
+      Write ("  fill");
+      Write ("} def");
+    end loop;
     Write ("/Line {");
     Write ("  newpath");
     Write ("  moveto");
@@ -175,12 +192,6 @@ package body Eps is
   end Create;
 
 
-  procedure Set_Color (Item : Color) is
-  begin
-    Write (" " & Image_Of(Item.C)  & Image_Of(Item.M) & Image_Of(Item.Y) & Image_Of(Item.K) & " setcmykcolor");
-  end Set_Color;
-
-
   procedure Set_Gray is
   begin
     Write ("  0.9 setgray");
@@ -227,6 +238,16 @@ package body Eps is
       Write (" " & X_Y_Of (To) & Image_Of (Radius) & " Circle");
     end if;
   end Add_Circle;
+
+
+  procedure Add_Filled_Circle (To     : Location;
+                               Radius : Value;
+                               Class  : Color_Class) is
+  begin
+    Write (" " & X_Y_Of (To) & Image_Of (Radius) & " Filled_Circle_" & Strings.Trimmed(Class'image));
+  end Add_Filled_Circle;
+
+
 
 
   procedure Add_Ellipse (To       : Location;

@@ -141,4 +141,10 @@ package body Object.Catalog is
     return Magnitude(Database.Stars.List(Star_Range(Id)).Info.Vmag);
   end V_Mag_Of;
 
+
+  function Spec_Type_Of (Id : Star) return Star_Spec_Type is
+  begin
+    return Database.Stars.List(Star_Range(Id)).Info.Stype;
+  end Spec_Type_Of;
+
 end Object.Catalog;

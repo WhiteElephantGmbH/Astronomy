@@ -50,6 +50,10 @@ package Eps is
   Dark        : constant Color := (C => 0.00, M => 0.00, Y => 0.00, K => 0.90);
   Silver      : constant Color := (C => 0.00, M => 0.00, Y => 0.10, K => 0.10);
 
+  type Color_Class is range 0 .. 17;
+
+  type Class_Colors is array (Color_Class) of Color;
+
   type Line_Style is (Solid, Dashed);
 
   type Line_Properties is record
@@ -62,7 +66,8 @@ package Eps is
 
 
   procedure Create (Filename : String;
-                    Format   : Dimension);
+                    Format   : Dimension;
+                    Colors   : Class_Colors);
 
   procedure Set_Gray;
 
@@ -124,6 +129,10 @@ package Eps is
   procedure Add_Circle (To        : Location;
                         Radius    : Value;
                         Is_Filled : Boolean := False);
+
+  procedure Add_Filled_Circle (To     : Location;
+                               Radius : Value;
+                               Class  : Color_Class);
 
   procedure Add_Ellipse (To       : Location;
                          A        : Value;

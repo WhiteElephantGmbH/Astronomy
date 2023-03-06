@@ -20,9 +20,17 @@ with Object.Catalog;
 package Object.Star is
 
   subtype Id is Object.Catalog.Star;
+  
+  subtype Spectral_Type is Object.Catalog.Star_Spec_Type;
+  
+  subtype Class is Object.Catalog.Star_Class;
 
   function Direction_Of (Item : Id) return Space.Direction;
 
-  function Magnitude_Of (Item : Id) return Magnitude;
+  function Magnitude_Of (Item : Id) return Magnitude with Inline;
+
+  function Spectral_Type_Of (Item : Id) return Spectral_Type with Inline;
+
+  function Class_Of (Item : Id) return Class with Inline;
 
 end Object.Star;

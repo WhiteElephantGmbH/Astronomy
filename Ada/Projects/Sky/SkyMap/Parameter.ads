@@ -33,7 +33,7 @@ package Parameter is
 
   function Line_Size return Eps.Value;
 
-  function Star_Color return Eps.Color;
+  function Star_Colors return Star.Colors;
 
   function Star_Min return Eps.Value;
 
