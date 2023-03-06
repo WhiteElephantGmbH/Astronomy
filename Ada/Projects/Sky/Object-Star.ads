@@ -21,6 +21,8 @@ package Object.Star is
 
   subtype Id is Object.Catalog.Star;
   
+  subtype Parallax is Object.Catalog.Parallax;
+
   subtype Spectral_Type is Object.Catalog.Star_Spec_Type;
   
   subtype Class is Object.Catalog.Star_Class;
@@ -28,6 +30,8 @@ package Object.Star is
   function Direction_Of (Item : Id) return Space.Direction;
 
   function Magnitude_Of (Item : Id) return Magnitude with Inline;
+
+  function Parallax_Of (Item : Id) return Parallax with Inline;
 
   function Spectral_Type_Of (Item : Id) return Spectral_Type with Inline;
 

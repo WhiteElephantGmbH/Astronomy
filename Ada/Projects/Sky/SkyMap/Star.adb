@@ -22,15 +22,15 @@ package body Star is
 
   package Log is new Traces ("Star");
 
-  The_List : List(Number);
-  The_Last : Natural := 0;
+
+  The_Stars : Stars.List;
 
   The_Directions : array (Number) of Direction;
 
 
   function Data_List return List is
   begin
-    return The_List(Number'first .. Number(The_Last));
+    return The_Stars;
   end Data_List;
 
 
@@ -40,26 +40,35 @@ package body Star is
   end Location_Of;
 
 
+  function "<" (Left, Right : Information) return Boolean is
+    use type Parallax;
+  begin
+    return Left.Plx < Right.Plx;
+  end "<";
+
+  package Parallax_Data is new Stars.Generic_Sorting;
+
+
   procedure Read (Ut : Time.Ut) is
 
     The_Direction : Earth.Direction;
 
   begin -- Read
     The_Directions := [others => Earth.Unknown_Direction];
-    The_Last := 0;
     Object.Set (Ut);
     for The_Id in Number loop
       The_Direction := Objects.Direction_Of (Object.Star.Direction_Of (The_Id), Time.Lmst_Of (Ut));
       if not Earth.Is_Below_Horizon (The_Direction) then
-        The_Last := @ + 1;
-        The_List(Number(The_Last)) := (Id    => The_Id,
-                                       Mag   => Magnitude(Object.Star.Magnitude_Of (The_Id)),
-                                       Class => Object.Star.Class_Of (The_Id),
-                                       Loc   => The_Direction);
+        The_Stars.Append ((Id    => The_Id,
+                           Mag   => Magnitude(Object.Star.Magnitude_Of (The_Id)),
+                           Class => Object.Star.Class_Of (The_Id),
+                           Plx   => Object.Star.Parallax_Of (The_Id),
+                           Loc   => The_Direction));
       end if;
       The_Directions(The_Id) := The_Direction;
     end loop;
-    Log.Write ("Read" & The_Last'image & " visible stars");
+    Parallax_Data.Sort (The_Stars);
+    Log.Write ("Read" & The_Stars.Length'image & " visible stars");
   exception
   when Item : others =>
     Log.Termination (Item);

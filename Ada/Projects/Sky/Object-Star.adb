@@ -32,6 +32,11 @@ package body Object.Star is
   end Magnitude_Of;
 
 
+  function Parallax_Of (Item : Id) return Parallax is
+  begin
+    return Object.Catalog.Parallax_Of (Item);
+  end Parallax_Of;
+
   function Spectral_Type_Of (Item : Id) return Spectral_Type is
   begin
     return Object.Catalog.Spec_Type_Of (Item);

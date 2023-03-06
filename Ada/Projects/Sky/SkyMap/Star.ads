@@ -15,6 +15,7 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with Ada.Containers.Doubly_Linked_Lists;
 with Object.Star;
 with Earth;
 with Eps;
@@ -25,6 +26,8 @@ package Star is
   subtype Number is Object.Star.Id;
 
   subtype Magnitude is Object.Magnitude;
+
+  subtype Parallax is Object.Star.Parallax;
 
   subtype Spectral_Class is Object.Star.Class;
 
@@ -38,10 +41,13 @@ package Star is
     Id    : Number;
     Mag   : Magnitude;
     Class : Spectral_Class;
+    Plx   : Parallax;
     Loc   : Direction;
   end record;
 
-  type List is array (Number range <>) of Information;
+  package Stars is new Ada.Containers.Doubly_Linked_Lists (Information);
+
+  subtype List is Stars.List;
 
   function Data_List return List;
 

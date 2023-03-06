@@ -16,7 +16,7 @@
 pragma Style_White_Elephant;
 
 pragma Build (Description => "Sky Map Generator",
-              Version     => (1, 2, 0, 2),
+              Version     => (1, 2, 0, 3),
               Kind        => Windows,
               Compiler    => "GNATPRO\23.0");
 

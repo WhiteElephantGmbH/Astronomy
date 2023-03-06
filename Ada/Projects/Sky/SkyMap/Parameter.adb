@@ -239,17 +239,17 @@ package body Parameter is
           (C => 0.02, M => 0.00, Y => 0.69, K => 0.00), -- G
           (C => 0.02, M => 0.37, Y => 0.72, K => 0.00), -- K
           (C => 0.02, M => 0.68, Y => 0.71, K => 0.00), -- M
-          (C => 1.00, M => 0.00, Y => 1.00, K => 0.00), -- R
-          (C => 1.00, M => 0.00, Y => 1.00, K => 0.00), -- S
-          (C => 1.00, M => 0.00, Y => 1.00, K => 0.00), -- N
-          (C => 0.00, M => 1.00, Y => 1.00, K => 0.00), -- C
-          (C => 1.00, M => 0.00, Y => 1.00, K => 0.00), -- DB
-          (C => 1.00, M => 0.00, Y => 1.00, K => 0.00), -- DA
-          (C => 1.00, M => 0.00, Y => 1.00, K => 0.00), -- DF
-          (C => 1.00, M => 0.00, Y => 1.00, K => 0.00), -- DG
-          (C => 1.00, M => 0.00, Y => 1.00, K => 0.00), -- WR
-          (C => 1.00, M => 0.00, Y => 1.00, K => 0.00), -- WN
-          (C => 1.00, M => 0.00, Y => 1.00, K => 0.00)  -- WC
+          (C => 0.00, M => 0.00, Y => 0.00, K => 1.00), -- (R)
+          (C => 0.33, M => 0.52, Y => 0.99, K => 0.15), -- S
+          (C => 0.29, M => 0.87, Y => 0.99, K => 0.32), -- N
+          (C => 0.09, M => 0.67, Y => 0.66, K => 0.00), -- C
+          (C => 0.00, M => 0.00, Y => 0.00, K => 1.00), -- (DB)
+          (C => 0.05, M => 0.04, Y => 0.00, K => 0.00), -- DA
+          (C => 0.00, M => 0.00, Y => 0.00, K => 1.00), -- (DF)
+          (C => 0.00, M => 0.00, Y => 0.00, K => 1.00), -- (DG)
+          (C => 0.00, M => 0.00, Y => 0.00, K => 1.00), -- (WR)
+          (C => 0.32, M => 0.15, Y => 0.03, K => 0.00), -- WN
+          (C => 0.40, M => 0.00, Y => 0.00, K => 0.00)  -- WC
         ];
 
       begin
@@ -328,10 +328,10 @@ package body Parameter is
       for The_Class in Star.Color_Range loop
         Put (Star_Color_Key (The_Class) & " = " & Color_Image_Of (The_Class));
       end loop;
-      Put (Min_Size_Key & "      = 0.5");
-      Put (Max_Size_Key & "      = 3.5");
+      Put (Min_Size_Key & "      = 0.2");
+      Put (Max_Size_Key & "      = 2.5");
       Put (Min_Magnitude_Key & " =-1.0");
-      Put (Max_Magnitude_Key & " = 7.0");
+      Put (Max_Magnitude_Key & " = 8.0");
       Put ("");
       Put ("[" & Planets_Id & "]");
       for The_Planet in Solar.Planet'range loop
@@ -399,6 +399,7 @@ package body Parameter is
       Log.Write ("Stars");
       for The_Class in Star.Color_Range loop
         The_Star_Colors(The_Class) := Value_Of (Star_Color_Key (The_Class));
+        Log.Write ("  Line " & Star_Color_Key (The_Class) & " :" & Image_Of (The_Star_Colors(The_Class)));
       end loop;
       The_Stars_Min_Size := Value_Of (Min_Size_Key);
       Log.Write ("  Min Size       :" & The_Stars_Min_Size'image);

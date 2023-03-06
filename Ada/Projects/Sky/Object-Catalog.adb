@@ -142,6 +142,12 @@ package body Object.Catalog is
   end V_Mag_Of;
 
 
+  function Parallax_Of (Id : Star) return Parallax is
+  begin
+    return Database.Stars.List(Star_Range(Id)).Info.Plx;
+  end Parallax_Of;
+
+
   function Spec_Type_Of (Id : Star) return Star_Spec_Type is
   begin
     return Database.Stars.List(Star_Range(Id)).Info.Stype;
