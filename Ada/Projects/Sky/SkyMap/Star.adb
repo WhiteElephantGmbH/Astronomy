@@ -56,6 +56,7 @@ package body Star is
   begin -- Read
     The_Directions := [others => Earth.Unknown_Direction];
     Object.Set (Ut);
+    The_Stars.Clear;
     for The_Id in Number loop
       The_Direction := Objects.Direction_Of (Object.Star.Direction_Of (The_Id), Time.Lmst_Of (Ut));
       if not Earth.Is_Below_Horizon (The_Direction) then
