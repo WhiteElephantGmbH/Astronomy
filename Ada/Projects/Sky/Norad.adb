@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2013 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2013 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -496,7 +496,7 @@ package body Norad is
 
   begin -- SGP
     Convert_Satellite_Data (Data);
-    Tsince := (Time.Julian_Date_Of (Ut) - Julian_Epoch) * Xmnpda;
+    Tsince := (Double(Time.Julian_Date_Of (Ut)) - Julian_Epoch) * Xmnpda;
     if Is_Deep_Space (Eo => Eo, Xincl => Xincl, Xno => Xno) then
       Error.Raise_With ("NORAD - Data for deep space not supported !");
       --SDP4 (Tsince, The_Position, The_Velocity);

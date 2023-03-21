@@ -177,6 +177,7 @@ package body Ten_Micron is
                                                     | Get_Axis_RA_Position
                                                     | Get_Air_Pressure
                                                     | Get_Temperature
+                                                    | Get_Julian_Date
                                                     | Get_Pointing_State);
 
   begin
@@ -195,7 +196,8 @@ package body Ten_Micron is
           end if;
           return Reply;
         end;
-      when Set_Local_Time
+      when Set_Julian_Date
+         | Set_Local_Time
          | Set_Time_Offset
          | Set_Altitude
          | Set_Azimuth
@@ -220,6 +222,7 @@ package body Ten_Micron is
          | Get_Axis_Dec_Position
          | Get_Air_Pressure
          | Get_Temperature
+         | Get_Julian_Date
          | Get_Number_Of_Alignment_Stars
          | Get_Pointing_State
          | Get_Right_Ascension
@@ -384,6 +387,24 @@ package body Ten_Micron is
   end Define;
 
 
+  procedure Set_Julian_Date (Item : Time.JD) is
+  begin
+    Execute (Lx200.Set_Julian_Date, Lx200.Julian_Date_Of (Item), Expected => "1");
+  exception
+  when Error.Occurred =>
+    Log.Error (Error.Message);
+  end Set_Julian_Date;
+
+
+  procedure Set_Time_Offset (Item : Duration) is
+  begin
+   Execute (Lx200.Set_Time_Offset, Lx200.Time_Offset_Of (Item), Expected => "1");    
+  exception
+  when Error.Occurred =>
+    Log.Error (Error.Message);
+  end Set_Time_Offset;
+
+
   function Air_Pressure return Refraction.Hectopascal is
   begin
     return Refraction.Hectopascal'value (Reply_For (Lx200.Get_Air_Pressure));
@@ -425,6 +446,16 @@ package body Ten_Micron is
   end Temperature;
 
 
+  function Julian_Date return Time.JD is
+  begin
+    return Time.JD'value (Reply_For (Lx200.Get_Julian_Date));
+  exception
+  when Error.Occurred =>
+    Log.Error ("invalid julian date");
+    return Time.Julian_Date;
+  end Julian_Date;
+
+
   function Get return Information is
     The_Information : Information;
   begin
@@ -434,9 +465,14 @@ package body Ten_Micron is
       The_Information.Direction := Actual_Direction;
       The_Information.Position := Actual_Position;
       The_Information.Pier_Side := Pier_Side;
-      Refraction.Set (Air_Pressure);
-      Refraction.Set (Temperature);
-    end if;
+      if The_Status = Stopped then
+        The_Information.Date_Time := Time.Ut_Of (Julian_Date);
+        Refraction.Set (Air_Pressure);
+        Refraction.Set (Temperature);
+      else
+        The_Information.Date_Time := Time.Universal;
+      end if;
+   end if;
     return The_Information;
   exception
   when Lx200.Protocol_Error =>

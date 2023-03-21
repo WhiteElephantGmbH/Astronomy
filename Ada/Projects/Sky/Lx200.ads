@@ -1,11 +1,12 @@
 -- *********************************************************************************************************************
--- *                       (c) 2021 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerlan                           *
+-- *                       (c) 2021 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerlan                           *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
 with Angle;
 with Refraction;
+with Time;
 
 package Lx200 is
 
@@ -64,6 +65,7 @@ package Lx200 is
     Get_Axis_Dec_Position,
     Get_Air_Pressure,
     Get_Temperature,
+    Get_Julian_Date,
     Get_Number_Of_Alignment_Stars,
     Get_Pointing_State,
     Get_Status,
@@ -74,6 +76,7 @@ package Lx200 is
     Set_Axis_Dec_Position,
     Set_Air_Pressure,
     Set_Temperature,
+    Set_Julian_Date,
     Set_Ultra_Precision_Mode,
     Slew_To_Axis_Position,
     Slew_To_Park_Position,
@@ -103,5 +106,9 @@ package Lx200 is
   function Air_Pressure_Of (Item : Refraction.Hectopascal) return String;
 
   function Temperature_Of (Item : Refraction.Celsius) return String;
+
+  function Julian_Date_Of (Item : Time.JD) return String;
+
+  function Time_Offset_Of (Item : Duration) return String;
 
 end Lx200;

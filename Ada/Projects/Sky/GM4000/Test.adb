@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2023 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2022 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
@@ -10,6 +10,7 @@ with Exceptions;
 with Log;
 with Network.Tcp;
 with Strings;
+with Time;
 
 package body Test is
 
@@ -78,6 +79,13 @@ package body Test is
     The_Points_Count   : Natural := 0;
     Last_Points_Count : Natural := 0;
 
+
+    function Julian_Date_Image return String is
+    begin
+      return Strings.Trimmed (Time.Julian_Date'image) & '#';
+    end Julian_Date_Image;
+
+
     function Points_Image return String is
       Image : constant String := "00" & Strings.Trimmed (The_Points_Count'image);
     begin
@@ -120,6 +128,8 @@ package body Test is
         declare
           Command          : constant String := Data(Data'first .. Data'first + 2);
           Image            : constant String := Data(Data'first + 3 .. Data'last);
+          Big_Command      : constant String := (if Data'length > 4 then Data(Data'first .. Data'first + 3) else None);
+          Big_Image        : constant String := (if Data'length > 4 then Data(Data'first + 4 .. Data'last - 1) else "");
           Extended_Command : constant String := (if Data'length > 5 then Data(Data'first .. Data'first + 4) else None);
           Extended_Image   : constant String := (if Data'length > 5 then Data(Data'first + 5 .. Data'last) else "");
           Large_Command    : constant String := (if Data'length > 6 then Data(Data'first .. Data'first + 5) else None);
@@ -180,6 +190,9 @@ package body Test is
           elsif Data = ":GRTMP#" then
             Put_Line ("Get Temperature");
             Send (Temperature_Image);
+          elsif Data = ":GJD1#" then
+            Put_Line ("Get Julian Date");
+            Send (Julian_Date_Image);
           elsif Data = ":newalig#" then
             The_Points_Count := 0;
             Put_Line ("Start Alignment");
@@ -230,6 +243,9 @@ package body Test is
             The_Points_Count := @ + 1;
             Put_Line ("New Alignment Point");
             Send (Points_Image & "#");
+          elsif Big_Command = ":SJD" then -- :SJD1234567.12345678#
+            Put_Line ("Set Julian Date " & Time.Image_Of (Time.Ut_Of (Time.JD'value(Big_Image))));
+            Send ("1");
           elsif Command = ":GV" then
             case Data(Data'first + 3) is
             when 'P' => -- GVP
@@ -308,6 +324,9 @@ package body Test is
           elsif Command = ":SL" then -- :SL09:45:00#
             Put_Line ("Set Local Time");
             Send ("1");
+          elsif Command = ":SG" then -- :SG-01.0#
+            Put_Line ("Set Time Offset");
+            Send ("1");
           elsif Command = ":MS" then
             The_State := Slewing;
             Put_Line ("Slew to Target Object");
@@ -344,7 +363,8 @@ package body Test is
             Is_Available  : Boolean;
           begin
             exit Main when Command = "";
-            if Command in ":Gstat#" | ":GD#" | ":GR#" | ":GaXa#" | ":GaXb#" | ":GRPRS#" | ":GRTMP#" | ":pS#" then
+            if Command in ":Gstat#" | ":GD#" | ":GR#" | ":GaXa#" | ":GaXb#" | ":GRPRS#" | ":GRTMP#" | ":GJD1#" | ":pS#"
+            then
               if not Hiding and not Log_All then
                 Start_Hiding := True;
               end if;

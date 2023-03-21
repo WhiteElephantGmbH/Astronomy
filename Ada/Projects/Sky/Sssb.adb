@@ -96,7 +96,7 @@ package body Sssb is
         elsif In_Data_Part and then Parts.Count = (Header'pos(Header'last) + 1) then
           Log.Write ("Data: " & Parts'image);
           declare
-            Ut  : constant Time.Ut       := Time.Ut_Of (Image_Of (Julian_Date));
+            Ut  : constant Time.Ut       := Time.Ut_Of (Time.JD'value(Image_Of (Julian_Date)));
             Ra  : constant Angle.Degrees := Angle.Degrees'value(Image_Of (Right_Ascension));
             Dec : constant Angle.Degrees := Angle.Degrees'value(Image_Of (Declination));
           begin

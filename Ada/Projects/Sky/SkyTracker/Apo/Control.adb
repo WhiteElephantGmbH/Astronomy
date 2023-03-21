@@ -16,6 +16,7 @@
 pragma Style_White_Elephant;
 
 with Application;
+with Clock;
 with Data;
 with Error;
 with Gui;
@@ -80,8 +81,8 @@ package body Control is
     entry Wait_For_Termination;
 
   private
-    The_New_Direction        : Space.Direction;
-    Next_Command                : User.Command_Action;
+    The_New_Direction           : Space.Direction;
+    Next_Command                : User.Command_Action := User.Command_Action'pred(User.Close); -- not Close
     Has_New_Telescope_Data      : Boolean := False;
     Has_New_Goto_Direction      : Boolean := False;
     Define_Catalog_Pending      : Boolean := False;
@@ -187,10 +188,7 @@ package body Control is
       elsif Has_New_Goto_Direction then
         The_Command := New_Goto_Direction;
         Has_New_Goto_Direction := False;
-      elsif Has_New_Telescope_Data then
-        The_Command := New_Telescope_Information;
-        Has_New_Telescope_Data := False;
-      else
+      elsif Command_Is_Pending then
         case Next_Command is
         when User.Align =>
           The_Command := Align;
@@ -214,6 +212,9 @@ package body Control is
           raise Program_Error; -- already handled
         end case;
         Command_Is_Pending := False;
+      elsif Has_New_Telescope_Data then
+        The_Command := New_Telescope_Information;
+        Has_New_Telescope_Data := False;
       end if;
     end Get;
 
@@ -435,6 +436,7 @@ package body Control is
     Action_Handler.Signal_New_Telescope_Data;
   end Information_Update_Handler;
 
+
   procedure Start is
 
     The_Manager : access Manager with Unreferenced;
@@ -480,6 +482,7 @@ package body Control is
     Parameter.Read;
     Read_Data;
     if Started_Stellarium_Server then
+      Clock.Start;
       Telescope.Start (Information_Update_Handler'access);
       Targets.Start (Clear  => User.Clear_Targets'access,
                      Define => User.Define'access,
@@ -488,10 +491,12 @@ package body Control is
                     User_Action_Handler'access,
                     Termination'access);
       Stellarium.Shutdown;
+      Clock.Finish;
     end if;
   exception
   when Error.Occurred =>
     Stellarium.Shutdown;
+    Clock.Finish;
     User.Show_Error (Error.Message);
   when Occurrence: others =>
     Log.Termination (Occurrence);

@@ -15,6 +15,7 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with Clock;
 with Parameter;
 with Picture;
 with Pole_Axis;
@@ -62,8 +63,8 @@ package body Telescope is
 
   Control : Control_Access;
 
-
   Signal_Information_Update : Information_Update_Handler;
+
 
   procedure Start (Update_Handler : Information_Update_Handler) is
   begin
@@ -197,8 +198,6 @@ package body Telescope is
 
 
   task body Control_Task is
-
-    Update_Delay : constant Duration := 0.5;
 
     Aligning_Enabled : Boolean := False;
 
@@ -376,6 +375,7 @@ package body Telescope is
               Ten_Micron.Slew_To (The_Next_Star);
             else
               Ten_Micron.Stop;
+              Clock.Define_Time;
             end if;
           end Go_To_Next;
         or
@@ -390,11 +390,13 @@ package body Telescope is
               Picture.Stop_Solving;
             end if;
             Ten_Micron.Stop;
-          end Stop;
+            Clock.Define_Time;
+           end Stop;
         or
           accept Unpark do
             Remote.Define (Target => "");
             Ten_Micron.Unpark;
+            Clock.Define_Time;
           end Unpark;
         or
           accept Get (The_Data : out Data) do
@@ -404,14 +406,13 @@ package body Telescope is
             The_Data.Actual_Position := The_Information.Position;
             The_Data.Picture_Direction := The_Picture_Direction;
             The_Data.Mount_Pier_Side := The_Information.Pier_Side;
-            The_Data.Universal_Time := Time.Universal;
+            The_Data.Universal_Time := The_Information.Date_Time;
             The_Data.Align_Points := Alignment.Star_Count;
             The_Data.Alignment_Info := Alignment.Info;
             The_Data.Cone_Error := Pole_Axis.Cone_Error;
             The_Data.Pole_Offsets := Pole_Axis.Offsets;
           end Get;
-        or delay Update_Delay;
-          Signal_Information_Update.all;
+        or delay 0.5;
           Update_Handling;
         end select;
         Remote.Define (The_Information.Status in Tracking | Following);

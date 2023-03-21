@@ -357,17 +357,23 @@ package body Time is
   -- Julian Date --
   -----------------
 
-  JD_Offset : constant Astro.REAL := 2451545.0;
+  JD_Offset : constant JD := 2451545.0;
 
-  function Julian_Date_Of (Utime : Ut) return Astro.REAL is
+  function Julian_Date return JD is
   begin
-     return Astro.REAL(Utime / One_Day) + JD_Offset;
+    return Julian_Date_Of (Universal);
+  end Julian_Date;
+
+
+  function Julian_Date_Of (Utime : Ut) return JD is
+  begin
+     return JD(Utime / One_Day) + JD_Offset;
   end Julian_Date_Of;
 
 
-  function Ut_Of (Jd : String) return Ut is
+  function Ut_Of (Item : JD) return Ut is
   begin
-    return Ut(Astro.REAL'value(Jd) - JD_Offset) * One_Day;
+    return Ut(Item - JD_Offset) * One_Day;
   end Ut_Of;
 
 end Time;

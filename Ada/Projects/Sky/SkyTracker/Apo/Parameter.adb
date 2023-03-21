@@ -47,6 +47,7 @@ package body Parameter is
   Expert_Mode_Key : constant String := "Expert Mode";
   Remote_Id       : constant String := "Remote";
   Telescope_Key   : constant String := "Telescope";
+  Clock_Id        : constant String := "Clock";
   Ip_Address_Key  : constant String := "IP Address";
   Port_Key        : constant String := "Port";
 
@@ -63,10 +64,13 @@ package body Parameter is
   The_10_Micron_Ip_Address : Network.Ip_Address;
   The_10_Micron_Port       : Network.Port_Number;
 
-  --Remote
+  -- Remote
   The_Telescope_Name : Strings.Element;
   The_Remote_Address : Network.Ip_Address;
   The_Remote_Port    : Network.Port_Number;
+
+  -- Clock
+  The_Udp_Socket : Network.Udp.Socket := Network.Udp.No_Socket;
 
   -- Stellarium
   The_Stellarium_Port  : Network.Port_Number;
@@ -140,8 +144,8 @@ package body Parameter is
 
 
   function Value_Of (Key     : String;
-                      Section : String := "") return Integer is
-    Item : constant String := String_Of (Key);
+                     Section : String := "") return Integer is
+    Item : constant String := String_Of (Key, Section);
   begin
     return Integer'value(Image_Of(Item));
   exception
@@ -169,7 +173,7 @@ package body Parameter is
 
 
   function Port_For (Section : String) return Network.Port_Number is
-    Value : constant Integer := Value_Of (Port_Key, Remote_Id);
+    Value : constant Integer := Value_Of (Port_Key, Section);
   begin
     Log.Write (Section & " port number:" & Value'image);
     return Network.Port_Number (Value);
@@ -232,6 +236,10 @@ package body Parameter is
       Put (Ip_Address_Key & " = 217.160.64.198");
       Put (Port_Key & "       = 5000");
       Put ("");
+      Put ("[" & Clock_Id & "]");
+      Put (Ip_Address_Key & " = 169.254.42.43"); -- or TimeServer
+      Put (Port_Key & "       = 44422");
+      Put ("");
       Put ("[" & Picture_Id & "]");
       Put (Astap_Key & "    = " & Default_Astap_Executable);
       Put (Filename_Key & " = " & Default_Picture_Filename);
@@ -258,9 +266,28 @@ package body Parameter is
       Handle              : constant Configuration.File_Handle    := Configuration.Handle_For (Filename);
       Ten_Micron_Handle   : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Ten_Micron_Id);
       Picture_Handle      : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Picture_Id);
+      Clock_Handle        : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Clock_Id);
       Remote_Handle       : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Remote_Id);
       Stellarium_Handle   : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Stellarium_Id);
       Localization_Handle : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Localization_Id);
+
+      procedure Connect_Clock is
+
+        Name_Or_Address  : constant String := String_Value_Of (Ip_Address_Key);
+        Datagram_Timeout : constant Duration := 0.3;
+
+      begin -- Connect_Clock
+        if Name_Or_Address /= "" then
+          The_Udp_Socket := Network.Udp.Socket_For (Name_Or_Address => Name_Or_Address,
+                                                    Port            => Port_For (Clock_Id),
+                                                    Receive_Timeout => Datagram_Timeout);
+          Log.Write ("Clock connected to " & Name_Or_Address);
+        end if;
+      exception
+      when Network.Not_Found =>
+        Error.Raise_With ("Clock not connected to " & Name_Or_Address);
+      end Connect_Clock;
+
 
       procedure Startup_Stellarium is
         Stellarium_Filename : constant String := String_Value_Of (Program_Key);
@@ -293,6 +320,9 @@ package body Parameter is
         The_Remote_Address := Ip_Address_For (Remote_Id);
         The_Remote_Port := Port_For (Remote_Id);
       end if;
+
+      Set (Clock_Handle);
+      Connect_Clock;
 
       Set (Picture_Handle);
       Astap.Define (Executable => Filename_Of (Astap_Key));
@@ -363,6 +393,23 @@ package body Parameter is
   begin
     return The_Remote_Port;
   end Remote_Port;
+
+
+  -----------
+  -- Clock --
+  -----------
+
+  function Clock_Configured return Boolean is
+    use type Network.Udp.Socket;
+  begin
+    return The_Udp_Socket /= Network.Udp.No_Socket;
+  end Clock_Configured;
+
+
+  function Clock_Socket return Network.Udp.Socket is
+  begin
+    return The_Udp_Socket;
+  end Clock_Socket;
 
 
   ----------------

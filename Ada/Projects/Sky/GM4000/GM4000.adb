@@ -5,7 +5,7 @@
 pragma Style_White_Elephant;
 
 pragma Build (Description => "GM4000 Simulator",
-              Version     => (2, 15, 1, 8),
+              Version     => (2, 15, 1, 9),
               Kind        => Console,
               Compiler    => "GNATPRO\23.0");
 with Test;

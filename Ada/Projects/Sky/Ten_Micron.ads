@@ -33,6 +33,7 @@ package Ten_Micron is
 
   type Information is record
     Status    : State := Disconnected;
+    Date_Time : Time.Ut;
     Direction : Space.Direction;
     Position  : Space.Direction;
     Pier_Side : Character;
@@ -67,6 +68,10 @@ package Ten_Micron is
   procedure Define (The_Air_Pressure : Refraction.Hectopascal);
 
   procedure Define (The_Temperature : Refraction.Celsius);
+
+  procedure Set_Julian_Date (Item : Time.JD);
+
+  procedure Set_Time_Offset (Item : Duration);
 
   procedure Slew_To (Location : Space.Direction;
                      Target   : Target_Kind := Other_Targets);

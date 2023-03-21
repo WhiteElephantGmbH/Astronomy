@@ -143,8 +143,20 @@ package Time is
   -- Julian Date --
   -----------------
 
-  function Julian_Date_Of (Utime : Ut) return Astro.REAL;
+  JD_Second : constant := 1.0 / 86_400.0;
 
-  function Ut_Of (Jd : String) return Ut;
+  JD_Minute : constant := 60.0 * JD_Second;
+
+  JD_Delta : constant := JD_Second / 10_000.0 ;
+
+  type JD is delta JD_Delta range -2 ** 63 * JD_Delta .. (2 ** 63 - 1) * JD_Delta with
+    Small => JD_Delta,
+    Size  => 64;
+
+  function Julian_Date return JD;
+
+  function Julian_Date_Of (Utime : Ut) return JD;
+
+  function Ut_Of (Item : JD) return Ut;
 
 end Time;

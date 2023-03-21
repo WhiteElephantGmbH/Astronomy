@@ -134,10 +134,14 @@ package body Lx200 is
       return Command_For ("GRPRS");
     when Get_Temperature =>
       return Command_For ("GRTMP");
+    when Get_Julian_Date =>
+      return Command_For ("GJD1");
     when Set_Air_Pressure =>
       return Command_For ("SRPRS" & Parameter);
     when Set_Temperature =>
       return Command_For ("SRTMP" & Parameter);
+    when Set_Julian_Date =>
+      return Command_For ("SJD" & Parameter);
     when Stop =>
       return Command_For ("STOP");
     when Unpark =>
@@ -296,5 +300,21 @@ package body Lx200 is
   begin
     return (if Item < 0.0 then '-' else '+') & Image (Image'last - 4 .. Image'last);
   end Temperature_Of;
+
+
+  function Julian_Date_Of (Item : Time.JD) return String is
+    Jd_Delta : constant := 10.0**(-8);
+    type Julian_Date is delta Jd_Delta range 0.0 .. ((2 ** 64 - 1) * Jd_Delta) with Small => Jd_Delta, Size => 64;
+  begin
+    return Strings.Trimmed (Julian_Date(Item)'image);
+  end Julian_Date_Of;
+
+
+  function Time_Offset_Of (Item : Duration) return String is
+    type Offset is delta 0.1 range -28.0 .. 28.0;
+    Image : constant String := "0" & Strings.Trimmed (Offset'(abs Item / 3600.0)'image);
+  begin
+    return (if Item > 0.0 then '-' else '+') & Image(Image'last - 3 .. Image'last);
+  end Time_Offset_Of;
 
 end Lx200;
