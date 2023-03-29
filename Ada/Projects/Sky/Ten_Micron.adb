@@ -92,13 +92,13 @@ package body Ten_Micron is
   end Received_Character;
 
 
-  procedure Send (Command     : String;
+  procedure Send (The_Command : String;
                   Log_Enabled : Boolean := True) is
   begin
     if Log_Enabled or Timeout_Detected then
-      Log.Write ("Command " & Command);
+      Log.Write ("Command " & The_Command);
     end if;
-    Network.Tcp.Send (The_String  => Command,
+    Network.Tcp.Send (The_String  => The_Command,
                       Used_Socket => The_Socket);
   exception
   when Network.Tcp.No_Client =>
@@ -167,23 +167,23 @@ package body Ten_Micron is
   end Set_Ultra_Precision_Mode;
 
 
-  function Reply_For (Command   : Lx200.Extended_Command;
-                      Parameter : String := "") return String is
+  function Reply_For (The_Command : Lx200.Extended_Command;
+                      Parameter   : String := "") return String is
     use all type Lx200.Command;
 
-    Log_Enabled : constant Boolean := not (Command in Get_Declination
-                                                    | Get_Right_Ascension
-                                                    | Get_Axis_Dec_Position
-                                                    | Get_Axis_RA_Position
-                                                    | Get_Air_Pressure
-                                                    | Get_Temperature
-                                                    | Get_Julian_Date
-                                                    | Get_Pointing_State);
+    Log_Enabled : constant Boolean := not (The_Command in Get_Declination
+                                                        | Get_Right_Ascension
+                                                        | Get_Axis_Dec_Position
+                                                        | Get_Axis_RA_Position
+                                                        | Get_Air_Pressure
+                                                        | Get_Temperature
+                                                        | Get_Julian_Date
+                                                        | Get_Pointing_State);
 
   begin
-    Send (Lx200.String_Of (Command, Parameter), Log_Enabled);
+    Send (Lx200.String_Of (The_Command, Parameter), Log_Enabled);
     begin
-      case Command is
+      case The_Command is
       when Slew
          | Slew_To_Axis_Position
       =>
@@ -241,10 +241,6 @@ package body Ten_Micron is
          | Stop
          | Slew_To_Park_Position
          | Unpark
-      =>
-        return "";
-      when Set_Polar_Alignment
-         | Set_Alt_Az_Alignment
          | Move_East
          | Move_North
          | Move_South
@@ -253,11 +249,17 @@ package body Ten_Micron is
          | Quit_Move_North
          | Quit_Move_South
          | Quit_Move_West
-         | Quit_Move
-         | Set_Centering_Rate
          | Set_Guiding_Rate
+         | Set_Centering_Rate
          | Set_Finding_Rate
          | Set_Slewing_Rate
+         | Set_Centering_Rate_Factor
+         | Set_Slewing_Rate_Factor
+      =>
+        return "";
+      when Set_Polar_Alignment
+         | Set_Alt_Az_Alignment
+         | Quit_Move
       =>
         raise Program_Error; -- not implemented for 10micron
       end case;
@@ -282,6 +284,9 @@ package body Ten_Micron is
   when others =>
     Error.Raise_With ("Send Error");
   end Reply_For;
+
+
+  procedure Define_Moving_Rate;
 
 
   procedure Startup (Server_Address : Network.Ip_Address;
@@ -319,6 +324,7 @@ package body Ten_Micron is
       end;
       Set_Ultra_Precision_Mode;
       Set_Device_Status;
+      Define_Moving_Rate;
     when others =>
       Log.Error ("already connected");
     end case;
@@ -328,29 +334,29 @@ package body Ten_Micron is
   end Startup;
 
 
-  procedure Execute (Command   : Lx200.Extended_Command;
-                     Parameter : String := "";
-                     Expected  : String := "") is
-    Reply : constant String := Reply_For (Command, Parameter);
+  procedure Execute (The_Command : Lx200.Extended_Command;
+                     Parameter   : String := "";
+                     Expected    : String := "") is
+    Reply : constant String := Reply_For (The_Command, Parameter);
   begin
     if Reply /= Expected then
-      Error.Raise_With ("command " & Command'image & " failed with " & Reply);
+      Error.Raise_With ("command " & The_Command'image & " failed with " & Reply);
     end if;
   end Execute;
 
 
-  function Execute (Command   : Lx200.Extended_Command;
-                    Parameter : String := "";
-                    Ok        : String;
-                    Failed    : String) return Boolean is
-    Reply : constant String := Reply_For (Command, Parameter);
+  function Execute (The_Command : Lx200.Extended_Command;
+                    Parameter   : String := "";
+                    Ok          : String;
+                    Failed      : String) return Boolean is
+    Reply : constant String := Reply_For (The_Command, Parameter);
   begin
     if Reply = Ok then
       return True;
     elsif Reply = Failed then
       return False;
     else
-      Error.Raise_With ("command " & Command'image & " failed with " & Reply);
+      Error.Raise_With ("command " & The_Command'image & " failed with " & Reply);
     end if;
   end Execute;
 
@@ -398,7 +404,7 @@ package body Ten_Micron is
 
   procedure Set_Time_Offset (Item : Duration) is
   begin
-   Execute (Lx200.Set_Time_Offset, Lx200.Time_Offset_Of (Item), Expected => "1");    
+   Execute (Lx200.Set_Time_Offset, Lx200.Time_Offset_Of (Item), Expected => "1");
   exception
   when Error.Occurred =>
     Log.Error (Error.Message);
@@ -461,6 +467,7 @@ package body Ten_Micron is
   begin
     if The_Status /= Disconnected then
       Set_Device_Status;
+      Define_Moving_Rate;
       The_Information.Status := The_Status;
       The_Information.Direction := Actual_Direction;
       The_Information.Position := Actual_Position;
@@ -557,10 +564,260 @@ package body Ten_Micron is
   procedure Unpark is
   begin
     Execute (Lx200.Unpark);
+    Define_Moving_Rate;
   exception
   when Error.Occurred =>
     Log.Error (Error.Message);
   end Unpark;
+
+
+  subtype Move_Command is Command range Move_Left .. Move_Down_End;
+
+  procedure Move (The_Command : Lx200.Command) is
+  begin
+    if The_Status in Tracking | Slewing | Following | Stopped | Positioned | Outside then
+      Execute (The_Command);
+    end if;
+  end Move;
+
+
+  generic
+    type Direction is (<>);
+    with procedure Move (To : Direction);
+    with procedure Quit_Move (To : Direction);
+  package Direct is
+
+    procedure Set (Item : Direction);
+
+    procedure Clear (Item : Direction);
+
+    function Is_Moving return Boolean;
+
+  end Direct;
+
+
+  package body Direct is
+
+    type Direct_State is (Both_Clear, First_Moving, Second_Moving, Both_Set, First_Set, Second_Set);
+
+    The_State : Direct_State := Both_Clear;
+
+    procedure Set (Item : Direction) is
+    begin
+      case The_State is
+      when Both_Clear =>
+        Move (To => Item);
+        if Item = Direction'first then
+          The_State := First_Moving;
+        else
+          The_State := Second_Moving;
+        end if;
+      when First_Moving =>
+        if Item = Direction'last then
+          Quit_Move (Direction'first);
+          The_State := Both_Set;
+        end if;
+      when Second_Moving =>
+        if Item = Direction'first then
+          Quit_Move (Direction'last);
+          The_State := Both_Set;
+        end if;
+      when First_Set =>
+        if Item = Direction'last then
+          The_State := Both_Set;
+        end if;
+      when Second_Set =>
+        if Item = Direction'first then
+          The_State := Both_Set;
+        end if;
+      when Both_Set =>
+        null;
+      end case;
+    end Set;
+
+
+    procedure Clear (Item : Direction) is
+    begin
+      case The_State is
+      when Both_Clear =>
+        null;
+      when First_Moving =>
+        if Item = Direction'first then
+          Quit_Move (Direction'first);
+          The_State := Both_Clear;
+        end if;
+      when Second_Moving =>
+        if Item = Direction'last then
+          Quit_Move (Direction'last);
+          The_State := Both_Clear;
+        end if;
+      when First_Set =>
+        if Item = Direction'first then
+          The_State := Both_Clear;
+        end if;
+      when Second_Set =>
+        if Item = Direction'last then
+          The_State := Both_Clear;
+        end if;
+      when Both_Set =>
+        if Item = Direction'first then
+          The_State := Second_Set;
+        else
+          The_State := First_Set;
+        end if;
+      end case;
+    end Clear;
+
+
+    function Is_Moving return Boolean is
+    begin
+      return The_State in First_Moving | Second_Moving;
+    end Is_Moving;
+
+  end Direct;
+
+
+  type North_South is (North, South);
+
+  procedure Move (To : North_South) is
+  begin
+    case To is
+    when North =>
+      Move (Lx200.Move_North);
+    when South =>
+      Move (Lx200.Move_South);
+    end case;
+  end Move;
+
+
+  procedure End_Move (To : North_South) is
+  begin
+    case To is
+    when North =>
+      Move (Lx200.Quit_Move_North);
+    when South =>
+      Move (Lx200.Quit_Move_South);
+    end case;
+  end End_Move;
+
+
+  package Direct_NS is new Direct (North_South, Move, End_Move);
+
+
+  type East_West is (East, West);
+
+  procedure Move (To : East_West) is
+  begin
+    case To is
+    when East =>
+      Move (Lx200.Move_East);
+    when West =>
+      Move (Lx200.Move_West);
+    end case;
+  end Move;
+
+
+  procedure End_Move (To : East_West) is
+  begin
+    case To is
+    when East =>
+      Move (Lx200.Quit_Move_East);
+    when West =>
+      Move (Lx200.Quit_Move_West);
+    end case;
+  end End_Move;
+
+
+  package Direct_EW is new Direct (East_West, Move, End_Move);
+
+
+  procedure Move (The_Command : Move_Command) is
+  begin
+    case The_Command is
+    when Move_Up =>
+      Direct_NS.Set (North);
+    when Move_Down =>
+      Direct_NS.Set (South);
+    when Move_Right =>
+      Direct_EW.Set (East);
+    when Move_Left =>
+      Direct_EW.Set (West);
+    when Move_Up_End =>
+      Direct_NS.Clear (North);
+    when Move_Down_End =>
+      Direct_NS.Clear (South);
+    when Move_Right_End =>
+      Direct_EW.Clear (East);
+    when Move_Left_End =>
+      Direct_EW.Clear (West);
+    end case;
+  end Move;
+
+
+  function Moving_Rate_Change_Allowed return Boolean is
+  begin
+    return not (Direct_NS.Is_Moving or Direct_EW.Is_Moving) and then
+      The_Status in Tracking | Stopped | Positioned | Following | Slewing | Outside;
+  end Moving_Rate_Change_Allowed;
+
+
+  type Moving_Factor is range 1 .. 255;
+
+  type Moving_Factor_Table is array (Positive range <>) of Moving_Factor;
+
+  Moving_Factors : constant Moving_Factor_Table := [Moving_Factor'first, 4, 16, 60, 240, Moving_Factor'last];
+
+  The_Moving_Index : Natural := 0; -- Undefined
+
+
+  procedure Set_Moving_Rate (The_Factor : Moving_Factor) is
+  begin
+    if The_Factor = Moving_Factor'last then
+      Execute (Lx200.Set_Slewing_Rate); -- set maximum slew rate
+    else
+      Execute (Lx200.Set_Centering_Rate_Factor, Strings.Trimmed(The_Factor'image));
+    end if;
+  end Set_Moving_Rate;
+
+
+  procedure Increase_Moving_Rate is
+  begin
+    if The_Moving_Index < Moving_Factors'last and then Moving_Rate_Change_Allowed then
+      The_Moving_Index := @ + 1;
+      Set_Moving_Rate (Moving_Factors(The_Moving_Index));
+    end if;
+  end Increase_Moving_Rate;
+
+
+  procedure Decrease_Moving_Rate is
+  begin
+    if The_Moving_Index > Moving_Factors'first and then Moving_Rate_Change_Allowed then
+      The_Moving_Index := @ - 1;
+      Set_Moving_Rate (Moving_Factors(The_Moving_Index));
+    end if;
+  end Decrease_Moving_Rate;
+
+
+  procedure Define_Moving_Rate is
+  begin
+    if The_Status /= Parked and then The_Moving_Index = 0 then -- Undefined
+      The_Moving_Index := Moving_Factors'first + 2; -- first Increment at startup -> default rate = 60
+      Increase_Moving_Rate;
+    end if;
+  end Define_Moving_Rate;
+
+
+  procedure Execute (The_Command : Command) is
+  begin
+    case The_Command is
+    when Move_Command =>
+      Move (The_Command);
+    when Increase_Moving_Rate =>
+      Increase_Moving_Rate;
+    when Decrease_Moving_Rate =>
+      Decrease_Moving_Rate;
+    end case;
+  end Execute;
 
 
   procedure Start_Alignment is

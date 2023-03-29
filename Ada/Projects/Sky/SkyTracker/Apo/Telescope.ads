@@ -30,6 +30,8 @@ package Telescope is
 
   use all type State;
 
+  subtype Command is Ten_Micron.Command;
+
   type Data is record
     Status             : State := Disconnected;
     Target_Direction   : Space.Direction;
@@ -74,6 +76,8 @@ package Telescope is
   procedure Stop;
 
   procedure Unpark;
+
+  procedure Execute (The_Command : Command);
 
   function Information return Data;
 

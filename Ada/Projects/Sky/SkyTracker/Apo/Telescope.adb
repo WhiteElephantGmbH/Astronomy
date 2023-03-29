@@ -52,6 +52,8 @@ package body Telescope is
 
     entry Unpark;
 
+    entry Execute (The_Command : Command);
+
     entry Get (The_Data : out Data);
 
     entry Close;
@@ -137,6 +139,12 @@ package body Telescope is
   begin
     Control.Unpark;
   end Unpark;
+
+
+  procedure Execute (The_Command : Command) is
+  begin
+    Control.Execute (The_Command);
+  end Execute;
 
 
   Next_Id            : Name.Id;
@@ -398,6 +406,10 @@ package body Telescope is
             Ten_Micron.Unpark;
             Clock.Define_Time;
           end Unpark;
+        or
+          accept Execute (The_Command : Command) do
+            Ten_Micron.Execute (The_Command);
+          end Execute;
         or
           accept Get (The_Data : out Data) do
             The_Data.Status := Telescope.State(The_Information.Status);

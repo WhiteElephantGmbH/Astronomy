@@ -77,9 +77,11 @@ package Lx200 is
     Set_Air_Pressure,
     Set_Temperature,
     Set_Julian_Date,
-    Set_Ultra_Precision_Mode,
+    Set_Centering_Rate_Factor,
+    Set_Slewing_Rate_Factor,
     Slew_To_Axis_Position,
     Slew_To_Park_Position,
+    Set_Ultra_Precision_Mode,
     Stop,
     Unpark);
 

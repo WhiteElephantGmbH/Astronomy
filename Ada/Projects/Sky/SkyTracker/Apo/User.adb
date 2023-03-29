@@ -23,6 +23,7 @@ with Alignment;
 with Data;
 with Earth;
 with Gui.Enumeration_Menu_Of;
+with Gui.Key_Codes;
 with Gui.Registered;
 with Lexicon;
 with Lx200;
@@ -828,6 +829,72 @@ package body User is
   end Enter_Setup_Page;
 
 
+  procedure Put (The_Command : Telescope.Command) is
+  begin
+    Telescope.Execute (The_Command);
+  end Put;
+
+
+  Ignore_Next : Boolean := False;
+
+
+  procedure Key_Handler (The_Event    : Gui.Key_Event;
+                         The_Key_Code : Gui.Key_Code) is
+    use all type Telescope.Command;
+  begin
+    case The_Page is
+    when Is_Setup =>
+      return;
+    when Is_Control | Is_Display =>
+      null;
+    end case;
+    case The_Event is
+    when Gui.Key_Pressed =>
+      Log.Write ("Key pressed: " & The_Key_Code'img);
+      if Ignore_Next then
+        return;
+      end if;
+      case The_Key_Code is
+      when Gui.Key_Codes.KP_2 | Gui.Key_Codes.KP_Down =>
+        Put (Move_Down);
+      when Gui.Key_Codes.KP_8 | Gui.Key_Codes.KP_Up =>
+        Put (Move_Up);
+      when Gui.Key_Codes.KP_4 | Gui.Key_Codes.KP_Left =>
+        Put (Move_Left);
+      when Gui.Key_Codes.KP_6 | Gui.Key_Codes.KP_Right =>
+        Put (Move_Right);
+      when Gui.Key_Codes.KP_Add =>
+        Put (Increase_Moving_Rate);
+      when Gui.Key_Codes.KP_Subtract =>
+        Put (Decrease_Moving_Rate);
+      when Gui.Key_Codes.K_Menu =>
+        Ignore_Next := True;
+      when others =>
+        null;
+      end case;
+    when Gui.Key_Released =>
+      Log.Write ("Key released: " & The_Key_Code'img);
+      case The_Key_Code is
+      when Gui.Key_Codes.KP_2 | Gui.Key_Codes.KP_Down =>
+        Put (Move_Down_End);
+      when Gui.Key_Codes.KP_8 | Gui.Key_Codes.KP_Up =>
+        Put (Move_Up_End);
+      when Gui.Key_Codes.KP_4 | Gui.Key_Codes.KP_Left =>
+        Put (Move_Left_End);
+      when Gui.Key_Codes.KP_6 | Gui.Key_Codes.KP_Right =>
+        Put (Move_Right_End);
+      when Gui.Key_Codes.K_Menu =>
+        Ignore_Next := True;
+      when others =>
+        null;
+      end case;
+    end case;
+  exception
+  when others =>
+    Log.Error ("Key_Handler failed");
+  end Key_Handler;
+
+
   function Convertion is new Ada.Unchecked_Conversion (Gui.Information, Name.Id_Access);
 
   function Display_Text_Handler (For_Column       : Natural;
@@ -921,6 +988,7 @@ package body User is
                                               The_Title         => "",
                                               The_Width         => The_Display_Data.Width,
                                               The_Justification => Gui.Left);
+        Gui.Install_Key_Handler (Key_Handler'access);
       end Define_Control_Page;
 
 

@@ -62,6 +62,17 @@ package Ten_Micron is
     Rms_Error           : Arc_Seconds   := No_Data;
   end record;
 
+  type Command is (Move_Left,
+                   Move_Right,
+                   Move_Up,
+                   Move_Down,
+                   Move_Left_End,
+                   Move_Right_End,
+                   Move_Up_End,
+                   Move_Down_End,
+                   Increase_Moving_Rate,
+                   Decrease_Moving_Rate);
+
   procedure Startup (Server_Address : Network.Ip_Address;
                      Server_Port    : Network.Port_Number);
 
@@ -87,6 +98,8 @@ package Ten_Micron is
   procedure Stop;
 
   procedure Unpark;
+
+  procedure Execute (The_Command : Command);
 
   function Get return Information;
 

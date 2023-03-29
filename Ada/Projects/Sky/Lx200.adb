@@ -91,13 +91,13 @@ package body Lx200 is
     when Quit_Move =>
       return Command_For ("Q");
     when Set_Centering_Rate =>
-      return Command_For ("RC");
+      return Command_For ("RC" & Parameter);
     when Set_Guiding_Rate =>
-      return Command_For ("RG");
+      return Command_For ("RG" & Parameter);
     when Set_Finding_Rate =>
       return Command_For ("RM");
     when Set_Slewing_Rate =>
-      return Command_For ("RS");
+      return Command_For ("RS" & Parameter);
 
     -- extended commands
 
@@ -123,13 +123,6 @@ package body Lx200 is
       return Command_For ("newalpt" & Parameter);
      when New_Alignment_End =>
       return Command_For ("endalig");
-    when Set_Ultra_Precision_Mode =>
-      Has_Ultra_Precision := True;
-      return Command_For ("U2");
-    when Slew_To_Axis_Position =>
-      return Command_For ("MaX");
-    when Slew_To_Park_Position =>
-      return Command_For ("KA");
     when Get_Air_Pressure =>
       return Command_For ("GRPRS");
     when Get_Temperature =>
@@ -142,6 +135,17 @@ package body Lx200 is
       return Command_For ("SRTMP" & Parameter);
     when Set_Julian_Date =>
       return Command_For ("SJD" & Parameter);
+    when Set_Centering_Rate_Factor =>
+      return Command_For ("Rc" & Parameter);
+    when Set_Slewing_Rate_Factor =>
+      return Command_For ("Rs" & Parameter);
+    when Slew_To_Axis_Position =>
+      return Command_For ("MaX");
+    when Slew_To_Park_Position =>
+      return Command_For ("KA");
+    when Set_Ultra_Precision_Mode =>
+      Has_Ultra_Precision := True;
+      return Command_For ("U2");
     when Stop =>
       return Command_For ("STOP");
     when Unpark =>

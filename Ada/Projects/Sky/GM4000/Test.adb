@@ -335,6 +335,32 @@ package body Test is
           elsif Command = ":CM" then
             Put_Line ("Synchronize to Target Object");
             Send ("Coordinates     matched        #"); -- OK
+          elsif Command = ":Mn" then
+            Put_Line ("Move North");
+          elsif Command = ":Ms" then
+            Put_Line ("Move South");
+          elsif Command = ":Me" then
+            Put_Line ("Move East");
+          elsif Command = ":Mw" then
+            Put_Line ("Move West");
+          elsif Command = ":Qn" then
+            Put_Line ("Quit move North");
+          elsif Command = ":Qs" then
+            Put_Line ("Quit move South");
+          elsif Command = ":Qe" then
+            Put_Line ("Quit move East");
+          elsif Command = ":Qw" then
+            Put_Line ("Quit move West");
+          elsif Command = ":RG" then
+            Put_Line ("Set slew rate to Guiding");
+          elsif Command = ":RC" then
+            Put_Line ("Set slew rate to Centering");
+          elsif Command = ":RM" then
+            Put_Line ("Set slew rate to Finding");
+          elsif Command = ":RS" then
+            Put_Line ("Set slew rate to maximum");
+          elsif Command = ":Rc" then
+            Put_Line ("Set centering rate to " & Image(Image'first .. Image'last - 1) & "x");
           else
             Put_Line ("Unknown Command " & Data);
           end if;
