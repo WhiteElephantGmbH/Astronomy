@@ -308,7 +308,7 @@ package body Time is
       begin
         if Time_Only then
           return Time_Image;
-        elsif Item = In_The_Past then
+        elsif Item = Unknown then
           return "<undefined>";
         else
           return Image_Of (The_Day) & '.' & Image_Of (The_Month) & "." & Image_Of (The_Year) & " " & Time_Image;

@@ -31,12 +31,14 @@ package Ten_Micron is
 
   type Target_Kind is (Axis_Position, Other_Targets);
 
+  Undefined_Pier : constant Character := ' ';
+
   type Information is record
     Status    : State := Disconnected;
-    Date_Time : Time.Ut;
+    Date_Time : Time.Ut := Time.Unknown;
     Direction : Space.Direction;
     Position  : Space.Direction;
-    Pier_Side : Character;
+    Pier_Side : Character := Undefined_Pier;
   end record;
 
   type Polar_Error is delta 0.01 range 0.0 .. 99.9999;

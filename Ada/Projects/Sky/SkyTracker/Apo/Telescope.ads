@@ -38,12 +38,12 @@ package Telescope is
     Actual_Direction   : Space.Direction;
     Actual_Position    : Space.Direction;
     Picture_Direction  : Space.Direction;
-    Mount_Pier_Side    : Character;
-    Align_Points       : Natural;
+    Mount_Pier_Side    : Character := Ten_Micron.Undefined_Pier;
+    Align_Points       : Natural := 0;
     Alignment_Info     : Alignment.Information;
     Cone_Error         : Angle.Value := Angle.Zero;
     Pole_Offsets       : Earth.Direction;
-    Universal_Time     : Time.Ut;
+    Universal_Time     : Time.Ut := Time.Unknown;
   end record;
 
   type Information_Update_Handler is access procedure;

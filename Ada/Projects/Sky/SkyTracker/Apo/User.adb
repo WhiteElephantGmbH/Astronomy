@@ -118,8 +118,6 @@ package body User is
 
   subtype Error is State range Inconsistent .. Failure;
 
-  subtype Warning is State range Inhibited .. Outside;
-
   The_Status : State := Disconnected;
 
   Action_Routine   : Action_Handler;
@@ -415,7 +413,7 @@ package body User is
 
     begin -- Define_Control_Buttons
       case Information.Status is
-      when Disconnected | Error | Unparking =>
+      when Disconnected | Error | Inhibited | Unparking =>
         Align_On_Picture_Is_Enabled := False;
         Disable_Action;
         Disable_Control;
@@ -426,7 +424,7 @@ package body User is
         Align_On_Picture_Is_Enabled := False;
         Enable_Goto;
         Enable_Stop;
-      when Stopped | Warning =>
+      when Stopped | Outside =>
         Enable_Goto;
         Enable_Control ("Park", Perform_Park'access);
       when Tracking =>
@@ -483,7 +481,7 @@ package body User is
 
     begin
       case Information.Status is
-      when Disconnected | Error | Unparking =>
+      when Disconnected | Error | Inhibited | Unparking =>
         Disable_Action;
         Disable_Control;
         Gui.Disable (Temperature_Box);
@@ -497,7 +495,7 @@ package body User is
         else
           Enable_Stop;
         end if;
-      when Stopped | Warning =>
+      when Stopped | Outside =>
         if Alignment.Ready then
           Enable_Action ("Align", Perform_Align'access);
         else
@@ -538,7 +536,7 @@ package body User is
       Gui.Set_Text (Actual_Alt, "");
       Gui.Set_Text (Actual_Az, "");
       Gui.Set_Text (Pier_Side, "");
-     The_Actual_Direction := Earth.Unknown_Direction;
+      The_Actual_Direction := Earth.Unknown_Direction;
     end Clear_Actual_Values;
 
     function Image_Of (Item         : String;
@@ -592,7 +590,7 @@ package body User is
         Gui.Set_Text (Actual_Ra, Space.Ra_Image_Of (Information.Actual_Direction));
         Gui.Set_Text (Actual_Alt, Earth.Alt_Image_Of (The_Actual_Direction));
         Gui.Set_Text (Actual_Az, Earth.Az_Image_Of (The_Actual_Direction));
-        Gui.Set_Text (Pier_Side, "" & Information.Mount_Pier_Side);
+        Gui.Set_Text (Pier_Side, [Information.Mount_Pier_Side]);
       else
         Clear_Actual_Values;
       end if;
@@ -603,7 +601,7 @@ package body User is
         Gui.Set_Text (Dec_Axis, "");
         Gui.Set_Text (Ra_Axis, "");
       end if;
-      if Information.Universal_Time = Time.In_The_Past then
+      if Information.Universal_Time = Time.Unknown then
         Gui.Set_Text (Lmst, "");
         Gui.Set_Text (Local_Time, "");
       else
@@ -863,9 +861,9 @@ package body User is
         Put (Move_Left);
       when Gui.Key_Codes.KP_6 | Gui.Key_Codes.KP_Right =>
         Put (Move_Right);
-      when Gui.Key_Codes.KP_Add =>
+      when Gui.Key_Codes.KP_Add | Gui.Key_Codes.K_Page_Up =>
         Put (Increase_Moving_Rate);
-      when Gui.Key_Codes.KP_Subtract =>
+      when Gui.Key_Codes.KP_Subtract | Gui.Key_Codes.K_Page_Down =>
         Put (Decrease_Moving_Rate);
       when Gui.Key_Codes.K_Menu =>
         Ignore_Next := True;

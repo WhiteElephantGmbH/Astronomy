@@ -154,6 +154,8 @@ package body Ten_Micron is
       Error.Raise_With ("Unknown device status <" & Reply & ">");
     end;
   exception
+  when Network.Tcp.No_Client =>
+    Disconnect_Device ("Set_Device_Status - no client");
   when Network.Timeout =>
     Log.Warning ("Reply timeout");
     Timeout_Detected := True;
@@ -432,13 +434,13 @@ package body Ten_Micron is
         return 'W';
       else
         Log.Error ("unknown pier side");
-        return ' ';
+        return Undefined_Pier;
       end if;
     end;
   exception
   when others =>
     Log.Error ("invalid pier side");
-    return ' ';
+    return Undefined_Pier;
   end Pier_Side;
 
 

@@ -80,6 +80,7 @@ package Time is
 
   In_The_Past   : constant Ut := 0.0;
   In_The_Future : constant Ut := Ut'last;
+  Unknown       : constant Ut := 0.0;
 
   type Period is record
     Arrival_Time : Ut := In_The_Future;
