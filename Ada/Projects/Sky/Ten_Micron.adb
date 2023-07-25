@@ -19,7 +19,7 @@ package body Ten_Micron is
 
   GM1000HPS       : constant String := "10micron GM1000HPS";
   GM4000HPS       : constant String := "10micron GM4000HPS";
-  Firmware_GM1000 : constant String := "3.1.2";
+  Firmware_GM1000 : constant String := "3.1.10";
   Firmware_GM4000 : constant String := "2.15.1";
 
   Receive_Timeout  : constant Duration := 3.0;
