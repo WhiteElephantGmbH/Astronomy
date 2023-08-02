@@ -480,7 +480,7 @@ package body Control is
     Neo.Add_Objects;
     Name.Read_Favorites (Enable_Axis_Positions => False,
                          Enable_Land_Marks     => True,
-                         Enable_Neos           => True);
+                         Neo_Existing          => Neo.Exists'access);
   end Read_Data;
 
 
@@ -557,9 +557,10 @@ package body Control is
       raise;
     end;
     Telescope.Start (Information_Update_Handler'access);
-    Targets.Start (Clear  => User.Clear_Targets'access,
-                   Define => User.Define'access,
-                   Update => User.Update_Targets'access);
+    Targets.Start (Clear    => User.Clear_Targets'access,
+                   Define   => User.Define'access,
+                   Update   => User.Update_Targets'access,
+                   Arriving => Neo.Is_Arriving'access);
     User.Execute (Startup'access,
                   User_Action_Handler'access,
                   Termination'access);

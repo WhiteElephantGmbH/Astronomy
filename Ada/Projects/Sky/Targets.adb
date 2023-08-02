@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2021 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2021 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -17,7 +17,6 @@ pragma Style_White_Elephant;
 
 with Data;
 with Moon;
-with Neo;
 with Site;
 with Sky_Line;
 with Solar_System;
@@ -53,14 +52,18 @@ package body Targets is
 
   The_Handler : access Handler;
 
+  Is_Arriving : Arriving_Handling;
 
-  procedure Start (Clear  : access procedure;
-                   Define : access procedure (List : Name.Id_List_Access);
-                   Update : access procedure) is
+
+  procedure Start (Clear    : access procedure;
+                   Define   : access procedure (List : Name.Id_List_Access);
+                   Update   : access procedure;
+                   Arriving : Arriving_Handling := null) is
   begin
     The_Handler := new Handler (Clear  => Clear,
                                 Define => Define,
                                 Update => Update);
+    Is_Arriving := Arriving;
   end Start;
 
 
@@ -162,7 +165,7 @@ package body Targets is
             when Name.Small_Solar_System_Body =>
               return Is_To_Add (Solar_System, Sssb.Direction_Of (Item, Ut));
             when Name.Near_Earth_Object =>
-              return Is_Selected (Near_Earth_Objects) and then Neo.Is_Arriving (Item);
+              return Is_Selected (Near_Earth_Objects) and then Is_Arriving (Item);
             when Name.Axis_Position =>
               return The_Actual_Selection = All_Objects;
             when Name.Landmark =>

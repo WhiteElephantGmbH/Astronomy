@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2022 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2022 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
@@ -8,6 +8,7 @@ with Ada.Command_Line;
 with Ada.Text_IO;
 with Exceptions;
 with Network.Tcp;
+with Satellite;
 
 package body Test is
 
@@ -15,8 +16,6 @@ package body Test is
   begin
     Ada.Text_IO.Put_Line (Item);
   end Put_Line;
-
-
   procedure Client (Ip_Address : String := "192.168.26.180") is
 
     Socket_Protocol : constant Network.Tcp.Protocol := Network.Tcp.Raw;
@@ -50,6 +49,19 @@ package body Test is
           The_Kind := Single;
           Network.Tcp.Send (The_String  => "" & Ascii.Ack,
                             Used_Socket => The_Socket);
+        elsif Command = "l" then
+          Satellite.Read_Stellarium_Data;
+          Put_Line (Satellite.Names'image);
+          Ada.Text_IO.Put ("Satellite>");
+          declare
+            Name : constant String := Ada.Text_IO.Get_Line;
+          begin
+            if Satellite.Exists (Name) then
+              Put_Line ("Satellite Found");
+            else
+              Put_Line ("Satellite Not Found");
+            end if;
+          end;
         else
           begin
             case Command (Command'first) is

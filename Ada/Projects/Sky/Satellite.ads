@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2013 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2013 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,13 +15,17 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Application;
+with Norad;
+with Strings;
 
 package Satellite is
 
-  Directory : constant String := Application.Composure ("Neo");
-  Extension : constant String := "neo";
-
   procedure Read_Stellarium_Data;
+
+  function Names return Strings.List;
+  
+  function Exists (Name : String) return Boolean;
+  
+  function Tle_Of (Name : String) return Norad.Two_Line;
 
 end Satellite;

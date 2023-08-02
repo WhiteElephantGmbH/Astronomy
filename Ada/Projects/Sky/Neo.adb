@@ -15,20 +15,15 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Ada.Directories;
-with Ada.Text_IO;
 with Ada.Unchecked_Deallocation;
 with Angle;
 with Astro;
 with Data;
-with Earth;
 with Error;
-with File;
 with Norad;
 with Satellite;
 with Site;
 with Sky_Line;
-with Strings;
 with Traces;
 with Values;
 
@@ -38,18 +33,9 @@ package body Neo is
 
   use type Time.Ut;
 
-  Directory : constant String := Satellite.Directory;
-  Extension : constant String := Satellite.Extension;
-
-  function Filename_Of (Item : String) return String is
-  begin
-    return File.Composure (Directory, Item, Extension);
-  end Filename_Of;
-
-
   function Exists (Item : String) return Boolean is
   begin
-    return File.Exists (Filename_Of (Item));
+    return Satellite.Exists (Item);
   end Exists;
 
 
@@ -70,150 +56,6 @@ package body Neo is
     Start_Time : constant Time.Ut := Time.Synchronized_Universal (Base => 1.0);
     The_Entry  : Natural := 0;
 
-    procedure Read_Sssb (Object : String) is
-
-      type Header is (Unused_Universal_Time,
-                      Julian_Date,
-                      Unused_Solar_Presence,
-                      Unused_Lunar_Presence,
-                      Right_Ascension,
-                      Declination,
-                      Azimuth,
-                      Altitude,
-                      Unused_Line_End);
-
-      The_File : Ada.Text_IO.File_Type;
-
-      In_Data_Part : Boolean := False;
-
-      The_Data_Below_Horizon : Element := (others => <>);
-      Az_Below_Horizon       : Angle.Value;
-      Alt_Below_Horizon      : Angle.Value;
-      Has_Data_Below_Horizon : Boolean := False;
-
-    begin -- Read_Objects
-      Ada.Text_IO.Open (The_File, Ada.Text_IO.In_File, Filename_Of (Object));
-      while not Ada.Text_IO.End_Of_File (The_File) loop
-        declare
-
-          Line  : constant String := Strings.Trimmed (Ada.Text_IO.Get_Line (The_File));
-          Parts : constant Strings.Item := Strings.Item_Of (Line, Separator => ',', Purge => False);
-
-          function Image_Of (Item : Header) return String is
-          begin
-            return Strings.Trimmed (Parts(Strings.First_Index + Header'pos(Item)));
-          end Image_Of;
-
-          use all type Angle.Value;
-
-        begin
-          if Line = "$$SOE" then
-            In_Data_Part := True;
-          elsif Line = "$$EOE" then
-            In_Data_Part := True;
-          elsif In_Data_Part and then Parts.Count = (Header'pos(Header'last) + 1) then
-            declare
-              Ut  : constant Time.Ut     := Time.Ut_Of (Time.JD'value(Image_Of (Julian_Date)));
-              Ra  : constant Angle.Value := +Angle.Degrees'value(Image_Of (Right_Ascension));
-              Dec : constant Angle.Value := +Angle.Degrees'value(Image_Of (Declination));
-              Az  : constant Angle.Value := +Angle.Degrees'value(Image_Of (Azimuth));
-              Alt : constant Angle.Value := +Angle.Degrees'value(Image_Of (Altitude));
-
-              function First_Above_Horizon return Element is
-                The_Ut  : Time.Ut;
-                The_Az  : Angle.Value;
-                The_Alt : Angle.Value;
-              begin
-                if Has_Data_Below_Horizon then
-                  The_Ut := The_Data_Below_Horizon.Ut;
-                  The_Az := Az_Below_Horizon;
-                  The_Alt := Alt_Below_Horizon;
-                  while The_Ut < Ut loop
-                    The_Az := Values.Interpolation_Of (T  => The_Ut,
-                                                       T1 => The_Data_Below_Horizon.Ut,
-                                                       T2 => Ut,
-                                                       V1 => Az_Below_Horizon,
-                                                       V2 => Az);
-                    The_Alt := Values.Interpolation_Of (T  => The_Ut,
-                                                        T1 => The_Data_Below_Horizon.Ut,
-                                                        T2 => Ut,
-                                                        V1 => Alt_Below_Horizon,
-                                                        V2 => Alt);
-                    if Sky_Line.Is_Above (Earth.Direction_Of (Alt => The_Alt, Az => The_Az)) then
-                      exit;
-                    end if;
-                    The_Ut := The_Ut + Time.One_Second;
-                  end loop;
-                  return (Ut  => The_Ut,
-                          Ra => Values.Interpolation_Of (T  => The_Ut,
-                                                         T1 => The_Data_Below_Horizon.Ut,
-                                                         T2 => Ut,
-                                                         V1 => The_Data_Below_Horizon.Ra,
-                                                         V2 => Ra),
-                          Dec => Values.Interpolation_Of (T  => The_Ut,
-                                                          T1 => The_Data_Below_Horizon.Ut,
-                                                          T2 => Ut,
-                                                          V1 => The_Data_Below_Horizon.Dec,
-                                                          V2 => Dec));
-                else
-                  return (Ut => Ut, Ra => Ra, Dec => Dec);
-                end if;
-              end First_Above_Horizon;
-
-            begin
-              if The_Entry > The_List'last - 3 then
-                Log.Warning ("SSSB object too slow");
-                The_Entry := The_List'first;
-                exit;
-              end if;
-              if Ut >= Start_Time and then Sky_Line.Is_Above (Earth.Direction_Of (Alt => Alt, Az => Az)) then
-                if Has_Data_Below_Horizon then
-                  The_Entry := The_Entry + 1;
-                  The_List(The_Entry) := First_Above_Horizon; -- Previous Data added;
-                  Has_Data_Below_Horizon := False;
-                end if;
-                The_Entry := The_Entry + 1;
-                declare
-                  The : Element renames The_List(The_Entry);
-                begin
-                  The.Ut := Ut;
-                  The.Ra := Ra;
-                  The.Dec := Dec;
-                end;
-              else
-                The_Data_Below_Horizon := (Ut => Ut, Ra => Ra, Dec => Dec);
-                Az_Below_Horizon := Az;
-                Alt_Below_Horizon := Alt;
-                Has_Data_Below_Horizon := True;
-                if The_Entry > 0 then
-                  The_Entry := The_Entry + 1;
-                  The_List(The_Entry) := The_Data_Below_Horizon; -- Next Data added
-                  exit;
-                end if;
-              end if;
-            end;
-          elsif The_Entry > 0 and then Line'length > 0 and then Line(Line'first) = '>' then
-            -- elevation cut-off requested
-            if The_Entry = The_List'first then
-              The_Entry := 0; -- at least two entries in a section
-              Has_Data_Below_Horizon := False;
-            else
-              exit;
-            end if;
-          end if;
-        end;
-      end loop;
-      Ada.Text_IO.Close (The_File);
-      if The_Entry > The_List'first then
-        The_Last := The_Entry;
-      end if;
-      return;
-    exception
-    when Error.Occurred =>
-      raise;
-    when others =>
-      Error.Raise_With ("Incorrect Data in " & Object);
-    end Read_Sssb;
 
 
     Norad_Lines : Norad.Two_Line;
@@ -353,23 +195,11 @@ package body Neo is
       The_Last := 0;
     end Find_Norad_Entries;
 
-    The_File : Ada.Text_IO.File_Type;
-
   begin -- read
     The_Last := 0;
     The_Entry := 0;
     Log.Write ("NEO READ - " & Target);
-    Ada.Text_IO.Open (The_File, Ada.Text_IO.In_File, Filename_Of (Target));
-    begin
-      Norad_Lines(1) := Ada.Text_IO.Get_Line (The_File);
-      Norad_Lines(2) := Ada.Text_IO.Get_Line (The_File);
-      Ada.Text_IO.Close (The_File);
-    exception
-    when others => -- No NORAD Data
-      Ada.Text_IO.Close (The_File);
-      Read_Sssb (Target);
-      return;
-    end;
+    Norad_Lines := Satellite.Tle_Of (Target);
     Find_Norad_Entries;
   end Read;
 
@@ -381,34 +211,26 @@ package body Neo is
 
   procedure Add_Objects is
 
-    procedure Process_File (Directory_Entry : Ada.Directories.Directory_Entry_Type) is
+    procedure Process (Target : String) is
       The_Index : Positive;
     begin
-      declare
-        Filename : constant String := Ada.Directories.Simple_Name (Directory_Entry);
-        Object   : constant String := Filename(Filename'first .. Filename'last - Neo.Extension'length - 1);
-      begin
-        Read (Object);
-        if The_Last > 0 then
-          The_Index := Data.New_Neo_Object_For (Name        => Object,
-                                                Description => "",
-                                                The_Type    => Data.Satellite);
-          if The_Index > The_Lists'last then
-            Error.Raise_With ("Too many near earth objects");
-          end if;
-          The_Lists(The_Index) := new List'(The_List(1..The_Last));
+      Read (Target);
+      if The_Last > 0 then
+        The_Index := Data.New_Neo_Object_For (Name        => Target,
+                                              Description => "",
+                                              The_Type    => Data.Satellite);
+        if The_Index > The_Lists'last then
+          Error.Raise_With ("Too many near earth objects");
         end if;
-      end;
-    end Process_File;
+        The_Lists(The_Index) := new List'(The_List(1..The_Last));
+      end if;
+    end Process;
 
   begin -- Add_Near_Earth_Objects
     Satellite.Read_Stellarium_Data;
-    if Ada.Directories.Exists (Neo.Directory) then
-      Ada.Directories.Search (Directory => Neo.Directory,
-                              Pattern   => "*." & Neo.Extension,
-                              Filter    => [Ada.Directories.Ordinary_File => True, others => False],
-                              Process   => Process_File'access);
-    end if;
+    for Target of Satellite.Names loop
+      Process (Target);
+    end loop;
   end Add_Objects;
 
 

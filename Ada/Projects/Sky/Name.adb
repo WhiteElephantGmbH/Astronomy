@@ -23,7 +23,6 @@ with Application;
 with Error;
 with File;
 with Lexicon;
-with Neo;
 with Solar_System;
 with Sssb;
 with Moon;
@@ -36,7 +35,7 @@ package body Name is
 
   Support_Axis_Positions : Boolean := False;
   Support_Land_Marks     : Boolean := False;
-  Support_Neos           : Boolean := False;
+  Neo_Exists             : access function (Id : String) return Boolean;
 
   type Text is new Ada.Strings.Unbounded.Unbounded_String;
 
@@ -388,11 +387,11 @@ package body Name is
 
   procedure Read_Favorites (Enable_Axis_Positions : Boolean;
                             Enable_Land_Marks     : Boolean;
-                            Enable_Neos           : Boolean) is
+                            Neo_Existing          : Neo_Exists_Handler := null) is
   begin
     Support_Axis_Positions := Enable_Axis_Positions;
     Support_Land_Marks := Enable_Land_Marks;
-    Support_Neos := Enable_Neos;
+    Neo_Exists := Neo_Existing;
     Actual_Catalog.Read_Favorite_Catalog;
   end Read_Favorites;
 
@@ -543,7 +542,7 @@ package body Name is
                   if Sssb.Exists (Object_Id) then
                     The_Element.Kind := Small_Solar_System_Body;
                     return;
-                  elsif Support_Neos and then Neo.Exists (Object_Id) then
+                  elsif Neo_Exists /= null and then Neo_Exists (Object_Id) then
                     The_Element.Kind := Near_Earth_Object;
                     The_Element.Object := Data.Neo_Object_Of (Object_Id);
                     return;
@@ -681,12 +680,8 @@ package body Name is
         Put (Image_Of (Lexicon.Pluto));
         Put ("");
         if Support_Land_Marks then
-          if Support_Neos then -- like CDK observatorium Schaffhausen
-            Put ("LM " & Image_Of (Lexicon.Road_Sign) & " | 259° 49' 13"" | 2° 56' 15""");
-          else -- like M_Zero
-            Put ("LM " & Image_Of (Lexicon.East) &  " |  90° | 0°");
-            Put ("LM " & Image_Of (Lexicon.West) &  " | 270° | 0°");
-          end if;
+          -- example for observatorium Schaffhausen
+          Put ("LM " & Image_Of (Lexicon.Road_Sign) & " | 259° 49' 13"" | 2° 56' 15""");
           Put ("");
         end if;
         Put ("HIP 95947  | " & Image_Of (Lexicon.Albireo));

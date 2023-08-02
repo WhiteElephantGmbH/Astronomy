@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2011 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2011 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -56,9 +56,11 @@ package Name is
 
   function "=" (Left, Right : Id_List) return Boolean;
 
+  type Neo_Exists_Handler is access function (Item : String) return Boolean;
+
   procedure Read_Favorites (Enable_Axis_Positions : Boolean;
                             Enable_Land_Marks     : Boolean;
-                            Enable_Neos           : Boolean);
+                            Neo_Existing          : Neo_Exists_Handler := null);
 
   procedure Define (List : Data.Kind);
 

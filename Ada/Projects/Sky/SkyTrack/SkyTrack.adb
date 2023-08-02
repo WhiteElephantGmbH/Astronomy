@@ -16,8 +16,9 @@
 pragma Style_White_Elephant;
 
 pragma Build (Description => "Telescope control program",
-              Version     => (1, 6, 0, 4),
+              Version     => (1, 6, 0, 5),
               Kind        => Windows,
+              Libraries   => ("COLL64"),
               Compiler    => "GNATPRO\23.0");
 
 with Control;

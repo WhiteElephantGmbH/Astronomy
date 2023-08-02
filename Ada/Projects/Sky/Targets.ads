@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2021 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2021 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -26,10 +26,13 @@ package Targets is
                      Near_Earth_Objects);
 
   subtype Objects is Selection range Selection'succ(Selection'first) .. Selection'last;
+  
+  type Arriving_Handling is access function (Id : Name.Id) return Boolean;
 
-  procedure Start (Clear  : access procedure;
-                   Define : access procedure (List : Name.Id_List_Access);
-                   Update : access procedure);
+  procedure Start (Clear    : access procedure;
+                   Define   : access procedure (List : Name.Id_List_Access);
+                   Update   : access procedure;
+                   Arriving : Arriving_Handling := null);
 
   procedure Define_Catalog;
 

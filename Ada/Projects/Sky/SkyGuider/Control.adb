@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2021 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                      *
+-- *                           (c) 2021 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                      *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -431,8 +431,7 @@ package body Control is
     end if;
     Sky_Line.Read;
     Name.Read_Favorites (Enable_Axis_Positions => False,
-                         Enable_Land_Marks     => True,
-                         Enable_Neos           => False);
+                         Enable_Land_Marks     => True);
   end Read_Data;
 
 
