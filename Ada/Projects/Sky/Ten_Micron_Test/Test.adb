@@ -52,16 +52,27 @@ package body Test is
         elsif Command = "l" then
           Satellite.Read_Stellarium_Data;
           Put_Line (Satellite.Names'image);
-          Ada.Text_IO.Put ("Satellite>");
-          declare
-            Name : constant String := Ada.Text_IO.Get_Line;
-          begin
-            if Satellite.Exists (Name) then
-              Put_Line ("Satellite Found");
-            else
-              Put_Line ("Satellite Not Found");
-            end if;
-          end;
+          loop
+            Ada.Text_IO.Put ("Satellite>");
+            declare
+              Name : constant String := Ada.Text_IO.Get_Line;
+              Eol  : constant String := "$0A";
+            begin
+              if Name = "" then
+                exit Main;
+              elsif Satellite.Exists (Name) then
+                declare
+                  Tle : constant Satellite.Tle := Satellite.Tle_Of (Name);
+                begin
+                  Network.Tcp.Send (The_String  => ":TLEL0" & Name & Eol & Tle(1) & Eol & Tle(2) & Eol & '#',
+                                    Used_Socket => The_Socket);
+                end;
+                exit;
+              else
+                Put_Line ("!!! satellite unknown");
+              end if;
+            end;
+          end loop;
         else
           begin
             case Command (Command'first) is
@@ -72,8 +83,8 @@ package body Test is
             when 'n' =>
               The_Kind := None;
             when others =>
-              Put_Line ("!!! command must start with ':' (normal), 'a' (ack), 's' (single response) or 'n' (no reply)");
-              exit;
+              Put_Line ("!!! expects ':' (normal), 'a' (ack), 's' (single response), 'n' (no reply) or 'l' (load TLE)");
+              exit Main;
             end case;
             Network.Tcp.Send (The_String  => Command(The_First .. Command'last),
                               Used_Socket => The_Socket);

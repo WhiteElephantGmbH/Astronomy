@@ -46,15 +46,15 @@ package body Satellite is
   end Read_Json_Data;
 
 
-  function "=" (Unused_Left, Unused_Right : Norad.Two_Line) return Boolean is
+  function "=" (Unused_Left, Unused_Right : Tle) return Boolean is
   begin
     return False;
   end "=";
 
 
-  package Tle is new Ada.Containers.Indefinite_Ordered_Maps (Key_Type     => String,
-                                                             Element_Type => Norad.Two_Line);
-  Tle_Map : Tle.Map;
+  package Tle_Data is new Ada.Containers.Indefinite_Ordered_Maps (Key_Type     => String,
+                                                                  Element_Type => Tle);
+  Tle_Map : Tle_Data.Map;
 
 
   procedure Build_Satellite_Data is
@@ -84,11 +84,11 @@ package body Satellite is
         end case;
         if The_Magnitude <= Stellarium.Magnitude_Maximum then
           for Group of Groups loop
-            if Group.Get = "visual" then
+            if Group.Get in "visual" | "iridium" then
               declare
                 Name   : constant String := Value.Get ("name");
-                Values : constant Norad.Two_Line := [1 => Value.Get ("tle1"),
-                                                     2 => Value.Get ("tle2")];
+                Values : constant Tle    := [1 => Value.Get ("tle1"),
+                                             2 => Value.Get ("tle2")];
               begin
                 if not Tle_Map.Contains (Name) and then not Norad.Is_In_Deep_Space (Values) then
                   Tle_Map.Insert (Name, Values);
@@ -122,9 +122,9 @@ package body Satellite is
 
     The_Names : Strings.List;
 
-    procedure Add (Position : Tle.Cursor) is
+    procedure Add (Position : Tle_Data.Cursor) is
     begin
-      The_Names.Append (Tle.Key (Position));
+      The_Names.Append (Tle_Data.Key (Position));
     end Add;
 
   begin -- Names
@@ -139,7 +139,7 @@ package body Satellite is
   end Exists;
 
 
-  function Tle_Of (Name : String) return Norad.Two_Line is
+  function Tle_Of (Name : String) return Tle is
   begin
     return Tle_Map.Element (Name);
   end Tle_Of;

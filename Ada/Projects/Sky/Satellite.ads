@@ -20,12 +20,14 @@ with Strings;
 
 package Satellite is
 
+  subtype Tle is Norad.Two_Line;
+
   procedure Read_Stellarium_Data;
 
   function Names return Strings.List;
-  
+
   function Exists (Name : String) return Boolean;
-  
-  function Tle_Of (Name : String) return Norad.Two_Line;
+
+  function Tle_Of (Name : String) return Tle;
 
 end Satellite;

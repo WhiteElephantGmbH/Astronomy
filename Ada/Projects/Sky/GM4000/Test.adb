@@ -18,6 +18,9 @@ package body Test is
   Hiding       : Boolean := False;
   Log_All      : Boolean := False;
 
+  use type Strings.Element;
+  use type Time.JD;
+
 
   procedure Put_Line (Item : String) is
   begin
@@ -78,6 +81,15 @@ package body Test is
 
     The_Points_Count   : Natural := 0;
     Last_Points_Count : Natural := 0;
+
+    Loaded_TLE_Data      : Strings.Element;
+    Tle_Is_Precalculated : Boolean := False;
+    Jd_Start             : Time.JD := 0.0;
+    Jd_End               : Time.JD := 0.0;
+
+    type Satellite_State is (Undefined, Preparing, Waiting, Catching, Tracking, Ended);
+
+    The_Satellite_State  : Satellite_State := Undefined;
 
 
     function Julian_Date_Image return String is
@@ -163,9 +175,7 @@ package body Test is
           elsif Data = ":STOP#" then
             Put_Line ("Stop");
             The_State := Stopped;
-          elsif Data = ":STOP#" then
-            Put_Line ("Stop");
-            The_State := Stopped;
+            The_Satellite_State := Undefined;
           elsif Data = ":GaXa#" then
             Put_Line ("Get RA Axis Angle");
             case The_State is
@@ -223,6 +233,57 @@ package body Test is
             Put_Line ("Slew to Axis Position");
             Send ("0"); -- OK
             Send_Delay := Delay_Counter;
+          elsif Data = ":TLEG#" then
+            if Strings.Is_Null (Loaded_TLE_Data) then
+              Put_Line ("TLE not loaded");
+              Send ("E#");
+            else
+              Put_Line ("Get loaded TLE");
+              Send (+Loaded_TLE_Data & "#");
+            end if;
+          elsif Data = ":TLES#" then
+            if Tle_Is_Precalculated then
+              case The_State is
+              when Parked =>
+                Put_Line ("Telecope is parked");
+                Send ("F#");
+              when others =>
+                if Jd_End < Time.Julian_Date then
+                  Send ("Q#");
+                  The_Satellite_State := Undefined;
+                elsif Jd_Start < Time.Julian_Date then
+                  Send ("S#");
+                  The_Satellite_State := Catching;
+                  The_State := Tracking;
+                else
+                  Send ("V#");
+                  The_Satellite_State := Preparing;
+                  The_State := Tracking;
+                end if;
+              end case;
+            else
+              Put_Line ("TLE not precalculated");
+              Send ("E#");
+            end if;
+          elsif Data = ":TLESCK#" then
+            Put_Line ("Satellite State: " & The_Satellite_State'image);
+            case The_Satellite_State is
+            when Undefined =>
+              Send ("E#");
+            when others =>
+              if Jd_End < Time.Julian_Date then
+                Send ("Q#");
+                The_Satellite_State := Ended;
+              elsif Jd_Start < Time.Julian_Date then
+                Send ("T#");
+                The_Satellite_State := Tracking;
+                The_State := Tracking;
+              else
+                Send ("P#");
+                The_Satellite_State := Waiting;
+                The_State := Tracking;
+              end if;
+            end case;
           elsif Extended_Command = ":SaXa" then
             Put_Line ("Set RA Axis Angle");
             RA_Axis_Image := Extended_Image;
@@ -231,10 +292,55 @@ package body Test is
             Put_Line ("Set Dec Axis Angle");
             Dec_Axis_Image := Extended_Image;
             Send ("1");
+          elsif Extended_Command = ":TLEP" then
+            Tle_Is_Precalculated := False;
+            if Strings.Is_Null (Loaded_TLE_Data) then
+              Put_Line ("TLE not loaded");
+              Send ("E#");
+            else
+              declare
+                Items     : constant Strings.Item := Strings.Item_Of (Extended_Image, ',', Symbols => "#");
+                Jd_Image  : constant String := Items(1);
+                Min_Image : constant String := Items(2);
+                Jd        : constant Time.JD := Time.JD'value(Jd_Image);
+              begin
+                if Jd < Time.Julian_Date then
+                  Put_Line ("Start time in the past");
+                  Send ("N#");
+                else
+                  Jd_Start := Jd + 0.0005;
+                  Jd_End := Jd_Start + 0.0005;
+                  Put_Line ("TLE Precalculation within next " & Min_Image & " minutes");
+                  Send (Strings.Trimmed (Jd_Start'image) & ',' & Strings.Trimmed (Jd_End'image)  & ",F#");
+                  Tle_Is_Precalculated := True;
+                end if;
+              end;
+            end if;
           elsif Large_Command = ":SRPRS" then
             Put_Line ("Set Air Pressure: " & Large_Image);
             Air_Pressure_Image := Large_Image;
             Send ("1");
+          elsif Large_Command = ":TLEL0" then
+            declare
+              Tle_Data : constant String := Large_Image;
+            begin
+              Loaded_TLE_Data := [Tle_Data(Tle_Data'first .. Tle_Data'last - 1)];
+            end;
+            Put_Line ("TLE data loaded");
+            Send ("V#");
+          elsif Large_Command = ":TLEDL" then
+            begin
+              declare
+                Item   : constant String := Large_Image;
+                Number : constant Positive := Positive'value(Item(Item'first .. Item'last - 1));
+              begin
+                Put_Line ("No satellite loded at position " & Number'image);
+              end;
+            exception
+            when others =>
+              Put_Line ("Invalid TLE Command");
+            end;
+            Send ("E#");
           elsif Large_Command = ":SRTMP" then
             Put_Line ("Set Temperature: " & Large_Image);
             Temperature_Image := Large_Image;
@@ -265,6 +371,7 @@ package body Test is
             The_State := Tracking;
           elsif Command = ":KA" then
             Put_Line ("Park");
+            The_Satellite_State := Undefined;
             The_State := Parked;
           elsif Command = ":Gg" then
             Put_Line ("Get Longitude");
