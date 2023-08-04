@@ -481,21 +481,26 @@ package body Control is
     Parameter.Read;
     Read_Data;
     if Started_Stellarium_Server then
-      Clock.Start;
-      Telescope.Start (Information_Update_Handler'access);
-      Targets.Start (Clear  => User.Clear_Targets'access,
-                     Define => User.Define'access,
-                     Update => User.Update_Targets'access);
-      User.Execute (Startup'access,
-                    User_Action_Handler'access,
-                    Termination'access);
-      Stellarium.Shutdown;
-      Clock.Finish;
+      begin
+        Clock.Start;
+        Telescope.Start (Information_Update_Handler'access);
+        Targets.Start (Clear  => User.Clear_Targets'access,
+                       Define => User.Define'access,
+                       Update => User.Update_Targets'access);
+        User.Execute (Startup'access,
+                      User_Action_Handler'access,
+                      Termination'access);
+        Stellarium.Shutdown;
+        Clock.Finish;
+      exception
+      when others =>
+        Clock.Finish;
+        raise;
+      end;
     end if;
   exception
   when Error.Occurred =>
     Stellarium.Shutdown;
-    Clock.Finish;
     User.Show_Error (Error.Message);
   when Occurrence: others =>
     Log.Termination (Occurrence);

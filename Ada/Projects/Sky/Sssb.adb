@@ -129,9 +129,11 @@ package body Sssb is
   function Filename_Of (Target_Name : String) return String is
     The_Name : String := Target_Name;
   begin
-    if The_Name (The_Name'first + 1) = '/' then
-      The_Name (The_Name'first + 1) := '-';
-    end if;
+    for The_Character of The_Name loop
+      if The_Character = '/' then
+        The_Character := '-';
+      end if;
+    end loop;
     return The_Name;
   end Filename_Of;
 
