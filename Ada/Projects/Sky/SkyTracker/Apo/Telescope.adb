@@ -48,6 +48,8 @@ package body Telescope is
 
     entry Park;
 
+    entry Prepare_Tle;
+
     entry Stop;
 
     entry Unpark;
@@ -123,6 +125,12 @@ package body Telescope is
   end Go_To_Next;
 
 
+  procedure Prepare_Tle is
+  begin
+    Control.Prepare_Tle;
+  end Prepare_Tle;
+
+
   procedure Park is
   begin
     Control.Park;
@@ -158,6 +166,8 @@ package body Telescope is
       case Name.Kind_Of (Next_Id) is
       when Name.Axis_Position =>
         return Ten_Micron.Axis_Position;
+      when Name.Near_Earth_Object =>
+        return Ten_Micron.Near_Earth_Object;
       when others =>
         return Ten_Micron.Other_Targets;
       end case;
@@ -386,6 +396,14 @@ package body Telescope is
               Clock.Define_Time;
             end if;
           end Go_To_Next;
+        or
+          accept Prepare_Tle do
+            if not (The_Information.Status in Parked | Disconnected) then
+              Ten_Micron.Stop;
+              Clock.Define_Time;
+            end if;
+            Ten_Micron.Load_Tle (Name.Image_Of (Next_Id));
+          end Prepare_Tle;
         or
           accept Park do
             Remote.Define (Target => "");

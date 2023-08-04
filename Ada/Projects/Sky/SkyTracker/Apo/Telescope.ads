@@ -28,6 +28,10 @@ package Telescope is
 
   subtype State is Ten_Micron.State;
 
+  subtype Error_State is Ten_Micron.Error_State;
+
+  subtype Transit_State is Ten_Micron.Transit_State;
+
   use all type State;
 
   subtype Command is Ten_Micron.Command;
@@ -70,6 +74,8 @@ package Telescope is
   procedure Go_To_Top;
 
   procedure Go_To_Next;
+  
+  procedure Prepare_Tle;
 
   procedure Park;
 

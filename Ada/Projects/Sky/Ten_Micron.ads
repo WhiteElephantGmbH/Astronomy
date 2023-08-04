@@ -26,10 +26,18 @@ package Ten_Micron is
                  Inconsistent,  -- user intervention needed
                  Unknown,       -- unknown mount status
                  Failure,       -- error
+                 Preparing,     -- slewing to start of the transit
+                 Waiting,       -- waiting for the satellite, stopped at the start of the transit
+                 Catching,      -- slewing to catch the satellite
+                 Ended,         -- the transit has ended
                  Solving,       -- picture solving
                  Disconnected); -- no connection to mount
 
-  type Target_Kind is (Axis_Position, Other_Targets);
+  subtype Error_State is State range Inconsistent .. Failure;
+
+  subtype Transit_State is State range Preparing .. Ended;
+
+  type Target_Kind is (Axis_Position, Near_Earth_Object, Other_Targets);
 
   Undefined_Pier : constant Character := ' ';
 
@@ -94,6 +102,8 @@ package Ten_Micron is
   procedure Start_Solving;
 
   procedure End_Solving;
+
+  procedure Load_Tle (Name : String);
 
   procedure Park;
 

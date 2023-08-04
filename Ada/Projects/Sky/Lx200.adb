@@ -103,6 +103,8 @@ package body Lx200 is
 
     when Get_Status =>
       return Command_For ("Gstat");
+    when Get_Transit_Status =>
+      return Command_For ("TLESCK");
     when Get_Axis_RA_Position =>
       return Command_For ("GaXa");
     when Get_Axis_Dec_Position =>
@@ -148,6 +150,12 @@ package body Lx200 is
       return Command_For ("U2");
     when Stop =>
       return Command_For ("STOP");
+    when Tle_Load_Satellite =>
+      return Command_For ("TLEL0" & Parameter);
+    when Tle_Precalculate =>
+      return Command_For ("TLEP" & Parameter);
+    when Tle_Slew =>
+      return Command_For ("TLES");
     when Unpark =>
       return Command_For ("PO");
     end case;

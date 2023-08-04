@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2017 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2017 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -60,6 +60,7 @@ package body Lexicon is
     Finish            => E ("End",               "Fin",                      "Ende",               "Τέλος",                   "Fine",                        "Fin"),
     Galaxies          => E ("Galaxies",          "Galaxies",                 "Galaxien",           "Γαλαξίες",                "Galassie",                    "Galaxias"),
     Hubbles_Nebula    => E ("Hubble's nebula",   "Nébuleuse de Hubble",      "Hubbles Nebel",      "Νεφέλωμα του Hubble",     "Nebulosa di Hubble",          "Nebulosa Hubble"),
+    In_Time           => E ("in",                "en",                       "in",                 "σε",                      "in",                          "en"),
     Jupiter           => E ("Jupiter",           "Jupiter",                  "Jupiter",            "Δίας",                    "Giove",                       "Júpiter"),
     Mars              => E ("Mars",              "Mars",                     "Mars",               "Άρης",                    "Marte",                       "Marte"),
     Mercury           => E ("Mercury",           "Mercure",                  "Merkur",             "Ερμής",                   "Mecurio",                     "Mecurio"),
@@ -101,6 +102,7 @@ package body Lexicon is
     Vega              => E ("Vega",              "Véga",                     "Vega",               "Βέγας",                   "Vega",                        "Vega"),
     Veil_Nebula       => E ("Veil nebula",       "Nébuleuse de Voile",       "Schleiernebel",      "Νεφέλωμα Βέλο",           "Nebulosa Velo",               "Nebulosa del Velo"),
     Venus             => E ("Venus",             "Vénus",                    "Venus",              "Αφροδίτη",                "Venere",                      "Venus"),
+    Visible           => E ("visible",           "visible",                  "sichtbar",           "ορατό",                   "visibile",                    "visible"),
     West              => E ("W",                 "O",                        "W",                  "Δ",                       "O",                           "O"),
     Whirlpool_Galaxy  => E ("Whirlpool galaxy",  "Galaxy du Tourbillon",     "Strudelgalaxie",     "Γαλαξίας της Δίνης",      "Galassia Trottola",           "Galaxia del Remolino"),
     Wild_Duck_Cluster => E ("Wild Duck cluster", "Amas du Canard Sauvage",   "Wildenten-Haufen",   "Σμήνος Αγριόπαπιας",      "Ammasso Anatra Selvatica",    "Cúmulo del Pato Salvaje")];

@@ -16,6 +16,8 @@ package body Test is
   begin
     Ada.Text_IO.Put_Line (Item);
   end Put_Line;
+
+
   procedure Client (Ip_Address : String := "192.168.26.180") is
 
     Socket_Protocol : constant Network.Tcp.Protocol := Network.Tcp.Raw;

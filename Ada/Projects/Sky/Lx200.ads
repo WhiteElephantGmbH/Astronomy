@@ -69,6 +69,7 @@ package Lx200 is
     Get_Number_Of_Alignment_Stars,
     Get_Pointing_State,
     Get_Status,
+    Get_Transit_Status,
     New_Alignment_Start,
     New_Alignment_Point,
     New_Alignment_End,
@@ -83,6 +84,9 @@ package Lx200 is
     Slew_To_Park_Position,
     Set_Ultra_Precision_Mode,
     Stop,
+    Tle_Load_Satellite,
+    Tle_Precalculate,
+    Tle_Slew,
     Unpark);
 
   subtype Command is Extended_Command range Extended_Command'first .. Set_Slewing_Rate;

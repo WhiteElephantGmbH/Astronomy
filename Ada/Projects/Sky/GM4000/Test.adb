@@ -55,7 +55,7 @@ package body Test is
     The_Client_Socket : Network.Tcp.Socket;
     Client_Address    : Network.Ip_Address;
 
-    type State is (Parked, Slewing, Tracking, Stopped, Positioning, Positioned);
+    type State is (Parked, Slewing, Tracking, Following, Stopped, Positioning, Positioned);
 
     The_State  : State := Parked;
     Send_Delay : Integer;
@@ -171,6 +171,11 @@ package body Test is
               Send ("7#");
             when Tracking =>
               Send ("0#");
+            when Following =>
+              Send ("10#");
+              if The_Satellite_State = Ended then
+                The_State := Stopped;
+              end if;
             end case;
           elsif Data = ":STOP#" then
             Put_Line ("Stop");
@@ -248,17 +253,16 @@ package body Test is
                 Put_Line ("Telecope is parked");
                 Send ("F#");
               when others =>
+                The_State := Following;
                 if Jd_End < Time.Julian_Date then
                   Send ("Q#");
                   The_Satellite_State := Undefined;
                 elsif Jd_Start < Time.Julian_Date then
                   Send ("S#");
                   The_Satellite_State := Catching;
-                  The_State := Tracking;
                 else
                   Send ("V#");
                   The_Satellite_State := Preparing;
-                  The_State := Tracking;
                 end if;
               end case;
             else
@@ -277,11 +281,11 @@ package body Test is
               elsif Jd_Start < Time.Julian_Date then
                 Send ("T#");
                 The_Satellite_State := Tracking;
-                The_State := Tracking;
+                The_State := Following;
               else
                 Send ("P#");
                 The_Satellite_State := Waiting;
-                The_State := Tracking;
+                The_State := Following;
               end if;
             end case;
           elsif Extended_Command = ":SaXa" then
@@ -304,11 +308,11 @@ package body Test is
                 Min_Image : constant String := Items(2);
                 Jd        : constant Time.JD := Time.JD'value(Jd_Image);
               begin
-                if Jd < Time.Julian_Date then
+                Jd_Start := Jd + 0.0005;
+                if Jd_Start < Time.Julian_Date then
                   Put_Line ("Start time in the past");
                   Send ("N#");
                 else
-                  Jd_Start := Jd + 0.0005;
                   Jd_End := Jd_Start + 0.0005;
                   Put_Line ("TLE Precalculation within next " & Min_Image & " minutes");
                   Send (Strings.Trimmed (Jd_Start'image) & ',' & Strings.Trimmed (Jd_End'image)  & ",F#");
@@ -496,7 +500,8 @@ package body Test is
             Is_Available  : Boolean;
           begin
             exit Main when Command = "";
-            if Command in ":Gstat#" | ":GD#" | ":GR#" | ":GaXa#" | ":GaXb#" | ":GRPRS#" | ":GRTMP#" | ":GJD1#" | ":pS#"
+            if Command in ":Gstat#" | ":TLESCK#"
+              | ":GD#" | ":GR#" | ":GaXa#" | ":GaXb#" | ":GRPRS#" | ":GRTMP#" | ":GJD1#" | ":pS#"
             then
               if not Hiding and not Log_All then
                 Start_Hiding := True;

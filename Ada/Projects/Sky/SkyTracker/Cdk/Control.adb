@@ -288,9 +288,10 @@ package body Control is
         begin
           if Neo_Tracking_Period /= Time.Undefined then
             Arriving_In := Duration(Neo_Tracking_Period.Arrival_Time - Time.Universal);
-            if Arriving_In >= 0.0 then
-              User.Show (Arriving_In);
+            if Arriving_In < 0.0 then
+              Arriving_In := 0.0;
             end if;
+            User.Show (Arriving_In);
           end if;
         end;
       end if;

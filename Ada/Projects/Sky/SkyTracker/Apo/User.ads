@@ -33,6 +33,8 @@ package User is
 
   type Setup_Object is (Pole_Top, Pole_Left, Pole_Right, Align_Next);
 
+  procedure Show (Visible_In : Duration);
+
   procedure Show (Information : Telescope.Data);
 
   procedure Set (The_Target : Name.Id);

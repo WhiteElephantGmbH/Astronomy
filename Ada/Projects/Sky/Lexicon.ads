@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2017 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2017 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -35,6 +35,7 @@ package Lexicon is
                 Finish,
                 Galaxies,
                 Hubbles_Nebula,
+                In_Time,
                 Jupiter,
                 Mars,
                 Mercury,
@@ -76,6 +77,7 @@ package Lexicon is
                 Vega,
                 Veil_Nebula,
                 Venus,
+                Visible,
                 West,
                 Whirlpool_Galaxy,
                 Wild_Duck_Cluster);

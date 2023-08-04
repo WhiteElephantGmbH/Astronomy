@@ -8,6 +8,7 @@ with Angle;
 with Error;
 with Lx200;
 with Network.Tcp;
+with Satellite;
 with Strings;
 with Traces;
 
@@ -125,6 +126,34 @@ package body Ten_Micron is
 
 
   procedure Set_Device_Status is
+
+    function Transit_Status return State is
+    begin
+      Send (Lx200.String_Of(Lx200.Get_Transit_Status), Log_Enabled => False);
+      declare
+        Reply : constant String := Received_String (Log_Enabled => False);
+      begin
+        if Reply'length = 1 then
+          case Reply(Reply'first) is
+          when 'V' =>
+            return Preparing;
+          when 'P' =>
+            return Waiting;
+          when 'S' =>
+            return Catching;
+          when 'T' =>
+            return Following;
+          when 'Q' =>
+            return Ended;
+          when others =>
+            null;
+          end case;
+        end if;
+        Log.Error ("Unexpected Transient State: " & Reply);
+        return Failure;
+      end;
+    end Transit_Status;
+
   begin
     Send (Lx200.String_Of(Lx200.Get_Status), Log_Enabled => False);
     declare
@@ -140,12 +169,16 @@ package body Ten_Micron is
         when 99 =>
           The_State := Failure;
         when others =>
-          The_State := State'val(State_Number);
+          if State_Number > 11 then
+            Log.Error ("Overloaded State");
+            The_State := Failure;
+          else
+            The_State := State'val(State_Number);
+            if The_State = Following then
+              The_State := Transit_Status;
+            end if;
+          end if;
         end case;
-        if The_State = Disconnected then
-          Log.Error ("Overloaded State");
-          The_State := Failure;
-        end if;
         Set_Status (The_State);
       end;
       return;
@@ -220,6 +253,7 @@ package body Ten_Micron is
          | Get_Longitude
          | Get_Sideral_Time
          | Get_Status
+         | Get_Transit_Status
          | Get_Axis_RA_Position
          | Get_Axis_Dec_Position
          | Get_Air_Pressure
@@ -237,6 +271,9 @@ package body Ten_Micron is
          | Set_Latitude
          | Set_Longitude
          | Synchronize
+         | Tle_Load_Satellite
+         | Tle_Precalculate
+         | Tle_Slew
        =>
         return Received_String (Log_Enabled);
       when Set_Ultra_Precision_Mode
@@ -495,8 +532,45 @@ package body Ten_Micron is
 
   procedure Slew_To (Location : Space.Direction;
                      Target   : Target_Kind := Other_Targets) is
+
     use all type Lx200.Command;
-  begin
+
+    function Neo_Prepared return Boolean is
+      Reply : constant String := Reply_For (Tle_Precalculate, Lx200.Julian_Date_Of (Time.Julian_Date) & ",60");
+    begin
+      if Reply in "E" | "N" then
+        Log.Error ("TLE precalculation failed");
+        return False;
+      else
+        Log.Write ("Precalculation result: " & Reply);
+        return True;
+      end if;
+    end Neo_Prepared;
+
+    procedure Neo_Slew is
+      Reply : constant String := Reply_For (Tle_Slew);
+    begin
+      if Reply'length = 1 then
+        case Reply(Reply'first) is
+        when 'E' =>
+          Log.Error ("NEO no transient precalculated");
+        when 'F' =>
+          Log.Error ("NEO mount parked");
+        when 'Q' =>
+          Log.Warning ("NEO transit already ended");
+        when 'S' =>
+          Log.Write ("NEO start to catch satellite");
+        when 'V' =>
+          Log.Write ("NEO slew to start position");
+        when others =>
+          Log.Error ("Neo unknown relpy <" & Reply & '>');
+        end case;
+      else
+        Log.Error ("Neo bad relpy <" & Reply & '>');
+      end if;
+    end Neo_Slew;
+
+  begin -- Slew_To
     if Not_Connected then
       return;
     end if;
@@ -505,6 +579,10 @@ package body Ten_Micron is
       Execute (Set_Axis_RA_Position, Lx200.Position_Of (Space.Ra_Of (Location)), Expected => "1");
       Execute (Set_Axis_Dec_Position, Lx200.Position_Of (Space.Dec_Of (Location)), Expected => "1");
       Execute (Slew_To_Axis_Position, Expected => Lx200.Slew_Ok);
+    when Near_Earth_Object =>
+      if Neo_Prepared then
+        Neo_Slew;
+      end if;
     when Other_Targets =>
       Execute (Set_Right_Ascension, Lx200.Hours_Of (Space.Ra_Of (Location)), Expected => "1");
       Execute (Set_Declination, Lx200.Signed_Degrees_Of (Space.Dec_Of (Location)), Expected => "1");
@@ -543,6 +621,24 @@ package body Ten_Micron is
     Log.Write ("end solving");
     The_Status := Last_State;
   end End_Solving;
+
+
+  procedure Load_Tle (Name : String) is
+
+    function Two_Line_Element return String is
+      Eol  : constant String := "$0A";
+      Tle : constant Satellite.Tle := Satellite.Tle_Of (Name);
+    begin
+      return Name & Eol & Tle(1) & Eol & Tle(2) & Eol;
+    end Two_Line_Element;
+
+  begin
+    Log.Write ("load TLE of satellite " & Name);
+    Execute (Lx200.Tle_Load_Satellite, Two_Line_Element, Expected => "V");
+  exception
+  when Error.Occurred =>
+    Log.Error (Error.Message);
+  end Load_Tle;
 
 
   procedure Park is

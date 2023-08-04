@@ -23,6 +23,7 @@ with Gui;
 with Horizon;
 with Moon;
 with Name;
+with Neo;
 with Network.Tcp;
 with Os.Application;
 with Os.Process;
@@ -258,27 +259,32 @@ package body Control is
 
     The_Data : Telescope.Data;
 
+    The_Neo_Target : Name.Id;
+
     use all type Telescope.State;
+
+    subtype Error_State is Telescope.Error_State;
+
+    subtype Transit_State is Telescope.Transit_State;
 
     procedure Define_External_Target is
     begin
       User.Clear_Target;
       New_Target_Direction := Action_Handler.New_Direction;
       Telescope.Define_Space_Access (Target_Direction_Of'access, Name.No_Id);
+      The_Neo_Target := Name.No_Id;
     end Define_External_Target;
 
     procedure Handle_Goto is
     begin
       Define_External_Target;
       case The_Data.Status is
-      when Failure
-         | Inconsistent
+      when Error_State
          | Inhibited
          | Homing
          | Parked
          | Parking
          | Unparking
-         | Unknown
          | Disconnected
       =>
         Log.Warning ("goto not executed");
@@ -288,6 +294,7 @@ package body Control is
          | Outside
          | Stopped
          | Tracking
+         | Transit_State
          | Solving
       =>
         User.Perform_Goto;
@@ -299,12 +306,26 @@ package body Control is
     begin
       The_Data := Telescope.Information;
       User.Show (The_Data);
+      if Name.Is_Known (The_Neo_Target) then
+        declare
+          Neo_Tracking_Period : constant Time.Period := Neo.Tracking_Period_Of (The_Neo_Target);
+          Arriving_In         : Duration;
+          use type Time.Ut;
+          use type Time.Period;
+        begin
+          if Neo_Tracking_Period /= Time.Undefined then
+            Arriving_In := Duration(Neo_Tracking_Period.Arrival_Time - Time.Universal);
+            if Arriving_In < 0.0 then
+              Arriving_In := 0.0;
+            end if;
+            User.Show (Arriving_In);
+          end if;
+        end;
+      end if;
       case The_Data.Status is
-      when Failure
-         | Inconsistent
+      when Error_State
          | Inhibited
          | Outside
-         | Unknown
          | Disconnected
       =>
         null;
@@ -314,6 +335,7 @@ package body Control is
          | Stopped
          | Parked
          | Tracking
+         | Transit_State
          | Solving
          | Homing
          | Parking
@@ -341,6 +363,7 @@ package body Control is
           The_Item    : Name.Id;
         begin
           User.Show_Description ("");
+          The_Neo_Target := Name.No_Id;
           Targets.Get_For (Target_Name, The_Item);
           if Name.Is_Known (The_Item)  then
             case Name.Kind_Of (The_Item) is
@@ -365,7 +388,9 @@ package body Control is
             when Name.Landmark =>
               null; -- no Landmark
             when Name.Near_Earth_Object =>
-              null; -- no NEOs
+              Telescope.Define_Space_Access (null, The_Item);
+              The_Neo_Target := The_Item;
+              Telescope.Prepare_Tle;
             end case;
           else
             null;
@@ -425,8 +450,10 @@ package body Control is
       Horizon.Generate;
     end if;
     Sky_Line.Read;
+    Neo.Add_Objects;
     Name.Read_Favorites (Enable_Axis_Positions => True,
-                         Enable_Land_Marks     => False);
+                         Enable_Land_Marks     => False,
+                         Neo_Existing          => Neo.Exists'access);
   end Read_Data;
 
 
@@ -484,9 +511,10 @@ package body Control is
       begin
         Clock.Start;
         Telescope.Start (Information_Update_Handler'access);
-        Targets.Start (Clear  => User.Clear_Targets'access,
-                       Define => User.Define'access,
-                       Update => User.Update_Targets'access);
+        Targets.Start (Clear    => User.Clear_Targets'access,
+                       Define   => User.Define'access,
+                       Update   => User.Update_Targets'access,
+                       Arriving => Neo.Is_Arriving'access);
         User.Execute (Startup'access,
                       User_Action_Handler'access,
                       Termination'access);

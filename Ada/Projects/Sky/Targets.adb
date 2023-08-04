@@ -16,6 +16,7 @@
 pragma Style_White_Elephant;
 
 with Data;
+with Lexicon;
 with Moon;
 with Site;
 with Sky_Line;
@@ -264,5 +265,45 @@ package body Targets is
   when Occurrence: others =>
     Log.Termination (Occurrence);
   end Handler;
+
+
+  function Text_Of (Visible_In : Duration) return String is
+
+    Visible : constant String := Lexicon.Image_Of (Lexicon.Visible);
+    In_Time : constant String := Lexicon.Image_Of (Lexicon.In_Time);
+
+    function Image_Of (Value : Natural;
+                       Unit  : String) return String is
+      Image : constant String := Value'img & Unit;
+    begin
+      if Value = 0 then
+        return "";
+      else
+        return Image;
+      end if;
+    end Image_Of;
+
+    Second : constant String := "s";
+    Minute : constant String := "m";
+    Hour   : constant String := "h";
+
+    function Duration_Text_Of (Value      : Natural;
+                               Upper_Unit : String;
+                               Lower_Unit : String) return String is
+    begin
+      return Visible & ' ' & In_Time  & Image_Of (Value / 60, Upper_Unit) & Image_Of (Value mod 60, Lower_Unit);
+    end Duration_Text_Of;
+
+    Delta_Time : constant Natural := Natural(Visible_In);
+
+  begin -- Text_Of
+    if Delta_Time = 0 then
+      return Visible;
+    elsif Delta_Time < 3600 then
+      return Duration_Text_Of (Delta_Time, Minute, Second);
+    else
+      return Duration_Text_Of ((Delta_Time + 59) / 60, Hour, Minute);
+    end if;
+  end Text_Of;
 
 end Targets;

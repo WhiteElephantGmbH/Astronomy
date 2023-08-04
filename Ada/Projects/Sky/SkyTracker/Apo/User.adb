@@ -116,7 +116,9 @@ package body User is
 
   use all type State;
 
-  subtype Error is State range Inconsistent .. Failure;
+  subtype Error_State is Telescope.Error_State;
+
+  subtype Transit_State is Telescope.Transit_State;
 
   The_Status : State := Disconnected;
 
@@ -158,21 +160,22 @@ package body User is
 
 
   use all type Targets.Selection;
-  subtype Selection is Targets.Selection range All_Objects .. Multiple_Stars;
+  subtype Selection is Targets.Selection;
 
 
   function Image_Of (The_Selection : Selection) return String is
 
     type Names is array (Selection) of Lexicon.Word;
 
-    Name_Of : constant Names := [All_Objects    => Lexicon.All_Objects,
-                                 Solar_System   => Lexicon.Solar_System,
-                                 Clusters       => Lexicon.Clusters,
-                                 Open_Clusters  => Lexicon.Open_Clusters,
-                                 Nebulas        => Lexicon.Nebulas,
-                                 Galaxies       => Lexicon.Galaxies,
-                                 Stars          => Lexicon.Stars,
-                                 Multiple_Stars => Lexicon.Multiple_Stars];
+    Name_Of : constant Names := [All_Objects        => Lexicon.All_Objects,
+                                 Solar_System       => Lexicon.Solar_System,
+                                 Clusters           => Lexicon.Clusters,
+                                 Open_Clusters      => Lexicon.Open_Clusters,
+                                 Nebulas            => Lexicon.Nebulas,
+                                 Galaxies           => Lexicon.Galaxies,
+                                 Stars              => Lexicon.Stars,
+                                 Multiple_Stars     => Lexicon.Multiple_Stars,
+                                 Near_Earth_Objects => Lexicon.Neos];
   begin
     return Lexicon.Image_Of (Name_Of(The_Selection));
   end Image_Of;
@@ -191,8 +194,8 @@ package body User is
   end Selection_Handler;
 
 
-  function Image_Of (The_Selection : Data.Sky_Object) return String is
-    use all type Data.Sky_Object;
+  function Image_Of (The_Selection : Data.Kind) return String is
+    use all type Data.Kind;
   begin
     case The_Selection is
     when Favorites =>
@@ -205,6 +208,8 @@ package body User is
       return "HR";
     when Messier =>
       null;
+    when Neo =>
+      return "NEO";
     when Ngc =>
       return "NGC";
     when Ocl =>
@@ -215,9 +220,9 @@ package body User is
     return Strings.Legible_Of (The_Selection'img);
   end Image_Of;
 
-  package Catalog_Menu is new Gui.Enumeration_Menu_Of (Data.Sky_Object, Gui.Radio, Image_Of);
+  package Catalog_Menu is new Gui.Enumeration_Menu_Of (Data.Kind, Gui.Radio, Image_Of);
 
-  procedure Catalog_Handler (The_Catalog : Data.Sky_Object) is
+  procedure Catalog_Handler (The_Catalog : Data.Kind) is
   begin
     Log.Write ("Catalog: " & The_Catalog'img);
     Name.Define (The_Catalog);
@@ -354,6 +359,12 @@ package body User is
   end Image_Of;
 
 
+  procedure Show (Visible_In : Duration) is
+  begin
+    Show_Description (Targets.Text_Of (Visible_In));
+  end Show;
+
+
   procedure Show (Information : Telescope.Data) is
 
     procedure Disable (The_Button : Gui.Button) is
@@ -413,14 +424,14 @@ package body User is
 
     begin -- Define_Control_Buttons
       case Information.Status is
-      when Disconnected | Error | Inhibited | Unparking =>
+      when Disconnected | Error_State | Inhibited | Unparking =>
         Align_On_Picture_Is_Enabled := False;
         Disable_Action;
         Disable_Control;
       when Parked =>
         Disable_Action;
         Enable_Control ("Unpark", Perform_Unpark'access);
-      when Slewing | Parking | Homing | Following | Positioned =>
+      when Slewing | Parking | Homing | Following | Transit_State | Positioned =>
         Align_On_Picture_Is_Enabled := False;
         Enable_Goto;
         Enable_Stop;
@@ -481,14 +492,14 @@ package body User is
 
     begin
       case Information.Status is
-      when Disconnected | Error | Inhibited | Unparking =>
+      when Disconnected | Error_State | Inhibited | Unparking =>
         Disable_Action;
         Disable_Control;
         Gui.Disable (Temperature_Box);
       when Parked =>
         Disable_Action;
         Enable_Control ("Unpark", Perform_Unpark'access);
-      when Slewing | Parking | Homing | Following | Positioned =>
+      when Slewing | Parking | Homing | Following | Transit_State | Positioned =>
         Enable_Goto;
         if Pole_Axis.Has_Values then
           Enable_Control ("Clear", Perform_Clear'access);
@@ -519,7 +530,7 @@ package body User is
     procedure Define_Settings is
     begin
       case Information.Status is
-      when Disconnected | Error =>
+      when Disconnected | Error_State =>
         Gui.Disable (Air_Pressure_Box);
         Gui.Disable (Temperature_Box);
       when others =>

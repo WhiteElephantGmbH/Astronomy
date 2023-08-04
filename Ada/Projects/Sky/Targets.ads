@@ -48,5 +48,7 @@ package Targets is
                      Target_Id     : out Name.Id);
 
   procedure Stop;
+  
+  function Text_Of (Visible_In : Duration) return String;
 
 end Targets;

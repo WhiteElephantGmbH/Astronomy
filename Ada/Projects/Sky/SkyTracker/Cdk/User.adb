@@ -346,42 +346,8 @@ package body User is
 
 
   procedure Show (Visible_In : Duration) is
-
-    function Image_Of (Value : Natural;
-                       Unit  : String) return String is
-      Image : constant String := Value'img & " " & Unit;
-    begin
-      if Value = 0 then
-        return "";
-      elsif Value = 1 then
-        return Image;
-      else
-        return Image & "s";
-      end if;
-    end Image_Of;
-
-    Header : constant String := "Visible in";
-    Second : constant String := "second";
-    Minute : constant String := "minute";
-    Hour   : constant String := "hour";
-
-    procedure Show_Duration (Value      : Natural;
-                             Upper_Unit : String;
-                             Lower_Unit : String) is
-    begin
-      Show_Description (Header & Image_Of (Value / 60, Upper_Unit) & Image_Of (Value mod 60, Lower_Unit));
-    end Show_Duration;
-
-    Delta_Time : constant Natural := Natural(Visible_In);
-
-  begin -- Show
-    if Delta_Time = 0 then
-      Show_Description ("");
-    elsif Delta_Time < 3600 then
-      Show_Duration (Delta_Time, Minute, Second);
-    else
-      Show_Duration ((Delta_Time + 59) / 60, Hour, Minute);
-    end if;
+  begin
+    Show_Description (Targets.Text_Of (Visible_In));
   end Show;
 
 
