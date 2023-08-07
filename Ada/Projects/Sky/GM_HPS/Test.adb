@@ -21,6 +21,13 @@ package body Test is
   use type Strings.Element;
   use type Time.JD;
 
+  type Mount is (GM_1000, GM_4000);
+
+  Mount_Type : Mount := GM_1000;
+  Firmware   : Float := 0.0;
+
+  Error : exception;
+
 
   procedure Put_Line (Item : String) is
   begin
@@ -28,6 +35,17 @@ package body Test is
       Ada.Text_IO.Put_Line (Item);
     end if;
   end Put_Line;
+
+
+  function Minimum_Version (Version : Float) return Boolean is
+  begin
+    if Firmware >= Version then
+      return True;
+    else
+      Put_Line ("Command not supported");
+      return False;
+    end if;
+  end Minimum_Version;
 
 
   procedure End_Hiding is
@@ -91,6 +109,10 @@ package body Test is
 
     The_Satellite_State  : Satellite_State := Undefined;
 
+    type Offset is delta 0.1 range -9999.0 .. 9999.0;
+
+    The_Time_Offset : Offset := 0.0;
+
 
     function Julian_Date_Image return String is
     begin
@@ -135,18 +157,50 @@ package body Test is
         null;
       end Flush_Input;
 
+
+      The_Offset : Offset;
+
+      procedure Get_Offset (Image   : String;
+                            Maximum : Offset) is
+
+        type Id is range 1 .. 4;
+
+        The_Id : Id;
+
+        Items : constant Strings.Item := Strings.Item_Of (Image, ',', Symbols => "#");
+
+      begin -- Get_Offset
+        if The_State = Following then
+          The_Id := Id'value(Items(1));
+          if The_Id /= 4 then
+            Put_Line ("offset id" & The_Id'image & " not implemented");
+            raise Error;
+          end if;
+          The_Offset := Offset'value(Items(2));
+          if abs The_Offset > Maximum then
+            raise Error;
+          end if;
+          Send ("V#");
+        else
+          Put_Line ("not following");
+          raise Error;
+        end if;
+      end Get_Offset;
+
     begin -- Message_Handler
       if Data'length > 3  and then Data(Data'last) = Terminator then
         declare
-          Command          : constant String := Data(Data'first .. Data'first + 2);
-          Image            : constant String := Data(Data'first + 3 .. Data'last);
-          Big_Command      : constant String := (if Data'length > 4 then Data(Data'first .. Data'first + 3) else None);
-          Big_Image        : constant String := (if Data'length > 4 then Data(Data'first + 4 .. Data'last - 1) else "");
-          Extended_Command : constant String := (if Data'length > 5 then Data(Data'first .. Data'first + 4) else None);
-          Extended_Image   : constant String := (if Data'length > 5 then Data(Data'first + 5 .. Data'last) else "");
-          Large_Command    : constant String := (if Data'length > 6 then Data(Data'first .. Data'first + 5) else None);
-          Large_Image      : constant String := (if Data'length > 6 then Data(Data'first + 6 .. Data'last) else "");
-          Huge_Command     : constant String := (if Data'length > 8 then Data(Data'first .. Data'first + 7) else None);
+          Command   : constant String := Data(Data'first .. Data'first + 2);
+          Image     : constant String := Data(Data'first + 3 .. Data'last);
+          Command_3 : constant String := (if Data'length > 4 then Data(Data'first .. Data'first + 3) else None);
+          Image_3   : constant String := (if Data'length > 4 then Data(Data'first + 4 .. Data'last - 1) else "");
+          Command_4 : constant String := (if Data'length > 5 then Data(Data'first .. Data'first + 4) else None);
+          Image_4   : constant String := (if Data'length > 5 then Data(Data'first + 5 .. Data'last) else "");
+          Command_5 : constant String := (if Data'length > 6 then Data(Data'first .. Data'first + 5) else None);
+          Image_5   : constant String := (if Data'length > 6 then Data(Data'first + 6 .. Data'last) else "");
+          Command_7 : constant String := (if Data'length > 8 then Data(Data'first .. Data'first + 7) else None);
+          Command_8 : constant String := (if Data'length > 9 then Data(Data'first .. Data'first + 8) else None);
+          Image_8   : constant String := (if Data'length > 9 then Data(Data'first + 9 .. Data'last) else "");
         begin
           if Data = ":Gstat#" then
             Put_Line ("Get Status");
@@ -181,6 +235,7 @@ package body Test is
             Put_Line ("Stop");
             The_State := Stopped;
             The_Satellite_State := Undefined;
+            The_Time_Offset := 0.0;
           elsif Data = ":GaXa#" then
             Put_Line ("Get RA Axis Angle");
             case The_State is
@@ -257,6 +312,7 @@ package body Test is
                 if Jd_End < Time.Julian_Date then
                   Send ("Q#");
                   The_Satellite_State := Undefined;
+                  The_Time_Offset := 0.0;
                 elsif Jd_Start < Time.Julian_Date then
                   Send ("S#");
                   The_Satellite_State := Catching;
@@ -288,22 +344,22 @@ package body Test is
                 The_State := Following;
               end if;
             end case;
-          elsif Extended_Command = ":SaXa" then
+          elsif Command_4 = ":SaXa" then
             Put_Line ("Set RA Axis Angle");
-            RA_Axis_Image := Extended_Image;
+            RA_Axis_Image := Image_4;
             Send ("1");
-          elsif Extended_Command = ":SaXb" then
+          elsif Command_4 = ":SaXb" then
             Put_Line ("Set Dec Axis Angle");
-            Dec_Axis_Image := Extended_Image;
+            Dec_Axis_Image := Image_4;
             Send ("1");
-          elsif Extended_Command = ":TLEP" then
+          elsif Command_4 = ":TLEP" then
             Tle_Is_Precalculated := False;
             if Strings.Is_Null (Loaded_TLE_Data) then
               Put_Line ("TLE not loaded");
               Send ("E#");
             else
               declare
-                Items     : constant Strings.Item := Strings.Item_Of (Extended_Image, ',', Symbols => "#");
+                Items     : constant Strings.Item := Strings.Item_Of (Image_4, ',', Symbols => "#");
                 Jd_Image  : constant String := Items(1);
                 Min_Image : constant String := Items(2);
                 Jd        : constant Time.JD := Time.JD'value(Jd_Image);
@@ -320,22 +376,22 @@ package body Test is
                 end if;
               end;
             end if;
-          elsif Large_Command = ":SRPRS" then
-            Put_Line ("Set Air Pressure: " & Large_Image);
-            Air_Pressure_Image := Large_Image;
+          elsif Command_5 = ":SRPRS" then
+            Put_Line ("Set Air Pressure: " & Image_5);
+            Air_Pressure_Image := Image_5;
             Send ("1");
-          elsif Large_Command = ":TLEL0" then
+          elsif Command_5 = ":TLEL0" then
             declare
-              Tle_Data : constant String := Large_Image;
+              Tle_Data : constant String := Image_5;
             begin
               Loaded_TLE_Data := [Tle_Data(Tle_Data'first .. Tle_Data'last - 1)];
             end;
             Put_Line ("TLE data loaded");
             Send ("V#");
-          elsif Large_Command = ":TLEDL" then
+          elsif Command_5 = ":TLEDL" then
             begin
               declare
-                Item   : constant String := Large_Image;
+                Item   : constant String := Image_5;
                 Number : constant Positive := Positive'value(Item(Item'first .. Item'last - 1));
               begin
                 Put_Line ("No satellite loded at position " & Number'image);
@@ -345,26 +401,57 @@ package body Test is
               Put_Line ("Invalid TLE Command");
             end;
             Send ("E#");
-          elsif Large_Command = ":SRTMP" then
-            Put_Line ("Set Temperature: " & Large_Image);
-            Temperature_Image := Large_Image;
+          elsif Command_5 = ":SRTMP" then
+            Put_Line ("Set Temperature: " & Image_5);
+            Temperature_Image := Image_5;
             Send ("1");
-          elsif Huge_Command = ":newalpt" then
+          elsif Command_7 = ":newalpt" then
             The_Points_Count := @ + 1;
             Put_Line ("New Alignment Point");
             Send (Points_Image & "#");
-          elsif Big_Command = ":SJD" then -- :SJD1234567.12345678#
-            Put_Line ("Set Julian Date " & Time.Image_Of (Time.Ut_Of (Time.JD'value(Big_Image))));
+          elsif Command_8 = ":TROFFADD" then
+            if Minimum_Version (3.0) then
+              begin
+                Put_Line ("Add offset whilst following");
+                Get_Offset (Image_8, Maximum => 1000.0);
+                Put_Line ("Offset =" & The_Offset'image);
+                begin
+                  The_Time_Offset := @ + The_Offset;
+                exception
+                when others =>
+                  Put_Line ("Time Offset out of range");
+                  raise Error;
+                end;
+                Put_Line ("Time Offset =" & The_Time_Offset'image);
+              exception
+              when Error =>
+                Send ("E#");
+              end;
+            end if;
+          elsif Command_3 = ":SJD" then -- :SJD1234567.12345678#
+            Put_Line ("Set Julian Date " & Time.Image_Of (Time.Ut_Of (Time.JD'value(Image_3))));
             Send ("1");
           elsif Command = ":GV" then
             case Data(Data'first + 3) is
             when 'P' => -- GVP
               The_State := Parked;
               Put_Line ("Get Product Name");
-              Send ("10micron GM4000HPS#");
+              case Mount_Type is
+              when GM_1000 =>
+                Send ("10micron GM1000HPS#");
+              when GM_4000 =>
+                Send ("10micron GM4000HPS#");
+              end case;
             when 'N' => -- GVN
               Put_Line ("Get Firmware Number");
-              Send ("2.15.1#");
+              case Mount_Type is
+              when GM_1000 =>
+                Send ("3.1.10#");
+                Firmware := 3.1;
+              when GM_4000 =>
+                Send ("2.15.1#");
+                Firmware := 2.15;
+              end case;
             when others =>
               Put_Line ("Unknown GV Command");
             end case;
@@ -373,10 +460,12 @@ package body Test is
           elsif Command = ":PO" then
             Put_Line ("Unpark");
             The_State := Tracking;
+            The_Time_Offset := 0.0;
           elsif Command = ":KA" then
             Put_Line ("Park");
             The_Satellite_State := Undefined;
             The_State := Parked;
+            The_Time_Offset := 0.0;
           elsif Command = ":Gg" then
             Put_Line ("Get Longitude");
             Send ("-008*37:32.0#");
@@ -443,6 +532,7 @@ package body Test is
             Put_Line ("Slew to Target Object");
             Send ("0"); -- OK
             Send_Delay := Delay_Counter;
+            The_Time_Offset := 0.0;
           elsif Command = ":CM" then
             Put_Line ("Synchronize to Target Object");
             Send ("Coordinates     matched        #"); -- OK
@@ -491,7 +581,7 @@ package body Test is
       Network.Tcp.Accept_Client_From (Listener_Socket,
                                       The_Client_Socket,
                                       Client_Address);
-      Put_Line ("GM 4000 HPS connected. Ip Address " & Network.Image_Of (Client_Address));
+      Put_Line (Mount_Type'image & " HPS connected. Ip Address " & Network.Image_Of (Client_Address));
       begin
         loop
           declare
@@ -525,7 +615,7 @@ package body Test is
       exception
       when Network.Tcp.No_Client =>
         End_Hiding;
-        Put_Line ("GM 4000 HPS has disconnected");
+        Put_Line ("GM HPS has disconnected");
       end;
     end loop Main;
   exception
@@ -546,12 +636,20 @@ package body Test is
   procedure Execute is
     Nr_Of_Arguments : constant Natural := Ada.Command_Line.Argument_Count;
   begin
-    if Nr_Of_Arguments = 0 then
-      Put_Line ("GM 4000 Simulator.");
-      Server;
-    else
+    if Nr_Of_Arguments > 1 then
       Put_Line ("Incorrect number of parameters");
+      return;
+    elsif Nr_Of_Arguments = 1 then
+      begin
+        Mount_Type := Mount'value ("GM_" & Ada.Command_Line.Argument(1));
+      exception
+      when others =>
+        Put_Line ("Expected parameter: 1000 or 4000");
+        return;
+      end;
     end if;
+    Put_Line (Mount_Type'image & " HPS Simulator.");
+    Server;
   exception
   when Event : others =>
     Put_Line (Exceptions.Information_Of (Event));

@@ -4,13 +4,13 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-pragma Build (Description => "GM4000 Simulator",
-              Version     => (2, 15, 1, 10),
+pragma Build (Description => "GM HPS Simulator",
+              Version     => (3, 1, 10, 0),
               Kind        => Console,
               Compiler    => "GNATPRO\23.0");
 with Test;
 
-procedure GM4000 is
+procedure GM_HPS is
 begin
   Test.Execute;
-end GM4000;
+end GM_HPS;
