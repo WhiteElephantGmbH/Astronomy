@@ -24,8 +24,8 @@ with Data;
 with Device;
 with Earth;
 with Gui.Enumeration_Menu_Of;
-with Gui.Key_Codes;
 with Gui.Registered;
+with Keys;
 with Lexicon;
 with Parameter;
 with Persistent;
@@ -848,94 +848,35 @@ package body User is
   end Put;
 
 
-  Ignore_Next       : Boolean := False;
-  Arrow_Was_Pressed : Boolean := False; -- whilst space is pressed
-  Is_Changing       : Boolean := False;
-  Enter_Is_Pressed  : Boolean := False;
-
-  procedure Key_Handler (The_Event    : Gui.Key_Event;
-                         The_Key_Code : Gui.Key_Code) is
+  procedure Put_Key (The_Key : Keys.Command) is
+    use all type Keys.Command;
+    use all type Device.Command;
   begin
-    case The_Page is
-    when Is_Setup =>
-      return;
-    when Is_Control | Is_Display =>
-      null;
+    case The_Key is
+    when Move_Left =>
+      Put (Move_Left);
+    when Move_Right=>
+      Put (Move_Right);
+    when Move_Up=>
+      Put (Move_Up);
+    when Move_Down=>
+      Put (Move_Down);
+    when Increase_Time=>
+      Put (Increase_Time);
+    when Decrease_Time=>
+      Put (Decrease_Time);
+    when Keys.End_Command =>
+      Put (No_Command);
+    when Increase_Speed=>
+      Put (Increase_Speed);
+    when Decrease_Speed=>
+      Put (Decrease_Speed);
+    when Enter=>
+      Put (Enter);
     end case;
-    case The_Event is
-    when Gui.Key_Pressed =>
-      Log.Write ("Key pressed: " & The_Key_Code'img);
-      if Ignore_Next then
-        return;
-      end if;
-      case The_Key_Code is
-      when Gui.Key_Codes.KP_2 | Gui.Key_Codes.KP_Down | Gui.Key_Codes.K_Down =>
-        if Enter_Is_Pressed then
-          Put (Device.Decrease_Speed);
-          Arrow_Was_Pressed := True;
-        else
-          Is_Changing := True;
-          Put (Device.Move_Down);
-        end if;
-      when Gui.Key_Codes.KP_8 | Gui.Key_Codes.KP_Up | Gui.Key_Codes.K_Up =>
-        if Enter_Is_Pressed then
-          Put (Device.Increase_Speed);
-          Arrow_Was_Pressed := True;
-        else
-          Is_Changing := True;
-          Put (Device.Move_Up);
-        end if;
-      when Gui.Key_Codes.KP_4 | Gui.Key_Codes.KP_Left | Gui.Key_Codes.K_Left =>
-        Is_Changing := True;
-        if Enter_Is_Pressed then
-          Put (Device.Decrease_Time);
-          Arrow_Was_Pressed := True;
-        else
-          Put (Device.Move_Left);
-        end if;
-      when Gui.Key_Codes.KP_6 | Gui.Key_Codes.KP_Right | Gui.Key_Codes.K_Right =>
-        Is_Changing := True;
-        if Enter_Is_Pressed then
-          Put (Device.Increase_Time);
-          Arrow_Was_Pressed := True;
-        else
-          Put (Device.Move_Right);
-        end if;
-      when Gui.Key_Codes.KP_Enter | Gui.Key_Codes.K_Return =>
-        Enter_Is_Pressed := True;
-        Arrow_Was_Pressed := False;
-      when Gui.Key_Codes.K_Menu =>
-        Ignore_Next := True;
-      when others =>
-        null;
-      end case;
-    when Gui.Key_Released =>
-      Log.Write ("Key released: " & The_Key_Code'img);
-      case The_Key_Code is
-      when Gui.Key_Codes.K_Menu =>
-        Ignore_Next := False;
-      when
-        Gui.Key_Codes.KP_2 | Gui.Key_Codes.KP_Down  | Gui.Key_Codes.K_Down
-      | Gui.Key_Codes.KP_8 | Gui.Key_Codes.KP_Up    | Gui.Key_Codes.K_Up
-      | Gui.Key_Codes.KP_4 | Gui.Key_Codes.KP_Left  | Gui.Key_Codes.K_Left
-      | Gui.Key_Codes.KP_6 | Gui.Key_Codes.KP_Right | Gui.Key_Codes.K_Right =>
-        if Is_Changing then
-          Is_Changing := False;
-          Put (Device.No_Command);
-        end if;
-      when Gui.Key_Codes.KP_Enter | Gui.Key_Codes.K_Return =>
-        Enter_Is_Pressed := False;
-        if not Arrow_Was_Pressed then
-          Put (Device.Enter);
-        end if;
-      when others =>
-        null;
-      end case;
-    end case;
-  exception
-  when others =>
-    Log.Error ("Key_Handler failed");
-  end Key_Handler;
+  end Put_Key;
+
+  procedure Key_Handler is new Keys.Handler (Put_Key);
 
 
   function Convertion is new Ada.Unchecked_Conversion (Gui.Information, Name.Id_Access);

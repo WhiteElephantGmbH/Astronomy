@@ -23,8 +23,8 @@ with Alignment;
 with Data;
 with Earth;
 with Gui.Enumeration_Menu_Of;
-with Gui.Key_Codes;
 with Gui.Registered;
+with Keys;
 with Lexicon;
 with Lx200;
 with Objects;
@@ -838,70 +838,43 @@ package body User is
   end Enter_Setup_Page;
 
 
-  procedure Put (The_Command : Telescope.Command) is
-  begin
-    Telescope.Execute (The_Command);
-  end Put;
-
-
-  Ignore_Next : Boolean := False;
-
-
-  procedure Key_Handler (The_Event    : Gui.Key_Event;
-                         The_Key_Code : Gui.Key_Code) is
+  procedure Put_Key (The_Key : Keys.Command) is
+    use all type Keys.Command;
     use all type Telescope.Command;
   begin
-    case The_Page is
-    when Is_Setup =>
-      return;
-    when Is_Control | Is_Display =>
+    case The_Key is
+    when Move_Left =>
+      Telescope.Execute (Move_Left); 
+    when Move_Right=>
+      Telescope.Execute (Move_Right);
+    when Move_Up=>
+      Telescope.Execute (Move_Up);
+    when Move_Down=>
+      Telescope.Execute (Move_Down);
+    when Increase_Time=>
+      null;--Put (Increase_Time);
+    when Decrease_Time=>
+      null;--Put (Decrease_Time);
+    when Move_Left_End=>
+      Telescope.Execute (Move_Left_End);
+    when Move_Right_End=>
+      Telescope.Execute (Move_Right_End);
+    when Move_Up_End=>
+      Telescope.Execute (Move_Up_End);
+    when Move_Down_End=>
+      Telescope.Execute (Move_Down_End);
+    when Change_Time_End=>
+      Telescope.Execute (Move_Left);
+    when Increase_Speed=>
+      Telescope.Execute (Increase_Moving_Rate);
+    when Decrease_Speed=>
+      Telescope.Execute (Decrease_Moving_Rate);
+    when Enter=>
       null;
     end case;
-    case The_Event is
-    when Gui.Key_Pressed =>
-      Log.Write ("Key pressed: " & The_Key_Code'img);
-      if Ignore_Next then
-        return;
-      end if;
-      case The_Key_Code is
-      when Gui.Key_Codes.KP_2 | Gui.Key_Codes.KP_Down =>
-        Put (Move_Down);
-      when Gui.Key_Codes.KP_8 | Gui.Key_Codes.KP_Up =>
-        Put (Move_Up);
-      when Gui.Key_Codes.KP_4 | Gui.Key_Codes.KP_Left =>
-        Put (Move_Left);
-      when Gui.Key_Codes.KP_6 | Gui.Key_Codes.KP_Right =>
-        Put (Move_Right);
-      when Gui.Key_Codes.KP_Add | Gui.Key_Codes.K_Page_Up =>
-        Put (Increase_Moving_Rate);
-      when Gui.Key_Codes.KP_Subtract | Gui.Key_Codes.K_Page_Down =>
-        Put (Decrease_Moving_Rate);
-      when Gui.Key_Codes.K_Menu =>
-        Ignore_Next := True;
-      when others =>
-        null;
-      end case;
-    when Gui.Key_Released =>
-      Log.Write ("Key released: " & The_Key_Code'img);
-      case The_Key_Code is
-      when Gui.Key_Codes.KP_2 | Gui.Key_Codes.KP_Down =>
-        Put (Move_Down_End);
-      when Gui.Key_Codes.KP_8 | Gui.Key_Codes.KP_Up =>
-        Put (Move_Up_End);
-      when Gui.Key_Codes.KP_4 | Gui.Key_Codes.KP_Left =>
-        Put (Move_Left_End);
-      when Gui.Key_Codes.KP_6 | Gui.Key_Codes.KP_Right =>
-        Put (Move_Right_End);
-      when Gui.Key_Codes.K_Menu =>
-        Ignore_Next := True;
-      when others =>
-        null;
-      end case;
-    end case;
-  exception
-  when others =>
-    Log.Error ("Key_Handler failed");
-  end Key_Handler;
+  end Put_Key;
+
+  procedure Key_Handler is new Keys.Handler (Put_Key);
 
 
   function Convertion is new Ada.Unchecked_Conversion (Gui.Information, Name.Id_Access);
