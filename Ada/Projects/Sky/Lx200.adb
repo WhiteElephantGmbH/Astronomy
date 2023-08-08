@@ -156,6 +156,8 @@ package body Lx200 is
       return Command_For ("TLEP" & Parameter);
     when Tle_Slew =>
       return Command_For ("TLES");
+    when Trajectory_Offset_Add =>
+      return Command_For ("TROFFADD" & Parameter);
     when Unpark =>
       return Command_For ("PO");
     end case;

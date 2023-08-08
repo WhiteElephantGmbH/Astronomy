@@ -109,7 +109,7 @@ package body Test is
 
     The_Satellite_State  : Satellite_State := Undefined;
 
-    type Offset is delta 0.1 range -9999.0 .. 9999.0;
+    type Offset is delta 0.1 range -9999.0 .. 9999.0 with Small => 0.1;
 
     The_Time_Offset : Offset := 0.0;
 

@@ -87,6 +87,7 @@ package Lx200 is
     Tle_Load_Satellite,
     Tle_Precalculate,
     Tle_Slew,
+    Trajectory_Offset_Add,
     Unpark);
 
   subtype Command is Extended_Command range Extended_Command'first .. Set_Slewing_Rate;

@@ -18,10 +18,11 @@ package body Ten_Micron is
 
   Socket_Protocol : constant Network.Tcp.Protocol := Network.Tcp.Raw;
 
-  GM1000HPS       : constant String := "10micron GM1000HPS";
-  GM4000HPS       : constant String := "10micron GM4000HPS";
-  Firmware_GM1000 : constant String := "3.1.10";
-  Firmware_GM4000 : constant String := "2.15.1";
+  Version_Delta : constant := 0.0001;
+
+  type Firmware_Version is delta Version_Delta range 0.0000 .. 99.9999 with Small => Version_Delta;
+
+  The_Firmware_Version : Firmware_Version := 0.0;
 
   Receive_Timeout  : constant Duration := 3.0;
   Flush_Timeout    : constant Duration := 0.5;
@@ -274,6 +275,7 @@ package body Ten_Micron is
          | Tle_Load_Satellite
          | Tle_Precalculate
          | Tle_Slew
+         | Trajectory_Offset_Add
        =>
         return Received_String (Log_Enabled);
       when Set_Ultra_Precision_Mode
@@ -345,20 +347,21 @@ package body Ten_Micron is
         Error.Raise_With (Network.Exception_Kind (Item)'image);
       end;
       declare
-        Product : constant String := Reply_For (Lx200.Get_Product_Name);
+        Product  : constant String := Reply_For (Lx200.Get_Product_Name);
+        Version  : constant String := Reply_For (Lx200.Get_Firmware_Number);
+        Versions : constant Strings.Item := Strings.Item_Of (Version, '.');
+        type Number_Part is range 0 .. 99;
+        function Value (Item : String) return Firmware_Version is (Firmware_Version(Number_Part'value(Item)));
       begin
-        if Product = GM1000HPS then
-          if Reply_For (Lx200.Get_Firmware_Number) /= Firmware_GM1000 then
-            Error.Raise_With ("expected version GM1000HPS " & Firmware_GM1000);
-          end if;
-        elsif Product = GM4000HPS then
-          if Reply_For (Lx200.Get_Firmware_Number) /= Firmware_GM4000 then
-            Error.Raise_With ("expected version GM4000HPS " & Firmware_GM4000);
-          end if;
-          Is_Legacy := True;
-        else
-          Error.Raise_With ("Incorrect 10micron product name " & Product);
-        end if;
+        Log.Write ("Product " & Product);
+        begin
+          The_Firmware_Version := Value(Versions(1)) + Value(Versions(2)) * 0.01 + Value (Versions(3)) * 0.0001;
+          Log.Write ("Firmware " & Version);
+        exception
+        when others =>
+          Error.Raise_With ("Incorrect firmware version " & Version);
+        end;
+        Is_Legacy := The_Firmware_Version < 3.0;
         Has_New_Alignment := True;
       end;
       Set_Ultra_Precision_Mode;
@@ -878,29 +881,29 @@ package body Ten_Micron is
   end Set_Moving_Rate;
 
 
-  procedure Increase_Moving_Rate is
+  procedure Increase is
   begin
     if The_Moving_Index < Moving_Factors'last and then Moving_Rate_Change_Allowed then
       The_Moving_Index := @ + 1;
       Set_Moving_Rate (Moving_Factors(The_Moving_Index));
     end if;
-  end Increase_Moving_Rate;
+  end Increase;
 
 
-  procedure Decrease_Moving_Rate is
+  procedure Decrease is
   begin
     if The_Moving_Index > Moving_Factors'first and then Moving_Rate_Change_Allowed then
       The_Moving_Index := @ - 1;
       Set_Moving_Rate (Moving_Factors(The_Moving_Index));
     end if;
-  end Decrease_Moving_Rate;
+  end Decrease;
 
 
   procedure Define_Moving_Rate is
   begin
     if The_Status /= Parked and then The_Moving_Index = 0 then -- Undefined
       The_Moving_Index := Moving_Factors'first + 2; -- first Increment at startup -> default rate = 60
-      Increase_Moving_Rate;
+      Increase;
     end if;
   end Define_Moving_Rate;
 
@@ -911,9 +914,9 @@ package body Ten_Micron is
     when Move_Command =>
       Move (The_Command);
     when Increase_Moving_Rate =>
-      Increase_Moving_Rate;
+      Increase;
     when Decrease_Moving_Rate =>
-      Decrease_Moving_Rate;
+      Decrease;
     end case;
   end Execute;
 
@@ -1019,6 +1022,35 @@ package body Ten_Micron is
     Log.Termination (Item);
     return No_Information;
   end Alignment_Info;
+
+
+  function Image_Of (Value : Time_Offset) return String is
+
+    I : constant String := Value'image;
+    F : constant Natural := I'first;
+
+  begin
+    return (if Value < 0.0 then '-' else '+') & I(F + 1) & I(F + 3 .. F + 5) & '.' & I(F + 6);
+  end Image_Of;
+
+
+  function Updated (Time_Change : Time_Offset) return Boolean is
+  begin
+    if Is_Legacy then
+      Log.Warning ("Legacy Firmware for " & Lx200.String_Of (Lx200.Trajectory_Offset_Add));
+      return False;
+    else
+      declare
+        Time_Image : constant String := Image_Of (Time_Change);
+      begin
+        return Execute (Lx200.Trajectory_Offset_Add, Parameter => "4," & Time_Image, Ok => "V", Failed => "E");
+      end;
+    end if;
+  exception
+  when Error.Occurred =>
+    Log.Error (Error.Message);
+    return False;
+  end Updated;
 
 
   procedure Disconnect is

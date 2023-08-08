@@ -36,6 +36,12 @@ package Telescope is
 
   subtype Command is Ten_Micron.Command;
 
+  type Update_Command is (Start_Time_Increase, Start_Time_Decrease, End_Time_Change);
+
+  subtype Time_Offset is Ten_Micron.Time_Offset;
+
+  function Image_Of (Time_Delta : Time_Offset) return String renames Ten_Micron.Image_Of;
+
   type Data is record
     Status             : State := Disconnected;
     Target_Direction   : Space.Direction;
@@ -48,6 +54,7 @@ package Telescope is
     Cone_Error         : Angle.Value := Angle.Zero;
     Pole_Offsets       : Earth.Direction;
     Universal_Time     : Time.Ut := Time.Unknown;
+    Time_Delta         : Time_Offset;
   end record;
 
   type Information_Update_Handler is access procedure;
@@ -74,7 +81,7 @@ package Telescope is
   procedure Go_To_Top;
 
   procedure Go_To_Next;
-  
+
   procedure Prepare_Tle;
 
   procedure Park;
@@ -84,6 +91,8 @@ package Telescope is
   procedure Unpark;
 
   procedure Execute (The_Command : Command);
+
+  procedure Update (The_Command : Update_Command);
 
   function Information return Data;
 

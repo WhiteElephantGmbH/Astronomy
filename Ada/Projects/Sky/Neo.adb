@@ -56,8 +56,6 @@ package body Neo is
     Start_Time : constant Time.Ut := Time.Synchronized_Universal (Base => 1.0);
     The_Entry  : Natural := 0;
 
-
-
     Norad_Lines : Norad.Two_Line;
 
     procedure Find_Norad_Entries is

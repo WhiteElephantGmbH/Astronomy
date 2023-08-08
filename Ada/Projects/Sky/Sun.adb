@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2022 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                           (c) 2023 by White Elephant GmbH, Schaffhausen, Switzerland                              *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,15 +15,15 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-pragma Build (Description => "Sky Tracker control program for 10micron",
-              Version     => (2, 3, 0, 1),
-              Kind        => Windows,
-              Libraries   => ("AWS64", "COLL64"),
-              Compiler    => "GNATPRO\23.0");
+with Earth;
+with Solar_System;
+with Time;
 
-with Control;
+package body Sun is
 
-procedure SkyTracker is
-begin
-  Control.Start;
-end SkyTracker;
+  function Is_Visible return Boolean is
+  begin
+    return not Earth.Is_Below_Horizon (Solar_System.Direction_Of (Solar_System.Sun, Time.Universal));
+  end Is_Visible;
+
+end Sun;

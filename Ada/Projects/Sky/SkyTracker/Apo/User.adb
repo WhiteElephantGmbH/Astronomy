@@ -68,6 +68,7 @@ package body User is
   Dec_Axis     : Gui.Plain_Edit_Box;
   Lmst         : Gui.Plain_Edit_Box;
   Local_Time   : Gui.Plain_Edit_Box;
+  Time_Offset  : Gui.Plain_Edit_Box;
 
   Setup_Page           : Gui.Page;
   Setup_Action_Button  : Gui.Button;
@@ -562,6 +563,7 @@ package body User is
 
     use type Angle.Value;
     use type Time.Ut;
+    use type Telescope.Time_Offset;
 
   begin -- Show
     if (The_Status /= Information.Status)
@@ -623,6 +625,11 @@ package body User is
         end if;
         Gui.Set_Text (Local_Time, Time.Image_Of (Information.Universal_Time, Time_Only => True));
       end if;
+      if Information.Time_Delta = 0.0 then
+          Gui.Set_Text (Time_Offset, "");
+        else
+          Gui.Set_Text (Time_Offset, Telescope.Image_Of (Information.Time_Delta));
+        end if;
     when Is_Setup =>
       if Refraction.New_Air_Pressure then
         Gui.Set_Text (Air_Pressure_Box, Image_Of (Refraction.Air_Pressure));
@@ -841,20 +848,18 @@ package body User is
   procedure Put_Key (The_Key : Keys.Command) is
     use all type Keys.Command;
     use all type Telescope.Command;
+    use all type Telescope.Update_Command;
   begin
+    Log.Write ("Command " & The_Key'image);
     case The_Key is
     when Move_Left =>
-      Telescope.Execute (Move_Left); 
+      Telescope.Execute (Move_Left);
     when Move_Right=>
       Telescope.Execute (Move_Right);
     when Move_Up=>
       Telescope.Execute (Move_Up);
     when Move_Down=>
       Telescope.Execute (Move_Down);
-    when Increase_Time=>
-      null;--Put (Increase_Time);
-    when Decrease_Time=>
-      null;--Put (Decrease_Time);
     when Move_Left_End=>
       Telescope.Execute (Move_Left_End);
     when Move_Right_End=>
@@ -863,12 +868,16 @@ package body User is
       Telescope.Execute (Move_Up_End);
     when Move_Down_End=>
       Telescope.Execute (Move_Down_End);
-    when Change_Time_End=>
-      Telescope.Execute (Move_Left);
     when Increase_Speed=>
       Telescope.Execute (Increase_Moving_Rate);
     when Decrease_Speed=>
       Telescope.Execute (Decrease_Moving_Rate);
+    when Increase_Time=>
+      Telescope.Update (Start_Time_Increase);
+    when Decrease_Time=>
+      Telescope.Update (Start_Time_Decrease);
+    when Change_Time_End=>
+      Telescope.Update (End_Time_Change);
     when Enter=>
       null;
     end case;
@@ -1037,6 +1046,11 @@ package body User is
                                   Is_Modifiable  => False,
                                   The_Size       => Text_Size,
                                   The_Title_Size => Title_Size);
+
+        Time_Offset := Gui.Create (Display_Page, "Time Δ", "",
+                                   Is_Modifiable  => False,
+                                   The_Size       => Text_Size,
+                                   The_Title_Size => Title_Size);
       end Define_Display_Page;
 
       procedure Define_Setup_Page is

@@ -15,6 +15,7 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with Ada.Real_Time;
 with Clock;
 with Parameter;
 with Picture;
@@ -27,6 +28,7 @@ package body Telescope is
 
   package Log is new Traces ("Telescope");
 
+  package RT renames Ada.Real_Time;
 
   task type Control_Task is
 
@@ -55,6 +57,8 @@ package body Telescope is
     entry Unpark;
 
     entry Execute (The_Command : Command);
+
+    entry Update (The_Command : Update_Command);
 
     entry Get (The_Data : out Data);
 
@@ -155,6 +159,12 @@ package body Telescope is
   end Execute;
 
 
+  procedure Update (The_Command : Update_Command) is
+  begin
+    Control.Update (The_Command);
+  end Update;
+
+
   Next_Id            : Name.Id;
   Next_Get_Direction : Get_Space_Access := null;
   The_Next_Star      : Space.Direction;
@@ -227,6 +237,78 @@ package body Telescope is
     Evaluate_Pole_Setup : access procedure;
 
 
+    type Timer_State is (Stopped, Increasing, Decreasing);
+
+    The_Timer_State : Timer_State := Stopped;
+
+    The_Start_Time : RT.Time;
+    The_Delta_Time : Time_Offset := 0.0;
+
+
+    function "-" (Left, Right : RT.Time) return Duration is
+      use type RT.Time;
+    begin
+      return RT.To_Duration (Left - Right);
+    end "-";
+
+
+    procedure Update_Offset (Now         : RT.Time;
+                             Time_Change : Duration) is
+      Offset : Time_Offset;
+      use type Time_Offset;
+    begin
+      The_Start_Time := Now;
+      Offset := Time_Offset(Time_Change / 50.0);
+      if Ten_Micron.Updated (Offset) then
+        The_Delta_Time := @ + Offset;
+        The_Start_Time := Now;
+      end if;
+    exception
+    when others =>
+      null;
+    end Update_Offset;
+
+
+    procedure Update_Time_Delta is
+      Now : constant RT.Time := RT.Clock;
+    begin
+      if The_Information.Status in Transit_State | Following then
+        case The_Timer_State is
+        when Increasing =>
+          Update_Offset (Now, Now - The_Start_Time);
+        when Decreasing =>
+          Update_Offset (Now, The_Start_Time - Now);
+        when Stopped =>
+          null;
+        end case;
+      else
+        The_Timer_State := Stopped;
+        The_Delta_Time := 0.0;
+      end if;
+    end Update_Time_Delta;
+
+
+    procedure Start_Increase_Time is
+    begin
+      The_Timer_State := Increasing;
+      The_Start_Time := RT.Clock;
+    end Start_Increase_Time;
+
+
+    procedure Start_Decrease_Time is
+    begin
+      The_Timer_State := Decreasing;
+      The_Start_Time := RT.Clock;
+    end Start_Decrease_Time;
+
+
+    procedure End_Change_Time is
+    begin
+      Update_Time_Delta;
+      The_Timer_State := Stopped;
+    end End_Change_Time;
+
+
     procedure Get_Information is
     begin
       if The_Information.Status = Disconnected then
@@ -274,6 +356,7 @@ package body Telescope is
     procedure Update_Handling is
     begin
       Get_Information;
+      Update_Time_Delta;
       case The_Information.Status is
       when Positioned =>
         if User.In_Setup_Mode and then Picture.Exists and then Solve_Picture then
@@ -429,6 +512,21 @@ package body Telescope is
             Ten_Micron.Execute (The_Command);
           end Execute;
         or
+          accept Update (The_Command : Update_Command) do
+            if The_Information.Status in Transit_State | Following then
+              case The_Command is
+              when Start_Time_Increase =>
+                Start_Increase_Time;
+              when Start_Time_Decrease =>
+                Start_Decrease_Time;
+              when End_Time_Change =>
+                End_Change_Time;
+              end case;
+            else
+              The_Delta_Time := 0.0;
+            end if;
+          end Update;
+        or
           accept Get (The_Data : out Data) do
             The_Data.Status := Telescope.State(The_Information.Status);
             The_Data.Target_Direction := Actual_Target_Direction;
@@ -437,6 +535,7 @@ package body Telescope is
             The_Data.Picture_Direction := The_Picture_Direction;
             The_Data.Mount_Pier_Side := The_Information.Pier_Side;
             The_Data.Universal_Time := The_Information.Date_Time;
+            The_Data.Time_Delta := The_Delta_Time;
             The_Data.Align_Points := Alignment.Star_Count;
             The_Data.Alignment_Info := Alignment.Info;
             The_Data.Cone_Error := Pole_Axis.Cone_Error;
@@ -445,7 +544,7 @@ package body Telescope is
         or delay 0.5;
           Update_Handling;
         end select;
-        Remote.Define (The_Information.Status in Tracking | Following);
+        Remote.Define (Is_On_Target => The_Information.Status in Tracking | Following);
       exception
       when Item: others =>
         Log.Termination (Item);

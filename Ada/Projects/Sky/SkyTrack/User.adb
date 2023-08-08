@@ -1306,7 +1306,7 @@ package body User is
         Put (Device.Decrease);
       when Gui.Key_Codes.K_Back =>
         Put (Device.Stop);
-      when Gui.Key_Codes.KP_Enter | Gui.Key_Codes.K_Return =>
+      when Gui.Key_Codes.KP_Enter =>
         Input.Put (Device.Enter, From => Input.Keypad);
       when Gui.Key_Codes.K_Menu =>
         Ignore_Next := True;
@@ -1356,7 +1356,7 @@ package body User is
         else
           Not_A_Number;
         end if;
-      when Gui.Key_Codes.KP_Enter | Gui.Key_Codes.K_Return =>
+      when Gui.Key_Codes.KP_Enter =>
         Put (Device.No_Command);
       when Gui.Key_Codes.K_Menu =>
         Ignore_Next := False;

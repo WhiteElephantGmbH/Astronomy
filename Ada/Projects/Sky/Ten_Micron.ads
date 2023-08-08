@@ -39,14 +39,16 @@ package Ten_Micron is
 
   type Target_Kind is (Axis_Position, Near_Earth_Object, Other_Targets);
 
+  type Time_Offset is delta 0.0001 range -9.9999 .. 9.9999 with Small => 0.0001;
+
   Undefined_Pier : constant Character := ' ';
 
   type Information is record
-    Status    : State := Disconnected;
-    Date_Time : Time.Ut := Time.Unknown;
-    Direction : Space.Direction;
-    Position  : Space.Direction;
-    Pier_Side : Character := Undefined_Pier;
+    Status     : State := Disconnected;
+    Date_Time  : Time.Ut := Time.Unknown;
+    Direction  : Space.Direction;
+    Position   : Space.Direction;
+    Pier_Side  : Character := Undefined_Pier;
   end record;
 
   type Polar_Error is delta 0.01 range 0.0 .. 99.9999;
@@ -128,6 +130,10 @@ package Ten_Micron is
   function Has_New_Alignment_Info return Boolean;
 
   function Alignment_Info return Alignment_Data;
+
+  function Updated (Time_Change : Time_Offset) return Boolean;
+
+  function Image_Of (Value : Time_Offset) return String;
 
   procedure Disconnect;
 

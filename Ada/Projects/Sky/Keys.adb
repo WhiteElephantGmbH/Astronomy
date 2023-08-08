@@ -27,7 +27,7 @@ package body Keys is
   Moving_Up        : Boolean := False;
   Moving_Down      : Boolean := False;
   Time_Changing    : Boolean := False;
-  Enter_Is_Pressed : Boolean := False;
+  Shift_Is_Pressed : Boolean := False;
   Ignore_Next      : Boolean := False;
 
   procedure Handler (The_Event    : Gui.Key_Event;
@@ -41,21 +41,21 @@ package body Keys is
       end if;
       case The_Key_Code is
       when Gui.Key_Codes.KP_2 | Gui.Key_Codes.KP_Down | Gui.Key_Codes.K_Down =>
-        if Enter_Is_Pressed then
+        if Shift_Is_Pressed then
           Put (Decrease_Speed);
         else
           Moving_Down := True;
           Put (Move_Down);
         end if;
       when Gui.Key_Codes.KP_8 | Gui.Key_Codes.KP_Up | Gui.Key_Codes.K_Up =>
-        if Enter_Is_Pressed then
+        if Shift_Is_Pressed then
           Put (Increase_Speed);
         else
           Moving_Up := True;
           Put (Move_Up);
         end if;
       when Gui.Key_Codes.KP_4 | Gui.Key_Codes.KP_Left | Gui.Key_Codes.K_Left =>
-        if Enter_Is_Pressed then
+        if Shift_Is_Pressed then
           if not Time_Changing then
             Put (Decrease_Time);
             Time_Changing := True;
@@ -65,7 +65,7 @@ package body Keys is
           Moving_Left := True;
         end if;
       when Gui.Key_Codes.KP_6 | Gui.Key_Codes.KP_Right | Gui.Key_Codes.K_Right =>
-        if Enter_Is_Pressed then
+        if Shift_Is_Pressed then
           if not Time_Changing then
             Put (Increase_Time);
             Time_Changing := True;
@@ -78,8 +78,10 @@ package body Keys is
         Put (Increase_Speed);
       when Gui.Key_Codes.KP_Subtract | Gui.Key_Codes.K_Page_Down =>
         Put (Decrease_Speed);
-      when Gui.Key_Codes.KP_Enter | Gui.Key_Codes.K_Return =>
-        Enter_Is_Pressed := True;
+      when Gui.Key_Codes.KP_Enter =>
+        Put (Enter);
+      when Gui.Key_Codes.K_Space | Gui.Key_Codes.K_Shift =>
+        Shift_Is_Pressed := True;
       when Gui.Key_Codes.K_Menu =>
         Ignore_Next := True;
       when others =>
@@ -118,11 +120,8 @@ package body Keys is
           Put (Change_Time_End);
           Time_Changing := False;
         end if;
-      when Gui.Key_Codes.KP_Enter | Gui.Key_Codes.K_Return =>
-        Enter_Is_Pressed := False;
-        if not (Moving_Left or Moving_Right or Moving_Up or Moving_Down or Time_Changing) then
-          Put (Enter);
-        end if;
+      when Gui.Key_Codes.K_Space | Gui.Key_Codes.K_Shift =>
+        Shift_Is_Pressed := False;
       when others =>
         null;
       end case;

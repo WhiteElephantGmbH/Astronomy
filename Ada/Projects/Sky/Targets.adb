@@ -22,6 +22,7 @@ with Site;
 with Sky_Line;
 with Solar_System;
 with Sssb;
+with Sun;
 with Time;
 with Traces;
 
@@ -166,7 +167,7 @@ package body Targets is
             when Name.Small_Solar_System_Body =>
               return Is_To_Add (Solar_System, Sssb.Direction_Of (Item, Ut));
             when Name.Near_Earth_Object =>
-              return Is_Selected (Near_Earth_Objects) and then Is_Arriving (Item);
+              return Is_Selected (Near_Earth_Objects) and then Is_Arriving (Item) and then not Sun.Is_Visible;
             when Name.Axis_Position =>
               return The_Actual_Selection = All_Objects;
             when Name.Landmark =>
