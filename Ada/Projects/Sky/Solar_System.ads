@@ -25,6 +25,9 @@ package Solar_System is
   type Body_Name is (Sun, Mercury, Venus, Mars, Jupiter, Saturn, Uranus, Neptune, Pluto);
 
   function Direction_Of (Item : Body_Name;
+                         Ut   : Time.Ut) return Space.Direction;
+
+  function Direction_Of (Item : Body_Name;
                          Ut   : Time.Ut) return Earth.Direction;
 
   function Direction_Of (Item : Name.Id;

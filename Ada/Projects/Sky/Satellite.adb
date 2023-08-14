@@ -84,7 +84,7 @@ package body Satellite is
         end case;
         if The_Magnitude <= Stellarium.Magnitude_Maximum then
           for Group of Groups loop
-            if Group.Get in "visual" | "iridium" then
+            if Group.Get in Stellarium.Satellite_Group then
               declare
                 Name   : constant String := Value.Get ("name");
                 Values : constant Tle    := [1 => Value.Get ("tle1"),

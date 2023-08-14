@@ -32,6 +32,10 @@ package Stellarium is
 
   function Magnitude_Maximum return Magnitude;
 
+  procedure Set_Satellite_Group (Name : String);
+
+  function Satellite_Group return String;
+
   function Startup (Filename : String;
                     The_Port : Network.Port_Number) return Boolean;
 

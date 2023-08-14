@@ -16,14 +16,43 @@
 pragma Style_White_Elephant;
 
 with Earth;
+with Objects;
 with Solar_System;
 with Time;
+with Traces;
 
 package body Sun is
 
-  function Is_Visible return Boolean is
+  package Log is new Traces ("Sun");
+
+  The_Sun_Direction : Space.Direction;
+  The_Safety_Angle  : Angle.Degrees := 0.0;
+
+
+  procedure Define (Safety_Angle : Angle.Degrees) is
+    use type Angle.Value;
   begin
-    return not Earth.Is_Below_Horizon (Solar_System.Direction_Of (Solar_System.Sun, Time.Universal));
+    The_Safety_Angle := Safety_Angle;
+    Log.Write ("Safety Angle: " & Angle.Image_Of (+The_Safety_Angle));
+  end Define;
+
+
+  function Is_Visible return Boolean is
+    Ut : constant Time.Ut := Time.Universal;
+  begin
+    The_Sun_Direction := Solar_System.Direction_Of (Solar_System.Sun, Ut);
+    return not Earth.Is_Below_Horizon (Objects.Direction_Of (Direction => The_Sun_Direction,
+                                                             Lmst      => Time.Lmst_Of (Ut)));
   end Is_Visible;
+
+
+  function Is_In_Safe_Distance (To_Target : Space.Direction) return Boolean is
+    use type Angle.Degrees;
+  begin
+    if The_Safety_Angle = 0.0 then
+      return True;
+    end if;
+    return not Space.Angle_Between (The_Sun_Direction, To_Target, Smaller_Than => The_Safety_Angle);
+  end Is_In_Safe_Distance;
 
 end Sun;

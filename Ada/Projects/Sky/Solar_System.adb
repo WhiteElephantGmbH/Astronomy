@@ -84,10 +84,18 @@ package body Solar_System is
   end Direction_Of;
 
 
+
+  function Direction_Of (Item : Body_Name;
+                         Ut   : Time.Ut) return Space.Direction is
+  begin
+    return Direction_Of (PLANET'value(Item'image), Ut);
+  end Direction_Of;
+
+
   function Direction_Of (Item : Body_Name;
                          Ut   : Time.Ut) return Earth.Direction is
   begin
-    return Objects.Direction_Of (Direction => Direction_Of (PLANET'value(Item'image), Ut),
+    return Objects.Direction_Of (Direction => Direction_Of (Item, Ut),
                                  Lmst      => Time.Lmst_Of (Ut));
   end Direction_Of;
 

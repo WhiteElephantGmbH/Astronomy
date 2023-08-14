@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2014 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2014 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -58,8 +58,8 @@ package Space is
 
   function "-" (Left, Right : Direction) return Direction;
 
-  function "-" (Left, Right : Direction) return Distance;
-  -- fast calculation for the maximum distance (RA or Dec) with a correction close to the Pole
+  function Angle_Between (Left, Right  : Direction;
+                          Smaller_Than : Angle.Degrees) return Boolean;
 
 private
 

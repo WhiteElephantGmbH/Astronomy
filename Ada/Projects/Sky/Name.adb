@@ -283,14 +283,12 @@ package body Name is
         Item : constant Id := List.Ids(Index);
 
         function Found_Item (Direction_Of : Get_Space_Access) return Boolean is
-          use type Space.Direction;
         begin
           if Is_Visible (Item) then
             declare
               List_Direction : constant Space.Direction := Direction_Of (Item, Time.Universal);
-              use type Angle.Degrees;
             begin
-              if (Direction - List_Direction) < Search_Tolerance then
+              if Space.Angle_Between (Direction, List_Direction, Smaller_Than => Search_Tolerance) then
                 Log.Write ("Found: in list: " & Space.Image_Of (List_Direction));
                 Log.Write ("       actual : " & Space.Image_Of (Direction));
                 return True;

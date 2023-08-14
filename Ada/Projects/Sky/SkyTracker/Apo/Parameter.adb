@@ -27,6 +27,7 @@ with Os.System;
 with Picture;
 with Stellarium;
 with Strings;
+with Sun;
 with Targets;
 with Traces;
 
@@ -42,6 +43,8 @@ package body Parameter is
   Stellarium_Id        : constant String := "Stellarium";
   Program_Key          : constant String := "Program";
   Search_Tolerance_Key : constant String := "Search Tolerance";
+  Magnitude_Key        : constant String := "Magnitude";
+  Satellite_Group_Key  : constant String := "Satellite Group";
 
   Ten_Micron_Id   : constant String := "10micron";
   Expert_Mode_Key : constant String := "Expert Mode";
@@ -50,6 +53,9 @@ package body Parameter is
   Clock_Id        : constant String := "Clock";
   Ip_Address_Key  : constant String := "IP Address";
   Port_Key        : constant String := "Port";
+
+  Sun_Id           : constant String := "Sun";
+  Safety_Angle_Key : constant String := "Safety Angle";
 
   Astap_Key      : constant String := "ASTAP";
   Filename_Key   : constant String := "Filename";
@@ -231,6 +237,9 @@ package body Parameter is
       Put (Ip_Address_Key & "  = 192.168.26.180");
       Put (Port_Key & "        = 3490");
       Put ("");
+      Put ("[" & Sun_Id & "]");
+      Put (Safety_Angle_Key & " = 60" & Angle.Degree);
+      Put ("");
       Put ("[" & Remote_Id & "]");
       Put (Telescope_Key & "  = apo");
       Put (Ip_Address_Key & " = 217.160.64.198");
@@ -249,7 +258,9 @@ package body Parameter is
       Put ("[" & Stellarium_Id & "]");
       Put (Port_Key & "             = 10001");
       Put (Program_Key & "          = " & Os.System.Program_Files_Folder & "Stellarium\Stellarium.exe");
-      Put (Search_Tolerance_Key & " = 6'");
+      Put (Search_Tolerance_Key & " = 3'");
+      Put (Magnitude_Key & "        = 8.0");
+      Put (Satellite_Group_Key & "  = 10micron");
       Ada.Text_IO.Close (The_File);
     exception
     when Error.Occurred =>
@@ -265,6 +276,7 @@ package body Parameter is
 
       Handle              : constant Configuration.File_Handle    := Configuration.Handle_For (Filename);
       Ten_Micron_Handle   : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Ten_Micron_Id);
+      Sun_Handle          : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Sun_Id);
       Picture_Handle      : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Picture_Id);
       Clock_Handle        : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Clock_Id);
       Remote_Handle       : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Remote_Id);
@@ -313,6 +325,9 @@ package body Parameter is
       The_10_Micron_Ip_Address := Ip_Address_For (Ten_Micron_Id);
       The_10_Micron_Port := Port_For (Ten_Micron_Id);
 
+      Set (Sun_Handle);
+      Sun.Define (Degrees_Of (Safety_Angle_Key, 180.0));
+
       Set (Remote_Handle);
       The_Telescope_Name := [String_Value_Of (Telescope_Key)];
       if Remote_Configured then
@@ -333,6 +348,18 @@ package body Parameter is
       Set (Stellarium_Handle);
       The_Stellarium_Port := Port_For (Stellarium_Id);
       The_Search_Tolerance := Degrees_Of (Search_Tolerance_Key, Targets.Maximum_Search_Tolerance);
+      declare
+        Image     : constant String := String_Of (Magnitude_Key, Stellarium_Id);
+        Magnitude : Stellarium.Magnitude;
+      begin
+        Magnitude := Stellarium.Magnitude'value(Image);
+        Log.Write ("Magnitude Maximum:" & Magnitude'image);
+        Stellarium.Set_Maximum (Magnitude);
+      exception
+      when others =>
+        Error.Raise_With ("Magnitude out of range");
+      end;
+      Stellarium.Set_Satellite_Group (String_Of (Satellite_Group_Key, Stellarium_Id));
       Startup_Stellarium;
     end Read_Values;
 

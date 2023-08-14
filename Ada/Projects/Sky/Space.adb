@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2014 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2014 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -14,6 +14,9 @@
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
+
+with Astro;
+with Error;
 
 package body Space is
 
@@ -100,25 +103,35 @@ package body Space is
   end "-";
 
 
-  function "-" (Left, Right : Direction) return Distance is
-    Diff : constant Direction := Left - Right;
-    use type Angle.Signed;
+  function Angle_Between (Left, Right : Direction) return Angle.Degrees is
+
+    use Astro.MATLIB;
     use type Angle.Degrees;
+
+    Dec_1 : constant Angle.Degrees := + Left.Dec;
+    Dec_2 : constant Angle.Degrees := + Right.Dec;
+    Ra_1  : constant Angle.Degrees := + Left.Ra;
+    Ra_2  : constant Angle.Degrees := + Right.Ra;
+    D_Ra  : constant Angle.Degrees := Ra_2 - Ra_1;
+
   begin
-    if Diff.Is_Known then
-      declare
-        Left_Dec  : constant Angle.Degrees := + Left.Dec;
-        Delta_Dec : constant Angle.Degrees := + abs Angle.Signed'(+Diff.Dec);
-        Delta_Ra  : constant Angle.Degrees := + abs Angle.Signed'(+Diff.Ra);
-      begin
-        if Left_Dec > 88.0 then -- near Pole
-          return Angle.Degrees'max (Delta_Dec, Delta_Ra / 10.0);
-        else
-          return Angle.Degrees'max (Delta_Dec, Delta_Ra);
-        end if;
-      end;
+    if Left.Is_Known and Right.Is_Known then
+      return ACS(SN(Dec_1) * SN(Dec_2) + CS(Dec_1) * CS(Dec_2) * CS(D_Ra));
+    else
+      Error.Raise_With ("value unknown");
     end if;
-    return Angle.Degrees'last;
-  end "-";
+  end Angle_Between;
+
+
+  function Angle_Between (Left, Right  : Direction;
+                          Smaller_Than : Angle.Degrees) return Boolean is
+    use type Angle.Degrees;
+    D_Dec : constant Angle.Degrees := abs(Left.Dec - Right.Dec);
+  begin
+    if D_Dec >= Smaller_Than then
+      return False;
+    end if;
+    return Angle_Between (Left, Right) < Smaller_Than;
+  end Angle_Between;
 
 end Space;

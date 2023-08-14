@@ -37,6 +37,7 @@ with Solar_System;
 with Space;
 with Sssb;
 with Stellarium;
+with Sun;
 with Targets;
 with Telescope;
 with Time;
@@ -90,7 +91,9 @@ package body Control is
   begin
     Targets.Get_For (The_Direction, Parameter.Search_Tolerance, The_Target);
     if The_Target = Name.No_Id then
-      Action_Handler.Put_Goto (The_Direction);
+      if not Sun.Is_Visible or else Sun.Is_In_Safe_Distance (To_Target => The_Direction) then
+        Action_Handler.Put_Goto (The_Direction);
+      end if;
     else
       User.Set (The_Target);
     end if;

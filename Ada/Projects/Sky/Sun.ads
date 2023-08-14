@@ -15,8 +15,16 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with Angle;
+with Space;
+
 package Sun is
 
+  procedure Define (Safety_Angle : Angle.Degrees);
+
   function Is_Visible return Boolean;
+
+  function Is_In_Safe_Distance (To_Target : Space.Direction) return Boolean;
+  -- PRECONDITION: Is_Visible must have been called;
 
 end Sun;

@@ -128,7 +128,7 @@ package body Ten_Micron is
 
   procedure Set_Device_Status is
 
-    function Transit_Status return State is
+    procedure Set_Transit_Status (The_State : in out State) is
     begin
       Send (Lx200.String_Of(Lx200.Get_Transit_Status), Log_Enabled => False);
       declare
@@ -137,25 +137,26 @@ package body Ten_Micron is
         if Reply'length = 1 then
           case Reply(Reply'first) is
           when 'V' =>
-            return Preparing;
+            The_State := Preparing;
           when 'P' =>
-            return Waiting;
+            The_State := Waiting;
           when 'S' =>
-            return Catching;
+            The_State := Catching;
           when 'T' =>
-            return Following;
+            return; -- allready following
           when 'Q' =>
-            return Ended;
+            The_State := Ended;
+          when 'E' =>
+            return; -- allready stopped
           when others =>
             null;
           end case;
         end if;
         Log.Error ("Unexpected Transient State: " & Reply);
-        return Failure;
       end;
-    end Transit_Status;
+    end Set_Transit_Status;
 
-  begin
+  begin -- Set_Device_Status
     Send (Lx200.String_Of(Lx200.Get_Status), Log_Enabled => False);
     declare
       Reply : constant String := Received_String (Log_Enabled => False);
@@ -176,7 +177,7 @@ package body Ten_Micron is
           else
             The_State := State'val(State_Number);
             if The_State = Following then
-              The_State := Transit_Status;
+              Set_Transit_Status (The_State);
             end if;
           end if;
         end case;

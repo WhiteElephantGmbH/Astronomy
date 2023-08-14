@@ -31,6 +31,7 @@ with Os.User;
 with PWI.Settings;
 with Stellarium;
 with Strings;
+with Sun;
 with Targets;
 with Traces;
 
@@ -67,6 +68,9 @@ package body Parameter is
   Controller_Id  : constant String := "Controller";
   Ip_Address_Key : constant String := "IP Address";
 
+  Sun_Id           : constant String := "Sun";
+  Safety_Angle_Key : constant String := "Safety Angle";
+
   Lx200_Id : constant String := "Lx200";
 
   Remote_Id     : constant String := "Remote";
@@ -75,6 +79,7 @@ package body Parameter is
   Stellarium_Id        : constant String := "Stellarium";
   Search_Tolerance_Key : constant String := "Search Tolerance";
   Magnitude_Key        : constant String := "Magnitude";
+  Satellite_Group_Key  : constant String := "Satellite Group";
 
   The_Section : Configuration.Section_Handle;
 
@@ -340,6 +345,9 @@ package body Parameter is
       Put ("[" & Controller_Id & "]");
       Put (Ip_Address_Key & " = 192.168.10.160");
       Put ("");
+      Put ("[" & Sun_Id & "]");
+      Put (Safety_Angle_Key & " = 60" & Angle.Degree);
+      Put ("");
       Put ("[" & Lx200_Id & "]");
       Put (Port_Key & " = 4030");
       Put ("");
@@ -351,8 +359,9 @@ package body Parameter is
       Put ("[" & Stellarium_Id & "]");
       Put (Port_Key & "             = 10001");
       Put (Program_Key & "          = " & Os.System.Program_Files_Folder & "Stellarium\Stellarium.exe");
-      Put (Search_Tolerance_Key & " = 6'");
+      Put (Search_Tolerance_Key & " = 3'");
       Put (Magnitude_Key & "        = 8.0");
+      Put (Satellite_Group_Key & "  = CDK");
       Ada.Text_IO.Close (The_File);
     exception
     when Error.Occurred =>
@@ -368,6 +377,7 @@ package body Parameter is
 
       Handle              : constant Configuration.File_Handle    := Configuration.Handle_For (Filename);
       PWI_Handle          : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, PWI_Id);
+      Sun_Handle          : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Sun_Id);
       Lx200_Handle        : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Lx200_Id);
       Remote_Handle       : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Remote_Id);
       Stellarium_Handle   : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Stellarium_Id);
@@ -549,6 +559,9 @@ package body Parameter is
         Cdk_700.Startup (Ip_Address_For (Controller_Id));
       end if;
 
+      Set (Sun_Handle);
+      Sun.Define (Degrees_Of (Safety_Angle_Key, 180.0));
+
       Set (Lx200_Handle);
       The_Lx200_Port := Port_For (Lx200_Id);
 
@@ -564,20 +577,17 @@ package body Parameter is
       The_Stellarium_Port :=  Port_For (Stellarium_Id);
       The_Search_Tolerance := Degrees_Of (Search_Tolerance_Key, Targets.Maximum_Search_Tolerance);
       declare
-        Image     : constant String := String_Value_Of (Magnitude_Key);
+        Image     : constant String := String_Of (Magnitude_Key, Stellarium_Id);
         Magnitude : Stellarium.Magnitude;
       begin
-        if Image = "" then
-          Magnitude := Stellarium.Magnitude'last;
-        else
-          Magnitude := Stellarium.Magnitude'value(Image);
-        end if;
+        Magnitude := Stellarium.Magnitude'value(Image);
         Log.Write ("Magnitude Maximum:" & Magnitude'image);
         Stellarium.Set_Maximum (Magnitude);
       exception
       when others =>
         Error.Raise_With ("Magnitude out of range");
       end;
+      Stellarium.Set_Satellite_Group (String_Of (Satellite_Group_Key, Stellarium_Id));
       Startup_Stellarium;
     exception
     when Cdk_700.Startup_Failed =>

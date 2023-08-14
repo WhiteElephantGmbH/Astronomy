@@ -135,16 +135,27 @@ package body Targets is
 
     procedure Define_Targets is
 
+      Sun_Is_Visible : constant Boolean := Sun.Is_Visible;
+
       function Is_Visible (Direction : Space.Direction) return Boolean is
       begin
         return Sky_Line.Is_Above (Direction => Direction,
                                   Lmst      => Time.Lmst);
       end Is_Visible;
 
+      function Is_Selected_And_Visible (Item      : Selection;
+                                        Direction : Space.Direction) return Boolean is
+      begin
+        return Space.Direction_Is_Known (Direction) and then Is_Selected (Item) and then Is_Visible (Direction);
+      end Is_Selected_And_Visible;
+
       function Is_To_Add (Item      : Selection;
                           Direction : Space.Direction) return Boolean is
       begin
-        return Space.Direction_Is_Known (Direction) and then Is_Selected (Item) and then Is_Visible (Direction);
+         if Is_Selected_And_Visible (Item, Direction) then
+           return not Sun_Is_Visible or else Sun.Is_In_Safe_Distance (To_Target => Direction);
+         end if;
+         return False;
       end Is_To_Add;
 
       The_Changes : Natural := 0;
@@ -162,12 +173,14 @@ package body Targets is
             case Name.Kind_Of (Item) is
             when Name.Moon =>
               return Is_To_Add (Solar_System, Moon.Direction_Of (Item, Ut));
-            when Name.Sun | Name.Planet =>
+            when Name.Planet =>
               return Is_To_Add (Solar_System, Standard.Solar_System.Direction_Of (Item, Ut));
+            when Name.Sun =>
+              return Is_Selected_And_Visible (Solar_System, Standard.Solar_System.Direction_Of (Item, Ut));
             when Name.Small_Solar_System_Body =>
               return Is_To_Add (Solar_System, Sssb.Direction_Of (Item, Ut));
             when Name.Near_Earth_Object =>
-              return Is_Selected (Near_Earth_Objects) and then Is_Arriving (Item) and then not Sun.Is_Visible;
+              return Is_Selected (Near_Earth_Objects) and then Is_Arriving (Item) and then not Sun_Is_Visible;
             when Name.Axis_Position =>
               return The_Actual_Selection = All_Objects;
             when Name.Landmark =>

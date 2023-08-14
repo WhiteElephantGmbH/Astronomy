@@ -47,6 +47,22 @@ package body Stellarium is
   end Magnitude_Maximum;
 
 
+  The_Set_Satellite_Group : Strings.Element;
+
+  procedure Set_Satellite_Group (Name : String) is
+  begin
+    Log.Write ("Satellite Group: " & Name);
+    The_Set_Satellite_Group := [Name];
+  end Set_Satellite_Group;
+
+
+  function Satellite_Group return String is
+    use type Strings.Element;
+  begin
+    return +The_Set_Satellite_Group;
+  end Satellite_Group;
+
+
   function Actual_Data_Directory return String is
 
     package Application is new Applications (Product => "stellarium"); -- lower case for Linux
