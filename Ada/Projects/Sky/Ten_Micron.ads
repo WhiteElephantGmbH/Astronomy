@@ -115,6 +115,10 @@ package Ten_Micron is
 
   procedure Execute (The_Command : Command);
 
+  function Gps_Is_Synchronized return Boolean;
+
+  function Julian_Date return Time.JD;
+
   function Get return Information;
 
   procedure Start_Alignment;

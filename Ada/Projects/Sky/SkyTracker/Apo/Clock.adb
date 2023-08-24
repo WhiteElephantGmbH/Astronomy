@@ -102,28 +102,33 @@ package body Clock is
         exit;
       or
         accept Define_Time do
-          Pc_Time_Offset := 0.0;
           The_Julian_Date := Time.Julian_Date;
-          if Parameter.Clock_Configured then
-            Last_Minute := Time.JD(Long_Long_Integer(The_Julian_Date / One_Minute - Time.JD(0.5))) * One_Minute;
-            Get (The_Data);
-            if The_Data.One_Minute /= Undefined_Time then
-              The_Actual_Date := Last_Minute + The_Data.Delta_Time * One_Second;
-              if abs (The_Actual_Date - The_Julian_Date) > 30 * One_Second then
-                if The_Actual_Date > The_Julian_Date then
-                  The_Actual_Date := @ - One_Minute;
-                else
-                  The_Actual_Date := @ + One_Minute;
+          if Ten_Micron.Gps_Is_Synchronized then
+            Log.Write ("GPS is synchronized");
+            Pc_Time_Offset := Duration((The_Julian_Date - Ten_Micron.Julian_Date) / One_Second);
+          else
+            Pc_Time_Offset := 0.0;
+            if Parameter.Clock_Configured then
+              Last_Minute := Time.JD(Long_Long_Integer(The_Julian_Date / One_Minute - Time.JD(0.5))) * One_Minute;
+              Get (The_Data);
+              if The_Data.One_Minute /= Undefined_Time then
+                The_Actual_Date := Last_Minute + The_Data.Delta_Time * One_Second;
+                if abs (The_Actual_Date - The_Julian_Date) > 30 * One_Second then
+                  if The_Actual_Date > The_Julian_Date then
+                    The_Actual_Date := @ - One_Minute;
+                  else
+                    The_Actual_Date := @ + One_Minute;
+                  end if;
                 end if;
+                Pc_Time_Offset := Duration((The_Julian_Date - The_Actual_Date) / One_Second);
+                if abs Pc_Time_Offset > Pc_Time_Tolerance then
+                  Log.Warning ("PC time is inaccuarate");
+                end if;
+                The_Julian_Date := The_Actual_Date;
               end if;
-              Pc_Time_Offset := Duration((The_Julian_Date - The_Actual_Date) / One_Second);
-              if abs Pc_Time_Offset > Pc_Time_Tolerance then
-                Log.Warning ("PC time is inaccuarate");
-              end if;
-              The_Julian_Date := The_Actual_Date;
             end if;
+            Ten_Micron.Set_Julian_Date (The_Julian_Date);
           end if;
-          Ten_Micron.Set_Julian_Date (The_Julian_Date);
           Log.Write ("PC time offset =" & Pc_Time_Offset'image);
           Ten_Micron.Set_Time_Offset (Duration(Ada.Calendar.Time_Zones.UTC_Time_Offset) * 60.0);
         end Define_Time;

@@ -70,6 +70,7 @@ package Lx200 is
     Get_Pointing_State,
     Get_Status,
     Get_Transit_Status,
+    Gps_Test_Synchronized,
     New_Alignment_Start,
     New_Alignment_Point,
     New_Alignment_End,

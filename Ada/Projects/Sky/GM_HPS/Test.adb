@@ -263,6 +263,14 @@ package body Test is
           elsif Data = ":GJD1#" then
             Put_Line ("Get Julian Date");
             Send (Julian_Date_Image);
+          elsif Data = ":gtg#" then
+            Put_Line ("Gps Test Synchronized");
+            case Mount_Type is
+            when GM_1000 =>
+              Send ("0#");
+            when GM_4000 =>
+              Send ("1#");
+            end case;
           elsif Data = ":newalig#" then
             The_Points_Count := 0;
             Put_Line ("Start Alignment");

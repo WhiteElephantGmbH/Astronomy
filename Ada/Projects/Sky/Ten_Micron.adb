@@ -267,6 +267,7 @@ package body Ten_Micron is
          | Get_Declination
          | Get_Altitude
          | Get_Azimuth
+         | Gps_Test_Synchronized
          | New_Alignment_Start
          | New_Alignment_Point
          | New_Alignment_End
@@ -503,6 +504,16 @@ package body Ten_Micron is
     Log.Error ("invalid julian date");
     return Time.Julian_Date;
   end Julian_Date;
+
+
+  function Gps_Is_Synchronized return Boolean is
+  begin
+    return Execute (Lx200.Gps_Test_Synchronized, Ok => "1", Failed => "0");
+  exception
+  when Error.Occurred =>
+    Log.Error (Error.Message);
+    return False;
+  end Gps_Is_Synchronized;
 
 
   function Get return Information is

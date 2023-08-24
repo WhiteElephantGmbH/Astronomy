@@ -119,6 +119,8 @@ package body Lx200 is
       return Command_For ("getain");
     when Get_Pointing_State =>
       return Command_For ("pS");
+    when Gps_Test_Synchronized =>
+      return Command_For ("gtg");
     when New_Alignment_Start =>
       return Command_For ("newalig");
     when New_Alignment_Point =>
