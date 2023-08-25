@@ -29,7 +29,6 @@ with Keys;
 with Lexicon;
 with Parameter;
 with Persistent;
-with Refraction;
 with Remote;
 with Site;
 with Space;
@@ -92,13 +91,9 @@ package body User is
   Focuser_Actual  : Gui.Plain_Edit_Box;
   Focuser_Goto    : Gui.Plain_Edit_Box;
   Orientation_Box : Gui.Plain_Combo_Box;
-  Air_Pressure    : Gui.Plain_Edit_Box;
-  Temperature     : Gui.Plain_Edit_Box;
 
   type Setup_Data_Storage is record
     Image_Orientation : Telescope.Orientation;
-    Air_Pressure      : Refraction.Hectopascal;
-    Temperature       : Refraction.Celsius;
     Focuser_Position  : Device.Microns;
     Focuser_In_Use    : Boolean := False;
   end record;
@@ -107,11 +102,9 @@ package body User is
 
   The_Setup_Data : Persistent_Setup.Data;
 
-  The_Image_Orientation : Telescope.Orientation   renames The_Setup_Data.Storage.Image_Orientation;
-  The_Air_Pressure      : Refraction.Hectopascal  renames The_Setup_Data.Storage.Air_Pressure;
-  The_Temperature       : Refraction.Celsius      renames The_Setup_Data.Storage.Temperature;
-  The_Focuser_Position  : Device.Microns          renames The_Setup_Data.Storage.Focuser_Position;
-  Focuser_In_Use        : Boolean                 renames The_Setup_Data.Storage.Focuser_In_Use;
+  The_Image_Orientation : Telescope.Orientation renames The_Setup_Data.Storage.Image_Orientation;
+  The_Focuser_Position  : Device.Microns        renames The_Setup_Data.Storage.Focuser_Position;
+  Focuser_In_Use        : Boolean               renames The_Setup_Data.Storage.Focuser_In_Use;
 
   type Page is (Is_Control, Is_Display, Is_Setup);
 
@@ -702,41 +695,6 @@ package body User is
   The_Targets : Name.Id_List_Access;
 
 
-  function Image_Of (The_Value : Refraction.Hectopascal) return String is
-  begin
-    return Strings.Trimmed (The_Value'img) & "hPa";
-  end Image_Of;
-
-
-  procedure Define_Air_Pressure is
-  begin
-    declare
-      Value : constant String := Strings.Trimmed (Gui.Contents_Of (Air_Pressure));
-      Last  : Natural := Value'last;
-    begin
-      loop
-        exit when Value(Last) in '0'..'9';
-        Last := Last - 1;
-      end loop;
-      The_Air_Pressure := Refraction.Hectopascal'value(Value(Value'first .. Last));
-      Refraction.Set (The_Air_Pressure);
-    exception
-    when others =>
-      Show_Error ("Incorrect Air Pressure: " & Value);
-    end;
-    Gui.Set_Text (Air_Pressure, Image_Of (The_Air_Pressure));
-  exception
-  when others =>
-    Log.Error ("Define_Air_Pressure");
-  end Define_Air_Pressure;
-
-
-  function Image_Of (The_Value : Refraction.Celsius) return String is
-  begin
-    return Strings.Trimmed (The_Value'img) & "°C";
-  end Image_Of;
-
-
   function Focuser_Position_Image return String is
   begin
     if Focuser_In_Use then
@@ -745,26 +703,6 @@ package body User is
       return "";
     end if;
   end Focuser_Position_Image;
-
-
-  procedure Define_Temperature is
-  begin
-    declare
-      Value : constant String := Strings.Trimmed (Gui.Contents_Of (Temperature));
-      Last  : Natural := Value'last;
-    begin
-      loop
-        exit when Value(Last) in '0'..'9';
-        Last := Last - 1;
-      end loop;
-      The_Temperature := Refraction.Celsius'value(Value(Value'first .. Last));
-      Refraction.Set (The_Temperature);
-    exception
-    when others =>
-      Show_Error ("Incorrect Temperature: " & Value);
-    end;
-    Gui.Set_Text (Temperature, Image_Of (The_Temperature));
-  end Define_Temperature;
 
 
   procedure Focuser_Move is
@@ -1141,15 +1079,7 @@ package body User is
           Gui.Add_Text (Orientation_Box, Strings.Legible_Of (Value'img));
         end loop;
         Gui.Select_Text (Orientation_Box, Strings.Legible_Of (The_Image_Orientation'img));
-        Air_Pressure := Gui.Create (Setup_Page, "Air Pressure", Image_Of (The_Air_Pressure),
-                                    The_Action_Routine => Define_Air_Pressure'access,
-                                    The_Size           => Text_Size,
-                                    The_Title_Size     => Title_Size);
-        Temperature := Gui.Create (Setup_Page, "Temperature", Image_Of (The_Temperature),
-                                   The_Action_Routine => Define_Temperature'access,
-                                   The_Size           => Text_Size,
-                                   The_Title_Size     => Title_Size);
-      end Define_Setup_Page;
+     end Define_Setup_Page;
 
     begin -- Create_Interface
       Selection_Menu.Create (Lexicon.Image_Of (Lexicon.Selection), Selection_Handler'access);
@@ -1166,12 +1096,8 @@ package body User is
       Define_Control_Page;
       if Persistent_Setup.Storage_Is_Empty then
         The_Image_Orientation := Telescope.Correct;
-        The_Air_Pressure := 0.0;
-        The_Temperature := 10.0;
-      end if;
+       end if;
       Signal_Action (Set_Orientation);
-      Refraction.Set (The_Air_Pressure);
-      Refraction.Set (The_Temperature);
       Is_Expert_Mode := Parameter.Is_Expert_Mode;
       if Is_Expert_Mode then
         Define_Display_Page;
