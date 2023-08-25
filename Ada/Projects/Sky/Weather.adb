@@ -8,6 +8,7 @@ with Angle;
 with AWS.Client;
 with AWS.Response;
 with GNATCOLL.JSON;
+with Key;
 with Persistent_String;
 with Site;
 with Strings;
@@ -19,19 +20,21 @@ package body Weather is
 
   package JS renames GNATCOLL.JSON;
 
-  package Persistent_Key is new Persistent_String ("Weather_Key");
+  package Weather_Key is new Key ("Weather");
 
-  Weather_Key : Persistent_Key.Data;
+  package Persistent_Key is new Persistent_String (Weather_Key.Name);
 
-  function Actual_Key return String is
+  Key_Data : Persistent_Key.Data;
+
+  function Get return String is
   begin
-    if Weather_Key.Item = "" then
-      Weather_Key.Store ("a709155f006b0d9b2886d37beeb1f0b0");
+    if Key_Data.Item = "" then
+      Key_Data.Store (Weather_Key.New_Item);
     end if;
-    return Weather_Key.Item;
-  end Actual_Key;
+    return Key_Data.Item;
+  end Get;
 
-  Api_Key : constant String := Actual_Key;
+  Api_Key : constant String := Get;
 
   Is_Defined       : Boolean := False;
   The_Temperature  : Refraction.Celsius;

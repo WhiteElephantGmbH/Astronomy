@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2021 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2021 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -17,6 +17,7 @@ pragma Style_White_Elephant;
 
 with AWS.Client;
 with AWS.Response;
+with Key;
 with Persistent_String;
 with Strings;
 with Traces;
@@ -25,19 +26,21 @@ package body Remote is
 
   package Log is new Traces ("Remote");
 
-  package Persistent_Key is new Persistent_String ("Remote_Key");
+  package Remote_Key is new Key ("Remote");
 
-  Remote_Key : Persistent_Key.Data;
+  package Persistent_Key is new Persistent_String (Remote_Key.Name);
 
-  function Actual_Key return String is
+  Key_Data : Persistent_Key.Data;
+
+  function Get return String is
   begin
-    if Remote_Key.Item = "" then
-      Remote_Key.Store ("ZzRW8sYHdHrgZGG3");
+    if Key_Data.Item = "" then
+      Key_Data.Store (Remote_Key.New_Item);
     end if;
-    return Remote_Key.Item;
-  end Actual_Key;
+    return Key_Data.Item;
+  end Get;
 
-  Key : constant String := Actual_Key;
+  Api_Key : constant String := Get;
 
   type Telescope_State is (Unknown, On_Target, Not_On_Target);
 
@@ -144,7 +147,7 @@ package body Remote is
       Remote_Address : constant String := Network.Image_Of (The_Remote_Address);
       Remote_Port    : constant String := Network.Image_Of (The_Remote_Port);
       Parameters     : constant String := "?tele=" & Telescope_Name & "&" & Info;
-      URL            : constant String := "http://" & Remote_Address & ':' & Remote_Port & '/' & Key & Parameters;
+      URL            : constant String := "http://" & Remote_Address & ':' & Remote_Port & '/' & Api_Key & Parameters;
 
       Timeouts : constant AWS.Client.Timeouts_Values := AWS.Client.Timeouts (Connect  => 1.0,
                                                                              Send     => 1.0,
