@@ -32,6 +32,7 @@ with Os;
 with Parameter;
 with Persistent;
 with Pole_Axis;
+with Refraction;
 with Remote;
 with Site;
 with Space;
@@ -69,12 +70,12 @@ package body User is
   Lmst         : Gui.Plain_Edit_Box;
   Local_Time   : Gui.Plain_Edit_Box;
   Time_Offset  : Gui.Plain_Edit_Box;
+  Air_Pressure : Gui.Plain_Edit_Box;
+  Temperature  : Gui.Plain_Edit_Box;
 
   Setup_Page           : Gui.Page;
   Setup_Action_Button  : Gui.Button;
   Setup_Control_Button : Gui.Button;
-  Air_Pressure_Box     : Gui.Plain_Edit_Box;
-  Temperature_Box      : Gui.Plain_Edit_Box;
   Setup_Control        : Gui.Plain_Combo_Box;
   Picture_Ra           : Gui.Plain_Edit_Box;
   Picture_Dec          : Gui.Plain_Edit_Box;
@@ -109,9 +110,6 @@ package body User is
   Align_On_Picture_Is_Enabled : Boolean := False;
 
   The_Setup_Object : Setup_Object := Pole_Left;
-
-  The_Air_Pressure : Refraction.Hectopascal := Refraction.Undefined_Air_Pressure;
-  The_Temperature  : Refraction.Celsius := Refraction.Undefined_Temperature;
 
   subtype State is Telescope.State;
 
@@ -452,7 +450,6 @@ package body User is
       end case;
     end Define_Control_Buttons;
 
-
     procedure Define_Setup_Buttons is
 
       procedure Disable_Action is
@@ -491,12 +488,11 @@ package body User is
         Enable_Control ("Stop", Perform_Stop'access);
       end Enable_Stop;
 
-    begin
+    begin -- Define_Setup_Buttons
       case Information.Status is
       when Disconnected | Error_State | Inhibited | Unparking =>
         Disable_Action;
         Disable_Control;
-        Gui.Disable (Temperature_Box);
       when Parked =>
         Disable_Action;
         Enable_Control ("Unpark", Perform_Unpark'access);
@@ -526,20 +522,6 @@ package body User is
         Enable_Stop;
       end case;
     end Define_Setup_Buttons;
-
-
-    procedure Define_Settings is
-    begin
-      case Information.Status is
-      when Disconnected | Error_State =>
-        Gui.Disable (Air_Pressure_Box);
-        Gui.Disable (Temperature_Box);
-      when others =>
-        Gui.Enable (Air_Pressure_Box);
-        Gui.Enable (Temperature_Box);
-      end case;
-    end Define_Settings;
-
 
     procedure Clear_Actual_Values is
     begin
@@ -576,7 +558,6 @@ package body User is
       Define_Control_Buttons;
       if Is_Expert_Mode then
         Define_Setup_Buttons;
-        Define_Settings;
       end if;
       Gui.Set_Status_Line (Information.Status'img);
     end if;
@@ -626,17 +607,17 @@ package body User is
         Gui.Set_Text (Local_Time, Time.Image_Of (Information.Universal_Time, Time_Only => True));
       end if;
       if Information.Time_Delta = 0.0 then
-          Gui.Set_Text (Time_Offset, "");
-        else
-          Gui.Set_Text (Time_Offset, Telescope.Image_Of (Information.Time_Delta));
-        end if;
-    when Is_Setup =>
+        Gui.Set_Text (Time_Offset, "");
+      else
+        Gui.Set_Text (Time_Offset, Telescope.Image_Of (Information.Time_Delta));
+      end if;
       if Refraction.New_Air_Pressure then
-        Gui.Set_Text (Air_Pressure_Box, Image_Of (Refraction.Air_Pressure));
+        Gui.Set_Text (Air_Pressure, Image_Of (Refraction.Air_Pressure));
       end if;
       if Refraction.New_Temperature then
-        Gui.Set_Text (Temperature_Box, Image_Of (Refraction.Temperature));
+        Gui.Set_Text (Temperature, Image_Of (Refraction.Temperature));
       end if;
+    when Is_Setup =>
       if Space.Direction_Is_Known (Information.Picture_Direction) then
         Gui.Set_Text (Picture_Dec, Space.Dec_Image_Of (Information.Picture_Direction));
         Gui.Set_Text (Picture_Ra, Space.Ra_Image_Of (Information.Picture_Direction));
@@ -735,18 +716,6 @@ package body User is
   end Handle_Setup_Control;
 
 
-  function Air_Pressure return Refraction.Hectopascal is
-  begin
-    return The_Air_Pressure;
-  end Air_Pressure;
-
-
-  function Temperature return Refraction.Celsius is
-  begin
-    return The_Temperature;
-  end Temperature;
-
-
   function Target_Name return String is
   begin
     return Gui.Contents_Of (Target);
@@ -764,50 +733,6 @@ package body User is
     Gui.Message_Box (Image);
     Gui.Beep;
   end Show_Error;
-
-
-  procedure Define_Air_Pressure is
-  begin
-    declare
-      Value : constant String := Strings.Trimmed (Gui.Contents_Of (Air_Pressure_Box));
-      Last  : Natural := Value'last;
-    begin
-      loop
-        exit when Value(Last) in '0'..'9';
-        Last := Last - 1;
-      end loop;
-      The_Air_Pressure := Refraction.Hectopascal'value(Value(Value'first .. Last));
-      Signal_Action (Define_Air_Pressure);
-    exception
-    when others =>
-      Show_Error ("Incorrect Air Pressure: " & Value);
-    end;
-  exception
-  when others =>
-    Log.Error ("Define_Air_Pressure");
-  end Define_Air_Pressure;
-
-
-  procedure Define_Temperature is
-  begin
-    declare
-      Value : constant String := Strings.Trimmed (Gui.Contents_Of (Temperature_Box));
-      Last  : Natural := Value'last;
-    begin
-      loop
-        exit when Value(Last) in '0'..'9';
-        Last := Last - 1;
-      end loop;
-      The_Temperature := Refraction.Celsius'value(Value(Value'first .. Last));
-      Signal_Action (Define_Temperature);
-    exception
-    when others =>
-      Show_Error ("Incorrect Temperature: " & Value);
-    end;
-  exception
-  when others =>
-    Log.Error ("Define_Temperature");
-  end Define_Temperature;
 
 
   The_Targets : Name.Id_List_Access;
@@ -903,7 +828,8 @@ package body User is
       raise Program_Error;
     end if;
   exception
-  when others =>
+  when Item: others =>
+    Log.Termination (Item);
     Log.Error ("Display_Text_Handler failed");
     return "";
   end Display_Text_Handler;
@@ -984,10 +910,10 @@ package body User is
 
 
       procedure Define_Display_Page is
-        -- largest texts
-        Local_Time_Text : constant String := "Local Time";
+        -- largest text
+        Air_Pressure_Text : constant String := "Air Pressure";
 
-        Title_Size : constant Natural := Gui.Text_Size_Of (Local_Time_Text) + Separation;
+        Title_Size : constant Natural := Gui.Text_Size_Of (Air_Pressure_Text) + Separation;
         Text_Size  : constant Natural := Natural'max (Gui.Text_Size_Of ("+360d00'00.0"""),
                                                       Gui.Text_Size_Of ("20h58m58.58s")) + Separation;
       begin
@@ -1042,7 +968,7 @@ package body User is
                             The_Size       => Text_Size,
                             The_Title_Size => Title_Size);
 
-        Local_Time := Gui.Create (Display_Page, Local_Time_Text, "",
+        Local_Time := Gui.Create (Display_Page, "Local Time", "",
                                   Is_Modifiable  => False,
                                   The_Size       => Text_Size,
                                   The_Title_Size => Title_Size);
@@ -1051,13 +977,24 @@ package body User is
                                    Is_Modifiable  => False,
                                    The_Size       => Text_Size,
                                    The_Title_Size => Title_Size);
+
+        Air_Pressure := Gui.Create (Display_Page, Air_Pressure_Text, "",
+                                    Is_Modifiable  => False,
+                                    The_Size       => Text_Size,
+                                    The_Title_Size => Title_Size);
+        Temperature := Gui.Create (Display_Page, "Temperature", "",
+                                   Is_Modifiable  => False,
+                                   The_Size       => Text_Size,
+                                   The_Title_Size => Title_Size);
       end Define_Display_Page;
+
 
       procedure Define_Setup_Page is
 
-        -- largest texts
-        Air_Pressure_Text : constant String := "Air Pressure";
-        Title_Size : constant Natural := Gui.Text_Size_Of (Air_Pressure_Text) + Separation;
+        -- largest text
+        Align_Points_Text : constant String := "Align Points";
+
+        Title_Size : constant Natural := Gui.Text_Size_Of (Align_Points_Text) + Separation;
         Text_Size  : constant Natural := Gui.Text_Size_Of ("20h58m58.58s") + Separation;
       begin
         Setup_Page := Gui.Add_Page (The_Title  => "Setup",
@@ -1069,17 +1006,6 @@ package body User is
         Gui.Disable (Setup_Action_Button);
         Setup_Control_Button := Gui.Create (Setup_Page, "", Handle_Setup_Control'access);
         Gui.Disable (Setup_Control_Button);
-
-        Air_Pressure_Box := Gui.Create (Setup_Page, Air_Pressure_Text, "",
-                                        The_Action_Routine => Define_Air_Pressure'access,
-                                        The_Size           => Text_Size,
-                                        The_Title_Size     => Title_Size);
-        Gui.Disable (Air_Pressure_Box);
-        Temperature_Box := Gui.Create (Setup_Page, "Temperature", "",
-                                       The_Action_Routine => Define_Temperature'access,
-                                       The_Size           => Text_Size,
-                                       The_Title_Size     => Title_Size);
-        Gui.Disable (Temperature_Box);
 
         Setup_Control := Gui.Create (Setup_Page, Setup_Object_Key,
                                      The_Size           => Text_Size,
@@ -1236,7 +1162,7 @@ package body User is
       Gui.Add_To (Display, Index, Convert(Item));
     end Insert_Target;
 
-  begin -- Update
+  begin -- Update_Targets
     Name.Update (The_Targets, Remove_Target'access, Insert_Target'access);
   end Update_Targets;
 

@@ -158,7 +158,8 @@ package body Targets is
          return False;
       end Is_To_Add;
 
-      The_Changes : Natural := 0;
+      The_Changes     : Natural := 0;
+      Targets_Defined : Boolean := False;
 
       Ut : constant Time.Ut := Time.Universal;
 
@@ -224,7 +225,8 @@ package body Targets is
         Clear.all;
         Name.Clear_History_For (The_Targets);
         Define (The_Targets'unchecked_access);
-      else
+        Targets_Defined := True;
+      elsif Targets_Defined then
         Update.all;
       end if;
     end Define_Targets;

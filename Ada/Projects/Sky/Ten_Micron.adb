@@ -422,6 +422,7 @@ package body Ten_Micron is
   procedure Define (The_Air_Pressure : Refraction.Hectopascal) is
   begin
     Execute (Lx200.Set_Air_Pressure, Lx200.Air_Pressure_Of (The_Air_Pressure), Expected => "1");
+    Refraction.Set (The_Air_Pressure);
   exception
   when Error.Occurred =>
     Log.Error (Error.Message);
@@ -431,6 +432,7 @@ package body Ten_Micron is
   procedure Define (The_Temperature : Refraction.Celsius) is
   begin
     Execute (Lx200.Set_Temperature, Lx200.Temperature_Of (The_Temperature), Expected => "1");
+    Refraction.Set (The_Temperature);
   exception
   when Error.Occurred =>
     Log.Error (Error.Message);
