@@ -828,8 +828,7 @@ package body User is
       raise Program_Error;
     end if;
   exception
-  when Item: others =>
-    Log.Termination (Item);
+  when others =>
     Log.Error ("Display_Text_Handler failed");
     return "";
   end Display_Text_Handler;
@@ -1112,7 +1111,7 @@ package body User is
     begin
       The_Display_Data.Width := Gui.Width_Of (The_Targets_Column);
       Signal_Action (Close);
-      Log.Write ("Teminating");
+      Log.Write ("Terminating");
       The_Termination_Handler.all;
     exception
     when others =>

@@ -61,6 +61,7 @@ package body Clock is
       Size       => 64;
 
     Undefined_Time : constant Seconds := 0.0;
+    Undefined_Data : constant Time_Server_Data := (others => Undefined_Time);
 
 
     procedure Get (The_Data : out Time_Server_Data) is
@@ -70,6 +71,7 @@ package body Clock is
       function Datagram_From is new Network.Udp.Datagram_From  (Time_Server_Data);
 
     begin -- Get
+      The_Data := Undefined_Data;
       Network.Udp.Send (Message     => Sentinel'address,
                         Size        => Sentinel'size / 8,
                         Used_Socket => The_Socket);
@@ -126,6 +128,8 @@ package body Clock is
                 end if;
                 The_Julian_Date := The_Actual_Date;
               end if;
+            else
+              Log.Warning ("external time undefined");
             end if;
             Ten_Micron.Set_Julian_Date (The_Julian_Date);
           end if;

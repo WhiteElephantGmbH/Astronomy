@@ -138,14 +138,18 @@ package body Ten_Micron is
           case Reply(Reply'first) is
           when 'V' =>
             The_State := Preparing;
+            return;
           when 'P' =>
             The_State := Waiting;
+            return;
           when 'S' =>
             The_State := Catching;
+            return;
           when 'T' =>
             return; -- allready following
           when 'Q' =>
             The_State := Ended;
+            return;
           when 'E' =>
             return; -- allready stopped
           when others =>

@@ -274,6 +274,7 @@ package body Gui is
     Next_Information : Information;
     Is_Enabled       : Boolean := True;
     Is_Pending       : Boolean := False;
+    Is_Finishing     : Boolean := False;
     Is_Terminated    : Boolean := False;
   end Action;
 
@@ -308,6 +309,7 @@ package body Gui is
       Next_Action := null;
       Is_Pending := True;
       Is_Enabled := False;
+      Is_Finishing := True;
     end Finish;
 
     entry Get (The_Action : out Action_Routine;
@@ -322,7 +324,7 @@ package body Gui is
 
     procedure Enable is
     begin
-      Is_Enabled := True;
+      Is_Enabled := not Is_Finishing;
     end Enable;
 
     procedure Do_Terminate is

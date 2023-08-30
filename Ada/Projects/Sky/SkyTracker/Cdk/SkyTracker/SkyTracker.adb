@@ -16,7 +16,7 @@
 pragma Style_White_Elephant;
 
 pragma Build (Description => "CDK700 Control Program",
-              Version     => (2, 3, 1, 3),
+              Version     => (2, 3, 1, 4),
               Kind        => Windows,
               Libraries   => ("AWS64", "COLL64"),
               Compiler    => "GNATPRO\23.0");
