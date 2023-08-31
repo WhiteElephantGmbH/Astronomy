@@ -110,8 +110,9 @@ package body Targets is
 
   task body Handler is
 
-    The_Targets : aliased Name.Id_List;
-    New_List    : Boolean := False;
+    The_Targets     : aliased Name.Id_List;
+    Targets_Defined : Boolean := False;
+    New_List        : Boolean := False;
 
     The_Actual_Selection : Selection;
 
@@ -158,8 +159,7 @@ package body Targets is
          return False;
       end Is_To_Add;
 
-      The_Changes     : Natural := 0;
-      Targets_Defined : Boolean := False;
+      The_Changes : Natural := 0;
 
       Ut : constant Time.Ut := Time.Universal;
 

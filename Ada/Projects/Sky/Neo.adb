@@ -289,7 +289,7 @@ package body Neo is
       return Time.Undefined;
     else
       return (Arrival_Time => Data(Data'first).Ut,
-              Leaving_Time  => Data(Data'last).Ut);
+              Leaving_Time => Data(Data'last).Ut);
     end if;
   end Tracking_Period_Of;
 
