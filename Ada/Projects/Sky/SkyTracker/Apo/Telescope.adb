@@ -212,6 +212,8 @@ package body Telescope is
 
   task body Control_Task is
 
+    Time_Update_Interval : constant RT.Time_Span := RT.Minutes(10);
+
     Aligning_Enabled : Boolean := False;
 
     The_Information : Ten_Micron.Information;
@@ -228,6 +230,8 @@ package body Telescope is
 
     The_Start_Time : RT.Time;
     The_Delta_Time : Time_Offset := 0.0;
+
+    The_Next_Update_Time : RT.Time := RT.Clock;
 
 
     function "-" (Left, Right : RT.Time) return Duration is
@@ -338,20 +342,32 @@ package body Telescope is
     end Picture_Solved;
 
 
+    procedure Update_Time_And_Weather_Data is
+      use type RT.Time;
+    begin
+      if The_Next_Update_Time < RT.Clock then
+        The_Next_Update_Time := @ + Time_Update_Interval;
+        Clock.Define_Time;
+        if Weather.Requested then
+          Ten_Micron.Define (Weather.Air_Pressure);
+          Ten_Micron.Define (Weather.Temperature);
+        end if;
+      end if;
+    end Update_Time_And_Weather_Data;
+
+
     procedure Update_Handling is
     begin
       Get_Information;
       Update_Time_Delta;
       case The_Information.Status is
       when Positioned =>
+        Update_Time_And_Weather_Data;
         if User.In_Setup_Mode and then Picture.Exists and then Solve_Picture then
           Ten_Micron.Start_Solving;
         end if;
       when Tracking =>
-        if not Aligning_Enabled
-          and then Picture.Exists
-          and then Solve_Picture
-        then
+        if not Aligning_Enabled and then Picture.Exists and then Solve_Picture then
           Ten_Micron.Start_Solving;
         end if;
       when Solving =>
@@ -372,6 +388,9 @@ package body Telescope is
             Aligning_Enabled := True;
           end if;
         end if;
+      when Stopped | Waiting =>
+        Aligning_Enabled := False;
+        Update_Time_And_Weather_Data;
       when Disconnected =>
         Aligning_Enabled := False;
         Picture.Stop_Solving;
@@ -397,16 +416,6 @@ package body Telescope is
       Ten_Micron.Slew_To (The_Direction, Ten_Micron.Axis_Position);
       Remote.Define (Target => "");
     end Position_To;
-
-
-    procedure Update_Time_And_Weather_Data is
-    begin
-      Clock.Define_Time;
-      if Weather.Requested then
-        Ten_Micron.Define (Weather.Air_Pressure);
-        Ten_Micron.Define (Weather.Temperature);
-      end if;
-    end Update_Time_And_Weather_Data;
 
   begin -- Control_Task
     loop
@@ -463,15 +472,10 @@ package body Telescope is
               Ten_Micron.Slew_To (The_Next_Star);
             else
               Ten_Micron.Stop;
-              Update_Time_And_Weather_Data;
             end if;
           end Go_To_Next;
         or
           accept Prepare_Tle do
-            if not (The_Information.Status in Parked | Disconnected) then
-              Ten_Micron.Stop;
-              Update_Time_And_Weather_Data;
-            end if;
             Ten_Micron.Load_Tle (Name.Image_Of (Next_Id));
           end Prepare_Tle;
         or
@@ -486,7 +490,6 @@ package body Telescope is
               Picture.Stop_Solving;
             end if;
             Ten_Micron.Stop;
-            Update_Time_And_Weather_Data;
            end Stop;
         or
           accept Unpark do

@@ -63,6 +63,9 @@ package body Clock is
     Undefined_Time : constant Seconds := 0.0;
     Undefined_Data : constant Time_Server_Data := (others => Undefined_Time);
 
+    One_Minute : constant := Time.JD_Minute;
+    One_Second : constant := Time.JD_Second;
+
 
     procedure Get (The_Data : out Time_Server_Data) is
 
@@ -83,15 +86,7 @@ package body Clock is
       Log.Error ("RECEIVE ERROR");
     end Get;
 
-
-    The_Data        : Time_Server_Data;
-    The_Julian_Date : Time.JD;
-    Last_Minute     : Time.JD;
-    The_Actual_Date : Time.JD;
-    Pc_Time_Offset  : Duration;
-
-    One_Minute : constant := Time.JD_Minute;
-    One_Second : constant := Time.JD_Second;
+    Pc_Time_Offset : Duration;
 
     use type Time.JD;
 
@@ -104,36 +99,44 @@ package body Clock is
         exit;
       or
         accept Define_Time do
-          The_Julian_Date := Time.Julian_Date;
           if Ten_Micron.Gps_Is_Synchronized then
-            Log.Write ("GPS is synchronized");
-            Pc_Time_Offset := Duration((The_Julian_Date - Ten_Micron.Julian_Date) / One_Second);
+            Pc_Time_Offset := Duration((Time.Julian_Date - Ten_Micron.Julian_Date) / One_Second);
+            Log.Write ("GPS is synchronized - PC time offset =" & Pc_Time_Offset'image);
           else
-            Pc_Time_Offset := 0.0;
             if Parameter.Clock_Configured then
-              Last_Minute := Time.JD(Long_Long_Integer(The_Julian_Date / One_Minute - Time.JD(0.5))) * One_Minute;
-              Get (The_Data);
-              if The_Data.One_Minute /= Undefined_Time then
-                The_Actual_Date := Last_Minute + The_Data.Delta_Time * One_Second;
-                if abs (The_Actual_Date - The_Julian_Date) > 30 * One_Second then
-                  if The_Actual_Date > The_Julian_Date then
-                    The_Actual_Date := @ - One_Minute;
-                  else
-                    The_Actual_Date := @ + One_Minute;
+              declare
+                Julian_Date     : constant Time.JD := Time.Julian_Date;
+                Last_Minute     : Time.JD;
+                The_Data        : Time_Server_Data;
+                The_Actual_Date : Time.JD;
+              begin
+                Last_Minute := Time.JD(Long_Long_Integer(Julian_Date / One_Minute - Time.JD(0.5))) * One_Minute;
+                Get (The_Data);
+                if The_Data.One_Minute /= Undefined_Time then
+                  The_Actual_Date := Last_Minute + The_Data.Delta_Time * One_Second;
+                  if abs (The_Actual_Date - Julian_Date) > 30 * One_Second then
+                    if The_Actual_Date > Julian_Date then
+                      The_Actual_Date := @ - One_Minute;
+                    else
+                      The_Actual_Date := @ + One_Minute;
+                    end if;
                   end if;
+                  Ten_Micron.Set_Julian_Date (The_Actual_Date);
+                  Pc_Time_Offset := Duration((Julian_Date - The_Actual_Date) / One_Second);
+                  Log.Write ("external time set - PC time offset =" & Pc_Time_Offset'image);
+                  if abs Pc_Time_Offset > Pc_Time_Tolerance then
+                    Log.Warning ("PC time is inaccuarate");
+                  end if;
+                else
+                  Ten_Micron.Set_Julian_Date (Time.Julian_Date);
+                  Log.Warning ("external time undefined -> PC time set");
                 end if;
-                Pc_Time_Offset := Duration((The_Julian_Date - The_Actual_Date) / One_Second);
-                if abs Pc_Time_Offset > Pc_Time_Tolerance then
-                  Log.Warning ("PC time is inaccuarate");
-                end if;
-                The_Julian_Date := The_Actual_Date;
-              end if;
+              end;
             else
-              Log.Warning ("external time undefined");
+              Ten_Micron.Set_Julian_Date (Time.Julian_Date);
+              Log.Write ("PC time set");
             end if;
-            Ten_Micron.Set_Julian_Date (The_Julian_Date);
           end if;
-          Log.Write ("PC time offset =" & Pc_Time_Offset'image);
           Ten_Micron.Set_Time_Offset (Duration(Ada.Calendar.Time_Zones.UTC_Time_Offset) * 60.0);
         end Define_Time;
       end select;
