@@ -40,7 +40,7 @@ package body Ten_Micron is
   begin
     Last_State := Item;
     case The_Status is
-    when Solving =>
+    when Capturing | Solving =>
       case Item is
       when Positioned | Tracking =>
         return;
@@ -628,6 +628,13 @@ package body Ten_Micron is
   when Error.Occurred =>
     Log.Error (Error.Message);
   end Synch_To;
+
+
+  procedure Start_Capturing is
+  begin
+    Log.Write ("start capturing");
+    The_Status := Capturing;
+  end Start_Capturing;
 
 
   procedure Start_Solving is

@@ -274,6 +274,8 @@ package body Control is
          | Parking
          | Unparking
          | Disconnected
+         | Capturing
+         | Solving
       =>
         Log.Warning ("goto not executed");
       when Slewing
@@ -283,7 +285,6 @@ package body Control is
          | Stopped
          | Tracking
          | Transit_State
-         | Solving
       =>
         User.Perform_Goto;
       end case;
@@ -317,7 +318,8 @@ package body Control is
          | Disconnected
       =>
         null;
-      when Slewing
+      when Capturing
+         | Slewing
          | Following
          | Positioned
          | Stopped

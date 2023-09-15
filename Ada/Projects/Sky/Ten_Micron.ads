@@ -30,6 +30,7 @@ package Ten_Micron is
                  Waiting,       -- waiting for the satellite, stopped at the start of the transit
                  Catching,      -- slewing to catch the satellite
                  Ended,         -- the transit has ended
+                 Capturing,     -- Camera is capturing a picture
                  Solving,       -- picture solving
                  Disconnected); -- no connection to mount
 
@@ -100,6 +101,8 @@ package Ten_Micron is
                      Target   : Target_Kind := Other_Targets);
 
   procedure Synch_To (Location : Space.Direction);
+
+  procedure Start_Capturing;
 
   procedure Start_Solving;
 

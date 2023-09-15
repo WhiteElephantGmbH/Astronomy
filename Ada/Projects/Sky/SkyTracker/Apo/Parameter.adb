@@ -19,6 +19,7 @@ with Ada.Text_IO;
 with Angle;
 with Application;
 with Astap;
+with Camera;
 with Configuration;
 with Error;
 with File;
@@ -57,11 +58,15 @@ package body Parameter is
   Sun_Id           : constant String := "Sun";
   Safety_Angle_Key : constant String := "Safety Angle";
 
+  Picture_Id     : constant String := "Picture";
   Astap_Key      : constant String := "ASTAP";
   Filename_Key   : constant String := "Filename";
-  Picture_Id     : constant String := "Picture";
   Height_Key     : constant String := "Height";
   Width_Key      : constant String := "Width";
+
+  Camera_Id      : constant String := "Camera";
+  Command_Key    : constant String := "Command";
+  Parameters_Key : constant String := "Parameters";
 
   The_Section : Configuration.Section_Handle;
 
@@ -91,7 +96,7 @@ package body Parameter is
 
   function Default_Picture_Filename return String is
   begin
-    return "D:\temp\Picture.jpeg";
+    return "D:\Picture\Image.CR2";
   end Default_Picture_Filename;
 
 
@@ -201,8 +206,9 @@ package body Parameter is
   end Degrees_Of;
 
 
-  function Filename_Of (Key : String) return String is
-    Name : constant String := String_Of (Key);
+  function Filename_Of (Key     : String;
+                        Section : String := "") return String is
+    Name : constant String := String_Of (Key, Section);
   begin
     if not File.Exists (Name) then
       Error.Raise_With ("Filename " & Name & " not found for " & Key);
@@ -238,7 +244,7 @@ package body Parameter is
       Put (Port_Key & "        = 3490");
       Put ("");
       Put ("[" & Sun_Id & "]");
-      Put (Safety_Angle_Key & " = 60" & Angle.Degree);
+      Put (Safety_Angle_Key & " = 30" & Angle.Degree);
       Put ("");
       Put ("[" & Remote_Id & "]");
       Put (Telescope_Key & "  = apo");
@@ -252,13 +258,17 @@ package body Parameter is
       Put ("[" & Picture_Id & "]");
       Put (Astap_Key & "    = " & Default_Astap_Executable);
       Put (Filename_Key & " = " & Default_Picture_Filename);
-      Put (Height_Key & "   = 2.97" & Angle.Degree);
-      Put (Width_Key & "    = 4.46" & Angle.Degree);
+      Put (Height_Key & "   = 0.51" & Angle.Degree);
+      Put (Width_Key & "    = 0.74" & Angle.Degree);
+      Put ("");
+      Put ("[" & Camera_Id & "]");
+      Put (Command_Key & "    = " & Os.System.Program_Files_X86_Folder & "digiCamControl\CameraControlCmd.exe");
+      Put (Parameters_Key & " = " & "/capturenoaf /filename %picture% /iso 6400 /shutter 10");
       Put ("");
       Put ("[" & Stellarium_Id & "]");
       Put (Port_Key & "             = 10001");
       Put (Program_Key & "          = " & Os.System.Program_Files_Folder & "Stellarium\Stellarium.exe");
-      Put (Search_Tolerance_Key & " = 3'");
+      Put (Search_Tolerance_Key & " = 1'");
       Put (Magnitude_Key & "        = 8.0");
       Put (Satellite_Group_Key & "  = 10micron");
       Ada.Text_IO.Close (The_File);
@@ -278,6 +288,7 @@ package body Parameter is
       Ten_Micron_Handle   : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Ten_Micron_Id);
       Sun_Handle          : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Sun_Id);
       Picture_Handle      : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Picture_Id);
+      Camera_Handle       : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Camera_Id);
       Clock_Handle        : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Clock_Id);
       Remote_Handle       : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Remote_Id);
       Stellarium_Handle   : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Stellarium_Id);
@@ -341,9 +352,24 @@ package body Parameter is
 
       Set (Picture_Handle);
       Astap.Define (Executable => Filename_Of (Astap_Key));
-      Picture.Define (Name   => String_Of (Filename_Key),
-                      Height => Degrees_Of (Height_Key, Picture.Maximum_Heigth),
-                      Width  => Degrees_Of (Width_Key, Picture.Maximum_Width));
+      declare
+        Picture_File : constant String := String_Of (Filename_Key);
+      begin
+        Picture.Define (Name   => String_Of (Filename_Key),
+                        Height => Degrees_Of (Height_Key, Picture.Maximum_Heigth),
+                        Width  => Degrees_Of (Width_Key, Picture.Maximum_Width));
+
+        Set (Camera_Handle);
+        declare
+          Command : constant String := String_Value_Of (Command_Key);
+        begin
+          if Command /= "" then
+            Camera.Define (Command    => Filename_Of (Command_Key, Camera_Id),
+                           Parameters => String_Of (Parameters_Key, Camera_Id),
+                           Picture    => Picture_File);
+          end if;
+        end;
+      end;
 
       Set (Stellarium_Handle);
       The_Stellarium_Port := Port_For (Stellarium_Id);

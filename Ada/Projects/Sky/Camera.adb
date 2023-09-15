@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2021 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                      *
+-- *                           (c) 2023 by White Elephant GmbH, Schaffhausen, Switzerland                              *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,44 +15,63 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Ada.Numerics.Generic_Real_Arrays;
+with File;
+with Traces;
+with Os.Process;
 with Strings;
 
-package Astap is
+package body Camera is
 
-  type Degrees is new Long_Float;
+  package Log is new Traces ("Camera");
 
-  package Numeric is new Ada.Numerics.Generic_Real_Arrays (Degrees);
+  The_Id : Os.Process.Id;
 
-  Ra  : constant := Strings.First_Index;
-  Dec : constant := Ra + 1;
+  The_Command    : Strings.Element;
+  The_Work_Area  : Strings.Element;
+  The_Parameters : Strings.Element;
+  Is_Defined     : Boolean := False;
 
-  subtype Index is Integer range Ra .. Dec;
+  procedure Define (Command    : String;
+                    Parameters : String;
+                    Picture    : String) is
+    Picture_Id : constant String := "%picture%";
+    The_Index  : Natural;
+    use all type Strings.Element;
+  begin
+    Log.Write ("Command: " & Command);
+    The_Command := [Command];
+    The_Work_Area := [File.Containing_Directory_Of (Command)];
+    The_Parameters := [Parameters];
+    The_Index := Index (The_Parameters, Pattern => Picture_Id);
+    if The_Index >= Parameters'first then
+      Replace_Slice (The_Parameters, The_Index, The_Index + Picture_Id'length - 1, Picture);
+    end if;
+    Log.Write ("Parameters: " & The_Parameters);
+    Is_Defined := True;
+  end Define;
 
-  subtype Location is Numeric.Real_Vector (Index);
 
-  subtype Matrix is Numeric.Real_Matrix (Index, Index);
+  procedure Capture is
+    use type Strings.Element;
+  begin
+    if Is_Defined then
+      The_Id := Os.Process.Created (Executable     => +The_Command,
+                                    Parameters     => +The_Parameters,
+                                    Current_Folder => +The_Work_Area);
+      Log.Write ("capture started");
+    else
+      Log.Warning ("parameters undefined");
+    end if;
+  exception
+  when others =>
+    Log.Error ("capture failed");
+  end Capture;
 
-  type Pixels is array (Index) of Positive;
 
-  Not_Solved : exception;
+  procedure Stop is
+  begin
+    Os.Process.Terminate_With (The_Id);
+    Log.Write ("Capture stopped");
+  end Stop;
 
-  procedure Define (Executable : String);
-
-  procedure Solve (Filename : String;
-                   Height   : Degrees;
-                   Start    : Location);
-  -- exception: Not_Solved 
-
-  function Solved (The_Ra  : out Degrees;
-                   The_Dec : out Degrees) return Boolean;
-  -- exception: Not_Solved if no sulution found
-
-  function Solved (CRVAL : out Location;
-                   CD    : out Matrix;
-                   Size  : out Pixels) return Boolean;
-  -- exception: Not_Solved if no sulution found
-
-  procedure Stop;
-
-end Astap;
+end Camera;

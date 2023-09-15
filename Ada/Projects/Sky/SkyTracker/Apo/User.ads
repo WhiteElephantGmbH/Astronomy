@@ -30,7 +30,7 @@ package User is
 
   type Action_Handler is access procedure (The_Action : Action);
 
-  type Setup_Object is (Pole_Top, Pole_Left, Pole_Right, Align_Next);
+  type Setup_Object is (Pole_Top, Pole_Left, Pole_Right, Align_Stars);
 
   procedure Show (Visible_In : Duration);
 
@@ -45,6 +45,8 @@ package User is
                      The_Termination_Handler : not null access procedure);
 
   procedure Perform_Goto;
+
+  procedure Perform_Goto_Next;
 
   procedure Clear_Targets;
 

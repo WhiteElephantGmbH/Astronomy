@@ -195,6 +195,8 @@ package body Picture is
   when Not_Solved =>
     File.Delete (Filename);
     return False;
+  when Exif.File_Not_Found =>
+    return False;
   end Solve;
 
 

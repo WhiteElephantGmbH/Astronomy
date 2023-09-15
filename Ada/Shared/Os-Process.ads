@@ -38,7 +38,8 @@ package Os.Process is
 
   function Created (Executable     : String;
                     Current_Folder : String := "";
-                    Parameters     : String := "") return Id;
+                    Parameters     : String := "";
+                    Console        : Console_Type := Normal) return Id;
 
   Creation_Failure : exception;
   --
@@ -56,9 +57,7 @@ package Os.Process is
   --
   -- Procedure to terminate a detached process.
   --
-  -- Note: If the process was not created the kill is a no operation (no exception will be raised).
-
-  Termination_Failure : exception;
+  -- Note: If the process was not created or is ended the Termination is a no operation.
 
 
   function Execution_Of (Executable     : String;

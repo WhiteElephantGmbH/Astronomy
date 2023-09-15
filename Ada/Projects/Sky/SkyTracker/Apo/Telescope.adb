@@ -16,6 +16,7 @@
 pragma Style_White_Elephant;
 
 with Ada.Real_Time;
+with Camera;
 with Clock;
 with Parameter;
 with Picture;
@@ -216,6 +217,8 @@ package body Telescope is
 
     Aligning_Enabled : Boolean := False;
 
+    Is_Preparing_For_Capture : Boolean := False;
+
     The_Information : Ten_Micron.Information;
 
     The_Picture_Direction : Space.Direction;
@@ -313,33 +316,19 @@ package body Telescope is
     function Solve_Picture return Boolean is
     begin
       if not Picture.Solve (Actual_Target_Direction) then
-        Log.Warning ("Picture not solved");
+        Log.Warning ("solve picture not started");
         return False;
       end if;
       return True;
     exception
     when Picture.Not_Solved =>
-      Log.Warning ("Picture solving not started");
+      Log.Warning ("solve picture terminated");
       return False;
     when Item: others =>
-      Log.Error ("Picture solving failed");
+      Log.Error ("solve picture failed");
       Log.Termination (Item);
       return False;
     end Solve_Picture;
-
-
-    function Picture_Solved return Boolean is
-    begin
-      return Picture.Solved;
-    exception
-    when Picture.Not_Solved =>
-      Log.Warning ("Picture not solved");
-      return False;
-    when Item: others =>
-      Log.Error ("Picture solving failed");
-      Log.Termination (Item);
-      return False;
-    end Picture_Solved;
 
 
     procedure Update_Time_And_Weather_Data is
@@ -357,42 +346,69 @@ package body Telescope is
 
 
     procedure Update_Handling is
-    begin
+
+      procedure Capture_Handling is
+      begin
+        if Is_Preparing_For_Capture then
+          Ten_Micron.Start_Capturing;
+          Camera.Capture;
+          Is_Preparing_For_Capture := False;
+        end if;
+      end Capture_Handling;
+
+    begin -- Update_Handling
       Get_Information;
       Update_Time_Delta;
       case The_Information.Status is
       when Positioned =>
         Update_Time_And_Weather_Data;
-        if User.In_Setup_Mode and then Picture.Exists and then Solve_Picture then
-          Ten_Micron.Start_Solving;
+        if User.In_Setup_Mode then
+          Capture_Handling;
         end if;
       when Tracking =>
-        if not Aligning_Enabled and then Picture.Exists and then Solve_Picture then
+        if User.In_Setup_Mode then
+          Capture_Handling;
+        elsif not Aligning_Enabled and then Picture.Exists and then Solve_Picture then
+          Ten_Micron.Start_Solving;
+        end if;
+      when Capturing =>
+        if Picture.Exists and then Solve_Picture then
           Ten_Micron.Start_Solving;
         end if;
       when Solving =>
-        if Picture_Solved then
-          Ten_Micron.End_Solving;
-          Picture.Evaluate (Center => The_Picture_Direction,
-                            Lmst   => The_Picture_Lmst);
-          if User.In_Setup_Mode then
-            if Evaluate_Pole_Setup /= null then
-              Evaluate_Pole_Setup.all;
+        begin
+          if Picture.Solved then
+            Ten_Micron.End_Solving;
+            Picture.Evaluate (Center => The_Picture_Direction,
+                              Lmst   => The_Picture_Lmst);
+            if User.In_Setup_Mode then
+              if Evaluate_Pole_Setup /= null then
+                Evaluate_Pole_Setup.all;
+              else
+                Alignment.Define (Direction => The_Picture_Direction,
+                                  Lmst      => The_Picture_Lmst,
+                                  Pier_Side => The_Information.Pier_Side);
+                User.Perform_Goto_Next;
+              end if;
             else
-              Alignment.Define (Direction => The_Picture_Direction,
-                                Lmst      => The_Picture_Lmst,
-                                Pier_Side => The_Information.Pier_Side);
+              User.Enable_Align_On_Picture;
+              Aligning_Enabled := True;
             end if;
-          else
-            User.Enable_Align_On_Picture;
-            Aligning_Enabled := True;
           end if;
-        end if;
+        exception
+        when Picture.Not_Solved =>
+          Ten_Micron.End_Solving;
+          if User.In_Setup_Mode and Evaluate_Pole_Setup = null then
+            User.Perform_Goto_Next;
+          end if;
+        end;
       when Stopped | Waiting =>
         Aligning_Enabled := False;
+        Is_Preparing_For_Capture := False;
         Update_Time_And_Weather_Data;
       when Disconnected =>
         Aligning_Enabled := False;
+        Is_Preparing_For_Capture := False;
         Picture.Stop_Solving;
       when others =>
         Aligning_Enabled := False;
@@ -452,16 +468,19 @@ package body Telescope is
           accept Go_To_Left do
             Evaluate_Pole_Setup := Pole_Axis.Evaluate_Left'access;
             Position_To (Space.Axis_Pole_Left);
+            Is_Preparing_For_Capture := True;
           end Go_To_Left;
         or
           accept Go_To_Right do
             Evaluate_Pole_Setup := Pole_Axis.Evaluate_Right'access;
             Position_To (Space.Axis_Pole_Right);
+            Is_Preparing_For_Capture := True;
           end Go_To_Right;
         or
           accept Go_To_Top do
             Evaluate_Pole_Setup := Pole_Axis.Evaluate_Top'access;
             Position_To (Space.Axis_Pole_Top);
+            Is_Preparing_For_Capture := True;
           end Go_To_Top;
         or
           accept Go_To_Next do
@@ -470,6 +489,7 @@ package body Telescope is
             The_Next_Star := Alignment.Next_Star;
             if Space.Direction_Is_Known (The_Next_Star) then
               Ten_Micron.Slew_To (The_Next_Star);
+              Is_Preparing_For_Capture := True;
             else
               Ten_Micron.Stop;
             end if;
@@ -486,9 +506,14 @@ package body Telescope is
         or
           accept Stop do
             Remote.Define (Target => "");
-            if The_Information.Status = Solving then
+            case The_Information.Status is
+            when Solving =>
               Picture.Stop_Solving;
-            end if;
+            when Capturing =>
+              Camera.Stop;
+            when others =>
+              null;
+            end case;
             Ten_Micron.Stop;
            end Stop;
         or

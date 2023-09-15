@@ -124,7 +124,6 @@ package body Astap is
   exception
   when Not_Solved =>
     Cleanup;
-    Log.Warning ("Not solution for " & Filename);
     raise;
   when Os.Process.Creation_Failure =>
     Cleanup;
@@ -169,7 +168,7 @@ package body Astap is
 
     begin
       if Error /= "" then
-        Log.Error (Error);
+        Log.Warning (Error);
         raise Not_Solved;
       end if;
       if Warning /= "" then

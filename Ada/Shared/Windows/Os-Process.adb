@@ -172,7 +172,8 @@ package body Os.Process is
 
   function Created (Executable     : String;
                     Current_Folder : String := "";
-                    Parameters     : String := "") return Id is
+                    Parameters     : String := "";
+                    Console        : Console_Type := Normal) return Id is
     The_Process_Id : Id;
   begin
     Create (Executable     => Executable,
@@ -182,7 +183,7 @@ package body Os.Process is
             Std_Input      => No_Handle,
             Std_Output     => No_Handle,
             Std_Error      => No_Handle,
-            Console        => Normal,
+            Console        => Console,
             Process_Id     => The_Process_Id);
     return The_Process_Id;
   end Created;
@@ -192,16 +193,20 @@ package body Os.Process is
     SYNCHRONIZE       : constant := 16#00100000#;
     PROCESS_TERMINATE : constant := 1;
     The_Handle        : Win32.Winnt.HANDLE;
-    use type Win32.BOOL;
     use type Win32.DWORD;
   begin
     if Process_Id.Is_Defined then
-      The_Handle := Win32.Winbase.OpenProcess (dwDesiredAccess => SYNCHRONIZE + PROCESS_TERMINATE,
-                                               bInheritHandle  => Win32.TRUE,
-                                               dwProcessId     => Win32.DWORD(Process_Id.Value));
-      if Win32.Winbase.TerminateProcess (The_Handle, 0) /= Win32.TRUE then
-        raise Termination_Failure;
-      end if;
+      declare
+        Dummy : Win32.BOOL;
+      begin
+        The_Handle := Win32.Winbase.OpenProcess (dwDesiredAccess => SYNCHRONIZE + PROCESS_TERMINATE,
+                                                 bInheritHandle  => Win32.TRUE,
+                                                 dwProcessId     => Win32.DWORD(Process_Id.Value));
+        Dummy := Win32.Winbase.TerminateProcess (The_Handle, 0);
+      exception
+      when others =>
+        null;
+      end;
     end if;
   end Terminate_With;
 

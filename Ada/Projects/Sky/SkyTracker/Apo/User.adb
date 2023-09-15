@@ -286,6 +286,12 @@ package body User is
   end Perform_Goto;
 
 
+  procedure Perform_Goto_Next is
+  begin
+    Signal_Action (Go_To_Next);
+  end Perform_Goto_Next;
+
+
   procedure Perform_Setup_Goto is
 
     function Identifier_Of (Item : String) return String is
@@ -305,7 +311,7 @@ package body User is
     The_Setup_Object := Setup_Object'value(Setup_Object_Image);
     Log.Write ("Setup Object - " & Setup_Object_Image);
     case The_Setup_Object is
-    when Align_Next =>
+    when Align_Stars =>
       Signal_Action (Go_To_Next);
     when Pole_Left =>
       Signal_Action (Go_To_Left);
@@ -444,7 +450,7 @@ package body User is
           Enable_Goto;
         end if;
         Enable_Stop;
-      when Solving =>
+      when Capturing | Solving =>
         Disable_Action;
         Enable_Stop;
       end case;
@@ -517,7 +523,7 @@ package body User is
       when Tracking =>
         Enable_Goto;
         Enable_Stop;
-      when Solving =>
+      when Capturing | Solving =>
         Disable_Action;
         Enable_Stop;
       end case;
@@ -994,7 +1000,7 @@ package body User is
         Align_Points_Text : constant String := "Align Points";
 
         Title_Size : constant Natural := Gui.Text_Size_Of (Align_Points_Text) + Separation;
-        Text_Size  : constant Natural := Gui.Text_Size_Of ("20h58m58.58s") + Separation;
+        Text_Size  : constant Natural := Gui.Text_Size_Of ("Align Stars v") + Separation;
       begin
         Setup_Page := Gui.Add_Page (The_Title  => "Setup",
                                     The_Action => Enter_Setup_Page'access,
