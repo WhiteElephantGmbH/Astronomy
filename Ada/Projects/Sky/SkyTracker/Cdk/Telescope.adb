@@ -160,6 +160,15 @@ package body Telescope is
   end Define_Space_Access;
 
 
+  The_Park_Position : Earth.Direction;
+
+  procedure Define_Park_Position (The_Position : Earth.Direction) is
+  begin
+    The_Park_Position := The_Position;
+  end Define_Park_Position;
+
+
+
   function Information return Data is
     The_Data : Data;
   begin
@@ -640,6 +649,15 @@ package body Telescope is
     end Update_Preparing_Position;
 
 
+    procedure Do_Park is
+    begin
+      The_Start_Time := Time.Universal;
+      Mount.Goto_Mark (The_Park_Position, The_Completion_Time);
+      Log.Write ("do park");
+      The_State := Parking;
+    end Do_Park;
+
+
     procedure Do_Position is
     begin
       The_Start_Time := Time.Universal;
@@ -647,6 +665,13 @@ package body Telescope is
       Log.Write ("position to Landmark");
       The_State := Positioning;
     end Do_Position;
+
+
+    procedure Do_Disable is
+    begin
+      Fans.Turn_On_Or_Off;
+      Mount.Disable;
+    end Do_Disable;
 
 
     procedure Start_Adjusting (Kind : Adjusting_Kind) is
@@ -865,8 +890,7 @@ package body Telescope is
     begin
       case The_Event is
       when Shutdown =>
-        Fans.Turn_On_Or_Off;
-        Mount.Disable;
+        Do_Disable;
         delay 3.0;
         Mount.Disconnect;
         The_State := Disconnecting;
@@ -986,8 +1010,7 @@ package body Telescope is
         Rotator.Find_Home;
         The_State := Homing;
       when Shutdown =>
-        Fans.Turn_On_Or_Off;
-        Mount.Disable;
+        Do_Disable;
         The_State := Disabling;
       when others =>
         null;
@@ -1033,8 +1056,7 @@ package body Telescope is
         Mount.Set_Pointing_Model;
         The_State := Initializing;
       when Shutdown =>
-        Fans.Turn_On_Or_Off;
-        Mount.Disable;
+        Do_Disable;
         The_State := Disabling;
       when others =>
         null;
@@ -1073,9 +1095,13 @@ package body Telescope is
       when Position =>
         Do_Position;
       when Shutdown =>
-        Fans.Turn_On_Or_Off;
-        Mount.Disable;
-        The_State := Disabling;
+        if Earth.Direction_Is_Known (The_Park_Position) then
+          Do_Park;
+          The_State := Parking;
+        else
+          Do_Disable;
+          The_State := Disabling;
+        end if;
       when User_Adjust =>
         Jog_Handling;
       when User_Setup =>
@@ -1086,6 +1112,26 @@ package body Telescope is
         null;
       end case;
     end Stopped_State;
+
+    -------------
+    -- Parking --
+    -------------
+    procedure Parking_State is
+    begin
+      case The_Event is
+      when Mount_Startup =>
+        The_State := Mount_Startup_State (The_Event);
+      when Mount_Stopped =>
+        Do_Disable;
+        The_State := Disabling;
+      when Mount_Tracking =>
+        Mount.Stop;
+      when Halt =>
+        Stop_Target;
+      when others =>
+        null;
+      end case;
+     end Parking_State;
 
     --------------
     -- Stopping --
@@ -1529,6 +1575,7 @@ package body Telescope is
           when Initializing  => Initializing_State;
           when Stopped       => Stopped_State;
           when Stopping      => Stopping_State;
+          when Parking       => Parking_State;
           when Positioning   => Positioning_State;
           when Positioned    => Positioned_State;
           when Preparing     => Preparing_State;

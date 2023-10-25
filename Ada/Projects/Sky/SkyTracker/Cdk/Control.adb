@@ -322,6 +322,7 @@ package body Control is
       end case;
       case The_Data.Status is
       when Telescope.Stopped
+      | Telescope.Parking
       | Telescope.Positioning
       | Telescope.Preparing
       | Telescope.Approaching

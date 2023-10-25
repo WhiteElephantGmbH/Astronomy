@@ -512,7 +512,7 @@ package body User is
         Enable_Startup_Button;
         Enable_Shutdown_Button;
         Menu_Disable;
-      when Telescope.Disconnecting | Telescope.Disabling =>
+      when Telescope.Disconnecting | Telescope.Disabling | Telescope.Parking =>
         Disable_Startup_Button;
         Enable_Stop_Button;
         Menu_Disable;

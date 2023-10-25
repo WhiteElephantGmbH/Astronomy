@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2019 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2019 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -66,6 +66,7 @@ package Telescope is
                  Initializing,
                  Stopped,
                  Stopping,
+                 Parking,
                  Positioning,
                  Positioned,
                  Preparing,
@@ -108,6 +109,8 @@ package Telescope is
 
   procedure Define_Space_Access (Get_Direction : Get_Space_Access;
                                  The_Id        : Name.Id);
+
+  procedure Define_Park_Position (The_Position : Earth.Direction);
 
   procedure Execute (The_Command : Command);
 

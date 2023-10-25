@@ -22,6 +22,7 @@ with Cdk_700;
 with Configuration;
 with Cwe;
 with Doubly_Linked_Lists_Extension;
+with Earth;
 with Error;
 with File;
 with Language;
@@ -33,6 +34,7 @@ with Stellarium;
 with Strings;
 with Sun;
 with Targets;
+with Telescope;
 with Traces;
 
 package body Parameter is
@@ -64,6 +66,7 @@ package body Parameter is
   Moving_Speed_List_Key : constant String := "Moving Speed List";
   Cwe_Distance_Key      : constant String := "CWE Distance";
   Time_Adjustment_Key   : constant String := "Time Adjustment";
+  Park_Position_Az_Key  : constant String := "Park Position Az";
 
   Controller_Id  : constant String := "Controller";
   Ip_Address_Key : constant String := "IP Address";
@@ -251,6 +254,25 @@ package body Parameter is
   end Duration_Of;
 
 
+  function Direction_Of (Key : String) return Earth.Direction is
+    Image : constant String := String_Value_Of (Key);
+  begin
+    if Image = "" then
+      return Earth.Unknown_Direction;
+    end if;
+    begin
+      declare
+        Az : constant Angle.Degrees := Degrees_Of (Key, 360.0);
+      begin
+        return Earth.Direction_Of (Az=> +Az, Alt => +Angle.Degrees(45.0));
+      end;
+    exception
+    when others =>
+      Error.Raise_With ("Incorrect value for " & Key & ": <" & Image & ">");
+    end;
+  end Direction_Of;
+
+
   function Value_Of (Key     : String;
                      Section : String := "") return Integer is
     Item : constant String := String_Of (Key);
@@ -341,6 +363,7 @@ package body Parameter is
       Put (Moving_Speed_List_Key & " = 30""/s, 3'/s, 20'/s, 2°/s");
       Put (Cwe_Distance_Key & "      = 30'");
       Put (Time_Adjustment_Key & "   = 0.5s");
+      Put (Park_Position_Az_Key & "  = 90°");
       Put ("");
       Put ("[" & Controller_Id & "]");
       Put (Ip_Address_Key & " = 192.168.10.160");
@@ -553,6 +576,7 @@ package body Parameter is
       end if;
       The_Cwe_Distance := Degrees_Of (Cwe_Distance_Key, Cwe.Maximum_Distance);
       The_Time_Adjustment := Duration_Of (Time_Adjustment_Key);
+      Telescope.Define_Park_Position (Direction_Of (Park_Position_Az_Key));
 
       Set (Controller_Handle);
       if not Is_In_Simulation_Mode or else Is_In_Expert_Mode then
