@@ -112,6 +112,8 @@ package Telescope is
 
   procedure Define_Park_Position (The_Position : Earth.Direction);
 
+  function Park_Position_Defined return Boolean;
+
   procedure Execute (The_Command : Command);
 
   procedure Set (The_Orientation : Orientation);

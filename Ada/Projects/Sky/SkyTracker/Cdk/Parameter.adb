@@ -264,7 +264,7 @@ package body Parameter is
       declare
         Az : constant Angle.Degrees := Degrees_Of (Key, 360.0);
       begin
-        return Earth.Direction_Of (Az=> +Az, Alt => +Angle.Degrees(45.0));
+        return Earth.Direction_Of (Az=> +Az, Alt => +Angle.Degrees(5.0));
       end;
     exception
     when others =>
@@ -363,7 +363,7 @@ package body Parameter is
       Put (Moving_Speed_List_Key & " = 30""/s, 3'/s, 20'/s, 2°/s");
       Put (Cwe_Distance_Key & "      = 30'");
       Put (Time_Adjustment_Key & "   = 0.5s");
-      Put (Park_Position_Az_Key & "  = 90°");
+      Put (Park_Position_Az_Key & "  = 75°");
       Put ("");
       Put ("[" & Controller_Id & "]");
       Put (Ip_Address_Key & " = 192.168.10.160");

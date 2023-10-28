@@ -167,6 +167,7 @@ package body Telescope is
     The_Park_Position := The_Position;
   end Define_Park_Position;
 
+  function Park_Position_Defined return Boolean is (Earth.Direction_Is_Known (The_Park_Position));
 
 
   function Information return Data is
@@ -1095,7 +1096,7 @@ package body Telescope is
       when Position =>
         Do_Position;
       when Shutdown =>
-        if Earth.Direction_Is_Known (The_Park_Position) then
+        if Park_Position_Defined then
           Do_Park;
           The_State := Parking;
         else

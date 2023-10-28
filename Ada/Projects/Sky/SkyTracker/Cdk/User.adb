@@ -393,7 +393,11 @@ package body User is
 
   procedure Set_Shutdown_Text is
   begin
-    Gui.Set_Text (Right_Button, "Shutdown");
+    if Telescope.Park_Position_Defined then
+      Gui.Set_Text (Right_Button, "Park");
+    else
+      Gui.Set_Text (Right_Button, "Shutdown");
+    end if;
   end Set_Shutdown_Text;
 
 
