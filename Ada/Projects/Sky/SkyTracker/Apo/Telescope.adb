@@ -335,7 +335,7 @@ package body Telescope is
       use type RT.Time;
     begin
       if The_Next_Update_Time < RT.Clock then
-        The_Next_Update_Time := @ + Time_Update_Interval;
+        The_Next_Update_Time := RT.Clock + Time_Update_Interval;
         Clock.Define_Time;
         if Weather.Requested then
           Ten_Micron.Define (Weather.Air_Pressure);
