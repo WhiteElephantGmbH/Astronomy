@@ -1,13 +1,13 @@
 -- *********************************************************************************************************************
--- *                           (c) 2019 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2019 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with PWI.XML;
+with PWI2.XML;
 with Strings;
 
-package body PWI.Focuser is
+package body PWI2.Focuser is
 
   procedure Execute (Command_Name : String;
                      The_Port     : Port;
@@ -48,4 +48,4 @@ package body PWI.Focuser is
     end case;
   end Position;
 
-end PWI.Focuser;
+end PWI2.Focuser;

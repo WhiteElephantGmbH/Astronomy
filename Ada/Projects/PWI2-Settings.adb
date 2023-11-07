@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2019 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2019 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
@@ -10,7 +10,7 @@ with Angle;
 with Site;
 with Strings;
 
-package body PWI.Settings is
+package body PWI2.Settings is
 
   package IO renames Ada.Text_IO;
 
@@ -157,4 +157,4 @@ package body PWI.Settings is
     return The_Upper_Alt_Goto_Limit;
   end Upper_Alt_Goto_Limit;
 
-end PWI.Settings;
+end PWI2.Settings;

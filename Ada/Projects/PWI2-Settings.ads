@@ -1,10 +1,10 @@
 -- *********************************************************************************************************************
--- *                       (c) 2019 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2019 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-package PWI.Settings is
+package PWI2.Settings is
 
   File_Not_Found : exception;
 
@@ -27,4 +27,4 @@ package PWI.Settings is
 
   function Upper_Alt_Goto_Limit return Encoder_Degrees;
 
-end PWI.Settings;
+end PWI2.Settings;

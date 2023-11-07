@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2019 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2019 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
@@ -11,7 +11,7 @@ pragma Build (Description => "PWI test program",
               Compiler    => "GNATPRO\23.0");
 with Test;
 
-procedure PWI_Test is
+procedure PWI2_Test is
 begin
   Test.Work;
-end PWI_Test;
+end PWI2_Test;

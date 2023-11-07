@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2019 .. 2020 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2019 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
@@ -8,10 +8,10 @@ with Ada.Command_Line;
 with Ada.Text_IO;
 with Exceptions;
 with Log;
-with PWI.Mount;
-with PWI.M3;
-with PWI.Focuser;
-with PWI.Rotator;
+with PWI2.Mount;
+with PWI2.M3;
+with PWI2.Focuser;
+with PWI2.Rotator;
 with Serial_Io.Usb;
 with Strings;
 
@@ -159,15 +159,15 @@ package body Test is
 
     procedure Connect_Mount is
 
-      use type PWI.Mount.State;
+      use type PWI2.Mount.State;
 
       procedure Wait_For_Mount_Connected is
         Connect_Timeout : constant := 5; -- seconds
       begin
         for Unused_Count in 1 .. Connect_Timeout loop
           delay 1.0;
-          PWI.Get_System;
-          if PWI.Mount.Status = PWI.Mount.Connected then
+          PWI2.Get_System;
+          if PWI2.Mount.Status = PWI2.Mount.Connected then
             return;
           end if;
         end loop;
@@ -175,9 +175,9 @@ package body Test is
       end Wait_For_Mount_Connected;
 
     begin -- Connect_Mount
-      PWI.Get_System;
-      if PWI.Mount.Status = PWI.Mount.Disconnected then
-        PWI.Mount.Connect;
+      PWI2.Get_System;
+      if PWI2.Mount.Status = PWI2.Mount.Disconnected then
+        PWI2.Mount.Connect;
         Put ("connecting mount");
         Wait_For_Mount_Connected;
         Put ("mount connected");
@@ -187,17 +187,17 @@ package body Test is
 
     Rotator_Not_Connected : exception;
 
-    procedure Connect_Rotator (The_Port : PWI.Port) is
+    procedure Connect_Rotator (The_Port : PWI2.Port) is
 
-      use type PWI.Rotator.State;
+      use type PWI2.Rotator.State;
 
       procedure Wait_For_Rotator_Connected is
         Connect_Timeout : constant := 5; -- seconds
       begin
         for Unused_Count in 1 .. Connect_Timeout loop
           delay 1.0;
-          PWI.Get_System;
-          if PWI.Rotator.Status /= PWI.Rotator.Disconnected then
+          PWI2.Get_System;
+          if PWI2.Rotator.Status /= PWI2.Rotator.Disconnected then
             return;
           end if;
         end loop;
@@ -205,9 +205,9 @@ package body Test is
       end Wait_For_Rotator_Connected;
 
     begin -- Connect_Rotator
-      PWI.Get_System;
-      if PWI.Rotator.Status = PWI.Rotator.Disconnected then
-        PWI.Focuser.Connect (The_Port);
+      PWI2.Get_System;
+      if PWI2.Rotator.Status = PWI2.Rotator.Disconnected then
+        PWI2.Focuser.Connect (The_Port);
         Put ("connecting rotator/focuser");
         Wait_For_Rotator_Connected;
         Put ("rotator connected/focuser");
@@ -217,17 +217,17 @@ package body Test is
 
     Rotator_Not_Disconnected : exception;
 
-    procedure Disconnect_Rotator (The_Port : PWI.Port) is
+    procedure Disconnect_Rotator (The_Port : PWI2.Port) is
 
-      use type PWI.Rotator.State;
+      use type PWI2.Rotator.State;
 
       procedure Wait_For_Rotator_Disconnected is
         Disconnect_Timeout : constant := 5; -- seconds
       begin
         for Unused_Count in 1 .. Disconnect_Timeout loop
           delay 1.0;
-          PWI.Get_System;
-          if PWI.Rotator.Status = PWI.Rotator.Disconnected then
+          PWI2.Get_System;
+          if PWI2.Rotator.Status = PWI2.Rotator.Disconnected then
             return;
           end if;
         end loop;
@@ -235,9 +235,9 @@ package body Test is
       end Wait_For_Rotator_Disconnected;
 
     begin -- Disconnect_Rotator
-      PWI.Get_System;
-      if PWI.Rotator.Status = PWI.Rotator.Connected then
-        PWI.Focuser.Disconnect (The_Port);
+      PWI2.Get_System;
+      if PWI2.Rotator.Status = PWI2.Rotator.Connected then
+        PWI2.Focuser.Disconnect (The_Port);
         Put ("disconnecting rotator/focuser");
         Wait_For_Rotator_Disconnected;
         Put ("rotator/focuser disconnected");
@@ -250,15 +250,15 @@ package body Test is
 
     procedure Enable_Mount is
 
-      use type PWI.Mount.State;
+      use type PWI2.Mount.State;
 
       procedure Wait_For_Mount_Enabled is
         Enable_Timeout : constant := 45; -- seconds
       begin
         for Unused_Count in 1 .. Enable_Timeout loop
           delay 1.0;
-          PWI.Get_System;
-          if PWI.Mount.Status /= PWI.Mount.Connected then
+          PWI2.Get_System;
+          if PWI2.Mount.Status /= PWI2.Mount.Connected then
             return;
           end if;
         end loop;
@@ -266,13 +266,13 @@ package body Test is
       end Wait_For_Mount_Enabled;
 
     begin -- Enable_Mount
-      PWI.Get_System;
-      if PWI.Mount.Status < PWI.Mount.Connected then
+      PWI2.Get_System;
+      if PWI2.Mount.Status < PWI2.Mount.Connected then
         raise Mount_Must_Be_Connected;
       end if;
-      PWI.Get_System;
-      if PWI.Mount.Status = PWI.Mount.Connected then
-        PWI.Mount.Enable;
+      PWI2.Get_System;
+      if PWI2.Mount.Status = PWI2.Mount.Connected then
+        PWI2.Mount.Enable;
         Put ("enabling mount motors");
         Wait_For_Mount_Enabled;
         Put ("motors energized");
@@ -285,17 +285,17 @@ package body Test is
 
     procedure Home_Mount is
 
-      use type PWI.Mount.State;
+      use type PWI2.Mount.State;
 
       procedure Wait_For_Mount_At_Home is
       begin
         loop
           delay 1.0;
-          PWI.Get_System;
-          case PWI.Mount.Status is
-          when PWI.Mount.Homing =>
+          PWI2.Get_System;
+          case PWI2.Mount.Status is
+          when PWI2.Mount.Homing =>
             null;
-          when PWI.Mount.Synchronised | PWI.Mount.Stopped =>
+          when PWI2.Mount.Synchronised | PWI2.Mount.Stopped =>
             exit;
           when others =>
             raise Mount_Not_At_Home;
@@ -304,11 +304,11 @@ package body Test is
       end Wait_For_Mount_At_Home;
 
     begin -- Home_Mount
-      PWI.Get_System;
-      if PWI.Mount.Status < PWI.Mount.Enabled then
+      PWI2.Get_System;
+      if PWI2.Mount.Status < PWI2.Mount.Enabled then
         raise Mount_Must_Be_Enabled;
-      elsif PWI.Mount.Status = PWI.Mount.Enabled then
-        PWI.Mount.Find_Home;
+      elsif PWI2.Mount.Status = PWI2.Mount.Enabled then
+        PWI2.Mount.Find_Home;
         Put ("homing mount");
         Wait_For_Mount_At_Home;
         Put ("homing mount completed succsessfully");
@@ -318,17 +318,17 @@ package body Test is
 
     Rotator_Must_Be_Connected : exception;
 
-    procedure Home_Rotator (The_Port : PWI.Port) is
+    procedure Home_Rotator (The_Port : PWI2.Port) is
 
-      use type PWI.Rotator.State;
+      use type PWI2.Rotator.State;
 
       procedure Wait_For_Rotator_At_Home is
       begin
         loop
           delay 1.0;
-          PWI.Get_System;
-          case PWI.Rotator.Status is
-          when PWI.Rotator.Homing =>
+          PWI2.Get_System;
+          case PWI2.Rotator.Status is
+          when PWI2.Rotator.Homing =>
             null;
           when others =>
             exit;
@@ -337,11 +337,11 @@ package body Test is
       end Wait_For_Rotator_At_Home;
 
     begin -- Home_Rotator
-      PWI.Get_System;
-      if PWI.Rotator.Status < PWI.Rotator.Connected then
+      PWI2.Get_System;
+      if PWI2.Rotator.Status < PWI2.Rotator.Connected then
         raise Rotator_Must_Be_Connected;
-      elsif PWI.Rotator.Status = PWI.Rotator.Connected then
-        PWI.Rotator.Find_Home (The_Port);
+      elsif PWI2.Rotator.Status = PWI2.Rotator.Connected then
+        PWI2.Rotator.Find_Home (The_Port);
         Put ("homing rotator");
         Wait_For_Rotator_At_Home;
         Put ("homing rotator completed succsessfully");
@@ -350,13 +350,13 @@ package body Test is
 
 
     procedure Start_Rotator is
-      use type PWI.Rotator.State;
+      use type PWI2.Rotator.State;
     begin
-      PWI.Get_System;
-      if PWI.Rotator.Status < PWI.Rotator.Connected then
+      PWI2.Get_System;
+      if PWI2.Rotator.Status < PWI2.Rotator.Connected then
         raise Rotator_Must_Be_Connected;
-      elsif PWI.Rotator.Status = PWI.Rotator.Connected then
-        PWI.Rotator.Start;
+      elsif PWI2.Rotator.Status = PWI2.Rotator.Connected then
+        PWI2.Rotator.Start;
         Put ("Start rotator");
       end if;
     end Start_Rotator;
@@ -365,26 +365,26 @@ package body Test is
     Focuser_Incorrect_Position : exception;
     Focuser_Not_Connected      : exception;
 
-    procedure Move_Focuser (On          : PWI.Port;
+    procedure Move_Focuser (On          : PWI2.Port;
                             To_Position : String) is
     begin
       declare
-        Position : constant PWI.Microns := PWI.Microns'value(To_Position);
+        Position : constant PWI2.Microns := PWI2.Microns'value(To_Position);
       begin
         Put ("move focuser to " & To_Position);
-        PWI.Focuser.Move (On, To_Position => Position);
+        PWI2.Focuser.Move (On, To_Position => Position);
       end;
     exception
-    when PWI.No_Server =>
+    when PWI2.No_Server =>
       raise Focuser_Not_Connected;
     when others =>
       raise Focuser_Incorrect_Position;
     end Move_Focuser;
 
 
-    procedure Turn_M3 (To : PWI.Port) is
+    procedure Turn_M3 (To : PWI2.Port) is
     begin
-      PWI.M3.Turn (To);
+      PWI2.M3.Turn (To);
     end Turn_M3;
 
 
@@ -393,23 +393,23 @@ package body Test is
 
     procedure Set_Pointing_Model is
 
-      use type PWI.Mount.State;
+      use type PWI2.Mount.State;
 
       procedure Wait_For_Ponting_Model_Set is
       begin
         delay 1.0;
-        PWI.Get_System;
-        if PWI.Mount.Status /= PWI.Mount.Stopped then
+        PWI2.Get_System;
+        if PWI2.Mount.Status /= PWI2.Mount.Stopped then
           raise Pointing_Model_Not_Set;
         end if;
       end Wait_For_Ponting_Model_Set;
 
     begin -- Set_Pointing_Model
-      PWI.Get_System;
-      if PWI.Mount.Status < PWI.Mount.Synchronised then
+      PWI2.Get_System;
+      if PWI2.Mount.Status < PWI2.Mount.Synchronised then
         raise Mount_Must_Be_Synchronised;
       end if;
-      PWI.Mount.Set_Pointing_Model;
+      PWI2.Mount.Set_Pointing_Model;
       Put ("set pointing model");
       Wait_For_Ponting_Model_Set;
       Put ("pointing model set");
@@ -425,26 +425,26 @@ package body Test is
     end Startup;
 
 
-    procedure Move (Ra  : PWI.Mount.Hours;
-                    Dec : PWI.Mount.Degrees) is
-      use type PWI.Mount.State;
+    procedure Move (Ra  : PWI2.Mount.Hours;
+                    Dec : PWI2.Mount.Degrees) is
+      use type PWI2.Mount.State;
     begin
       Startup;
-      PWI.Mount.Move (Ra         => Ra,
-                      Dec        => Dec,
-                      From_J2000 => True);
+      PWI2.Mount.Move (Ra         => Ra,
+                       Dec        => Dec,
+                       From_J2000 => True);
       loop
         delay 1.0;
-        PWI.Get_System;
+        PWI2.Get_System;
         declare
-          Info : constant PWI.Mount.Information := PWI.Mount.Info;
+          Info : constant PWI2.Mount.Information := PWI2.Mount.Info;
         begin
           Put ("Mount State    : " & Strings.Legible_Of (Info.Status'img));
           Put ("      Ra       : " & Strings.Legible_Of (Info.Ra'img));
           Put ("      Dec      : " & Strings.Legible_Of (Info.Dec'img));
           Put ("      Ra 2000  : " & Strings.Legible_Of (Info.Ra_2000'img));
           Put ("      Dec 2000 : " & Strings.Legible_Of (Info.Dec_2000'img));
-          if Info.Status = PWI.Mount.Tracking then
+          if Info.Status = PWI2.Mount.Tracking then
             exit;
           end if;
         end;
@@ -455,10 +455,10 @@ package body Test is
     procedure Stop is
     begin
       loop
-        PWI.Get_System;
-        case PWI.Mount.Status is
-        when PWI.Mount.Homing | PWI.Mount.Approaching | PWI.Mount.Tracking =>
-          PWI.Mount.Stop;
+        PWI2.Get_System;
+        case PWI2.Mount.Status is
+        when PWI2.Mount.Homing | PWI2.Mount.Approaching | PWI2.Mount.Tracking =>
+          PWI2.Mount.Stop;
         when others =>
           exit;
         end case;
@@ -470,17 +470,17 @@ package body Test is
     procedure Shutdown is
     begin
       Stop;
-      PWI.Mount.Disable;
-      PWI.Mount.Disconnect;
+      PWI2.Mount.Disable;
+      PWI2.Mount.Disconnect;
     end Shutdown;
 
     Id : constant String := Strings.Lowercase_Of (Command);
 
-    use type PWI.Mount.Degrees;
-    use type PWI.Mount.Hours;
+    use type PWI2.Mount.Degrees;
+    use type PWI2.Mount.Hours;
 
   begin -- execute
-    PWI.Mount.Define_Pointing_Model ("First.pxp");
+    PWI2.Mount.Define_Pointing_Model ("First.pxp");
     if Id = "connect" then
       Connect_Mount;
     elsif Id = "enable" then
@@ -490,25 +490,25 @@ package body Test is
     elsif Id = "setmodel" then
       Set_Pointing_Model;
     elsif Id = "connectrotator1" then
-      Connect_Rotator (PWI.Port_1);
+      Connect_Rotator (PWI2.Port_1);
     elsif Id = "connectrotator2" then
-      Connect_Rotator (PWI.Port_2);
+      Connect_Rotator (PWI2.Port_2);
     elsif Id = "disconnectrotator1" then
-      Disconnect_Rotator (PWI.Port_1);
+      Disconnect_Rotator (PWI2.Port_1);
     elsif Id = "disconnectrotator2" then
-      Disconnect_Rotator (PWI.Port_2);
+      Disconnect_Rotator (PWI2.Port_2);
     elsif Id = "homerotator1" then
-      Home_Rotator (PWI.Port_1);
+      Home_Rotator (PWI2.Port_1);
     elsif Id = "homerotator2" then
-      Home_Rotator (PWI.Port_2);
+      Home_Rotator (PWI2.Port_2);
     elsif Id = "input" then
       Serial_Input ("");
     elsif Id = "startrotator" then
       Start_Rotator;
     elsif Id = "turnto1" then
-      Turn_M3 (To => PWI.Port_1);
+      Turn_M3 (To => PWI2.Port_1);
     elsif Id = "turnto2" then
-      Turn_M3 (To => PWI.Port_2);
+      Turn_M3 (To => PWI2.Port_2);
     elsif Id = "startup" then
       Startup;
     elsif Id = "movem13" then
@@ -522,9 +522,9 @@ package body Test is
     elsif Id = "shutdown" then
       Shutdown;
     elsif Id'length > 6 and then Id(Id'first..Id'first+5) = "move1=" then
-      Move_Focuser (PWI.Port_1, Id(Id'first+6..Id'last));
+      Move_Focuser (PWI2.Port_1, Id(Id'first+6..Id'last));
     elsif Id'length > 6 and then Id(Id'first..Id'first+5) = "move2=" then
-      Move_Focuser (PWI.Port_2, Id(Id'first+6..Id'last));
+      Move_Focuser (PWI2.Port_2, Id(Id'first+6..Id'last));
     else
       Input_Error ("unknown command");
     end if;
@@ -571,7 +571,7 @@ package body Test is
       Input_Error ("incorrect number of parameters");
     end case;
   exception
-  when PWI.No_Server =>
+  when PWI2.No_Server =>
     Error ("server not available");
   when Occurrence: others =>
     Put (Exceptions.Information_Of (Occurrence));

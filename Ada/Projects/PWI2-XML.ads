@@ -1,12 +1,12 @@
 -- *********************************************************************************************************************
--- *                       (c) 2019 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2019 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
 with Ada.Numerics;
 
-private package PWI.XML is
+private package PWI2.XML is
 
   Parsing_Error : exception;
 
@@ -268,4 +268,4 @@ private package PWI.XML is
 
   end Rotator;
 
-end PWI.XML;
+end PWI2.XML;

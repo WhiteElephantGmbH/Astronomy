@@ -1,12 +1,12 @@
 -- *********************************************************************************************************************
--- *                           (c) 2019 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2019 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
 with Network.Tcp;
 
-package PWI is
+package PWI2 is
 
   No_Server : exception;
 
@@ -42,4 +42,4 @@ private
 
   function Image_Of (The_Port : Port) return Character;
 
-end PWI;
+end PWI2;

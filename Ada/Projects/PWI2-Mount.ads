@@ -1,10 +1,10 @@
 -- *********************************************************************************************************************
--- *                       (c) 2019 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2019 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-package PWI.Mount is
+package PWI2.Mount is
 
   type Hours is delta 0.00000001 range 0.0 .. 24.0;
 
@@ -78,4 +78,4 @@ package PWI.Mount is
 
   procedure Stop;
 
-end PWI.Mount;
+end PWI2.Mount;

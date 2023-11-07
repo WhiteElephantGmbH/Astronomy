@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2019 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2022 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,72 +15,15 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Angle;
-with Device;
-with PWI;
-with Network;
-with Space;
+pragma Build (Description => "SkyTracker control program for GM 1000 HPS",
+              Version     => (2, 4, 0, 0),
+              Kind        => Windows,
+              Libraries   => ("AWSS64", "COLL64"),
+              Compiler    => "GNATPRO\23.0");
 
-package Parameter is
+with Control;
 
-  Speed_Unit : constant String := "/s";
-
-  procedure Read;
-
-  procedure Shutdown;
-
-  ------------
-  -- Device --
-  ------------
-
-  function Is_Expert_Mode return Boolean;
-
-  function Is_Simulation_Mode return Boolean;
-
-  function M3_Ocular_Port return PWI.Port;
-
-  function M3_Camera_Port return PWI.Port;
-
-  function M3_Default_Place return Device.M3.Place;
-
-  function Turn_Fans_On return Boolean;
-
-  function Pointing_Model return String;
-
-  function Pole_Height return Angle.Value;
-
-  function Is_Azimuthal_Mount return Boolean;
-
-  function Moving_Speeds return Angle.Values; -- in angle / s
-
-  function Cwe_Distance return Angle.Degrees;
-
-  function Time_Adjustment return Duration;
-
-  -----------
-  -- Lx200 --
-  -----------
-
-  function Lx200_Port return Network.Port_Number;
-
-  ------------
-  -- Remote --
-  ------------
-
-  function Remote_Configured return Boolean;
-
-  function Telescope_Name return String;
-
-  function Remote_Address return Network.Ip_Address;
-
-  function Remote_Port return Network.Port_Number;
-
-  ----------------
-  -- Stellarium --
-  ----------------
-
-  function Stellarium_Port return Network.Port_Number;
-
-  function Search_Tolerance return Space.Distance;
-
-end Parameter;
+procedure GM_1000 is
+begin
+  Control.Start;
+end GM_1000;

@@ -16,12 +16,12 @@
 pragma Style_White_Elephant;
 
 with Parameter;
-with PWI.Fans;
-with PWI.Focuser;
-with PWI.Mount;
-with PWI.M3;
-with PWI.Rotator;
-with PWI.Settings;
+with PWI2.Fans;
+with PWI2.Focuser;
+with PWI2.Mount;
+with PWI2.M3;
+with PWI2.Rotator;
+with PWI2.Settings;
 with Traces;
 with System;
 
@@ -64,14 +64,14 @@ package body Device is
                           Stop);
 
   type Parameters is record
-    Ra         : PWI.Mount.Hours   := 0.0;
-    Dec        : PWI.Mount.Degrees := 0.0;
-    Ra_Rate    : PWI.Mount.Speed   := 0.0;
-    Dec_Rate   : PWI.Mount.Speed   := 0.0;
-    From_J2000 : Boolean           := False;
-    Alt        : PWI.Mount.Degrees := 0.0;
-    Azm        : PWI.Mount.Degrees := 0.0;
-    Focuser    : Microns           := 0;
+    Ra         : PWI2.Mount.Hours   := 0.0;
+    Dec        : PWI2.Mount.Degrees := 0.0;
+    Ra_Rate    : PWI2.Mount.Speed   := 0.0;
+    Dec_Rate   : PWI2.Mount.Speed   := 0.0;
+    From_J2000 : Boolean            := False;
+    Alt        : PWI2.Mount.Degrees := 0.0;
+    Azm        : PWI2.Mount.Degrees := 0.0;
+    Focuser    : Microns            := 0;
   end record;
 
   type Mode is (Undefined, Normal, Simulation);
@@ -87,21 +87,21 @@ package body Device is
 
     procedure Put (Item : Mount_Action);
 
-    procedure Move (Ra         : PWI.Mount.Hours;
-                    Dec        : PWI.Mount.Degrees;
+    procedure Move (Ra         : PWI2.Mount.Hours;
+                    Dec        : PWI2.Mount.Degrees;
                     From_J2000 : Boolean := False);
 
-    procedure Move (Ra         : PWI.Mount.Hours;
-                    Dec        : PWI.Mount.Degrees;
-                    Ra_Rate    : PWI.Mount.Speed;
-                    Dec_Rate   : PWI.Mount.Speed;
+    procedure Move (Ra         : PWI2.Mount.Hours;
+                    Dec        : PWI2.Mount.Degrees;
+                    Ra_Rate    : PWI2.Mount.Speed;
+                    Dec_Rate   : PWI2.Mount.Speed;
                     From_J2000 : Boolean := False);
 
-    procedure Move (Alt : PWI.Mount.Degrees;
-                    Azm : PWI.Mount.Degrees);
+    procedure Move (Alt : PWI2.Mount.Degrees;
+                    Azm : PWI2.Mount.Degrees);
 
-    procedure Jog (Alt_Rate : PWI.Mount.Axis_Rate;
-                   Azm_Rate : PWI.Mount.Axis_Rate);
+    procedure Jog (Alt_Rate : PWI2.Mount.Axis_Rate;
+                   Azm_Rate : PWI2.Mount.Axis_Rate);
 
     procedure Put (Item : M3_Action);
 
@@ -173,8 +173,8 @@ package body Device is
     end Put;
 
 
-    procedure Move (Ra         : PWI.Mount.Hours;
-                    Dec        : PWI.Mount.Degrees;
+    procedure Move (Ra         : PWI2.Mount.Hours;
+                    Dec        : PWI2.Mount.Degrees;
                     From_J2000 : Boolean := False) is
     begin
       The_Mount_Action := Goto_Target;
@@ -185,10 +185,10 @@ package body Device is
     end Move;
 
 
-    procedure Move (Ra         : PWI.Mount.Hours;
-                    Dec        : PWI.Mount.Degrees;
-                    Ra_Rate    : PWI.Mount.Speed;
-                    Dec_Rate   : PWI.Mount.Speed;
+    procedure Move (Ra         : PWI2.Mount.Hours;
+                    Dec        : PWI2.Mount.Degrees;
+                    Ra_Rate    : PWI2.Mount.Speed;
+                    Dec_Rate   : PWI2.Mount.Speed;
                     From_J2000 : Boolean := False) is
     begin
       The_Mount_Action := Update_Target;
@@ -201,8 +201,8 @@ package body Device is
     end Move;
 
 
-    procedure Move (Alt : PWI.Mount.Degrees;
-                    Azm : PWI.Mount.Degrees) is
+    procedure Move (Alt : PWI2.Mount.Degrees;
+                    Azm : PWI2.Mount.Degrees) is
     begin
       The_Mount_Action := Goto_Mark;
       The_Parameter.Alt := Alt;
@@ -211,8 +211,8 @@ package body Device is
     end Move;
 
 
-    procedure Jog (Alt_Rate : PWI.Mount.Axis_Rate;
-                   Azm_Rate : PWI.Mount.Axis_Rate) is
+    procedure Jog (Alt_Rate : PWI2.Mount.Axis_Rate;
+                   Azm_Rate : PWI2.Mount.Axis_Rate) is
     begin
       The_Mount_Action := Jog;
       The_Parameter.Alt := Alt_Rate;
@@ -314,7 +314,7 @@ package body Device is
     use type Fans.State;
     use type Mount.State;
     use type M3.Position;
-    use type PWI.M3_Port;
+    use type PWI2.M3_Port;
 
   begin
     accept Start (Fans_State_Handler  : Fans.State_Handler_Access;
@@ -327,7 +327,7 @@ package body Device is
     end Start;
     Log.Write ("Control started" & (if Action.Is_Simulating then " Simulation" else ""));
     if Action.Is_Simulating then
-      PWI.Mount.Set_Simulation_Mode;
+      PWI2.Mount.Set_Simulation_Mode;
     end if;
     loop
       begin
@@ -355,13 +355,13 @@ package body Device is
             if Action.Is_Simulating then
               The_Fans_State := Fans.On;
             else
-              PWI.Fans.Turn_On;
+              PWI2.Fans.Turn_On;
             end if;
           when Turn_Off =>
             if Action.Is_Simulating then
               The_Fans_State := Fans.Off;
             else
-              PWI.Fans.Turn_Off;
+              PWI2.Fans.Turn_Off;
             end if;
           end case;
 
@@ -369,7 +369,7 @@ package body Device is
           when No_Action =>
             null;
           when Stop =>
-            PWI.Mount.Stop;
+            PWI2.Mount.Stop;
             if Action.Is_Simulating then
               The_Mount_State := Mount.Stopped;
             end if;
@@ -377,55 +377,55 @@ package body Device is
             if Action.Is_Simulating then
               The_Mount_State := Mount.Connected;
             else
-              PWI.Mount.Connect;
+              PWI2.Mount.Connect;
             end if;
           when Disconnect =>
             if Action.Is_Simulating then
               The_Mount_State := Mount.Disconnected;
             else
-              PWI.Mount.Disconnect;
+              PWI2.Mount.Disconnect;
             end if;
           when Enable =>
             if Action.Is_Simulating then
               The_Mount_State := Mount.Enabled;
             else
-              PWI.Mount.Enable;
+              PWI2.Mount.Enable;
             end if;
           when Disable =>
             if Action.Is_Simulating then
               The_Mount_State := Mount.Connected;
             else
-              PWI.Mount.Disable;
+              PWI2.Mount.Disable;
             end if;
           when Find_Home =>
             if Action.Is_Simulating then
               The_Mount_State := Mount.Synchronised;
             else
-              PWI.Mount.Find_Home;
+              PWI2.Mount.Find_Home;
             end if;
           when Set_Pointing_Model =>
             if Action.Is_Simulating then
               The_Mount_State := Mount.Stopped;
             else
-              PWI.Mount.Set_Pointing_Model;
+              PWI2.Mount.Set_Pointing_Model;
             end if;
           when Goto_Target =>
-            PWI.Mount.Move (Ra         => The_Parameter.Ra,
-                            Dec        => The_Parameter.Dec,
-                            From_J2000 => The_Parameter.From_J2000);
+            PWI2.Mount.Move (Ra         => The_Parameter.Ra,
+                             Dec        => The_Parameter.Dec,
+                             From_J2000 => The_Parameter.From_J2000);
             The_Mount_State := Mount.Approaching;
           when Update_Target =>
-            PWI.Mount.Move (Ra         => The_Parameter.Ra,
-                            Dec        => The_Parameter.Dec,
-                            Ra_Rate    => The_Parameter.Ra_Rate,
-                            Dec_Rate   => The_Parameter.Dec_Rate,
-                            From_J2000 => The_Parameter.From_J2000);
+            PWI2.Mount.Move (Ra         => The_Parameter.Ra,
+                             Dec        => The_Parameter.Dec,
+                             Ra_Rate    => The_Parameter.Ra_Rate,
+                             Dec_Rate   => The_Parameter.Dec_Rate,
+                             From_J2000 => The_Parameter.From_J2000);
           when Goto_Mark =>
-            PWI.Mount.Move (Alt => The_Parameter.Alt,
-                            Azm => The_Parameter.Azm);
+            PWI2.Mount.Move (Alt => The_Parameter.Alt,
+                             Azm => The_Parameter.Azm);
           when Jog =>
-            PWI.Mount.Jog (Alt_Rate => The_Parameter.Alt,
-                           Azm_Rate => The_Parameter.Azm);
+            PWI2.Mount.Jog (Alt_Rate => The_Parameter.Alt,
+                            Azm_Rate => The_Parameter.Azm);
           end case;
 
           case The_M3_Action is
@@ -435,13 +435,13 @@ package body Device is
             if Action.Is_Simulating then
               The_M3_Position := M3.Ocular;
             else
-              PWI.M3.Turn (To => Parameter.M3_Ocular_Port);
+              PWI2.M3.Turn (To => Parameter.M3_Ocular_Port);
             end if;
           when Turn_To_Camera =>
             if Action.Is_Simulating then
               The_M3_Position := M3.Camera;
             else
-              PWI.M3.Turn (To => Parameter.M3_Camera_Port);
+              PWI2.M3.Turn (To => Parameter.M3_Camera_Port);
             end if;
           end case;
 
@@ -449,38 +449,38 @@ package body Device is
           when No_Action =>
             null;
           when Connect =>
-            PWI.Focuser.Connect (Parameter.M3_Camera_Port);
+            PWI2.Focuser.Connect (Parameter.M3_Camera_Port);
           when Disconnect =>
-            PWI.Focuser.Disconnect (Parameter.M3_Camera_Port);
+            PWI2.Focuser.Disconnect (Parameter.M3_Camera_Port);
           when Move =>
-            PWI.Focuser.Move (Parameter.M3_Camera_Port, The_Parameter.Focuser);
+            PWI2.Focuser.Move (Parameter.M3_Camera_Port, The_Parameter.Focuser);
           end case;
 
           case The_Rotator_Action is
           when No_Action =>
             null;
           when Find_Home =>
-            PWI.Rotator.Find_Home (Parameter.M3_Camera_Port);
+            PWI2.Rotator.Find_Home (Parameter.M3_Camera_Port);
           when Start =>
-            PWI.Rotator.Start;
+            PWI2.Rotator.Start;
           when Stop =>
-            PWI.Rotator.Stop;
+            PWI2.Rotator.Stop;
           end case;
         or
           delay 1.0;
-          PWI.Get_System;
+          PWI2.Get_System;
         end select;
         if Action.Is_Simulating then
-          case PWI.Mount.Status is
-          when PWI.Mount.Approaching =>
+          case PWI2.Mount.Status is
+          when PWI2.Mount.Approaching =>
             The_Mount_State := Mount.Approaching;
-          when PWI.Mount.Tracking =>
+          when PWI2.Mount.Tracking =>
             The_Mount_State := Mount.Tracking;
-          when PWI.Mount.Stopped =>
+          when PWI2.Mount.Stopped =>
             if The_Mount_State in Mount.Approaching | Mount.Tracking  then
               The_Mount_State := Mount.Stopped;
             end if;
-          when PWI.Mount.Error =>
+          when PWI2.Mount.Error =>
             The_Mount_State := Mount.Error;
           when others =>
             if The_Mount_State = Mount.Unknown then
@@ -491,34 +491,34 @@ package body Device is
             The_M3_Position := Parameter.M3_Default_Place;
           end if;
         else
-          The_Fans_State := Fans.State'val(Boolean'pos(PWI.Fans.Turned_On));
-          case PWI.Mount.Status is
-          when PWI.Mount.Disconnected =>
+          The_Fans_State := Fans.State'val(Boolean'pos(PWI2.Fans.Turned_On));
+          case PWI2.Mount.Status is
+          when PWI2.Mount.Disconnected =>
             The_Mount_State := Mount.Disconnected;
-          when PWI.Mount.Connected =>
+          when PWI2.Mount.Connected =>
             The_Mount_State := Mount.Connected;
-          when PWI.Mount.Enabled =>
+          when PWI2.Mount.Enabled =>
             The_Mount_State := Mount.Enabled;
-          when PWI.Mount.Homing =>
+          when PWI2.Mount.Homing =>
             The_Mount_State := Mount.Homing;
-          when PWI.Mount.Synchronised =>
+          when PWI2.Mount.Synchronised =>
             The_Mount_State := Mount.Synchronised;
-          when PWI.Mount.Stopped =>
+          when PWI2.Mount.Stopped =>
             The_Mount_State := Mount.Stopped;
-          when PWI.Mount.Approaching =>
+          when PWI2.Mount.Approaching =>
             The_Mount_State := Mount.Approaching;
-          when PWI.Mount.Tracking =>
+          when PWI2.Mount.Tracking =>
             The_Mount_State := Mount.Tracking;
-          when PWI.Mount.Error =>
+          when PWI2.Mount.Error =>
             The_Mount_State := Mount.Error;
           end case;
-          case PWI.M3.Actual_Port is
-          when PWI.Unknown =>
+          case PWI2.M3.Actual_Port is
+          when PWI2.Unknown =>
             The_M3_Position := M3.Unknown;
-          when PWI.Between =>
+          when PWI2.Between =>
             The_M3_Position := M3.Between;
           when others =>
-            if PWI.M3.Actual_Port = Parameter.M3_Camera_Port then
+            if PWI2.M3.Actual_Port = Parameter.M3_Camera_Port then
               The_M3_Position := M3.Camera;
             else
               The_M3_Position := M3.Ocular;
@@ -526,7 +526,7 @@ package body Device is
           end case;
         end if;
       exception
-      when PWI.No_Server =>
+      when PWI2.No_Server =>
         The_Mount_State := Mount.Unknown;
         The_M3_Position := M3.Unknown;
       end;
@@ -556,7 +556,7 @@ package body Device is
                    Pointing_Model      : String) is
   begin
     Action.Set_Mode;
-    PWI.Mount.Define_Pointing_Model (Pointing_Model);
+    PWI2.Mount.Define_Pointing_Model (Pointing_Model);
     The_Control := new Control;
     The_Control.Start (Fans_State_Handler  => Fans_State_Handler,
                        Mount_State_Handler => Mount_State_Handler,
@@ -582,10 +582,10 @@ package body Device is
 
   function Limits return Encoder_Limits is
   begin
-    return (Azm_Lower_Goto => PWI.Settings.Lower_Azm_Goto_Limit,
-            Azm_Upper_Goto => PWI.Settings.Upper_Azm_Goto_Limit,
-            Alt_Lower_Goto => PWI.Settings.Lower_Alt_Goto_Limit,
-            Alt_Upper_Goto => PWI.Settings.Upper_Alt_Goto_Limit);
+    return (Azm_Lower_Goto => PWI2.Settings.Lower_Azm_Goto_Limit,
+            Azm_Upper_Goto => PWI2.Settings.Upper_Azm_Goto_Limit,
+            Alt_Lower_Goto => PWI2.Settings.Lower_Alt_Goto_Limit,
+            Alt_Upper_Goto => PWI2.Settings.Upper_Alt_Goto_Limit);
   end Limits;
 
 
@@ -642,7 +642,7 @@ package body Device is
 
 
     function Actual_Encoder return Encoder_Data is
-      Mount_Encoder : constant PWI.Encoder_Data := PWI.Mount.Encoder;
+      Mount_Encoder : constant PWI2.Encoder_Data := PWI2.Mount.Encoder;
     begin
       return (Azm => Mount_Encoder.Azm,
               Alt => Mount_Encoder.Alt);
@@ -650,7 +650,7 @@ package body Device is
 
 
     function Actual_Info return Information is
-      Mount_Info : constant PWI.Mount.Information := PWI.Mount.Info;
+      Mount_Info : constant PWI2.Mount.Information := PWI2.Mount.Info;
       use type Angle.Value;
     begin
       return (J2000_Direction  => Space.Direction_Of (Ra  => Angle.Value'(+Angle.Hours(Mount_Info.Ra_2000)),
@@ -718,15 +718,15 @@ package body Device is
     begin
       if With_Speed = [0, 0] then
         Log.Write ("Mount.Goto_Target " & Image_Of (Direction));
-        Action.Move (Ra         => PWI.Mount.Hours(Angle.Hours'(+Space.Ra_Of (Direction))),
-                     Dec        => PWI.Mount.Degrees(Angle.Degrees'(+Angle.Signed'(+Space.Dec_Of (Direction)))),
+        Action.Move (Ra         => PWI2.Mount.Hours(Angle.Hours'(+Space.Ra_Of (Direction))),
+                     Dec        => PWI2.Mount.Degrees(Angle.Degrees'(+Angle.Signed'(+Space.Dec_Of (Direction)))),
                      From_J2000 => False);
       else
         Log.Write ("Mount.Goto_Target " & Image_Of (Direction) & " " & Image_Of (With_Speed));
-        Action.Move (Ra         => PWI.Mount.Hours(Angle.Hours'(+Space.Ra_Of (Direction))),
-                     Dec        => PWI.Mount.Degrees(Angle.Degrees'(+Angle.Signed'(+Space.Dec_Of (Direction)))),
-                     Ra_Rate    => PWI.Mount.Speed(Angle.Degrees'(+With_Speed(D1)) * 3600.0),
-                     Dec_Rate   => PWI.Mount.Speed(Angle.Degrees'(+With_Speed(D2)) * 3600.0),
+        Action.Move (Ra         => PWI2.Mount.Hours(Angle.Hours'(+Space.Ra_Of (Direction))),
+                     Dec        => PWI2.Mount.Degrees(Angle.Degrees'(+Angle.Signed'(+Space.Dec_Of (Direction)))),
+                     Ra_Rate    => PWI2.Mount.Speed(Angle.Degrees'(+With_Speed(D1)) * 3600.0),
+                     Dec_Rate   => PWI2.Mount.Speed(Angle.Degrees'(+With_Speed(D2)) * 3600.0),
                      From_J2000 => False);
       end if;
       Completion_Time := Time.Universal + Completion_Duration;
@@ -740,16 +740,16 @@ package body Device is
     begin
       Log.Write ("Mount.Goto_Mark " & Image_Of (Direction));
       pragma Assert (Earth.Direction_Is_Known (Direction));
-      Action.Move (Alt => PWI.Mount.Degrees(Angle.Degrees'(+Earth.Alt_Of (Direction))),
-                   Azm => PWI.Mount.Degrees(Angle.Degrees'(+Earth.Az_Of (Direction))));
+      Action.Move (Alt => PWI2.Mount.Degrees(Angle.Degrees'(+Earth.Alt_Of (Direction))),
+                   Azm => PWI2.Mount.Degrees(Angle.Degrees'(+Earth.Az_Of (Direction))));
       Completion_Time := Time.Universal + Completion_Duration;
     end Goto_Mark;
 
 
     procedure Jog (Rate : Speed) is
       use type Angle.Signed;
-      Alt_Rate : constant PWI.Mount.Axis_Rate := PWI.Mount.Axis_Rate(Angle.Degrees'(+Rate(D2)));
-      Azm_Rate : constant PWI.Mount.Axis_Rate := PWI.Mount.Axis_Rate(Angle.Degrees'(+Rate(D1)));
+      Alt_Rate : constant PWI2.Mount.Axis_Rate := PWI2.Mount.Axis_Rate(Angle.Degrees'(+Rate(D2)));
+      Azm_Rate : constant PWI2.Mount.Axis_Rate := PWI2.Mount.Axis_Rate(Angle.Degrees'(+Rate(D1)));
     begin
       Log.Write ("Mount.Jog - Alt_Rate:" & Alt_Rate'img & " - Azm_Rate:" & Azm_Rate'img);
       Action.Jog (Alt_Rate => Alt_Rate,
@@ -843,7 +843,7 @@ package body Device is
       if Action.Is_Simulating then
         return The_Simulated_Actual_Position;
       else
-        return PWI.Focuser.Position (On => Parameter.M3_Camera_Port);
+        return PWI2.Focuser.Position (On => Parameter.M3_Camera_Port);
       end if;
     end Position;
 

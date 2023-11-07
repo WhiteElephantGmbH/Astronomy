@@ -1,14 +1,14 @@
 -- *********************************************************************************************************************
--- *                       (c) 2019 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2019 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
 with Os.Process;
-with PWI.XML;
+with PWI2.XML;
 with Traces;
 
-package body PWI is
+package body PWI2 is
 
   package Log is new Traces ("Pwi");
 
@@ -131,4 +131,4 @@ package body PWI is
     end case;
   end Image_Of;
 
-end PWI;
+end PWI2;

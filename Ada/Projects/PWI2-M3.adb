@@ -1,11 +1,12 @@
 -- *********************************************************************************************************************
--- *                           (c) 2019 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2019 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with PWI.XML;
-package body PWI.M3 is
+with PWI2.XML;
+
+package body PWI2.M3 is
 
   procedure Execute (Command_Name : String;
                      Parameters   : String := "") is
@@ -41,4 +42,4 @@ package body PWI.M3 is
     return Unknown;
   end Actual_Port;
 
-end PWI.M3;
+end PWI2.M3;

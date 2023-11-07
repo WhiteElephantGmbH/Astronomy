@@ -1,14 +1,14 @@
 -- *********************************************************************************************************************
--- *                       (c) 2019 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2019 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
 with Ada.Numerics;
-with PWI.XML;
+with PWI2.XML;
 with Strings;
 
-package body PWI.Mount is
+package body PWI2.Mount is
 
   procedure Execute (Command_Name : String;
                      Parameters   : String := "") is
@@ -155,7 +155,7 @@ package body PWI.Mount is
   procedure Set_Pointing_Model is
   begin
     Execute (Command_Name => "setmodel",
-             Parameters   => "filename=" & PWI.Mount.Defined_Pointing_Model);
+             Parameters   => "filename=" & PWI2.Mount.Defined_Pointing_Model);
   end Set_Pointing_Model;
 
 
@@ -221,4 +221,4 @@ package body PWI.Mount is
     Execute ("stop");
   end Stop;
 
-end PWI.Mount;
+end PWI2.Mount;

@@ -1,15 +1,18 @@
 -- *********************************************************************************************************************
--- *                           (c) 2019 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2019 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-package PWI.Fans is
+package PWI2.Focuser is
 
-  procedure Turn_On;
+  procedure Connect (To : Port);
 
-  procedure Turn_Off;
+  procedure Disconnect (From : Port);
 
-  function Turned_On return Boolean;
+  procedure Move (On          : Port;
+                  To_Position : Microns);
 
-end PWI.Fans;
+  function Position (On : Port) return Microns;
+
+end PWI2.Focuser;

@@ -1,13 +1,15 @@
 -- *********************************************************************************************************************
--- *                           (c) 2019 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2019 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-package PWI.M3 is
+package PWI2.Fans is
 
-  procedure Turn (To : Port);
+  procedure Turn_On;
 
-  function Actual_Port return M3_Port;
+  procedure Turn_Off;
 
-end PWI.M3;
+  function Turned_On return Boolean;
+
+end PWI2.Fans;

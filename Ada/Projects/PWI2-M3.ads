@@ -1,18 +1,13 @@
 -- *********************************************************************************************************************
--- *                           (c) 2019 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2019 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-package PWI.Focuser is
+package PWI2.M3 is
 
-  procedure Connect (To : Port);
+  procedure Turn (To : Port);
 
-  procedure Disconnect (From : Port);
+  function Actual_Port return M3_Port;
 
-  procedure Move (On          : Port;
-                  To_Position : Microns);
-
-  function Position (On : Port) return Microns;
-
-end PWI.Focuser;
+end PWI2.M3;

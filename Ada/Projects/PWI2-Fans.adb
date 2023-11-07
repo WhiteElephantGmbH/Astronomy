@@ -1,12 +1,12 @@
 -- *********************************************************************************************************************
--- *                           (c) 2019 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2019 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with PWI.XML;
+with PWI2.XML;
 
-package body PWI.Fans is
+package body PWI2.Fans is
 
   procedure Execute (Command_Name : String) is
   begin
@@ -29,7 +29,7 @@ package body PWI.Fans is
 
   function Turned_On return Boolean is
   begin
-    return PWI.XML.Fans.Turned_On;
+    return PWI2.XML.Fans.Turned_On;
   end Turned_On;
 
-end PWI.Fans;
+end PWI2.Fans;

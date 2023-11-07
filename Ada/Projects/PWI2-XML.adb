@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2019 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2019 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
@@ -7,7 +7,7 @@ pragma Style_White_Elephant;
 with Traces;
 with Strings;
 
-package body PWI.XML is
+package body PWI2.XML is
 
   package Log is new Traces ("Xml");
 
@@ -1135,4 +1135,4 @@ package body PWI.XML is
 
   end System;
 
-end PWI.XML;
+end PWI2.XML;

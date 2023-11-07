@@ -1,10 +1,10 @@
 -- *********************************************************************************************************************
--- *                           (c) 2019 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2019 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-package PWI.Rotator is
+package PWI2.Rotator is
 
   type State is (Disconnected, -- not Connected
                  Connected,    -- Connected and not homing and not derotating
@@ -19,4 +19,4 @@ package PWI.Rotator is
 
   procedure Stop;
 
-end PWI.Rotator;
+end PWI2.Rotator;

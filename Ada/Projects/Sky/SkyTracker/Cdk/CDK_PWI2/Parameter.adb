@@ -29,7 +29,7 @@ with Language;
 with Network.Tcp;
 with Os.System;
 with Os.User;
-with PWI.Settings;
+with PWI2.Settings;
 with Stellarium;
 with Strings;
 with Sun;
@@ -90,7 +90,7 @@ package body Parameter is
   Is_In_Expert_Mode     : Boolean;
   Is_In_Simulation_Mode : Boolean;
   The_M3_Default_Place  : Device.M3.Place;
-  The_M3_Ocular_Port    : PWI.Port;
+  The_M3_Ocular_Port    : PWI2.Port;
   Fans_On               : Boolean;
   The_Pointing_Model    : Strings.Element;
 
@@ -414,23 +414,23 @@ package body Parameter is
           Error.Raise_With ("PWI settings filename not defined");
         end if;
         Log.Write ("PWI settings file: """ & Settings_Filename & """");
-        PWI.Settings.Read (Settings_Filename);
+        PWI2.Settings.Read (Settings_Filename);
       exception
-      when PWI.Settings.File_Not_Found =>
+      when PWI2.Settings.File_Not_Found =>
         Error.Raise_With ("PWI settings file " & Settings_Filename & " not found");
-      when PWI.Settings.Missing_Longitude =>
+      when PWI2.Settings.Missing_Longitude =>
         Error.Raise_With ("PWI settings missing longitude");
-      when PWI.Settings.Missing_Latitude =>
+      when PWI2.Settings.Missing_Latitude =>
         Error.Raise_With ("PWI settings missing latitude");
-      when PWI.Settings.Missing_Elevation =>
+      when PWI2.Settings.Missing_Elevation =>
         Error.Raise_With ("PWI settings missing elevation");
-      when PWI.Settings.Missing_Lower_Azm_Goto_Limit =>
+      when PWI2.Settings.Missing_Lower_Azm_Goto_Limit =>
         Error.Raise_With ("PWI settings missing lower azm goto limit");
-      when PWI.Settings.Missing_Upper_Azm_Goto_Limit =>
+      when PWI2.Settings.Missing_Upper_Azm_Goto_Limit =>
         Error.Raise_With ("PWI settings missing upper azm goto limit");
-      when PWI.Settings.Missing_Lower_Alt_Goto_Limit =>
+      when PWI2.Settings.Missing_Lower_Alt_Goto_Limit =>
         Error.Raise_With ("PWI settings missing lower alt goto limit");
-      when PWI.Settings.Missing_Upper_Alt_Goto_Limit =>
+      when PWI2.Settings.Missing_Upper_Alt_Goto_Limit =>
         Error.Raise_With ("PWI settings missing upper alt goto limit");
       end Define_Site_Parameters;
 
@@ -460,7 +460,7 @@ package body Parameter is
           declare
             The_Number_Of_Retries : Natural := 5;
           begin
-            if PWI.Startup (PWI_Program_Filename) then
+            if PWI2.Startup (PWI_Program_Filename) then
               loop
                 begin
                   Prepare_Tcp;
@@ -518,9 +518,9 @@ package body Parameter is
       begin
         Log.Write (M3_Ocular_Port_Key & ": " & Port);
         if Strings.Is_Equal (Port, "1") then
-          The_M3_Ocular_Port := PWI.Port_1;
+          The_M3_Ocular_Port := PWI2.Port_1;
         elsif Strings.Is_Equal (Port, "2") then
-          The_M3_Ocular_Port := PWI.Port_2;
+          The_M3_Ocular_Port := PWI2.Port_2;
         else
           Error.Raise_With (M3_Ocular_Port_Key & " must be either 1 or 2");
         end if;
@@ -569,7 +569,7 @@ package body Parameter is
       Define_Fans_State;
       Define_Pointing_Model;
       Startup_PWI;
-      PWI.Install (PWI_Socket'access);
+      PWI2.Install (PWI_Socket'access);
       The_Moving_Speeds := Angles_Of (Moving_Speed_List_Key, Maximum_Speed, Speed_Unit);
       if Natural(The_Moving_Speeds.Length) < 2 then
         Error.Raise_With ("The speed list must contain at least two values");
@@ -620,7 +620,7 @@ package body Parameter is
       Error.Raise_With ("ENC-2302 not available");
     when others =>
       if Is_In_Shutdown_Mode then
-        PWI.Shutdown;
+        PWI2.Shutdown;
       end if;
       raise;
     end Read_Values;
@@ -636,7 +636,7 @@ package body Parameter is
   procedure Shutdown is
   begin
     if Is_In_Shutdown_Mode then
-      PWI.Shutdown;
+      PWI2.Shutdown;
     end if;
     Stellarium.Shutdown;
   end Shutdown;
@@ -658,19 +658,19 @@ package body Parameter is
   end Is_Simulation_Mode;
 
 
-  function M3_Ocular_Port return PWI.Port is
+  function M3_Ocular_Port return PWI2.Port is
   begin
     return The_M3_Ocular_Port;
   end M3_Ocular_Port;
 
 
-  function M3_Camera_Port return PWI.Port is
+  function M3_Camera_Port return PWI2.Port is
   begin
     case The_M3_Ocular_Port is
-    when PWI.Port_1 =>
-      return PWI.Port_2;
-    when PWI.Port_2 =>
-      return PWI.Port_1;
+    when PWI2.Port_1 =>
+      return PWI2.Port_2;
+    when PWI2.Port_2 =>
+      return PWI2.Port_1;
     end case;
   end M3_Camera_Port;
 

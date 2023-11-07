@@ -17,7 +17,7 @@ pragma Style_White_Elephant;
 
 with Angle;
 with Earth;
-with PWI;
+with PWI2;
 with Space;
 with Time;
 
@@ -39,13 +39,13 @@ package Device is
                    Set_Finding_Rate,
                    Set_Slewing_Rate);
 
-  use type PWI.Encoder_Degrees;
+  use type PWI2.Encoder_Degrees;
 
-  subtype Encoder_Degrees is PWI.Encoder_Degrees delta 0.000_000_1 range -999.999_999_9 .. 999.999_999_9;
+  subtype Encoder_Degrees is PWI2.Encoder_Degrees delta 0.000_000_1 range -999.999_999_9 .. 999.999_999_9;
 
   function Image_Of (Item : Encoder_Degrees) return String;
 
-  subtype Microns is PWI.Microns;
+  subtype Microns is PWI2.Microns;
 
   type Encoder_Limits is record
     Azm_Lower_Goto : Encoder_Degrees;

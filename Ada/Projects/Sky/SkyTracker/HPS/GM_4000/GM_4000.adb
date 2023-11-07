@@ -15,15 +15,15 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-pragma Build (Description => "Sky Tracker control program for 10micron",
-              Version     => (2, 3, 1, 8),
+pragma Build (Description => "SkyTracker control program for GM 4000 HPS",
+              Version     => (2, 4, 0, 0),
               Kind        => Windows,
               Libraries   => ("AWSS64", "COLL64"),
               Compiler    => "GNATPRO\23.0");
 
 with Control;
 
-procedure SkyTracker is
+procedure GM_4000 is
 begin
   Control.Start;
-end SkyTracker;
+end GM_4000;

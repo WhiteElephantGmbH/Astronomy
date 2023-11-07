@@ -1,12 +1,12 @@
 -- *********************************************************************************************************************
--- *                           (c) 2019 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2019 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with PWI.XML;
+with PWI2.XML;
 
-package body PWI.Rotator is
+package body PWI2.Rotator is
 
   function Status_Of (Info : XML.Rotator_Info) return State is
   begin
@@ -48,4 +48,4 @@ package body PWI.Rotator is
              Command => "stop");
   end Stop;
 
-end PWI.Rotator;
+end PWI2.Rotator;
