@@ -4,14 +4,14 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-pragma Build (Description => "PWI test program",
-              Version     => (2, 3, 2, 0),
-              Kind        => Console,
-              Icon        => False,
-              Compiler    => "GNATPRO\23.0");
-with Test;
+package PWI4.Fans is
 
-procedure PWI2_Test is
-begin
-  Test.Work;
-end PWI2_Test;
+  function Exists return Boolean;
+
+  procedure Turn_On;
+
+  procedure Turn_Off;
+
+  function Turned_On return Boolean;
+
+end PWI4.Fans;

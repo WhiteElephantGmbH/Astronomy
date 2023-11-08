@@ -4,14 +4,15 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-pragma Build (Description => "PWI test program",
-              Version     => (2, 3, 2, 0),
+pragma Build (Description => "PWI4 test program",
+              Version     => (4, 0, 0, 0),
               Kind        => Console,
               Icon        => False,
+              Libraries   => ("AWS64"),
               Compiler    => "GNATPRO\23.0");
 with Test;
 
-procedure PWI2_Test is
+procedure PWI4_Test is
 begin
   Test.Work;
-end PWI2_Test;
+end PWI4_Test;

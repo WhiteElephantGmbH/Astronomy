@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2022 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                           (c) 2019 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                      *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,15 +15,15 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-pragma Build (Description => "SkyTracker control program for GM 1000 HPS",
-              Version     => (2, 3, 2, 0),
+pragma Build (Description => "SkyTracker control program for CDK700 (PWI4)",
+              Version     => (4, 0, 0, 0),
               Kind        => Windows,
-              Libraries   => ("AWSS64", "COLL64"),
+              Libraries   => ("AWS64", "COLL64"),
               Compiler    => "GNATPRO\23.0");
 
 with Control;
 
-procedure GM_1000 is
+procedure CDK_PWI4 is
 begin
   Control.Start;
-end GM_1000;
+end CDK_PWI4;

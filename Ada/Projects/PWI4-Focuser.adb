@@ -4,14 +4,32 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-pragma Build (Description => "PWI test program",
-              Version     => (2, 3, 2, 0),
-              Kind        => Console,
-              Icon        => False,
-              Compiler    => "GNATPRO\23.0");
-with Test;
+with PWI4.Protocol;
 
-procedure PWI2_Test is
-begin
-  Test.Work;
-end PWI2_Test;
+package body PWI4.Focuser is
+
+  function Exists return Boolean is
+  begin
+    return Protocol.Focuser.Info.Exists;
+  end Exists;
+
+
+  procedure Execute (Command_Name : String) is
+  begin
+    Execute (Device  => "focuser",
+             Command => Command_Name);
+  end Execute;
+
+
+  procedure Enable is
+  begin
+    Execute ("enable");
+  end Enable;
+
+
+  procedure Disable is
+  begin
+    Execute ("disable");
+  end Disable;
+
+end PWI4.Focuser;

@@ -4,14 +4,12 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-pragma Build (Description => "PWI test program",
-              Version     => (2, 3, 2, 0),
-              Kind        => Console,
-              Icon        => False,
-              Compiler    => "GNATPRO\23.0");
-with Test;
+package PWI4.M3 is
 
-procedure PWI2_Test is
-begin
-  Test.Work;
-end PWI2_Test;
+  procedure Turn (To : Port);
+
+  function Exists return Boolean;
+
+  function Actual_Port return M3_Port;
+
+end PWI4.M3;
