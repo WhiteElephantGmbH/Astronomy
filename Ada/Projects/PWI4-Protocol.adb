@@ -53,7 +53,7 @@ package body PWI4.Protocol is
   exception
   when others =>
     Log.Error ("Meters_Of (Image -> """ & Image & """)");
-    raise Parsing_Error;
+    return Undefined_Meters;
   end Meters_Of;
 
 

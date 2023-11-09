@@ -13,14 +13,23 @@ private package PWI4.Protocol is
   function Image_Of (Item : Boolean) return String;
 
 
-  type Meters is range 0 .. 10000;
+  Meters_Delta : constant := 0.1;
+
+  Meters_Lower_Limit : constant := -728.0; -- Dead See when dryed up
+  Meters_Upper_Limit : constant := 8848.0; -- Himalaya
+
+  type Meters is delta Meters_Delta range Meters_Lower_Limit .. Meters_Upper_Limit with Small => Meters_Delta;
+
+  Undefined_Meters : constant Meters := Meters_Lower_Limit;
 
   function Meters_Of (Image : String) return Meters;
 
   function Image_Of (Item : Meters) return String;
 
 
-  type Julian_Day is delta 0.00000001 range 0.0 .. 99999999.99999999;
+  Day_Delta : constant := 0.000_000_01;
+
+  type Julian_Day is delta Day_Delta range 0.0 .. 100_000_000.0 - Day_Delta with Small => Day_Delta;
 
   function Jd_Of (Image : String) return Julian_Day;
 
