@@ -60,8 +60,6 @@ private package PWI4.Protocol is
 
   function Arc_Second_Of (Image : String) return Arc_Second;
 
-  function Image_Of (Item : Arc_Second) return String;
-
   type Error_Code is new Natural;
 
   function Error_Code_Of (Image : String) return Error_Code;

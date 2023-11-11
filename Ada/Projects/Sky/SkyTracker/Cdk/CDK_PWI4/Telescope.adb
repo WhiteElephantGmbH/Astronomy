@@ -188,8 +188,12 @@ package body Telescope is
     The_Next_Tracking_Period : Time.Period := Time.Undefined;
     The_Completion_Time      : Time.Ut := Time.In_The_Past;
     The_Start_Time           : Time.Ut := Time.In_The_Past;
+    The_Start_Direction      : Space.Direction;
     The_Arrival_Time         : Time.Ut := Time.In_The_Future;
     Is_Fast_Tracking         : Boolean := False;
+
+    First_Adjust_Factor       : Angle.Signed := 1;
+    Second_Adjust_Factor      : Angle.Signed := 1;
 
     The_Landmark : Name.Id;
 
@@ -249,7 +253,8 @@ package body Telescope is
         raise Program_Error; -- unknown target;
       end if;
       The_Start_Time := Time.Universal;
-      Mount.Goto_Target (Direction       => Target_Direction (At_Time => The_Start_Time),
+      The_Start_Direction := Target_Direction (At_Time => The_Start_Time);
+      Mount.Goto_Target (Direction       => The_Start_Direction,
                          Completion_Time => The_Completion_Time);
       The_State := Approaching;
     exception
@@ -276,7 +281,8 @@ package body Telescope is
         raise Program_Error; -- unknown target;
       end if;
       The_Start_Time := Time.Universal;
-      Mount.Goto_Target (Direction       => Target_Direction (At_Time => The_Start_Time),
+      The_Start_Direction := Target_Direction (At_Time => The_Start_Time);
+      Mount.Goto_Target (Direction       => The_Start_Direction,
                          Completion_Time => Unused);
     exception
     when Target_Lost =>
@@ -363,20 +369,45 @@ package body Telescope is
     end Do_Disable;
 
 
+    procedure Adjust_First (The_Speed : Angle.Signed) is
+      use type Angle.Signed;
+      Moving_Speed : constant Angle.Degrees := +(The_Speed * First_Adjust_Factor);
+      use type Angle.Degrees;
+    begin
+      Mount.Set_Rate_Ra (Device.Speed(Moving_Speed * 3600.0));
+    end Adjust_First;
+
+
+    procedure Adjust_Second (The_Speed : Angle.Signed) is
+      use type Angle.Signed;
+      Moving_Speed : constant Angle.Degrees := +(The_Speed * Second_Adjust_Factor);
+      use type Angle.Degrees;
+    begin
+      Mount.Set_Rate_Dec (Device.Speed(Moving_Speed * 3600.0));
+    end Adjust_Second;
+
+
+    procedure Stop_Adjusting is
+    begin
+      Mount.Stop_Rate;
+    end Stop_Adjusting;
+
+
     procedure Offset_Handling is
-      --Speed : constant Angle.Value := Moving_Speeds(Moving_Index);
+      Speed : constant Angle.Value := Moving_Speeds(Moving_Index);
+      use type Angle.Signed;
     begin
       case The_User_Adjust is
       when Move_Left =>
-        null;
+        Adjust_First (-Speed);
       when Move_Right =>
-        null;
+        Adjust_First (+Speed);
       when Move_Up =>
-        null;
+        Adjust_Second (+Speed);
       when Move_Down =>
-        null;
+        Adjust_Second (-Speed);
       when End_Move =>
-        null;
+        Stop_Adjusting;
       when Decrease_Time =>
         null;
       when Increase_Time =>
@@ -385,6 +416,17 @@ package body Telescope is
         null;
       end case;
     end Offset_Handling;
+
+
+    procedure Update_Target_Direction is
+      Actual_Direction : constant Space.Direction := Target_Direction (At_Time => Time.Universal);
+      use type Space.Direction;
+      Delta_Direction  : constant Space.Direction := Actual_Direction - The_Start_Direction;
+    begin
+      if Space.Direction_Is_Known (Delta_Direction) then
+        Mount.Update_Target (Delta_Direction);
+      end if;
+    end Update_Target_Direction;
 
 
     procedure Setup_Handling is
@@ -876,7 +918,7 @@ package body Telescope is
     The_Next_Time : Ada.Real_Time.Time;
 
     use type Ada.Real_Time.Time;
-    use type Time.Ut;
+    use type Angle.Signed;
 
   begin -- Control_Task
     accept Start do
@@ -931,21 +973,17 @@ package body Telescope is
             Log.Write ("Orientation => " & The_Orientation'img);
             case The_Orientation is
             when Correct =>
-              null;
-              --First_Adjust_Factor := 1;
-              --Second_Adjust_Factor := 1;
+              First_Adjust_Factor := 1;
+              Second_Adjust_Factor := 1;
             when Upside_Down =>
-              null;
-              --First_Adjust_Factor := 1;
-              --Second_Adjust_Factor := -1;
+              First_Adjust_Factor := 1;
+              Second_Adjust_Factor := -1;
             when Backwards =>
-              null;
-              --First_Adjust_Factor := -1;
-              --Second_Adjust_Factor := 1;
+              First_Adjust_Factor := -1;
+              Second_Adjust_Factor := 1;
             when Rotated =>
-              null;
-              --First_Adjust_Factor := -1;
-              --Second_Adjust_Factor := -1;
+              First_Adjust_Factor := -1;
+              Second_Adjust_Factor := -1;
             end case;
           end Set;
         or
@@ -1059,12 +1097,10 @@ package body Telescope is
           end Get;
         or
           delay until The_Next_Time;
-          The_Next_Time := The_Next_Time + Ada.Real_Time.To_Time_Span(0.3);
+          The_Next_Time := The_Next_Time + Ada.Real_Time.To_Time_Span(1.0);
           case The_State is
-          when Approaching =>
-            if The_Completion_Time < Time.Universal then
-              Set_Tracking;
-            end if;
+          when Tracking =>
+            Update_Target_Direction;
           when Waiting =>
             The_Event := Mount_Stopped;
           when others =>

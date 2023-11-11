@@ -6,7 +6,12 @@ pragma Style_White_Elephant;
 
 package PWI4.Mount is
 
-  subtype Speed is Arc_Second;
+  type Offset_Axis is (Axis0, Axis1, Dec, Ra, Path, Transverse);
+
+  type Offset_Command is (Add_Arcsec, Add_Gradual_Offset_Arcsec, Gradual_Offset_Seconds, Reset,
+                          Set_Rate_Arcsec_Per_Sec, Set_Total_Arcsec, Stop, Stop_Gradual_Offset, Stop_Rate);
+
+  No_Offset : constant Arc_Second := 0.0;
 
   subtype Axis_Rate is Degrees; -- per second
 
@@ -42,14 +47,23 @@ package PWI4.Mount is
 
   procedure Find_Home;
 
-  procedure Goto_Ra_Dec (Ra         : Hours;
-                         Dec        : Degrees;
+  procedure Goto_Ra_Dec (With_Ra    : Hours;
+                         With_Dec   : Degrees;
                          From_J2000 : Boolean := False);
 
   procedure Goto_Alt_Az (Alt : Degrees;
                          Az  : Degrees);
 
   procedure Confirm_Goto;
+
+  procedure Set_Offset (Axis    : Offset_Axis;
+                        Command : Offset_Command;
+                        Item    : Arc_Second);
+
+  procedure Stop_Rates;
+
+  procedure Set_Gradual_Offsets (Delta_Ra  : Arc_Second;
+                                 Delta_Dec : Arc_Second);
 
   procedure Stop;
 

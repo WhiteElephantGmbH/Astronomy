@@ -15,6 +15,7 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with Angle;
 with Parameter;
 with PWI4.Fans;
 with PWI4.Focuser;
@@ -43,7 +44,10 @@ package body Device is
                         Disable,
                         Find_Home,
                         Goto_Target,
-                        Goto_Mark);
+                        Goto_Mark,
+                        Set_Gradual_Offsets,
+                        Set_Offset,
+                        Stop_Rates);
 
   type M3_Action is (No_Action,
                      Turn_To_Camera,
@@ -58,13 +62,16 @@ package body Device is
                           Disable);
 
   type Parameters is record
-    Ra         : PWI4.Hours       := 0.0;
-    Dec        : PWI4.Degrees     := 0.0;
-  --Ra_Rate    : PWI4.Mount.Speed := 0.0; -- !!! rate or offsets?
-  --Dec_Rate   : PWI4.Mount.Speed := 0.0;
-    From_J2000 : Boolean          := False;
-    Alt        : PWI4.Degrees     := 0.0;
-    Azm        : PWI4.Degrees     := 0.0;
+    From_J2000     : Boolean         := False;
+    Alt            : PWI4.Degrees    := 0.0;
+    Azm            : PWI4.Degrees    := 0.0;
+    Ra             : PWI4.Hours      := 0.0;
+    Dec            : PWI4.Degrees    := 0.0;
+    Arc_Seconds    : PWI4.Arc_Second := 0.0;
+    Delta_Ra       : PWI4.Arc_Second := 0.0;
+    Delta_Dec      : PWI4.Arc_Second := 0.0;
+    Offset_Axis    : PWI4.Mount.Offset_Axis;
+    Offset_Command : PWI4.Mount.Offset_Command;
   end record;
 
 
@@ -77,6 +84,15 @@ package body Device is
     procedure Slew_To (Ra         : PWI4.Hours;
                        Dec        : PWI4.Degrees;
                        From_J2000 : Boolean := False);
+
+    procedure Set_Offset (Axis : PWI4.Mount.Offset_Axis;
+                          Cmd  : PWI4.Mount.Offset_Command;
+                          Item : PWI4.Arc_Second);
+
+    procedure Stop_Rates;
+
+    procedure Set_Gradual_Offsets (Delta_Ra  : PWI4.Arc_Second;
+                                   Delta_Dec : PWI4.Arc_Second);
 
     procedure Position_To (Alt : PWI4.Degrees;
                            Azm : PWI4.Degrees);
@@ -135,6 +151,36 @@ package body Device is
       The_Parameter.From_J2000 := From_J2000;
       Is_Pending := True;
     end Slew_To;
+
+
+    procedure Set_Offset (Axis : PWI4.Mount.Offset_Axis;
+                          Cmd  : PWI4.Mount.Offset_Command;
+                          Item : PWI4.Arc_Second) is
+    begin
+      The_Mount_Action := Set_Offset;
+      The_Parameter.Offset_Axis := Axis;
+      The_Parameter.Offset_Command := Cmd;
+      The_Parameter.Arc_Seconds := Item;
+      Is_Pending := True;
+    end Set_Offset;
+
+
+    procedure Stop_Rates is
+    begin
+      The_Mount_Action := Stop_Rates;
+      Is_Pending := True;
+    end Stop_Rates;
+
+    procedure Set_Gradual_Offsets (Delta_Ra  : PWI4.Arc_Second;
+                                   Delta_Dec : PWI4.Arc_Second) is
+    begin
+      if The_Mount_Action = No_Action then
+        The_Mount_Action := Set_Gradual_Offsets;
+        The_Parameter.Delta_Ra := Delta_Ra;
+        The_Parameter.Delta_Dec := Delta_Dec;
+        Is_Pending := True;
+      end if;
+    end Set_Gradual_Offsets;
 
 
     procedure Position_To (Alt : PWI4.Degrees;
@@ -289,13 +335,22 @@ package body Device is
         when Find_Home =>
           PWI4.Mount.Find_Home;
         when Goto_Target =>
-          PWI4.Mount.Goto_Ra_Dec (Ra         => The_Parameter.Ra,
-                                  Dec        => The_Parameter.Dec,
+          PWI4.Mount.Goto_Ra_Dec (With_Ra    => The_Parameter.Ra,
+                                  With_Dec   => The_Parameter.Dec,
                                   From_J2000 => The_Parameter.From_J2000);
           The_Mount_State := Mount.Approaching;
         when Goto_Mark =>
           PWI4.Mount.Goto_Alt_Az (Alt => The_Parameter.Alt,
                                   Az  => The_Parameter.Azm);
+        when Set_Offset =>
+          PWI4.Mount.Set_Offset (Axis    => The_Parameter.Offset_Axis,
+                                 Command => The_Parameter.Offset_Command,
+                                 Item    => The_Parameter.Arc_Seconds);
+        when Stop_Rates =>
+          PWI4.Mount.Stop_Rates;
+        when Set_Gradual_Offsets =>
+          PWI4.Mount.Set_Gradual_Offsets (Delta_Ra  => The_Parameter.Delta_Ra,
+                                          Delta_Dec => The_Parameter.Delta_Dec);
         end case;
 
         case The_M3_Action is
@@ -336,7 +391,6 @@ package body Device is
         The_Mount_State := Mount.Connected;
       when PWI4.Mount.Enabled =>
         The_Mount_State := Mount.Enabled;
-
       when PWI4.Mount.Stopped =>
         The_Mount_State := Mount.Stopped;
       when PWI4.Mount.Approaching =>
@@ -396,6 +450,18 @@ package body Device is
 
 
   package body Mount is
+
+    The_Last_Ra_Offset  : PWI4.Arc_Second;
+    The_Last_Dec_Offset : PWI4.Arc_Second;
+
+
+    function Arc_Second_Of (Item : Angle.Value) return PWI4.Arc_Second is
+      use type Angle.Signed;
+      use type Angle.Degrees;
+    begin
+      return PWI4.Arc_Second(Angle.Degrees'(+Angle.Signed'(+Item)) * 3600.0);
+    end Arc_Second_Of;
+
 
     function Image_Of (The_Direction : Space.Direction) return String is
     begin
@@ -481,11 +547,54 @@ package body Device is
       use type Time.Ut;
     begin
       Log.Write ("Mount.Goto_Target " & Image_Of (Direction));
+      The_Last_Ra_Offset := 0.0;
+      The_Last_Dec_Offset := 0.0;
       Action.Slew_To (Ra         => PWI4.Hours(Angle.Hours'(+Space.Ra_Of (Direction))),
                       Dec        => PWI4.Degrees(Angle.Degrees'(+Angle.Signed'(+Space.Dec_Of (Direction)))),
                       From_J2000 => False);
       Completion_Time := Time.Universal + Completion_Duration;
     end Goto_Target;
+
+
+    procedure Update_Target (Offset : Space.Direction) is
+      The_Offset : PWI4.Arc_Second;
+      Delta_Ra   : PWI4.Arc_Second;
+      Delta_Dec  : PWI4.Arc_Second;
+      use type PWI4.Arc_Second;
+    begin
+      The_Offset := Arc_Second_Of (Space.Ra_Of (Offset));
+      Delta_Ra := The_Offset - The_Last_Ra_Offset;
+      The_Last_Ra_Offset := The_Offset;
+      The_Offset := Arc_Second_Of (Space.Dec_Of (Offset));
+      Delta_Dec := The_Offset - The_Last_Dec_Offset;
+      The_Last_Dec_Offset := The_Offset;
+      if Delta_Ra /= 0.0 or Delta_Dec /= 0.0 then
+        Log.Write ("Mount.Update_Target - Delta_Ra: " & Image_Of (Delta_Ra) & " - Delta_Dec: " & Image_Of (Delta_Dec));
+        Action.Set_Gradual_Offsets (Delta_Ra  => Delta_Ra,
+                                    Delta_Dec => Delta_Dec);
+      end if;
+    end Update_Target;
+
+
+    procedure Set_Rate_Dec (Item : Speed) is
+    begin
+      Log.Write ("Mount.Set_Rate_Dec " & Image_Of (Item));
+      Action.Set_Offset (PWI4.Mount.Dec, PWI4.Mount.Set_Rate_Arcsec_Per_Sec, Item);
+    end Set_Rate_Dec;
+
+
+    procedure Set_Rate_Ra (Item : Speed) is
+    begin
+      Log.Write ("Mount.Set_Rate_Ra " & Image_Of (Item));
+      Action.Set_Offset (PWI4.Mount.Ra, PWI4.Mount.Set_Rate_Arcsec_Per_Sec, Item);
+    end Set_Rate_Ra;
+
+
+    procedure Stop_Rate is
+    begin
+      Log.Write ("Mount.Stop_Rate");
+      Action.Stop_Rates;
+    end Stop_Rate;
 
 
     procedure Goto_Mark (Direction       :     Earth.Direction;

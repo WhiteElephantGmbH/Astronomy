@@ -15,7 +15,6 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Angle;
 with Earth;
 with PWI4;
 with Space;
@@ -43,13 +42,13 @@ package Device is
 
   function Image_Of (Item : Degrees) return String renames PWI4.Image_Of;
 
+  subtype Speed is PWI4.Arc_Second; -- per second
+
+  function Image_Of (Item : Speed) return String renames PWI4.Image_Of;
+
   subtype Microns is PWI4.Microns;
 
   package Mount is
-
-    type Drive is (D1, D2);
-
-    type Speed is array (Drive) of Angle.Signed;
 
     type State is (Unknown,
                    Disconnected,
@@ -86,6 +85,14 @@ package Device is
 
     procedure Goto_Target (Direction       :     Space.Direction;
                            Completion_Time : out Time.Ut);
+
+    procedure Update_Target (Offset : Space.Direction);
+
+    procedure Set_Rate_Ra (Item : Speed);
+
+    procedure Set_Rate_Dec (Item : Speed);
+
+    procedure Stop_Rate;
 
     procedure Goto_Mark (Direction       :     Earth.Direction;
                          Completion_Time : out Time.Ut);

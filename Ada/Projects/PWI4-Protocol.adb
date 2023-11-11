@@ -110,12 +110,6 @@ package body PWI4.Protocol is
   end Arc_Second_Of;
 
 
-  function Image_Of (Item : Arc_Second) return String is
-  begin
-    return Strings.Trimmed (Item'img);
-  end Image_Of;
-
-
   function Error_Code_Of (Image : String) return Error_Code is
   begin
     return Error_Code'value(Image);

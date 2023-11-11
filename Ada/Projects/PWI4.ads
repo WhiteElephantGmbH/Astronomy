@@ -11,6 +11,8 @@ package PWI4 is
 
   type Arc_Second is delta Arc_Second_Delta range -Arc_Second_Limit .. Arc_Second_Limit with Small => Arc_Second_Delta;
 
+  function Image_Of (Item : Arc_Second) return String;
+
   Degrees_Delta : constant := 0.000_000_000_1;
   Degrees_Limit : constant := 1000.0 - Degrees_Delta;
 

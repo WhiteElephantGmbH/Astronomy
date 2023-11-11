@@ -20,6 +20,12 @@ package body PWI4 is
   The_Ip_Address_And_Port : Strings.Element := ["127.0.0.1:8220"];
 
 
+  function Image_Of (Item : Arc_Second) return String is
+  begin
+    return Strings.Trimmed (Item'image);
+  end Image_Of;
+
+
   function Image_Of (Item : Degrees) return String is
   begin
     return Strings.Trimmed (Item'image);

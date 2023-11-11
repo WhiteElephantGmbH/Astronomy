@@ -71,6 +71,8 @@ package body PWI4.Mount is
         end if;
       elsif Flags.Is_Slewing then
         return Approaching;
+      elsif Is_Leaving then
+        return Approaching;
       else
         return Tracking;
       end if;
@@ -126,12 +128,12 @@ package body PWI4.Mount is
   end Find_Home;
 
 
-  procedure Goto_Ra_Dec (Ra         : Hours;
-                         Dec        : Degrees;
+  procedure Goto_Ra_Dec (With_Ra    : Hours;
+                         With_Dec   : Degrees;
                          From_J2000 : Boolean := False) is
 
-    Ra_Image  : constant String := Strings.Trimmed (Ra'img);
-    Dec_Image : constant String := Strings.Trimmed (Dec'img);
+    Ra_Image  : constant String := Image_Of (With_Ra);
+    Dec_Image : constant String := Image_Of (With_Dec);
 
   begin
     Is_Leaving := True;
@@ -148,14 +150,61 @@ package body PWI4.Mount is
   procedure Goto_Alt_Az (Alt : Degrees;
                          Az  : Degrees) is
 
-    Alt_Image : constant String := Strings.Trimmed (Alt'img);
-    Az_Image  : constant String := Strings.Trimmed (Az'img);
+    Alt_Image : constant String := Image_Of (Alt);
+    Az_Image  : constant String := Image_Of (Az);
 
   begin
     Is_Leaving := True;
     Execute (Command_Name => "goto_alt_az",
              Parameters   => "alt_degs=" & Alt_Image & "&az_degs=" & Az_Image);
   end Goto_Alt_Az;
+
+
+  function Command_For (Axis : Offset_Axis;
+                        Command : Offset_Command) return String is
+  begin
+    return Strings.Lowercase_Of (Axis'image) & "_" & Strings.Lowercase_Of (Command'image);
+  end Command_For;
+
+
+  procedure Set_Offset (Axis    : Offset_Axis;
+                        Command : Offset_Command;
+                        Item    : Arc_Second) is
+
+    Item_Image : constant String := Image_Of (Item);
+    Parameter  : constant String := Command_For (Axis, Command) & "=" & Item_Image;
+
+  begin
+    Execute (Command_Name => "offset",
+             Parameters   => Parameter);
+  end Set_Offset;
+
+
+  procedure Stop_Rates is
+    Stop_Ra_Rate  : constant String := Command_For (Ra, Stop_Rate) & "=0";
+    Stop_Dec_Rate : constant String := Command_For (Dec, Stop_Rate) & "=0";
+  begin
+    Execute (Command_Name => "offset",
+             Parameters   => Stop_Ra_Rate & "&" & Stop_Dec_Rate);
+  end Stop_Rates;
+
+
+  procedure Set_Gradual_Offsets (Delta_Ra  : Arc_Second;
+                                 Delta_Dec : Arc_Second) is
+
+    function Parameter_For (Axis : Offset_Axis;
+                            Item : Arc_Second) return String is
+
+      Over_A_Second : constant String := Command_For (Axis, Gradual_Offset_Seconds) & "=1";
+
+    begin
+      return Command_For (Axis, Add_Gradual_Offset_Arcsec) & "=" & Image_Of (Item) & "&" & Over_A_Second;
+    end Parameter_For;
+
+  begin
+    Execute (Command_Name => "offset",
+             Parameters   => Parameter_For (Ra, Delta_Ra) & "&" & Parameter_For (Dec, Delta_Dec));
+  end Set_Gradual_Offsets;
 
 
   procedure Confirm_Goto is
