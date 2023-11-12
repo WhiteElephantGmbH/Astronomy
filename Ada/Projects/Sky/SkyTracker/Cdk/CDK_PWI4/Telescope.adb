@@ -1059,10 +1059,8 @@ package body Telescope is
               end if;
             end if;
             The_Data.Status := The_State;
-            The_Data.Time_Adjustment := 0.0; --!!! get from PWI
             The_Data.Fans_State := The_Fans_State;
             The_Data.M3_Position := The_M3_Position;
-            The_Data.Universal_Time := Time.Universal; --!!! get from PWI
             case The_State is
             when Approaching | Preparing | Positioning | Homing =>
               The_Data.Completion_Time := The_Completion_Time;
@@ -1071,28 +1069,16 @@ package body Telescope is
             end case;
             case The_State is
             when Startup_State =>
-              The_Data.Actual_J2000_Direction := Space.Unknown_Direction;
               The_Data.Actual_Direction := Space.Unknown_Direction;
-              The_Data.Local_Direction := Earth.Unknown_Direction;
             when others =>
               declare
                 Info : constant Mount.Information := Mount.Actual_Info;
               begin
-                The_Data.Actual_J2000_Direction := Info.J2000_Direction;
                 The_Data.Actual_Direction := Info.Actual_Direction;
-                The_Data.Local_Direction := Info.Local_Direction;
-                The_Data.Az_Position := Info.Az_Axis.Position;
-                The_Data.Alt_Position := Info.Alt_Axis.Position;
               end;
             end case;
-            if Get_Direction = null then
-              The_Data.Target_Direction := Space.Unknown_Direction;
-            else
-              The_Data.Target_Direction := Get_Direction (Id, The_Data.Universal_Time);
-            end if;
             The_Data.Target_Lost := Target_Is_Lost;
             Target_Is_Lost := False;
-            The_Data.Local_Offset := Earth.Unknown_Direction; --!!! get from PWI
             The_Data.Moving_Speed := Moving_Speeds(Moving_Index);
           end Get;
         or

@@ -11,8 +11,6 @@ package PWI4.Mount is
   type Offset_Command is (Add_Arcsec, Add_Gradual_Offset_Arcsec, Gradual_Offset_Seconds, Reset,
                           Set_Rate_Arcsec_Per_Sec, Set_Total_Arcsec, Stop, Stop_Gradual_Offset, Stop_Rate);
 
-  No_Offset : constant Arc_Second := 0.0;
-
   subtype Axis_Rate is Degrees; -- per second
 
   type State is (Disconnected, -- not Connected

@@ -53,7 +53,6 @@ package body Parameter is
   PWI_Id                : constant String := "PWI";
   Program_Key           : constant String := "Program";
   Shutdown_Key          : constant String := "Shutdown";
-  Expert_Mode_Key       : constant String := "Expert Mode";
   Fans_Key              : constant String := "Fans";
   M3_Default_Place_Key  : constant String := "M3 Default Place";
   M3_Ocular_Port_Key    : constant String := "M3 Ocular Port";
@@ -82,7 +81,6 @@ package body Parameter is
   The_Section : Configuration.Section_Handle;
 
   Is_In_Shutdown_Mode  : Boolean := False;
-  Is_In_Expert_Mode    : Boolean;
   The_M3_Default_Place : Device.M3.Place;
   The_M3_Ocular_Port   : PWI4.Port;
   Fans_On              : Boolean;
@@ -339,7 +337,6 @@ package body Parameter is
       Put ("[" & PWI_Id & "]");
       Put (Program_Key & "           = " & PWI_Program_Files & "\PlaneWave interface 4\PWI4.exe");
       Put (Shutdown_Key & "          = True");
-      Put (Expert_Mode_Key & "       = False");
       Put (M3_Default_Place_Key & "  = Ocular");
       Put (M3_Ocular_Port_Key & "    = 1");
       Put (Fans_Key & "              = Off");
@@ -516,7 +513,6 @@ package body Parameter is
       Set (PWI_Handle);
 
       Is_In_Shutdown_Mode := Strings.Is_Equal (String_Value_Of (Shutdown_Key), "True");
-      Is_In_Expert_Mode := Strings.Is_Equal (String_Value_Of (Expert_Mode_Key), "True");
       Define_M3_Default_Place;
       Define_M3_Ocular_Port;
       Define_Fans_State;
@@ -594,12 +590,6 @@ package body Parameter is
   ---------
   -- PWI --
   ---------
-
-  function Is_Expert_Mode return Boolean is
-  begin
-    return Is_In_Expert_Mode;
-  end Is_Expert_Mode;
-
 
   function M3_Ocular_Port return PWI4.Port is
   begin

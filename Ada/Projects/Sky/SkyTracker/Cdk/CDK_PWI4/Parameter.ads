@@ -33,8 +33,6 @@ package Parameter is
   -- PWI --
   ---------
 
-  function Is_Expert_Mode return Boolean;
-
   function M3_Ocular_Port return PWI4.Port;
 
   function M3_Camera_Port return PWI4.Port;

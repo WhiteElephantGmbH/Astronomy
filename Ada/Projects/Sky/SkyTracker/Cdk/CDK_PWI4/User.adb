@@ -17,12 +17,9 @@ pragma Style_White_Elephant;
 
 with Ada.Real_Time;
 with Ada.Unchecked_Conversion;
-with Angle;
-with Application;
 with Cwe;
 with Data;
 with Device;
-with Earth;
 with Gui.Enumeration_Menu_Of;
 with Gui.Registered;
 with Keys;
@@ -30,11 +27,8 @@ with Lexicon;
 with Parameter;
 with Persistent;
 with Remote;
-with Site;
-with Space;
 with Strings;
 with Targets;
-with Time;
 with Traces;
 with User.Input;
 
@@ -45,57 +39,13 @@ package body User is
   package Fans renames Device.Fans;
   package M3   renames Device.M3;
 
-  Application_Name : constant String := Application.Name;
-  Version          : constant String := Application.Main_Version;
-
-  Control_Page : Gui.Page;
+  Page         : Gui.Page;
   Left_Button  : Gui.Button;
   Right_Button : Gui.Button;
   Progress_Bar : Gui.Progress_Bar;
   Target       : Gui.Plain_Edit_Box;
   Description  : Gui.Plain_Edit_Box;
   Display      : Gui.List_View;
-
-  Display_Page     : Gui.Page;
-  Target_Dec       : Gui.Plain_Edit_Box;
-  Target_Ra        : Gui.Plain_Edit_Box;
-  Actual_J2000_Dec : Gui.Plain_Edit_Box;
-  Actual_J2000_Ra  : Gui.Plain_Edit_Box;
-  Actual_Dec       : Gui.Plain_Edit_Box;
-  Actual_Ra        : Gui.Plain_Edit_Box;
-  Actual_Alt       : Gui.Plain_Edit_Box;
-  Actual_Az        : Gui.Plain_Edit_Box;
-  Alt_Offset       : Gui.Plain_Edit_Box;
-  Az_Offset        : Gui.Plain_Edit_Box;
-  Az_Position      : Gui.Plain_Edit_Box;
-  Alt_Position     : Gui.Plain_Edit_Box;
-  Moving_Speed     : Gui.Plain_Edit_Box;
-  Fans_State       : Gui.Plain_Edit_Box;
-  M3_Position      : Gui.Plain_Edit_Box;
-  Longitude        : Gui.Plain_Edit_Box;
-  Latitude         : Gui.Plain_Edit_Box;
-  Elevation        : Gui.Plain_Edit_Box;
-  Lmst             : Gui.Plain_Edit_Box;
-  Local_Time       : Gui.Plain_Edit_Box;
-  Time_Offset      : Gui.Plain_Edit_Box;
-
-  Setup_Page      : Gui.Page;
-  Orientation_Box : Gui.Plain_Combo_Box;
-
-  type Setup_Data_Storage is record
-    Image_Orientation : Telescope.Orientation;
-  end record;
-
-  package Persistent_Setup is new Persistent (Setup_Data_Storage, "Setup");
-
-  The_Setup_Data : Persistent_Setup.Data;
-
-  The_Image_Orientation : Telescope.Orientation renames The_Setup_Data.Storage.Image_Orientation;
-
-  type Page is (Is_Control, Is_Display, Is_Setup);
-
-  Is_Expert_Mode : Boolean := False;
-  The_Page       : Page := Is_Control;
 
   type Target_Selection is (No_Target, Target_Object);
 
@@ -472,8 +422,6 @@ package body User is
 
   procedure Show (Information : Telescope.Data) is
     use type Telescope.State;
-    use type Telescope.Time_Delta;
-    use type Time.Ut;
   begin
     if (The_Status /= Information.Status) or (Last_Target_Selection /= The_Target_Selection) then
       The_Status := Information.Status;
@@ -522,70 +470,6 @@ package body User is
       end case;
     end if;
     Gui.Set_Status_Line (Information.Status'img);
-    case The_Page is
-    when Is_Control =>
-      null;
-    when Is_Display =>
-      if Space.Direction_Is_Known (Information.Target_Direction) then
-        Gui.Set_Text (Target_Dec, Space.Dec_Image_Of (Information.Target_Direction));
-        Gui.Set_Text (Target_Ra, Space.Ra_Image_Of (Information.Target_Direction));
-      else
-        Gui.Set_Text (Target_Dec, "");
-        Gui.Set_Text (Target_Ra, "");
-      end if;
-      if Space.Direction_Is_Known (Information.Actual_J2000_Direction) then
-        Gui.Set_Text (Actual_J2000_Dec, Space.Dec_Image_Of (Information.Actual_J2000_Direction));
-        Gui.Set_Text (Actual_J2000_Ra, Space.Ra_Image_Of (Information.Actual_J2000_Direction));
-      else
-        Gui.Set_Text (Actual_J2000_Dec, "");
-        Gui.Set_Text (Actual_J2000_Ra, "");
-      end if;
-      if Space.Direction_Is_Known (Information.Actual_Direction) then
-        Gui.Set_Text (Actual_Dec, Space.Dec_Image_Of (Information.Actual_Direction));
-        Gui.Set_Text (Actual_Ra, Space.Ra_Image_Of (Information.Actual_Direction));
-      else
-        Gui.Set_Text (Actual_Dec, "");
-        Gui.Set_Text (Actual_Ra, "");
-      end if;
-      if Earth.Direction_Is_Known (Information.Local_Direction) then
-        Gui.Set_Text (Actual_Alt, Earth.Alt_Image_Of (Information.Local_Direction));
-        Gui.Set_Text (Actual_Az, Earth.Az_Image_Of (Information.Local_Direction));
-        Gui.Set_Text (Alt_Position, Device.Image_Of (Information.Alt_Position));
-        Gui.Set_Text (Az_Position, Device.Image_Of (Information.Az_Position));
-      else
-        Gui.Set_Text (Actual_Alt, "");
-        Gui.Set_Text (Actual_Az, "");
-        Gui.Set_Text (Alt_Position, "");
-        Gui.Set_Text (Az_Position, "");
-      end if;
-      if Earth.Direction_Is_Known (Information.Local_Offset) then
-        Gui.Set_Text (Alt_Offset, Earth.Alt_Offset_Image_Of (Information.Local_Offset));
-        Gui.Set_Text (Az_Offset, Earth.Az_Offset_Image_Of (Information.Local_Offset));
-      else
-        Gui.Set_Text (Alt_Offset, "");
-        Gui.Set_Text (Az_Offset, "");
-      end if;
-      Gui.Set_Text (Moving_Speed, Angle.Image_Of (Information.Moving_Speed, Decimals => 2) & "/s");
-      Gui.Set_Text (Fans_State, Strings.Legible_Of (Information.Fans_State'img));
-      Gui.Set_Text (M3_Position, Strings.Legible_Of (Information.M3_Position'img));
-      Gui.Set_Text (Longitude, Angle.Image_Of (Site.Longitude, Decimals => 2));
-      Gui.Set_Text (Latitude, Angle.Image_Of (Site.Latitude, Decimals => 2, Show_Signed => True));
-      Gui.Set_Text (Elevation, Strings.Trimmed (Site.Elevation'img) & 'm');
-      if Information.Universal_Time = Time.In_The_Past then
-        Gui.Set_Text (Lmst, "");
-        Gui.Set_Text (Local_Time, "");
-      else
-        Gui.Set_Text (Lmst, Time.Image_Of (Time.Lmst_Of (Information.Universal_Time)));
-        Gui.Set_Text (Local_Time, Time.Image_Of (Information.Universal_Time, Time_Only => True));
-      end if;
-      if Information.Time_Adjustment = 0.0 then
-        Gui.Set_Text (Time_Offset, "");
-      else
-        Gui.Set_Text (Time_Offset, Information.Time_Adjustment'img & "s");
-      end if;
-    when Is_Setup =>
-      null;
-    end case;
     Is_From_Set := True;
     Fans_Menu.Set (Information.Fans_State);
     if Information.M3_Position in M3.Place then
@@ -609,37 +493,10 @@ package body User is
   end Clear_Target;
 
 
-  function Identifier_Of (Item : String) return String is
-    The_Image : String := Strings.Trimmed (Item);
-  begin
-    for Index in The_Image'range loop
-      if The_Image(Index) = ' ' then
-        The_Image(Index) := '_';
-      end if;
-    end loop;
-    return The_Image;
-  end Identifier_Of;
-
-
   function Image_Orientation return Telescope.Orientation is
   begin
-    return The_Image_Orientation;
+    return Telescope.Correct;
   end Image_Orientation;
-
-
-  procedure Set_Orientation is
-  begin
-    begin
-      The_Image_Orientation := Telescope.Orientation'value(Identifier_Of (Gui.Contents_Of (Orientation_Box)));
-    exception
-    when others =>
-      The_Image_Orientation := Telescope.Correct;
-    end;
-    Signal_Action (Set_Orientation);
-  exception
-  when others =>
-    Log.Error ("Set_Orientation");
-  end Set_Orientation;
 
 
   procedure Perform_Goto is
@@ -669,47 +526,9 @@ package body User is
   The_Targets : Name.Id_List_Access;
 
 
-  procedure Enter_Control_Page is
-  begin
-    The_Page := Is_Control;
-    Catalog_Menu.Enable;
-    Selection_Menu.Enable;
-    Gui.Enable_Key_Handler;
-  end Enter_Control_Page;
-
-
-  procedure Enter_Display_Page is
-  begin
-    The_Page := Is_Display;
-    Catalog_Menu.Disable;
-    Selection_Menu.Disable;
-    Gui.Enable_Key_Handler;
-  exception
-  when others =>
-    Log.Error ("Enter_Display_Page failed");
-  end Enter_Display_Page;
-
-
-  procedure Enter_Setup_Page is
-  begin
-    The_Page := Is_Setup;
-    Catalog_Menu.Disable;
-    Selection_Menu.Disable;
-    Gui.Disable_Key_Handler;
-  exception
-  when others =>
-    Log.Error ("Enter_Setup_Page");
-  end Enter_Setup_Page;
-
-
   procedure Enter_Handling is
   begin
-    case The_Page is
-    when Is_Control | Is_Display =>
-      Signal_Action (Back);
-    when Is_Setup =>
-      null;
-    end case;
+    Signal_Action (Back);
   end Enter_Handling;
 
 
@@ -811,27 +630,25 @@ package body User is
 
     procedure Create_Interface is
 
-      procedure Define_Control_Page is
-        Title      : constant String := Lexicon.Image_Of (Lexicon.Target);
-        Title_Size : constant Natural := Gui.Text_Size_Of (Title) + Separation;
+      procedure Define_Page is
+        Target_Image : constant String  := Lexicon.Image_Of (Lexicon.Target);
+        Target_Size  : constant Natural := Gui.Text_Size_Of (Target_Image) + Separation;
       begin
-        Control_Page := Gui.Add_Page (The_Title  => "Control",
-                                      The_Action => Enter_Control_Page'access,
-                                      The_Style  => [Gui.Buttons_Fill_Horizontally => True,
-                                                     Gui.Buttons_Fill_Vertically   => False]);
-
-        Left_Button := Gui.Create (Control_Page, "", Perform_Left'access);
+        Page := Gui.Add_Page (The_Title  => Lexicon.Image_Of (Lexicon.Ocular),
+                              The_Style  => [Gui.Buttons_Fill_Horizontally => True,
+                                             Gui.Buttons_Fill_Vertically   => False]);
+        Left_Button := Gui.Create (Page, "", Perform_Left'access);
         Gui.Disable (Left_Button);
-        Right_Button := Gui.Create (Control_Page, "", Perform_Right'access);
+        Right_Button := Gui.Create (Page, "", Perform_Right'access);
         Gui.Disable (Right_Button);
 
-        Progress_Bar := Gui.Create (Control_Page);
+        Progress_Bar := Gui.Create (Page);
         Gui.Define_Range (Progress_Bar, Natural(Percent'last));
 
-        Target := Gui.Create (Control_Page, Title, "", The_Title_Size => Title_Size, Is_Modifiable  => False);
-        Description := Gui.Create (Control_Page, "", "", Is_Modifiable  => False);
+        Target := Gui.Create (Page, Target_Image, "", The_Title_Size => Target_Size, Is_Modifiable  => False);
+        Description := Gui.Create (Page, "", "", Is_Modifiable  => False);
 
-        Display := Gui.Create (Parent_Page           => Control_Page,
+        Display := Gui.Create (Parent_Page           => Page,
                                The_Text_Handler      => Display_Text_Handler'access,
                                The_Click_Routine     => Select_Target'access,
                                The_Click_Kind        => Gui.Single_Click,
@@ -846,144 +663,7 @@ package body User is
                                               The_Title         => "",
                                               The_Width         => The_Display_Data.Width,
                                               The_Justification => Gui.Left);
-        Gui.Install_Key_Handler (Key_Handler'access);
-      end Define_Control_Page;
-
-
-      procedure Define_Display_Page is
-
-        Moving_Speed_Text : constant String := "Moving Speed"; -- largest text
-
-        Title_Size : constant Natural := Gui.Text_Size_Of (Moving_Speed_Text) + Separation;
-        Text_Size  : constant Natural := Gui.Text_Size_Of ("-999.9999999999") + Separation;
-
-      begin
-        Display_Page := Gui.Add_Page (The_Title  => "Display",
-                                      The_Action => Enter_Display_Page'access,
-                                      The_Style  => [Gui.Buttons_Fill_Horizontally => True,
-                                                     Gui.Buttons_Fill_Vertically   => False]);
-
-        Target_Dec := Gui.Create (Display_Page, "Target DEC", "",
-                                  Is_Modifiable  => False,
-                                  The_Size       => Text_Size,
-                                  The_Title_Size => Title_Size);
-        Target_Ra := Gui.Create (Display_Page, "Target RA", "",
-                                 Is_Modifiable  => False,
-                                 The_Size       => Text_Size,
-                                 The_Title_Size => Title_Size);
-
-        Actual_J2000_Dec := Gui.Create (Display_Page, "J2000 DEC", "",
-                                        Is_Modifiable  => False,
-                                        The_Size       => Text_Size,
-                                        The_Title_Size => Title_Size);
-        Actual_J2000_Ra := Gui.Create (Display_Page, "J2000 RA", "",
-                                       Is_Modifiable  => False,
-                                       The_Size       => Text_Size,
-                                       The_Title_Size => Title_Size);
-
-        Actual_Dec := Gui.Create (Display_Page, "Actual DEC", "",
-                                  Is_Modifiable  => False,
-                                  The_Size       => Text_Size,
-                                  The_Title_Size => Title_Size);
-        Actual_Ra := Gui.Create (Display_Page, "Actual RA", "",
-                                 Is_Modifiable  => False,
-                                 The_Size       => Text_Size,
-                                 The_Title_Size => Title_Size);
-
-        Actual_Alt := Gui.Create (Display_Page, "Actual ALT", "",
-                                  Is_Modifiable  => False,
-                                  The_Size       => Text_Size,
-                                  The_Title_Size => Title_Size);
-        Actual_Az := Gui.Create (Display_Page, "Actual AZ", "",
-                                 Is_Modifiable  => False,
-                                 The_Size       => Text_Size,
-                                 The_Title_Size => Title_Size);
-
-        Alt_Offset := Gui.Create (Display_Page, "ALT Offset", "",
-                                  Is_Modifiable  => False,
-                                  The_Size       => Text_Size,
-                                  The_Title_Size => Title_Size);
-        Az_Offset := Gui.Create (Display_Page, "AZ Offset", "",
-                                 Is_Modifiable  => False,
-                                 The_Size       => Text_Size,
-                                 The_Title_Size => Title_Size);
-
-        Alt_Position := Gui.Create (Display_Page, "ALT Position", "",
-                                    Is_Modifiable  => False,
-                                    The_Size       => Text_Size,
-                                    The_Title_Size => Title_Size);
-        Az_Position := Gui.Create (Display_Page, "AZ Position", "",
-                                   Is_Modifiable  => False,
-                                   The_Size       => Text_Size,
-                                   The_Title_Size => Title_Size);
-
-        Moving_Speed := Gui.Create (Display_Page, Moving_Speed_Text, "",
-                                    Is_Modifiable  => False,
-                                    The_Size       => Text_Size,
-                                    The_Title_Size => Title_Size);
-
-        Fans_State := Gui.Create (Display_Page, "Fans State", "",
-                                  Is_Modifiable  => False,
-                                  The_Size       => Text_Size,
-                                  The_Title_Size => Title_Size);
-
-        M3_Position := Gui.Create (Display_Page, "M3 Position", "",
-                                   Is_Modifiable  => False,
-                                   The_Size       => Text_Size,
-                                   The_Title_Size => Title_Size);
-
-        Longitude := Gui.Create (Display_Page, "Longitude", "",
-                                 Is_Modifiable  => False,
-                                 The_Size       => Text_Size,
-                                 The_Title_Size => Title_Size);
-
-        Latitude := Gui.Create (Display_Page, "Latitude", "",
-                                Is_Modifiable  => False,
-                                The_Size       => Text_Size,
-                                The_Title_Size => Title_Size);
-
-        Elevation := Gui.Create (Display_Page, "Elevation", "",
-                                 Is_Modifiable  => False,
-                                 The_Size       => Text_Size,
-                                 The_Title_Size => Title_Size);
-
-        Lmst := Gui.Create (Display_Page, "LMST", "",
-                            Is_Modifiable  => False,
-                            The_Size       => Text_Size,
-                            The_Title_Size => Title_Size);
-
-        Local_Time := Gui.Create (Display_Page, "Local Time", "",
-                                  Is_Modifiable  => False,
-                                  The_Size       => Text_Size,
-                                  The_Title_Size => Title_Size);
-        Time_Offset := Gui.Create (Display_Page, "Time Offset", "",
-                                   Is_Modifiable  => False,
-                                   The_Size       => Text_Size,
-                                   The_Title_Size => Title_Size);
-      end Define_Display_Page;
-
-
-      procedure Define_Setup_Page is
-
-        Orientation_Key : constant String := "Orientation";
-
-        -- largest texts
-        Title_Size : constant Natural := Gui.Text_Size_Of (Orientation_Key) + Separation;
-        Text_Size  : constant Natural := Gui.Text_Size_Of ("Upside Down sb") + Separation;
-      begin
-        Setup_Page := Gui.Add_Page (The_Title  => "Setup",
-                                    The_Action => Enter_Setup_Page'access,
-                                    The_Style  => [Gui.Buttons_Fill_Horizontally => True,
-                                                   Gui.Buttons_Fill_Vertically   => False]);
-        Orientation_Box := Gui.Create (Setup_Page, Orientation_Key,
-                                       The_Action_Routine => Set_Orientation'access,
-                                       The_Size           => Text_Size,
-                                       The_Title_Size     => Title_Size);
-        for Value in Telescope.Orientation'range loop
-          Gui.Add_Text (Orientation_Box, Strings.Legible_Of (Value'img));
-        end loop;
-        Gui.Select_Text (Orientation_Box, Strings.Legible_Of (The_Image_Orientation'img));
-     end Define_Setup_Page;
+      end Define_Page;
 
     begin -- Create_Interface
       Selection_Menu.Create (Lexicon.Image_Of (Lexicon.Selection), Selection_Handler'access);
@@ -997,16 +677,10 @@ package body User is
       if Parameter.Remote_Configured then
         Demo_21_Menu.Create ("Demo 21", Demo_21_Handler'access);
       end if;
-      Define_Control_Page;
-      if Persistent_Setup.Storage_Is_Empty then
-        The_Image_Orientation := Telescope.Correct;
-       end if;
-      Signal_Action (Set_Orientation);
-      Is_Expert_Mode := Parameter.Is_Expert_Mode;
-      if Is_Expert_Mode then
-        Define_Display_Page;
-        Define_Setup_Page;
-      end if;
+      Define_Page;
+      Catalog_Menu.Enable;
+      Selection_Menu.Enable;
+      Gui.Install_Key_Handler (Key_Handler'access);
       Gui.Enable_Key_Handler;
       The_Startup_Handler.all;
     exception
@@ -1017,7 +691,7 @@ package body User is
 
     function Title return String is
     begin
-      return Application_Name;
+      return "CDK700 PWI4";
     end Title;
 
 
@@ -1037,7 +711,6 @@ package body User is
     Input.Open;
     Action_Routine := The_Action_Handler;
     Gui.Registered.Execute (The_Application_Name    => Title,
-                            The_Version             => Version,
                             The_Startup_Routine     => Create_Interface'access,
                             The_Termination_Routine => Termination'access,
                             Initial_Metrics         => (Width  => Windows_Width,

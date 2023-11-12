@@ -82,21 +82,13 @@ package Telescope is
   type Time_Delta is delta 0.00001 range -100.0 .. 100.0;
 
   type Data is record
-    Status                 : State;
-    Target_Lost            : Boolean;
-    Target_Direction       : Space.Direction;
-    Actual_J2000_Direction : Space.Direction;
-    Actual_Direction       : Space.Direction;
-    Local_Direction        : Earth.Direction;
-    Local_Offset           : Earth.Direction;
-    Az_Position            : Device.Degrees;
-    Alt_Position           : Device.Degrees;
-    Moving_Speed           : Angle.Value;
-    Fans_State             : Fans.State;
-    M3_Position            : M3.Position;
-    Completion_Time        : Time.Ut;
-    Universal_Time         : Time.Ut;
-    Time_Adjustment        : Time_Delta;
+    Status           : State;
+    Target_Lost      : Boolean;
+    Actual_Direction : Space.Direction;
+    Moving_Speed     : Angle.Value;
+    Fans_State       : Fans.State;
+    M3_Position      : M3.Position;
+    Completion_Time  : Time.Ut;
   end record;
 
   type Information_Update_Handler is access procedure;
