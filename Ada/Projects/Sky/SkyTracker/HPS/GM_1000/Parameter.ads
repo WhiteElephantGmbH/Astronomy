@@ -15,15 +15,43 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-pragma Build (Description => "SkyTracker control program for GM 1000 HPS",
-              Version     => (2, 4, 0, 0),
-              Kind        => Windows,
-              Libraries   => ("AWSS64", "COLL64"),
-              Compiler    => "GNATPRO\23.0");
+with Network.Udp;
+with Space;
 
-with Control;
+package Parameter is
 
-procedure GM_1000 is
-begin
-  Control.Start;
-end GM_1000;
+  type Udp_Connection is record
+    Socket  : Network.Udp.Socket;
+    Address : Network.Address;
+  end record;
+
+
+  procedure Read;
+
+  --------------
+  -- 10micron --
+  --------------
+
+  function Is_Expert_Mode return Boolean;
+
+  function Ten_Micron_Ip_Address return Network.Ip_Address;
+
+  function Ten_Micron_Port return Network.Port_Number;
+
+  -----------
+  -- Clock --
+  -----------
+
+  function Clock_Configured return Boolean;
+
+  function Clock_Socket return Network.Udp.Socket;
+
+  ----------------
+  -- Stellarium --
+  ----------------
+
+  function Stellarium_Port return Network.Port_Number;
+
+  function Search_Tolerance return Space.Distance;
+
+end Parameter;

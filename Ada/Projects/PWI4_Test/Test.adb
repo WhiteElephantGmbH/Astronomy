@@ -299,8 +299,8 @@ package body Test is
       use type PWI4.Mount.State;
     begin
       Startup;
-      PWI4.Mount.Goto_Ra_Dec (Ra         => Ra,
-                              Dec        => Dec,
+      PWI4.Mount.Goto_Ra_Dec (With_Ra    => Ra,
+                              With_Dec   => Dec,
                               From_J2000 => True);
       loop
         delay 1.0;

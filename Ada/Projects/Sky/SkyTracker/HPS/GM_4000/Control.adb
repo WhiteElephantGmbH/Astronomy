@@ -16,7 +16,6 @@
 pragma Style_White_Elephant;
 
 with Application;
-with Clock;
 with Data;
 with Error;
 with Gui;
@@ -494,23 +493,15 @@ package body Control is
     Parameter.Read;
     Read_Data;
     if Started_Stellarium_Server then
-      begin
-        Clock.Start;
-        Telescope.Start (Information_Update_Handler'access);
-        Targets.Start (Clear    => User.Clear_Targets'access,
-                       Define   => User.Define'access,
-                       Update   => User.Update_Targets'access,
-                       Arriving => Neo.Is_Arriving'access);
-        User.Execute (Startup'access,
-                      User_Action_Handler'access,
-                      Termination'access);
-        Stellarium.Shutdown;
-        Clock.Finish;
-      exception
-      when others =>
-        Clock.Finish;
-        raise;
-      end;
+      Telescope.Start (Information_Update_Handler'access);
+      Targets.Start (Clear    => User.Clear_Targets'access,
+                     Define   => User.Define'access,
+                     Update   => User.Update_Targets'access,
+                     Arriving => Neo.Is_Arriving'access);
+      User.Execute (Startup'access,
+                    User_Action_Handler'access,
+                    Termination'access);
+      Stellarium.Shutdown;
     end if;
   exception
   when Error.Occurred =>
