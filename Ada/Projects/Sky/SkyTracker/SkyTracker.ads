@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2022 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                           (c) 2023 by White Elephant GmbH, Schaffhausen, Switzerland                              *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,19 +15,10 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Network;
-with Progress;
+with Application;
 
-package Cdk_700 is
+package SkyTracker is
 
-  procedure Startup (Ip_Address       : Network.Ip_Address;
-                     Restart_Duration : Duration);
-    ENC_Not_Available : exception;
-    Startup_Failed    : exception;
+  function Title return String is ("SkyTracker " & Application.Main_Version);
 
-  function Is_Started return Boolean;
-  -- Precondition: Startup must have been called
-
-  function Startup_Progress return Progress.Percent;
-
-end Cdk_700;
+end SkyTracker;

@@ -18,7 +18,6 @@ pragma Style_White_Elephant;
 with Ada.Real_Time;
 with Ada.Unchecked_Conversion;
 with Angle;
-with Application;
 with Cwe;
 with Data;
 with Device;
@@ -31,6 +30,7 @@ with Parameter;
 with Persistent;
 with Remote;
 with Site;
+with SkyTracker;
 with Space;
 with Strings;
 with Targets;
@@ -45,9 +45,6 @@ package body User is
   package Fans    renames Device.Fans;
   package Focuser renames Device.Focuser;
   package M3      renames Device.M3;
-
-  Application_Name : constant String := Application.Name;
-  Version          : constant String := Application.Main_Version;
 
   Focuser_Actual_Key : constant String := "Focuser Actual";
 
@@ -1118,12 +1115,6 @@ package body User is
     end Create_Interface;
 
 
-    function Title return String is
-    begin
-      return Application_Name;
-    end Title;
-
-
     procedure Termination is
     begin
       Input.Close;
@@ -1139,8 +1130,7 @@ package body User is
   begin -- Execute
     Input.Open;
     Action_Routine := The_Action_Handler;
-    Gui.Registered.Execute (The_Application_Name    => Title,
-                            The_Version             => Version,
+    Gui.Registered.Execute (The_Application_Name    => SkyTracker.Title,
                             The_Startup_Routine     => Create_Interface'access,
                             The_Termination_Routine => Termination'access,
                             Initial_Metrics         => (Width  => Windows_Width,

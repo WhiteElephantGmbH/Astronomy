@@ -18,7 +18,6 @@ pragma Style_White_Elephant;
 with Angle;
 with Ada.Real_Time;
 with Ada.Unchecked_Conversion;
-with Application;
 with Alignment;
 with Data;
 with Earth;
@@ -35,6 +34,7 @@ with Pole_Axis;
 with Refraction;
 with Remote;
 with Site;
+with SkyTracker;
 with Space;
 with Strings;
 with Targets;
@@ -44,9 +44,6 @@ with Traces;
 package body User is
 
   package Log is new Traces ("User");
-
-  Application_Name : constant String := Application.Name;
-  Version          : constant String := Application.Main_Version;
 
   Setup_Object_Key : constant String := "Setup Object";
 
@@ -1107,12 +1104,6 @@ package body User is
     end Create_Interface;
 
 
-    function Title return String is
-    begin
-      return Application_Name;
-    end Title;
-
-
     procedure Termination is
     begin
       The_Display_Data.Width := Gui.Width_Of (The_Targets_Column);
@@ -1126,8 +1117,7 @@ package body User is
 
   begin -- Execute
     Action_Routine := The_Action_Handler;
-    Gui.Registered.Execute (The_Application_Name    => Title,
-                            The_Version             => Version,
+    Gui.Registered.Execute (The_Application_Name    => SkyTracker.Title,
                             The_Startup_Routine     => Create_Interface'access,
                             The_Termination_Routine => Termination'access,
                             Initial_Metrics         => (Width  => Windows_Width,

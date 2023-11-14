@@ -62,8 +62,9 @@ package body Parameter is
   Time_Adjustment_Key   : constant String := "Time Adjustment";
   Park_Position_Az_Key  : constant String := "Park Position Az";
 
-  Controller_Id  : constant String := "Controller";
-  Ip_Address_Key : constant String := "IP Address";
+  Controller_Id        : constant String := "Controller";
+  Ip_Address_Key       : constant String := "IP Address";
+  Restart_Duration_Key : constant String := "Restart Duration";
 
   Sun_Id           : constant String := "Sun";
   Safety_Angle_Key : constant String := "Safety Angle";
@@ -218,9 +219,18 @@ package body Parameter is
   end Degrees_Of;
 
 
-  function Duration_Of (Key : String) return Duration is
+  function Duration_Of (Key         : String;
+                        Lower_Limit : Duration := 0.0;
+                        Upper_Limit : Duration) return Duration is
     Image : constant String := String_Value_Of (Key);
-  begin
+
+    function Image_Of (Item : Duration) return String is
+      type Value is delta 0.1 range Duration'first .. Duration'last;
+    begin
+      return Strings.Trimmed (Value(Item)'image) & 's';
+    end Image_Of;
+
+  begin -- Duration_Of
     if Image = "" then
       return 0.0;
     end if;
@@ -232,10 +242,10 @@ package body Parameter is
       declare
         Value : constant Duration := Duration'value(Image(Image'first .. Image'last - 1));
       begin
-        if Value >= -1.0 and Value <= 1.0 then
+        if Value >= Lower_Limit and Value <= Upper_Limit then
           return Value;
         else
-          Error.Raise_With ("value not in range -1.0s .. 1.0s");
+          Error.Raise_With ("value not in range " & Image_Of (Lower_Limit) & " .. " & Image_Of (Upper_Limit));
         end if;
       end;
     exception
@@ -348,7 +358,8 @@ package body Parameter is
       Put (Park_Position_Az_Key & "  = 75°");
       Put ("");
       Put ("[" & Controller_Id & "]");
-      Put (Ip_Address_Key & " = 192.168.10.160");
+      Put (Ip_Address_Key & "       = 192.168.10.160");
+      Put (Restart_Duration_Key & " = 10s");
       Put ("");
       Put ("[" & Sun_Id & "]");
       Put (Safety_Angle_Key & " = 60" & Angle.Degree);
@@ -522,11 +533,12 @@ package body Parameter is
         Error.Raise_With ("The speed list must contain at least two values");
       end if;
       The_Cwe_Distance := Degrees_Of (Cwe_Distance_Key, Cwe.Maximum_Distance);
-      The_Time_Adjustment := Duration_Of (Time_Adjustment_Key);
+      The_Time_Adjustment := Duration_Of (Time_Adjustment_Key, Lower_Limit => -1.0, Upper_Limit => 1.0);
       Telescope.Define_Park_Position (Direction_Of (Park_Position_Az_Key));
 
       Set (Controller_Handle);
-      Cdk_700.Startup (Ip_Address_For (Controller_Id));
+      Cdk_700.Startup (Ip_Address_For (Controller_Id),
+                       Restart_Duration => Duration_Of (Restart_Duration_Key, Upper_Limit => 60.0));
 
       Set (Sun_Handle);
       Sun.Define (Degrees_Of (Safety_Angle_Key, 180.0));

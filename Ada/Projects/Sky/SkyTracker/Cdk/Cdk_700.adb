@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2022 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2022 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -28,8 +28,6 @@ package body Cdk_700 is
 
   Expected_Switches : constant ENC.Switches := [On, On, Off, On];
 
-  Startup_Duration : constant Duration := 60.0; -- seconds
-
   The_Ip_Address : Network.Ip_Address;
 
 
@@ -44,7 +42,8 @@ package body Cdk_700 is
   end Switches;
 
 
-  procedure Startup (Ip_Address : Network.Ip_Address) is
+  procedure Startup (Ip_Address       : Network.Ip_Address;
+                     Restart_Duration : Duration) is
     use type ENC.Switches;
   begin
     Log.Write ("Startup");
@@ -59,7 +58,7 @@ package body Cdk_700 is
             ENC.Set (Port, Expected_Switches(Port), The_Ip_Address);
           end if;
         end loop;
-        Progress.Start (Startup_Duration);
+        Progress.Start (Restart_Duration);
       end if;
     end;
   exception

@@ -27,6 +27,7 @@ with Lexicon;
 with Parameter;
 with Persistent;
 with Remote;
+with SkyTracker;
 with Strings;
 with Targets;
 with Traces;
@@ -689,12 +690,6 @@ package body User is
     end Create_Interface;
 
 
-    function Title return String is
-    begin
-      return "CDK700 PWI4";
-    end Title;
-
-
     procedure Termination is
     begin
       Input.Close;
@@ -710,7 +705,7 @@ package body User is
   begin -- Execute
     Input.Open;
     Action_Routine := The_Action_Handler;
-    Gui.Registered.Execute (The_Application_Name    => Title,
+    Gui.Registered.Execute (The_Application_Name    => SkyTracker.Title,
                             The_Startup_Routine     => Create_Interface'access,
                             The_Termination_Routine => Termination'access,
                             Initial_Metrics         => (Width  => Windows_Width,

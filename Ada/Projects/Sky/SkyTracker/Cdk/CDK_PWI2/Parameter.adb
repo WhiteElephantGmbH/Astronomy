@@ -580,7 +580,8 @@ package body Parameter is
 
       Set (Controller_Handle);
       if not Is_In_Simulation_Mode or else Is_In_Expert_Mode then
-        Cdk_700.Startup (Ip_Address_For (Controller_Id));
+        Cdk_700.Startup (Ip_Address_For (Controller_Id),
+                         Restart_Duration => 60.0); -- 1 Minute
       end if;
 
       Set (Sun_Handle);
