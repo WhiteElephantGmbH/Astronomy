@@ -290,16 +290,17 @@ package body Telescope is
     end Back_To_Target;
 
 
-    function Goto_Waiting_Position return Boolean is
-
-      Arrival_Position : constant Earth.Direction := Objects.Direction_Of (Get_Direction (Id, The_Arrival_Time),
-                                                                           Time.Lmst_Of (The_Arrival_Time));
+    procedure Goto_Waiting_Position is
     begin
       The_Arrival_Time := The_Next_Tracking_Period.Arrival_Time;
-      The_Start_Time := Time.Universal;
-      Mount.Goto_Mark (Arrival_Position, The_Completion_Time);
-      The_State := Preparing;
-      return True;
+      declare
+        Arrival_Position : constant Earth.Direction := Objects.Direction_Of (Get_Direction (Id, The_Arrival_Time),
+                                                                             Time.Lmst_Of (The_Arrival_Time));
+      begin
+        The_Start_Time := Time.Universal;
+        Mount.Goto_Mark (Arrival_Position, The_Completion_Time);
+        The_State := Preparing;
+      end;
     end Goto_Waiting_Position;
 
 
@@ -334,9 +335,7 @@ package body Telescope is
       if Is_Fast_Tracking then
         Log.Write ("follow from " & The_State'img & " after " & Time.Image_Of (The_Next_Tracking_Period.Arrival_Time)
                                                   & " until " & Time.Image_Of (The_Next_Tracking_Period.Leaving_Time));
-        if not Goto_Waiting_Position then -- allready arrived
-          Goto_Target;
-        end if;
+        Goto_Waiting_Position;
       else
         Log.Write ("follow from " & The_State'img);
         Goto_Target;
