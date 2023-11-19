@@ -292,7 +292,6 @@ package body Telescope is
 
     procedure Goto_Waiting_Position is
     begin
-      The_Arrival_Time := The_Next_Tracking_Period.Arrival_Time;
       declare
         Arrival_Position : constant Earth.Direction := Objects.Direction_Of (Get_Direction (Id, The_Arrival_Time),
                                                                              Time.Lmst_Of (The_Arrival_Time));
@@ -302,6 +301,12 @@ package body Telescope is
         The_State := Preparing;
       end;
     end Goto_Waiting_Position;
+
+
+    procedure Follow_Target (Neo_Id : Name.Id) is
+    begin
+      Mount.Follow_Tle (Neo_Id);
+    end Follow_Target;
 
 
     Moving_Speeds : constant Angle.Values := Parameter.Moving_Speeds;
@@ -328,6 +333,7 @@ package body Telescope is
 
     procedure Follow_New_Target is
       use type Time.Period;
+      use type Time.Ut;
     begin
       Id := Next_Id;
       Get_Direction := Next_Get_Direction;
@@ -335,7 +341,12 @@ package body Telescope is
       if Is_Fast_Tracking then
         Log.Write ("follow from " & The_State'img & " after " & Time.Image_Of (The_Next_Tracking_Period.Arrival_Time)
                                                   & " until " & Time.Image_Of (The_Next_Tracking_Period.Leaving_Time));
-        Goto_Waiting_Position;
+        The_Arrival_Time := The_Next_Tracking_Period.Arrival_Time;
+        if Time.Universal < The_Arrival_Time then
+          Goto_Waiting_Position;
+        else
+          Follow_Target (Id);
+        end if;
       else
         Log.Write ("follow from " & The_State'img);
         Goto_Target;
@@ -839,7 +850,7 @@ package body Telescope is
         The_State := Mount_Startup_State (The_Event);
       when Mount_Stopped =>
         if Time.Universal > The_Arrival_Time then
-          The_State := Approaching;
+          Follow_Target (Id);
         end if;
       when Mount_Approach =>
         The_State := Approaching;

@@ -22,8 +22,9 @@ with PWI4.Focuser;
 with PWI4.Mount;
 with PWI4.M3;
 with PWI4.Rotator;
-with Traces;
+with Satellite;
 with System;
+with Traces;
 
 package body Device is
 
@@ -43,6 +44,7 @@ package body Device is
                         Enable,
                         Disable,
                         Find_Home,
+                        Follow_Tle,
                         Goto_Target,
                         Goto_Mark,
                         Set_Gradual_Offsets,
@@ -72,6 +74,7 @@ package body Device is
     Delta_Dec      : PWI4.Arc_Second := 0.0;
     Offset_Axis    : PWI4.Mount.Offset_Axis;
     Offset_Command : PWI4.Mount.Offset_Command;
+    Name_Id        : Name.Id;
   end record;
 
 
@@ -96,6 +99,8 @@ package body Device is
 
     procedure Position_To (Alt : PWI4.Degrees;
                            Azm : PWI4.Degrees);
+
+    procedure Follow_Tle (Id : Name.Id);
 
     procedure Put (Item : M3_Action);
 
@@ -192,6 +197,12 @@ package body Device is
       Is_Pending := True;
     end Position_To;
 
+    procedure Follow_Tle (Id : Name.Id) is
+    begin
+      The_Mount_Action := Follow_Tle;
+      The_Parameter.Name_Id := Id;
+      Is_Pending := True;
+    end Follow_Tle;
 
     procedure Put (Item : M3_Action) is
     begin
@@ -258,6 +269,14 @@ package body Device is
   The_Control : access Control;
 
   task body Control is
+
+    procedure Follow_Tle (Tle_Name : String) is
+      Tle : constant Satellite.Tle := Satellite.Tle_Of (Tle_Name);
+    begin
+      PWI4.Mount.Follow_Tle (Line_1 => Tle_Name,
+                             Line_2 => Tle(1),
+                             Line_3 => Tle(2));
+    end Follow_Tle;
 
     The_Fans_State_Handler  : Fans.State_Handler_Access;
     The_Mount_State_Handler : Mount.State_Handler_Access;
@@ -334,6 +353,8 @@ package body Device is
           PWI4.Mount.Disable;
         when Find_Home =>
           PWI4.Mount.Find_Home;
+        when Follow_Tle =>
+          Follow_Tle (Name.Image_Of (The_Parameter.Name_Id));
         when Goto_Target =>
           PWI4.Mount.Goto_Ra_Dec (With_Ra    => The_Parameter.Ra,
                                   With_Dec   => The_Parameter.Dec,
@@ -616,18 +637,18 @@ package body Device is
     end Confirm_Goto;
 
 
+    procedure Follow_Tle (Id : Name.Id) is
+    begin
+      Log.Write ("Mount.Follow_Tle " & Name.Image_Of (Id));
+      Action.Follow_Tle (Id);
+    end Follow_Tle;
+
+
     procedure Stop is
     begin
       Log.Write ("Mount.Stop");
       Action.Put (Mount_Action'(Stop));
     end Stop;
-
-
-    function Actual_Direction return Space.Direction is
-    begin
-      Log.Write ("Mount.Actual_Direction Unknown");
-      return Space.Unknown_Direction;
-    end Actual_Direction;
 
   end Mount;
 

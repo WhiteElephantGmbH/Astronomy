@@ -16,6 +16,7 @@
 pragma Style_White_Elephant;
 
 with Earth;
+with Name;
 with PWI4;
 with Space;
 with Time;
@@ -99,10 +100,9 @@ package Device is
 
     procedure Confirm_Goto;
 
-    procedure Stop;
-    -- stoppes the motors
+    procedure Follow_Tle (Id : Name.Id);
 
-    function Actual_Direction return Space.Direction;
+    procedure Stop;
 
   end Mount;
 

@@ -6,12 +6,12 @@ pragma Style_White_Elephant;
 
 package PWI4.Mount is
 
+  subtype Axis_Rate is Degrees; -- per second
+
   type Offset_Axis is (Axis0, Axis1, Dec, Ra, Path, Transverse);
 
   type Offset_Command is (Add_Arcsec, Add_Gradual_Offset_Arcsec, Gradual_Offset_Seconds, Reset,
                           Set_Rate_Arcsec_Per_Sec, Set_Total_Arcsec, Stop, Stop_Gradual_Offset, Stop_Rate);
-
-  subtype Axis_Rate is Degrees; -- per second
 
   type State is (Disconnected, -- not Connected
                  Connected,    -- Connected and not (Azm_Enabled and Alt_Enabled)
@@ -53,6 +53,10 @@ package PWI4.Mount is
                          Az  : Degrees);
 
   procedure Confirm_Goto;
+
+  procedure Follow_Tle (Line_1 : String;
+                        Line_2 : String;
+                        Line_3 : String);
 
   procedure Set_Offset (Axis    : Offset_Axis;
                         Command : Offset_Command;

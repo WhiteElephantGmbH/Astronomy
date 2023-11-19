@@ -213,6 +213,15 @@ package body PWI4.Mount is
   end Confirm_Goto;
 
 
+  procedure Follow_Tle (Line_1 : String;
+                        Line_2 : String;
+                        Line_3 : String) is
+  begin
+    Execute (Command_Name => "follow_tle",
+             Parameters   => "line1=" & Line_1 & "&line2=" & Line_2 & "&line3=" & Line_3);
+  end Follow_Tle;
+
+
   procedure Stop is
   begin
     Is_Leaving := False;
