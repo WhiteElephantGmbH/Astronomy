@@ -33,11 +33,7 @@ package Device is
                    Increase_Time,
                    Decrease_Time,
                    Enter,
-                   Stop,
-                   Set_Guiding_Rate,
-                   Set_Centering_Rate,
-                   Set_Finding_Rate,
-                   Set_Slewing_Rate);
+                   Stop);
 
   subtype Degrees is PWI4.Degrees;
 

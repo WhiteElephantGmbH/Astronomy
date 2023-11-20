@@ -496,7 +496,7 @@ package body User is
 
   function Image_Orientation return Telescope.Orientation is
   begin
-    return Telescope.Correct;
+    return Telescope.Backwards;
   end Image_Orientation;
 
 

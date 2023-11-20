@@ -69,8 +69,6 @@ package body Parameter is
   Sun_Id           : constant String := "Sun";
   Safety_Angle_Key : constant String := "Safety Angle";
 
-  Lx200_Id : constant String := "Lx200";
-
   Remote_Id     : constant String := "Remote";
   Telescope_Key : constant String := "Telescope";
 
@@ -91,9 +89,6 @@ package body Parameter is
   The_PWI_Address     : Network.Ip_Address;
   The_PWI_Port        : Network.Port_Number;
   The_Time_Adjustment : Duration;
-
-  --Lx200
-  The_Lx200_Port : Network.Port_Number;
 
   --Remote
   The_Telescope_Name : Strings.Element;
@@ -364,9 +359,6 @@ package body Parameter is
       Put ("[" & Sun_Id & "]");
       Put (Safety_Angle_Key & " = 60" & Angle.Degree);
       Put ("");
-      Put ("[" & Lx200_Id & "]");
-      Put (Port_Key & " = 4030");
-      Put ("");
       Put ("[" & Remote_Id & "]");
       Put (Telescope_Key & "  = cdk_ost");
       Put (Ip_Address_Key & " = 217.160.64.198");
@@ -394,7 +386,6 @@ package body Parameter is
       Handle              : constant Configuration.File_Handle    := Configuration.Handle_For (Filename);
       PWI_Handle          : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, PWI_Id);
       Sun_Handle          : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Sun_Id);
-      Lx200_Handle        : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Lx200_Id);
       Remote_Handle       : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Remote_Id);
       Stellarium_Handle   : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Stellarium_Id);
       Controller_Handle   : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Controller_Id);
@@ -543,9 +534,6 @@ package body Parameter is
       Set (Sun_Handle);
       Sun.Define (Degrees_Of (Safety_Angle_Key, 180.0));
 
-      Set (Lx200_Handle);
-      The_Lx200_Port := Port_For (Lx200_Id);
-
       Set (Remote_Handle);
       The_Telescope_Name := [String_Value_Of (Telescope_Key)];
       if Remote_Configured then
@@ -655,16 +643,6 @@ package body Parameter is
   begin
     return The_Time_Adjustment;
   end Time_Adjustment;
-
-
-  -----------
-  -- Lx200 --
-  -----------
-
-  function Lx200_Port return Network.Port_Number is
-  begin
-    return The_Lx200_Port;
-  end Lx200_Port;
 
 
   ------------

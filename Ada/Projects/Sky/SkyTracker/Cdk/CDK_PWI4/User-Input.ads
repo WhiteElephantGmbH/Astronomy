@@ -15,58 +15,19 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Angle;
 with Device;
-with PWI4;
-with Network;
-with Space;
 
-package Parameter is
+package User.Input is
 
-  Speed_Unit : constant String := "/s";
+  procedure Open;
 
-  procedure Read;
+  type Source is (Handbox, Keypad);
 
-  procedure Shutdown;
+  procedure Put (The_Command : Device.Command;
+                 From        : Source);
 
-  ---------
-  -- PWI --
-  ---------
+  function Is_Active return Boolean;
 
-  function M3_Ocular_Port return PWI4.Port;
+  procedure Close;
 
-  function M3_Camera_Port return PWI4.Port;
-
-  function M3_Default_Place return Device.M3.Place;
-
-  function Turn_Fans_On return Boolean;
-
-  function Pole_Height return Angle.Value;
-
-  function Moving_Speeds return Angle.Values; -- in angle / s
-
-  function Cwe_Distance return Angle.Degrees;
-
-  function Time_Adjustment return Duration;
-
-  ------------
-  -- Remote --
-  ------------
-
-  function Remote_Configured return Boolean;
-
-  function Telescope_Name return String;
-
-  function Remote_Address return Network.Ip_Address;
-
-  function Remote_Port return Network.Port_Number;
-
-  ----------------
-  -- Stellarium --
-  ----------------
-
-  function Stellarium_Port return Network.Port_Number;
-
-  function Search_Tolerance return Space.Distance;
-
-end Parameter;
+end User.Input;
