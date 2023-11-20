@@ -89,9 +89,13 @@ package Device is
 
     procedure Update_Target (Offset : Space.Direction);
 
+    procedure Set_Rate_Dec (Item : Speed);
+
     procedure Set_Rate_Ra (Item : Speed);
 
-    procedure Set_Rate_Dec (Item : Speed);
+    procedure Set_Rate_Path (Item : Speed);
+
+    procedure Set_Rate_Transverse (Item : Speed);
 
     procedure Stop_Rate;
 

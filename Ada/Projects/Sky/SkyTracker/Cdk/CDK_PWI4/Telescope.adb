@@ -384,7 +384,11 @@ package body Telescope is
       Moving_Speed : constant Angle.Degrees := +(The_Speed * First_Adjust_Factor);
       use type Angle.Degrees;
     begin
-      Mount.Set_Rate_Ra (Device.Speed(Moving_Speed * 3600.0));
+      if Is_Fast_Tracking then
+        Mount.Set_Rate_Transverse (Device.Speed(Moving_Speed * 3600.0));
+      else
+        Mount.Set_Rate_Ra (Device.Speed(Moving_Speed * 3600.0));
+      end if;
     end Adjust_First;
 
 
@@ -393,7 +397,11 @@ package body Telescope is
       Moving_Speed : constant Angle.Degrees := +(The_Speed * Second_Adjust_Factor);
       use type Angle.Degrees;
     begin
-      Mount.Set_Rate_Dec (Device.Speed(Moving_Speed * 3600.0));
+      if Is_Fast_Tracking then
+        Mount.Set_Rate_Path (Device.Speed(Moving_Speed * 3600.0));
+      else
+        Mount.Set_Rate_Dec (Device.Speed(Moving_Speed * 3600.0));
+      end if;
     end Adjust_Second;
 
 

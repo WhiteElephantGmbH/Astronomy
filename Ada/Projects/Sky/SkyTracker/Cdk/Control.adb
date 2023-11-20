@@ -327,6 +327,7 @@ package body Control is
       | Telescope.Preparing
       | Telescope.Approaching
       | Telescope.Is_Tracking
+      | Telescope.Positioned
       | Telescope.Waiting =>
         Lx200_Server.Set (The_Data.Actual_Direction);
         Stellarium.Set (The_Data.Actual_Direction);

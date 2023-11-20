@@ -611,6 +611,20 @@ package body Device is
     end Set_Rate_Ra;
 
 
+    procedure Set_Rate_Path (Item : Speed) is
+    begin
+      Log.Write ("Mount.Set_Rate_Path " & Image_Of (Item));
+      Action.Set_Offset (PWI4.Mount.Path, PWI4.Mount.Set_Rate_Arcsec_Per_Sec, Item);
+    end Set_Rate_Path;
+
+
+    procedure Set_Rate_Transverse (Item : Speed) is
+    begin
+      Log.Write ("Mount.Set_Rate_Transverse " & Image_Of (Item));
+      Action.Set_Offset (PWI4.Mount.Transverse, PWI4.Mount.Set_Rate_Arcsec_Per_Sec, Item);
+    end Set_Rate_Transverse;
+
+
     procedure Stop_Rate is
     begin
       Log.Write ("Mount.Stop_Rate");
