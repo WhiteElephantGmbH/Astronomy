@@ -1,15 +1,14 @@
 -- *********************************************************************************************************************
--- *                           (c) 2022 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                           (c) 2023 by White Elephant GmbH, Schaffhausen, Switzerland                              *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
 with Ada.Text_IO;
-with Exceptions;
 with AWS.Client;
 with AWS.Response;
---with GNATCOLL.JSON;
---with Strings;
+with Exceptions;
+with Strings;
 
 package body Client is
 
@@ -20,15 +19,45 @@ package body Client is
     loop
       IO.Put (">");
       declare
-        Data    : constant String := IO.Get_Line;
-        Url     : constant String := "http://127.0.0.1:4242/key?" & Data;
-        Result  : constant String := AWS.Response.Message_Body (AWS.Client.Get (Url));
-        --Data    : constant JS.JSON_Value := JS.Read (Result);
-        --Outputs : constant JS.JSON_Value := Data.Get ("outputs");
+        Data    : constant String := Strings.Trimmed (IO.Get_Line);
+        The_Url : Strings.Element := ["http://127.0.0.1:9000"];
+        use type Strings.Element;
       begin
         exit when Data = "";
-        IO.Put_Line ("URL: <<<" & Url & ">>>");
-        IO.Put_Line ("Got: <<<" & Result & ">>>");
+        case Data(Data'first) is
+        when 'i' =>
+          The_Url := The_Url & "/information";
+        when 'l' =>
+          The_Url := The_Url & "/mount/move_left";
+        when 'r' =>
+          The_Url := The_Url & "/mount/move_right";
+        when 'u' =>
+          The_Url := The_Url & "/mount/move_up";
+        when 'd' =>
+          The_Url := The_Url & "/mount/move_down";
+        when 'e' =>
+          The_Url := The_Url & "/mount/end_command";
+        when 'n' =>
+          The_Url := The_Url & "/mount/next_speed";
+        when 'p' =>
+          The_Url := The_Url & "/mount/previous_speed";
+        when 'b' =>
+          The_Url := The_Url & "/mount/back";
+        when 's' =>
+          The_Url := The_Url & "/mount/stop";
+        when others =>
+          The_Url := The_Url & Data;
+        end case;
+        declare
+          Url    : constant String := +The_Url;
+        begin
+          IO.Put_Line ("URL: <<<" & Url & ">>>");
+          declare
+            Result : constant String := AWS.Response.Message_Body (AWS.Client.Get (Url));
+          begin
+            IO.Put_Line ("Got: <<<" & Result & ">>>");
+          end;
+        end;
       end;
     end loop;
   exception

@@ -23,16 +23,16 @@ with Time;
 
 package Device is
 
-  type Command is (No_Command,
+  type Command is (End_Command,
                    Move_Left,
                    Move_Right,
                    Move_Up,
                    Move_Down,
-                   Increase_Speed,
-                   Decrease_Speed,
+                   Next_Speed,
+                   Previous_Speed,
                    Increase_Time,
                    Decrease_Time,
-                   Enter,
+                   Back,
                    Stop);
 
   subtype Degrees is PWI4.Degrees;

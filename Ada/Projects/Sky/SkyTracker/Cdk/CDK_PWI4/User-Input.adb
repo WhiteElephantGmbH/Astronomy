@@ -26,18 +26,17 @@ package body User.Input is
                    Move_Down,
                    Move_Left,
                    Move_Right,
-                   End_Move,
                    Decrease_Time,
                    Increase_Time,
-                   End_Change,
-                   Decrease_Speed,
-                   Increase_Speed,
-                   Enter,
+                   End_Command,
+                   Previous_Speed,
+                   Next_Speed,
+                   Back,
                    Stop);
 
   subtype Move is Command range Move_Up .. Move_Right;
 
-  subtype Change_Speed is Command range Decrease_Speed .. Increase_Speed;
+  subtype Change_Speed is Command range Previous_Speed .. Next_Speed;
 
   subtype Change_Time is Command range Decrease_Time .. Increase_Time;
 
@@ -71,16 +70,16 @@ package body User.Input is
         when Close | Stop =>
           return;
         when Move =>
-          if From_Source = From and The_Command = Device.No_Command then
-            Active_Command := End_Move;
+          if From_Source = From and The_Command = Device.End_Command then
+            Active_Command := End_Command;
             New_Command := True;
           end if;
         when Change_Time =>
-          if From_Source = From and The_Command = Device.No_Command then
-            Active_Command := End_Change;
+          if From_Source = From and The_Command = Device.End_Command then
+            Active_Command := End_Command;
             New_Command := True;
           end if;
-        when End_Move | End_Change | Enter | Change_Speed =>
+        when End_Command | Back | Change_Speed =>
           null;
         end case;
         if The_Command = Device.Stop then
@@ -92,8 +91,8 @@ package body User.Input is
         case The_Command is
         when Device.Stop =>
           Active_Command := Stop;
-        when Device.Enter =>
-          Active_Command := Enter;
+        when Device.Back =>
+          Active_Command := Back;
         when Device.Move_Up =>
           Active_Command := Move_Up;
         when Device.Move_Down =>
@@ -106,11 +105,11 @@ package body User.Input is
           Active_Command := Decrease_Time;
         when Device.Increase_Time =>
           Active_Command := Increase_Time;
-        when Device.Decrease_Speed =>
-          Active_Command := Decrease_Speed;
-        when Device.Increase_Speed =>
-          Active_Command := Increase_Speed;
-        when Device.No_Command =>
+        when Device.Previous_Speed =>
+          Active_Command := Previous_Speed;
+        when Device.Next_Speed =>
+          Active_Command := Next_Speed;
+        when Device.End_Command =>
           return;
         end case;
         New_Command := True;
@@ -173,7 +172,7 @@ package body User.Input is
 
   task body Handler is
     The_Command : Command;
-    Is_Moving   : Boolean := False;
+    Is_Changing : Boolean := False;
   begin
     Log.Write ("Started");
     loop
@@ -185,39 +184,39 @@ package body User.Input is
           exit;
         when Stop =>
           User.Perform_Stop;
-        when Enter =>
-          User.Enter_Handling;
+        when Back =>
+          User.Back_Handling;
         when Move_Up =>
           Telescope.Execute (Telescope.Move_Up);
-          Is_Moving := True;
+          Is_Changing := True;
         when Move_Down =>
           Telescope.Execute (Telescope.Move_Down);
-          Is_Moving := True;
+          Is_Changing := True;
         when Move_Left =>
           Telescope.Execute (Telescope.Move_Left);
-          Is_Moving := True;
+          Is_Changing := True;
         when Move_Right =>
           Telescope.Execute (Telescope.Move_Right);
-          Is_Moving := True;
-        when End_Move =>
-          Telescope.Execute (Telescope.End_Move);
-          Is_Moving := False;
-        when Decrease_Speed =>
-          Telescope.Execute (Telescope.Decrease_Speed);
-        when Increase_Speed =>
-          Telescope.Execute (Telescope.Increase_Speed);
+          Is_Changing := True;
         when Decrease_Time =>
           Telescope.Execute (Telescope.Decrease_Time);
+          Is_Changing := True;
         when Increase_Time =>
           Telescope.Execute (Telescope.Increase_Time);
-        when End_Change =>
-          Telescope.Execute (Telescope.End_Change);
+          Is_Changing := True;
+        when End_Command =>
+          Is_Changing := False;
+          Telescope.Execute (Telescope.End_Command);
+        when Previous_Speed =>
+          Telescope.Execute (Telescope.Previous_Speed);
+        when Next_Speed =>
+          Telescope.Execute (Telescope.Next_Speed);
         end case;
       or
         delay 20.0;
-        if Is_Moving then
-          Telescope.Execute (Telescope.End_Move);
-          Is_Moving := False;
+        if Is_Changing then
+          Telescope.Execute (Telescope.End_Command);
+          Is_Changing := False;
         end if;
       end select;
     end loop;

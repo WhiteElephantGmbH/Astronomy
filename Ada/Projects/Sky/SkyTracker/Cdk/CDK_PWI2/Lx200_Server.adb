@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2017 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2017 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -117,7 +117,7 @@ package body Lx200_Server is
             end;
           end if;
         elsif Command = ":CM" then
-          Execute (Device.Enter);
+          Execute (Device.Back);
           Server.Reply ("#", To => From);
         elsif Command = ":Me" then
           Execute (Device.Move_Left);
@@ -128,13 +128,13 @@ package body Lx200_Server is
         elsif Command = ":Mw" then
           Execute (Device.Move_Right);
         elsif Command = ":Qe" then
-          Execute (Device.No_Command);
+          Execute (Device.End_Command);
         elsif Command = ":Qn" then
-          Execute (Device.No_Command);
+          Execute (Device.End_Command);
         elsif Command = ":Qs" then
-          Execute (Device.No_Command);
+          Execute (Device.End_Command);
         elsif Command = ":Qw" then
-          Execute (Device.No_Command);
+          Execute (Device.End_Command);
         elsif Command = ":RC" then
           Execute (Device.Set_Centering_Rate);
         elsif Command = ":RG" then

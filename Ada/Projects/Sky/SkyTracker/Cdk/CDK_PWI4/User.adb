@@ -527,10 +527,10 @@ package body User is
   The_Targets : Name.Id_List_Access;
 
 
-  procedure Enter_Handling is
+  procedure Back_Handling is
   begin
     Signal_Action (Back);
-  end Enter_Handling;
+  end Back_Handling;
 
 
   procedure Put (The_Command : Device.Command) is
@@ -557,13 +557,13 @@ package body User is
     when Decrease_Time=>
       Put (Decrease_Time);
     when Keys.End_Command =>
-      Put (No_Command);
+      Put (End_Command);
     when Increase_Speed=>
-      Put (Increase_Speed);
+      Put (Next_Speed);
     when Decrease_Speed=>
-      Put (Decrease_Speed);
+      Put (Previous_Speed);
     when Enter=>
-      Put (Enter);
+      Put (Back);
     end case;
   end Put_Key;
 

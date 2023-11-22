@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2019 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2019 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -77,12 +77,12 @@ package body User.Input is
         when Close | Stop =>
           return;
         when Move =>
-          if From_Source = From and The_Command = Device.No_Command then
+          if From_Source = From and The_Command = Device.End_Command then
             Active_Command := End_Move;
             New_Command := True;
           end if;
         when Change_Time =>
-          if From_Source = From and The_Command = Device.No_Command then
+          if From_Source = From and The_Command = Device.End_Command then
             Active_Command := End_Change;
             New_Command := True;
           end if;
@@ -98,7 +98,7 @@ package body User.Input is
         case The_Command is
         when Device.Stop =>
           Active_Command := Stop;
-        when Device.Enter =>
+        when Device.Back =>
           Active_Command := Enter;
         when Device.Move_Up =>
           Active_Command := Move_Up;
@@ -112,9 +112,9 @@ package body User.Input is
           Active_Command := Decrease_Time;
         when Device.Increase_Time =>
           Active_Command := Increase_Time;
-        when Device.Decrease_Speed =>
+        when Device.Previous_Speed =>
           Active_Command := Decrease_Speed;
-        when Device.Increase_Speed =>
+        when Device.Next_Speed =>
           Active_Command := Increase_Speed;
         when Device.Set_Guiding_Rate =>
           Active_Command := Set_Guiding_Rate;
@@ -124,7 +124,7 @@ package body User.Input is
           Active_Command := Set_Finding_Rate;
         when Device.Set_Slewing_Rate =>
           Active_Command := Set_Slewing_Rate;
-        when Device.No_Command =>
+        when Device.End_Command =>
           return;
         end case;
         New_Command := True;
@@ -200,7 +200,7 @@ package body User.Input is
         when Stop =>
           User.Perform_Stop;
         when Enter =>
-          User.Enter_Handling;
+          User.Back_Handling;
         when Move_Up =>
           Telescope.Execute (Telescope.Move_Up);
           Is_Moving := True;

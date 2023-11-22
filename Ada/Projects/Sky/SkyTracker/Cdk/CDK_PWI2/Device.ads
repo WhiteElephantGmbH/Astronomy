@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2019 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2019 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -23,16 +23,16 @@ with Time;
 
 package Device is
 
-  type Command is (No_Command,
+  type Command is (End_Command,
                    Move_Left,
                    Move_Right,
                    Move_Up,
                    Move_Down,
-                   Increase_Speed,
-                   Decrease_Speed,
+                   Next_Speed,
+                   Previous_Speed,
                    Increase_Time,
                    Decrease_Time,
-                   Enter,
+                   Back,
                    Stop,
                    Set_Guiding_Rate,
                    Set_Centering_Rate,

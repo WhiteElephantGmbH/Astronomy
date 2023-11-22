@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2019 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2019 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -121,7 +121,7 @@ package body Handbox is
             case The_Character is
             when 'u' =>
               if Center_Is_Pressed then
-                Execute (Device.Increase_Speed);
+                Execute (Device.Next_Speed);
                 Arrow_Was_Pressed := True;
               else
                 Is_Changing := True;
@@ -129,7 +129,7 @@ package body Handbox is
               end if;
             when 'd' =>
               if Center_Is_Pressed then
-               Execute (Device.Decrease_Speed);
+               Execute (Device.Previous_Speed);
                 Arrow_Was_Pressed := True;
               else
                 Is_Changing := True;
@@ -157,12 +157,12 @@ package body Handbox is
             when 'U' | 'D' | 'L' | 'R' =>
               if Is_Changing then
                 Is_Changing := False;
-                Execute (Device.No_Command);
+                Execute (Device.End_Command);
               end if;
             when 'C' =>
               Center_Is_Pressed := False;
               if not Arrow_Was_Pressed then
-                Execute (Device.Enter);
+                Execute (Device.Back);
               end if;
             when others =>
               Log.Error ("Unknown Input: " & The_Character);

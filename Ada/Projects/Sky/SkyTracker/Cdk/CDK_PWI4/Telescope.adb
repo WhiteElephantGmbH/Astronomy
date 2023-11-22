@@ -424,14 +424,12 @@ package body Telescope is
         Adjust_Second (+Speed);
       when Move_Down =>
         Adjust_Second (-Speed);
-      when End_Move =>
-        Stop_Adjusting;
       when Decrease_Time =>
         null;
       when Increase_Time =>
         null;
-      when End_Change =>
-        null;
+      when End_Command =>
+        Stop_Adjusting;
       end case;
     end Offset_Handling;
 
@@ -450,18 +448,10 @@ package body Telescope is
     procedure Setup_Handling is
     begin
       case The_User_Setup is
-      when Decrease_Speed =>
+      when Previous_Speed =>
         Change_Moving_Speed (-1);
-      when Increase_Speed =>
+      when Next_Speed =>
         Change_Moving_Speed (+1);
-      when Set_Guiding_Rate =>
-        Set_Moving_Speed (Moving_Speeds'first);
-      when Set_Centering_Rate =>
-        Set_Moving_Speed (Moving_Speeds'first + 1);
-      when Set_Finding_Rate =>
-        Set_Moving_Speed (Moving_Speeds'last - 1);
-      when Set_Slewing_Rate =>
-        Set_Moving_Speed (Moving_Speeds'last);
       end case;
     end Setup_Handling;
 

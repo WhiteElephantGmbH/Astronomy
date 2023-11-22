@@ -36,20 +36,15 @@ package Telescope is
                    Move_Right,
                    Move_Up,
                    Move_Down,
-                   End_Move,
                    Decrease_Time,
                    Increase_Time,
-                   End_Change,
-                   Decrease_Speed,
-                   Increase_Speed,
-                   Set_Guiding_Rate,
-                   Set_Centering_Rate,
-                   Set_Finding_Rate,
-                   Set_Slewing_Rate);
+                   End_Command,
+                   Previous_Speed,
+                   Next_Speed);
 
-  subtype Adjust is Command range Move_Left .. End_Change;
+  subtype Adjust is Command range Move_Left .. End_Command;
 
-  subtype Setup is Command range Decrease_Speed .. Set_Slewing_Rate;
+  subtype Setup is Command range Previous_Speed .. Next_Speed;
 
   type State is (Unknown,    -- PWI server not available
                  Restarting, -- restarting CDK 700 PC

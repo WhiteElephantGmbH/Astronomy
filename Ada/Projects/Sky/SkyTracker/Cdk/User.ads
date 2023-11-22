@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2019 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2019 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -46,7 +46,7 @@ package User is
                      The_Action_Handler      : Action_Handler;
                      The_Termination_Handler : not null access procedure);
 
-  procedure Enter_Handling;
+  procedure Back_Handling;
 
   procedure Perform_Goto;
 

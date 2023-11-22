@@ -770,7 +770,7 @@ package body User is
   end Enter_Setup_Page;
 
 
-  procedure Enter_Handling is
+  procedure Back_Handling is
   begin
     case The_Page is
     when Is_Control | Is_Display =>
@@ -778,7 +778,7 @@ package body User is
     when Is_Setup =>
       null;
     end case;
-  end Enter_Handling;
+  end Back_Handling;
 
 
   procedure Put (The_Command : Device.Command) is
@@ -805,13 +805,13 @@ package body User is
     when Decrease_Time=>
       Put (Decrease_Time);
     when Keys.End_Command =>
-      Put (No_Command);
+      Put (End_Command);
     when Increase_Speed=>
-      Put (Increase_Speed);
+      Put (Next_Speed);
     when Decrease_Speed=>
-      Put (Decrease_Speed);
+      Put (Previous_Speed);
     when Enter=>
-      Put (Enter);
+      Put (Back);
     end case;
   end Put_Key;
 
