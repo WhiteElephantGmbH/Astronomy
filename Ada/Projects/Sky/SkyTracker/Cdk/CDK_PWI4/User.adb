@@ -38,7 +38,6 @@ package body User is
   package Log is new Traces ("User");
 
   package Fans renames Device.Fans;
-  package M3   renames Device.M3;
 
   Page         : Gui.Page;
   Left_Button  : Gui.Button;
@@ -190,30 +189,6 @@ package body User is
   when others =>
     Log.Error ("Fans_Handler");
   end Fans_Handler;
-
-
-  function Image_Of (The_Place : M3.Place) return String is
-  begin
-    case The_Place is
-    when M3.Camera =>
-      return Lexicon.Image_Of (Lexicon.Camera);
-    when M3.Ocular =>
-      return Lexicon.Image_Of (Lexicon.Ocular);
-    end case;
-  end Image_Of;
-
-  package M3_Menu is new Gui.Enumeration_Menu_Of (M3.Place, Gui.Radio, Image_Of);
-
-  procedure M3_Handler (The_Place : M3.Place) is
-  begin
-    if not Is_From_Set then
-      Log.Write ("M3: " & The_Place'img);
-      M3.Turn (To => The_Place);
-    end if;
-  exception
-  when others =>
-    Log.Error ("M3_Handler");
-  end M3_Handler;
 
 
   function Image_Of (The_Mode : Cwe.Mode) return String is
@@ -410,14 +385,12 @@ package body User is
   procedure Menu_Disable is
   begin
     Fans_Menu.Disable;
-    M3_Menu.Disable;
   end Menu_Disable;
 
 
   procedure Menu_Enable is
   begin
     Fans_Menu.Enable;
-    M3_Menu.Enable;
   end Menu_Enable;
 
 
@@ -473,9 +446,6 @@ package body User is
     Gui.Set_Status_Line (Information.Status'img);
     Is_From_Set := True;
     Fans_Menu.Set (Information.Fans_State);
-    if Information.M3_Position in M3.Place then
-      M3_Menu.Set (Information.M3_Position);
-    end if;
     Is_From_Set := False;
   end Show;
 
@@ -672,7 +642,6 @@ package body User is
       Catalog_Menu.Create (Lexicon.Image_Of (Lexicon.Catalog), Catalog_Handler'access);
       Catalog_Handler (Data.Favorites);
       Fans_Menu.Create (Lexicon.Image_Of (Lexicon.Fans), Fans_Handler'access);
-      M3_Menu.Create (Lexicon.Image_Of (Lexicon.Optic), M3_Handler'access);
       Menu_Disable;
       Cwe_Menu.Create ("CWE", Cwe_Handler'access);
       if Parameter.Remote_Configured then
