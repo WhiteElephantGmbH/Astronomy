@@ -117,7 +117,7 @@ package body Lx200_Server is
             end;
           end if;
         elsif Command = ":CM" then
-          Execute (Device.Back);
+          Execute (Device.Go_Back);
           Server.Reply ("#", To => From);
         elsif Command = ":Me" then
           Execute (Device.Move_Left);

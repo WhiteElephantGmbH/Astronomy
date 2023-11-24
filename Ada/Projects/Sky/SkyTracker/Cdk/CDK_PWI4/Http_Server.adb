@@ -49,6 +49,8 @@ package body Http_Server is
     begin
       Log.Write ("Subsystem: " & Subsystem);
       if Subsystem = "mount" then
+        declare
+          Command_Image : constant String := Parts(2);
         begin
           declare
             Command : constant Device.Command := Device.Command'value(Parts(2));
@@ -58,6 +60,8 @@ package body Http_Server is
           end;
         exception
         when others =>
+          Log.Error ("Unknown Command: " & Command_Image);
+          User.Input.Put (Device.End_Command, From => User.Input.Server);
           return AWS.Response.Acknowledge (AWS.Messages.S400, "Unknown Command");
         end;
       elsif Subsystem = "information" then

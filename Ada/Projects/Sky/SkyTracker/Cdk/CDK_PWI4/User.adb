@@ -563,7 +563,7 @@ package body User is
     when Decrease_Speed=>
       Put (Previous_Speed);
     when Enter=>
-      Put (Back);
+      Put (Go_Back);
     end case;
   end Put_Key;
 

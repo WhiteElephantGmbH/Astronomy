@@ -98,7 +98,7 @@ package body User.Input is
         case The_Command is
         when Device.Stop =>
           Active_Command := Stop;
-        when Device.Back =>
+        when Device.Go_Back =>
           Active_Command := Enter;
         when Device.Move_Up =>
           Active_Command := Move_Up;

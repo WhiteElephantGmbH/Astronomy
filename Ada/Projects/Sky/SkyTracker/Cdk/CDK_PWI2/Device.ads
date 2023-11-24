@@ -32,7 +32,7 @@ package Device is
                    Previous_Speed,
                    Increase_Time,
                    Decrease_Time,
-                   Back,
+                   Go_Back,
                    Stop,
                    Set_Guiding_Rate,
                    Set_Centering_Rate,

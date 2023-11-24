@@ -31,7 +31,7 @@ package body User.Input is
                    End_Command,
                    Previous_Speed,
                    Next_Speed,
-                   Back,
+                   Go_Back,
                    Stop);
 
   subtype Move is Command range Move_Up .. Move_Right;
@@ -79,7 +79,7 @@ package body User.Input is
             Active_Command := End_Command;
             New_Command := True;
           end if;
-        when End_Command | Back | Change_Speed =>
+        when End_Command | Go_Back | Change_Speed =>
           null;
         end case;
         if The_Command = Device.Stop then
@@ -91,8 +91,8 @@ package body User.Input is
         case The_Command is
         when Device.Stop =>
           Active_Command := Stop;
-        when Device.Back =>
-          Active_Command := Back;
+        when Device.Go_Back =>
+          Active_Command := Go_Back;
         when Device.Move_Up =>
           Active_Command := Move_Up;
         when Device.Move_Down =>
@@ -184,7 +184,7 @@ package body User.Input is
           exit;
         when Stop =>
           User.Perform_Stop;
-        when Back =>
+        when Go_Back =>
           User.Back_Handling;
         when Move_Up =>
           Telescope.Execute (Telescope.Move_Up);

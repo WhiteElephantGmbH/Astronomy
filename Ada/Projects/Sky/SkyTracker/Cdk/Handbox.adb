@@ -162,7 +162,7 @@ package body Handbox is
             when 'C' =>
               Center_Is_Pressed := False;
               if not Arrow_Was_Pressed then
-                Execute (Device.Back);
+                Execute (Device.Go_Back);
               end if;
             when others =>
               Log.Error ("Unknown Input: " & The_Character);
