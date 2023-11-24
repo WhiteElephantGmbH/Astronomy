@@ -1,12 +1,15 @@
-"""
-    CDK700 - Realtime Buttons
-
-    Note that your reaction latency will be the same as the timeout value.
+"""----------------------------------
+   -- Handbox Simulator for CDK700 --
+   ----------------------------------
 """
 import PySimpleGUI as sg
 import requests
 
+from cdk_pwi4_client import CDK_PWI4
+
 def main():
+    client = CDK_PWI4()
+
     # The Quit button is being placed in the bottom right corner and the colors are inverted, just for fun
     layout = [[sg.Text('CDK700 Control')],
               [sg.Text('     '),
@@ -16,7 +19,8 @@ def main():
                sg.RealtimeButton(sg.SYMBOL_RIGHT, key='move_right')],
               [sg.Text('     '),
                sg.RealtimeButton(sg.SYMBOL_DOWN, key='move_down')],
-              [sg.Column([[sg.Quit(button_color=(sg.theme_button_color()[1], sg.theme_button_color()[0]), focus=True)]], justification='r')]]
+              [sg.Column([[sg.Quit(button_color=(sg.theme_button_color()[1], sg.theme_button_color()[0]), focus=True)]],
+               justification='r')]]
 
     window = sg.Window('CDK700 Control',
                        layout,
@@ -32,25 +36,19 @@ def main():
 
         if event != sg.TIMEOUT_EVENT:
             # if not a timeout event, then it's a button that's being held down
-            if pressed == False:
-                url = "http://127.0.0.1:9000/mount/" + event
-                print('url ', url)
-                response = requests.get(url)
-                print ('Response ', response.text)
+            if not pressed:
+                print(client.mount_command (command = event))
                 pressed = True
-                back = event == "Go_Back"
+                go_back = event == "go_back"                
         else:
             # A timeout signals that all buttons have been released
-            if pressed == True:
-                if back != True:
-                url = "http://127.0.0.1:9000/mount/end_move"
-                print('url ', url)
-                response = requests.get(url)
-                print ('Response ', response.text)
+            if pressed:
                 pressed = False
+                if not go_back: #!= True:
+                    print(client.mount_command (command = 'end_command'))
 
     window.close()
 
 if __name__ == '__main__':
-    sg.theme('dark red')
+    sg.theme('DarkAmber')
     main()
