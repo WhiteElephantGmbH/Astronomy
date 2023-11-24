@@ -3,7 +3,6 @@
    ----------------------------------
 """
 import PySimpleGUI as sg
-import requests
 import sys
 
 from cdk_pwi4_client import CDK_PWI4
@@ -14,7 +13,7 @@ def main():
         ip_address = sys.argv[1]
     else:
         ip_address = "localhost"
-    print     
+
     client = CDK_PWI4(host=ip_address)
     
     color0 = sg.theme_button_color()[0]
@@ -57,8 +56,7 @@ def main():
                 else:
                     count += 1
                     if count == 5:
-                        response = client.information()
-                        window['-SPEED-'].update(response.text)
+                        window['-SPEED-'].update(client.speed())
                         count = 0;
         except:
             break

@@ -3,6 +3,7 @@
    ------------------------------------------------------------------------------------------------------------------
 """
 
+import json
 import requests
 
 class CDK_PWI4:
@@ -15,8 +16,10 @@ class CDK_PWI4:
 
     ### High-level methods #################################
 
-    def information(self):
-        return self.request_with_status("/information")
+    def speed(self):
+        i = self.info()
+        m = i["mount"]
+        return m["speed"]
 
     def mount_command(self, command):
         """
@@ -27,14 +30,23 @@ class CDK_PWI4:
         
     ### Low-level method for issuing requests ##################
 
+    def info(self):
+        r = self.request_with_status("/information")
+        return json.loads(r.text)
+
+
     def request_with_status(self, command):
         url = "http://" + self.host + ":" + str(self.port) + command
         print('url: ', url)
         try:
             response = requests.get(url)
-            print('response: ', response.text)
-            return response
+            if response.status_code == 200:
+                print('response: ', response.text)
+                return response
+            else:
+                print('request failed')
+                
         except:
-            print('no connection to CDK_PWI4')
+            print('no connection')
             raise
 

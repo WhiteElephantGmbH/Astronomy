@@ -9,7 +9,10 @@ with AWS.Messages;
 with AWS.Status;
 with AWS.Server;
 with AWS.Response;
+with GNATCOLL.JSON;
 with Device;
+with Lexicon;
+with Os.Process;
 with Strings;
 with Telescope;
 with Traces;
@@ -18,6 +21,8 @@ with User.Input;
 package body Http_Server is
 
   package Log is new Traces ("Http_Server");
+
+  package JS renames GNATCOLL.JSON;
 
   Arc_Minutes_Delta : constant := 0.001;
 
@@ -32,10 +37,46 @@ package body Http_Server is
   end Image_Of;
 
 
+  function Image_Of (Item : Telescope.M3.Position) return String is
+    use all type Telescope.M3.Position;
+  begin
+    case Item is
+    when Unknown =>
+      return "";
+    when Between =>
+      return "";
+    when Ocular =>
+      return Lexicon.Image_Of (Lexicon.Ocular);
+    when Camera =>
+      return Lexicon.Image_Of (Lexicon.Camera);
+    end case;
+  end Image_Of;
+
+
   function Information return String is
     Data : constant Telescope.Data := Telescope.Information;
+    Info : constant JS.JSON_Value := JS.Create_Object;
   begin
-    return "Mount.Moving_Speed=" & Image_Of (Data.Moving_Speed);
+    declare
+      Mount  : constant JS.JSON_Value := JS.Create_Object;
+      Exists : constant JS.JSON_Value := JS.Create (Boolean'(not (Data.Status in Telescope.Startup_State)));
+      Speed  : constant JS.JSON_Value := JS.Create (Image_Of (Data.Moving_Speed));
+    begin
+      JS.Set_Field (Mount, "exists", Exists);
+      JS.Set_Field (Mount, "speed", Speed);
+      JS.Set_Field (Info, "mount", Mount);
+    end;
+    declare
+      use type Telescope.M3.Position;
+      M3       : constant JS.JSON_Value := JS.Create_Object;
+      Exists   : constant JS.JSON_Value := JS.Create (Boolean'(not (Data.M3_Position = Telescope.M3.Unknown)));
+      Position : constant JS.JSON_Value := JS.Create (Image_Of (Data.M3_Position));
+    begin
+      JS.Set_Field (M3, "exists", Exists);
+      JS.Set_Field (M3, "position", Position);
+      JS.Set_Field (Info, "M3", M3);
+    end;
+    return JS.Write (Info);
   end Information;
 
 
@@ -71,8 +112,9 @@ package body Http_Server is
       end if;
     end;
   exception
-  when others =>
-    return AWS.Response.Acknowledge (AWS.Messages.S400, "Unknown URI");
+  when Item: others =>
+    Log.Termination (Item);
+    return AWS.Response.Acknowledge (AWS.Messages.S400, "Internal Error");
   end Call_Back;
 
 
@@ -82,6 +124,7 @@ package body Http_Server is
   begin
     Log.Write ("Start");
     AWS.Server.Start (Web_Server => The_Server, Name => "Skytracker", Callback => Call_Back'access, Port => 9000);
+    Os.Process.Create ("P:\Astronomy\Windows\Handbox.exe");
     Log.Write ("Start complete");
   exception
   when Item: others =>

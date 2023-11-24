@@ -346,7 +346,7 @@ package body Parameter is
       Put (M3_Ocular_Port_Key & "    = 1");
       Put (Fans_Key & "              = Off");
       Put (Ip_Address_Key & "        = Localhost");
-      Put (Port_Key & "              = 8080");
+      Put (Port_Key & "              = 8220");
       Put (Moving_Speed_List_Key & " = 30""/s, 3'/s, 20'/s, 2°/s");
       Put (Cwe_Distance_Key & "      = 30'");
       Put (Time_Adjustment_Key & "   = 0.5s");
@@ -357,7 +357,7 @@ package body Parameter is
       Put (Restart_Duration_Key & " = 10s");
       Put ("");
       Put ("[" & Sun_Id & "]");
-      Put (Safety_Angle_Key & " = 60" & Angle.Degree);
+      Put (Safety_Angle_Key & " = 30" & Angle.Degree);
       Put ("");
       Put ("[" & Remote_Id & "]");
       Put (Telescope_Key & "  = cdk_ost");
