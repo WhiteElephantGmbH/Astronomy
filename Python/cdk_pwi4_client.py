@@ -32,9 +32,9 @@ class CDK_PWI4:
         print('url: ', url)
         try:
             response = requests.get(url)
-            print('response: ', response)
+            print('response: ', response.text)
             return response
         except:
             print('no connection to CDK_PWI4')
-        return 'failed'
+            raise
 
