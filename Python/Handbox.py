@@ -4,19 +4,26 @@
 """
 import PySimpleGUI as sg
 import requests
+import sys
 
 from cdk_pwi4_client import CDK_PWI4
 
 def main():
-    client = CDK_PWI4()
+    args = len(sys.argv) - 1
+    if args == 1:
+        ip_address = sys.argv[1]
+    else:
+        ip_address = "localhost"
+    print     
+    client = CDK_PWI4(host=ip_address)
     
     color0 = sg.theme_button_color()[0]
     color1 = sg.theme_button_color()[1]
 
     layout = [[sg.Text('CDK700 Control')],
-              [sg.RealtimeButton(sg.SYMBOL_LEFT, key='previous_speed'),
+              [sg.RealtimeButton("➖️", key='previous_speed'),
                sg.Text(size=(7,1), key='-SPEED-', pad=(0,0), background_color=color1, text_color=color0),
-               sg.RealtimeButton(sg.SYMBOL_RIGHT, key='next_speed')],
+               sg.RealtimeButton("➕", key='next_speed')],
               [sg.Text('     '),
                sg.RealtimeButton(sg.SYMBOL_UP, key='move_up')],
               [sg.RealtimeButton(sg.SYMBOL_LEFT, key='move_left'),
