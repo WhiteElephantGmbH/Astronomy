@@ -6,6 +6,48 @@
 import json
 import requests
 
+class CDK_MOUNT:
+    """
+    Mount information of the CDK700 telescope.
+    """
+    def __init__(self, mount):
+        self.mount = mount
+            
+    def exists(self):
+        return self.mount["exists"]
+    
+    def speed(self):
+        return self.mount["speed"]
+
+
+class CDK_M3:
+    """
+    M3 information of the CDK700 telescope.
+    """
+    def __init__(self, m3):
+        self.m3 = m3
+            
+    def exists(self):
+        return self.m3["exists"]
+    
+    def position(self):
+        return self.m3["position"]
+
+
+class CDK_INFO:
+    """
+    Information of the CDK700 telescope.
+    """
+    def __init__(self, data):
+        self.info = json.loads(data)
+        
+    def mount(self):
+        return CDK_MOUNT(self.info["mount"])
+
+    def m3(self):
+        return CDK_MOUNT(self.info["M3"])
+
+
 class CDK_PWI4:
     """
     Client to the CDK700 telescope control application.
@@ -14,35 +56,30 @@ class CDK_PWI4:
         self.host = host
         self.port = port
 
-    ### High-level methods #################################
+    ### High-level methods ###
 
-    def speed(self):
-        i = self.info()
-        m = i["mount"]
-        return m["speed"]
 
     def mount_command(self, command):
         """
-        one of the following commands can be specified as a keyword argument:
-            move_left, move_right, move_up, move_down, end_command, go_back, stop
+        one of the following items can be specified as a command argument:
+            move_left, move_right, move_up, move_down, end_command, go_back, next_speed, previous_speed, stop
         """
         return self.request_with_status("/mount/" + command)
         
-    ### Low-level method for issuing requests ##################
-
     def info(self):
-        r = self.request_with_status("/information")
-        return json.loads(r.text)
+        return CDK_INFO(data=self.request_with_status("/information"))
+
+    ### Low-level method for issuing requests ###
 
 
     def request_with_status(self, command):
         url = "http://" + self.host + ":" + str(self.port) + command
-        print('url: ', url)
+        '''debug: print('url: ', url)'''
         try:
             response = requests.get(url)
             if response.status_code == 200:
-                print('response: ', response.text)
-                return response
+                '''debug: print('response: ', response.text)'''
+                return response.text
             else:
                 print('request failed')
                 
