@@ -12,7 +12,7 @@ with AWS.Response;
 with GNATCOLL.JSON;
 with Device;
 with Lexicon;
-with Os.Process;
+with Parameter;
 with Strings;
 with Telescope;
 with Traces;
@@ -68,13 +68,15 @@ package body Http_Server is
     end;
     declare
       use type Telescope.M3.Position;
-      M3       : constant JS.JSON_Value := JS.Create_Object;
-      Exists   : constant JS.JSON_Value := JS.Create (Boolean'(not (Data.M3_Position = Telescope.M3.Unknown)));
-      Position : constant JS.JSON_Value := JS.Create (Image_Of (Data.M3_Position));
+      M3        : constant JS.JSON_Value := JS.Create_Object;
+      Exists    : constant JS.JSON_Value := JS.Create (Boolean'(not (Data.M3_Position = Telescope.M3.Unknown)));
+      At_Camera : constant JS.JSON_Value := JS.Create (Boolean'(not (Data.M3_Position = Telescope.M3.Camera)));
+      Position  : constant JS.JSON_Value := JS.Create (Image_Of (Data.M3_Position));
     begin
       JS.Set_Field (M3, "exists", Exists);
+      JS.Set_Field (M3, "at_camera", At_Camera);
       JS.Set_Field (M3, "position", Position);
-      JS.Set_Field (Info, "M3", M3);
+      JS.Set_Field (Info, "m3", M3);
     end;
     return JS.Write (Info);
   end Information;
@@ -120,15 +122,13 @@ package body Http_Server is
 
   The_Server : AWS.Server.HTTP;
 
-  procedure Start is
+  procedure Start  is
   begin
     Log.Write ("Start");
-    AWS.Server.Start (Web_Server => The_Server, Name => "Skytracker", Callback => Call_Back'access, Port => 9000);
-    Os.Process.Create ("P:\Astronomy\Windows\Handbox.exe");
-    Log.Write ("Start complete");
-  exception
-  when Item: others =>
-    Log.Termination (Item);
+    AWS.Server.Start (Web_Server => The_Server,
+                      Name       => "Skytracker",
+                      Callback   => Call_Back'access,
+                      Port       => Natural(Parameter.Server_Port));
   end Start;
 
 
@@ -136,7 +136,9 @@ package body Http_Server is
   begin
     Log.Write ("Shutdown");
     AWS.Server.Shutdown (The_Server);
-    Log.Write ("Shutdown complete");
+  exception
+  when others =>
+    null;
   end Shutdown;
 
 end Http_Server;

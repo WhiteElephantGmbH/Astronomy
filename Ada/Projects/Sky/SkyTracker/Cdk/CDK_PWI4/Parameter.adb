@@ -27,6 +27,7 @@ with Error;
 with File;
 with Language;
 with Network.Tcp;
+with Os.Process;
 with Os.System;
 with Stellarium;
 with Strings;
@@ -54,7 +55,6 @@ package body Parameter is
   Program_Key           : constant String := "Program";
   Shutdown_Key          : constant String := "Shutdown";
   Fans_Key              : constant String := "Fans";
-  M3_Default_Place_Key  : constant String := "M3 Default Place";
   M3_Ocular_Port_Key    : constant String := "M3 Ocular Port";
   Port_Key              : constant String := "Port";
   Moving_Speed_List_Key : constant String := "Moving Speed List";
@@ -65,6 +65,9 @@ package body Parameter is
   Controller_Id        : constant String := "Controller";
   Ip_Address_Key       : constant String := "IP Address";
   Restart_Duration_Key : constant String := "Restart Duration";
+
+  Server_Id      : constant String := "Server";
+  Gui_Client_Key : constant String := "GUI Client";
 
   Sun_Id           : constant String := "Sun";
   Safety_Angle_Key : constant String := "Safety Angle";
@@ -79,16 +82,18 @@ package body Parameter is
 
   The_Section : Configuration.Section_Handle;
 
-  Is_In_Shutdown_Mode  : Boolean := False;
-  The_M3_Default_Place : Device.M3.Place;
-  The_M3_Ocular_Port   : PWI4.Port;
-  Fans_On              : Boolean;
+  Is_In_Shutdown_Mode : Boolean := False;
+  The_M3_Ocular_Port  : PWI4.Port;
+  Fans_On             : Boolean;
 
   The_Moving_Speeds   : Angles.List;
   The_Cwe_Distance    : Angle.Degrees;
   The_PWI_Address     : Network.Ip_Address;
   The_PWI_Port        : Network.Port_Number;
   The_Time_Adjustment : Duration;
+
+  -- Server
+  The_Server_Port : Network.Port_Number;
 
   --Remote
   The_Telescope_Name : Strings.Element;
@@ -271,7 +276,7 @@ package body Parameter is
 
   function Value_Of (Key     : String;
                      Section : String := "") return Integer is
-    Item : constant String := String_Of (Key);
+    Item : constant String := String_Of (Key, Section);
   begin
     return Integer'value(Image_Of(Item));
   exception
@@ -299,7 +304,7 @@ package body Parameter is
 
 
   function Port_For (Section : String) return Network.Port_Number is
-    Value : constant Integer := Value_Of (Port_Key, Remote_Id);
+    Value : constant Integer := Value_Of (Port_Key, Section);
   begin
     Log.Write (Section & " port number:" & Value'image);
     return Network.Port_Number (Value);
@@ -339,10 +344,13 @@ package body Parameter is
       Put (Strings.Bom_8 & "[" & Localization_Id & "]");
       Put (Language_Key & " = " & Strings.Legible_Of (Stellarium.Language'img));
       Put ("");
+      Put ("[" & Controller_Id & "]");
+      Put (Ip_Address_Key & "       = 192.168.10.160");
+      Put (Restart_Duration_Key & " = 10s");
+      Put ("");
       Put ("[" & PWI_Id & "]");
       Put (Program_Key & "           = " & PWI_Program_Files & "\PlaneWave interface 4\PWI4.exe");
       Put (Shutdown_Key & "          = True");
-      Put (M3_Default_Place_Key & "  = Ocular");
       Put (M3_Ocular_Port_Key & "    = 1");
       Put (Fans_Key & "              = Off");
       Put (Ip_Address_Key & "        = Localhost");
@@ -352,9 +360,9 @@ package body Parameter is
       Put (Time_Adjustment_Key & "   = 0.5s");
       Put (Park_Position_Az_Key & "  = 75°");
       Put ("");
-      Put ("[" & Controller_Id & "]");
-      Put (Ip_Address_Key & "       = 192.168.10.160");
-      Put (Restart_Duration_Key & " = 10s");
+      Put ("[" & Server_Id & "]");
+      Put (Port_Key & "       = 9000");
+      Put (Gui_Client_Key & " = " & Os.System.Program_Files_Folder & "White Elephant\Handbox.exe");
       Put ("");
       Put ("[" & Sun_Id & "]");
       Put (Safety_Angle_Key & " = 30" & Angle.Degree);
@@ -385,10 +393,11 @@ package body Parameter is
 
       Handle              : constant Configuration.File_Handle    := Configuration.Handle_For (Filename);
       PWI_Handle          : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, PWI_Id);
+      Controller_Handle   : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Controller_Id);
+      Server_Handle       : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Server_Id);
       Sun_Handle          : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Sun_Id);
       Remote_Handle       : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Remote_Id);
       Stellarium_Handle   : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Stellarium_Id);
-      Controller_Handle   : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Controller_Id);
       Localization_Handle : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Localization_Id);
 
 
@@ -449,6 +458,24 @@ package body Parameter is
       end Startup_PWI;
 
 
+      procedure Startup_Gui_Client is
+        Client_Filename : constant String := String_Value_Of (Gui_Client_Key);
+      begin
+        if Client_Filename /= "" then
+          Log.Write ("GUI client program file: """ & Client_Filename & """");
+          if not File.Exists (Client_Filename) then
+            Error.Raise_With ("GUI client program file """ & Client_Filename & """ not found");
+          end if;
+          begin
+            Os.Process.Create (Client_Filename);
+          exception
+          when others =>
+            Error.Raise_With ("GUI client not started");
+          end;
+        end if;
+      end Startup_Gui_Client;
+
+
       procedure Startup_Stellarium is
         Stellarium_Filename : constant String := String_Value_Of (Program_Key);
       begin
@@ -463,20 +490,6 @@ package body Parameter is
           Error.Raise_With ("Stellarium not started");
         end if;
       end Startup_Stellarium;
-
-
-      procedure Define_M3_Default_Place is
-        Place : constant String := String_Value_Of (M3_Default_Place_Key);
-      begin
-        Log.Write (M3_Default_Place_Key & ": " & Place);
-        if Strings.Is_Equal (Place, "Camera") then
-          The_M3_Default_Place := Device.M3.Camera;
-        elsif Strings.Is_Equal (Place, "Ocular") then
-          The_M3_Default_Place := Device.M3.Ocular;
-        else
-          Error.Raise_With (M3_Default_Place_Key & " must be either Camera or Ocular");
-        end if;
-      end Define_M3_Default_Place;
 
 
       procedure Define_M3_Ocular_Port is
@@ -512,10 +525,12 @@ package body Parameter is
       Set (Localization_Handle);
       Standard.Language.Define (Language);
 
-      Set (PWI_Handle);
+      Set (Controller_Handle);
+      Cdk_700.Startup (Ip_Address_For (Controller_Id),
+                       Restart_Duration => Duration_Of (Restart_Duration_Key, Upper_Limit => 60.0));
 
+      Set (PWI_Handle);
       Is_In_Shutdown_Mode := Strings.Is_Equal (String_Value_Of (Shutdown_Key), "True");
-      Define_M3_Default_Place;
       Define_M3_Ocular_Port;
       Define_Fans_State;
       Startup_PWI;
@@ -527,9 +542,9 @@ package body Parameter is
       The_Time_Adjustment := Duration_Of (Time_Adjustment_Key, Lower_Limit => -1.0, Upper_Limit => 1.0);
       Telescope.Define_Park_Position (Direction_Of (Park_Position_Az_Key));
 
-      Set (Controller_Handle);
-      Cdk_700.Startup (Ip_Address_For (Controller_Id),
-                       Restart_Duration => Duration_Of (Restart_Duration_Key, Upper_Limit => 60.0));
+      Set (Server_Handle);
+      The_Server_Port :=  Port_For (Server_Id);
+      Startup_Gui_Client;
 
       Set (Sun_Handle);
       Sun.Define (Degrees_Of (Safety_Angle_Key, 180.0));
@@ -608,12 +623,6 @@ package body Parameter is
   end M3_Camera_Port;
 
 
-  function M3_Default_Place return Device.M3.Place is
-  begin
-    return The_M3_Default_Place;
-  end M3_Default_Place;
-
-
   function Turn_Fans_On return Boolean is
   begin
     return Fans_On;
@@ -643,6 +652,16 @@ package body Parameter is
   begin
     return The_Time_Adjustment;
   end Time_Adjustment;
+
+
+  ------------
+  -- Server --
+  ------------
+
+  function Server_Port return Network.Port_Number is
+  begin
+    return The_Server_Port;
+  end Server_Port;
 
 
   ------------

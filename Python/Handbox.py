@@ -14,6 +14,8 @@ def main():
     else:
         ip_address = "localhost"
 
+    rotate_m3 = 'rotate_m3'
+    
     client = CDK_PWI4(host=ip_address)
     
     color0 = sg.theme_button_color()[0]
@@ -26,12 +28,15 @@ def main():
                [sg.RealtimeButton(sg.SYMBOL_DOWN, key='move_down')]]
 
     mount = [[sg.RealtimeButton(sg.SYMBOL_LEFT, key='previous_speed'),
-              sg.Text(size=(8,1), key='-SPEED-', pad=(0,0), font='Ani 14', justification='c', background_color=color1, text_color=color0),
+              sg.Text(size=(8,1), key='-SPEED-', pad=(0,0), font='Ani 14', justification='c', background_color=color0, text_color=color1),
               sg.RealtimeButton(sg.SYMBOL_RIGHT, key='next_speed')],
              [sg.Frame('', control, element_justification='c')]]
 
-    layout = [[sg.Frame('CDK700', mount, font='Any 12', title_color=color1, element_justification='c')],
-              [sg.RealtimeButton('', size=(14,1), key='-M3-', font='Any 14')]]
+    m3 = [[sg.RealtimeButton(sg.SYMBOL_RIGHT, key=rotate_m3),
+           sg.Text(size=(14,1), key='-M3-', pad=(0,0), font='Ani 14', background_color=color0, text_color=color1)]]
+
+    layout = [[sg.Frame('', mount, element_justification='c')],
+              [sg.Frame('', m3, element_justification='c')]]
 
     window = sg.Window('CDK700 Control',
                        layout,
@@ -39,7 +44,7 @@ def main():
                        finalize=True,
                        element_justification='c',
                        location=(0,0),
-                       size=(180,180))
+                       size=(245,200))
     count = 0
     pressed = False
 
@@ -51,16 +56,16 @@ def main():
                 if not pressed:
                     response = client.mount_command (command = event)
                     pressed = True
-                    go_back = event == "go_back"                
+                    release_action = event in ('move_up',  'move_down', 'move_left', 'move_right')
             else:
                 # A timeout signals that all buttons have been released
                 if pressed:
                     pressed = False
-                    if not go_back:
+                    if release_action:
                         response = client.mount_command (command = 'end_command')
                 else:
                     count += 1
-                    if count == 5:
+                    if count == 5: # every half second
                         count = 0;
                         info = client.info()
                         mount = info.mount()
@@ -71,6 +76,10 @@ def main():
                         m3 = info.m3()
                         if m3.exists():
                             window['-M3-'].update(m3.position())
+                            if m3.at_camera():
+                                window[rotate_m3].update(sg.SYMBOL_LEFT)
+                            else:
+                                window[rotate_m3].update(sg.SYMBOL_RIGHT)
                         else:
                             window['-M3-'].update("")
         except:

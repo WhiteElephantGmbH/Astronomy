@@ -452,6 +452,8 @@ package body Telescope is
         Change_Moving_Speed (-1);
       when Next_Speed =>
         Change_Moving_Speed (+1);
+      when Rotate_M3 =>
+        M3.Rotate;
       end case;
     end Setup_Handling;
 
@@ -582,7 +584,6 @@ package body Telescope is
         Mount.Enable;
         The_State := Enabling;
       when Mount_Enabled =>
-        M3.Turn (To => Parameter.M3_Default_Place);
         Mount.Find_Home (The_Completion_Time);
         The_State := Homing;
       when Mount_Stopped =>
@@ -643,7 +644,6 @@ package body Telescope is
         The_State := Mount_Error;
       when Mount_Enabled =>
         Fans.Turn (To => Fans.Off);
-        M3.Turn (To => Parameter.M3_Default_Place);
         Mount.Find_Home (The_Completion_Time);
         The_State := Homing;
       when Mount_Stopped =>
@@ -666,7 +666,6 @@ package body Telescope is
       when Mount_Connected =>
         The_State := Connected;
       when Startup =>
-        M3.Turn (To => Parameter.M3_Default_Place);
         Mount.Find_Home (The_Completion_Time);
         The_State := Homing;
       when Shutdown =>
@@ -860,6 +859,8 @@ package body Telescope is
         Follow_New_Target;
       when Position =>
         Do_Position;
+      when User_Setup =>
+        Setup_Handling;
       when others =>
         null;
       end case;

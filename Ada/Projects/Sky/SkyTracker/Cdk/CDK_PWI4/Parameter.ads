@@ -16,7 +16,6 @@
 pragma Style_White_Elephant;
 
 with Angle;
-with Device;
 with PWI4;
 with Network;
 with Space;
@@ -37,8 +36,6 @@ package Parameter is
 
   function M3_Camera_Port return PWI4.Port;
 
-  function M3_Default_Place return Device.M3.Place;
-
   function Turn_Fans_On return Boolean;
 
   function Pole_Height return Angle.Value;
@@ -48,6 +45,12 @@ package Parameter is
   function Cwe_Distance return Angle.Degrees;
 
   function Time_Adjustment return Duration;
+
+  ------------
+  -- Server --
+  ------------
+
+  function Server_Port return Network.Port_Number;
 
   ------------
   -- Remote --

@@ -6,8 +6,8 @@ pragma Style_White_Elephant;
 
 package Http_Server is
 
-   procedure Start;
+  procedure Start;
 
-   procedure Shutdown;
+  procedure Shutdown;
 
 end Http_Server;

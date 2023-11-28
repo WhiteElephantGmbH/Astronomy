@@ -33,6 +33,7 @@ package Device is
                    Increase_Time,
                    Decrease_Time,
                    Go_Back,
+                   Rotate_M3,
                    Stop);
 
   subtype Degrees is PWI4.Degrees;
@@ -133,7 +134,7 @@ package Device is
 
     type Position_Handler_Access is access procedure (The_Position : Position);
 
-    procedure Turn (To : Place);
+    procedure Rotate;
 
   end M3;
 

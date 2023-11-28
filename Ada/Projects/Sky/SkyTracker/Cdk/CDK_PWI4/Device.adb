@@ -727,21 +727,25 @@ package body Device is
 
     function Exists return Boolean renames PWI4.M3.Exists;
 
-    procedure Turn (To : Place) is
+    At_Place : Place := Ocular;
+
+    procedure Rotate is
     begin
       if Exists then
-        case To is
-        when Ocular =>
+        case At_Place is
+        when Camera =>
           Log.Write ("M3.Turn_To_Ocular");
           Action.Put (M3_Action'(Turn_To_Ocular));
-        when Camera =>
+          At_Place := Ocular;
+        when Ocular =>
           Log.Write ("M3.Turn_To_Camera");
           Action.Put (M3_Action'(Turn_To_Camera));
+          At_Place := Camera;
         end case;
       else
         Log.Warning ("M3 does not exist");
       end if;
-    end Turn;
+    end Rotate;
 
   end M3;
 

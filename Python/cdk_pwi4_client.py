@@ -30,6 +30,9 @@ class CDK_M3:
     def exists(self):
         return self.m3["exists"]
     
+    def at_camera(self):
+        return self.m3["at_camera"]
+    
     def position(self):
         return self.m3["position"]
 
@@ -45,7 +48,7 @@ class CDK_INFO:
         return CDK_MOUNT(self.info["mount"])
 
     def m3(self):
-        return CDK_MOUNT(self.info["M3"])
+        return CDK_MOUNT(self.info["m3"])
 
 
 class CDK_PWI4:
