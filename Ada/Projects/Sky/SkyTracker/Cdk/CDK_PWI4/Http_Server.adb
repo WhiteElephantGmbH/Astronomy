@@ -24,16 +24,29 @@ package body Http_Server is
 
   package JS renames GNATCOLL.JSON;
 
-  Arc_Minutes_Delta : constant := 0.001;
-
-  type Arc_Minutes is delta Arc_Minutes_Delta range 0.0 .. 1000.0 - Arc_Minutes_Delta with Small => Arc_Minutes_Delta;
 
 
   function Image_Of (Item : Angle.Value) return String is
+
+    Arc_Delta : constant := 0.01;
+    type Arc is delta Arc_Delta range 0.0 .. 100.0 - Arc_Delta with Small => Arc_Delta;
+
     use type Angle.Degrees;
     use type Angle.Value;
+
+    Speed : Angle.Degrees := +Item;
+
   begin
-    return Strings.Trimmed (Arc_Minutes(Angle.Degrees'(+Item) * 60.0)'image & "'/s");
+    if Speed >= 1.0 then
+      return Strings.Trimmed (Arc(Speed)'image & Angle.Degree & "/s");
+    else
+      Speed := @ * 60.0;
+      if Speed >= 1.0 then
+        return Strings.Trimmed (Arc(Speed)'image & "'/s");
+      else
+        return Strings.Trimmed (Natural(Speed * 60.0)'image & """/s");
+      end if;
+    end if;
   end Image_Of;
 
 
@@ -53,6 +66,8 @@ package body Http_Server is
   end Image_Of;
 
 
+  At_Camera_Simulation : Boolean := False;
+
   function Information return String is
     Data : constant Telescope.Data := Telescope.Information;
     Info : constant JS.JSON_Value := JS.Create_Object;
@@ -68,14 +83,21 @@ package body Http_Server is
     end;
     declare
       use type Telescope.M3.Position;
-      M3        : constant JS.JSON_Value := JS.Create_Object;
-      Exists    : constant JS.JSON_Value := JS.Create (Boolean'(not (Data.M3_Position = Telescope.M3.Unknown)));
-      At_Camera : constant JS.JSON_Value := JS.Create (Boolean'(not (Data.M3_Position = Telescope.M3.Camera)));
-      Position  : constant JS.JSON_Value := JS.Create (Image_Of (Data.M3_Position));
+      Exists      : constant Boolean := Data.M3_Position /= Telescope.M3.Unknown;
+      M3          : constant JS.JSON_Value := JS.Create_Object;
+      At_Camera   : Boolean;
+      M3_Position : Telescope.M3.Position;
     begin
-      JS.Set_Field (M3, "exists", Exists);
-      JS.Set_Field (M3, "at_camera", At_Camera);
-      JS.Set_Field (M3, "position", Position);
+      if Exists then
+        At_Camera := Data.M3_Position = Telescope.M3.Camera;
+        M3_Position := Data.M3_Position;
+      else -- simulated
+        At_Camera := At_Camera_Simulation;
+        M3_Position := (if At_Camera then Telescope.M3.Camera else Telescope.M3.Ocular);
+      end if;
+      JS.Set_Field (M3, "exists", JS.Create (Exists));
+      JS.Set_Field (M3, "at_camera", JS.Create (At_Camera));
+      JS.Set_Field (M3, "position", JS.Create (Image_Of (M3_Position)));
       JS.Set_Field (Info, "m3", M3);
     end;
     return JS.Write (Info);
@@ -91,14 +113,18 @@ package body Http_Server is
       Subsystem : constant String := Parts(1);
     begin
       Log.Write ("Subsystem: " & Subsystem);
-      if Subsystem = "mount" then
+      if Subsystem in "mount" | "m3" then
         declare
           Command_Image : constant String := Parts(2);
         begin
           declare
             Command : constant Device.Command := Device.Command'value(Parts(2));
+            use type Device.Command;
           begin
             User.Input.Put (Command, From => User.Input.Server);
+            if Command = Device.Rotate then
+              At_Camera_Simulation := not At_Camera_Simulation;
+            end if;
             return AWS.Response.Acknowledge (AWS.Messages.S200, "ok");
           end;
         exception

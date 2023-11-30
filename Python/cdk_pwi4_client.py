@@ -2,11 +2,10 @@
    -- This Python module wraps the calls and responses provided by the HTTP API exposed by CDK_PWI4 (SkyTracker). --
    ------------------------------------------------------------------------------------------------------------------
 """
-
 import json
 import requests
 
-class CDK_MOUNT:
+class Mount:
     """
     Mount information of the CDK700 telescope.
     """
@@ -20,7 +19,7 @@ class CDK_MOUNT:
         return self.mount["speed"]
 
 
-class CDK_M3:
+class M3:
     """
     M3 information of the CDK700 telescope.
     """
@@ -37,7 +36,7 @@ class CDK_M3:
         return self.m3["position"]
 
 
-class CDK_INFO:
+class Information:
     """
     Information of the CDK700 telescope.
     """
@@ -45,13 +44,13 @@ class CDK_INFO:
         self.info = json.loads(data)
         
     def mount(self):
-        return CDK_MOUNT(self.info["mount"])
+        return Mount(self.info["mount"])
 
     def m3(self):
-        return CDK_MOUNT(self.info["m3"])
+        return M3(self.info["m3"])
 
 
-class CDK_PWI4:
+class Client:
     """
     Client to the CDK700 telescope control application.
     """
@@ -61,19 +60,37 @@ class CDK_PWI4:
 
     ### High-level methods ###
 
+    """ Mount Commands
+        --------------
+    """
+    move_left      = 'move_left'
+    move_right     = 'move_right'
+    move_up        = 'move_up'
+    move_down      = 'move_down'
+    end_command    = 'end_command'
+    go_back        = 'go_back'
+    next_speed     = 'next_speed'
+    previous_speed = 'previous_speed'
+    stop           = 'stop'
 
     def mount_command(self, command):
-        """
-        one of the following items can be specified as a command argument:
-            move_left, move_right, move_up, move_down, end_command, go_back, next_speed, previous_speed, stop
-        """
         return self.request_with_status("/mount/" + command)
-        
+
+    """ M3 Command
+        ----------
+    """
+    rotate = 'rotate'
+
+    def m3_command(self, command):
+        return self.request_with_status("/m3/" + command)
+
+    """ Info
+        ----
+    """
     def info(self):
-        return CDK_INFO(data=self.request_with_status("/information"))
+        return Information(data=self.request_with_status("/information"))
 
     ### Low-level method for issuing requests ###
-
 
     def request_with_status(self, command):
         url = "http://" + self.host + ":" + str(self.port) + command

@@ -52,8 +52,7 @@ package body Device is
                         Stop_Rates);
 
   type M3_Action is (No_Action,
-                     Turn_To_Camera,
-                     Turn_To_Ocular);
+                     Toggle);
 
   type Focuser_Action is (No_Action,
                           Enable,
@@ -377,10 +376,15 @@ package body Device is
         case The_M3_Action is
         when No_Action =>
           null;
-        when Turn_To_Ocular =>
-          PWI4.M3.Turn (To => Parameter.M3_Ocular_Port);
-        when Turn_To_Camera =>
-          PWI4.M3.Turn (To => Parameter.M3_Camera_Port);
+        when Toggle =>
+          case The_M3_Position is
+          when M3.Camera =>
+            PWI4.M3.Turn (To => Parameter.M3_Ocular_Port);
+          when M3.Ocular =>
+            PWI4.M3.Turn (To => Parameter.M3_Camera_Port);
+          when others =>
+            null;
+          end case;
         end case;
 
         case The_Focuser_Action is
@@ -727,24 +731,12 @@ package body Device is
 
     function Exists return Boolean renames PWI4.M3.Exists;
 
-    At_Place : Place := Ocular;
-
     procedure Rotate is
     begin
-      if Exists then
-        case At_Place is
-        when Camera =>
-          Log.Write ("M3.Turn_To_Ocular");
-          Action.Put (M3_Action'(Turn_To_Ocular));
-          At_Place := Ocular;
-        when Ocular =>
-          Log.Write ("M3.Turn_To_Camera");
-          Action.Put (M3_Action'(Turn_To_Camera));
-          At_Place := Camera;
-        end case;
-      else
+      if not Exists then
         Log.Warning ("M3 does not exist");
       end if;
+      Action.Put (M3_Action'(Toggle));
     end Rotate;
 
   end M3;

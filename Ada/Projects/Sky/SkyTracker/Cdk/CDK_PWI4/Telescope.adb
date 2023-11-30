@@ -452,7 +452,7 @@ package body Telescope is
         Change_Moving_Speed (-1);
       when Next_Speed =>
         Change_Moving_Speed (+1);
-      when Rotate_M3 =>
+      when Rotate =>
         M3.Rotate;
       end case;
     end Setup_Handling;

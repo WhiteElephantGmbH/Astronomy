@@ -32,7 +32,7 @@ package body User.Input is
                    Previous_Speed,
                    Next_Speed,
                    Go_Back,
-                   Rotate_M3,
+                   Rotate,
                    Stop);
 
   subtype Move is Command range Move_Up .. Move_Right;
@@ -80,7 +80,7 @@ package body User.Input is
             Active_Command := End_Command;
             New_Command := True;
           end if;
-        when End_Command | Go_Back | Change_Speed | Rotate_M3 =>
+        when End_Command | Go_Back | Change_Speed | Rotate =>
           null;
         end case;
         if The_Command = Device.Stop then
@@ -110,8 +110,8 @@ package body User.Input is
           Active_Command := Previous_Speed;
         when Device.Next_Speed =>
           Active_Command := Next_Speed;
-        when Device.Rotate_M3 =>
-          Active_Command := Rotate_M3;
+        when Device.Rotate =>
+          Active_Command := Rotate;
         when Device.End_Command =>
           return;
         end case;
@@ -214,8 +214,8 @@ package body User.Input is
           Telescope.Execute (Telescope.Previous_Speed);
         when Next_Speed =>
           Telescope.Execute (Telescope.Next_Speed);
-        when Rotate_M3 =>
-          Telescope.Execute (Telescope.Rotate_M3);
+        when Rotate =>
+          Telescope.Execute (Telescope.Rotate);
         end case;
       or
         delay 20.0;

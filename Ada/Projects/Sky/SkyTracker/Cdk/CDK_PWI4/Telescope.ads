@@ -41,11 +41,11 @@ package Telescope is
                    End_Command,
                    Previous_Speed,
                    Next_Speed,
-                   Rotate_M3);
+                   Rotate);
 
   subtype Adjust is Command range Move_Left .. End_Command;
 
-  subtype Setup is Command range Previous_Speed .. Rotate_M3;
+  subtype Setup is Command range Previous_Speed .. Rotate;
 
   type State is (Unknown,    -- PWI server not available
                  Restarting, -- restarting CDK 700 PC

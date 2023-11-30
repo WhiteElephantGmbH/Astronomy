@@ -33,7 +33,7 @@ package Device is
                    Increase_Time,
                    Decrease_Time,
                    Go_Back,
-                   Rotate_M3,
+                   Rotate,
                    Stop);
 
   subtype Degrees is PWI4.Degrees;
