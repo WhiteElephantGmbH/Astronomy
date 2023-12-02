@@ -81,8 +81,14 @@ class Client:
     """
     rotate = 'rotate'
 
-    def m3_command(self, command):
-        return self.request_with_status("/m3/" + command)
+    def m3_rotate(self):
+        return self.request_with_status("/m3/rotate")
+
+    """ Focuser Command
+        ---------------
+    """
+    def focuser_set_position(self, value):
+        return self.request_with_status("/focuser/set/?position=" + str(value))
 
     """ Info
         ----

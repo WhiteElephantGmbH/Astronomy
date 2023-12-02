@@ -15,6 +15,10 @@ def main():
         ip_address = "localhost"
 
     client = cc.Client(host=ip_address)
+
+    focuser_min = 1
+    focuser_max = 10000
+    zoom_delta  = 100
     
     #events
     go_back        = client.go_back
@@ -30,6 +34,12 @@ def main():
     color0 = sg.theme_button_color()[0]
     color1 = sg.theme_button_color()[1]
 
+    value      = focuser_max/2
+    last_value = 0
+
+    lower_limit = focuser_min
+    upper_limit = focuser_max
+    
     control = [[sg.RealtimeButton(sg.SYMBOL_UP, key=move_up)],
                [sg.RealtimeButton(sg.SYMBOL_LEFT, key=move_left),
                 sg.RealtimeButton(sg.SYMBOL_CIRCLE, key=go_back),
@@ -42,10 +52,16 @@ def main():
              [sg.Frame('', control, element_justification='c')]]
 
     m3 = [[sg.RealtimeButton(sg.SYMBOL_RIGHT, key=rotate),
-           sg.Text(size=(14,1), key='-M3-', pad=(0,0), font='Ani 14', background_color=color0, text_color=color1)]]
+           sg.Text(size=(11,1), key='-M3-', pad=(0,0), font='Ani 14', justification='c', background_color=color0, text_color=color1)]]
+
+    focuser = [[sg.Slider(key='focus', range=(lower_limit,upper_limit), default_value=value,
+                          size=(13,18), orientation='horizontal', font='Ani 14',
+                          enable_events=True),
+                sg.RealtimeButton('🔎', key='zoom', font='Ani 12', size=(1,1))]]
 
     layout = [[sg.Frame('', mount, element_justification='c')],
-              [sg.Frame('', font='Ani 8', key='-FM3-', layout=m3, element_justification='c')]]
+              [sg.Frame('', font='Ani 8', key='-FM3-', layout=m3, element_justification='c')],
+              [sg.Frame('focuser', font='Ani 8', key='-FFO-', layout=focuser, element_justification='c', visible=False)]]
 
     window = sg.Window('CDK700 Control',
                        layout,
@@ -53,20 +69,36 @@ def main():
                        finalize=True,
                        element_justification='c',
                        location=(0,0),
-                       size=(245,300))
+                       size=(245,290))
     count = 0
     pressed = False
-
     while True:
         try:
             event, values = window.read(timeout=100)
-            if event != sg.TIMEOUT_EVENT:
+            if event == 'focus':
+                value = values['focus']
+                if (value == upper_limit) | (value == lower_limit):
+                    lower_limit = focuser_min
+                    upper_limit = focuser_max
+                    window['focus'].update(range=(lower_limit,upper_limit))
+            elif event != sg.TIMEOUT_EVENT:
                 # if not a timeout event, then it's a button that's being held down
                 if not pressed:
                     pressed = True
                     release_action = event in (move_up,  move_down, move_left, move_right)
                     if event == rotate:
-                        response = client.m3_command (command = event)
+                        response = client.m3_rotate()
+                    elif event == 'zoom':
+                        upper_limit = value + (zoom_delta / 2)
+                        if upper_limit > focuser_max:
+                            lower_limit = focuser_max - zoom_distance
+                            upper_limit = focuser_max
+                        else:
+                            lower_limit = value - (zoom_delta / 2)
+                            if lower_limit < focuser_min:
+                                lower_limit = focuser_min
+                                upper_limit = focuser_min + zoom_distance                           
+                        window['focus'].update(range=(lower_limit,upper_limit))
                     else:
                         response = client.mount_command (command = event)
             else:
@@ -81,20 +113,28 @@ def main():
                         count = 0;
                         info = client.info()
                         mount = info.mount()
+                        m3 = info.m3()
                         if mount.exists():
                             window['-SPEED-'].update(mount.speed())
+                            if m3.exists():
+                                window['-FM3-'].update("M3")
+                            else:
+                                window['-FM3-'].update("M3 Simulation")
+                            window['-M3-'].update(m3.position())
+                            if m3.at_camera():
+                                window[rotate].update(sg.SYMBOL_LEFT)
+                                window['-FFO-'].update(visible=True)
+                                if value != last_value:
+                                    last_value = value;
+                                    response = client.focuser_set_position (int(last_value))
+                            else:
+                                window[rotate].update(sg.SYMBOL_RIGHT)
+                                window['-FFO-'].update(visible=False)
                         else:
                             window['-SPEED-'].update("")                        
-                        m3 = info.m3()
-                        if m3.exists():
-                            window['-FM3-'].update("M3")
-                        else:
-                            window['-FM3-'].update("M3 Simulation")
-                        window['-M3-'].update(m3.position())
-                        if m3.at_camera():
-                            window[rotate].update(sg.SYMBOL_LEFT)
-                        else:
-                            window[rotate].update(sg.SYMBOL_RIGHT)
+                            window['-FM3-'].update("")
+                            window['-M3-'].update("")
+                            window['-FFO-'].update(visible=False)
         except:
             break
     window.close()

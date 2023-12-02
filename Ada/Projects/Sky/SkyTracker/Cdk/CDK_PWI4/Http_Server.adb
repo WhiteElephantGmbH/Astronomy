@@ -131,18 +131,32 @@ package body Http_Server is
         when others =>
           Log.Error ("Unknown Command: " & Command_Image);
           User.Input.Put (Device.End_Command, From => User.Input.Server);
-          return AWS.Response.Acknowledge (AWS.Messages.S400, "Unknown Command");
+          return AWS.Response.Acknowledge (AWS.Messages.S400, "unknown command");
+        end;
+      elsif Subsystem = "focuser" then
+        if Parts(2) /= "set" then
+          raise Program_Error;
+        end if;
+        declare
+          Value : constant String := AWS.Status.Parameter (Data, "position");
+        begin
+          if Value = "" then
+            return AWS.Response.Acknowledge (AWS.Messages.S400, "no position parameter");
+          end if;
+          Log.Write ("Focuser.Set_Position: " & Value);
+          --!!! execute set focuser position
+          return AWS.Response.Acknowledge (AWS.Messages.S200, "ok");
         end;
       elsif Subsystem = "information" then
         return AWS.Response.Acknowledge (AWS.Messages.S200, Information);
       else
-        return AWS.Response.Acknowledge (AWS.Messages.S400, "Unknown Subsystem");
+        return AWS.Response.Acknowledge (AWS.Messages.S400, "unknown subsystem");
       end if;
     end;
   exception
   when Item: others =>
     Log.Termination (Item);
-    return AWS.Response.Acknowledge (AWS.Messages.S400, "Internal Error");
+    return AWS.Response.Acknowledge (AWS.Messages.S400, "exception in response handling");
   end Call_Back;
 
 
