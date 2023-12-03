@@ -60,8 +60,8 @@ def main():
                 sg.RealtimeButton('🔎', key='zoom', font='Ani 12', size=(1,1))]]
 
     layout = [[sg.Frame('', mount, element_justification='c')],
-              [sg.Frame('', font='Ani 8', key='-FM3-', layout=m3, element_justification='c')],
-              [sg.Frame('focuser', font='Ani 8', key='-FFO-', layout=focuser, element_justification='c', visible=False)]]
+              [sg.Frame('M3', font='Ani 8', key='-FM3-', layout=m3, element_justification='c', visible=False)],
+              [sg.Frame('Focuser', font='Ani 8', key='-FFO-', layout=focuser, element_justification='c', visible=False)]]
 
     window = sg.Window('CDK700 Control',
                        layout,
@@ -117,23 +117,22 @@ def main():
                         if mount.exists():
                             window['-SPEED-'].update(mount.speed())
                             if m3.exists():
-                                window['-FM3-'].update("M3")
+                                window['-FM3-'].update(visible=True)
+                                window['-M3-'].update(m3.position())
+                                if m3.at_camera():
+                                    window[rotate].update(sg.SYMBOL_LEFT)
+                                    window['-FFO-'].update(visible=True)
+                                    if value != last_value:
+                                        last_value = value;
+                                        response = client.focuser_set_position (int(last_value))
+                                else:
+                                    window[rotate].update(sg.SYMBOL_RIGHT)
+                                    window['-FFO-'].update(visible=False)
                             else:
-                                window['-FM3-'].update("M3 Simulation")
-                            window['-M3-'].update(m3.position())
-                            if m3.at_camera():
-                                window[rotate].update(sg.SYMBOL_LEFT)
-                                window['-FFO-'].update(visible=True)
-                                if value != last_value:
-                                    last_value = value;
-                                    response = client.focuser_set_position (int(last_value))
-                            else:
-                                window[rotate].update(sg.SYMBOL_RIGHT)
-                                window['-FFO-'].update(visible=False)
+                                window['-FM3-'].update(visible=False)
                         else:
                             window['-SPEED-'].update("")                        
-                            window['-FM3-'].update("")
-                            window['-M3-'].update("")
+                            window['-FM3-'].update(visible=False)
                             window['-FFO-'].update(visible=False)
         except:
             break

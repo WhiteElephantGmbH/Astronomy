@@ -181,13 +181,17 @@ package body PWI4.Mount is
 
 
   procedure Stop_Rates is
-    Stop_Dec_Rate         : constant String := Command_For (Dec, Stop_Rate) & "=0";
-    Stop_Ra_Rate          : constant String := Command_For (Ra, Stop_Rate) & "=0";
-    Stop_Path_Rate        : constant String := Command_For (Path, Stop_Rate) & "=0";
-    Stop_Transverse_Rate  : constant String := Command_For (Transverse, Stop_Rate) & "=0";
+    Stop_Axis0_Rate      : constant String := Command_For (Axis0, Stop_Rate) & "=0";
+    Stop_Axis1_Rate      : constant String := Command_For (Axis1, Stop_Rate) & "=0";
+    Stop_Dec_Rate        : constant String := Command_For (Dec, Stop_Rate) & "=0";
+    Stop_Ra_Rate         : constant String := Command_For (Ra, Stop_Rate) & "=0";
+    Stop_Path_Rate       : constant String := Command_For (Path, Stop_Rate) & "=0";
+    Stop_Transverse_Rate : constant String := Command_For (Transverse, Stop_Rate) & "=0";
   begin
     Execute (Command_Name => "offset",
-             Parameters   => Stop_Dec_Rate & "&" & Stop_Ra_Rate & "&" & Stop_Path_Rate & "&" & Stop_Transverse_Rate);
+             Parameters   => Stop_Axis0_Rate & "&" & Stop_Axis1_Rate & "&" &
+                             Stop_Dec_Rate & "&" & Stop_Ra_Rate & "&" &
+                             Stop_Path_Rate & "&" & Stop_Transverse_Rate);
   end Stop_Rates;
 
 

@@ -16,6 +16,7 @@
 pragma Style_White_Elephant;
 
 with Angle;
+with Cdk_700;
 with Parameter;
 with PWI4.Fans;
 with PWI4.Focuser;
@@ -56,6 +57,7 @@ package body Device is
 
   type Focuser_Action is (No_Action,
                           Enable,
+                          Go_To,
                           Disable);
 
   type Rotator_Action is (No_Action,
@@ -63,17 +65,18 @@ package body Device is
                           Disable);
 
   type Parameters is record
-    From_J2000     : Boolean         := False;
-    Alt            : PWI4.Degrees    := 0.0;
-    Azm            : PWI4.Degrees    := 0.0;
-    Ra             : PWI4.Hours      := 0.0;
-    Dec            : PWI4.Degrees    := 0.0;
-    Arc_Seconds    : PWI4.Arc_Second := 0.0;
-    Delta_Ra       : PWI4.Arc_Second := 0.0;
-    Delta_Dec      : PWI4.Arc_Second := 0.0;
-    Offset_Axis    : PWI4.Mount.Offset_Axis;
-    Offset_Command : PWI4.Mount.Offset_Command;
-    Name_Id        : Name.Id;
+    From_J2000       : Boolean         := False;
+    Alt              : PWI4.Degrees    := 0.0;
+    Azm              : PWI4.Degrees    := 0.0;
+    Ra               : PWI4.Hours      := 0.0;
+    Dec              : PWI4.Degrees    := 0.0;
+    Arc_Seconds      : PWI4.Arc_Second := 0.0;
+    Delta_Ra         : PWI4.Arc_Second := 0.0;
+    Delta_Dec        : PWI4.Arc_Second := 0.0;
+    Offset_Axis      : PWI4.Mount.Offset_Axis;
+    Offset_Command   : PWI4.Mount.Offset_Command;
+    Name_Id          : Name.Id;
+    Focuser_Position : Microns := 0;
   end record;
 
 
@@ -104,6 +107,8 @@ package body Device is
     procedure Put (Item : M3_Action);
 
     procedure Put (Item : Focuser_Action);
+
+    procedure Go_To (Position : Microns);
 
     procedure Put (Item : Rotator_Action);
 
@@ -196,12 +201,14 @@ package body Device is
       Is_Pending := True;
     end Position_To;
 
+
     procedure Follow_Tle (Id : Name.Id) is
     begin
       The_Mount_Action := Follow_Tle;
       The_Parameter.Name_Id := Id;
       Is_Pending := True;
     end Follow_Tle;
+
 
     procedure Put (Item : M3_Action) is
     begin
@@ -215,6 +222,14 @@ package body Device is
       The_Focuser_Action := Item;
       Is_Pending := True;
     end Put;
+
+
+    procedure Go_To (Position : Microns) is
+    begin
+      The_Focuser_Action := Go_To;
+      The_Parameter.Focuser_Position := Position;
+      Is_Pending := True;
+    end Go_To;
 
 
     procedure Put (Item : Rotator_Action) is
@@ -295,12 +310,15 @@ package body Device is
     Last_M3_Position   : M3.Position := M3.Unknown;
     The_Parameter      : Parameters;
 
+    Is_Simulation         : Boolean;
+    Simulated_M3_Position : M3.Position := M3.Ocular;
+
     use type Fans.State;
     use type Mount.State;
     use type M3.Position;
     use type PWI4.M3_Port;
 
-  begin
+  begin -- Control
     accept Start (Fans_State_Handler  : Fans.State_Handler_Access;
                   Mount_State_Handler : Mount.State_Handler_Access;
                   M3_Position_Handler : M3.Position_Handler_Access)
@@ -310,6 +328,7 @@ package body Device is
       The_M3_Position_Handler := M3_Position_Handler;
     end Start;
     Log.Write ("Control started");
+    Is_Simulation := Cdk_700.Is_Simulated;
     loop
       select
         Action.Get (New_Fan_Action     => The_Fan_Action,
@@ -379,9 +398,17 @@ package body Device is
         when Toggle =>
           case The_M3_Position is
           when M3.Camera =>
-            PWI4.M3.Turn (To => Parameter.M3_Ocular_Port);
+            if Is_Simulation then
+              Simulated_M3_Position := M3.Ocular;
+            else
+              PWI4.M3.Turn (To => Parameter.M3_Ocular_Port);
+            end if;
           when M3.Ocular =>
-            PWI4.M3.Turn (To => Parameter.M3_Camera_Port);
+            if Is_Simulation then
+              Simulated_M3_Position := M3.Camera;
+            else
+              PWI4.M3.Turn (To => Parameter.M3_Camera_Port);
+            end if;
           when others =>
             null;
           end case;
@@ -392,6 +419,8 @@ package body Device is
           null;
         when Enable =>
           PWI4.Focuser.Enable;
+        when Go_To =>
+          PWI4.Focuser.Go_To (The_Parameter.Focuser_Position);
         when Disable =>
           PWI4.Focuser.Disable;
         end case;
@@ -427,7 +456,11 @@ package body Device is
       end case;
       case PWI4.M3.Actual_Port is
       when PWI4.Unknown =>
-        The_M3_Position := M3.Unknown;
+        if Is_Simulation and then The_Mount_State > Mount.Enabled then
+          The_M3_Position := Simulated_M3_Position;
+        else
+          The_M3_Position := M3.Unknown;
+        end if;
       when PWI4.Between =>
         The_M3_Position := M3.Between;
       when others =>
@@ -601,6 +634,21 @@ package body Device is
     end Update_Target;
 
 
+    procedure Set_Rate_Axis0 (Item : Speed) is
+      use type Speed;
+    begin
+      Log.Write ("Mount.Set_Rate_Axis0 " & Image_Of (Item));
+      Action.Set_Offset (PWI4.Mount.Axis0, PWI4.Mount.Set_Rate_Arcsec_Per_Sec, -Item); -- reverse direction
+    end Set_Rate_Axis0;
+
+
+    procedure Set_Rate_Axis1 (Item : Speed) is
+    begin
+      Log.Write ("Mount.Set_Rate_Axis1 " & Image_Of (Item));
+      Action.Set_Offset (PWI4.Mount.Axis1, PWI4.Mount.Set_Rate_Arcsec_Per_Sec, Item);
+    end Set_Rate_Axis1;
+
+
     procedure Set_Rate_Dec (Item : Speed) is
     begin
       Log.Write ("Mount.Set_Rate_Dec " & Image_Of (Item));
@@ -684,6 +732,17 @@ package body Device is
         Log.Warning ("Focuser does not exist");
       end if;
     end Enable;
+
+
+    procedure Go_To (The_Position : Microns) is
+    begin
+      if Exists then
+        Log.Write ("Focuser.Goto" & The_Position'image);
+        Action.Go_To (The_Position);
+      elsif Cdk_700.Is_Simulated then
+        Log.Write ("Simulated Focuser.Goto" & The_Position'img);
+      end if;
+    end Go_To;
 
 
     procedure Disable is

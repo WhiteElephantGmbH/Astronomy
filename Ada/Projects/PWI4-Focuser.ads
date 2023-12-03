@@ -9,6 +9,8 @@ package PWI4.Focuser is
   function Exists return Boolean;
 
   procedure Enable;
+  
+  procedure Go_To (Position : Microns);
 
   procedure Disable;
 

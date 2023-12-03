@@ -14,10 +14,12 @@ package body PWI4.Focuser is
   end Exists;
 
 
-  procedure Execute (Command_Name : String) is
+  procedure Execute (Command_Name : String;
+                     Parameters   : String := "") is
   begin
-    Execute (Device  => "focuser",
-             Command => Command_Name);
+    Execute (Device     => "focuser",
+             Command    => Command_Name,
+             Parameters => Parameters);
   end Execute;
 
 
@@ -25,6 +27,13 @@ package body PWI4.Focuser is
   begin
     Execute ("enable");
   end Enable;
+
+
+  procedure Go_To (Position : Microns) is
+  begin
+    Execute (Command_Name => "goto",
+             Parameters   => "target=" & Protocol.Image_Of (Position));
+  end Go_To;
 
 
   procedure Disable is

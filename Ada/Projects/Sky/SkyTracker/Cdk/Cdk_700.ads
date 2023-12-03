@@ -30,4 +30,6 @@ package Cdk_700 is
 
   function Startup_Progress return Progress.Percent;
 
+  function Is_Simulated return Boolean;
+
 end Cdk_700;

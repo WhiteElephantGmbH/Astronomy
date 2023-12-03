@@ -116,6 +116,8 @@ package Telescope is
 
   procedure Position_To (Landmark : Name.Id);
 
+  procedure Focuser_Goto (Position : Device.Microns);
+
   function Information return Data;
 
   procedure Close;

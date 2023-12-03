@@ -86,6 +86,10 @@ package Device is
 
     procedure Update_Target (Offset : Space.Direction);
 
+    procedure Set_Rate_Axis0 (Item : Speed);
+
+    procedure Set_Rate_Axis1 (Item : Speed);
+
     procedure Set_Rate_Dec (Item : Speed);
 
     procedure Set_Rate_Ra (Item : Speed);
@@ -110,6 +114,8 @@ package Device is
   package Focuser is
 
     procedure Enable;
+
+    procedure Go_To (The_Position : Microns);
 
     procedure Disable;
 

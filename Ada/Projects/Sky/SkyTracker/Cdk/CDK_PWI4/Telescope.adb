@@ -49,6 +49,8 @@ package body Telescope is
 
     entry Position_To (Landmark : Name.Id);
 
+    entry Focuser_Goto (The_Position : Device.Microns);
+
     entry New_Fans_State (New_State : Fans.State);
 
     entry New_Mount_State (New_State : Mount.State);
@@ -148,6 +150,12 @@ package body Telescope is
   end Position_To;
 
 
+  procedure Focuser_Goto (Position : Device.Microns) is
+  begin
+    Control.Focuser_Goto (Position);
+  end Focuser_Goto;
+
+
   Next_Id            : Name.Id;
   Next_Get_Direction : Get_Space_Access;
 
@@ -197,6 +205,8 @@ package body Telescope is
 
     The_Landmark : Name.Id;
 
+    The_Focuser_Position : Device.Microns;
+
     type Event is (No_Event,
                    Startup,
                    Shutdown,
@@ -213,7 +223,8 @@ package body Telescope is
                    Mount_Enabled,
                    Mount_Stopped,
                    Mount_Approach,
-                   Mount_Track);
+                   Mount_Track,
+                   Focuser_Goto);
 
     subtype Mount_Startup is Event range Mount_Disconnected .. Mount_Enabled;
 
@@ -383,11 +394,14 @@ package body Telescope is
       use type Angle.Signed;
       Moving_Speed : constant Angle.Degrees := +(The_Speed * First_Adjust_Factor);
       use type Angle.Degrees;
+      use type M3.Position;
     begin
       if Is_Fast_Tracking then
         Mount.Set_Rate_Transverse (Device.Speed(Moving_Speed * 3600.0));
-      else
+      elsif The_M3_Position = M3.Camera then
         Mount.Set_Rate_Ra (Device.Speed(Moving_Speed * 3600.0));
+      else
+        Mount.Set_Rate_Axis0 (Device.Speed(Moving_Speed * 3600.0));
       end if;
     end Adjust_First;
 
@@ -396,11 +410,14 @@ package body Telescope is
       use type Angle.Signed;
       Moving_Speed : constant Angle.Degrees := +(The_Speed * Second_Adjust_Factor);
       use type Angle.Degrees;
+      use type M3.Position;
     begin
       if Is_Fast_Tracking then
         Mount.Set_Rate_Path (Device.Speed(Moving_Speed * 3600.0));
-      else
+      elsif The_M3_Position = M3.Camera then
         Mount.Set_Rate_Dec (Device.Speed(Moving_Speed * 3600.0));
+      else
+        Mount.Set_Rate_Axis1 (Device.Speed(Moving_Speed * 3600.0));
       end if;
     end Adjust_Second;
 
@@ -917,6 +934,8 @@ package body Telescope is
         Offset_Handling;
       when User_Setup =>
         Setup_Handling;
+      when Focuser_Goto =>
+        Device.Focuser.Go_To (The_Focuser_Position);
       when others =>
         null;
       end case;
@@ -977,6 +996,11 @@ package body Telescope is
           end Position_To;
           Remote.Define (Target => "");
           The_Event := Position;
+        or
+          accept Focuser_Goto (The_Position : Device.Microns) do
+            The_Focuser_Position := The_Position;
+          end Focuser_Goto;
+          The_Event := Focuser_Goto;
         or
           accept Set (The_Orientation : Orientation) do
             Log.Write ("Orientation => " & The_Orientation'img);
@@ -1052,10 +1076,12 @@ package body Telescope is
           when M3.Camera =>
             if The_State > Homing then
               Rotator.Enable;
+              Focuser.Enable;
             end if;
           when M3.Ocular =>
             if The_State > Homing then
               Rotator.Disable;
+              Focuser.Disable;
             end if;
           when others =>
             null;

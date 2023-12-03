@@ -138,13 +138,13 @@ package body Http_Server is
           raise Program_Error;
         end if;
         declare
-          Value : constant String := AWS.Status.Parameter (Data, "position");
+          Value_Image : constant String := AWS.Status.Parameter (Data, "position");
         begin
-          if Value = "" then
+          if Value_Image = "" then
             return AWS.Response.Acknowledge (AWS.Messages.S400, "no position parameter");
           end if;
-          Log.Write ("Focuser.Set_Position: " & Value);
-          --!!! execute set focuser position
+          Log.Write ("Focuser.Set_Position: " & Value_Image);
+          Telescope.Focuser_Goto (Device.Microns'value(Value_Image));
           return AWS.Response.Acknowledge (AWS.Messages.S200, "ok");
         end;
       elsif Subsystem = "information" then
