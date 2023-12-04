@@ -22,7 +22,6 @@ with Data;
 with Device;
 with Gui.Enumeration_Menu_Of;
 with Gui.Registered;
-with Keys;
 with Lexicon;
 with Parameter;
 with Persistent;
@@ -503,43 +502,6 @@ package body User is
   end Back_Handling;
 
 
-  procedure Put (The_Command : Device.Command) is
-  begin
-    Input.Put (The_Command, From => Input.Keypad);
-  end Put;
-
-
-  procedure Put_Key (The_Key : Keys.Command) is
-    use all type Keys.Command;
-    use all type Device.Command;
-  begin
-    case The_Key is
-    when Move_Left =>
-      Put (Move_Left);
-    when Move_Right=>
-      Put (Move_Right);
-    when Move_Up=>
-      Put (Move_Up);
-    when Move_Down=>
-      Put (Move_Down);
-    when Increase_Time=>
-      Put (Increase_Time);
-    when Decrease_Time=>
-      Put (Decrease_Time);
-    when Keys.End_Command =>
-      Put (End_Command);
-    when Increase_Speed=>
-      Put (Next_Speed);
-    when Decrease_Speed=>
-      Put (Previous_Speed);
-    when Enter=>
-      Put (Go_Back);
-    end case;
-  end Put_Key;
-
-  procedure Key_Handler is new Keys.Handler (Put_Key);
-
-
   function Convertion is new Ada.Unchecked_Conversion (Gui.Information, Name.Id_Access);
 
   function Display_Text_Handler (For_Column       : Natural;
@@ -650,8 +612,6 @@ package body User is
       Define_Page;
       Catalog_Menu.Enable;
       Selection_Menu.Enable;
-      Gui.Install_Key_Handler (Key_Handler'access);
-      Gui.Enable_Key_Handler;
       The_Startup_Handler.all;
     exception
     when Item: others =>

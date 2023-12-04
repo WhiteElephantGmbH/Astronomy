@@ -936,7 +936,7 @@ package body Telescope is
         Setup_Handling;
       when Focuser_Goto =>
         if Focuser.Exists then
-          Device.Focuser.Go_To (The_Focuser_Position);
+          Focuser.Go_To (The_Focuser_Position);
         else
           Log.Warning ("Simulated Focuser.Goto" & The_Focuser_Position'img);
         end if;

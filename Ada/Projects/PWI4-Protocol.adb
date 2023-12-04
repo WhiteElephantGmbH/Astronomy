@@ -598,7 +598,7 @@ package body PWI4.Protocol is
         The_Response.Focuser.Is_Enabled := Boolean_Of (Value);
       when I_Position =>
         Log.Write ("focuser.position=" & Next_Value);
-        The_Response.Focuser.Position := 0; --!!!
+        The_Response.Focuser.Position := Microns'value(Value);
       when I_Is_Moving =>
         Log.Write ("focuser.is_moving=" & Next_Value);
         The_Response.Focuser.Is_Moving := Boolean_Of (Value);

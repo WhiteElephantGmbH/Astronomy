@@ -21,7 +21,7 @@ package User.Input is
 
   procedure Open;
 
-  type Source is (Handbox, Keypad, Server);
+  type Source is (Handbox, Server);
 
   procedure Put (The_Command : Device.Command;
                  From        : Source);
