@@ -23,10 +23,28 @@ package body PWI4.Focuser is
   end Execute;
 
 
+  procedure Connect is
+  begin
+    Execute ("connect");
+  end Connect;
+
+
+  procedure Disconnect is
+  begin
+    Execute ("disconnect");
+  end Disconnect;
+
+
   procedure Enable is
   begin
     Execute ("enable");
   end Enable;
+
+
+  procedure Disable is
+  begin
+    Execute ("disable");
+  end Disable;
 
 
   procedure Go_To (Position : Microns) is
@@ -36,9 +54,9 @@ package body PWI4.Focuser is
   end Go_To;
 
 
-  procedure Disable is
+  procedure Stop is
   begin
-    Execute ("disable");
-  end Disable;
+    Execute ("stop");
+  end Stop;
 
 end PWI4.Focuser;

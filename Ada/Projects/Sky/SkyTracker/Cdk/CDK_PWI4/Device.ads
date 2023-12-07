@@ -113,19 +113,35 @@ package Device is
 
   package Focuser is
 
+    function Exists return Boolean;
+    
+    procedure Connect;
+
+    procedure Disconnect;
+
     procedure Enable;
+    
+    procedure Disable;
 
     procedure Go_To (The_Position : Microns);
 
-    procedure Disable;
+    procedure Stop;
 
   end Focuser;
 
   package Rotator is
+  
+    function Exists return Boolean;
+
+    procedure Connect;
+
+    procedure Disconnect;
 
     procedure Enable;
 
     procedure Disable;
+
+    procedure Stop;
 
   end Rotator;
 

@@ -935,7 +935,11 @@ package body Telescope is
       when User_Setup =>
         Setup_Handling;
       when Focuser_Goto =>
-        Device.Focuser.Go_To (The_Focuser_Position);
+        if Focuser.Exists then
+          Device.Focuser.Go_To (The_Focuser_Position);
+        else
+          Log.Warning ("Simulated Focuser.Goto" & The_Focuser_Position'img);
+        end if;
       when others =>
         null;
       end case;
@@ -1075,13 +1079,19 @@ package body Telescope is
           case The_M3_Position is
           when M3.Camera =>
             if The_State > Homing then
-              Rotator.Enable;
-              Focuser.Enable;
+              if Rotator.Exists and Focuser.Exists then
+                Rotator.Enable;
+                Focuser.Enable;
+              else
+                Log.Warning ("Rotator and Focuser are simulated");
+              end if;
             end if;
           when M3.Ocular =>
             if The_State > Homing then
-              Rotator.Disable;
-              Focuser.Disable;
+              if Rotator.Exists and Focuser.Exists then
+                Rotator.Disable;
+                Focuser.Disable;
+              end if;
             end if;
           when others =>
             null;

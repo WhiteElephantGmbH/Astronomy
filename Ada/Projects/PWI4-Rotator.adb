@@ -21,6 +21,18 @@ package body PWI4.Rotator is
   end Execute;
 
 
+  procedure Connect is
+  begin
+    Execute ("connect");
+  end Connect;
+
+
+  procedure Disconnect is
+  begin
+    Execute ("disconnect");
+  end Disconnect;
+
+
   procedure Enable is
   begin
     Execute ("enable");
@@ -31,5 +43,11 @@ package body PWI4.Rotator is
   begin
     Execute ("disable");
   end Disable;
+
+
+  procedure Stop is
+  begin
+    Execute ("stop");
+  end Stop;
 
 end PWI4.Rotator;

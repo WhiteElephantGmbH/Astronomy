@@ -8,8 +8,14 @@ package PWI4.Rotator is
 
   function Exists return Boolean;
 
+  procedure Connect;
+
+  procedure Disconnect;
+
   procedure Enable;
 
   procedure Disable;
+
+  procedure Stop;
 
 end PWI4.Rotator;

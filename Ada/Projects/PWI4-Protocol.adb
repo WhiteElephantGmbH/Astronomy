@@ -254,6 +254,8 @@ package body PWI4.Protocol is
                         I_Tolerance,
                         I_Total,
                         I_Transverse_Arcsec,
+                        I_Update_Duration_Msec,
+                        I_Update_Count,
                         I_Version,
                         I_Version_Field,
                         I_X,
@@ -271,7 +273,7 @@ package body PWI4.Protocol is
       return Identifier'value ("I_" & Strings.Uppercase_Of (Data(First .. The_Index - 1)));
     exception
     when others =>
-      Log.Write ("Next_Identifier unknown <" & Data(First .. The_Index - 1) & ">");
+      Log.Error ("Next_Identifier unknown <" & Data(First .. The_Index - 1) & ">");
       raise Parsing_Error;
     end Next_Identifier;
 
@@ -359,6 +361,10 @@ package body PWI4.Protocol is
       when I_Julian_Date =>
         Log.Write ("mount.julian_date=" & Next_Value);
         The_Response.Mount.Julian_Date := Jd_Of (Value);
+      when I_Update_Duration_Msec =>
+        Log.Write ("mount.update_duration_msec=" & Next_Value);
+      when I_Update_Count =>
+        Log.Write ("mount.update_count=" & Next_Value);
       when I_Slew_Time_Constant =>
         Log.Write ("mount.slew_time_constant=" & Next_Value);
       when I_Ra_Apparent_Hours =>

@@ -8,10 +8,16 @@ package PWI4.Focuser is
 
   function Exists return Boolean;
 
+  procedure Connect;
+  
+  procedure Disconnect;
+
   procedure Enable;
   
+  procedure Disable;
+
   procedure Go_To (Position : Microns);
 
-  procedure Disable;
+  procedure Stop;
 
 end PWI4.Focuser;

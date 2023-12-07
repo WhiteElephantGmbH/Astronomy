@@ -56,13 +56,19 @@ package body Device is
                      Toggle);
 
   type Focuser_Action is (No_Action,
+                          Connect,
+                          Disconnect,
                           Enable,
+                          Disable,
                           Go_To,
-                          Disable);
+                          Stop);
 
   type Rotator_Action is (No_Action,
+                          Connect,
+                          Disconnect,
                           Enable,
-                          Disable);
+                          Disable,
+                          Stop);
 
   type Parameters is record
     From_J2000       : Boolean         := False;
@@ -417,21 +423,33 @@ package body Device is
         case The_Focuser_Action is
         when No_Action =>
           null;
+        when Connect =>
+          PWI4.Focuser.Connect;
+        when Disconnect =>
+          PWI4.Focuser.Disconnect;
         when Enable =>
           PWI4.Focuser.Enable;
-        when Go_To =>
-          PWI4.Focuser.Go_To (The_Parameter.Focuser_Position);
         when Disable =>
           PWI4.Focuser.Disable;
+        when Go_To =>
+          PWI4.Focuser.Go_To (The_Parameter.Focuser_Position);
+        when Stop =>
+          PWI4.Focuser.Stop;
         end case;
 
         case The_Rotator_Action is
         when No_Action =>
           null;
+        when Connect =>
+          PWI4.Rotator.Connect;
+        when Disconnect =>
+          PWI4.Rotator.Disconnect;
         when Enable =>
           PWI4.Rotator.Enable;
         when Disable =>
           PWI4.Rotator.Disable;
+        when Stop =>
+          PWI4.Rotator.Stop;
         end case;
       or
         delay 1.0;
@@ -723,37 +741,47 @@ package body Device is
 
     function Exists return Boolean renames PWI4.Focuser.Exists;
 
+
+    procedure Connect is
+    begin
+      Log.Write ("Focuser.Connect");
+      Action.Put (Focuser_Action'(Connect));
+    end Connect;
+
+
+    procedure Disconnect is
+    begin
+      Log.Write ("Focuser.Disconnect");
+      Action.Put (Focuser_Action'(Disconnect));
+    end Disconnect;
+
+
     procedure Enable is
     begin
-      if Exists then
-        Log.Write ("Focuser.Enable");
-        Action.Put (Focuser_Action'(Enable));
-      else
-        Log.Warning ("Focuser does not exist");
-      end if;
+      Log.Write ("Focuser.Enable");
+      Action.Put (Focuser_Action'(Enable));
     end Enable;
-
-
-    procedure Go_To (The_Position : Microns) is
-    begin
-      if Exists then
-        Log.Write ("Focuser.Goto" & The_Position'image);
-        Action.Go_To (The_Position);
-      elsif Cdk_700.Is_Simulated then
-        Log.Write ("Simulated Focuser.Goto" & The_Position'img);
-      end if;
-    end Go_To;
 
 
     procedure Disable is
     begin
-      if Exists then
-        Log.Write ("Focuser.Disable");
-        Action.Put (Focuser_Action'(Disable));
-      else
-        Log.Warning ("Focuser does not exist");
-      end if;
+      Log.Write ("Focuser.Disable");
+      Action.Put (Focuser_Action'(Disable));
     end Disable;
+
+
+    procedure Go_To (The_Position : Microns) is
+    begin
+      Log.Write ("Focuser.Goto" & The_Position'image);
+      Action.Go_To (The_Position);
+    end Go_To;
+
+
+    procedure Stop is
+    begin
+      Log.Write ("Focuser.Stop");
+      Action.Put (Focuser_Action'(Stop));
+    end Stop;
 
   end Focuser;
 
@@ -762,26 +790,40 @@ package body Device is
 
     function Exists return Boolean renames PWI4.Rotator.Exists;
 
+
     procedure Enable is
     begin
-      if Exists then
-        Log.Write ("Rotator.Enable");
-        Action.Put (Rotator_Action'(Enable));
-      else
-        Log.Warning ("Rotator does not exist");
-      end if;
+      Log.Write ("Rotator.Enable");
+      Action.Put (Rotator_Action'(Enable));
     end Enable;
 
 
     procedure Disable is
     begin
-      if Exists then
-        Log.Write ("Rotator.Disable");
-        Action.Put (Rotator_Action'(Disable));
-      else
-        Log.Warning ("Rotator does not exist");
-      end if;
+      Log.Write ("Rotator.Disable");
+      Action.Put (Rotator_Action'(Disable));
     end Disable;
+
+
+    procedure Connect is
+    begin
+      Log.Write ("Rotator.Connect");
+      Action.Put (Rotator_Action'(Connect));
+    end Connect;
+
+
+    procedure Disconnect is
+    begin
+      Log.Write ("Rotator.Disconnect");
+      Action.Put (Rotator_Action'(Disconnect));
+    end Disconnect;
+
+
+    procedure Stop is
+    begin
+      Log.Write ("Rotator.Stop");
+      Action.Put (Rotator_Action'(Stop));
+    end Stop;
 
   end Rotator;
 
