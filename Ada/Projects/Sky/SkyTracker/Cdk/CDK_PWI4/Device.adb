@@ -50,7 +50,8 @@ package body Device is
                         Goto_Mark,
                         Set_Gradual_Offsets,
                         Set_Offset,
-                        Stop_Rates);
+                        Stop_Rates,
+                        Reset_Moving_Target);
 
   type M3_Action is (No_Action,
                      Toggle);
@@ -101,6 +102,8 @@ package body Device is
                           Item : PWI4.Arc_Second);
 
     procedure Stop_Rates;
+
+    procedure Reset_Moving_Target;
 
     procedure Set_Gradual_Offsets (Delta_Ra  : PWI4.Arc_Second;
                                    Delta_Dec : PWI4.Arc_Second);
@@ -185,6 +188,14 @@ package body Device is
       The_Mount_Action := Stop_Rates;
       Is_Pending := True;
     end Stop_Rates;
+
+
+    procedure Reset_Moving_Target is
+    begin
+      The_Mount_Action := Reset_Moving_Target;
+      Is_Pending := True;
+    end Reset_Moving_Target;
+
 
     procedure Set_Gradual_Offsets (Delta_Ra  : PWI4.Arc_Second;
                                    Delta_Dec : PWI4.Arc_Second) is
@@ -393,6 +404,8 @@ package body Device is
                                  Item    => The_Parameter.Arc_Seconds);
         when Stop_Rates =>
           PWI4.Mount.Stop_Rates;
+        when Reset_Moving_Target =>
+          PWI4.Mount.Reset_Moving_Target;
         when Set_Gradual_Offsets =>
           PWI4.Mount.Set_Gradual_Offsets (Delta_Ra  => The_Parameter.Delta_Ra,
                                           Delta_Dec => The_Parameter.Delta_Dec);
@@ -700,6 +713,13 @@ package body Device is
       Log.Write ("Mount.Stop_Rate");
       Action.Stop_Rates;
     end Stop_Rate;
+
+
+    procedure Reset_Moving_Target is
+    begin
+      Log.Write ("Mount.Reset_Moving_Target");
+      Action.Reset_Moving_Target;
+    end Reset_Moving_Target;
 
 
     procedure Goto_Mark (Direction       :     Earth.Direction;

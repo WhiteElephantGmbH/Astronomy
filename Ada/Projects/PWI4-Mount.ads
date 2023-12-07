@@ -64,6 +64,8 @@ package PWI4.Mount is
 
   procedure Stop_Rates;
 
+  procedure Reset_Moving_Target;
+
   procedure Set_Gradual_Offsets (Delta_Ra  : Arc_Second;
                                  Delta_Dec : Arc_Second);
 

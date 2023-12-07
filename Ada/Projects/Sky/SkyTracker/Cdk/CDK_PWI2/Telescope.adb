@@ -339,6 +339,15 @@ package body Telescope is
     end Azm_Encoder_Position_Of;
 
 
+    procedure Reset_Adjustments is
+    begin
+      The_Adjusted_Offset := Cwe.Adjustment;
+      The_Time_Adjustment := Parameter.Time_Adjustment;
+      The_Adjusting_Start_Time := Time.In_The_Future;
+      The_Adjusting_End_Time := Time.In_The_Future;
+    end Reset_Adjustments;
+
+
     procedure Goto_Target is
 
       Encoder : constant Mount.Encoder_Data := Mount.Actual_Encoder;
@@ -409,15 +418,6 @@ package body Telescope is
     when Target_Lost =>
       null;
     end Goto_Target;
-
-
-    procedure Reset_Adjustments is
-    begin
-      The_Adjusted_Offset := Cwe.Adjustment;
-      The_Time_Adjustment := Parameter.Time_Adjustment;
-      The_Adjusting_Start_Time := Time.In_The_Future;
-      The_Adjusting_End_Time := Time.In_The_Future;
-    end Reset_Adjustments;
 
 
     procedure Stop_Target is

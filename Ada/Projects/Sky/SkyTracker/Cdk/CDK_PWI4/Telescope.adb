@@ -17,6 +17,7 @@ pragma Style_White_Elephant;
 
 with Ada.Real_Time;
 with Cdk_700;
+with Cwe;
 with Objects;
 with Parameter;
 with Remote;
@@ -200,8 +201,11 @@ package body Telescope is
     The_Arrival_Time         : Time.Ut := Time.In_The_Future;
     Is_Fast_Tracking         : Boolean := False;
 
-    First_Adjust_Factor       : Angle.Signed := 1;
-    Second_Adjust_Factor      : Angle.Signed := 1;
+    First_Adjust_Factor  : Angle.Signed := 1;
+    Second_Adjust_Factor : Angle.Signed := 1;
+
+    The_Adjusted_Offset : Earth.Direction;
+
 
     The_Landmark : Name.Id;
 
@@ -248,14 +252,27 @@ package body Telescope is
 
 
     function Target_Direction (At_Time : Time.Ut := Time.Universal) return Space.Direction is
-      Direction : constant Space.Direction := Get_Direction (Id, At_Time);
+      Direction     : constant Space.Direction := Get_Direction (Id, At_Time);
+      The_Direction : Earth.Direction;
     begin
       if not Space.Direction_Is_Known (Direction) then
         Target_Is_Lost := True;
         raise Target_Lost;
       end if;
-      return Direction;
+      if Earth.Direction_Is_Known (The_Adjusted_Offset) then
+        The_Direction := Objects.Direction_Of (Direction, Time.Lmst_Of (At_Time));
+        Earth.Add_To (The_Direction, The_Adjusted_Offset);
+        return Objects.Direction_Of (The_Direction, At_Time);
+      else
+        return Direction;
+      end if;
     end Target_Direction;
+
+
+    procedure Reset_Adjustments is
+    begin
+      The_Adjusted_Offset := Cwe.Adjustment;
+    end Reset_Adjustments;
 
 
     procedure Goto_Target is
@@ -282,19 +299,24 @@ package body Telescope is
       else
         The_State := Stopping;
       end if;
+      Reset_Adjustments;
     end Stop_Target;
 
 
     procedure Back_To_Target is
       Unused : Time.Ut;
     begin
-      if Get_Direction = null then
-        raise Program_Error; -- unknown target;
+      if Is_Fast_Tracking then
+        Mount.Reset_Moving_Target;
+      else
+        if Get_Direction = null then
+          raise Program_Error; -- unknown target;
+        end if;
+        The_Start_Time := Time.Universal;
+        The_Start_Direction := Target_Direction (At_Time => The_Start_Time);
+        Mount.Goto_Target (Direction       => The_Start_Direction,
+                           Completion_Time => Unused);
       end if;
-      The_Start_Time := Time.Universal;
-      The_Start_Direction := Target_Direction (At_Time => The_Start_Time);
-      Mount.Goto_Target (Direction       => The_Start_Direction,
-                         Completion_Time => Unused);
     exception
     when Target_Lost =>
       Stop_Target;
@@ -422,12 +444,6 @@ package body Telescope is
     end Adjust_Second;
 
 
-    procedure Stop_Adjusting is
-    begin
-      Mount.Stop_Rate;
-    end Stop_Adjusting;
-
-
     procedure Offset_Handling is
       Speed : constant Angle.Value := Moving_Speeds(Moving_Index);
       use type Angle.Signed;
@@ -446,7 +462,7 @@ package body Telescope is
       when Increase_Time =>
         null;
       when End_Command =>
-        Stop_Adjusting;
+        Mount.Stop_Rate;
       end case;
     end Offset_Handling;
 
@@ -953,6 +969,7 @@ package body Telescope is
     use type Angle.Signed;
 
   begin -- Control_Task
+    Reset_Adjustments;
     accept Start do
       Device.Start (Fans_State_Handler'access,
                     Mount_State_Handler'access,
@@ -984,9 +1001,11 @@ package body Telescope is
           else
             Remote.Define (Target => "");
           end if;
+          Reset_Adjustments;
           The_Event := Follow;
         or
           accept Back;
+          Reset_Adjustments;
           The_Event := Back;
         or
           accept Startup;
@@ -999,6 +1018,7 @@ package body Telescope is
             The_Landmark := Landmark;
           end Position_To;
           Remote.Define (Target => "");
+          Reset_Adjustments;
           The_Event := Position;
         or
           accept Focuser_Goto (The_Position : Device.Microns) do

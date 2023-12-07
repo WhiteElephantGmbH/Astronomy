@@ -195,6 +195,15 @@ package body PWI4.Mount is
   end Stop_Rates;
 
 
+  procedure Reset_Moving_Target is
+    Path_Reset       : constant String := Command_For (Path, Reset) & "=0";
+    Transverse_Reset : constant String := Command_For (Transverse, Reset) & "=0";
+  begin
+    Execute (Command_Name => "offset",
+             Parameters   => Path_Reset & "&" & Transverse_Reset);
+  end Reset_Moving_Target;
+
+
   procedure Set_Gradual_Offsets (Delta_Ra  : Arc_Second;
                                  Delta_Dec : Arc_Second) is
 

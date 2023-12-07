@@ -259,7 +259,6 @@ package body User is
 
   procedure Perform_Left is
   begin
-    Cwe.New_Offset;
     Perform_Left_Handler.all;
   end Perform_Left;
 
@@ -471,6 +470,7 @@ package body User is
 
   procedure Perform_Goto is
   begin
+    Cwe.New_Offset;
     Signal_Action (Go_To);
   end Perform_Goto;
 

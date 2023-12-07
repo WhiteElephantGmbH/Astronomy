@@ -100,6 +100,8 @@ package Device is
 
     procedure Stop_Rate;
 
+    procedure Reset_Moving_Target;
+
     procedure Goto_Mark (Direction       :     Earth.Direction;
                          Completion_Time : out Time.Ut);
 
@@ -114,13 +116,13 @@ package Device is
   package Focuser is
 
     function Exists return Boolean;
-    
+
     procedure Connect;
 
     procedure Disconnect;
 
     procedure Enable;
-    
+
     procedure Disable;
 
     procedure Go_To (The_Position : Microns);
@@ -130,7 +132,7 @@ package Device is
   end Focuser;
 
   package Rotator is
-  
+
     function Exists return Boolean;
 
     procedure Connect;
