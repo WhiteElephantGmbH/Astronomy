@@ -18,7 +18,7 @@ def main():
 
     focuser_min = 1
     focuser_max = 10000
-    zoom_delta  = 100
+    zoom_delta  = 150
     
     #events
     go_back        = client.go_back
@@ -54,10 +54,10 @@ def main():
     m3 = [[sg.RealtimeButton(sg.SYMBOL_RIGHT, key=rotate),
            sg.Text(size=(11,1), key='-M3-', pad=(0,0), font='Ani 14', justification='c', background_color=color0, text_color=color1)]]
 
-    focuser = [[sg.Slider(key='focus', range=(lower_limit,upper_limit), default_value=value,
-                          size=(13,18), orientation='horizontal', font='Ani 14',
-                          enable_events=True),
-                sg.RealtimeButton('🔎', key='zoom', font='Ani 12', size=(1,1))]]
+    focuser = [[sg.RealtimeButton('🔎', key='zoom', font='Ani 11', size=(2,1)),
+                sg.Slider(key='focus', range=(lower_limit,upper_limit), default_value=value,
+                          size=(18,18), orientation='horizontal', font='Ani 12',
+                          enable_events=True)]]
 
     layout = [[sg.Frame('', mount, element_justification='c')],
               [sg.Frame('M3', font='Ani 8', key='-FM3-', layout=m3, element_justification='c', visible=False)],
@@ -72,15 +72,12 @@ def main():
                        size=(245,290))
     count = 0
     pressed = False
+    zoomed = False
     while True:
         try:
             event, values = window.read(timeout=100)
             if event == 'focus':
                 value = values['focus']
-                if (value == upper_limit) | (value == lower_limit):
-                    lower_limit = focuser_min
-                    upper_limit = focuser_max
-                    window['focus'].update(range=(lower_limit,upper_limit))
             elif event != sg.TIMEOUT_EVENT:
                 # if not a timeout event, then it's a button that's being held down
                 if not pressed:
@@ -89,15 +86,23 @@ def main():
                     if event == rotate:
                         response = client.m3_rotate()
                     elif event == 'zoom':
-                        upper_limit = value + (zoom_delta / 2)
-                        if upper_limit > focuser_max:
-                            lower_limit = focuser_max - zoom_distance
+                        if zoomed:
+                            zoomed = False
+                            lower_limit = focuser_min
                             upper_limit = focuser_max
+                            window['zoom'].update(text='🔎')
                         else:
-                            lower_limit = value - (zoom_delta / 2)
-                            if lower_limit < focuser_min:
-                                lower_limit = focuser_min
-                                upper_limit = focuser_min + zoom_distance                           
+                            zoomed = True
+                            upper_limit = value + (zoom_delta / 2)
+                            if upper_limit > focuser_max:
+                                lower_limit = focuser_max - zoom_delta
+                                upper_limit = focuser_max
+                            else:
+                                lower_limit = value - (zoom_delta / 2)
+                                if lower_limit < focuser_min:
+                                    lower_limit = focuser_min
+                                    upper_limit = focuser_min + zoom_delta                           
+                            window['zoom'].update(text='⇔')
                         window['focus'].update(range=(lower_limit,upper_limit))
                     else:
                         response = client.mount_command (command = event)
