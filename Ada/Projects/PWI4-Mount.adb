@@ -23,6 +23,9 @@ package body PWI4.Mount is
 
   Is_Leaving : Boolean := False;
 
+  Homing_Check_Count : constant Natural := 3;
+  Homing_Counter     : Natural;
+
   Last_Axis0_Position : Degrees;
   Last_Axis1_Position : Degrees;
 
@@ -37,6 +40,7 @@ package body PWI4.Mount is
       Delta_Axis1 : Degrees;
     begin
       if not Flags.Is_Connected then
+        Homing_Counter := Homing_Check_Count;
         Is_Homing := False;
         Is_Homed := False;
         Is_Leaving := False;
@@ -44,20 +48,26 @@ package body PWI4.Mount is
         Last_Axis1_Position := Degrees'last;
         return Disconnected;
       elsif not (Flags.Axis1_Is_Enabled and Flags.Axis1_Is_Enabled) then
-        Last_Axis0_Position := Degrees'last;
-        Last_Axis1_Position := Degrees'last;
+        Homing_Counter := Homing_Check_Count;
         Is_Homing := False;
         Is_Homed := False;
         Is_Leaving := False;
+        Last_Axis0_Position := Degrees'last;
+        Last_Axis1_Position := Degrees'last;
         return Connected;
       elsif not Is_Homed then
         if Is_Homing then
           Delta_Axis0 := Data.Axis0.Position - Last_Axis0_Position;
           Delta_Axis1 := Data.Axis1.Position - Last_Axis1_Position;
-          if abs(Delta_Axis0) < 0.001 and abs(Delta_Axis1) < 0.001 then
-            Is_Homed := True;
-            Is_Homing := False;
-            return Stopped;
+          if abs(Delta_Axis0) < 0.0002 and abs(Delta_Axis1) < 0.0002 then
+            Homing_Counter := @ - 1;
+            if Homing_Counter = 0 then
+              Is_Homed := True;
+              Is_Homing := False;
+              return Stopped;
+            end if;
+          else
+            Homing_Counter := Homing_Check_Count;
           end if;
           Last_Axis0_Position := Data.Axis0.Position;
           Last_Axis1_Position := Data.Axis1.Position;

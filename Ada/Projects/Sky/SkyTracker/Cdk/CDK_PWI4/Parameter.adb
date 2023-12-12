@@ -59,7 +59,6 @@ package body Parameter is
   Port_Key              : constant String := "Port";
   Moving_Speed_List_Key : constant String := "Moving Speed List";
   Cwe_Distance_Key      : constant String := "CWE Distance";
-  Time_Adjustment_Key   : constant String := "Time Adjustment";
   Park_Position_Az_Key  : constant String := "Park Position Az";
 
   Controller_Id        : constant String := "Controller";
@@ -86,11 +85,10 @@ package body Parameter is
   The_M3_Ocular_Port  : PWI4.Port;
   Fans_On             : Boolean;
 
-  The_Moving_Speeds   : Angles.List;
-  The_Cwe_Distance    : Angle.Degrees;
-  The_PWI_Address     : Network.Ip_Address;
-  The_PWI_Port        : Network.Port_Number;
-  The_Time_Adjustment : Duration;
+  The_Moving_Speeds : Angles.List;
+  The_Cwe_Distance  : Angle.Degrees;
+  The_PWI_Address   : Network.Ip_Address;
+  The_PWI_Port      : Network.Port_Number;
 
   -- Server
   The_Server_Port : Network.Port_Number;
@@ -357,7 +355,6 @@ package body Parameter is
       Put (Port_Key & "              = 8220");
       Put (Moving_Speed_List_Key & " = 30""/s, 3'/s, 20'/s, 2°/s");
       Put (Cwe_Distance_Key & "      = 30'");
-      Put (Time_Adjustment_Key & "   = 0.5s");
       Put (Park_Position_Az_Key & "  = 75°");
       Put ("");
       Put ("[" & Server_Id & "]");
@@ -539,7 +536,6 @@ package body Parameter is
         Error.Raise_With ("The speed list must contain at least two values");
       end if;
       The_Cwe_Distance := Degrees_Of (Cwe_Distance_Key, Cwe.Maximum_Distance);
-      The_Time_Adjustment := Duration_Of (Time_Adjustment_Key, Lower_Limit => -1.0, Upper_Limit => 1.0);
       Telescope.Define_Park_Position (Direction_Of (Park_Position_Az_Key));
 
       Set (Server_Handle);
@@ -646,12 +642,6 @@ package body Parameter is
   begin
     return The_Cwe_Distance;
   end Cwe_Distance;
-
-
-  function Time_Adjustment return Duration is
-  begin
-    return The_Time_Adjustment;
-  end Time_Adjustment;
 
 
   ------------

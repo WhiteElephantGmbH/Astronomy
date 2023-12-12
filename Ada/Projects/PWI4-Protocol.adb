@@ -42,7 +42,7 @@ package body PWI4.Protocol is
     return Hours'value(Image);
   exception
   when others =>
-    Log.Error ("Hours_Of (Image -> """ & Image & """)");
+    Log.Warning ("Hours_Of (Image -> """ & Image & """)");
     return Undefined_Hours;
   end Hours_Of;
 
@@ -52,7 +52,7 @@ package body PWI4.Protocol is
     return Meters'value(Image);
   exception
   when others =>
-    Log.Error ("Meters_Of (Image -> """ & Image & """)");
+    Log.Warning ("Meters_Of (Image -> """ & Image & """)");
     return Undefined_Meters;
   end Meters_Of;
 
