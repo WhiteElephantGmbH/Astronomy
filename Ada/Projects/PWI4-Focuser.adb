@@ -14,6 +14,18 @@ package body PWI4.Focuser is
   end Exists;
 
 
+  function Enabled return Boolean is
+  begin
+    return Protocol.Focuser.Info.Is_Enabled;
+  end Enabled;
+
+
+  function Actual_Position return Microns is
+  begin
+    return Protocol.Focuser.Info.Position;
+  end Actual_Position;
+
+
   procedure Execute (Command_Name : String;
                      Parameters   : String := "") is
   begin
@@ -50,7 +62,7 @@ package body PWI4.Focuser is
   procedure Go_To (Position : Microns) is
   begin
     Execute (Command_Name => "goto",
-             Parameters   => "target=" & Protocol.Image_Of (Position));
+             Parameters   => "target=" & Image_Of (Position));
   end Go_To;
 
 

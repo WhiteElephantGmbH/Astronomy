@@ -30,6 +30,10 @@ package body Telescope is
 
   package Mount renames Device.Mount;
 
+  package M3 renames Device.M3;
+
+  package Focuser renames Device.Focuser;
+
   task type Control_Task with Priority => System.Max_Priority is
 
     entry Start;
@@ -209,7 +213,6 @@ package body Telescope is
 
     The_Landmark : Name.Id;
 
-    The_Focuser_Position : Device.Microns;
 
     type Event is (No_Event,
                    Startup,
@@ -227,8 +230,7 @@ package body Telescope is
                    Mount_Enabled,
                    Mount_Stopped,
                    Mount_Approach,
-                   Mount_Track,
-                   Focuser_Goto);
+                   Mount_Track);
 
     subtype Mount_Startup is Event range Mount_Disconnected .. Mount_Enabled;
 
@@ -558,6 +560,8 @@ package body Telescope is
       case The_Event is
       when Startup =>
         Mount.Connect;
+        Focuser.Connect;
+        Rotator.Connect;
         The_State := Connecting;
       when Mount_Startup =>
         The_State := Mount_Startup_State (The_Event);
@@ -950,12 +954,6 @@ package body Telescope is
         Offset_Handling;
       when User_Setup =>
         Setup_Handling;
-      when Focuser_Goto =>
-        if Focuser.Exists then
-          Focuser.Go_To (The_Focuser_Position);
-        else
-          Log.Warning ("Simulated Focuser.Goto" & The_Focuser_Position'img);
-        end if;
       when others =>
         null;
       end case;
@@ -1022,9 +1020,8 @@ package body Telescope is
           The_Event := Position;
         or
           accept Focuser_Goto (The_Position : Device.Microns) do
-            The_Focuser_Position := The_Position;
+            Focuser.Go_To (The_Position);
           end Focuser_Goto;
-          The_Event := Focuser_Goto;
         or
           accept Set (The_Orientation : Orientation) do
             Log.Write ("Orientation => " & The_Orientation'img);
@@ -1099,19 +1096,13 @@ package body Telescope is
           case The_M3_Position is
           when M3.Camera =>
             if The_State > Homing then
-              if Rotator.Exists and Focuser.Exists then
-                Rotator.Enable;
-                Focuser.Enable;
-              else
-                Log.Warning ("Rotator and Focuser are simulated");
-              end if;
+              Rotator.Enable;
+              Focuser.Enable;
             end if;
           when M3.Ocular =>
             if The_State > Homing then
-              if Rotator.Exists and Focuser.Exists then
-                Rotator.Disable;
-                Focuser.Disable;
-              end if;
+              Rotator.Disable;
+              Focuser.Disable;
             end if;
           when others =>
             null;
@@ -1125,7 +1116,11 @@ package body Telescope is
             end if;
             The_Data.Status := The_State;
             The_Data.Fans_State := The_Fans_State;
-            The_Data.M3_Position := The_M3_Position;
+            The_Data.M3.Exists := M3.Exists;
+            The_Data.M3.Position := The_M3_Position;
+            The_Data.Focuser.Exists := Focuser.Exists;
+            The_Data.Focuser.Enabled := Focuser.Enabled;
+            The_Data.Focuser.Position := Focuser.Actual_Position;
             case The_State is
             when Approaching | Preparing | Positioning | Homing =>
               The_Data.Completion_Time := The_Completion_Time;

@@ -33,7 +33,12 @@ package PWI4 is
     Position : Degrees;
   end record;
 
-  type Microns is range -999_999 .. 999_999;
+  Microns_Delta : constant := 0.1;
+  Microns_Limit : constant := 100000.0 - Microns_Delta;
+
+  type Microns is delta Microns_Delta range -Microns_Limit .. Microns_Limit with Small => Microns_Delta;
+
+  function Image_Of (Item : Microns) return String;
 
   type M3_Port is (Unknown, Between, Port_1, Port_2);
 

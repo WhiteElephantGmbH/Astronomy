@@ -26,10 +26,6 @@ package Telescope is
 
   package Fans renames Device.Fans;
 
-  package M3 renames Device.M3;
-
-  package Focuser renames Device.Focuser;
-
   package Rotator renames Device.Rotator;
 
   type Command is (Move_Left,
@@ -77,13 +73,25 @@ package Telescope is
 
   type Time_Delta is delta 0.00001 range -100.0 .. 100.0;
 
+  type M3_Data is record
+    Exists   : Boolean;
+    Position : Device.M3.Position;
+  end record;
+
+  type Focuser_Data is record
+    Exists   : Boolean;
+    Enabled  : Boolean;
+    Position : Device.Microns;
+  end record;
+
   type Data is record
     Status           : State;
     Target_Lost      : Boolean;
     Actual_Direction : Space.Direction;
     Moving_Speed     : Angle.Value;
     Fans_State       : Fans.State;
-    M3_Position      : M3.Position;
+    M3               : M3_Data;
+    Focuser          : Focuser_Data;
     Completion_Time  : Time.Ut;
   end record;
 

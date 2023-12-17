@@ -38,6 +38,12 @@ package body PWI4 is
   end Image_Of;
 
 
+  function Image_Of (Item : Microns) return String is
+  begin
+    return Strings.Trimmed (Integer(Item)'image);
+  end Image_Of;
+
+
   function Startup (Filename   : String;
                     Ip_Address : String) return Boolean is
   begin

@@ -36,6 +36,23 @@ class M3:
         return self.m3["position"]
 
 
+class Focuser:
+    """
+    Focuser information of the CDK700 telescope.
+    """
+    def __init__(self, focuser):
+        self.focuser = focuser
+            
+    def exists(self):
+        return self.focuser["exists"]
+    
+    def enabled(self):
+        return self.focuser["enabled"]
+    
+    def position(self):
+        return self.focuser["position"]
+
+
 class Information:
     """
     Information of the CDK700 telescope.
@@ -48,6 +65,9 @@ class Information:
 
     def m3(self):
         return M3(self.info["m3"])
+
+    def focuser(self):
+        return Focuser(self.info["focuser"])
 
 
 class Client:

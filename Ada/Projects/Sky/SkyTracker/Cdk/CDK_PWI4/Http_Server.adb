@@ -9,6 +9,7 @@ with AWS.Messages;
 with AWS.Status;
 with AWS.Server;
 with AWS.Response;
+with Cdk_700;
 with GNATCOLL.JSON;
 with Device;
 with Lexicon;
@@ -23,7 +24,6 @@ package body Http_Server is
   package Log is new Traces ("Http_Server");
 
   package JS renames GNATCOLL.JSON;
-
 
 
   function Image_Of (Item : Angle.Value) return String is
@@ -50,8 +50,8 @@ package body Http_Server is
   end Image_Of;
 
 
-  function Image_Of (Item : Telescope.M3.Position) return String is
-    use all type Telescope.M3.Position;
+  function Image_Of (Item : Device.M3.Position) return String is
+    use all type Device.M3.Position;
   begin
     case Item is
     when Unknown =>
@@ -69,12 +69,19 @@ package body Http_Server is
   At_Camera_Simulation : Boolean := False;
 
   function Information return String is
+
+    Is_Simulation : constant Boolean := Cdk_700.Is_Simulated;
+
     Data : constant Telescope.Data := Telescope.Information;
     Info : constant JS.JSON_Value := JS.Create_Object;
+
+    Mount_Exists : constant Boolean := not (Data.Status in Telescope.Startup_State);
+    At_Camera    : Boolean;
+
   begin
     declare
       Mount  : constant JS.JSON_Value := JS.Create_Object;
-      Exists : constant JS.JSON_Value := JS.Create (Boolean'(not (Data.Status in Telescope.Startup_State)));
+      Exists : constant JS.JSON_Value := JS.Create (Mount_Exists);
       Speed  : constant JS.JSON_Value := JS.Create (Image_Of (Data.Moving_Speed));
     begin
       JS.Set_Field (Mount, "exists", Exists);
@@ -82,23 +89,42 @@ package body Http_Server is
       JS.Set_Field (Info, "mount", Mount);
     end;
     declare
-      use type Telescope.M3.Position;
-      Exists      : constant Boolean := Data.M3_Position /= Telescope.M3.Unknown;
-      M3          : constant JS.JSON_Value := JS.Create_Object;
-      At_Camera   : Boolean;
-      M3_Position : Telescope.M3.Position;
+      use type Device.M3.Position;
+      M3        : constant JS.JSON_Value := JS.Create_Object;
+      Exists    : Boolean;
+      Position  : Device.M3.Position;
     begin
-      if Exists then
-        At_Camera := Data.M3_Position = Telescope.M3.Camera;
-        M3_Position := Data.M3_Position;
-      else -- simulated
+      if Is_Simulation then
+        Exists := Mount_Exists;
         At_Camera := At_Camera_Simulation;
-        M3_Position := (if At_Camera then Telescope.M3.Camera else Telescope.M3.Ocular);
+        Position := (if At_Camera then Device.M3.Camera else Device.M3.Ocular);
+      else -- simulated
+        Exists := Data.M3.Exists;
+        At_Camera := Data.M3.Position = Device.M3.Camera;
+        Position := Data.M3.Position;
       end if;
       JS.Set_Field (M3, "exists", JS.Create (Exists));
       JS.Set_Field (M3, "at_camera", JS.Create (At_Camera));
-      JS.Set_Field (M3, "position", JS.Create (Image_Of (M3_Position)));
+      JS.Set_Field (M3, "position", JS.Create (Image_Of (Position)));
       JS.Set_Field (Info, "m3", M3);
+    end;
+    declare
+      Focuser   : constant JS.JSON_Value := JS.Create_Object;
+      Position  : constant Device.Microns := Data.Focuser.Position;
+      Exists    : Boolean;
+      Enabled   : Boolean;
+    begin
+      if Is_Simulation then
+        Exists := True;
+        Enabled := At_Camera;
+      else
+        Exists := Data.Focuser.Exists;
+        Enabled := Data.Focuser.Enabled;
+      end if;
+      JS.Set_Field (Focuser, "exists", JS.Create (Exists));
+      JS.Set_Field (Focuser, "enabled", JS.Create (Enabled));
+      JS.Set_Field (Focuser, "position", JS.Create (Integer(Position)));
+      JS.Set_Field (Info, "focuser", Focuser);
     end;
     return JS.Write (Info);
   end Information;

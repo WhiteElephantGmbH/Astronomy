@@ -94,12 +94,6 @@ package body PWI4.Protocol is
   end Focuser_Position_Of;
 
 
-  function Image_Of (Item : Microns) return String is
-  begin
-    return Strings.Trimmed (Item'img);
-  end Image_Of;
-
-
   function Arc_Second_Of (Image : String) return Arc_Second is
   begin
     return Arc_Second'value(Image);
@@ -598,7 +592,7 @@ package body PWI4.Protocol is
         The_Response.Focuser.Is_Enabled := Boolean_Of (Value);
       when I_Position =>
         Log.Write ("focuser.position=" & Next_Value);
-        The_Response.Focuser.Position := Microns'value(Value);
+        The_Response.Focuser.Position := Focuser_Position_Of (Value);
       when I_Is_Moving =>
         Log.Write ("focuser.is_moving=" & Next_Value);
         The_Response.Focuser.Is_Moving := Boolean_Of (Value);

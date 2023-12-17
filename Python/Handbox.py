@@ -34,8 +34,9 @@ def main():
     color0 = sg.theme_button_color()[0]
     color1 = sg.theme_button_color()[1]
 
-    value      = focuser_max/2
-    last_value = 0
+    value          = focuser_min
+    last_value     = focuser_max
+    last_new_value = focuser_max
 
     lower_limit = focuser_min
     upper_limit = focuser_max
@@ -119,17 +120,24 @@ def main():
                         info = client.info()
                         mount = info.mount()
                         m3 = info.m3()
+                        focuser = info.focuser()
                         if mount.exists():
                             window['-SPEED-'].update(mount.speed())
                             if m3.exists():
                                 window['-FM3-'].update(visible=True)
                                 window['-M3-'].update(m3.position())
-                                if m3.at_camera():
+                                if focuser.enabled():
                                     window[rotate].update(sg.SYMBOL_LEFT)
                                     window['-FFO-'].update(visible=True)
                                     if value != last_value:
                                         last_value = value;
                                         response = client.focuser_set_position (int(last_value))
+                                    new_value = focuser.position()
+                                    if new_value != value:
+                                        if last_new_value == new_value:
+                                            window['focus'].update(value=new_value)
+                                        else:
+                                            last_new_value = new_value
                                 else:
                                     window[rotate].update(sg.SYMBOL_RIGHT)
                                     window['-FFO-'].update(visible=False)

@@ -117,6 +117,10 @@ package Device is
 
     function Exists return Boolean;
 
+    function Enabled return Boolean;
+
+    function Actual_Position return Microns;
+
     procedure Connect;
 
     procedure Disconnect;
@@ -157,6 +161,8 @@ package Device is
     subtype Place is Position range Ocular .. Camera;
 
     type Position_Handler_Access is access procedure (The_Position : Position);
+
+    function Exists return Boolean;
 
     procedure Rotate;
 

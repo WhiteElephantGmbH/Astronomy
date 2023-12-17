@@ -38,8 +38,6 @@ private package PWI4.Protocol is
 
   function Focuser_Position_Of (Image : String) return Microns;
 
-  function Image_Of (Item : Microns) return String;
-
   type Focuser_Info is record
     Exists       : Boolean;
     Is_Connected : Boolean;
