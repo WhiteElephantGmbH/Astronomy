@@ -14,10 +14,16 @@ package body PWI4.Focuser is
   end Exists;
 
 
-  function Enabled return Boolean is
+  function Connected return Boolean is
   begin
-    return Protocol.Focuser.Info.Is_Enabled;
-  end Enabled;
+    return Protocol.Focuser.Info.Is_Connected;
+  end Connected;
+
+
+  function Moving return Boolean is
+  begin
+    return Protocol.Focuser.Info.Is_Moving;
+  end Moving;
 
 
   function Actual_Position return Microns is
@@ -45,18 +51,6 @@ package body PWI4.Focuser is
   begin
     Execute ("disconnect");
   end Disconnect;
-
-
-  procedure Enable is
-  begin
-    Execute ("enable");
-  end Enable;
-
-
-  procedure Disable is
-  begin
-    Execute ("disable");
-  end Disable;
 
 
   procedure Go_To (Position : Microns) is

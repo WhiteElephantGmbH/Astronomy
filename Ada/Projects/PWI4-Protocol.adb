@@ -767,13 +767,13 @@ package body PWI4.Protocol is
         Log.Write ("Focuser");
         Log.Write ("  Exists       : " & Image_Of (Data.Focuser.Exists));
         Log.Write ("  Is_Connected : " & Image_Of (Data.Focuser.Is_Connected));
-        Log.Write ("  Is_Enabled   : " & Image_Of (Data.Focuser.Is_Connected));
+        Log.Write ("  Is_Enabled   : " & Image_Of (Data.Focuser.Is_Enabled));
         Log.Write ("  Position     : " & Image_Of (Data.Focuser.Position));
         Log.Write ("  Is_Moving    : " & Image_Of (Data.Focuser.Is_Moving));
         Log.Write ("Rotator");
         Log.Write ("  Exists        : " & Image_Of (Data.Focuser.Exists));
         Log.Write ("  Is_Connected  : " & Image_Of (Data.Rotator.Is_Connected));
-        Log.Write ("  Is_Enabled    : " & Image_Of (Data.Rotator.Is_Connected));
+        Log.Write ("  Is_Enabled    : " & Image_Of (Data.Rotator.Is_Enabled));
         Log.Write ("  Mech_Position : " & Image_Of (Data.Rotator.Mech_Position));
         Log.Write ("  Field_Angle   : " & Image_Of (Data.Rotator.Field_Angle));
         Log.Write ("  Is_Moving     : " & Image_Of (Data.Rotator.Is_Moving));

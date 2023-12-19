@@ -561,7 +561,6 @@ package body Telescope is
       when Startup =>
         Mount.Connect;
         Focuser.Connect;
-        Rotator.Connect;
         The_State := Connecting;
       when Mount_Startup =>
         The_State := Mount_Startup_State (The_Event);
@@ -1093,20 +1092,6 @@ package body Telescope is
             The_M3_Position := New_Position;
             Has_New_Data := True;
           end New_M3_Position;
-          case The_M3_Position is
-          when M3.Camera =>
-            if The_State > Homing then
-              Rotator.Enable;
-              Focuser.Enable;
-            end if;
-          when M3.Ocular =>
-            if The_State > Homing then
-              Rotator.Disable;
-              Focuser.Disable;
-            end if;
-          when others =>
-            null;
-          end case;
         or
           accept Get (The_Data : out Data) do
             if The_State = Restarting then
@@ -1119,7 +1104,8 @@ package body Telescope is
             The_Data.M3.Exists := M3.Exists;
             The_Data.M3.Position := The_M3_Position;
             The_Data.Focuser.Exists := Focuser.Exists;
-            The_Data.Focuser.Enabled := Focuser.Enabled;
+            The_Data.Focuser.Connected := Focuser.Connected;
+            The_Data.Focuser.Moving := Focuser.Moving;
             The_Data.Focuser.Position := Focuser.Actual_Position;
             case The_State is
             when Approaching | Preparing | Positioning | Homing =>

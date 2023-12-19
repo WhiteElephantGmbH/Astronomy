@@ -79,9 +79,10 @@ package Telescope is
   end record;
 
   type Focuser_Data is record
-    Exists   : Boolean;
-    Enabled  : Boolean;
-    Position : Device.Microns;
+    Exists    : Boolean;
+    Connected : Boolean;
+    Moving    : Boolean;
+    Position  : Device.Microns;
   end record;
 
   type Data is record

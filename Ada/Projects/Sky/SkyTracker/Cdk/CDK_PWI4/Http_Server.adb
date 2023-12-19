@@ -87,6 +87,7 @@ package body Http_Server is
       JS.Set_Field (Mount, "exists", Exists);
       JS.Set_Field (Mount, "speed", Speed);
       JS.Set_Field (Info, "mount", Mount);
+      Log.Write ("Mount Exists: " & Mount_Exists'image);
     end;
     declare
       use type Device.M3.Position;
@@ -98,7 +99,7 @@ package body Http_Server is
         Exists := Mount_Exists;
         At_Camera := At_Camera_Simulation;
         Position := (if At_Camera then Device.M3.Camera else Device.M3.Ocular);
-      else -- simulated
+      else
         Exists := Data.M3.Exists;
         At_Camera := Data.M3.Position = Device.M3.Camera;
         Position := Data.M3.Position;
@@ -107,31 +108,37 @@ package body Http_Server is
       JS.Set_Field (M3, "at_camera", JS.Create (At_Camera));
       JS.Set_Field (M3, "position", JS.Create (Image_Of (Position)));
       JS.Set_Field (Info, "m3", M3);
+      Log.Write ("M3 Exists: " & Exists'image);
+      Log.Write ("M3 At_Camera: " & At_Camera'image);
     end;
     declare
       Focuser   : constant JS.JSON_Value := JS.Create_Object;
-      Position  : constant Device.Microns := Data.Focuser.Position;
-      Exists    : Boolean;
-      Enabled   : Boolean;
+      Connected : constant Boolean := Data.Focuser.Connected;
+      Position  : constant Integer := Integer(Data.Focuser.Position);
+      Moving    : constant Boolean := Data.Focuser.Moving;
+      Exists   : Boolean;
     begin
       if Is_Simulation then
         Exists := True;
-        Enabled := At_Camera;
       else
         Exists := Data.Focuser.Exists;
-        Enabled := Data.Focuser.Enabled;
       end if;
       JS.Set_Field (Focuser, "exists", JS.Create (Exists));
-      JS.Set_Field (Focuser, "enabled", JS.Create (Enabled));
-      JS.Set_Field (Focuser, "position", JS.Create (Integer(Position)));
+      JS.Set_Field (Focuser, "connected", JS.Create (Connected));
+      JS.Set_Field (Focuser, "moving", JS.Create (Moving));
+      JS.Set_Field (Focuser, "position", JS.Create (Position));
       JS.Set_Field (Info, "focuser", Focuser);
+      Log.Write ("Focuser Exists: " & Exists'image);
+      Log.Write ("Focuser Connected: " & Connected'image);
+      Log.Write ("Focuser Moving: " & Moving'image);
+      Log.Write ("Focuser Position:" & Position'image);
     end;
     return JS.Write (Info);
   end Information;
 
 
   function Call_Back (Data : AWS.Status.Data) return AWS.Response.Data is
-  begin -- Call_Back
+  begin
     Log.Write ("Callback - URI: " & AWS.Status.URI (Data));
     declare
       Uri       : constant String := AWS.Status.URI (Data);

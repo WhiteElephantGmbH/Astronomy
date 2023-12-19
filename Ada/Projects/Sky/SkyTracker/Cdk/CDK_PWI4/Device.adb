@@ -32,7 +32,7 @@ package body Device is
   package Log is new Traces ("Device");
 
   Completion_Duration : constant Duration := 22.0;
-  Homing_Duration     : constant Duration := 140.0;
+  Homing_Duration     : constant Duration := 30.0;
 
   type Fan_Action is (No_Action,
                       Turn_On,
@@ -59,16 +59,10 @@ package body Device is
   type Focuser_Action is (No_Action,
                           Connect,
                           Disconnect,
-                          Enable,
-                          Disable,
                           Go_To,
                           Stop);
 
   type Rotator_Action is (No_Action,
-                          Connect,
-                          Disconnect,
-                          Enable,
-                          Disable,
                           Stop);
 
   type Parameters is record
@@ -301,9 +295,10 @@ package body Device is
   The_Control : access Control;
 
   Is_Simulation                       : Boolean := False;
-  Simulated_Focuser_Enabled           : Boolean := False;
+  Simulated_Focuser_Connected         : Boolean := False;
+  Simulated_Focuser_Moving            : Boolean := False;
   The_Simulated_Focuser_Position      : Microns := 4321.0;
-  The_Simulated_Focuser_Goto_Position : Microns;
+  The_Simulated_Focuser_Goto_Position : Microns := The_Simulated_Focuser_Position;
 
 
   task body Control is
@@ -340,6 +335,7 @@ package body Device is
     use type Mount.State;
     use type M3.Position;
     use type PWI4.M3_Port;
+    use type Microns;
 
   begin -- Control
     accept Start (Fans_State_Handler  : Fans.State_Handler_Access;
@@ -443,17 +439,20 @@ package body Device is
           case The_Focuser_Action is
           when No_Action =>
             null;
+          when Connect =>
+            Simulated_Focuser_Connected := True;
+            Log.Write ("Simulated focuser connect");
+          when Disconnect =>
+            Simulated_Focuser_Moving := False;
+            Simulated_Focuser_Connected := False;
+            Log.Write ("Simulated focuser disconnect");
           when Go_To =>
             The_Simulated_Focuser_Goto_Position := The_Parameter.Focuser_Position;
+            Simulated_Focuser_Moving := True;
             Log.Write ("Simulated focuser goto : " & The_Simulated_Focuser_Goto_Position'image);
-          when Enable =>
-            Simulated_Focuser_Enabled := True;
-            Log.Write ("Simulated focuser enable");
-          when Disable =>
-            Simulated_Focuser_Enabled := False;
-            Log.Write ("Simulated focuser disable");
-          when others =>
-            Log.Write ("Simulated focuser action : " & The_Focuser_Action'image);
+          when Stop =>
+            Simulated_Focuser_Moving := False;
+            Log.Write ("Simulated focuser stop");
           end case;
         else
           case The_Focuser_Action is
@@ -463,10 +462,6 @@ package body Device is
             PWI4.Focuser.Connect;
           when Disconnect =>
             PWI4.Focuser.Disconnect;
-          when Enable =>
-            PWI4.Focuser.Enable;
-          when Disable =>
-            PWI4.Focuser.Disable;
           when Go_To =>
             PWI4.Focuser.Go_To (The_Parameter.Focuser_Position);
           when Stop =>
@@ -480,14 +475,6 @@ package body Device is
           case The_Rotator_Action is
           when No_Action =>
             null;
-          when Connect =>
-            PWI4.Rotator.Connect;
-          when Disconnect =>
-            PWI4.Rotator.Disconnect;
-          when Enable =>
-            PWI4.Rotator.Enable;
-          when Disable =>
-            PWI4.Rotator.Disable;
           when Stop =>
             PWI4.Rotator.Stop;
           end case;
@@ -495,6 +482,16 @@ package body Device is
       or
         delay 1.0;
         PWI4.Get_System;
+        if Is_Simulation then
+          if Simulated_Focuser_Moving then
+            if abs(The_Simulated_Focuser_Position - The_Simulated_Focuser_Goto_Position) > 3.0 then
+              The_Simulated_Focuser_Position := @ + (The_Simulated_Focuser_Goto_Position - @) / 2;
+            else
+              The_Simulated_Focuser_Position := The_Simulated_Focuser_Goto_Position;
+              Simulated_Focuser_Moving := False;
+            end if;
+          end if;
+        end if;
       end select;
       The_Fans_State := Fans.State'val(Boolean'pos(PWI4.Fans.Turned_On));
       case PWI4.Mount.Info.Status is
@@ -789,23 +786,29 @@ package body Device is
 
     function Exists return Boolean renames PWI4.Focuser.Exists;
 
-    function Enabled return Boolean is
+    function Connected return Boolean is
     begin
       if Is_Simulation then
-        return Simulated_Focuser_Enabled;
+        return Simulated_Focuser_Connected;
       else
-        return PWI4.Focuser.Enabled;
+        return PWI4.Focuser.Connected;
       end if;
-    end Enabled;
+    end Connected;
+
+
+    function Moving return Boolean is
+    begin
+      if Is_Simulation then
+        return Simulated_Focuser_Moving;
+      else
+        return PWI4.Focuser.Moving;
+      end if;
+    end Moving;
 
 
     function Actual_Position return Microns is
-      use type Microns;
     begin
       if Is_Simulation then
-        if The_Simulated_Focuser_Position /= The_Simulated_Focuser_Goto_Position then
-          The_Simulated_Focuser_Position := @ + (The_Simulated_Focuser_Goto_Position - @) / 2;
-        end if;
         return The_Simulated_Focuser_Position;
       else
         return PWI4.Focuser.Actual_Position;
@@ -827,27 +830,13 @@ package body Device is
     end Disconnect;
 
 
-    procedure Enable is
-    begin
-      Log.Write ("Focuser.Enable");
-      Action.Put (Focuser_Action'(Enable));
-    end Enable;
-
-
-    procedure Disable is
-    begin
-      Log.Write ("Focuser.Disable");
-      Action.Put (Focuser_Action'(Disable));
-    end Disable;
-
-
     procedure Go_To (The_Position : Microns) is
     begin
       Log.Write ("Focuser.Goto" & The_Position'image);
-      if Enabled then
+      if Connected then
         Action.Go_To (The_Position);
       else
-        Log.Warning ("Focuser not enabled");
+        Log.Warning ("Focuser not connected");
       end if;
     end Go_To;
 
@@ -864,35 +853,6 @@ package body Device is
   package body Rotator is
 
     function Exists return Boolean renames PWI4.Rotator.Exists;
-
-
-    procedure Enable is
-    begin
-      Log.Write ("Rotator.Enable");
-      Action.Put (Rotator_Action'(Enable));
-    end Enable;
-
-
-    procedure Disable is
-    begin
-      Log.Write ("Rotator.Disable");
-      Action.Put (Rotator_Action'(Disable));
-    end Disable;
-
-
-    procedure Connect is
-    begin
-      Log.Write ("Rotator.Connect");
-      Action.Put (Rotator_Action'(Connect));
-    end Connect;
-
-
-    procedure Disconnect is
-    begin
-      Log.Write ("Rotator.Disconnect");
-      Action.Put (Rotator_Action'(Disconnect));
-    end Disconnect;
-
 
     procedure Stop is
     begin

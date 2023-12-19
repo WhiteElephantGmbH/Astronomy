@@ -46,8 +46,11 @@ class Focuser:
     def exists(self):
         return self.focuser["exists"]
     
-    def enabled(self):
-        return self.focuser["enabled"]
+    def connected(self):
+        return self.focuser["connected"]
+    
+    def moving(self):
+        return self.focuser["moving"]
     
     def position(self):
         return self.focuser["position"]
