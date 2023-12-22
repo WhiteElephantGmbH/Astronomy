@@ -6,12 +6,8 @@ pragma Style_White_Elephant;
 
 package PWI4.Fans is
 
-  function Exists return Boolean;
-
   procedure Turn_On;
 
   procedure Turn_Off;
-
-  function Turned_On return Boolean;
 
 end PWI4.Fans;

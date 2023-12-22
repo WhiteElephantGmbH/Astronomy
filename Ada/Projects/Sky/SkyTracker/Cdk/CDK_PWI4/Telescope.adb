@@ -34,13 +34,16 @@ package body Telescope is
 
   package Focuser renames Device.Focuser;
 
+  package Rotator renames Device.Rotator;
+
+  package Fans renames Device.Fans;
+
+
   task type Control_Task with Priority => System.Max_Priority is
 
     entry Start;
 
     entry Execute (The_Command : Command);
-
-    entry Set (The_Orientation : Orientation);
 
     entry Halt;
 
@@ -56,8 +59,6 @@ package body Telescope is
 
     entry Focuser_Goto (The_Position : Device.Microns);
 
-    entry New_Fans_State (New_State : Fans.State);
-
     entry New_Mount_State (New_State : Mount.State);
 
     entry New_M3_Position (New_Position : M3.Position);
@@ -71,14 +72,6 @@ package body Telescope is
   type Control_Access is access Control_Task;
 
   Control : Control_Access;
-
-
-  procedure Fans_State_Handler (New_State : Fans.State) is
-  begin
-    if not Control'terminated then
-      Control.New_Fans_State (New_State);
-    end if;
-  end Fans_State_Handler;
 
 
   procedure Mount_State_Handler (New_State : Mount.State) is
@@ -111,12 +104,6 @@ package body Telescope is
   begin
     Control.Execute (The_Command);
   end Execute;
-
-
-  procedure Set (The_Orientation  : Orientation) is
-  begin
-    Control.Set (The_Orientation);
-  end Set;
 
 
   procedure Startup is
@@ -205,9 +192,6 @@ package body Telescope is
     The_Arrival_Time         : Time.Ut := Time.In_The_Future;
     Is_Fast_Tracking         : Boolean := False;
 
-    First_Adjust_Factor  : Angle.Signed := 1;
-    Second_Adjust_Factor : Angle.Signed := 1;
-
     The_Adjusted_Offset : Earth.Direction;
 
 
@@ -238,8 +222,6 @@ package body Telescope is
     The_Event  : Event := No_Event;
 
     Mount_Is_Stopped : Boolean := True;
-
-    The_Fans_State : Fans.State := Fans.Initial_State;
 
     The_M3_Position : M3.Position := M3.Unknown;
 
@@ -416,30 +398,32 @@ package body Telescope is
 
     procedure Adjust_First (The_Speed : Angle.Signed) is
       use type Angle.Signed;
-      Moving_Speed : constant Angle.Degrees := +(The_Speed * First_Adjust_Factor);
+      Moving_Speed : constant Angle.Degrees := +(The_Speed);
       use type Angle.Degrees;
       use type M3.Position;
+      use type Device.Speed;
     begin
       if Is_Fast_Tracking then
         Mount.Set_Rate_Transverse (Device.Speed(Moving_Speed * 3600.0));
       elsif The_M3_Position = M3.Camera then
         Mount.Set_Rate_Ra (Device.Speed(Moving_Speed * 3600.0));
       else
-        Mount.Set_Rate_Axis0 (Device.Speed(Moving_Speed * 3600.0));
+        Mount.Set_Rate_Axis0 (-Device.Speed(Moving_Speed * 3600.0));
       end if;
     end Adjust_First;
 
 
     procedure Adjust_Second (The_Speed : Angle.Signed) is
       use type Angle.Signed;
-      Moving_Speed : constant Angle.Degrees := +(The_Speed * Second_Adjust_Factor);
+      Moving_Speed : constant Angle.Degrees := +(The_Speed);
       use type Angle.Degrees;
       use type M3.Position;
+      use type Device.Speed;
     begin
       if Is_Fast_Tracking then
         Mount.Set_Rate_Path (Device.Speed(Moving_Speed * 3600.0));
       elsif The_M3_Position = M3.Camera then
-        Mount.Set_Rate_Dec (Device.Speed(Moving_Speed * 3600.0));
+        Mount.Set_Rate_Dec (-Device.Speed(Moving_Speed * 3600.0));
       else
         Mount.Set_Rate_Axis1 (Device.Speed(Moving_Speed * 3600.0));
       end if;
@@ -491,6 +475,16 @@ package body Telescope is
         M3.Rotate;
       end case;
     end Setup_Handling;
+
+
+    procedure Find_Home is
+    begin
+      Fans.Turn (To => Fans.Off);
+      Mount.Find_Home (The_Completion_Time);
+      Focuser.Find_Home;
+      Rotator.Find_Home;
+      The_State := Homing;
+    end Find_Home;
 
 
   --=============
@@ -620,8 +614,7 @@ package body Telescope is
         Mount.Enable;
         The_State := Enabling;
       when Mount_Enabled =>
-        Mount.Find_Home (The_Completion_Time);
-        The_State := Homing;
+        Find_Home;
       when Mount_Stopped =>
         The_State := Stopped;
       when Halt =>
@@ -679,9 +672,7 @@ package body Telescope is
       when Mount_Error =>
         The_State := Mount_Error;
       when Mount_Enabled =>
-        Fans.Turn (To => Fans.Off);
-        Mount.Find_Home (The_Completion_Time);
-        The_State := Homing;
+        Find_Home;
       when Mount_Stopped =>
         The_State := Stopped;
       when Halt =>
@@ -702,8 +693,7 @@ package body Telescope is
       when Mount_Connected =>
         The_State := Connected;
       when Startup =>
-        Mount.Find_Home (The_Completion_Time);
-        The_State := Homing;
+        Find_Home;
       when Shutdown =>
         Do_Disable;
         The_State := Disabling;
@@ -963,13 +953,11 @@ package body Telescope is
     The_Next_Time : Ada.Real_Time.Time;
 
     use type Ada.Real_Time.Time;
-    use type Angle.Signed;
 
   begin -- Control_Task
     Reset_Adjustments;
     accept Start do
-      Device.Start (Fans_State_Handler'access,
-                    Mount_State_Handler'access,
+      Device.Start (Mount_State_Handler'access,
                     M3_Position_Handler'access);
     end Start;
     Log.Write ("Started");
@@ -1022,24 +1010,6 @@ package body Telescope is
             Focuser.Go_To (The_Position);
           end Focuser_Goto;
         or
-          accept Set (The_Orientation : Orientation) do
-            Log.Write ("Orientation => " & The_Orientation'img);
-            case The_Orientation is
-            when Correct =>
-              First_Adjust_Factor := 1;
-              Second_Adjust_Factor := 1;
-            when Upside_Down =>
-              First_Adjust_Factor := 1;
-              Second_Adjust_Factor := -1;
-            when Backwards =>
-              First_Adjust_Factor := -1;
-              Second_Adjust_Factor := 1;
-            when Rotated =>
-              First_Adjust_Factor := -1;
-              Second_Adjust_Factor := -1;
-            end case;
-          end Set;
-        or
           accept Execute (The_Command : Command) do
             if The_State >= Stopped then
               case The_Command is
@@ -1052,12 +1022,6 @@ package body Telescope is
               end case;
             end if;
           end Execute;
-        or
-          accept New_Fans_State (New_State : Fans.State) do
-            Log.Write ("Fans State " & New_State'img);
-            The_Fans_State := New_State;
-            Has_New_Data := True;
-          end New_Fans_State;
         or
           accept New_Mount_State (New_State : Mount.State) do
             Log.Write ("Mount State " & New_State'img);
@@ -1100,7 +1064,6 @@ package body Telescope is
               end if;
             end if;
             The_Data.Status := The_State;
-            The_Data.Fans_State := The_Fans_State;
             The_Data.M3.Exists := M3.Exists;
             The_Data.M3.Position := The_M3_Position;
             The_Data.Focuser.Exists := Focuser.Exists;

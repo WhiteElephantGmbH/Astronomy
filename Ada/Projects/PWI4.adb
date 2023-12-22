@@ -5,6 +5,7 @@
 pragma Style_White_Elephant;
 
 with AWS.Client;
+with AWS.Messages;
 with AWS.Response;
 with Os.Process;
 with PWI4.Protocol;
@@ -70,7 +71,21 @@ package body PWI4 is
     Url : constant String := "http://" & The_Ip_Address_And_Port;
   begin
     Log.Write ("Execute " & Item);
-    Protocol.Parse (AWS.Response.Message_Body (AWS.Client.Get (Url & '/' & Item)));
+    declare
+      Data   : constant AWS.Response.Data := AWS.Client.Get (Url & '/' & Item);
+      Status : constant AWS.Messages.Status_Code := AWS.Response.Status_Code (Data);
+    begin
+      case Status is
+      when AWS.Messages.Informational =>
+        Log.Warning ("Execute response status: " & Status'image);
+      when AWS.Messages.Success =>
+        null;
+      when others =>
+        Log.Error ("Execute response status: " & Status'image);
+        return;
+      end case;
+      Protocol.Parse (AWS.Response.Message_Body (Data));
+    end;
   end Execute;
 
 

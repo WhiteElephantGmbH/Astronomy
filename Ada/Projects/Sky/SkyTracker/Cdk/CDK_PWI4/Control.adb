@@ -58,7 +58,6 @@ package body Control is
                    Stop,
                    Go_To,
                    Back,
-                   Set_Orientation,
                    New_Goto_Direction,
                    Update,
                    New_Telescope_Information,
@@ -135,9 +134,6 @@ package body Control is
         Command_Is_Pending := True;
       when User.Update =>
         Update_Pending := True;
-      when User.Set_Orientation =>
-        Next_Command := Set_Orientation;
-        Command_Is_Pending := True;
       when User.Close =>
         Next_Command := Close;
         Command_Is_Pending := True;
@@ -352,7 +348,6 @@ package body Control is
 
   begin -- Manager
     Log.Write ("manager start");
-    Telescope.Set (User.Image_Orientation);
     Http_Server.Start;
     Handbox.Start;
     if Parameter.Remote_Configured then
@@ -415,8 +410,6 @@ package body Control is
           end if;
         when Back =>
           Telescope.Back;
-        when Set_Orientation =>
-          Telescope.Set (User.Image_Orientation);
         when New_Goto_Direction =>
           Handle_Goto;
         when New_Telescope_Information =>

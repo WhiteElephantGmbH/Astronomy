@@ -127,6 +127,8 @@ package Device is
 
     procedure Disconnect;
 
+    procedure Find_Home;
+
     procedure Go_To (The_Position : Microns);
 
     procedure Stop;
@@ -136,6 +138,8 @@ package Device is
   package Rotator is
 
     function Exists return Boolean;
+
+    procedure Find_Home;
 
     procedure Stop;
 
@@ -162,18 +166,13 @@ package Device is
 
     type State is (Off, On);
 
-    Initial_State : constant State := Off;
-
     procedure Turn (To : State);
 
     procedure Turn_On_Or_Off;
 
-    type State_Handler_Access is access procedure (The_State : State);
-
   end Fans;
 
-  procedure Start (Fans_State_Handler  : Fans.State_Handler_Access;
-                   Mount_State_Handler : Mount.State_Handler_Access;
+  procedure Start (Mount_State_Handler : Mount.State_Handler_Access;
                    M3_Position_Handler : M3.Position_Handler_Access);
 
   procedure Finalize;

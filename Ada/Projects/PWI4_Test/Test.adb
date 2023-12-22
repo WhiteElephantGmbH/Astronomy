@@ -8,10 +8,10 @@ with Ada.Command_Line;
 with Ada.Text_IO;
 with Exceptions;
 with Log;
-with PWI4.Mount;
-with PWI4.M3;
 with PWI4.Focuser;
 with PWI4.Rotator;
+with PWI4.Mount;
+with PWI4.M3;
 with Serial_Io.Usb;
 with Strings;
 
@@ -185,28 +185,11 @@ package body Test is
     end Connect_Mount;
 
 
-    procedure Enable_Focuser is
+    procedure Connect_Focuser is
+
     begin
-      PWI4.Focuser.Enable;
-    end Enable_Focuser;
-
-
-    procedure Disable_Focuser is
-    begin
-      PWI4.Focuser.Disable;
-    end Disable_Focuser;
-
-
-    procedure Enable_Rotator is
-    begin
-      PWI4.Rotator.Enable;
-    end Enable_Rotator;
-
-
-    procedure Disable_Rotator is
-    begin
-      PWI4.Rotator.Disable;
-    end Disable_Rotator;
+      PWI4.Focuser.Connect;
+    end Connect_Focuser;
 
 
     Mount_Not_Enabled       : exception;
@@ -242,6 +225,24 @@ package body Test is
         Put ("motors energized");
       end if;
     end Enable_Mount;
+
+
+    procedure Home_Focuser is
+    begin
+      PWI4.Focuser.Find_Home;
+    end Home_Focuser;
+
+
+    procedure Home_Rotator is
+    begin
+      PWI4.Rotator.Find_Home;
+    end Home_Rotator;
+
+
+    procedure Start_Rotator is
+    begin
+      PWI4.Rotator.Start;
+    end Start_Rotator;
 
 
     Mount_Not_At_Home     : exception;
@@ -350,19 +351,16 @@ package body Test is
 
   begin -- execute
     if Id = "connect" then
+      Connect_Focuser;
       Connect_Mount;
     elsif Id = "enable" then
       Enable_Mount;
     elsif Id = "home" then
+      Home_Focuser;
+      Home_Rotator;
       Home_Mount;
-    elsif Id = "enablefocuser" then
-      Enable_Focuser;
-     elsif Id = "disablefocuser" then
-      Disable_Focuser;
-    elsif Id = "enablerotator" then
-      Enable_Rotator;
-     elsif Id = "disablerotator" then
-      Disable_Rotator;
+    elsif Id = "start" then
+      Start_Rotator;
     elsif Id = "input" then
       Serial_Input ("");
     elsif Id = "turnto1" then

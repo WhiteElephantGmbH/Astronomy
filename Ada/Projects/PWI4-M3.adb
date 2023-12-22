@@ -6,12 +6,7 @@ pragma Style_White_Elephant;
 
 with PWI4.Protocol;
 
-with Traces;
-
 package body PWI4.M3 is
-
-  package Log is new Traces ("PWI.M3");
-
 
   function Exists return Boolean is
   begin
@@ -37,17 +32,16 @@ package body PWI4.M3 is
 
   function Actual_Port return M3_Port is
     Data : constant Protocol.M3_Info := Protocol.M3.Info;
+    use type Protocol.Port_Number;
   begin
     if Data.Exists then
       case Data.Port is
-      when 0 =>
+      when 0 | -1 =>
         return Between;
       when 1 =>
         return Port_1;
       when 2 =>
         return Port_2;
-      when others =>
-        Log.Warning ("Unknown Port: " & Protocol.Image_Of (Data.Port));
       end case;
     end if;
     return Unknown;

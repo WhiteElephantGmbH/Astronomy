@@ -24,10 +24,6 @@ with Time;
 
 package Telescope is
 
-  package Fans renames Device.Fans;
-
-  package Rotator renames Device.Rotator;
-
   type Command is (Move_Left,
                    Move_Right,
                    Move_Up,
@@ -69,8 +65,6 @@ package Telescope is
 
   subtype Startup_State is State range Unknown .. Homing;
 
-  type Orientation is (Correct, Upside_Down, Backwards, Rotated);
-
   type Time_Delta is delta 0.00001 range -100.0 .. 100.0;
 
   type M3_Data is record
@@ -90,7 +84,6 @@ package Telescope is
     Target_Lost      : Boolean;
     Actual_Direction : Space.Direction;
     Moving_Speed     : Angle.Value;
-    Fans_State       : Fans.State;
     M3               : M3_Data;
     Focuser          : Focuser_Data;
     Completion_Time  : Time.Ut;
@@ -110,8 +103,6 @@ package Telescope is
   function Park_Position_Defined return Boolean;
 
   procedure Execute (The_Command : Command);
-
-  procedure Set (The_Orientation : Orientation);
 
   procedure Startup;
 

@@ -12,9 +12,9 @@ package PWI4.Rotator is
 
   procedure Disconnect;
 
-  procedure Enable;
+  procedure Find_Home;
 
-  procedure Disable;
+  procedure Start;
 
   procedure Stop;
 

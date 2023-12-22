@@ -18,6 +18,8 @@ package PWI4.Focuser is
 
   procedure Disconnect;
 
+  procedure Find_Home;
+
   procedure Go_To (Position : Microns);
 
   procedure Stop;

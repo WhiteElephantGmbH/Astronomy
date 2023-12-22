@@ -87,7 +87,7 @@ private package PWI4.Protocol is
     Axis1       : Axis_Data;
   end record;
 
-  type Port_Number is new Integer;
+  type Port_Number is new Integer range -1 .. 2;
 
   function Port_Number_Of (Image : String) return Port_Number;
 

@@ -53,6 +53,12 @@ package body PWI4.Focuser is
   end Disconnect;
 
 
+  procedure Find_Home is
+  begin
+    Execute ("find_home");
+  end Find_Home;
+
+
   procedure Go_To (Position : Microns) is
   begin
     Execute (Command_Name => "goto",

@@ -59,7 +59,6 @@ package body Cdk_700 is
       Actual_Switches : constant ENC.Switches := Switches;
     begin
       if Actual_Switches /= Expected_Switches then
-        Log.Warning ("CDK 700 not started");
         for Port in ENC.Port loop
           if Actual_Switches(Port) /= Expected_Switches(Port) then
             ENC.Set (Port, Expected_Switches(Port), The_Ip_Address);

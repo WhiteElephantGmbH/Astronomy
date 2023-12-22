@@ -11,6 +11,9 @@ package body PWI4.Protocol is
 
   package Log is new Traces ("PWI.Protocol");
 
+  Mount_Connected : Boolean := False;
+
+
   function Boolean_Of (Image : String) return Boolean is
   begin
     return Boolean'value(Strings.Uppercase_Of (Image));
@@ -42,7 +45,9 @@ package body PWI4.Protocol is
     return Hours'value(Image);
   exception
   when others =>
-    Log.Warning ("Hours_Of (Image -> """ & Image & """)");
+    if Mount_Connected then
+      Log.Warning ("Hours_Of (Image -> """ & Image & """)");
+    end if;
     return Undefined_Hours;
   end Hours_Of;
 
@@ -347,7 +352,8 @@ package body PWI4.Protocol is
       case Next_Identifier is
       when I_Is_Connected =>
         Log.Write ("mount.is_connected=" & Next_Value);
-        The_Response.Mount.Flags.Is_Connected := Boolean_Of (Value);
+        Mount_Connected := Boolean_Of (Value);
+        The_Response.Mount.Flags.Is_Connected := Mount_Connected;
       when I_Geometry =>
         Log.Write ("mount.geometry=" & Next_Value);
       when I_Timestamp_Utc =>

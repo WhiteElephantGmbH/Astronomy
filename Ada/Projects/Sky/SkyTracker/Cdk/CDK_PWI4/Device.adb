@@ -32,7 +32,7 @@ package body Device is
   package Log is new Traces ("Device");
 
   Completion_Duration : constant Duration := 22.0;
-  Homing_Duration     : constant Duration := 30.0;
+  Homing_Duration     : constant Duration := 45.0;
 
   type Fan_Action is (No_Action,
                       Turn_On,
@@ -59,10 +59,12 @@ package body Device is
   type Focuser_Action is (No_Action,
                           Connect,
                           Disconnect,
+                          Find_Home,
                           Go_To,
                           Stop);
 
   type Rotator_Action is (No_Action,
+                          Find_Home,
                           Stop);
 
   type Parameters is record
@@ -285,8 +287,7 @@ package body Device is
 
   task type Control with Priority => System.Max_Priority is
 
-    entry Start (Fans_State_Handler  : Fans.State_Handler_Access;
-                 Mount_State_Handler : Mount.State_Handler_Access;
+    entry Start (Mount_State_Handler : Mount.State_Handler_Access;
                  M3_Position_Handler : M3.Position_Handler_Access);
 
   end Control;
@@ -311,7 +312,6 @@ package body Device is
                              Line_3 => Tle(2));
     end Follow_Tle;
 
-    The_Fans_State_Handler  : Fans.State_Handler_Access;
     The_Mount_State_Handler : Mount.State_Handler_Access;
     The_M3_Position_Handler : M3.Position_Handler_Access;
 
@@ -321,8 +321,6 @@ package body Device is
     The_M3_Action      : M3_Action := No_Action;
     The_Focuser_Action : Focuser_Action := No_Action;
     The_Rotator_Action : Rotator_Action := No_Action;
-    The_Fans_State     : Fans.State := Fans.Initial_State;
-    Last_Fans_State    : Fans.State := Fans.Initial_State;
     The_Mount_State    : Mount.State := Mount.Unknown;
     Last_Mount_State   : Mount.State := Mount.Unknown;
     The_M3_Position    : M3.Position := M3.Unknown;
@@ -331,18 +329,15 @@ package body Device is
 
     Simulated_M3_Position : M3.Position := M3.Ocular;
 
-    use type Fans.State;
     use type Mount.State;
     use type M3.Position;
     use type PWI4.M3_Port;
     use type Microns;
 
   begin -- Control
-    accept Start (Fans_State_Handler  : Fans.State_Handler_Access;
-                  Mount_State_Handler : Mount.State_Handler_Access;
+    accept Start (Mount_State_Handler : Mount.State_Handler_Access;
                   M3_Position_Handler : M3.Position_Handler_Access)
     do
-      The_Fans_State_Handler := Fans_State_Handler;
       The_Mount_State_Handler := Mount_State_Handler;
       The_M3_Position_Handler := M3_Position_Handler;
     end Start;
@@ -370,9 +365,17 @@ package body Device is
         when No_Action =>
           null;
         when Turn_On =>
-          PWI4.Fans.Turn_On;
+          if Is_Simulation then
+            Log.Write ("Simulated fans on");
+          else
+            PWI4.Fans.Turn_On;
+          end if;
         when Turn_Off =>
-          PWI4.Fans.Turn_Off;
+          if Is_Simulation then
+            Log.Write ("Simulated fans off");
+          else
+            PWI4.Fans.Turn_Off;
+          end if;
         end case;
 
         case The_Mount_Action is
@@ -446,6 +449,8 @@ package body Device is
             Simulated_Focuser_Moving := False;
             Simulated_Focuser_Connected := False;
             Log.Write ("Simulated focuser disconnect");
+          when Find_Home =>
+            Log.Write ("Simulated focuser find_home");
           when Go_To =>
             The_Simulated_Focuser_Goto_Position := The_Parameter.Focuser_Position;
             Simulated_Focuser_Moving := True;
@@ -462,6 +467,8 @@ package body Device is
             PWI4.Focuser.Connect;
           when Disconnect =>
             PWI4.Focuser.Disconnect;
+          when Find_Home =>
+            PWI4.Focuser.Find_Home;
           when Go_To =>
             PWI4.Focuser.Go_To (The_Parameter.Focuser_Position);
           when Stop =>
@@ -475,6 +482,8 @@ package body Device is
           case The_Rotator_Action is
           when No_Action =>
             null;
+          when Find_Home =>
+            PWI4.Rotator.Find_Home;
           when Stop =>
             PWI4.Rotator.Stop;
           end case;
@@ -493,7 +502,6 @@ package body Device is
           end if;
         end if;
       end select;
-      The_Fans_State := Fans.State'val(Boolean'pos(PWI4.Fans.Turned_On));
       case PWI4.Mount.Info.Status is
       when PWI4.Mount.Disconnected =>
         The_Mount_State := Mount.Disconnected;
@@ -526,10 +534,6 @@ package body Device is
           The_M3_Position := M3.Ocular;
         end if;
       end case;
-      if The_Fans_State /= Last_Fans_State then
-        The_Fans_State_Handler (The_Fans_State);
-        Last_Fans_State := The_Fans_State;
-      end if;
       if The_Mount_State /= Last_Mount_State then
         The_Mount_State_Handler (The_Mount_State);
         Last_Mount_State := The_Mount_State;
@@ -546,13 +550,11 @@ package body Device is
   end Control;
 
 
-  procedure Start (Fans_State_Handler  : Fans.State_Handler_Access;
-                   Mount_State_Handler : Mount.State_Handler_Access;
+  procedure Start (Mount_State_Handler : Mount.State_Handler_Access;
                    M3_Position_Handler : M3.Position_Handler_Access) is
   begin
     The_Control := new Control;
-    The_Control.Start (Fans_State_Handler  => Fans_State_Handler,
-                       Mount_State_Handler => Mount_State_Handler,
+    The_Control.Start (Mount_State_Handler => Mount_State_Handler,
                        M3_Position_Handler => M3_Position_Handler);
   end Start;
 
@@ -830,6 +832,13 @@ package body Device is
     end Disconnect;
 
 
+    procedure Find_Home is
+    begin
+      Log.Write ("Focuser.Find_Home");
+      Action.Put (Focuser_Action'(Find_Home));
+    end Find_Home;
+
+
     procedure Go_To (The_Position : Microns) is
     begin
       Log.Write ("Focuser.Goto" & The_Position'image);
@@ -860,6 +869,13 @@ package body Device is
       Action.Put (Rotator_Action'(Stop));
     end Stop;
 
+
+    procedure Find_Home is
+    begin
+      Log.Write ("Rotator.Find_Home");
+      Action.Put (Rotator_Action'(Find_Home));
+    end Find_Home;
+
   end Rotator;
 
 
@@ -880,34 +896,23 @@ package body Device is
 
   package body Fans is
 
-    function Exists return Boolean renames PWI4.Fans.Exists;
-
     procedure Turn (To : State) is
     begin
-      if Exists then
-        Log.Write ("Fans.Turn " & To'img);
-        case To is
-        when Off =>
-          Action.Put (Turn_Off);
-        when On =>
-          Action.Put (Turn_On);
-        end case;
-      else
-        Log.Warning ("Fans do not exist");
-      end if;
+      case To is
+      when Off =>
+        Action.Put (Turn_Off);
+      when On =>
+        Action.Put (Turn_On);
+      end case;
     end Turn;
 
     procedure Turn_On_Or_Off is
     begin
-      if Exists then
-        Log.Write ("Fans.Turn_On_Or_Off");
-        if Parameter.Turn_Fans_On then
-          Action.Put (Turn_On);
-        else
-          Action.Put (Turn_Off);
-        end if;
+      Log.Write ("Fans.Turn_On_Or_Off");
+      if Parameter.Turn_Fans_On then
+        Action.Put (Turn_On);
       else
-        Log.Warning ("Fans do not exist");
+        Action.Put (Turn_Off);
       end if;
     end Turn_On_Or_Off;
 

@@ -19,7 +19,6 @@ with Ada.Real_Time;
 with Ada.Unchecked_Conversion;
 with Cwe;
 with Data;
-with Device;
 with Gui.Enumeration_Menu_Of;
 with Gui.Registered;
 with Lexicon;
@@ -35,8 +34,6 @@ with User.Input;
 package body User is
 
   package Log is new Traces ("User");
-
-  package Fans renames Device.Fans;
 
   Page         : Gui.Page;
   Left_Button  : Gui.Button;
@@ -162,32 +159,6 @@ package body User is
   when others =>
     Log.Error ("Catalog_Handler");
   end Catalog_Handler;
-
-
-  function Image_Of (The_State : Fans.State) return String is
-  begin
-    case The_State is
-    when Fans.Off =>
-      return Lexicon.Image_Of (Lexicon.Off);
-    when Fans.On =>
-      return Lexicon.Image_Of (Lexicon.On);
-    end case;
-  end Image_Of;
-
-  Is_From_Set : Boolean := False;
-
-  package Fans_Menu is new Gui.Enumeration_Menu_Of (Fans.State, Gui.Radio, Image_Of);
-
-  procedure Fans_Handler (The_State : Fans.State) is
-  begin
-    if not Is_From_Set then
-      Log.Write ("Fans: " & The_State'img);
-      Fans.Turn (To => The_State);
-    end if;
-  exception
-  when others =>
-    Log.Error ("Fans_Handler");
-  end Fans_Handler;
 
 
   function Image_Of (The_Mode : Cwe.Mode) return String is
@@ -380,18 +351,6 @@ package body User is
   end Disable_Shutdown_Button;
 
 
-  procedure Menu_Disable is
-  begin
-    Fans_Menu.Disable;
-  end Menu_Disable;
-
-
-  procedure Menu_Enable is
-  begin
-    Fans_Menu.Enable;
-  end Menu_Enable;
-
-
   procedure Show (Information : Telescope.Data) is
     use type Telescope.State;
   begin
@@ -402,49 +361,37 @@ package body User is
       when Telescope.Unknown | Telescope.Restarting =>
         Disable_Startup_Button;
         Disable_Stop_Button;
-        Menu_Disable;
       when Telescope.Disconnected =>
         Enable_Startup_Button;
         Disable_Shutdown_Button;
-        Menu_Disable;
       when Telescope.Mount_Error =>
         Disable_Startup_Button;
         Disable_Stop_Button;
-        Menu_Disable;
         Enable_Shutdown_Button;
       when Telescope.Connected | Telescope.Enabled =>
         Enable_Startup_Button;
         Enable_Shutdown_Button;
-        Menu_Disable;
       when Telescope.Disconnecting | Telescope.Disabling | Telescope.Parking =>
         Disable_Startup_Button;
         Enable_Stop_Button;
-        Menu_Disable;
       when Telescope.Connecting | Telescope.Enabling | Telescope.Homing =>
         Disable_Startup_Button;
         Enable_Stop_Button;
-        Menu_Disable;
       when Telescope.Stopped =>
         Enable_Goto_Button;
         Enable_Shutdown_Button;
-        Menu_Enable;
       when Telescope.Positioned | Telescope.Waiting =>
         Enable_Stop_Button;
         Enable_Goto_Button;
       when Telescope.Positioning | Telescope.Preparing | Telescope.Approaching | Telescope.Is_Tracking =>
         Enable_Goto_Button;
         Enable_Stop_Button;
-        Menu_Disable;
       when Telescope.Stopping =>
         Disable_Goto_Button;
         Disable_Stop_Button;
-        Menu_Disable;
       end case;
     end if;
     Gui.Set_Status_Line (Information.Status'img);
-    Is_From_Set := True;
-    Fans_Menu.Set (Information.Fans_State);
-    Is_From_Set := False;
   end Show;
 
 
@@ -460,12 +407,6 @@ package body User is
   begin
     Set_Target_Name ("");
   end Clear_Target;
-
-
-  function Image_Orientation return Telescope.Orientation is
-  begin
-    return Telescope.Backwards;
-  end Image_Orientation;
 
 
   procedure Perform_Goto is
@@ -603,8 +544,6 @@ package body User is
       Targets.Set (The_Selection => All_Objects);
       Catalog_Menu.Create (Lexicon.Image_Of (Lexicon.Catalog), Catalog_Handler'access);
       Catalog_Handler (Data.Favorites);
-      Fans_Menu.Create (Lexicon.Image_Of (Lexicon.Fans), Fans_Handler'access);
-      Menu_Disable;
       Cwe_Menu.Create ("CWE", Cwe_Handler'access);
       if Parameter.Remote_Configured then
         Demo_21_Menu.Create ("Demo 21", Demo_21_Handler'access);

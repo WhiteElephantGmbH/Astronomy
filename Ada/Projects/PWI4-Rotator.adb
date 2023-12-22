@@ -33,16 +33,16 @@ package body PWI4.Rotator is
   end Disconnect;
 
 
-  procedure Enable is
+  procedure Find_Home is
   begin
-    Execute ("enable");
-  end Enable;
+    Execute ("find_home");
+  end Find_Home;
 
 
-  procedure Disable is
+  procedure Start is
   begin
-    Execute ("disable");
-  end Disable;
+    Execute ("derotatestart");
+  end Start;
 
 
   procedure Stop is

@@ -145,7 +145,6 @@ package body Http_Server is
       Parts     : constant Strings.Item := Strings.Item_Of (Uri, Separator => '/');
       Subsystem : constant String := Parts(1);
     begin
-      Log.Write ("Subsystem: " & Subsystem);
       if Subsystem in "mount" | "m3" then
         declare
           Command_Image : constant String := Parts(2);
