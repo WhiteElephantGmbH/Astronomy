@@ -29,31 +29,31 @@ package body PWI4.Mount is
   Last_Axis0_Position : Degrees;
   Last_Axis1_Position : Degrees;
 
+  procedure Initialize_Homing is
+  begin
+    Homing_Counter := Homing_Check_Count;
+    Is_Homing := False;
+    Is_Homed := False;
+    Is_Leaving := False;
+    Last_Axis0_Position := 0.0;
+    Last_Axis1_Position := 0.0;
+  end Initialize_Homing;
+
+
   function Info return Information is
 
     Data  : constant Protocol.Mount_Info := Protocol.Mount.Info;
     Flags : Protocol.Mount_Flag renames Data.Flags;
-
 
     function Status return State is
       Delta_Axis0 : Degrees;
       Delta_Axis1 : Degrees;
     begin
       if not Flags.Is_Connected then
-        Homing_Counter := Homing_Check_Count;
-        Is_Homing := False;
-        Is_Homed := False;
-        Is_Leaving := False;
-        Last_Axis0_Position := Degrees'last;
-        Last_Axis1_Position := Degrees'last;
+        Initialize_Homing;
         return Disconnected;
-      elsif not (Flags.Axis1_Is_Enabled and Flags.Axis1_Is_Enabled) then
-        Homing_Counter := Homing_Check_Count;
-        Is_Homing := False;
-        Is_Homed := False;
-        Is_Leaving := False;
-        Last_Axis0_Position := Degrees'last;
-        Last_Axis1_Position := Degrees'last;
+      elsif not (Flags.Axis0_Is_Enabled and Flags.Axis1_Is_Enabled) then
+        Initialize_Homing;
         return Connected;
       elsif not Is_Homed then
         if Is_Homing then
@@ -69,9 +69,9 @@ package body PWI4.Mount is
           else
             Homing_Counter := Homing_Check_Count;
           end if;
-          Last_Axis0_Position := Data.Axis0.Position;
-          Last_Axis1_Position := Data.Axis1.Position;
         end if;
+        Last_Axis0_Position := Data.Axis0.Position;
+        Last_Axis1_Position := Data.Axis1.Position;
         return Enabled;
       elsif not (Flags.Is_Tracking or Flags.Is_Slewing) then
         if Is_Leaving then

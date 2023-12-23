@@ -449,8 +449,9 @@ package body Device is
             Simulated_Focuser_Moving := False;
             Simulated_Focuser_Connected := False;
             Log.Write ("Simulated focuser disconnect");
-          when Find_Home =>
-            Log.Write ("Simulated focuser find_home");
+          when Find_Home => -- overwrites Connect in simulation
+            Simulated_Focuser_Connected := True;
+            Log.Write ("Simulated focuser connect and find_home");
           when Go_To =>
             The_Simulated_Focuser_Goto_Position := The_Parameter.Focuser_Position;
             Simulated_Focuser_Moving := True;
