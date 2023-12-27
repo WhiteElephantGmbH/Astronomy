@@ -17,7 +17,7 @@ def main():
     client = cc.Client(host=ip_address)
 
     focuser_min = 1
-    focuser_max = 10000
+    focuser_max = 10000 # default
     zoom_delta  = 150
     
     #events
@@ -73,6 +73,7 @@ def main():
     count = 0
     pressed = False
     zoomed = False
+    startup = True
     while True:
         try:
             event, values = window.read(timeout=100)
@@ -128,6 +129,11 @@ def main():
                                 if focuser.connected() and m3.at_camera():
                                     window[rotate].update(sg.SYMBOL_LEFT)
                                     window['-FFO-'].update(visible=True)
+                                    if startup:
+                                        focuser_max = focuser.max_position()
+                                        upper_limit = focuser_max
+                                        window['focus'].update(range=(lower_limit,upper_limit))
+                                        startup = False
                                     if value != last_value:
                                         last_value = value;
                                         response = client.focuser_set_position (int(last_value))

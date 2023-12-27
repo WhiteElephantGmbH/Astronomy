@@ -21,6 +21,7 @@ with Application;
 with Cdk_700;
 with Configuration;
 with Cwe;
+with Device;
 with Doubly_Linked_Lists_Extension;
 with Earth;
 with Error;
@@ -60,6 +61,7 @@ package body Parameter is
   Moving_Speed_List_Key : constant String := "Moving Speed List";
   Cwe_Distance_Key      : constant String := "CWE Distance";
   Park_Position_Az_Key  : constant String := "Park Position Az";
+  Focuser_Maximum_Key   : constant String := "Focuser Maximum";
 
   Controller_Id        : constant String := "Controller";
   Ip_Address_Key       : constant String := "IP Address";
@@ -283,6 +285,17 @@ package body Parameter is
   end Value_Of;
 
 
+  function Value_Of (Key     : String;
+                     Section : String := "") return Device.Microns is
+    Item : constant String := String_Of (Key, Section);
+  begin
+    return Device.Microns(Positive'value(Item));
+  exception
+  when others =>
+    Error.Raise_With ("Incorrect " & (if Section = "" then "" else Section & " ") & Key & ": <" & Item & ">");
+  end Value_Of;
+
+
   function Ip_Address_For (Section : String) return Network.Ip_Address is
     Server      : constant String := String_Of (Ip_Address_Key, Section);
     The_Address : Network.Ip_Address;
@@ -355,7 +368,8 @@ package body Parameter is
       Put (Port_Key & "              = 8220");
       Put (Moving_Speed_List_Key & " = 30""/s, 3'/s, 20'/s, 2°/s");
       Put (Cwe_Distance_Key & "      = 30'");
-      Put (Park_Position_Az_Key & "  = 75°");
+      Put (Park_Position_Az_Key & "  = 75" & Angle.Degree);
+      Put (Focuser_Maximum_Key & "   = 10000");
       Put ("");
       Put ("[" & Server_Id & "]");
       Put (Port_Key & "       = 9000");
@@ -537,6 +551,7 @@ package body Parameter is
       end if;
       The_Cwe_Distance := Degrees_Of (Cwe_Distance_Key, Cwe.Maximum_Distance);
       Telescope.Define_Park_Position (Direction_Of (Park_Position_Az_Key));
+      Telescope.Define_Max_Focuser_Position (Value_Of (Focuser_Maximum_Key));
 
       Set (Server_Handle);
       The_Server_Port :=  Port_For (Server_Id);

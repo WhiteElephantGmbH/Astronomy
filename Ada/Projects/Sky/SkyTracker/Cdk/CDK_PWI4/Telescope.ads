@@ -73,10 +73,11 @@ package Telescope is
   end record;
 
   type Focuser_Data is record
-    Exists    : Boolean;
-    Connected : Boolean;
-    Moving    : Boolean;
-    Position  : Device.Microns;
+    Exists       : Boolean;
+    Connected    : Boolean;
+    Moving       : Boolean;
+    Max_Position : Device.Microns;
+    Position     : Device.Microns;
   end record;
 
   type Data is record
@@ -101,6 +102,8 @@ package Telescope is
   procedure Define_Park_Position (The_Position : Earth.Direction);
 
   function Park_Position_Defined return Boolean;
+
+  procedure Define_Max_Focuser_Position (The_Position : Device.Microns);
 
   procedure Execute (The_Command : Command);
 

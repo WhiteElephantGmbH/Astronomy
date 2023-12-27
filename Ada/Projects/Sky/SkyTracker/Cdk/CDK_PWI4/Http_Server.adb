@@ -112,11 +112,12 @@ package body Http_Server is
       Log.Write ("M3 At_Camera: " & At_Camera'image);
     end;
     declare
-      Focuser   : constant JS.JSON_Value := JS.Create_Object;
-      Connected : constant Boolean := Data.Focuser.Connected;
-      Position  : constant Integer := Integer(Data.Focuser.Position);
-      Moving    : constant Boolean := Data.Focuser.Moving;
-      Exists   : Boolean;
+      Focuser      : constant JS.JSON_Value := JS.Create_Object;
+      Connected    : constant Boolean := Data.Focuser.Connected;
+      Moving       : constant Boolean := Data.Focuser.Moving;
+      Max_Position : constant Integer := Integer(Data.Focuser.Max_Position);
+      Position     : constant Integer := Integer(Data.Focuser.Position);
+      Exists       : Boolean;
     begin
       if Is_Simulation then
         Exists := True;
@@ -126,6 +127,7 @@ package body Http_Server is
       JS.Set_Field (Focuser, "exists", JS.Create (Exists));
       JS.Set_Field (Focuser, "connected", JS.Create (Connected));
       JS.Set_Field (Focuser, "moving", JS.Create (Moving));
+      JS.Set_Field (Focuser, "max_position", JS.Create (Max_Position));
       JS.Set_Field (Focuser, "position", JS.Create (Position));
       JS.Set_Field (Info, "focuser", Focuser);
       Log.Write ("Focuser Exists: " & Exists'image);

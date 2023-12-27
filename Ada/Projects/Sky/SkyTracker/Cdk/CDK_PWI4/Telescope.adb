@@ -169,6 +169,15 @@ package body Telescope is
   function Park_Position_Defined return Boolean is (Earth.Direction_Is_Known (The_Park_Position));
 
 
+  Max_Fucuser_Position : Device.Microns;
+
+  procedure Define_Max_Focuser_Position (The_Position : Device.Microns) is
+  begin
+    Log.Write ("define max focuser position =>" & The_Position'image);
+    Max_Fucuser_Position := The_Position;
+  end Define_Max_Focuser_Position;
+
+
   function Information return Data is
     The_Data : Data;
   begin
@@ -1070,6 +1079,7 @@ package body Telescope is
             The_Data.Focuser.Connected := Focuser.Connected;
             The_Data.Focuser.Moving := Focuser.Moving;
             The_Data.Focuser.Position := Focuser.Actual_Position;
+            The_Data.Focuser.Max_Position := Max_Fucuser_Position;
             case The_State is
             when Approaching | Preparing | Positioning | Homing =>
               The_Data.Completion_Time := The_Completion_Time;

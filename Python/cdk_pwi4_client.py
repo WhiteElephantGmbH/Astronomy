@@ -52,6 +52,9 @@ class Focuser:
     def moving(self):
         return self.focuser["moving"]
     
+    def max_position(self):
+        return self.focuser["max_position"]
+
     def position(self):
         return self.focuser["position"]
 
