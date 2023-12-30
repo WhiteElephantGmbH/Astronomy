@@ -73,7 +73,7 @@ def main():
                        finalize=True,
                        element_justification='c',
                        location=(0,0),
-                       size=(245,315))
+                       size=(245,355))
     count = 0
     pressed = False
     zoomed = False
