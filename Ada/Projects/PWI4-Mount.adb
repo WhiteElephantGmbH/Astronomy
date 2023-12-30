@@ -9,6 +9,14 @@ with Strings;
 
 package body PWI4.Mount is
 
+  The_Enable_Delay_Count : Natural := 60;
+
+  procedure Set_Enable_Delay (Time : Duration) is
+  begin
+    The_Enable_Delay_Count := Natural(Time);
+  end Set_Enable_Delay;
+
+
   procedure Execute (Command_Name : String;
                      Parameters   : String := "") is
   begin
@@ -72,7 +80,12 @@ package body PWI4.Mount is
         end if;
         Last_Axis0_Position := Data.Axis0.Position;
         Last_Axis1_Position := Data.Axis1.Position;
-        return Enabled;
+        if The_Enable_Delay_Count > 0 then
+          The_Enable_Delay_Count := @ - 1;
+          return Connected;
+        else
+          return Enabled;
+        end if;
       elsif not (Flags.Is_Tracking or Flags.Is_Slewing) then
         if Is_Leaving then
           return Approaching;

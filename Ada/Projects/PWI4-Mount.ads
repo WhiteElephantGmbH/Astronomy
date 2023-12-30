@@ -6,6 +6,8 @@ pragma Style_White_Elephant;
 
 package PWI4.Mount is
 
+  procedure Set_Enable_Delay (Time : Duration);
+
   subtype Axis_Rate is Degrees; -- per second
 
   type Offset_Axis is (Axis0, Axis1, Dec, Ra, Path, Transverse);

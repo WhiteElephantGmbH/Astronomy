@@ -32,6 +32,8 @@ package body Cdk_700 is
 
   Is_Simulation_Mode : Boolean := False;
 
+  The_Restart_Duration : Duration := 0.0;
+
 
   function Switches return ENC.Switches is
   begin
@@ -51,6 +53,7 @@ package body Cdk_700 is
   begin
     Log.Write ("Startup");
     The_Ip_Address := Ip_Address;
+    The_Restart_Duration := Restart_Duration;
     Is_Simulation_Mode := Ip_Address = Network.Loopback_Address;
     if Is_Simulation_Mode then
       Log.Warning ("is in simulation mode");
@@ -82,6 +85,15 @@ package body Cdk_700 is
   begin
     return not Progress.Is_Active;
   end Is_Started;
+
+
+  function Enable_Delay return Duration is
+  begin
+    if Is_Started then
+      return 0.0;
+    end if;
+    return The_Restart_Duration;
+  end Enable_Delay;
 
 
   function Is_Simulated return Boolean is (Is_Simulation_Mode);
