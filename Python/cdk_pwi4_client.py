@@ -18,6 +18,12 @@ class Mount:
     def speed(self):
         return self.mount["speed"]
 
+    def axis0(self):
+        return self.mount["axis0"]
+
+    def axis1(self):
+        return self.mount["axis1"]
+
 
 class M3:
     """

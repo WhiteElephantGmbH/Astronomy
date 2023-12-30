@@ -1094,6 +1094,8 @@ package body Telescope is
                 Info : constant Mount.Information := Mount.Actual_Info;
               begin
                 The_Data.Actual_Direction := Info.Actual_Direction;
+                The_Data.Mount.Axis0 := Info.Az_Axis.Position;
+                The_Data.Mount.Axis1 := Info.Alt_Axis.Position;
               end;
             end case;
             The_Data.Target_Lost := Target_Is_Lost;

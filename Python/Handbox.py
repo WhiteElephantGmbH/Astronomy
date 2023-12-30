@@ -46,10 +46,14 @@ def main():
                 sg.RealtimeButton(sg.SYMBOL_RIGHT, key=move_right)],
                [sg.RealtimeButton(sg.SYMBOL_DOWN, key=move_down)]]
 
+    position = [[sg.Text(size=(14,1), key='-Az-', pad=(0,0), font='Ani 12', justification='r', background_color=color0, text_color=color1)],
+                [sg.Text(size=(14,1), key='-Alt-', pad=(0,0), font='Ani 12', justification='r', background_color=color0, text_color=color1)]]
+
     mount = [[sg.RealtimeButton(sg.SYMBOL_LEFT, key=previous_speed),
               sg.Text(size=(8,1), key='-SPEED-', pad=(0,0), font='Ani 14', justification='c', background_color=color0, text_color=color1),
               sg.RealtimeButton(sg.SYMBOL_RIGHT, key=next_speed)],
-             [sg.Frame('', control, element_justification='c')]]
+             [sg.Frame('', control, element_justification='c')],
+             [sg.Frame('Axis 0/1', position, element_justification='c')]]
 
     m3 = [[sg.RealtimeButton(sg.SYMBOL_RIGHT, key=rotate),
            sg.Text(size=(11,1), key='-M3-', pad=(0,0), font='Ani 14', justification='c', background_color=color0, text_color=color1)]]
@@ -69,7 +73,7 @@ def main():
                        finalize=True,
                        element_justification='c',
                        location=(0,0),
-                       size=(245,290))
+                       size=(245,315))
     count = 0
     pressed = False
     zoomed = False
@@ -123,6 +127,8 @@ def main():
                         focuser = info.focuser()
                         if mount.exists():
                             window['-SPEED-'].update(mount.speed())
+                            window['-Az-'].update(mount.axis0())
+                            window['-Alt-'].update(mount.axis1())
                             if m3.exists():
                                 window['-FM3-'].update(visible=True)
                                 window['-M3-'].update(m3.position())

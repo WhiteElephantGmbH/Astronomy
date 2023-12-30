@@ -83,8 +83,12 @@ package body Http_Server is
       Mount  : constant JS.JSON_Value := JS.Create_Object;
       Exists : constant JS.JSON_Value := JS.Create (Mount_Exists);
       Speed  : constant JS.JSON_Value := JS.Create (Image_Of (Data.Moving_Speed));
+      Axis0  : constant JS.JSON_Value := JS.Create (Device.Image_Of (Data.Mount.Axis0));
+      Axis1  : constant JS.JSON_Value := JS.Create (Device.Image_Of (Data.Mount.Axis1));
     begin
       JS.Set_Field (Mount, "exists", Exists);
+      JS.Set_Field (Mount, "axis0", Axis0);
+      JS.Set_Field (Mount, "axis1", Axis1);
       JS.Set_Field (Mount, "speed", Speed);
       JS.Set_Field (Info, "mount", Mount);
       Log.Write ("Mount Exists: " & Mount_Exists'image);

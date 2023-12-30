@@ -67,6 +67,11 @@ package Telescope is
 
   type Time_Delta is delta 0.00001 range -100.0 .. 100.0;
 
+  type Mount_Data is record
+    Axis0  : Device.Degrees;
+    Axis1  : Device.Degrees;
+  end record;
+
   type M3_Data is record
     Exists   : Boolean;
     Position : Device.M3.Position;
@@ -85,6 +90,7 @@ package Telescope is
     Target_Lost      : Boolean;
     Actual_Direction : Space.Direction;
     Moving_Speed     : Angle.Value;
+    Mount            : Mount_Data;
     M3               : M3_Data;
     Focuser          : Focuser_Data;
     Completion_Time  : Time.Ut;
