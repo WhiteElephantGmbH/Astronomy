@@ -45,6 +45,12 @@ package body PWI4 is
   end Image_Of;
 
 
+  function Image_Of (Item : Points) return String is
+  begin
+    return Strings.Trimmed (Item'image);
+  end Image_Of;
+
+
   function Startup (Filename   : String;
                     Ip_Address : String) return Boolean is
   begin

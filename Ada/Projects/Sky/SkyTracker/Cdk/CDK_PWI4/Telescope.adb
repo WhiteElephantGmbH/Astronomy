@@ -22,6 +22,7 @@ with Objects;
 with Parameter;
 with Remote;
 with System;
+with Targets;
 with Traces;
 
 package body Telescope is
@@ -439,6 +440,15 @@ package body Telescope is
     end Adjust_Second;
 
 
+    procedure Add_Target_J2000_Direction_To_Model is
+      Direction : constant Space.Direction := Targets.J2000_Direction_Of (Id);
+    begin
+      if Space.Direction_Is_Known (Direction) then
+        Mount.Add_To_Model (Direction);
+      end if;
+    end Add_Target_J2000_Direction_To_Model;
+
+
     procedure Offset_Handling is
       Speed : constant Angle.Value := Moving_Speeds(Moving_Index);
       use type Angle.Signed;
@@ -452,12 +462,14 @@ package body Telescope is
         Adjust_Second (+Speed);
       when Move_Down =>
         Adjust_Second (-Speed);
-      when Decrease_Time =>
-        null;
-      when Increase_Time =>
-        null;
       when End_Command =>
         Mount.Stop_Rate;
+      when Spiral_Offset_Next =>
+        Mount.Spiral_Offset_Next;
+      when Spiral_Offset_Previous =>
+        Mount.Spiral_Offset_Previous;
+      when Add_Point =>
+        Add_Target_J2000_Direction_To_Model;
       end case;
     end Offset_Handling;
 
@@ -1096,6 +1108,7 @@ package body Telescope is
                 The_Data.Actual_Direction := Info.Actual_Direction;
                 The_Data.Mount.Axis0 := Info.Az_Axis.Position;
                 The_Data.Mount.Axis1 := Info.Alt_Axis.Position;
+                The_Data.Mount.Model_Points := Info.Model.Points_Enabled;
               end;
             end case;
             The_Data.Target_Lost := Target_Is_Lost;

@@ -57,6 +57,16 @@ package body PWI4.Protocol is
   end Meters_Of;
 
 
+  function Points_Of (Image : String) return Points is
+  begin
+    return Points'value(Image);
+  exception
+  when others =>
+    Log.Error ("Points_Of (Image -> """ & Image & """)");
+    return 0;
+  end Points_Of;
+
+
   function Image_Of (Item : Meters) return String is
   begin
     return Strings.Trimmed (Item'image);
@@ -565,8 +575,10 @@ package body PWI4.Protocol is
           Log.Write ("mount.model.filename=" & Next_Value);
         when I_Num_Points_Total =>
           Log.Write ("mount.model.num_points_total=" & Next_Value);
+          The_Response.Mount.Model.Points_Total := Points_Of (Value);
         when I_Num_Points_Enabled =>
           Log.Write ("mount.model.num_points_enabled=" & Next_Value);
+          The_Response.Mount.Model.Points_Enabled := Points_Of (Value);
         when I_Rms_Error_Arcsec =>
           Log.Write ("mount.model.rms_error_arcsec=" & Next_Value);
         when others =>

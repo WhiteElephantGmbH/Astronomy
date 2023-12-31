@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2012 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2012 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -58,13 +58,16 @@ package body Data is
                          Dec_J2000  : REAL;
                          Ra_Motion  : REAL;
                          Dec_Motion : REAL;
-                         Ut         : Time.Ut) return Space.Direction is
+                         Ut         : Time.Ut;
+                         Is_J2000   : Boolean) return Space.Direction is
     Ra, Dec : REAL;
     Delta_T : constant REAL := REAL(Ut) * Delta_Factor;
   begin
     Ra := Ra_J2000 + Ra_Motion * Delta_T;
     Dec := Dec_J2000 + Dec_Motion * Delta_T;
-    Apparent (Ra, Dec);
+    if not Is_J2000 then
+      Apparent (Ra, Dec);
+    end if;
     return Space.Direction_Of (Dec => Dec,
                                Ra  => Ra);
   end Direction_Of;
@@ -200,14 +203,16 @@ package body Data is
   end Descriptor_Of;
 
 
-  function Direction_Of (Id : Object;
-                         Ut : Time.Ut) return Space.Direction is
+  function Direction_Of (Id       : Object;
+                         Ut       : Time.Ut;
+                         Is_J2000 : Boolean := False) return Space.Direction is
   begin
     return Direction_Of (Ra_J2000   => Ra_J2000_Of (Id),
                          Dec_J2000  => Dec_J2000_Of (Id),
                          Ra_Motion  => Ra_Motion_Of (Id),
                          Dec_Motion => Dec_Motion_Of (Id),
-                         Ut         => Ut);
+                         Ut         => Ut,
+                         Is_J2000   => Is_J2000);
   end Direction_Of;
 
 

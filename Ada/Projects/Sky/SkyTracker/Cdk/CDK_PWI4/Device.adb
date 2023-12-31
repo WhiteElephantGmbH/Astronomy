@@ -51,7 +51,10 @@ package body Device is
                         Set_Gradual_Offsets,
                         Set_Offset,
                         Stop_Rates,
-                        Reset_Moving_Target);
+                        Spiral_Offset_Next,
+                        Spiral_Offset_Previous,
+                        Reset_Moving_Target,
+                        Add_To_Model);
 
   type M3_Action is (No_Action,
                      Toggle);
@@ -99,6 +102,10 @@ package body Device is
 
     procedure Stop_Rates;
 
+    procedure Spiral_Offset_Next;
+
+    procedure Spiral_Offset_Previous;
+
     procedure Reset_Moving_Target;
 
     procedure Set_Gradual_Offsets (Delta_Ra  : PWI4.Arc_Second;
@@ -108,6 +115,9 @@ package body Device is
                            Azm : PWI4.Degrees);
 
     procedure Follow_Tle (Id : Name.Id);
+
+    procedure Add_To_Model (Ra_J2000  : PWI4.Hours;
+                            Dec_J2000 : PWI4.Degrees);
 
     procedure Put (Item : M3_Action);
 
@@ -186,6 +196,20 @@ package body Device is
     end Stop_Rates;
 
 
+    procedure Spiral_Offset_Next is
+    begin
+      The_Mount_Action := Spiral_Offset_Next;
+      Is_Pending := True;
+    end Spiral_Offset_Next;
+
+
+    procedure Spiral_Offset_Previous is
+    begin
+      The_Mount_Action := Spiral_Offset_Previous;
+      Is_Pending := True;
+    end Spiral_Offset_Previous;
+
+
     procedure Reset_Moving_Target is
     begin
       The_Mount_Action := Reset_Moving_Target;
@@ -221,6 +245,16 @@ package body Device is
       The_Parameter.Name_Id := Id;
       Is_Pending := True;
     end Follow_Tle;
+
+
+    procedure Add_To_Model (Ra_J2000  : PWI4.Hours;
+                            Dec_J2000 : PWI4.Degrees) is
+    begin
+      The_Mount_Action := Add_To_Model;
+      The_Parameter.Ra := Ra_J2000;
+      The_Parameter.Dec := Dec_J2000;
+      Is_Pending := True;
+    end Add_To_Model;
 
 
     procedure Put (Item : M3_Action) is
@@ -409,11 +443,18 @@ package body Device is
                                  Item    => The_Parameter.Arc_Seconds);
         when Stop_Rates =>
           PWI4.Mount.Stop_Rates;
+        when Spiral_Offset_Next =>
+          PWI4.Mount.Spiral_Offset_Next;
+        when Spiral_Offset_Previous =>
+          PWI4.Mount.Spiral_Offset_Previous;
         when Reset_Moving_Target =>
           PWI4.Mount.Reset_Moving_Target;
         when Set_Gradual_Offsets =>
           PWI4.Mount.Set_Gradual_Offsets (Delta_Ra  => The_Parameter.Delta_Ra,
                                           Delta_Dec => The_Parameter.Delta_Dec);
+        when Add_To_Model =>
+          PWI4.Mount.Add_Point (Ra_J2000  => The_Parameter.Ra,
+                                Dec_J2000 => The_Parameter.Dec);
         end case;
 
         case The_M3_Action is
@@ -609,7 +650,8 @@ package body Device is
               Local_Direction  => Earth.Direction_Of (Az  => Angle.Value'(+Angle.Degrees(Mount_Info.Az)),
                                                       Alt => Angle.Value'(+Angle.Degrees(Mount_Info.Alt))),
               Az_Axis          => Mount_Info.Az_Axis,
-              Alt_Axis         => Mount_Info.Alt_Axis);
+              Alt_Axis         => Mount_Info.Alt_Axis,
+              Model            => Mount_Info.Model);
     end Actual_Info;
 
 
@@ -743,6 +785,20 @@ package body Device is
     end Stop_Rate;
 
 
+    procedure Spiral_Offset_Next is
+    begin
+      Log.Write ("Mount.Spiral_Offset_Next");
+      Action.Spiral_Offset_Next;
+    end Spiral_Offset_Next;
+
+
+    procedure Spiral_Offset_Previous is
+    begin
+      Log.Write ("Mount.Spiral_Offset_Previous");
+      Action.Spiral_Offset_Previous;
+    end Spiral_Offset_Previous;
+
+
     procedure Reset_Moving_Target is
     begin
       Log.Write ("Mount.Reset_Moving_Target");
@@ -774,6 +830,17 @@ package body Device is
       Log.Write ("Mount.Follow_Tle " & Name.Image_Of (Id));
       Action.Follow_Tle (Id);
     end Follow_Tle;
+
+
+    procedure Add_To_Model (Direction : Space.Direction) is
+      use type Angle.Degrees;
+      use type Angle.Signed;
+      use type Angle.Value;
+    begin
+      Log.Write ("Mount.Add_To_Model " & Image_Of (Direction));
+      Action.Add_To_Model (Ra_J2000  => PWI4.Hours(Angle.Hours'(+Space.Ra_Of (Direction))),
+                           Dec_J2000 => PWI4.Degrees(Angle.Degrees'(+Angle.Signed'(+Space.Dec_Of (Direction)))));
+    end Add_To_Model;
 
 
     procedure Stop is

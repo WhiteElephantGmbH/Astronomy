@@ -283,6 +283,30 @@ package body Targets is
   end Handler;
 
 
+  function J2000_Direction_Of (Id : Name.Id) return Space.Direction is
+    use type Name.Id;
+  begin
+    if Id = Name.No_Id then
+      return Space.Unknown_Direction;
+    else
+      declare
+        Ut : constant Time.Ut := Time.Universal;
+      begin
+        case Name.Kind_Of (Id) is
+        when Name.Moon =>
+          return Moon.Direction_Of (Id, Ut);
+        when Name.Planet =>
+          return Standard.Solar_System.Direction_Of (Id, Ut);
+        when Name.Sky_Object =>
+          return Data.Direction_Of (Name.Object_Of (Id), Ut, Is_J2000 => True);
+        when others =>
+          return Space.Unknown_Direction;
+        end case;
+      end;
+    end if;
+  end J2000_Direction_Of;
+
+
   function Text_Of (Visible_In : Duration) return String is
 
     Visible : constant String := Lexicon.Image_Of (Lexicon.Visible);

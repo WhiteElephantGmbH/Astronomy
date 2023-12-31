@@ -28,16 +28,17 @@ package Telescope is
                    Move_Right,
                    Move_Up,
                    Move_Down,
-                   Decrease_Time,
-                   Increase_Time,
                    End_Command,
-                   Previous_Speed,
+                   Spiral_Offset_Next,
+                   Spiral_Offset_Previous,
+                   Add_Point,
                    Next_Speed,
+                   Previous_Speed,
                    Rotate);
 
-  subtype Adjust is Command range Move_Left .. End_Command;
+  subtype Adjust is Command range Move_Left .. Add_Point;
 
-  subtype Setup is Command range Previous_Speed .. Rotate;
+  subtype Setup is Command range Next_Speed .. Rotate;
 
   type State is (Unknown,    -- PWI server not available
                  Restarting, -- restarting CDK 700 PC
@@ -68,8 +69,9 @@ package Telescope is
   type Time_Delta is delta 0.00001 range -100.0 .. 100.0;
 
   type Mount_Data is record
-    Axis0  : Device.Degrees;
-    Axis1  : Device.Degrees;
+    Axis0        : Device.Degrees;
+    Axis1        : Device.Degrees;
+    Model_Points : Device.Points;
   end record;
 
   type M3_Data is record

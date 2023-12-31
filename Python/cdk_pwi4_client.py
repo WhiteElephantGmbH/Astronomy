@@ -24,6 +24,9 @@ class Mount:
     def axis1(self):
         return self.mount["axis1"]
 
+    def points(self):
+        return self.mount["points"]
+
 
 class M3:
     """
@@ -95,6 +98,7 @@ class Client:
     """ Mount Commands
         --------------
     """
+    add_point      = 'add_point'
     move_left      = 'move_left'
     move_right     = 'move_right'
     move_up        = 'move_up'

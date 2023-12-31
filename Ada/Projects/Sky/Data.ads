@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2012 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2012 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -49,8 +49,9 @@ package Data is
 
   function Descriptor_Of (Id : Object) return String;
 
-  function Direction_Of (Id : Object;
-                         Ut : Time.Ut) return Space.Direction;
+  function Direction_Of (Id       : Object;
+                         Ut       : Time.Ut;
+                         Is_J2000 : Boolean := False) return Space.Direction;
 
   function Magnitude_Of (Id : Object) return Float;
 

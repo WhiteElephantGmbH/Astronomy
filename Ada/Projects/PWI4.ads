@@ -33,6 +33,15 @@ package PWI4 is
     Position : Degrees;
   end record;
 
+  type Points is new Natural range 0 .. 255;
+
+  function Image_Of (Item : Points) return String;
+
+  type Model_Data is record
+    Points_Total   : Points;
+    Points_Enabled : Points;
+  end record;
+
   Microns_Delta : constant := 0.1;
   Microns_Limit : constant := 100000.0 - Microns_Delta;
 

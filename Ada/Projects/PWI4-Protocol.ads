@@ -26,7 +26,6 @@ private package PWI4.Protocol is
 
   function Image_Of (Item : Meters) return String;
 
-
   Day_Delta : constant := 0.000_000_01;
 
   type Julian_Day is delta Day_Delta range 0.0 .. 100_000_000.0 - Day_Delta with Small => Day_Delta;
@@ -85,6 +84,7 @@ private package PWI4.Protocol is
     Altitude    : Degrees;
     Axis0       : Axis_Data;
     Axis1       : Axis_Data;
+    Model       : Model_Data;
   end record;
 
   type Port_Number is new Integer range -1 .. 2;

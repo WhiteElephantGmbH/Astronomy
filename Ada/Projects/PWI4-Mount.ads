@@ -33,6 +33,7 @@ package PWI4.Mount is
     Alt       : Degrees;
     Az_Axis   : Axis_Data;
     Alt_Axis  : Axis_Data;
+    Model     : Model_Data;
   end record;
 
   function Info return Information;
@@ -66,10 +67,19 @@ package PWI4.Mount is
 
   procedure Stop_Rates;
 
+  procedure Spiral_Offset_Next;
+
+  procedure Spiral_Offset_Previous;
+
   procedure Reset_Moving_Target;
 
   procedure Set_Gradual_Offsets (Delta_Ra  : Arc_Second;
                                  Delta_Dec : Arc_Second);
+
+  procedure Set_Axis0_Wrap (Range_Min : Degrees);
+
+  procedure Add_Point (Ra_J2000  : Hours;
+                       Dec_J2000 : Degrees);
 
   procedure Stop;
 
