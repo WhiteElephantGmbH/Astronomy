@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2019 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2019 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
@@ -227,7 +227,7 @@ package body PWI4.Mount is
 
   procedure Spiral_Offset_Previous is
   begin
-    Execute (Command_Name => "spiral_offset/position");
+    Execute (Command_Name => "spiral_offset/previous");
   end Spiral_Offset_Previous;
 
 

@@ -14,7 +14,7 @@
 *      You should have received a copy of the GNU General Public License along with this program; if not, write to     *
 *      the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                 *
 ************************************************************************************************************************
-*                                             Handbox Simulator for CDK700                                             *
+*                                        Enhanced Handbox Simulator for CDK700                                         *
 ************************************************************************************************************************
 """
 import cdk_pwi4_client as cc
@@ -63,24 +63,45 @@ def main():
                       justification='c', background_color=color0, text_color=color1),
               sg.RealtimeButton(sg.SYMBOL_RIGHT, key=next_speed)]]
 
-    handbox = [[sg.Frame('Speed', font='Ani 8', layout=speed, element_justification='c')],
+    control = [[sg.Frame('Speed', font='Ani 8', layout=speed, element_justification='c')],
                [sg.RealtimeButton(sg.SYMBOL_UP, key=move_up)],
                [sg.RealtimeButton(sg.SYMBOL_LEFT, key=move_left),
                 sg.RealtimeButton(sg.SYMBOL_CIRCLE, key=go_back),
                 sg.RealtimeButton(sg.SYMBOL_RIGHT, key=move_right)],
                [sg.RealtimeButton(sg.SYMBOL_DOWN, key=move_down)]]
 
+    spiral = [[sg.RealtimeButton(sg.SYMBOL_LEFT, key=spiral_offset_previous),
+               sg.RealtimeButton(sg.SYMBOL_CIRCLE, key='spiral_go_back'),
+               sg.RealtimeButton(sg.SYMBOL_RIGHT, key=spiral_offset_next)]]
+
+    position = [[sg.Text(size=(14,1), key='-AXIS0-', pad=(0,0), font='Ani 12',
+                         justification='r', background_color=color0, text_color=color1)],
+                [sg.Text(size=(14,1), key='-AXIS1-', pad=(0,0), font='Ani 12',
+                         justification='r', background_color=color0, text_color=color1)]]
+
+    model = [[sg.RealtimeButton('Add Point', key=add_point),
+              sg.Text(size=(6,1), key='-POINTS-', pad=(0,0), font='Ani 13',
+                      justification='c', background_color=color0, text_color=color1)]]
+
+    mount = [[sg.Frame('', control, element_justification='c')],
+             [sg.Frame('Spiral Offset', font='Ani 8', layout=spiral, element_justification='c')],
+             [sg.Frame('Axis 0/1', font='Ani 8', layout=position, element_justification='c')],
+             [sg.Frame('Model', font='Ani 8', layout= model, element_justification='c')]]
+
     m3 = [[sg.RealtimeButton(sg.SYMBOL_RIGHT, key=rotate),
-           sg.Text(size=(11,1), key='-M3-', pad=(0,0), font='Ani 14', justification='c', background_color=color0, text_color=color1)]]
+           sg.Text(size=(12,1), key='-M3-', pad=(0,0), font='Ani 14',
+                   justification='c', background_color=color0, text_color=color1)]]
 
     focuser = [[sg.RealtimeButton('🔎', key='zoom', font='Ani 11', size=(2,1)),
                 sg.Slider(key='focus', range=(lower_limit,upper_limit), default_value=value,
                           size=(18,18), orientation='horizontal', font='Ani 12',
                           enable_events=True)]]
 
-    layout = [[sg.Frame('Handbox', font='Ani 8', layout=handbox, element_justification='c')],
-              [sg.Frame('M3', font='Ani 8', key='-FM3-', layout=m3, element_justification='c', visible=False)],
-              [sg.Frame('Focuser', font='Ani 8', key='-FFO-', layout=focuser, element_justification='c', visible=False)]]
+    layout = [[sg.Frame('Mount', font='Ani 8', layout=mount, element_justification='c')],
+              [sg.Frame('M3', font='Ani 8', key='-FM3-', layout=m3, element_justification='c',
+                        visible=False)],
+              [sg.Frame('Focuser', font='Ani 8', key='-FFO-', layout=focuser, element_justification='c',
+                        visible=False)]]
 
     window = sg.Window('CDK700 Control',
                        layout,
@@ -88,7 +109,7 @@ def main():
                        finalize=True,
                        element_justification='c',
                        location=(0,0),
-                       size=(245,320))
+                       size=(245,505))
     count = 0
     pressed = False
     zoomed = False
@@ -125,7 +146,10 @@ def main():
                             window['zoom'].update(text='⇔')
                         window['focus'].update(range=(lower_limit,upper_limit))
                     else:
-                        response = client.mount_command (command = event)
+                        if event == 'spiral_go_back':
+                            response = client.mount_command (command = go_back)
+                        else:
+                            response = client.mount_command (command = event)
             else:
                 # A timeout signals that all buttons have been released
                 if pressed:
@@ -142,6 +166,9 @@ def main():
                         focuser = info.focuser()
                         if mount.exists():
                             window['-SPEED-'].update(mount.speed())
+                            window['-AXIS0-'].update(mount.axis0())
+                            window['-AXIS1-'].update(mount.axis1())
+                            window['-POINTS-'].update(mount.points())
                             if m3.exists():
                                 window['-FM3-'].update(visible=True)
                                 window['-M3-'].update(m3.position())

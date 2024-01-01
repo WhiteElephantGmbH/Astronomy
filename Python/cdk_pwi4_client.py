@@ -98,16 +98,18 @@ class Client:
     """ Mount Commands
         --------------
     """
-    add_point      = 'add_point'
-    move_left      = 'move_left'
-    move_right     = 'move_right'
-    move_up        = 'move_up'
-    move_down      = 'move_down'
-    end_command    = 'end_command'
-    go_back        = 'go_back'
-    next_speed     = 'next_speed'
-    previous_speed = 'previous_speed'
-    stop           = 'stop'
+    add_point              = 'add_point'
+    move_left              = 'move_left'
+    move_right             = 'move_right'
+    move_up                = 'move_up'
+    move_down              = 'move_down'
+    end_command            = 'end_command'
+    go_back                = 'go_back'
+    spiral_offset_next     = 'spiral_offset_next'
+    spiral_offset_previous = 'spiral_offset_previous'
+    next_speed             = 'next_speed'
+    previous_speed         = 'previous_speed'
+    stop                   = 'stop'
 
     def mount_command(self, command):
         return self.request_with_status("/mount/" + command)
