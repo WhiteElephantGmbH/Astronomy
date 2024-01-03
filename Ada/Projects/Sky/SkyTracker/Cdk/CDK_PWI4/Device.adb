@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2019 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2019 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -53,8 +53,11 @@ package body Device is
                         Stop_Rates,
                         Spiral_Offset_Next,
                         Spiral_Offset_Previous,
-                        Reset_Moving_Target,
-                        Add_To_Model);
+                        Reset_Moving_Target);
+
+  type Mount_Setup is (No_Setup,
+                       Set_Axis0_Wrap,
+                       Add_To_Model);
 
   type M3_Action is (No_Action,
                      Toggle);
@@ -76,13 +79,16 @@ package body Device is
     Azm              : PWI4.Degrees    := 0.0;
     Ra               : PWI4.Hours      := 0.0;
     Dec              : PWI4.Degrees    := 0.0;
+    Ra_J2000         : PWI4.Hours      := 0.0;
+    Dec_J2000        : PWI4.Degrees    := 0.0;
     Arc_Seconds      : PWI4.Arc_Second := 0.0;
     Delta_Ra         : PWI4.Arc_Second := 0.0;
     Delta_Dec        : PWI4.Arc_Second := 0.0;
     Offset_Axis      : PWI4.Mount.Offset_Axis;
     Offset_Command   : PWI4.Mount.Offset_Command;
+    Wrap_Position    : PWI4.Degrees := 0.0;
+    Focuser_Position : Microns      := 0.0;
     Name_Id          : Name.Id;
-    Focuser_Position : Microns := 0.0;
   end record;
 
 
@@ -116,6 +122,8 @@ package body Device is
 
     procedure Follow_Tle (Id : Name.Id);
 
+    procedure Set_Axis0_Wrap (Range_Min : Degrees);
+
     procedure Add_To_Model (Ra_J2000  : PWI4.Hours;
                             Dec_J2000 : PWI4.Degrees);
 
@@ -131,6 +139,7 @@ package body Device is
 
     entry Get (New_Fan_Action     : out Fan_Action;
                New_Mount_Action   : out Mount_Action;
+               New_Mount_Setup    : out Mount_Setup;
                New_M3_Action      : out M3_Action;
                New_Focuser_Action : out Focuser_Action;
                New_Rotator_Action : out Rotator_Action;
@@ -140,6 +149,7 @@ package body Device is
   private
     The_Fan_Action     : Fan_Action     := No_Action;
     The_Mount_Action   : Mount_Action   := No_Action;
+    The_Mount_Setup    : Mount_Setup    := No_Setup;
     The_M3_Action      : M3_Action      := No_Action;
     The_Focuser_Action : Focuser_Action := No_Action;
     The_Rotator_Action : Rotator_Action := No_Action;
@@ -247,12 +257,20 @@ package body Device is
     end Follow_Tle;
 
 
+    procedure Set_Axis0_Wrap (Range_Min : Degrees) is
+    begin
+      The_Mount_Setup := Set_Axis0_Wrap;
+      The_Parameter.Wrap_Position := Range_Min;
+      Is_Pending := True;
+    end Set_Axis0_Wrap;
+
+
     procedure Add_To_Model (Ra_J2000  : PWI4.Hours;
                             Dec_J2000 : PWI4.Degrees) is
     begin
-      The_Mount_Action := Add_To_Model;
-      The_Parameter.Ra := Ra_J2000;
-      The_Parameter.Dec := Dec_J2000;
+      The_Mount_Setup := Add_To_Model;
+      The_Parameter.Ra_J2000 := Ra_J2000;
+      The_Parameter.Dec_J2000 := Dec_J2000;
       Is_Pending := True;
     end Add_To_Model;
 
@@ -295,6 +313,7 @@ package body Device is
 
     entry Get (New_Fan_Action     : out Fan_Action;
                New_Mount_Action   : out Mount_Action;
+               New_Mount_Setup    : out Mount_Setup;
                New_M3_Action      : out M3_Action;
                New_Focuser_Action : out Focuser_Action;
                New_Rotator_Action : out Rotator_Action;
@@ -303,11 +322,13 @@ package body Device is
     begin
       New_Fan_Action := The_Fan_Action;
       New_Mount_Action := The_Mount_Action;
+      New_Mount_Setup := The_Mount_Setup;
       New_M3_Action := The_M3_Action;
       New_Focuser_Action := The_Focuser_Action;
       New_Rotator_Action := The_Rotator_Action;
       The_Fan_Action := No_Action;
       The_Mount_Action := No_Action;
+      The_Mount_Setup := No_Setup;
       The_M3_Action := No_Action;
       The_Focuser_Action := No_Action;
       The_Rotator_Action := No_Action;
@@ -352,6 +373,7 @@ package body Device is
     Is_Finishing       : Boolean := False;
     The_Fan_Action     : Fan_Action := No_Action;
     The_Mount_Action   : Mount_Action := No_Action;
+    The_Mount_Setup    : Mount_Setup := No_Setup;
     The_M3_Action      : M3_Action := No_Action;
     The_Focuser_Action : Focuser_Action := No_Action;
     The_Rotator_Action : Rotator_Action := No_Action;
@@ -381,6 +403,7 @@ package body Device is
       select
         Action.Get (New_Fan_Action     => The_Fan_Action,
                     New_Mount_Action   => The_Mount_Action,
+                    New_Mount_Setup    => The_Mount_Setup,
                     New_M3_Action      => The_M3_Action,
                     New_Focuser_Action => The_Focuser_Action,
                     New_Rotator_Action => The_Rotator_Action,
@@ -388,6 +411,7 @@ package body Device is
                     New_Parameter      => The_Parameter);
         Log.Write ("Handle - Fan " & The_Fan_Action'img
                        & " - Mount " & The_Mount_Action'img
+                       & " - Setup " & The_Mount_Setup'img
                        & " - M3 " & The_M3_Action'img
                        & " - Focuser " & The_Focuser_Action'img
                        & " - Rotator " & The_Rotator_Action'img);
@@ -452,9 +476,16 @@ package body Device is
         when Set_Gradual_Offsets =>
           PWI4.Mount.Set_Gradual_Offsets (Delta_Ra  => The_Parameter.Delta_Ra,
                                           Delta_Dec => The_Parameter.Delta_Dec);
+        end case;
+
+        case The_Mount_Setup is
+        when No_Setup =>
+          null;
+        when Set_Axis0_Wrap =>
+          PWI4.Mount.Set_Axis0_Wrap (Range_Min => The_Parameter.Wrap_Position);
         when Add_To_Model =>
-          PWI4.Mount.Add_Point (Ra_J2000  => The_Parameter.Ra,
-                                Dec_J2000 => The_Parameter.Dec);
+          PWI4.Mount.Add_Point (Ra_J2000  => The_Parameter.Ra_J2000,
+                                Dec_J2000 => The_Parameter.Dec_J2000);
         end case;
 
         case The_M3_Action is
@@ -830,6 +861,13 @@ package body Device is
       Log.Write ("Mount.Follow_Tle " & Name.Image_Of (Id));
       Action.Follow_Tle (Id);
     end Follow_Tle;
+
+
+    procedure Set_Axis0_Wrap (Range_Min : Degrees) is
+    begin
+      Log.Write ("Mount.Set_Axis0_Wrap " & Image_Of (Range_Min));
+      Action.Set_Axis0_Wrap (Range_Min);
+    end Set_Axis0_Wrap;
 
 
     procedure Add_To_Model (Direction : Space.Direction) is

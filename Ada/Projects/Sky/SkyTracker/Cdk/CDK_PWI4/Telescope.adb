@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2019 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2019 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -270,12 +270,17 @@ package body Telescope is
 
 
     procedure Goto_Target is
+      The_Start_Az : Angle.Degrees;
+      use type Angle.Value;
+      use type Device.Degrees;
     begin
       if Get_Direction = null then
         raise Program_Error; -- unknown target;
       end if;
       The_Start_Time := Time.Universal;
       The_Start_Direction := Target_Direction (At_Time => The_Start_Time);
+      The_Start_Az := +Earth.Az_Of (Objects.Direction_Of (The_Start_Direction, Time.Lmst_Of (The_Start_Time)));
+      Mount.Set_Axis0_Wrap (Device.Degrees(The_Start_Az) - 180.0);
       Mount.Goto_Target (Direction       => The_Start_Direction,
                          Completion_Time => The_Completion_Time);
       The_State := Approaching;
