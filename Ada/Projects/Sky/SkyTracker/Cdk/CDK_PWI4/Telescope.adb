@@ -269,18 +269,24 @@ package body Telescope is
     end Reset_Adjustments;
 
 
-    procedure Goto_Target is
+    procedure Set_Wrap_Position_For (The_Direction : Earth.Direction) is
       The_Start_Az : Angle.Degrees;
       use type Angle.Value;
       use type Device.Degrees;
+    begin
+      The_Start_Az := +Earth.Az_Of (The_Direction);
+      Mount.Set_Axis0_Wrap (Device.Degrees(The_Start_Az) - 180.0);
+    end Set_Wrap_Position_For;
+
+
+    procedure Goto_Target is
     begin
       if Get_Direction = null then
         raise Program_Error; -- unknown target;
       end if;
       The_Start_Time := Time.Universal;
       The_Start_Direction := Target_Direction (At_Time => The_Start_Time);
-      The_Start_Az := +Earth.Az_Of (Objects.Direction_Of (The_Start_Direction, Time.Lmst_Of (The_Start_Time)));
-      Mount.Set_Axis0_Wrap (Device.Degrees(The_Start_Az) - 180.0);
+      Set_Wrap_Position_For (Objects.Direction_Of (The_Start_Direction, Time.Lmst_Of (The_Start_Time)));
       Mount.Goto_Target (Direction       => The_Start_Direction,
                          Completion_Time => The_Completion_Time);
       The_State := Approaching;
@@ -322,14 +328,21 @@ package body Telescope is
     end Back_To_Target;
 
 
+    procedure Goto_Mark (The_Position : Earth.Direction) is
+    begin
+      The_Start_Time := Time.Universal;
+      Set_Wrap_Position_For (The_Position);
+      Mount.Goto_Mark (The_Position, The_Completion_Time);
+    end Goto_Mark;
+
+
     procedure Goto_Waiting_Position is
     begin
       declare
         Arrival_Position : constant Earth.Direction := Objects.Direction_Of (Get_Direction (Id, The_Arrival_Time),
                                                                              Time.Lmst_Of (The_Arrival_Time));
       begin
-        The_Start_Time := Time.Universal;
-        Mount.Goto_Mark (Arrival_Position, The_Completion_Time);
+        Goto_Mark (Arrival_Position);
         The_State := Preparing;
       end;
     end Goto_Waiting_Position;
@@ -388,8 +401,7 @@ package body Telescope is
 
     procedure Do_Park is
     begin
-      The_Start_Time := Time.Universal;
-      Mount.Goto_Mark (The_Park_Position, The_Completion_Time);
+      Goto_Mark (The_Park_Position);
       Log.Write ("do park");
       The_State := Parking;
     end Do_Park;
@@ -397,8 +409,7 @@ package body Telescope is
 
     procedure Do_Position is
     begin
-      The_Start_Time := Time.Universal;
-      Mount.Goto_Mark (Name.Direction_Of (The_Landmark), The_Completion_Time);
+      Goto_Mark (Name.Direction_Of (The_Landmark));
       Log.Write ("position to Landmark");
       The_State := Positioning;
     end Do_Position;
