@@ -30,6 +30,7 @@ with Language;
 with Network.Tcp;
 with Os.Process;
 with Os.System;
+with PWI4.Mount;
 with Stellarium;
 with Strings;
 with Sun;
@@ -539,7 +540,7 @@ package body Parameter is
       Set (Controller_Handle);
       Cdk_700.Startup (Ip_Address_For (Controller_Id),
                        Restart_Duration => Duration_Of (Restart_Duration_Key, Upper_Limit => 60.0));
-
+      PWI4.Mount.Set_Enable_Delay (Cdk_700.Enable_Delay);
       Set (PWI_Handle);
       Is_In_Shutdown_Mode := Strings.Is_Equal (String_Value_Of (Shutdown_Key), "True");
       Define_M3_Ocular_Port;

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2019 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2019 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
@@ -8,6 +8,14 @@ with PWI4.Protocol;
 with Strings;
 
 package body PWI4.Mount is
+
+  The_Enable_Delay_Count : Natural := 60;
+
+  procedure Set_Enable_Delay (Time : Duration) is
+  begin
+    The_Enable_Delay_Count := Natural(Time);
+  end Set_Enable_Delay;
+
 
   procedure Execute (Command_Name : String;
                      Parameters   : String := "") is
@@ -28,6 +36,9 @@ package body PWI4.Mount is
 
   Last_Axis0_Position : Degrees;
   Last_Axis1_Position : Degrees;
+
+  Spiral_Offsets : PWI4.Protocol.Spiral_Data;
+
 
   procedure Initialize_Homing is
   begin
@@ -72,7 +83,12 @@ package body PWI4.Mount is
         end if;
         Last_Axis0_Position := Data.Axis0.Position;
         Last_Axis1_Position := Data.Axis1.Position;
-        return Enabled;
+        if The_Enable_Delay_Count > 0 then
+          The_Enable_Delay_Count := @ - 1;
+          return Connected;
+        else
+          return Enabled;
+        end if;
       elsif not (Flags.Is_Tracking or Flags.Is_Slewing) then
         if Is_Leaving then
           return Approaching;
@@ -89,6 +105,7 @@ package body PWI4.Mount is
     end Status;
 
   begin
+    Spiral_Offsets := Data.Spiral_Offsets;
     return (Status    => Status,
             Ra        => Data.Ra,
             Dec       => Data.Dec,
@@ -97,7 +114,8 @@ package body PWI4.Mount is
             Az        => Data.Azimuth,
             Alt       => Data.Altitude,
             Az_Axis   => Data.Axis0,
-            Alt_Axis  => Data.Axis1);
+            Alt_Axis  => Data.Axis1,
+            Model     => Data.Model);
   end Info;
 
 
@@ -205,6 +223,27 @@ package body PWI4.Mount is
   end Stop_Rates;
 
 
+  procedure Spiral_Offset_Center is
+    X_Step : constant String := Image_Of (Spiral_Offsets.X_Step);
+    Y_Step : constant String := Image_Of (Spiral_Offsets.Y_Step);
+  begin
+    Execute (Command_Name => "spiral_offset/new",
+             Parameters   => "x_step_arcsec=" & X_Step & "&y_step_arcsec=" & Y_Step);
+  end Spiral_Offset_Center;
+
+
+  procedure Spiral_Offset_Next is
+  begin
+    Execute (Command_Name => "spiral_offset/next");
+  end Spiral_Offset_Next;
+
+
+  procedure Spiral_Offset_Previous is
+  begin
+    Execute (Command_Name => "spiral_offset/previous");
+  end Spiral_Offset_Previous;
+
+
   procedure Reset_Moving_Target is
     Path_Reset       : constant String := Command_For (Path, Reset) & "=0";
     Transverse_Reset : constant String := Command_For (Transverse, Reset) & "=0";
@@ -230,6 +269,26 @@ package body PWI4.Mount is
     Execute (Command_Name => "offset",
              Parameters   => Parameter_For (Ra, Delta_Ra) & "&" & Parameter_For (Dec, Delta_Dec));
   end Set_Gradual_Offsets;
+
+
+  procedure Set_Axis0_Wrap (Range_Min : Degrees) is
+    Minimum_Image : constant String := Image_Of (Range_Min);
+  begin
+    Execute (Command_Name => "set_axis0_wrap_range_min",
+             Parameters   => "degs=" & Minimum_Image);
+  end Set_Axis0_Wrap;
+
+
+  procedure Add_Point (Ra_J2000  : Hours;
+                       Dec_J2000 : Degrees) is
+
+    Ra_Image  : constant String := Image_Of (Ra_J2000);
+    Dec_Image : constant String := Image_Of (Dec_J2000);
+
+  begin
+    Execute (Command_Name => "model/add_point",
+             Parameters   => "ra_j2000_hours=" & Ra_Image & "&dec_j2000_degs=" & Dec_Image);
+  end Add_Point;
 
 
   procedure Confirm_Goto is

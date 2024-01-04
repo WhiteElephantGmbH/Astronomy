@@ -49,6 +49,8 @@ package Targets is
 
   procedure Stop;
   
+  function J2000_Direction_Of (Id : Name.Id) return Space.Direction;
+
   function Text_Of (Visible_In : Duration) return String;
 
 end Targets;

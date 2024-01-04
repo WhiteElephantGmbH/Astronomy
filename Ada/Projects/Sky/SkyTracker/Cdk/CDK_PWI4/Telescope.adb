@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2019 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2019 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -18,10 +18,12 @@ pragma Style_White_Elephant;
 with Ada.Real_Time;
 with Cdk_700;
 with Cwe;
+with Gui;
 with Objects;
 with Parameter;
 with Remote;
 with System;
+with Targets;
 with Traces;
 
 package body Telescope is
@@ -228,6 +230,7 @@ package body Telescope is
     subtype Mount_Startup is Event range Mount_Disconnected .. Mount_Enabled;
 
     The_State  : State := Unknown;
+    Is_Closing : Boolean := False;
     The_Event  : Event := No_Event;
 
     Mount_Is_Stopped : Boolean := True;
@@ -268,6 +271,16 @@ package body Telescope is
     end Reset_Adjustments;
 
 
+    procedure Set_Wrap_Position_For (The_Direction : Earth.Direction) is
+      The_Start_Az : Angle.Degrees;
+      use type Angle.Value;
+      use type Device.Degrees;
+    begin
+      The_Start_Az := +Earth.Az_Of (The_Direction);
+      Mount.Set_Axis0_Wrap (Device.Degrees(The_Start_Az) - 180.0);
+    end Set_Wrap_Position_For;
+
+
     procedure Goto_Target is
     begin
       if Get_Direction = null then
@@ -275,6 +288,7 @@ package body Telescope is
       end if;
       The_Start_Time := Time.Universal;
       The_Start_Direction := Target_Direction (At_Time => The_Start_Time);
+      Set_Wrap_Position_For (Objects.Direction_Of (The_Start_Direction, Time.Lmst_Of (The_Start_Time)));
       Mount.Goto_Target (Direction       => The_Start_Direction,
                          Completion_Time => The_Completion_Time);
       The_State := Approaching;
@@ -316,14 +330,21 @@ package body Telescope is
     end Back_To_Target;
 
 
+    procedure Goto_Mark (The_Position : Earth.Direction) is
+    begin
+      The_Start_Time := Time.Universal;
+      Set_Wrap_Position_For (The_Position);
+      Mount.Goto_Mark (The_Position, The_Completion_Time);
+    end Goto_Mark;
+
+
     procedure Goto_Waiting_Position is
     begin
       declare
         Arrival_Position : constant Earth.Direction := Objects.Direction_Of (Get_Direction (Id, The_Arrival_Time),
                                                                              Time.Lmst_Of (The_Arrival_Time));
       begin
-        The_Start_Time := Time.Universal;
-        Mount.Goto_Mark (Arrival_Position, The_Completion_Time);
+        Goto_Mark (Arrival_Position);
         The_State := Preparing;
       end;
     end Goto_Waiting_Position;
@@ -382,8 +403,7 @@ package body Telescope is
 
     procedure Do_Park is
     begin
-      The_Start_Time := Time.Universal;
-      Mount.Goto_Mark (The_Park_Position, The_Completion_Time);
+      Goto_Mark (The_Park_Position);
       Log.Write ("do park");
       The_State := Parking;
     end Do_Park;
@@ -391,8 +411,7 @@ package body Telescope is
 
     procedure Do_Position is
     begin
-      The_Start_Time := Time.Universal;
-      Mount.Goto_Mark (Name.Direction_Of (The_Landmark), The_Completion_Time);
+      Goto_Mark (Name.Direction_Of (The_Landmark));
       Log.Write ("position to Landmark");
       The_State := Positioning;
     end Do_Position;
@@ -415,9 +434,9 @@ package body Telescope is
       if Is_Fast_Tracking then
         Mount.Set_Rate_Transverse (Device.Speed(Moving_Speed * 3600.0));
       elsif The_M3_Position = M3.Camera then
-        Mount.Set_Rate_Ra (Device.Speed(Moving_Speed * 3600.0));
+        Mount.Set_Rate_Ra (-Device.Speed(Moving_Speed * 3600.0));
       else
-        Mount.Set_Rate_Axis0 (-Device.Speed(Moving_Speed * 3600.0));
+        Mount.Set_Rate_Axis0 (Device.Speed(Moving_Speed * 3600.0));
       end if;
     end Adjust_First;
 
@@ -432,11 +451,20 @@ package body Telescope is
       if Is_Fast_Tracking then
         Mount.Set_Rate_Path (Device.Speed(Moving_Speed * 3600.0));
       elsif The_M3_Position = M3.Camera then
-        Mount.Set_Rate_Dec (-Device.Speed(Moving_Speed * 3600.0));
+        Mount.Set_Rate_Dec (Device.Speed(Moving_Speed * 3600.0));
       else
-        Mount.Set_Rate_Axis1 (Device.Speed(Moving_Speed * 3600.0));
+        Mount.Set_Rate_Axis1 (-Device.Speed(Moving_Speed * 3600.0));
       end if;
     end Adjust_Second;
+
+
+    procedure Add_Target_J2000_Direction_To_Model is
+      Direction : constant Space.Direction := Targets.J2000_Direction_Of (Id);
+    begin
+      if Space.Direction_Is_Known (Direction) then
+        Mount.Add_To_Model (Direction);
+      end if;
+    end Add_Target_J2000_Direction_To_Model;
 
 
     procedure Offset_Handling is
@@ -452,12 +480,16 @@ package body Telescope is
         Adjust_Second (+Speed);
       when Move_Down =>
         Adjust_Second (-Speed);
-      when Decrease_Time =>
-        null;
-      when Increase_Time =>
-        null;
       when End_Command =>
         Mount.Stop_Rate;
+      when Spiral_Offset_Center =>
+        Mount.Spiral_Offset_Center;
+      when Spiral_Offset_Next =>
+        Mount.Spiral_Offset_Next;
+      when Spiral_Offset_Previous =>
+        Mount.Spiral_Offset_Previous;
+      when Add_Point =>
+        Add_Target_J2000_Direction_To_Model;
       end case;
     end Offset_Handling;
 
@@ -585,7 +617,12 @@ package body Telescope is
     begin
       case The_Event is
       when Mount_Disconnected =>
-        The_State := Disconnected;
+        if Is_Closing then
+          Is_Closing := False;
+          Gui.Close;
+        else
+          The_State := Disconnected;
+        end if;
       when Mount_Connected =>
         Mount.Disconnect;
       when Halt =>
@@ -768,6 +805,7 @@ package body Telescope is
       when Mount_Startup =>
         The_State := Mount_Startup_State (The_Event);
       when Mount_Stopped =>
+        Is_Closing := True;
         Do_Disable;
         The_State := Disabling;
       when Mount_Track =>
@@ -1094,6 +1132,9 @@ package body Telescope is
                 Info : constant Mount.Information := Mount.Actual_Info;
               begin
                 The_Data.Actual_Direction := Info.Actual_Direction;
+                The_Data.Mount.Axis0 := Info.Az_Axis.Position;
+                The_Data.Mount.Axis1 := Info.Alt_Axis.Position;
+                The_Data.Mount.Model_Points := Info.Model.Points_Enabled;
               end;
             end case;
             The_Data.Target_Lost := Target_Is_Lost;

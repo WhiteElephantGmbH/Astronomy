@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2019 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2019 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -26,20 +26,22 @@ package body User.Input is
                    Move_Down,
                    Move_Left,
                    Move_Right,
-                   Decrease_Time,
-                   Increase_Time,
                    End_Command,
-                   Previous_Speed,
                    Next_Speed,
+                   Previous_Speed,
+                   Spiral_Offset_Center,
+                   Spiral_Offset_Next,
+                   Spiral_Offset_Previous,
                    Go_Back,
                    Rotate,
+                   Add_Point,
                    Stop);
 
   subtype Move is Command range Move_Up .. Move_Right;
 
-  subtype Change_Speed is Command range Previous_Speed .. Next_Speed;
+  subtype Change_Speed is Command range Next_Speed .. Previous_Speed;
 
-  subtype Change_Time is Command range Decrease_Time .. Increase_Time;
+  subtype Spiral_Offset is Command range Spiral_Offset_Center .. Spiral_Offset_Previous;
 
   protected Manager is
 
@@ -75,12 +77,7 @@ package body User.Input is
             Active_Command := End_Command;
             New_Command := True;
           end if;
-        when Change_Time =>
-          if From_Source = From and The_Command = Device.End_Command then
-            Active_Command := End_Command;
-            New_Command := True;
-          end if;
-        when End_Command | Go_Back | Change_Speed | Rotate =>
+        when End_Command | Go_Back | Change_Speed | Spiral_Offset | Add_Point | Rotate =>
           null;
         end case;
         if The_Command = Device.Stop then
@@ -102,16 +99,20 @@ package body User.Input is
           Active_Command := Move_Left;
         when Device.Move_Right =>
           Active_Command := Move_Right;
-        when Device.Decrease_Time =>
-          Active_Command := Decrease_Time;
-        when Device.Increase_Time =>
-          Active_Command := Increase_Time;
+        when Device.Spiral_Offset_Center =>
+          Active_Command := Spiral_Offset_Center;
+        when Device.Spiral_Offset_Next =>
+          Active_Command := Spiral_Offset_Next;
+        when Device.Spiral_Offset_Previous =>
+          Active_Command := Spiral_Offset_Previous;
         when Device.Previous_Speed =>
           Active_Command := Previous_Speed;
         when Device.Next_Speed =>
           Active_Command := Next_Speed;
         when Device.Rotate =>
           Active_Command := Rotate;
+        when Device.Add_Point =>
+          Active_Command := Add_Point;
         when Device.End_Command =>
           return;
         end case;
@@ -124,7 +125,7 @@ package body User.Input is
 
     function In_Action return Boolean is
     begin
-      return Active_Command in Move | Change_Time;
+      return Active_Command in Move;
     end In_Action;
 
 
@@ -140,7 +141,7 @@ package body User.Input is
     begin
       The_Command := Active_Command;
       case The_Command is
-      when Move | Change_Time =>
+      when Move =>
         null;
       when others =>
         Is_Active := False;
@@ -201,12 +202,6 @@ package body User.Input is
         when Move_Right =>
           Telescope.Execute (Telescope.Move_Right);
           Is_Changing := True;
-        when Decrease_Time =>
-          Telescope.Execute (Telescope.Decrease_Time);
-          Is_Changing := True;
-        when Increase_Time =>
-          Telescope.Execute (Telescope.Increase_Time);
-          Is_Changing := True;
         when End_Command =>
           Is_Changing := False;
           Telescope.Execute (Telescope.End_Command);
@@ -214,6 +209,14 @@ package body User.Input is
           Telescope.Execute (Telescope.Previous_Speed);
         when Next_Speed =>
           Telescope.Execute (Telescope.Next_Speed);
+        when Spiral_Offset_Center =>
+          Telescope.Execute (Telescope.Spiral_Offset_Center);
+        when Spiral_Offset_Next =>
+          Telescope.Execute (Telescope.Spiral_Offset_Next);
+        when Spiral_Offset_Previous =>
+          Telescope.Execute (Telescope.Spiral_Offset_Previous);
+        when Add_Point =>
+          Telescope.Execute (Telescope.Add_Point);
         when Rotate =>
           Telescope.Execute (Telescope.Rotate);
         end case;

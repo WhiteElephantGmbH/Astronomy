@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2023 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2023 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
@@ -25,7 +25,6 @@ private package PWI4.Protocol is
   function Meters_Of (Image : String) return Meters;
 
   function Image_Of (Item : Meters) return String;
-
 
   Day_Delta : constant := 0.000_000_01;
 
@@ -72,19 +71,26 @@ private package PWI4.Protocol is
     Axis1_Is_Enabled : Boolean;
   end record with Pack;
 
+  type Spiral_Data is record
+    X_Step : Arc_Second := 0.0;
+    Y_Step : Arc_Second := 0.0;
+  end record;
+
   type Mount_Info is record
-    Flags       : Mount_Flag;
-    Julian_Date : Julian_Day;
-    Ra          : Hours;
-    Dec         : Degrees;
-    Ra_Target   : Hours;
-    Dec_Target  : Degrees;
-    Ra_J2000    : Hours;
-    Dec_J2000   : Degrees;
-    Azimuth     : Degrees;
-    Altitude    : Degrees;
-    Axis0       : Axis_Data;
-    Axis1       : Axis_Data;
+    Flags          : Mount_Flag;
+    Julian_Date    : Julian_Day;
+    Ra             : Hours;
+    Dec            : Degrees;
+    Ra_Target      : Hours;
+    Dec_Target     : Degrees;
+    Ra_J2000       : Hours;
+    Dec_J2000      : Degrees;
+    Azimuth        : Degrees;
+    Altitude       : Degrees;
+    Axis0          : Axis_Data;
+    Axis1          : Axis_Data;
+    Spiral_Offsets : Spiral_Data;
+    Model          : Model_Data;
   end record;
 
   type Port_Number is new Integer range -1 .. 2;

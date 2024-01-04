@@ -1,6 +1,6 @@
 """
 ************************************************************************************************************************
-*                                             Handbox Simulator for CDK700                                             *
+*                                        Enhanced Handbox Simulator for CDK700                                         *
 ************************************************************************************************************************
 *                              (c) 2024 by White Elephant GmbH, Schaffhausen, Switzerland                              *
 *                                                www.white-elephant.ch                                                 *
@@ -42,8 +42,12 @@ def main():
     move_up                = client.move_up
     move_down              = client.move_down
     end_command            = client.end_command
+    spiral_offset_center   = client.spiral_offset_center
+    spiral_offset_next     = client.spiral_offset_next
+    spiral_offset_previous = client.spiral_offset_previous
     next_speed             = client.next_speed
     previous_speed         = client.previous_speed
+    add_point              = client.add_point
     rotate                 = client.rotate
 
     color0 = sg.theme_button_color()[0]
@@ -60,6 +64,10 @@ def main():
                       justification='c', background_color=color0, text_color=color1),
               sg.RealtimeButton(sg.SYMBOL_RIGHT, key=next_speed)]]
 
+    spiral = [[sg.RealtimeButton(sg.SYMBOL_LEFT, key=spiral_offset_previous),
+               sg.RealtimeButton(sg.SYMBOL_CIRCLE, key=spiral_offset_center),
+               sg.RealtimeButton(sg.SYMBOL_RIGHT, key=spiral_offset_next)]]
+
     move = [[sg.RealtimeButton(sg.SYMBOL_UP, key=move_up)],
             [sg.RealtimeButton(sg.SYMBOL_LEFT, key=move_left),
              sg.RealtimeButton(sg.SYMBOL_CIRCLE, key=go_back),
@@ -67,10 +75,24 @@ def main():
             [sg.RealtimeButton(sg.SYMBOL_DOWN, key=move_down)]]
 
     handbox = [[sg.Frame('Speed', font='Ani 8', layout=speed, element_justification='c')],
-               [sg.Frame('', layout=move, element_justification='c')]]
+               [sg.Frame('', layout=move, element_justification='c')],
+               [sg.Frame('Spiral Offset', font='Ani 8', layout=spiral, element_justification='c')]]
+
+    axis = [[sg.Text(size=(14,1), key='-AXIS0-', pad=(0,0), font='Ani 12',
+                     justification='r', background_color=color0, text_color=color1)],
+            [sg.Text(size=(14,1), key='-AXIS1-', pad=(0,0), font='Ani 12',
+                     justification='r', background_color=color0, text_color=color1)]]
+
+    model = [[sg.RealtimeButton('Add Point', key=add_point),
+              sg.Text(size=(6,1), key='-POINTS-', pad=(0,0), font='Ani 13',
+                      justification='c', background_color=color0, text_color=color1)]]
+
+    mount = [[sg.Frame('', layout=handbox, element_justification='c')],
+             [sg.Frame('Axis 0/1', font='Ani 8', layout=axis, element_justification='c')],
+             [sg.Frame('Model', font='Ani 8', layout=model, element_justification='c')]]
 
     m3 = [[sg.RealtimeButton(sg.SYMBOL_RIGHT, key=rotate),
-           sg.Text(size=(11,1), key='-M3-', pad=(0,0), font='Ani 14',
+           sg.Text(size=(12,1), key='-M3-', pad=(0,0), font='Ani 14',
                    justification='c', background_color=color0, text_color=color1)]]
 
     focuser = [[sg.RealtimeButton('🔎', key='zoom', font='Ani 11', size=(2,1)),
@@ -78,7 +100,7 @@ def main():
                           size=(18,18), orientation='horizontal', font='Ani 12',
                           enable_events=True)]]
 
-    layout = [[sg.Frame('', layout=handbox, element_justification='c')],
+    layout = [[sg.Frame('Mount', font='Ani 8', layout=mount, element_justification='c')],
               [sg.Frame('M3', font='Ani 8', key='-FM3-', layout=m3, element_justification='c',
                         visible=False)],
               [sg.Frame('Focuser', font='Ani 8', key='-FFO-', layout=focuser, element_justification='c',
@@ -90,7 +112,7 @@ def main():
                        finalize=True,
                        element_justification='c',
                        location=(0,0),
-                       size=(245,315))
+                       size=(245,520))
     count = 0
     pressed = False
     zoomed = False
@@ -144,6 +166,9 @@ def main():
                         focuser = info.focuser()
                         if mount.exists():
                             window['-SPEED-'].update(mount.speed())
+                            window['-AXIS0-'].update(mount.axis0())
+                            window['-AXIS1-'].update(mount.axis1())
+                            window['-POINTS-'].update(mount.points())
                             if m3.exists():
                                 window['-FM3-'].update(visible=True)
                                 window['-M3-'].update(m3.position())

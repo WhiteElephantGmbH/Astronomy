@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2023 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2023 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
@@ -55,6 +55,16 @@ package body PWI4.Protocol is
     Log.Warning ("Meters_Of (Image -> """ & Image & """)");
     return Undefined_Meters;
   end Meters_Of;
+
+
+  function Points_Of (Image : String) return Points is
+  begin
+    return Points'value(Image);
+  exception
+  when others =>
+    Log.Error ("Points_Of (Image -> """ & Image & """)");
+    return 0;
+  end Points_Of;
 
 
   function Image_Of (Item : Meters) return String is
@@ -484,8 +494,10 @@ package body PWI4.Protocol is
           Log.Write ("mount.spiral_offsets.y=" & Next_Value);
         when I_X_Step_Arcsec =>
           Log.Write ("mount.spiral_offsets.x_step_arcsec=" & Next_Value);
+          The_Response.Mount.Spiral_Offsets.X_Step := Arc_Second_Of (Value);
         when I_Y_Step_Arcsec =>
           Log.Write ("mount.spiral_offsets.y_step_arcsec=" & Next_Value);
+          The_Response.Mount.Spiral_Offsets.Y_Step := Arc_Second_Of (Value);
         when others =>
           raise Parsing_Error;
         end case;
@@ -565,8 +577,10 @@ package body PWI4.Protocol is
           Log.Write ("mount.model.filename=" & Next_Value);
         when I_Num_Points_Total =>
           Log.Write ("mount.model.num_points_total=" & Next_Value);
+          The_Response.Mount.Model.Points_Total := Points_Of (Value);
         when I_Num_Points_Enabled =>
           Log.Write ("mount.model.num_points_enabled=" & Next_Value);
+          The_Response.Mount.Model.Points_Enabled := Points_Of (Value);
         when I_Rms_Error_Arcsec =>
           Log.Write ("mount.model.rms_error_arcsec=" & Next_Value);
         when others =>

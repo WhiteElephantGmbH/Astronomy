@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2019 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2019 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -30,10 +30,12 @@ package Device is
                    Move_Down,
                    Next_Speed,
                    Previous_Speed,
-                   Increase_Time,
-                   Decrease_Time,
+                   Spiral_Offset_Center,
+                   Spiral_Offset_Next,
+                   Spiral_Offset_Previous,
                    Go_Back,
                    Rotate,
+                   Add_Point,
                    Stop);
 
   subtype Degrees is PWI4.Degrees;
@@ -45,6 +47,10 @@ package Device is
   function Image_Of (Item : Speed) return String renames PWI4.Image_Of;
 
   subtype Microns is PWI4.Microns;
+
+  subtype Points is PWI4.Points;
+
+  function Image_Of (Item : Points) return String renames PWI4.Image_Of;
 
   package Mount is
 
@@ -63,6 +69,7 @@ package Device is
       Local_Direction  : Earth.Direction;
       Az_Axis          : PWI4.Axis_Data;
       Alt_Axis         : PWI4.Axis_Data;
+      Model            : PWI4.Model_Data;
     end record;
 
     type State_Handler_Access is access procedure (The_State : State);
@@ -100,6 +107,12 @@ package Device is
 
     procedure Stop_Rate;
 
+    procedure Spiral_Offset_Center;
+
+    procedure Spiral_Offset_Next;
+
+    procedure Spiral_Offset_Previous;
+
     procedure Reset_Moving_Target;
 
     procedure Goto_Mark (Direction       :     Earth.Direction;
@@ -108,6 +121,10 @@ package Device is
     procedure Confirm_Goto;
 
     procedure Follow_Tle (Id : Name.Id);
+
+    procedure Set_Axis0_Wrap (Range_Min : Degrees);
+
+    procedure Add_To_Model (Direction : Space.Direction);
 
     procedure Stop;
 

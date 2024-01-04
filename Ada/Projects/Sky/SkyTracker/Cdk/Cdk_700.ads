@@ -27,6 +27,8 @@ package Cdk_700 is
 
   function Is_Started return Boolean;
   -- Precondition: Startup must have been called
+  
+  function Enable_Delay return Duration;
 
   function Startup_Progress return Progress.Percent;
 
