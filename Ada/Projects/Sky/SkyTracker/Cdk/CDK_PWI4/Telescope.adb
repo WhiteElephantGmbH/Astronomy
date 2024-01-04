@@ -18,6 +18,7 @@ pragma Style_White_Elephant;
 with Ada.Real_Time;
 with Cdk_700;
 with Cwe;
+with Gui;
 with Objects;
 with Parameter;
 with Remote;
@@ -229,6 +230,7 @@ package body Telescope is
     subtype Mount_Startup is Event range Mount_Disconnected .. Mount_Enabled;
 
     The_State  : State := Unknown;
+    Is_Closing : Boolean := False;
     The_Event  : Event := No_Event;
 
     Mount_Is_Stopped : Boolean := True;
@@ -432,9 +434,9 @@ package body Telescope is
       if Is_Fast_Tracking then
         Mount.Set_Rate_Transverse (Device.Speed(Moving_Speed * 3600.0));
       elsif The_M3_Position = M3.Camera then
-        Mount.Set_Rate_Ra (Device.Speed(Moving_Speed * 3600.0));
+        Mount.Set_Rate_Ra (-Device.Speed(Moving_Speed * 3600.0));
       else
-        Mount.Set_Rate_Axis0 (-Device.Speed(Moving_Speed * 3600.0));
+        Mount.Set_Rate_Axis0 (Device.Speed(Moving_Speed * 3600.0));
       end if;
     end Adjust_First;
 
@@ -449,9 +451,9 @@ package body Telescope is
       if Is_Fast_Tracking then
         Mount.Set_Rate_Path (Device.Speed(Moving_Speed * 3600.0));
       elsif The_M3_Position = M3.Camera then
-        Mount.Set_Rate_Dec (-Device.Speed(Moving_Speed * 3600.0));
+        Mount.Set_Rate_Dec (Device.Speed(Moving_Speed * 3600.0));
       else
-        Mount.Set_Rate_Axis1 (Device.Speed(Moving_Speed * 3600.0));
+        Mount.Set_Rate_Axis1 (-Device.Speed(Moving_Speed * 3600.0));
       end if;
     end Adjust_Second;
 
@@ -613,7 +615,12 @@ package body Telescope is
     begin
       case The_Event is
       when Mount_Disconnected =>
-        The_State := Disconnected;
+        if Is_Closing then
+          Is_Closing := False;
+          Gui.Close;
+        else
+          The_State := Disconnected;
+        end if;
       when Mount_Connected =>
         Mount.Disconnect;
       when Halt =>
@@ -796,6 +803,7 @@ package body Telescope is
       when Mount_Startup =>
         The_State := Mount_Startup_State (The_Event);
       when Mount_Stopped =>
+        Is_Closing := True;
         Do_Disable;
         The_State := Disabling;
       when Mount_Track =>
