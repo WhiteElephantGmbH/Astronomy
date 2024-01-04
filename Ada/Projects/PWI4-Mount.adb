@@ -219,6 +219,15 @@ package body PWI4.Mount is
   end Stop_Rates;
 
 
+  procedure Spiral_Offset_Center is
+    X_Step : constant String := "1800";
+    Y_Step : constant String := "1200";
+  begin
+    Execute (Command_Name => "spiral_offset/new",
+             Parameters   => "x_step_arcsec=" & X_Step & "&y_step_arcsec=" & Y_Step);
+  end Spiral_Offset_Center;
+
+
   procedure Spiral_Offset_Next is
   begin
     Execute (Command_Name => "spiral_offset/next");

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2019 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2019 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -29,6 +29,7 @@ package Telescope is
                    Move_Up,
                    Move_Down,
                    End_Command,
+                   Spiral_Offset_Center,
                    Spiral_Offset_Next,
                    Spiral_Offset_Previous,
                    Add_Point,

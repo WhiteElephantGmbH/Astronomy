@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2019 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2019 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
@@ -66,6 +66,8 @@ package PWI4.Mount is
                         Item    : Arc_Second);
 
   procedure Stop_Rates;
+
+  procedure Spiral_Offset_Center;
 
   procedure Spiral_Offset_Next;
 

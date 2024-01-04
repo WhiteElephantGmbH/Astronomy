@@ -51,6 +51,7 @@ package body Device is
                         Set_Gradual_Offsets,
                         Set_Offset,
                         Stop_Rates,
+                        Spiral_Offset_Center,
                         Spiral_Offset_Next,
                         Spiral_Offset_Previous,
                         Reset_Moving_Target);
@@ -107,6 +108,8 @@ package body Device is
                           Item : PWI4.Arc_Second);
 
     procedure Stop_Rates;
+
+    procedure Spiral_Offset_Center;
 
     procedure Spiral_Offset_Next;
 
@@ -204,6 +207,13 @@ package body Device is
       The_Mount_Action := Stop_Rates;
       Is_Pending := True;
     end Stop_Rates;
+
+
+    procedure Spiral_Offset_Center is
+    begin
+      The_Mount_Action := Spiral_Offset_Center;
+      Is_Pending := True;
+    end Spiral_Offset_Center;
 
 
     procedure Spiral_Offset_Next is
@@ -467,6 +477,8 @@ package body Device is
                                  Item    => The_Parameter.Arc_Seconds);
         when Stop_Rates =>
           PWI4.Mount.Stop_Rates;
+        when Spiral_Offset_Center =>
+          PWI4.Mount.Spiral_Offset_Center;
         when Spiral_Offset_Next =>
           PWI4.Mount.Spiral_Offset_Next;
         when Spiral_Offset_Previous =>
@@ -814,6 +826,13 @@ package body Device is
       Log.Write ("Mount.Stop_Rate");
       Action.Stop_Rates;
     end Stop_Rate;
+
+
+    procedure Spiral_Offset_Center is
+    begin
+      Log.Write ("Mount.Spiral_Offset_Center");
+      Action.Spiral_Offset_Center;
+    end Spiral_Offset_Center;
 
 
     procedure Spiral_Offset_Next is

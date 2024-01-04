@@ -30,6 +30,7 @@ package Device is
                    Move_Down,
                    Next_Speed,
                    Previous_Speed,
+                   Spiral_Offset_Center,
                    Spiral_Offset_Next,
                    Spiral_Offset_Previous,
                    Go_Back,
@@ -105,6 +106,8 @@ package Device is
     procedure Set_Rate_Transverse (Item : Speed);
 
     procedure Stop_Rate;
+
+    procedure Spiral_Offset_Center;
 
     procedure Spiral_Offset_Next;
 

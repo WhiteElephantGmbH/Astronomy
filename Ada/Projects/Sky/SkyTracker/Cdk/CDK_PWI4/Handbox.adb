@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2019 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2019 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -98,9 +98,9 @@ package body Handbox is
       User.Input.Put (Command, User.Input.Handbox);
     end Execute;
 
-    Arrow_Was_Pressed : Boolean := False;
-    Center_Is_Pressed : Boolean := False;
-    Is_Changing       : Boolean := False;
+    Is_Changing         : Boolean := False;
+    Center_Is_Pressed   : Boolean := False;
+    Left_Action_Pending : Boolean := False;
 
     Delay_Time_After_Error : constant Duration := 0.5; -- seconds
 
@@ -122,48 +122,53 @@ package body Handbox is
             when 'u' =>
               if Center_Is_Pressed then
                 Execute (Device.Next_Speed);
-                Arrow_Was_Pressed := True;
-              else
+              elsif not Is_Changing then
                 Is_Changing := True;
                 Execute (Device.Move_Up);
               end if;
             when 'd' =>
               if Center_Is_Pressed then
-               Execute (Device.Previous_Speed);
-                Arrow_Was_Pressed := True;
-              else
+                Execute (Device.Previous_Speed);
+              elsif not Is_Changing then
                 Is_Changing := True;
                 Execute (Device.Move_Down);
               end if;
             when 'l' =>
-              Is_Changing := True;
               if Center_Is_Pressed then
-                Execute (Device.Spiral_Offset_Previous);
-                Arrow_Was_Pressed := True;
-              else
+                Left_Action_Pending := True;
+              elsif not Is_Changing then
+                Is_Changing := True;
                 Execute (Device.Move_Left);
               end if;
             when 'r' =>
-              Is_Changing := True;
               if Center_Is_Pressed then
                 Execute (Device.Spiral_Offset_Next);
-                Arrow_Was_Pressed := True;
-              else
+              elsif not Is_Changing then
+                Is_Changing := True;
                 Execute (Device.Move_Right);
               end if;
             when 'c' =>
-              Center_Is_Pressed := True;
-              Arrow_Was_Pressed := False;
+              if not Is_Changing then
+                Center_Is_Pressed := True;
+              end if;
             when 'U' | 'D' | 'L' | 'R' =>
               if Is_Changing then
-                Is_Changing := False;
                 Execute (Device.End_Command);
+              elsif Left_Action_Pending then
+                Execute (Device.Spiral_Offset_Previous);
               end if;
+              Is_Changing := False;
+              Left_Action_Pending := False;
             when 'C' =>
-              Center_Is_Pressed := False;
-              if not Arrow_Was_Pressed then
-                Execute (Device.Go_Back);
+              if not Is_Changing then
+                if Left_Action_Pending then
+                  Execute (Device.Spiral_Offset_Center);
+                else
+                  Execute (Device.Go_Back);
+                end if;
               end if;
+              Left_Action_Pending := False;
+              Center_Is_Pressed := False;
             when others =>
               Log.Error ("Unknown Input: " & The_Character);
             end case;

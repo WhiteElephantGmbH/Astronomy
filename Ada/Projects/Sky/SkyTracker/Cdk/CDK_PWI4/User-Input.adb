@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2019 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2019 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -29,6 +29,7 @@ package body User.Input is
                    End_Command,
                    Next_Speed,
                    Previous_Speed,
+                   Spiral_Offset_Center,
                    Spiral_Offset_Next,
                    Spiral_Offset_Previous,
                    Go_Back,
@@ -39,6 +40,8 @@ package body User.Input is
   subtype Move is Command range Move_Up .. Move_Right;
 
   subtype Change_Speed is Command range Next_Speed .. Previous_Speed;
+
+  subtype Spiral_Offset is Command range Spiral_Offset_Center .. Spiral_Offset_Previous;
 
   protected Manager is
 
@@ -74,7 +77,7 @@ package body User.Input is
             Active_Command := End_Command;
             New_Command := True;
           end if;
-        when End_Command | Go_Back | Change_Speed | Spiral_Offset_Next | Spiral_Offset_Previous | Add_Point | Rotate =>
+        when End_Command | Go_Back | Change_Speed | Spiral_Offset | Add_Point | Rotate =>
           null;
         end case;
         if The_Command = Device.Stop then
@@ -96,6 +99,8 @@ package body User.Input is
           Active_Command := Move_Left;
         when Device.Move_Right =>
           Active_Command := Move_Right;
+        when Device.Spiral_Offset_Center =>
+          Active_Command := Spiral_Offset_Center;
         when Device.Spiral_Offset_Next =>
           Active_Command := Spiral_Offset_Next;
         when Device.Spiral_Offset_Previous =>
@@ -204,6 +209,8 @@ package body User.Input is
           Telescope.Execute (Telescope.Previous_Speed);
         when Next_Speed =>
           Telescope.Execute (Telescope.Next_Speed);
+        when Spiral_Offset_Center =>
+          Telescope.Execute (Telescope.Spiral_Offset_Center);
         when Spiral_Offset_Next =>
           Telescope.Execute (Telescope.Spiral_Offset_Next);
         when Spiral_Offset_Previous =>

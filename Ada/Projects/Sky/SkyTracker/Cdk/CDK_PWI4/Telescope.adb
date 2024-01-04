@@ -482,6 +482,8 @@ package body Telescope is
         Adjust_Second (-Speed);
       when End_Command =>
         Mount.Stop_Rate;
+      when Spiral_Offset_Center =>
+        Mount.Spiral_Offset_Center;
       when Spiral_Offset_Next =>
         Mount.Spiral_Offset_Next;
       when Spiral_Offset_Previous =>
