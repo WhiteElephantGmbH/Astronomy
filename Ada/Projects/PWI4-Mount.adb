@@ -37,6 +37,9 @@ package body PWI4.Mount is
   Last_Axis0_Position : Degrees;
   Last_Axis1_Position : Degrees;
 
+  Spiral_Offsets : PWI4.Protocol.Spiral_Data;
+
+
   procedure Initialize_Homing is
   begin
     Homing_Counter := Homing_Check_Count;
@@ -102,6 +105,7 @@ package body PWI4.Mount is
     end Status;
 
   begin
+    Spiral_Offsets := Data.Spiral_Offsets;
     return (Status    => Status,
             Ra        => Data.Ra,
             Dec       => Data.Dec,
@@ -220,8 +224,8 @@ package body PWI4.Mount is
 
 
   procedure Spiral_Offset_Center is
-    X_Step : constant String := "1800";
-    Y_Step : constant String := "1200";
+    X_Step : constant String := Image_Of (Spiral_Offsets.X_Step);
+    Y_Step : constant String := Image_Of (Spiral_Offsets.Y_Step);
   begin
     Execute (Command_Name => "spiral_offset/new",
              Parameters   => "x_step_arcsec=" & X_Step & "&y_step_arcsec=" & Y_Step);

@@ -1,5 +1,7 @@
 """
 ************************************************************************************************************************
+*                                        Enhanced Handbox Simulator for CDK700                                         *
+************************************************************************************************************************
 *                              (c) 2024 by White Elephant GmbH, Schaffhausen, Switzerland                              *
 *                                                www.white-elephant.ch                                                 *
 *                                                                                                                      *
@@ -13,8 +15,6 @@
 *                                                                                                                      *
 *      You should have received a copy of the GNU General Public License along with this program; if not, write to     *
 *      the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                 *
-************************************************************************************************************************
-*                                        Enhanced Handbox Simulator for CDK700                                         *
 ************************************************************************************************************************
 """
 import cdk_pwi4_client as cc
@@ -34,7 +34,7 @@ def main():
     focuser_min = 1
     focuser_max = 10000 # default
     zoom_delta  = 150
-    
+
     #events
     go_back                = client.go_back
     move_left              = client.move_left
@@ -42,6 +42,7 @@ def main():
     move_up                = client.move_up
     move_down              = client.move_down
     end_command            = client.end_command
+    spiral_offset_center   = client.spiral_offset_center
     spiral_offset_next     = client.spiral_offset_next
     spiral_offset_previous = client.spiral_offset_previous
     next_speed             = client.next_speed
@@ -57,36 +58,38 @@ def main():
 
     lower_limit = focuser_min
     upper_limit = focuser_max
-    
+
     speed = [[sg.RealtimeButton(sg.SYMBOL_LEFT, key=previous_speed),
               sg.Text(size=(8,1), key='-SPEED-', pad=(0,0), font='Ani 13',
                       justification='c', background_color=color0, text_color=color1),
               sg.RealtimeButton(sg.SYMBOL_RIGHT, key=next_speed)]]
 
-    control = [[sg.Frame('Speed', font='Ani 8', layout=speed, element_justification='c')],
-               [sg.RealtimeButton(sg.SYMBOL_UP, key=move_up)],
-               [sg.RealtimeButton(sg.SYMBOL_LEFT, key=move_left),
-                sg.RealtimeButton(sg.SYMBOL_CIRCLE, key=go_back),
-                sg.RealtimeButton(sg.SYMBOL_RIGHT, key=move_right)],
-               [sg.RealtimeButton(sg.SYMBOL_DOWN, key=move_down)]]
-
     spiral = [[sg.RealtimeButton(sg.SYMBOL_LEFT, key=spiral_offset_previous),
-               sg.RealtimeButton(sg.SYMBOL_CIRCLE, key='spiral_go_back'),
+               sg.RealtimeButton(sg.SYMBOL_CIRCLE, key=spiral_offset_center),
                sg.RealtimeButton(sg.SYMBOL_RIGHT, key=spiral_offset_next)]]
 
-    position = [[sg.Text(size=(14,1), key='-AXIS0-', pad=(0,0), font='Ani 12',
-                         justification='r', background_color=color0, text_color=color1)],
-                [sg.Text(size=(14,1), key='-AXIS1-', pad=(0,0), font='Ani 12',
-                         justification='r', background_color=color0, text_color=color1)]]
+    move = [[sg.RealtimeButton(sg.SYMBOL_UP, key=move_up)],
+            [sg.RealtimeButton(sg.SYMBOL_LEFT, key=move_left),
+             sg.RealtimeButton(sg.SYMBOL_CIRCLE, key=go_back),
+             sg.RealtimeButton(sg.SYMBOL_RIGHT, key=move_right)],
+            [sg.RealtimeButton(sg.SYMBOL_DOWN, key=move_down)]]
+
+    handbox = [[sg.Frame('Speed', font='Ani 8', layout=speed, element_justification='c')],
+               [sg.Frame('', layout=move, element_justification='c')],
+               [sg.Frame('Spiral Offset', font='Ani 8', layout=spiral, element_justification='c')]]
+
+    axis = [[sg.Text(size=(14,1), key='-AXIS0-', pad=(0,0), font='Ani 12',
+                     justification='r', background_color=color0, text_color=color1)],
+            [sg.Text(size=(14,1), key='-AXIS1-', pad=(0,0), font='Ani 12',
+                     justification='r', background_color=color0, text_color=color1)]]
 
     model = [[sg.RealtimeButton('Add Point', key=add_point),
               sg.Text(size=(6,1), key='-POINTS-', pad=(0,0), font='Ani 13',
                       justification='c', background_color=color0, text_color=color1)]]
 
-    mount = [[sg.Frame('', control, element_justification='c')],
-             [sg.Frame('Spiral Offset', font='Ani 8', layout=spiral, element_justification='c')],
-             [sg.Frame('Axis 0/1', font='Ani 8', layout=position, element_justification='c')],
-             [sg.Frame('Model', font='Ani 8', layout= model, element_justification='c')]]
+    mount = [[sg.Frame('', layout=handbox, element_justification='c')],
+             [sg.Frame('Axis 0/1', font='Ani 8', layout=axis, element_justification='c')],
+             [sg.Frame('Model', font='Ani 8', layout=model, element_justification='c')]]
 
     m3 = [[sg.RealtimeButton(sg.SYMBOL_RIGHT, key=rotate),
            sg.Text(size=(12,1), key='-M3-', pad=(0,0), font='Ani 14',
@@ -109,7 +112,7 @@ def main():
                        finalize=True,
                        element_justification='c',
                        location=(0,0),
-                       size=(245,505))
+                       size=(245,520))
     count = 0
     pressed = False
     zoomed = False
@@ -124,9 +127,7 @@ def main():
                 if not pressed:
                     pressed = True
                     release_action = event in (move_up,  move_down, move_left, move_right)
-                    if event == rotate:
-                        response = client.m3_rotate()
-                    elif event == 'zoom':
+                    if event == 'zoom':
                         if zoomed:
                             zoomed = False
                             lower_limit = focuser_min
@@ -142,14 +143,13 @@ def main():
                                 lower_limit = value - (zoom_delta / 2)
                                 if lower_limit < focuser_min:
                                     lower_limit = focuser_min
-                                    upper_limit = focuser_min + zoom_delta                           
+                                    upper_limit = focuser_min + zoom_delta
                             window['zoom'].update(text='⇔')
                         window['focus'].update(range=(lower_limit,upper_limit))
+                    elif event == rotate:
+                        response = client.m3_rotate()
                     else:
-                        if event == 'spiral_go_back':
-                            response = client.mount_command (command = go_back)
-                        else:
-                            response = client.mount_command (command = event)
+                        response = client.mount_command (command = event)
             else:
                 # A timeout signals that all buttons have been released
                 if pressed:
@@ -193,7 +193,7 @@ def main():
                             else:
                                 window['-FM3-'].update(visible=False)
                         else:
-                            window['-SPEED-'].update("")                        
+                            window['-SPEED-'].update("")
                             window['-FM3-'].update(visible=False)
                             window['-FFO-'].update(visible=False)
         except:

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2023 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2023 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
@@ -494,8 +494,10 @@ package body PWI4.Protocol is
           Log.Write ("mount.spiral_offsets.y=" & Next_Value);
         when I_X_Step_Arcsec =>
           Log.Write ("mount.spiral_offsets.x_step_arcsec=" & Next_Value);
+          The_Response.Mount.Spiral_Offsets.X_Step := Arc_Second_Of (Value);
         when I_Y_Step_Arcsec =>
           Log.Write ("mount.spiral_offsets.y_step_arcsec=" & Next_Value);
+          The_Response.Mount.Spiral_Offsets.Y_Step := Arc_Second_Of (Value);
         when others =>
           raise Parsing_Error;
         end case;

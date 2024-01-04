@@ -1,5 +1,7 @@
 """
 ************************************************************************************************************************
+*                                             Handbox Simulator for CDK700                                             *
+************************************************************************************************************************
 *                              (c) 2024 by White Elephant GmbH, Schaffhausen, Switzerland                              *
 *                                                www.white-elephant.ch                                                 *
 *                                                                                                                      *
@@ -13,8 +15,6 @@
 *                                                                                                                      *
 *      You should have received a copy of the GNU General Public License along with this program; if not, write to     *
 *      the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                 *
-************************************************************************************************************************
-*                                             Handbox Simulator for CDK700                                             *
 ************************************************************************************************************************
 """
 import cdk_pwi4_client as cc
@@ -34,7 +34,7 @@ def main():
     focuser_min = 1
     focuser_max = 10000 # default
     zoom_delta  = 150
-    
+
     #events
     go_back                = client.go_back
     move_left              = client.move_left
@@ -42,11 +42,8 @@ def main():
     move_up                = client.move_up
     move_down              = client.move_down
     end_command            = client.end_command
-    spiral_offset_next     = client.spiral_offset_next
-    spiral_offset_previous = client.spiral_offset_previous
     next_speed             = client.next_speed
     previous_speed         = client.previous_speed
-    add_point              = client.add_point
     rotate                 = client.rotate
 
     color0 = sg.theme_button_color()[0]
@@ -57,30 +54,35 @@ def main():
 
     lower_limit = focuser_min
     upper_limit = focuser_max
-    
+
     speed = [[sg.RealtimeButton(sg.SYMBOL_LEFT, key=previous_speed),
               sg.Text(size=(8,1), key='-SPEED-', pad=(0,0), font='Ani 13',
                       justification='c', background_color=color0, text_color=color1),
               sg.RealtimeButton(sg.SYMBOL_RIGHT, key=next_speed)]]
 
+    move = [[sg.RealtimeButton(sg.SYMBOL_UP, key=move_up)],
+            [sg.RealtimeButton(sg.SYMBOL_LEFT, key=move_left),
+             sg.RealtimeButton(sg.SYMBOL_CIRCLE, key=go_back),
+             sg.RealtimeButton(sg.SYMBOL_RIGHT, key=move_right)],
+            [sg.RealtimeButton(sg.SYMBOL_DOWN, key=move_down)]]
+
     handbox = [[sg.Frame('Speed', font='Ani 8', layout=speed, element_justification='c')],
-               [sg.RealtimeButton(sg.SYMBOL_UP, key=move_up)],
-               [sg.RealtimeButton(sg.SYMBOL_LEFT, key=move_left),
-                sg.RealtimeButton(sg.SYMBOL_CIRCLE, key=go_back),
-                sg.RealtimeButton(sg.SYMBOL_RIGHT, key=move_right)],
-               [sg.RealtimeButton(sg.SYMBOL_DOWN, key=move_down)]]
+               [sg.Frame('', layout=move, element_justification='c')]]
 
     m3 = [[sg.RealtimeButton(sg.SYMBOL_RIGHT, key=rotate),
-           sg.Text(size=(11,1), key='-M3-', pad=(0,0), font='Ani 14', justification='c', background_color=color0, text_color=color1)]]
+           sg.Text(size=(11,1), key='-M3-', pad=(0,0), font='Ani 14',
+                   justification='c', background_color=color0, text_color=color1)]]
 
     focuser = [[sg.RealtimeButton('🔎', key='zoom', font='Ani 11', size=(2,1)),
                 sg.Slider(key='focus', range=(lower_limit,upper_limit), default_value=value,
                           size=(18,18), orientation='horizontal', font='Ani 12',
                           enable_events=True)]]
 
-    layout = [[sg.Frame('Handbox', font='Ani 8', layout=handbox, element_justification='c')],
-              [sg.Frame('M3', font='Ani 8', key='-FM3-', layout=m3, element_justification='c', visible=False)],
-              [sg.Frame('Focuser', font='Ani 8', key='-FFO-', layout=focuser, element_justification='c', visible=False)]]
+    layout = [[sg.Frame('', layout=handbox, element_justification='c')],
+              [sg.Frame('M3', font='Ani 8', key='-FM3-', layout=m3, element_justification='c',
+                        visible=False)],
+              [sg.Frame('Focuser', font='Ani 8', key='-FFO-', layout=focuser, element_justification='c',
+                        visible=False)]]
 
     window = sg.Window('CDK700 Control',
                        layout,
@@ -88,7 +90,7 @@ def main():
                        finalize=True,
                        element_justification='c',
                        location=(0,0),
-                       size=(245,320))
+                       size=(245,315))
     count = 0
     pressed = False
     zoomed = False
@@ -103,9 +105,7 @@ def main():
                 if not pressed:
                     pressed = True
                     release_action = event in (move_up,  move_down, move_left, move_right)
-                    if event == rotate:
-                        response = client.m3_rotate()
-                    elif event == 'zoom':
+                    if event == 'zoom':
                         if zoomed:
                             zoomed = False
                             lower_limit = focuser_min
@@ -121,9 +121,11 @@ def main():
                                 lower_limit = value - (zoom_delta / 2)
                                 if lower_limit < focuser_min:
                                     lower_limit = focuser_min
-                                    upper_limit = focuser_min + zoom_delta                           
+                                    upper_limit = focuser_min + zoom_delta
                             window['zoom'].update(text='⇔')
                         window['focus'].update(range=(lower_limit,upper_limit))
+                    elif event == rotate:
+                        response = client.m3_rotate()
                     else:
                         response = client.mount_command (command = event)
             else:
@@ -166,7 +168,7 @@ def main():
                             else:
                                 window['-FM3-'].update(visible=False)
                         else:
-                            window['-SPEED-'].update("")                        
+                            window['-SPEED-'].update("")
                             window['-FM3-'].update(visible=False)
                             window['-FFO-'].update(visible=False)
         except:

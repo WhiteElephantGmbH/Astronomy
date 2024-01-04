@@ -98,9 +98,10 @@ package body Handbox is
       User.Input.Put (Command, User.Input.Handbox);
     end Execute;
 
-    Is_Changing         : Boolean := False;
+    Is_Moving           : Boolean := False;
     Center_Is_Pressed   : Boolean := False;
     Left_Action_Pending : Boolean := False;
+    Is_Active           : Boolean := False;
 
     Delay_Time_After_Error : constant Duration := 0.5; -- seconds
 
@@ -122,53 +123,59 @@ package body Handbox is
             when 'u' =>
               if Center_Is_Pressed then
                 Execute (Device.Next_Speed);
-              elsif not Is_Changing then
-                Is_Changing := True;
+                Is_Active := True;
+              elsif not Is_Moving then
                 Execute (Device.Move_Up);
+                Is_Moving := True;
               end if;
             when 'd' =>
               if Center_Is_Pressed then
                 Execute (Device.Previous_Speed);
-              elsif not Is_Changing then
-                Is_Changing := True;
+                Is_Active := True;
+              elsif not Is_Moving then
                 Execute (Device.Move_Down);
+                Is_Moving := True;
               end if;
             when 'l' =>
               if Center_Is_Pressed then
                 Left_Action_Pending := True;
-              elsif not Is_Changing then
-                Is_Changing := True;
+              elsif not Is_Moving then
                 Execute (Device.Move_Left);
+                Is_Moving := True;
               end if;
             when 'r' =>
               if Center_Is_Pressed then
                 Execute (Device.Spiral_Offset_Next);
-              elsif not Is_Changing then
-                Is_Changing := True;
+                Is_Active := True;
+              elsif not Is_Moving then
                 Execute (Device.Move_Right);
+                Is_Moving := True;
               end if;
             when 'c' =>
-              if not Is_Changing then
+              if not Is_Moving then
                 Center_Is_Pressed := True;
+                Is_Active := False;
               end if;
             when 'U' | 'D' | 'L' | 'R' =>
-              if Is_Changing then
+              if Is_Moving then
+                Is_Moving := False;
                 Execute (Device.End_Command);
               elsif Left_Action_Pending then
                 Execute (Device.Spiral_Offset_Previous);
+                Is_Active := True;
               end if;
-              Is_Changing := False;
               Left_Action_Pending := False;
             when 'C' =>
-              if not Is_Changing then
+              if not Is_Moving then
                 if Left_Action_Pending then
                   Execute (Device.Spiral_Offset_Center);
-                else
+                  Left_Action_Pending := False;
+                elsif not Is_Active then
                   Execute (Device.Go_Back);
                 end if;
               end if;
-              Left_Action_Pending := False;
               Center_Is_Pressed := False;
+              Is_Active := False;
             when others =>
               Log.Error ("Unknown Input: " & The_Character);
             end case;

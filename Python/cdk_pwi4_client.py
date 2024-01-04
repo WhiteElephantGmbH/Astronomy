@@ -1,20 +1,35 @@
-"""------------------------------------------------------------------------------------------------------------------
-   -- This Python module wraps the calls and responses provided by the HTTP API exposed by CDK_PWI4 (SkyTracker). --
-   ------------------------------------------------------------------------------------------------------------------
+"""
+************************************************************************************************************************
+*                    HTTP API exposed by CDK_PWI4 (SkyTracker) implemented using the json protocoll                    *
+************************************************************************************************************************
+*                              (c) 2024 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+*                                                www.white-elephant.ch                                                 *
+*                                                                                                                      *
+*      This program is free software; you can redistribute it and/or modify it under the terms of the GNU General      *
+*      Public License as published by the Free Software Foundation; either version 2 of the License, or                *
+*      (at your option) any later version.                                                                             *
+*                                                                                                                      *
+*      This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the      *
+*      implied warranty of MERCHANTABILITY or FITNESS for A PARTICULAR PURPOSE. See the GNU General Public License     *
+*      for more details.                                                                                               *
+*                                                                                                                      *
+*      You should have received a copy of the GNU General Public License along with this program; if not, write to     *
+*      the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                 *
+************************************************************************************************************************
 """
 import json
 import requests
 
+""" Mount Information
+    =================
+"""
 class Mount:
-    """
-    Mount information of the CDK700 telescope.
-    """
     def __init__(self, mount):
         self.mount = mount
-            
+
     def exists(self):
         return self.mount["exists"]
-    
+
     def speed(self):
         return self.mount["speed"]
 
@@ -28,39 +43,39 @@ class Mount:
         return self.mount["points"]
 
 
+""" M3 Information
+    ==============
+"""
 class M3:
-    """
-    M3 information of the CDK700 telescope.
-    """
     def __init__(self, m3):
         self.m3 = m3
-            
+
     def exists(self):
         return self.m3["exists"]
-    
+
     def at_camera(self):
         return self.m3["at_camera"]
-    
+
     def position(self):
         return self.m3["position"]
 
 
+""" Focuser Information
+    ===================
+"""
 class Focuser:
-    """
-    Focuser information of the CDK700 telescope.
-    """
     def __init__(self, focuser):
         self.focuser = focuser
-            
+
     def exists(self):
         return self.focuser["exists"]
-    
+
     def connected(self):
         return self.focuser["connected"]
-    
+
     def moving(self):
         return self.focuser["moving"]
-    
+
     def max_position(self):
         return self.focuser["max_position"]
 
@@ -68,13 +83,13 @@ class Focuser:
         return self.focuser["position"]
 
 
+""" Information from SkyTracker
+    ***************************
+"""
 class Information:
-    """
-    Information of the CDK700 telescope.
-    """
     def __init__(self, data):
         self.info = json.loads(data)
-        
+
     def mount(self):
         return Mount(self.info["mount"])
 
@@ -85,10 +100,12 @@ class Information:
         return Focuser(self.info["focuser"])
 
 
+"""
+    *******************
+    * CDK_PWI4 Client *
+    *******************
+"""
 class Client:
-    """
-    Client to the CDK700 telescope control application.
-    """
     def __init__(self, host="localhost", port=9000):
         self.host = host
         self.port = port
@@ -105,6 +122,7 @@ class Client:
     move_down              = 'move_down'
     end_command            = 'end_command'
     go_back                = 'go_back'
+    spiral_offset_center   = 'spiral_offset_center'
     spiral_offset_next     = 'spiral_offset_next'
     spiral_offset_previous = 'spiral_offset_previous'
     next_speed             = 'next_speed'
@@ -128,8 +146,8 @@ class Client:
     def focuser_set_position(self, value):
         return self.request_with_status("/focuser/set/?position=" + str(value))
 
-    """ Info
-        ----
+    """ Information
+        -----------
     """
     def info(self):
         return Information(data=self.request_with_status("/information"))
@@ -146,8 +164,7 @@ class Client:
                 return response.text
             else:
                 print('request failed')
-                
+
         except:
             print('no connection')
             raise
-
