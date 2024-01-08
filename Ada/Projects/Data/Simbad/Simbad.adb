@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2023 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2023 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -18,7 +18,7 @@ pragma Style_White_Elephant;
 with Generator;
 
 pragma Build (Description => "Generate Simbad Objects",
-              Version     => (1, 0, 0, 0),
+              Version     => (1, 0, 0, 1),
               Kind        => Console,
               Icon        => False,
               Compiler    => "GNATPRO\23.0");

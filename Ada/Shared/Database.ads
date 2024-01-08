@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2023 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2023 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -158,11 +158,8 @@ package Database is
 
   subtype Visual_Magnitude is Magnitude range -2.0 .. 10.0;
 
-  Undefined_Parallax  : constant := Parallax'first;
-  Undefined_Magnitude : constant := Magnitude'last;
-
-  No_Plx : constant := Undefined_Parallax;
-  No_Mag : constant := Undefined_Magnitude;
+  No_Plx : constant := Parallax'first;
+  No_Mag : constant := Magnitude'last;
 
   type Star_Class is (O, B, A, F, G, K, M, R, S, N, C, DB, DA, DF, DG, WR, WN, WC);
 
@@ -176,21 +173,15 @@ package Database is
     Luminosity : Star_Luminosity_Class;
   end record;
 
-  Undefined_Spec_Type : constant Star_Spec_Type := (G, S0, NO);
-
   type Star_Information is record
-    Otype      : Database.Star_Type;
-    Ra_J2000   : Database.Degrees_Ra;
-    Dec_J2000  : Database.Degrees_Dec;
-    Ra_Pm      : Database.Motion;
-    Dec_Pm     : Database.Motion;
-    Plx        : Database.Parallax;
-    Umag       : Database.Magnitude;
-    Bmag       : Database.Magnitude;
-    Vmag       : Database.Magnitude;
-    Rmag       : Database.Magnitude;
-    Imag       : Database.Magnitude;
-    Stype      : Database.Star_Spec_Type;
+    Otype     : Database.Star_Type;
+    Ra_J2000  : Database.Degrees_Ra;
+    Dec_J2000 : Database.Degrees_Dec;
+    Ra_PM     : Database.Motion;
+    Dec_PM    : Database.Motion;
+    Plx       : Database.Parallax;
+    Vmag      : Database.Magnitude;
+    Stype     : Database.Star_Spec_Type;
   end record with Pack;
 
 end Database;
