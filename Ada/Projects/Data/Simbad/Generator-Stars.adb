@@ -30,6 +30,19 @@ package body Generator.Stars is
   Skip_Object : exception;
 
 
+  procedure Warning (Message : String) is
+  begin
+    Log.Warning (Message & " in Line" & The_Line_Number'image);
+  end Warning;
+
+
+  procedure Warning_And_Skip (Message : String) with No_Return is
+  begin
+    Warning ("skip - " & Message);
+    raise Skip_Object;
+  end Warning_And_Skip;
+
+
   function Otype_Of (Item : String) return Database.Star_Type is
   -- * Star
   --    Ma*         Ma?    Massive Star
@@ -139,12 +152,12 @@ package body Generator.Stars is
 
   begin -- Otype_Of
     if Item = Undefined then
-      raise Skip_Object;
+      Warning_And_Skip ("Undefined Otype");
     elsif Item in "a2*" | "a2?" then
       return Alpha2_Cvn_Variable_Star;
     elsif Item in "AB*" | "AB?" then
       return Asymptotic_Giant_Branch_Star;
-    elsif Item = "Be*" then
+    elsif Item in "Be*" | "Be?" then
       return Be_Star;
     elsif Item in "bC*" | "bC?" then
       return Beta_Cep_Variable_Star;
@@ -178,7 +191,7 @@ package body Generator.Stars is
       return Emission_Line_Star;
     elsif Item = "Er*" then
       return Eruptive_Variable_Star;
-    elsif Item = "sg*" then
+    elsif Item in "sg*" | "sg?" then
       return Evolved_Supergiant_Star;
     elsif Item = "gD*" then
       return Gamma_Dor_Variable_Star;
@@ -192,7 +205,7 @@ package body Generator.Stars is
       return High_Velocity_Star;
     elsif Item = "HB*" then
       return Horizontal_Branch_Star;
-    elsif Item = "HS*" then
+    elsif Item in "HS*" | "HS?" then
       return Hot_Subdwarf_Star;
     elsif Item = "Ir*" then
       return Irregular_Variable_Star;
@@ -206,17 +219,19 @@ package body Generator.Stars is
       return Main_Sequence_Star;
     elsif Item = "Mi*" then
       return Mira_Variable_Star;
+    elsif Item = "mul" then
+      return Composite_Object_Blend;
     elsif Item = "OH*" then
       return OH_IR_Star;
     elsif Item = "Or*" then
       return Orion_Variable_Star;
-    elsif Item = "PN" then
+    elsif Item in "PN" | "PN?" then
       return Planetary_Nebula_Star;
     elsif Item in "pA*" | "pA?" then
       return Post_AGB_Star;
     elsif Item = "Pu*" then
       return Pulsating_Variable_Star;
-    elsif Item = "RC*" then
+    elsif Item in "RC*" | "RC?" then
       return R_Crb_Variable_Star;
     elsif Item in "RG*" | "RB?" then
       return Red_Giant_Branch_Star;
@@ -236,6 +251,8 @@ package body Generator.Stars is
       return Spectroscopic_Binary_Star;
     elsif Item = "*" then
       return Star;
+    elsif Item in "SN*" | "SN?" then
+      return Supernova;
     elsif Item = "SX*" then
       return SX_Phe_Variable;
     elsif Item = "Sy*" then
@@ -257,7 +274,7 @@ package body Generator.Stars is
     elsif Item in "Y*O" | "Y*?" then
       return Young_Stellar_Object_Star;
     else
-      Error ("Unknown Otype: " & Item);
+      Warning_And_Skip ("Unknown Otype " & Item);
     end if;
   end Otype_Of;
 
@@ -292,10 +309,13 @@ package body Generator.Stars is
     use all type Database.Star_Luminosity_Class;
 
   begin -- Stype_Of
-    if Item = Undefined then
-      raise Skip_Object;
+    if Item in Undefined | "-" then
+      Warning ("Undefined Stype");
+      return Database.Undefined_Spec_Type;
     end if;
-    while not (Image(Index) in 'O' | 'B' | 'A' | 'F' | 'G' | 'K' | 'M' | 'R' | 'S' | 'N' | 'C' | 'D' | 'W' | ' ') loop
+    while not
+      (Image(Index) in 'O' | 'B' | 'A' | 'F' | 'G' | 'K' | 'L' | 'M' | 'R' | 'S' | 'N' | 'C' | 'D' | 'W' | ' ')
+    loop
       Index := @ + 1;
     end loop;
     case Image(Index) is
@@ -311,6 +331,8 @@ package body Generator.Stars is
       The_Class := G;
     when 'K' =>
       The_Class := K;
+    when 'L' =>
+      The_Class := L;
     when 'M' =>
       The_Class := M;
     when 'R' =>
@@ -377,9 +399,11 @@ package body Generator.Stars is
         end case;
       when 'b' =>
         The_Luminosity_Class := Ib;
-      when ' ' | ':' | '+' | '/'  | '(' | ')' |'e' | 'f' =>
-        -- I | I: | I+ | I/II | I(n) | (I) | Ie | If -> II
+      when ' ' | ':' | '+' | '/'  | '(' | ')' |'e' | 'f' | '-' | '[' =>
+        -- I | I: | I+ | I/II | I(n) | (I) | Ie | If | I-II(I) | I[e] -> II
         The_Luminosity_Class := II;
+      when '?' =>
+        The_Luminosity_Class := NO;
       when 'I' => -- II
         Index := @ + 1;
         case Image(Index) is
@@ -457,6 +481,12 @@ package body Generator.Stars is
   The_Stars : Star_Data.List;
   The_Names : Strings.List;
 
+  type Hd_Ids is array (Id range 1 .. 400000) of Boolean with Pack;
+  type Hr_Ids is array (Id range 1 .. 10000) of Boolean with Pack;
+
+  Used_Hd_Ids  : Hd_Ids := [others => False];
+  Used_Hr_Ids  : Hr_Ids := [others => False];
+
   Max_Name_Length : Natural := 0;
 
   HD_Last  : Id := Id'first;
@@ -474,19 +504,29 @@ package body Generator.Stars is
 
       function Ra_J2000_Of (Part: String) return Database.Degrees_Ra is
       begin
-        return Database.Degrees_Ra'value(Part);
-      exception
-      when others =>
-        Error ("Incorrect Ra J2000 <" & Part & ">");
+        if Part = "" then
+          Warning_And_Skip ("No Ra_J2000 value");
+        end if;
+        begin
+          return Database.Degrees_Ra'value(Part);
+        exception
+        when others =>
+          Error ("Incorrect Ra J2000 <" & Part & ">");
+        end;
       end Ra_J2000_Of;
 
 
       function Dec_J2000_Of (Part: String) return Database.Degrees_Dec is
       begin
-        return Database.Degrees_Dec'value(Part);
-      exception
-      when others =>
-        Error ("Incorrect Dec J2000 <" & Part & ">");
+        if Part = "" then
+          Warning_And_Skip ("No Ra_J2000 value");
+        end if;
+        begin
+          return Database.Degrees_Dec'value(Part);
+        exception
+        when others =>
+          Error ("Incorrect Dec J2000 <" & Part & ">");
+        end;
       end Dec_J2000_Of;
 
 
@@ -505,7 +545,7 @@ package body Generator.Stars is
       function Parallax_Of (Item : String) return Database.Parallax is
       begin
         if Item = Undefined then
-          raise Skip_Object;
+          return Database.Parallax'first;
         end if;
         begin
           return Database.Parallax'value(Item);
@@ -514,20 +554,6 @@ package body Generator.Stars is
           Error ("Incorrect Parallax: " & Item);
         end;
       end Parallax_Of;
-
-
-      function Magnitude_Of (Item : String) return Database.Magnitude is
-      begin
-        if Item = Undefined then
-          Error ("Undefined Magnitude");
-        end if;
-        return Database.Visual_Magnitude'(Database.Magnitude'value(Item));
-      exception
-      when Error_Occured =>
-        raise;
-      when others =>
-        Error ("Incorrect Magnitude: " & Item);
-      end Magnitude_Of;
 
 
       function Image_Of (Item  : String;
@@ -549,7 +575,7 @@ package body Generator.Stars is
           Name : constant String := Image_Of (Item, After => "NAME");
         begin
           if Base_Name_Of (Name) = Undefined then
-            Log.Warning ("Undefined Name" & Name);
+            Log.Warning ("Undefined Name " & Name);
             return Unknown_Id;
           else
             if Max_Name_Length < Name'length then
@@ -565,12 +591,22 @@ package body Generator.Stars is
       function Id_Of (Item   :        String;
                       Prefix :        String;
                       Last   : in out Id) return Id is
-      begin
+
+        function Corrected_Id return String is
+        begin
+          if Item(Item'last) in '0'..'9' then
+            return Item;
+          else
+            return Item(Item'first .. Item'last - 1); -- remove A, B...
+          end if;
+        end Corrected_Id;
+
+      begin -- Id_Of
         if Item = Undefined then
           return Unknown_Id;
         end if;
         declare
-          Number_Image : constant String := Image_Of (Item, After => Prefix);
+          Number_Image : constant String := Image_Of (Corrected_Id, After => Prefix);
           The_Id : Id;
         begin
           The_Id := Id'value(Number_Image);
@@ -580,7 +616,7 @@ package body Generator.Stars is
           return The_Id;
         exception
         when others =>
-          raise Skip_Object;
+          Warning_And_Skip ("Undefined Id " & Item);
         end;
       end Id_Of;
 
@@ -592,13 +628,62 @@ package body Generator.Stars is
       function Hr_Id_Of (Item : String) return Id is (Id_Of (Item, "HR", HR_Last));
 
 
-      type Header is (Main_Id, Id_Name, Id_HD, Id_HIP, Id_HR, Ra, Dec, Ra_PM, Dec_PM, Plx, Otype, Stype, Mag_V);
+      function Corrected (Item : String) return String is
+        The_Line        : String := Item;
+        String_Position : constant Natural := Strings.Location_Of ('"', Item);
+      begin
+        if String_Position = Strings.Not_Found then
+          return Item;
+        else
+          for The_Character of The_Line(String_Position + 1 .. The_Line'last) loop
+            case The_Character is
+            when ',' =>
+              The_Character := ';'; -- replace comma in string;
+            when '"' =>
+              exit;
+            when others =>
+              null;
+            end case;
+          end loop;
+          return The_Line;
+        end if;
+      end Corrected;
 
       Line  : constant String := IO.Get_Line (File);
-      Parts : constant Strings.Item := Strings.Item_Of (Line, ',', Purge => False);
+      Parts : constant Strings.Item := Strings.Item_Of (Corrected(Line), ',', Purge => False);
       Count : constant Natural := Parts.Count;
 
+      type Header is (Main_Id, Id_Name, Id_HD, Id_HIP, Id_HR, Ra, Dec, Ra_PM, Dec_PM, Plx, Otype, Stype, Mv);
+
+
       function Part (Item : Header) return String is (Strings.Trimmed (Parts(Header'pos(Item) + Strings.First_Index)));
+
+
+      function Magnitude_Of (Mag : Header) return Database.Magnitude is
+        Item : constant String := Part(Mag);
+      begin
+        if Item = Undefined then
+          Warning ("Magnitude set to default");
+          return Database.Default_Star_Magnitude;
+        end if;
+        begin
+          return Database.Magnitude'value(Item);
+        exception
+        when others =>
+          Error ("Incorrect " & Mag'image & ": " & Item);
+        end;
+      end Magnitude_Of;
+
+
+      function Magnitude return Database.Magnitude is
+        Visual_Mag : constant Database.Magnitude := Magnitude_Of (Mv);
+      begin
+        if Visual_Mag > Database.Magnitude(Database.Star_Magnitude'last) then
+          Warning_And_Skip ("Magnitude" & Visual_Mag'image & " out of range");
+        end if;
+        return Visual_Mag;
+      end Magnitude;
+
 
       Object_Name : constant String := Part(Main_Id);
 
@@ -606,27 +691,38 @@ package body Generator.Stars is
       if Count /= Strings.First_Index + Header'pos(Header'last) then
         Error ("Not enough parts (actual:" & Parts.Count'image & ")");
       end if;
-      Log.Write ("Object: " & Object_Name);
-      The_Star.Data.Vmag := Magnitude_Of (Part (Mag_V));
-      The_Star.Data.Stype := Stype_Of (Part (Stype));
-      The_Star.Data.Otype := Otype_Of (Part (Otype));
-      The_Star.Data.Plx := Parallax_Of (Part (Plx));
-      The_Star.Data.Ra_J2000 := Ra_J2000_Of (Part(Ra));
-      The_Star.Data.Dec_J2000 := Dec_J2000_Of (Part(Dec));
-      The_Star.Data.Ra_PM := Motion_Of (Part (Ra_PM));
-      The_Star.Data.Dec_PM := Motion_Of (Part (Dec_PM));
       The_Star.Hd_Id := Hd_Id_Of (Part (Id_HD));
       The_Star.Hip_Id := Hip_Id_Of (Part (Id_HIP));
       The_Star.Hr_Id := Hr_Id_Of (Part (Id_HR));
       if (The_Star.Hd_Id = Unknown_Id) and (The_Star.Hip_Id = Unknown_Id) and (The_Star.Hr_Id = Unknown_Id) then
-        Log.Warning ("No id for " & Object_Name);
+        Warning ("No id for " & Object_Name);
       else
+        if The_Star.Hd_Id /= Unknown_Id then
+          if Used_Hd_Ids(The_Star.Hd_Id) then
+            Warning_And_Skip ("Duplicated HD" & The_Star.Hd_Id'image);
+          end if;
+          Used_Hd_Ids(The_Star.Hd_Id) := True;
+        end if;
+        if The_Star.Hr_Id /= Unknown_Id then
+          if Used_Hr_Ids(The_Star.Hr_Id) then
+            Warning_And_Skip ("Duplicated HR" & The_Star.Hr_Id'image);
+          end if;
+          Used_Hr_Ids(The_Star.Hr_Id) := True;
+        end if;
+        The_Star.Data.Vmag := Magnitude;
+        The_Star.Data.Stype := Stype_Of (Part (Stype));
+        The_Star.Data.Otype := Otype_Of (Part (Otype));
+        The_Star.Data.Plx := Parallax_Of (Part (Plx));
+        The_Star.Data.Ra_J2000 := Ra_J2000_Of (Part(Ra));
+        The_Star.Data.Dec_J2000 := Dec_J2000_Of (Part(Dec));
+        The_Star.Data.Ra_PM := Motion_Of (Part (Ra_PM));
+        The_Star.Data.Dec_PM := Motion_Of (Part (Dec_PM));
         The_Star.Name_Id := Name_Id_Of (Part (Id_Name));
         The_Stars.Append (The_Star);
       end if;
     exception
     when Skip_Object =>
-      Log.Write ("Skip " & Object_Name);
+      null;
     end Add_Next_Object;
 
     Filename : constant String := Simbad_Folder & "stars.csv";

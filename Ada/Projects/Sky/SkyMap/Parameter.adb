@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2023 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2023 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -238,6 +238,7 @@ package body Parameter is
           (C => 0.00, M => 0.00, Y => 0.00, K => 0.00), -- F
           (C => 0.02, M => 0.00, Y => 0.69, K => 0.00), -- G
           (C => 0.02, M => 0.37, Y => 0.72, K => 0.00), -- K
+          (C => 0.02, M => 0.50, Y => 0.72, K => 0.00), -- L
           (C => 0.02, M => 0.68, Y => 0.71, K => 0.00), -- M
           (C => 0.00, M => 0.00, Y => 0.00, K => 1.00), -- (R)
           (C => 0.33, M => 0.52, Y => 0.99, K => 0.15), -- S

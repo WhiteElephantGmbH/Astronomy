@@ -36,7 +36,8 @@ def get_data(lower_magnitude, upper_magnitude):
     customSimbad = Simbad()
     customSimbad.TIMEOUT = 1000  # Set the timeout for the query (in seconds)
     customSimbad.remove_votable_fields('coordinates')
-    customSimbad.add_votable_fields('id(name)', 'id(HD)', 'id(HIP)', 'id(HR)', 'ra(d)', 'dec(d)', 'pmra', 'pmdec', 'plx', 'otype(otypes)', 'sp', 'flux(V)')
+    customSimbad.add_votable_fields('id(name)', 'id(HD)', 'id(HIP)', 'id(HR)', 'ra(d)', 'dec(d)', 'pmra', 'pmdec',
+                                    'plx', 'otype(otypes)', 'sp', 'flux(V)')
 
     # Define the query to retrieve stars with a magnitude in the specified range
     query = f"Vmag>={lower_magnitude} & Vmag<{upper_magnitude} & otype in ('*')"
@@ -51,25 +52,66 @@ def get_data(lower_magnitude, upper_magnitude):
     return result_table
 
 
+def get_hr_data():
+    """
+    Query the Simbad database for stars from the HR catalog range.
+
+    Returns:
+    - result_table (astropy.table.Table): Table containing the query results.
+    """
+    # Set up the Simbad query
+    customSimbad = Simbad()
+    customSimbad.TIMEOUT = 1000  # Set the timeout for the query (in seconds)
+    customSimbad.remove_votable_fields('coordinates')
+    customSimbad.add_votable_fields('id(name)', 'id(HD)', 'id(HIP)', 'id(HR)', 'ra(d)', 'dec(d)', 'pmra', 'pmdec',
+                                    'plx', 'otype(otypes)', 'sp', 'flux(V)')
+
+    # Define the query to retrieve stars
+    query = f"cat='HR'"
+
+    # Execute the query
+    try:
+        result_table = customSimbad.query_criteria(query)
+    except Exception as e:
+        print(f"Error during Simbad query: {e}")
+        return None
+
+    return result_table
+
+
 """
-   Get symbad stars in chunks of magnitude ranges
-   ==============================================
+   Get symbad stars
+   ================
 """
 
 Output_File = "stars.csv"
 
 Min_Magnitude          = -2.0
 First_Upper_Magnitude  =  3.0
-Max_Star_Magnitude     = 10.0
+Max_Star_Magnitude     =  9.0
 
 max_table_length = 20000
+
+all_dataframes  = []
+
+print("generate HR catalogue star table")
+star_table = get_hr_data()
+if star_table:
+    dataframe = star_table.to_pandas()
+    table_length = len(star_table)
+    if table_length >= max_table_length:
+        print ("star table incomplete - table length:", table_length)
+        sys.exit()
+    all_dataframes.append(dataframe)
+else:
+    print ("star table empty")
+    sys.exit()
 
 # Values in centi magnitudes
 first_upper_value = int(First_Upper_Magnitude * 100)
 last_upper_value  = int(Max_Star_Magnitude * 100)
 increment         = 5
 
-all_dataframes  = []
 lower_magnitude = Min_Magnitude
 print("generate star table from magnitude", lower_magnitude)
 for centi_magnitude in range(first_upper_value, last_upper_value, increment):
@@ -94,7 +136,8 @@ if all_dataframes:
     result_dataframe = pd.concat(all_dataframes, ignore_index=True)
 
     # Select only the relevant columns
-    relevant_columns = ['MAIN_ID', 'ID_name', 'ID_HD', 'ID_HIP', 'ID_HR', 'RA_d', 'DEC_d', 'PMRA', 'PMDEC', 'PLX_VALUE', 'OTYPE_otypes', 'SP_TYPE', 'FLUX_V']
+    relevant_columns = ['MAIN_ID', 'ID_name', 'ID_HD', 'ID_HIP', 'ID_HR', 'RA_d', 'DEC_d', 'PMRA', 'PMDEC',
+                        'PLX_VALUE', 'OTYPE_otypes', 'SP_TYPE', 'FLUX_V']
 
     # Save to CSV without index
     result_dataframe[relevant_columns].to_csv(Output_File, index=False)
