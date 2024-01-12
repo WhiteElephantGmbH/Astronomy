@@ -21,28 +21,27 @@ from astroquery.simbad import Simbad
 import pandas as pd
 import sys
 
-def get_data(lower_ra, upper_ra):
-    """
-    Query the Simbad database for deep sky objects within a specified ra range.
-
+"""
+    Query the Simbad database for deep sky objects within a specified ra range and catalogues
+    ------------------------------------------------------------------------------------------
     Parameters:
     - lower_ra: Lower limit of the right ascension in degrees.
     - upper_ra: Upper limit of the right ascension in degrees.
 
     Returns:
     - result_table (astropy.table.Table): Table containing the query results.
-    """
+"""
+def get_data(lower_ra, upper_ra, catalogs):
     # Set up the Simbad query
     customSimbad = Simbad()
-    customSimbad.TIMEOUT = 1800 # Set the timeout 30 min for the query (in seconds)
+    customSimbad.TIMEOUT = 180 # Set the timeout 3 min for the query (in seconds)
     customSimbad.remove_votable_fields('coordinates')
     customSimbad.add_votable_fields('id(name)', 'id(HD)', 'id(HIP)', 'id(HR)', 'id(M)', 'id(NGC)', 'id(IC)', 'id(Ocl)',
                                     'ra(d)', 'dec(d)', 'pmra', 'pmdec', 'plx', 'distance', 'otype(otypes)', 'sp',
                                     'flux(R)', 'flux(G)', 'flux(B)', 'flux(V)')
 
     # Define the query to retrieve deep sky objects
-    query = f"Ra>={lower_ra} & Ra<{upper_ra} & ((otype in ('G', 'ISM', 'Cl*', 'As*') & Vmag < 16.0)"\
-            " | (cat='HD' & Vmag < 12.0) | (cat='HIP' & Vmag < 12.0) | cat='HR' | cat='M')"
+    query = f"Ra>={lower_ra} & Ra<{upper_ra} & cat in ({catalogs})"
 
     # Execute the query
     try:
@@ -55,31 +54,41 @@ def get_data(lower_ra, upper_ra):
 
 
 """
-   Get symbad objects in chunks of Ra ranges
-   =========================================
+   Get symbad cataloges in chunks of Ra ranges
+   -------------------------------------------
 """
-
-Output_File = "data.csv"
-
 max_table_length = 20000
 
 all_dataframes  = []
 
-for lower_ra in range(0, 3600, 1):
-    from_ra = lower_ra / 10.0
-    to_ra = (lower_ra + 1) / 10.0
-    print("from RA:", from_ra, "to RA:", to_ra)
-    object_table = get_data(from_ra, to_ra)
-    if object_table:
-        dataframe = object_table.to_pandas()
-        table_length = len(object_table)
-        if table_length >= max_table_length:
-            print ("object table incomplete - table length:", table_length)
+def get_catalog(catalog, chunks):
+    step_size = int(360 / chunks)
+    print ("catalog(s):", catalog)
+    for lower_ra in range(0, 360, step_size):
+        from_ra = lower_ra
+        to_ra = lower_ra + step_size
+        print("from RA:", from_ra, "to RA:", to_ra)
+        object_table = get_data(from_ra, to_ra, catalog)
+        if object_table:
+            dataframe = object_table.to_pandas()
+            table_length = len(object_table)
+            if table_length >= max_table_length:
+                print ("object table incomplete - table length:", table_length)
+                sys.exit()
+            all_dataframes.append(dataframe)
+        else:
+            print ("object table empty")
             sys.exit()
-        all_dataframes.append(dataframe)
-    else:
-        print ("object table empty")
-        sys.exit()
+
+"""
+   Get cataloge data and store the result
+   ======================================
+"""
+
+Output_File = "data.csv"
+
+get_catalog ("'IC','M','NGC','OCL'", 20)
+get_catalog ("'HD','HIP','HR'", 180)
 
 # Process data
 if all_dataframes:
