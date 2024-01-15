@@ -50,7 +50,7 @@ package Eps is
   Dark        : constant Color := (C => 0.00, M => 0.00, Y => 0.00, K => 0.90);
   Silver      : constant Color := (C => 0.00, M => 0.00, Y => 0.10, K => 0.10);
 
-  type Color_Class is range 0 .. 18;
+  type Color_Class is range 0 .. 24;
 
   type Class_Colors is array (Color_Class) of Color;
 

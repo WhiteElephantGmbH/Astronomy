@@ -47,17 +47,34 @@ package Database is
     Tau,  -- τ
     Ups,  -- υ
     Phi,  -- φ
-    Khi,  -- χ
+    Chi,  -- χ
     Psi,  -- ψ
     Ome); -- ω
 
   type Constellation is (
     C_And, C_Ant, C_Aps, C_Aqr, C_Aql, C_Ara, C_Ari, C_Aur, C_Boo, C_Cae, C_Cam, C_Cnc, C_Cvn, C_Cma, C_Cmi, C_Cap,
     C_Car, C_Cas, C_Cen, C_Cep, C_Cet, C_Cha, C_Cir, C_Col, C_Com, C_Cra, C_Crb, C_Crv, C_Crt, C_Cru, C_Cyg, C_Del,
-    C_Dor, C_Dra, C_Equ, C_Eri, C_For, C_Gem, C_Her, C_Hor, C_Hya, C_Hyi, C_Ind, C_Leo, C_Lep, C_Lib, C_Lup, C_Lyn,
-    C_Lyr, C_Men, C_Mic, C_Mon, C_Mus, C_Nor, C_Oct, C_Oph, C_Ori, C_Pav, C_Peg, C_Per, C_Phe, C_Pic, C_Psc, C_Psa,
-    C_Pup, C_Pyx, C_Ret, C_Sge, C_Sgr, C_Sco, C_Scl, C_Sct, C_Ser, C_Sex, C_Tau, C_Tel, C_Tri, C_Tra, C_Tuc, C_Uma,
-    C_Umi, C_Vel, C_Vir, C_Vol, C_Vul, C_LMC, C_SMC);
+    C_Dor, C_Dra, C_Equ, C_Eri, C_For, C_Gem, C_Gru, C_Her, C_Hor, C_Hya, C_Hyi, C_Ind, C_Lac, C_Leo, C_Lep, C_Lib,
+    C_Lmi, C_Lup, C_Lyn, C_Lyr, C_Men, C_Mic, C_Mon, C_Mus, C_Nor, C_Oct, C_Oph, C_Ori, C_Pav, C_Peg, C_Per, C_Phe,
+    C_Pic, C_Psc, C_Psa, C_Pup, C_Pyx, C_Ret, C_Sge, C_Sgr, C_Sco, C_Scl, C_Sct, C_Ser, C_Sex, C_Tau, C_Tel, C_Tri,
+    C_Tra, C_Tuc, C_Uma, C_Umi, C_Vel, C_Vir, C_Vol, C_Vul, C_LMC, C_SMC) with Size => 8;
+
+  type Star_Count_Type is (Unknown, Greek, Alphabetic, Numeric) with Size => 4;
+
+  type Star_Number is range 0 .. 999 with Size => 12;
+
+  type Star_Index is range 0 .. 99  with Size => 8;
+
+  type Star_Id is record
+    Kind  : Star_Count_Type := Unknown;
+    Count : Star_Number     := 0;
+    Index : Star_Index      := 0;
+    C_Id  : Constellation   := Constellation'first;
+  end record
+  with Pack, Size => 32;
+
+  Unknown_Star_Id : constant Star_Id := (others => <>);
+
 
   type Object_Type is (
 
@@ -183,6 +200,7 @@ package Database is
 
   type Otype_Id is range 0 .. Object_Type'pos(Object_Type'last);
 
+
   Delta_Degrees   : constant := 0.0000000000001;
   Delta_Motion    : constant := 0.001;
   Delta_Parallax  : constant := 0.0001;
@@ -197,10 +215,18 @@ package Database is
 
   type Light_Years is range 0 .. 2**32-1;
 
+  One_Parsec_In_Light_Years : constant Float := 3.26156;
+
+  Max_Star_Magnitude : constant Magnitude := 8.9;
+
   No_Plx : constant := Parallax'first;
   No_Mag : constant := Magnitude'last;
 
-  type Star_Class is (O, B, A, F, G, K, L, M, R, S, T, N, C, DB, DC, DA, DF, DG, D0, DQ, WC, WO, WN, WR); -- D0 ≡ DO
+  No_Distance : constant := Light_Years'first;
+
+
+  type Star_Class is
+    (O, B, A, F, G, K, L, M, R, S, T, N, C, DA, DB, DC, DF, DG, D0, DQ, DZ, WC, WO, WN, WR); -- D0 ≡ DO
 
   type Star_Subclass is (S0, S1, S2, S3, S4, S5, S6, S7, S8, S9);
 
@@ -213,17 +239,5 @@ package Database is
   end record;
 
   No_Spec_Type : constant Star_Spec_Type := (Star_Class'first, Star_Subclass'first, NO);
-
-  type Object_Information is record
-    Otype     : Object_Type;
-    Ra_J2000  : Degrees_Ra;
-    Dec_J2000 : Degrees_Dec;
-    Ra_PM     : Motion;
-    Dec_PM    : Motion;
-    Plx       : Parallax;
-    Distance  : Light_Years;
-    Mag       : Magnitude;
-    Stype     : Star_Spec_Type;
-  end record with Pack;
 
 end Database;

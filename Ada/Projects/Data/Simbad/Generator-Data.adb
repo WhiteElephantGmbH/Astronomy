@@ -579,6 +579,8 @@ package body Generator.Data is
         The_Class := D0; -- DO
       when 'Q' =>
         The_Class := DQ;
+      when 'Z' =>
+        The_Class := DZ;
       when others =>
         Error ("Unknown White Dwarf type: " & Image(Index - 1.. Index));
       end case;
@@ -719,13 +721,18 @@ package body Generator.Data is
   Unknown_Id : constant := Database.Unknown_Id;
   First_Id   : constant Id := Unknown_Id + 1;
 
+  No_Distance : constant Database.Light_Years := Database.No_Distance;
+
   type Header is
-    (LN, MI, Name, HD, HIP, HR, M, NGC, IC, Ocl, Ra, Dec, Ra_PM, Dec_PM, Plx, DD, DU, Otype, Stype, Mr, Mg, Mb, Mv);
+    (NC, SC, Name, HD, HIP, HR, M, NGC, IC, Ocl, Ra, Dec, Ra_PM, Dec_PM, Plx, DD, DU, Otype, Stype, Mr, Mg, Mb, Mv);
 
-  type Cat is new Header range LN .. Ocl;
+  -- NC -> No Catalog
+  -- SC -> Star Catalog containing star names like Alfa Centauri
 
-  NC : constant Cat := LN; -- No Catalog
-  SC : constant Cat := MI; -- Star Catalog containing star names like Alfa Centauri
+  MI : constant Header := SC; -- Main Id
+  LN : constant Header := NC; -- Line_Number
+
+  type Cat is new Header range NC .. Ocl;
 
 
   function Image_Of (Item : Cat) return String is
@@ -743,7 +750,7 @@ package body Generator.Data is
   end Image_Of;
 
 
-  subtype Ids_Cat is Cat range HD .. Cat'last; -- catalog containing data
+  subtype Ids_Cat is Cat range HD .. Cat'last; -- catalogs containing data
 
 
   function Left_Adjusted (Text       : String;
@@ -765,9 +772,18 @@ package body Generator.Data is
   type Id_List is array (Cat) of Id;
 
   type Information is record
-    Main_Cat : Cat := NC;
-    Ids      : Id_List := [others => Unknown_Id];
-    Data     : Database.Object_Information;
+    Main_Cat  : Cat := NC;
+    Star_Id   : Database.Star_Id := Database.Unknown_Star_Id;
+    Ids       : Id_List := [others => Unknown_Id];
+    Ra_J2000  : Database.Degrees_Ra;
+    Dec_J2000 : Database.Degrees_Dec;
+    Ra_PM     : Database.Motion;
+    Dec_PM    : Database.Motion;
+    Plx       : Database.Parallax;
+    Distance  : Database.Light_Years;
+    Mag       : Database.Magnitude;
+    Otype     : Object_Type;
+    Stype     : Database.Star_Spec_Type;
   end record;
 
   function "=" (Left, Right : Information) return Boolean is (Left.Ids(Left.Main_Cat) = Right.Ids(Right.Main_Cat));
@@ -777,7 +793,7 @@ package body Generator.Data is
 
   use type Database.Degrees_Ra;
 
-  function "<" (Left, Right : Information) return Boolean is (Left.Data.Ra_J2000 < Right.Data.Ra_J2000);
+  function "<" (Left, Right : Information) return Boolean is (Left.Ra_J2000 < Right.Ra_J2000);
 
   package Objects is new Object_Data.Generic_Sorting ("<" => "<");
 
@@ -925,7 +941,7 @@ package body Generator.Data is
           return Unknown_Id;
         end if;
         declare
-          Number_Image : constant String := Image_Of (Item, After => For_Cat);
+          Number_Image : constant String := Image_Of (Id_Image, After => For_Cat);
           Last         : Id renames Last_Id (For_Cat);
           The_Id       : Id;
         begin
@@ -934,7 +950,7 @@ package body Generator.Data is
             return Unknown_Id;
           end if;
           if Used_Ids(For_Cat)(The_Id) then
-           Error (Item & " defined twice");
+            Warning_And_Skip (Item & " defined twice");
           end if;
           Used_Ids(For_Cat)(The_Id) := True;
           if The_Id > Last then
@@ -1019,35 +1035,170 @@ package body Generator.Data is
         return The_Magnitude;
       end Visual_Magnitude;
 
-      Star_Image : constant String := "*";
-      NAME_Image : constant String := "NAME";
-      Cl_Image   : constant String := "Cl"; -- Cl Berkeley
 
-      function Catalog_Id_Of (Main_Id : String) return Cat is
-        Name_Parts : constant Strings.Item := Strings.Item_Of (Main_Id, ' ');
+      function Distance_In_LY return Database.Light_Years is
+        Distance_Image : constant String := Part (DD);
+        Distance_Unit  : constant String := Part (DU);
+        type Unit is (Pc, Kpc, Mpc);
+        The_Distance   : Float;
+      begin
+        if Distance_Image = "" and then Distance_Unit = "" then
+          return Database.No_Distance;
+        end if;
+        The_Distance := Float'value(Distance_Image);
+        case Unit'value(Distance_Unit) is
+        when Pc =>
+          null;
+        when Kpc =>
+          The_Distance := @ * 1_000.0;
+        when Mpc =>
+          The_Distance := @ * 1_000_000.0;
+        end case;
+        return Database.Light_Years(The_Distance * Database.One_Parsec_In_Light_Years);
+      end Distance_In_LY;
+
+
+      Star_Image   : constant String := "*";
+      V_Star_Image : constant String := "V*";
+      NAME_Image   : constant String := "NAME";
+      Cl_Image     : constant String := "Cl"; -- Cl Berkeley
+
+      function Catalog_Id_Of (Main_Image : String) return Cat is
+        Name_Parts : constant Strings.Item := Strings.Item_Of (Main_Image, ' ');
         Cat_Id     : constant String := Name_Parts(1);
       begin
-        if Cat_Id = Star_Image then
-          --!!! analyse and set * catalogue
+        if Cat_Id in Star_Image | V_Star_Image then
           return SC;
         elsif Cat_Id = Cl_Image then
-          --!!! analyse Ocl catalogue
           return Cat_Of (Ocl);
         elsif Cat_Id = NAME_Image then
           return Cat_Of (Name);
         elsif Name_Parts.Count > 2 then
-          raise Skip_Object; -- ignore other main catalogues
-        elsif not (Main_Id(Main_Id'last) in '0'..'9') then
-          raise Skip_Object; -- ignore catalogues not ending with a number
+          return NC; -- ignore other main catalogues
+        elsif not (Main_Image(Main_Image'last) in '0'..'9') then
+          return NC; -- ignore catalogues not ending with a number
         else
           return Ids_Cat'value(Cat_Id);
         end if;
       exception
       when others =>
-        raise Skip_Object;
+        return NC;
       end Catalog_Id_Of;
 
-      The_Main_Catalog : Cat;
+
+      subtype Greek_Letter is Database.Greek_Letter;
+      subtype Star_Number  is Database.Star_Number;
+      subtype Star_Index   is Database.Star_Index;
+
+      Unknown_Star_Id : constant Database.Star_Id:= Database.Unknown_Star_Id;
+
+      procedure Define_Star_Id_For (Id_Image : String) is
+        Id_Parts : constant Strings.Item := Strings.Item_Of (Id_Image, ' ');
+        The_Id   : Database.Star_Id; -- default unknown
+      begin
+        if Id_Parts.Count = 3 and then Id_Parts(1) = Star_Image then
+          declare
+            P1     : constant String := Id_Parts(2);
+            P2     : constant String := Id_Parts(3);
+            use all type Database.Star_Count_Type;
+          begin
+            if P1(P1'first) in '0' .. '9' then
+              The_Id.Kind := Numeric;
+              The_Id.Count := Star_Number'value(P1);
+            else
+              declare
+                The_Last : Natural := P1'last;
+              begin
+                for The_Index in P1'first .. P1'last loop
+                  if not (Strings.Lowercase_Of (P1(The_Index)) in 'a' .. 'z') then
+                    The_Last := The_Index - 1;
+                    exit;
+                  end if;
+                end loop;
+                if The_Last = P1'first then
+                  The_Id.Kind := Alphabetic;
+                  The_Id.Count := Star_Number(Character'pos(P1(P1'first)) - Character'pos('A'));
+                else
+                  The_Id.Kind := Greek;
+                  The_Id.Count := Star_Number(Greek_Letter'pos(Greek_Letter'value(P1(P1'first .. The_Last))));
+                end if;
+                if The_Last < P1'last then
+                  declare
+                    First : constant Positive := (if P1(The_Last + 1) = '.' then The_Last + 2 else The_Last + 1);
+                    Index : constant String := P1(First .. P1'last);
+                  begin
+                    if Index /= "" then
+                      The_Id.Index := Star_Index'value(Index);
+                    end if;
+                  end;
+                end if;
+              end;
+            end if;
+            The_Id.C_Id := Database.Constellation'value("C_" & P2);
+          exception
+          when others =>
+            Error ("Incorrect Star Id: " & Id_Image);
+          end;
+        end if;
+        The_Object.Star_Id := The_Id;
+      end Define_Star_Id_For;
+
+
+      procedure Define_Catalogs is
+        The_Id        : Id;
+        Found_Catalog : Boolean := False;
+      begin
+        for The_Catalog in Ids_Cat loop
+          The_Id := Id_Of (Part(Header(The_Catalog)), The_Catalog);
+          The_Object.Ids(The_Catalog) := The_Id;
+          if The_Id /= Unknown_Id then
+            Found_Catalog := True;
+          end if;
+        end loop;
+        if not Found_Catalog then
+          raise Skip_Object;
+        end if;
+      end Define_Catalogs;
+
+
+      procedure Define_Main_And_Star_Catalogs is
+        Main_Id          : constant String := Part (MI);
+        Name_Id          : constant Id := Name_Id_Of (Part (Name));
+        The_Main_Catalog : Cat := Catalog_Id_Of (Main_Id);
+        use type Database.Star_Id;
+      begin
+        The_Object.Ids(Name) := Name_Id;
+        case The_Main_Catalog is
+        when Name =>
+          if Name_Id = Unknown_Id then
+            The_Main_Catalog := NC;
+          end if;
+        when SC =>
+          Define_Star_Id_For (Main_Id);
+          if The_Object.Star_Id = Unknown_Star_Id then
+            The_Main_Catalog := NC;
+          end if;
+        when NC =>
+          null;
+        when others =>
+          if The_Object.Ids(The_Main_Catalog) = Unknown_Id then
+            The_Main_Catalog := NC;
+          end if;
+        end case;
+        if The_Main_Catalog = NC then
+          for The_Cat in Ids_Cat loop
+            if The_Object.Ids(The_Cat) /= Unknown_Id then
+              The_Main_Catalog := The_Cat;
+              exit;
+            end if;
+          end loop;
+          if The_Main_Catalog = NC then
+            Error ("No catalog defined");
+          end if;
+        end if;
+        The_Object.Main_Cat := The_Main_Catalog;
+      end Define_Main_And_Star_Catalogs;
+
       The_Magnitude    : Magnitude;
       The_Object_Type  : Object_Type;
 
@@ -1057,25 +1208,24 @@ package body Generator.Data is
         Error ("Incorrect column count (actual:" & Parts.Count'image & ")");
       end if;
       The_Line_Number := Natural'value(Part (LN));
-      The_Main_Catalog := Catalog_Id_Of (Part (MI));
-      The_Object.Main_Cat := The_Main_Catalog;
-      for C in Ids_Cat loop
-        The_Object.Ids(C) := Id_Of (Part(Header(C)), C);
-      end loop;
+      Define_Catalogs;
       The_Magnitude := Visual_Magnitude;
-      The_Object.Data.Mag := The_Magnitude;
-      The_Object.Data.Stype := Stype_Of (Part (Stype));
+      The_Object.Mag := The_Magnitude;
+      The_Object.Stype := Stype_Of (Part (Stype));
       The_Object_Type := Otype_Of (Part (Otype));
-      The_Object.Data.Otype := The_Object_Type;
-      if The_Object_Type in Star_Object and then The_Magnitude > 9.0 then
-        raise Skip_Object; -- !!! GNAT limitation (GNAT bug - heap overflow))
+      The_Object.Otype := The_Object_Type;
+      if The_Object_Type in Star_Object and then The_Magnitude > Database.Max_Star_Magnitude then
+        if The_Object.Ids(HR) = Unknown_Id then
+          raise Skip_Object; -- !!! GNAT limitation (GNAT bug - heap overflow))
+        end if;
       end if;
-      The_Object.Data.Plx := Parallax_Of (Part (Plx));
-      The_Object.Data.Ra_J2000 := Ra_J2000_Of (Part(Ra));
-      The_Object.Data.Dec_J2000 := Dec_J2000_Of (Part(Dec));
-      The_Object.Data.Ra_PM := Motion_Of (Part (Ra_PM));
-      The_Object.Data.Dec_PM := Motion_Of (Part (Dec_PM));
-      The_Object.Ids(Name) := Name_Id_Of (Part (Name)); -- must be last to not handle name when skiped object
+      The_Object.Plx := Parallax_Of (Part (Plx));
+      The_Object.Distance := Distance_In_LY;
+      The_Object.Ra_J2000 := Ra_J2000_Of (Part(Ra));
+      The_Object.Dec_J2000 := Dec_J2000_Of (Part(Dec));
+      The_Object.Ra_PM := Motion_Of (Part (Ra_PM));
+      The_Object.Dec_PM := Motion_Of (Part (Dec_PM));
+      Define_Main_And_Star_Catalogs; -- must be last action befor append
       The_Objects.Append (The_Object);
     exception
     when Skip_Object =>
@@ -1164,7 +1314,7 @@ package body Generator.Data is
     end Sort_Names;
 
 
-    pragma Style_Checks ("M173");
+    pragma Style_Checks ("M165");
 
     procedure Put_Header is
 
@@ -1213,20 +1363,24 @@ package body Generator.Data is
         Output ("  type " & Left_Adjusted (C'image & "_Id", 8) & "is range Unknown_Id .." & Last_Id(C)'image & ";");
       end loop;
       Output;
+      Output ("  type Catalog_Id is range 1 .." & Cat'pos(Cat'last)'image & ";");
+      Output;
       Output ("  type Information is record");
-      Output ("    Name_Index : Name_Id;");
+      Output ("    Catalog_Index : Catalog_Id;");
+      Output ("    Star_Id       : Natural;");
+      Output ("    Name_Index    : Name_Id;");
       for C in Ids_Cat loop
-        Output ("    " & Left_Adjusted (C'image & "_Number", 11) & ": " & C'image & "_Id;");
+        Output ("    " & Left_Adjusted (C'image & "_Number", 14) & ": " & C'image & "_Id;");
       end loop;
-      Output ("    Ra_J2000   : Degrees_Ra;");
-      Output ("    Dec_J2000  : Degrees_Dec;");
-      Output ("    Ra_PM      : Motion;");
-      Output ("    Dec_PM     : Motion;");
-      Output ("    Plx        : Parallax;");
-    --Output ("    Distance   : Light_Years;");
-      Output ("    Mag        : Magnitude;");
-      Output ("    Otype      : Otype_Id;");
-      Output ("    Stype      : Star_Spec_Type;");
+      Output ("    Ra_J2000      : Degrees_Ra;");
+      Output ("    Dec_J2000     : Degrees_Dec;");
+      Output ("    Ra_PM         : Motion;");
+      Output ("    Dec_PM        : Motion;");
+      Output ("    Plx           : Parallax;");
+    --Output ("    Distance      : Light_Years;");
+      Output ("    Mag           : Magnitude;");
+      Output ("    Otype         : Otype_Id;");
+      Output ("    Stype         : Star_Spec_Type;");
       Output ("  end record with Pack;");
       Output;
       Output ("  type Names is (");
@@ -1265,7 +1419,7 @@ package body Generator.Data is
       Output ("  type Data is array (Data_Range) of Information;");
       Output;
       Output ("  List : constant Data := [");
-      Output ("--  Name" & Ids_Header & "           Ra J2000          Dec J2000      Ra PM     Dec PM       PLX    MagV Otype    Stype");
+      Output ("-- Cat         Star Name" & Ids_Header & "           Ra J2000          Dec J2000      Ra PM     Dec PM       PLX    Distance    MagV Otype    Stype");
     end Put_Header;
 
     procedure Put (The_Object : Information;
@@ -1274,14 +1428,16 @@ package body Generator.Data is
       No_Information : constant String := "NI";
       Separator      : constant String := ", ";
 
-      Name_Field_Size  : constant := 3;
-      Ra_Field_Size    : constant := 17;
-      Dec_Field_Size   : constant := 17;
-      Pm_Field_Size    : constant := 9;
-      Plx_Field_Size   : constant := 8;
-      Mag_Field_Size   : constant := 6;
-      Otype_Field_Size : constant := 3;
-      Stype_Field_Size : constant := 16;
+      Main_Field_Size     : constant := 1;
+      Name_Field_Size     : constant := 3;
+      Ra_Field_Size       : constant := 17;
+      Dec_Field_Size      : constant := 17;
+      Pm_Field_Size       : constant := 9;
+      Plx_Field_Size      : constant := 8;
+      Distance_Field_Size : constant := 10;
+      Mag_Field_Size      : constant := 6;
+      Otype_Field_Size    : constant := 3;
+      Stype_Field_Size    : constant := 16;
 
       function Image_Of (Item       : Id;
                          Field_Size : Positive) return String is
@@ -1306,12 +1462,42 @@ package body Generator.Data is
         return Image;
       end Image_Of;
 
+      function Value_Item (Image      : String;
+                           Fiels_Size : Natural) return String is
+      begin
+        return Right_Adjusted (Strings.Trimmed (Image), Fiels_Size) & Separator;
+      end Value_Item;
+
+      function Main return String is (Value_Item (Cat'pos(The_Object.Main_Cat)'image, Main_Field_Size));
+
       function Name return String is
         Name_Id  : constant Id := The_Object.Ids(Name);
         Name_Key : constant Id := (if Name_Id = Unknown_Id then Unknown_Id else The_Name_Map(Name_Id));
       begin
         return Image_Of (Name_Key, Name_Field_Size) & Separator;
       end Name;
+
+      function Star return String is
+        Star_Id     : constant Database.Star_Id := The_Object.Star_Id;
+        Kind_Image  : constant String := Strings.Trimmed (Database.Star_Count_Type'pos(Star_Id.Kind)'image);
+        Count_Image : constant String := Strings.Trimmed (Star_Id.Count'image);
+        Index_Image : constant String := Strings.Trimmed (Star_Id.Index'image);
+        C_Id_Image  : constant String := Strings.Trimmed (Database.Constellation'pos(Star_Id.C_Id)'image);
+                                   --  K Cnt Ix Con
+        Image    :          String := "0_000_00_00, ";
+                                   --  1   5  8  11
+        Image_NI : constant String := "         NI, ";
+        use type Database.Star_Id;
+      begin
+        if Star_Id = Database.Unknown_Star_Id then
+          return Image_NI;
+        end if;
+        Image ( 1 -  Kind_Image'length + 1 ..  1) := Kind_Image;
+        Image ( 5 - Count_Image'length + 1 ..  5) := Count_Image;
+        Image ( 8 - Index_Image'length + 1 ..  8) := Index_Image;
+        Image (11 -  C_Id_Image'length + 1 .. 11) := C_Id_Image;
+        return Image;
+      end Star;
 
       function Ids return String is
         Ids_Image : Strings.Element;
@@ -1323,26 +1509,28 @@ package body Generator.Data is
         return +Ids_Image;
       end Ids;
 
-      function Value_Item (Image      : String;
-                           Fiels_Size : Natural) return String is
-      begin
-        return Right_Adjusted (Strings.Trimmed (Image), Fiels_Size) & Separator;
-      end Value_Item;
+      function Ra_J2000 return String is (Value_Item (The_Object.Ra_J2000'image, Ra_Field_Size));
 
-      function Ra_J2000 return String is (Value_Item (The_Object.Data.Ra_J2000'image, Ra_Field_Size));
+      function Dec_J2000 return String is (Value_Item (The_Object.Dec_J2000'image, Dec_Field_Size));
 
-      function Dec_J2000 return String is (Value_Item (The_Object.Data.Dec_J2000'image, Dec_Field_Size));
+      function Ra_Pm return String is (Value_Item (The_Object.Ra_PM'image, Pm_Field_Size));
 
-      function Ra_Pm return String is (Value_Item (The_Object.Data.Ra_PM'image, Pm_Field_Size));
-
-      function Dec_Pm return String is (Value_Item (The_Object.Data.Dec_PM'image, Pm_Field_Size));
+      function Dec_Pm return String is (Value_Item (The_Object.Dec_PM'image, Pm_Field_Size));
 
       function Plx return String is
-        Value : constant Database.Parallax := The_Object.Data.Plx;
+        Value : constant Database.Parallax := The_Object.Plx;
         Image : constant String := Value'image;
       begin
         return Value_Item (Image, Plx_Field_Size);
       end Plx;
+
+      function Distance return String is
+        use type Database.Light_Years;
+        Distance_Value : constant Database.Light_Years := The_Object.Distance;
+        Distance_Image : constant String := (if Distance_Value = No_Distance then "NI" else Distance_Value'image);
+      begin
+        return (Value_Item (Distance_Image, Distance_Field_Size));
+      end Distance;
 
       function Magnitude (Value      : Database.Magnitude;
                           Field_Size : Positive) return String is
@@ -1351,12 +1539,12 @@ package body Generator.Data is
         return Value_Item (Image, Field_Size);
       end Magnitude;
 
-      function Vmag return String is (Magnitude (The_Object.Data.Mag, Mag_Field_Size));
+      function Vmag return String is (Magnitude (The_Object.Mag, Mag_Field_Size));
 
-      function Otype return String is (Value_Item (Object_Type'pos(The_Object.Data.Otype)'image, Otype_Field_Size));
+      function Otype return String is (Value_Item (Object_Type'pos(The_Object.Otype)'image, Otype_Field_Size));
 
       function Stype return String is
-        Kind       : constant Database.Star_Spec_Type := The_Object.Data.Stype;
+        Kind       : constant Database.Star_Spec_Type := The_Object.Stype;
         Class      : constant String := Kind.Class'image;
         Subclass   : constant String := Kind.Subclass'image;
         Luminosity : constant String := Image_Of (Kind.Luminosity);
@@ -1372,7 +1560,7 @@ package body Generator.Data is
       end Object_Id;
 
     begin -- Put
-      Output ("    (" & Name & Ids & Ra_J2000 & Dec_J2000 & Ra_Pm & Dec_Pm & Plx & Vmag & Otype & Stype & Object_Id);
+      Output ("    (" & Main & Star & Name & Ids & Ra_J2000 & Dec_J2000 & Ra_Pm & Dec_Pm & Plx & Distance & Vmag & Otype & Stype & Object_Id);
     end Put;
 
     procedure Put_Footer is
