@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2023 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2023 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -25,7 +25,7 @@ package body Object.Catalog is
   type HIP_List is array (HIP) of Star_Id;
   type HR_List  is array (HR) of Star_Id;
 
-  subtype Star_Range is Database.Stars.Data_Range;
+  subtype Star_Range is Database.Objects.Data_Range;
 
 
   function HD_Stars return HD_List is
@@ -33,7 +33,7 @@ package body Object.Catalog is
   begin
     for The_Star in Star loop
       declare
-        Id : constant HD_Id := HD_Id(Database.Stars.List(Star_Range(The_Star)).HD_Number);
+        Id : constant HD_Id := HD_Id(Database.Objects.List(Star_Range(The_Star)).HD_Number);
       begin
         if Id /= Unknown_Id then
           if The_List(Id) = Unknown_Id then
@@ -53,7 +53,7 @@ package body Object.Catalog is
   begin
     for The_Star in Star loop
       declare
-        Id : constant HIP_Id := HIP_Id(Database.Stars.List(Star_Range(The_Star)).HIP_Number);
+        Id : constant HIP_Id := HIP_Id(Database.Objects.List(Star_Range(The_Star)).HIP_Number);
       begin
         if Id /= Unknown_Id then
           if The_List(Id) = Unknown_Id then
@@ -73,7 +73,7 @@ package body Object.Catalog is
   begin
     for The_Star in Star loop
       declare
-        Id : constant HR_Id := HR_Id(Database.Stars.List(Star_Range(The_Star)).HR_Number);
+        Id : constant HR_Id := HR_Id(Database.Objects.List(Star_Range(The_Star)).HR_Number);
       begin
         if Id /= Unknown_Id then
           if The_List(Id) = Unknown_Id then
@@ -114,43 +114,43 @@ package body Object.Catalog is
 
   function Ra_J2000_Of (Id : Star) return Angle.Degrees is
   begin
-    return Angle.Degrees(Database.Stars.List(Star_Range(Id)).Info.Ra_J2000);
+    return Angle.Degrees(Database.Objects.List(Star_Range(Id)).Ra_J2000);
   end Ra_J2000_Of;
 
 
   function Dec_J2000_Of (Id : Star) return Angle.Degrees is
   begin
-    return Angle.Degrees(Database.Stars.List(Star_Range(Id)).Info.Dec_J2000);
+    return Angle.Degrees(Database.Objects.List(Star_Range(Id)).Dec_J2000);
   end Dec_J2000_Of;
 
 
   function Ra_Motion_Of (Id : Star) return Angle.Degrees is
   begin
-    return Angle.Degrees(Database.Stars.List(Star_Range(Id)).Info.Ra_Pm);
+    return Angle.Degrees(Database.Objects.List(Star_Range(Id)).Ra_PM);
   end Ra_Motion_Of;
 
 
   function Dec_Motion_Of (Id : Star) return Angle.Degrees is
   begin
-    return Angle.Degrees(Database.Stars.List(Star_Range(Id)).Info.Dec_Pm);
+    return Angle.Degrees(Database.Objects.List(Star_Range(Id)).Dec_PM);
   end Dec_Motion_Of;
 
 
   function V_Mag_Of (Id : Star) return Magnitude is
   begin
-    return Magnitude(Database.Stars.List(Star_Range(Id)).Info.Vmag);
+    return Magnitude(Database.Objects.List(Star_Range(Id)).Mag);
   end V_Mag_Of;
 
 
   function Parallax_Of (Id : Star) return Parallax is
   begin
-    return Database.Stars.List(Star_Range(Id)).Info.Plx;
+    return Database.Objects.List(Star_Range(Id)).Plx;
   end Parallax_Of;
 
 
   function Spec_Type_Of (Id : Star) return Star_Spec_Type is
   begin
-    return Database.Stars.List(Star_Range(Id)).Info.Stype;
+    return Database.Objects.List(Star_Range(Id)).Stype;
   end Spec_Type_Of;
 
 end Object.Catalog;

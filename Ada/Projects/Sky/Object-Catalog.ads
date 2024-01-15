@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2023 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2023 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,14 +15,14 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Database.Stars;
+with Database.Objects;
 
 package Object.Catalog is
 
   Unknown_Id : constant := Database.Unknown_Id;
   First_Id   : constant := Unknown_Id + 1;
 
-  type Star_Id is range Unknown_Id .. Database.Stars.Data_Range'last;
+  type Star_Id is range Unknown_Id .. Database.Objects.Data_Range'last;
 
   subtype Parallax is Database.Parallax;
 
@@ -32,15 +32,15 @@ package Object.Catalog is
 
   subtype Star is Star_Id range First_Id .. Star_Id'last;
 
-  type HD_Id is new Database.Stars.HD_Id;
+  type HD_Id is new Database.Objects.HD_Id;
 
   subtype HD is HD_Id range First_Id .. HD_Id'last;
 
-  type HIP_Id is new Database.Stars.HIP_Id;
+  type HIP_Id is new Database.Objects.HIP_Id;
 
   subtype HIP is HIP_Id range First_Id .. HIP_Id'last;
 
-  type HR_Id is new Database.Stars.HR_Id;
+  type HR_Id is new Database.Objects.HR_Id;
 
   subtype HR is HR_Id range First_Id .. HR_Id'last;
 

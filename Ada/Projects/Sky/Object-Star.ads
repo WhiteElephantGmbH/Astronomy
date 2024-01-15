@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2023 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2023 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -20,11 +20,11 @@ with Object.Catalog;
 package Object.Star is
 
   subtype Id is Object.Catalog.Star;
-  
+
   subtype Parallax is Object.Catalog.Parallax;
 
   subtype Spectral_Type is Object.Catalog.Star_Spec_Type;
-  
+
   subtype Class is Object.Catalog.Star_Class;
 
   function Direction_Of (Item : Id) return Space.Direction;

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2023 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2023 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -16,14 +16,14 @@
 pragma Style_White_Elephant;
 
 with Exceptions;
-with Generator.Stars;
+with Generator.Data;
 
 package body Generator is
 
   procedure Execute is
   begin
-    Stars.Read;
-    Stars.Generate_Database;
+    Data.Read;
+    Data.Generate;
   exception
   when Error_Occured =>
     null;

@@ -87,8 +87,7 @@ def get_catalog(catalog, chunks):
 
 Output_File = "data.csv"
 
-get_catalog ("'IC','M','NGC','OCL'", 20)
-get_catalog ("'HD','HIP','HR'", 180)
+get_catalog ("'*','HD','HIP','HR', 'IC','M','NGC','OCL'", 360)
 
 # Process data
 if all_dataframes:
