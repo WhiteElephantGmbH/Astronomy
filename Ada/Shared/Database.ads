@@ -198,6 +198,8 @@ package Database is
   subtype Star_Object   is Object_Type range Alpha2_Cvn_Variable_Star .. Young_Stellar_Object_Star;
   subtype Stars_Object  is Object_Type range Association_Of_Stars .. Stellar_Stream;
 
+  subtype Visual_Limited_Star is Star_Object with Predicate => Visual_Limited_Star /= Planetary_Nebula_Star;
+
   type Otype_Id is range 0 .. Object_Type'pos(Object_Type'last);
 
 

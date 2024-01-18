@@ -44,7 +44,6 @@ package body Generator.Data is
 
 
   subtype Object_Type is Database.Object_Type;
-  subtype Star_Object is Database.Star_Object;
 
   function Otype_Of (Item : String) return Object_Type is
   -----------------------1. TAXONOMY OF STARS------------------------------
@@ -1214,11 +1213,6 @@ package body Generator.Data is
       The_Object.Stype := Stype_Of (Part (Stype));
       The_Object_Type := Otype_Of (Part (Otype));
       The_Object.Otype := The_Object_Type;
-      if The_Object_Type in Star_Object and then The_Magnitude > Database.Max_Star_Magnitude then
-        if The_Object.Ids(HR) = Unknown_Id then
-          raise Skip_Object; -- !!! GNAT limitation (GNAT bug - heap overflow))
-        end if;
-      end if;
       The_Object.Plx := Parallax_Of (Part (Plx));
       The_Object.Distance := Distance_In_LY;
       The_Object.Ra_J2000 := Ra_J2000_Of (Part(Ra));
@@ -1226,6 +1220,11 @@ package body Generator.Data is
       The_Object.Ra_PM := Motion_Of (Part (Ra_PM));
       The_Object.Dec_PM := Motion_Of (Part (Dec_PM));
       Define_Main_And_Star_Catalogs; -- must be last action befor append
+      if The_Object_Type in Database.Visual_Limited_Star and then The_Magnitude > Database.Max_Star_Magnitude then
+        if The_Object.Ids(HR) = Unknown_Id and The_Object.Ids(M) = Unknown_Id and The_Object.Ids(Name) = Unknown_Id then
+          raise Skip_Object; -- !!! GNAT limitation (GNAT bug - heap overflow))
+        end if;
+      end if;
       The_Objects.Append (The_Object);
     exception
     when Skip_Object =>
@@ -1354,7 +1353,7 @@ package body Generator.Data is
       Output;
       Output ("package Database.Objects is");
       Output;
-      Output ("  pragma Style_Checks (""M200"");");
+      Output ("  pragma Style_Checks (""M191"");");
       Output;
       Output ("  type Data_Range is range 1 .." & The_Objects.Length'image & ";");
       Output;
@@ -1377,7 +1376,7 @@ package body Generator.Data is
       Output ("    Ra_PM         : Motion;");
       Output ("    Dec_PM        : Motion;");
       Output ("    Plx           : Parallax;");
-    --Output ("    Distance      : Light_Years;");
+      Output ("    Distance      : Light_Years;");
       Output ("    Mag           : Magnitude;");
       Output ("    Otype         : Otype_Id;");
       Output ("    Stype         : Star_Spec_Type;");
