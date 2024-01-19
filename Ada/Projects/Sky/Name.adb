@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2011 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2011 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -682,10 +682,10 @@ package body Name is
           Put ("LM " & Image_Of (Lexicon.Road_Sign) & " | 259° 49' 13"" | 2° 56' 15""");
           Put ("");
         end if;
-        Put ("HIP 95947  | " & Image_Of (Lexicon.Albireo));
+        Put ("HIP 95947  | " & Image_Of (Lexicon.Albereo));
         Put ("HIP 21421  | " & Image_Of (Lexicon.Aldebaran));
         Put ("HIP 97649  | " & Image_Of (Lexicon.Altair));
-        Put ("HIP 69673  | " & Image_Of (Lexicon.Arkturus));
+        Put ("HIP 69673  | " & Image_Of (Lexicon.Arcturus));
         Put ("HIP 27989  | " & Image_Of (Lexicon.Betelgeuse));
         Put ("HIP 102098 | " & Image_Of (Lexicon.Deneb));
         Put ("HIP 65378  | " & Image_Of (Lexicon.Mizar));
@@ -722,7 +722,7 @@ package body Name is
         Put ("M20");
         Put ("M22");
         Put ("M27");
-        Put ("M31 | " & Image_Of (Lexicon.Andromeda_Galaxie));
+        Put ("M31 | " & Image_Of (Lexicon.Andromeda_Galaxy));
         Put ("M33");
         Put ("M34");
         Put ("M35");

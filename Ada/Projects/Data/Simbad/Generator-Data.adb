@@ -888,12 +888,34 @@ package body Generator.Data is
 
 
       function Name_Id_Of (Item : String) return Id is
-      begin
+
+        function Corrected_Name return String is
+
+          function Found (Name_Part : String) return Boolean is
+          begin
+            return Strings.Location_Of (Name_Part, Item) /= Strings.Not_Found;
+          end Found;
+
+        begin -- Corrected_Name
+          if Found ("chi Per Cluster") then
+            return "Chi Per Cluster";
+          elsif Found ("h Per Cluster") then
+            return "H Per Cluster";
+          elsif Found ("M 81*") then
+            return "Bodes Galaxy";
+          elsif Found ("NGC 6618 Horseshoe") then
+            return "Omega Nebula";
+          else
+            return Removed_The_Of (Image_Of (Item, After => Name));
+          end if;
+        end Corrected_Name;
+
+      begin -- Name_Id_Of
         if Item = Undefined then
           return Unknown_Id;
         end if;
         declare
-          Name_Image : constant String := Removed_The_Of (Image_Of (Item, After => Name));
+          Name_Image : constant String := Corrected_Name;
         begin
           if Base_Name_Of (Name_Image) = Undefined then
             Log.Warning ("Undefined Name " & Name_Image);
@@ -1387,7 +1409,7 @@ package body Generator.Data is
       for The_Association of The_Name_Associations loop
         declare
           Name_Id         : constant Id := The_Name_Map(The_Association.Key);
-          Prefix          : constant String := "    S_";
+          Prefix          : constant String := "    N_";
           Postfix         : constant String := (if Name_Id = Id(The_Names.Length) then " " else ",");
           Name_Field_Size : constant Natural := Prefix'length + Max_Name_Length + Postfix'length;
         begin
