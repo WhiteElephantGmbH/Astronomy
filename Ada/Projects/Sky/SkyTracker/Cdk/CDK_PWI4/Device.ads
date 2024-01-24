@@ -134,8 +134,6 @@ package Device is
 
     function Exists return Boolean;
 
-    function Connected return Boolean;
-
     function Moving return Boolean;
 
     function Actual_Position return Microns;
@@ -154,9 +152,23 @@ package Device is
 
   package Rotator is
 
-    function Exists return Boolean;
-
     procedure Find_Home;
+
+    function Moving return Boolean;
+
+    function Slewing return Boolean;
+
+    function Mech_Position return Degrees;
+
+    function Field_Angle return Degrees;
+
+    procedure Goto_Field (The_Angle : Degrees);
+
+    procedure Goto_Mech (The_Position : Degrees);
+
+    procedure Go_To (The_Offset : Degrees);
+
+    procedure Start;
 
     procedure Stop;
 

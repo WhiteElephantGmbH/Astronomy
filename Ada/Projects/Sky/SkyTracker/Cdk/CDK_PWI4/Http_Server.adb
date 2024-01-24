@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2023 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2023 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
@@ -24,6 +24,14 @@ package body Http_Server is
   package Log is new Traces ("Http_Server");
 
   package JS renames GNATCOLL.JSON;
+
+
+  type Degrees is delta 0.00001 range -999.0 .. 999.0;
+
+  function Image_Of (Item : Degrees) return String is
+  begin
+    return Strings.Trimmed (Item'image);
+  end Image_Of;
 
 
   function Image_Of (Item : Angle.Value) return String is
@@ -78,8 +86,7 @@ package body Http_Server is
     Mount_Exists : constant Boolean := not (Data.Status in Telescope.Startup_State);
     At_Camera    : Boolean;
 
-  begin
-    declare
+    procedure Set_Mount_Values is
       Mount  : constant JS.JSON_Value := JS.Create_Object;
       Exists : constant JS.JSON_Value := JS.Create (Mount_Exists);
       Speed  : constant JS.JSON_Value := JS.Create (Image_Of (Data.Moving_Speed));
@@ -94,8 +101,9 @@ package body Http_Server is
       JS.Set_Field (Mount, "points", Points);
       JS.Set_Field (Info, "mount", Mount);
       Log.Write ("Mount Exists: " & Mount_Exists'image);
-    end;
-    declare
+    end Set_Mount_Values;
+
+    procedure Set_M3_Values is
       use type Device.M3.Position;
       M3        : constant JS.JSON_Value := JS.Create_Object;
       Exists    : Boolean;
@@ -116,10 +124,10 @@ package body Http_Server is
       JS.Set_Field (Info, "m3", M3);
       Log.Write ("M3 Exists: " & Exists'image);
       Log.Write ("M3 At_Camera: " & At_Camera'image);
-    end;
-    declare
+    end Set_M3_Values;
+
+    procedure Set_Focuser_Values is
       Focuser      : constant JS.JSON_Value := JS.Create_Object;
-      Connected    : constant Boolean := Data.Focuser.Connected;
       Moving       : constant Boolean := Data.Focuser.Moving;
       Max_Position : constant Integer := Integer(Data.Focuser.Max_Position);
       Position     : constant Integer := Integer(Data.Focuser.Position);
@@ -131,16 +139,38 @@ package body Http_Server is
         Exists := Data.Focuser.Exists;
       end if;
       JS.Set_Field (Focuser, "exists", JS.Create (Exists));
-      JS.Set_Field (Focuser, "connected", JS.Create (Connected));
       JS.Set_Field (Focuser, "moving", JS.Create (Moving));
       JS.Set_Field (Focuser, "max_position", JS.Create (Max_Position));
       JS.Set_Field (Focuser, "position", JS.Create (Position));
       JS.Set_Field (Info, "focuser", Focuser);
-      Log.Write ("Focuser Exists: " & Exists'image);
-      Log.Write ("Focuser Connected: " & Connected'image);
-      Log.Write ("Focuser Moving: " & Moving'image);
-      Log.Write ("Focuser Position:" & Position'image);
-    end;
+      Log.Write ("Focuser Exists   : " & Exists'image);
+      Log.Write ("Focuser Moving   : " & Moving'image);
+      Log.Write ("Focuser Position :" & Position'image);
+    end Set_Focuser_Values;
+
+    procedure Set_Rotator_Values is
+      Rotator       : constant JS.JSON_Value := JS.Create_Object;
+      Moving        : constant Boolean := Data.Rotator.Moving;
+      Slewing       : constant Boolean := Data.Rotator.Slewing;
+      Field_Angle   : constant Degrees := Degrees(Data.Rotator.Field_Angle);
+      Mech_Position : constant Degrees := Degrees(Data.Rotator.Mech_Position);
+    begin
+      JS.Set_Field (Rotator, "moving", JS.Create (Moving'image));
+      JS.Set_Field (Rotator, "slewing", JS.Create (Slewing'image));
+      JS.Set_Field (Rotator, "field_angle", JS.Create (Image_Of (Field_Angle)));
+      JS.Set_Field (Rotator, "mech_position", JS.Create (Image_Of (Mech_Position)));
+      JS.Set_Field (Info, "rotator", Rotator);
+      Log.Write ("Rotator Moving        : " & Moving'image);
+      Log.Write ("Rotator Slewing       : " & Slewing'image);
+      Log.Write ("Rotator Field Angle   :" & Field_Angle'image);
+      Log.Write ("Rotator Mech Position :" & Mech_Position'image);
+    end Set_Rotator_Values;
+
+  begin -- Information
+    Set_Mount_Values;
+    Set_M3_Values;
+    Set_Focuser_Values;
+    Set_Rotator_Values;
     return JS.Write (Info);
   end Information;
 
@@ -186,6 +216,51 @@ package body Http_Server is
           Log.Write ("Focuser.Set_Position: " & Value_Image);
           Telescope.Focuser_Goto (Device.Microns'value(Value_Image));
           return AWS.Response.Acknowledge (AWS.Messages.S200, "ok");
+        end;
+      elsif Subsystem = "rotator" then
+        declare
+          Command_Image : constant String := Parts(2);
+        begin
+          if Command_Image = "goto_field" then
+            declare
+              Value_Image : constant String := AWS.Status.Parameter (Data, "angle");
+            begin
+              if Value_Image = "" then
+                return AWS.Response.Acknowledge (AWS.Messages.S400, "no field angle parameter");
+              end if;
+              Log.Write ("Rotator.Goto_Field_Angle: " & Value_Image);
+              Telescope.Rotator_Goto_Field_Angle (Device.Degrees'value(Value_Image));
+              return AWS.Response.Acknowledge (AWS.Messages.S200, "ok");
+            end;
+          elsif Command_Image = "goto_mech" then
+            declare
+              Value_Image : constant String := AWS.Status.Parameter (Data, "position");
+            begin
+              if Value_Image = "" then
+                return AWS.Response.Acknowledge (AWS.Messages.S400, "no mech position parameter");
+              end if;
+              Log.Write ("Rotator.Goto_Mech_Position: " & Value_Image);
+              Telescope.Rotator_Goto_Mech_Position (Device.Degrees'value(Value_Image));
+              return AWS.Response.Acknowledge (AWS.Messages.S200, "ok");
+            end;
+          elsif Command_Image = "goto" then
+            declare
+              Value_Image : constant String := AWS.Status.Parameter (Data, "offset");
+            begin
+              if Value_Image = "" then
+                return AWS.Response.Acknowledge (AWS.Messages.S400, "no offset parameter");
+              end if;
+              Log.Write ("Rotator.Goto_Offset: " & Value_Image);
+              Telescope.Rotator_Goto_Offset (Device.Degrees'value(Value_Image));
+              return AWS.Response.Acknowledge (AWS.Messages.S200, "ok");
+            end;
+          elsif Command_Image = "start" then
+            Log.Write ("Rotator.Start");
+            Telescope.Rotator_Start;
+            return AWS.Response.Acknowledge (AWS.Messages.S200, "ok");
+          else
+            raise Program_Error;
+          end if;
         end;
       elsif Subsystem = "information" then
         return AWS.Response.Acknowledge (AWS.Messages.S200, Information);

@@ -405,8 +405,10 @@ package body PWI4.Protocol is
         Log.Write ("mount.field_angle_here=" & Next_Value);
       when I_Field_Angle_At_Target_Degs =>
         Log.Write ("mount.field_angle_at_target=" & Next_Value);
+        The_Response.Mount.Field_Angle_At_Target := Degrees_Of (Value);
       when I_Field_Angle_Rate_At_Target_Degs_Per_Sec =>
         Log.Write ("mount.field_angle_rate_at_target=" & Next_Value);
+        The_Response.Mount.Field_Angle_Rate_At_Target := Degrees_Of (Value);
       when I_Path_Angle_At_Target_Degs =>
         Log.Write ("mount.path_angle_at_target=" & Next_Value);
       when I_Path_Angle_Rate_At_Target_Degs_Per_Sec =>
@@ -628,11 +630,11 @@ package body PWI4.Protocol is
       when I_Is_Enabled =>
         Log.Write ("rotator.is_enabled=" & Next_Value);
         The_Response.Rotator.Is_Enabled := Boolean_Of (Value);
-      when I_Mech_Position_Degs =>
-        Log.Write ("rotator.mech_position_degs=" & Next_Value);
-        The_Response.Rotator.Mech_Position := Degrees_Of (Value);
       when I_Field_Angle_Degs =>
         Log.Write ("rotator.field_angle_degs=" & Next_Value);
+        The_Response.Rotator.Field_Angle := Degrees_Of (Value);
+      when I_Mech_Position_Degs =>
+        Log.Write ("rotator.mech_position_degs=" & Next_Value);
         The_Response.Rotator.Mech_Position := Degrees_Of (Value);
       when I_Is_Moving =>
         Log.Write ("rotator.is_moving=" & Next_Value);
@@ -763,35 +765,37 @@ package body PWI4.Protocol is
         Log.Write ("  Height    : " & Image_Of (Data.Site.Height));
         Log.Write ("  Lmst      : " & Image_Of (Data.Site.Lmst));
         Log.Write ("Mount");
-        Log.Write ("  Is_Connected    : " & Image_Of (Data.Mount.Flags.Is_Connected));
-        Log.Write ("  Is_Slewing      : " & Image_Of (Data.Mount.Flags.Is_Slewing));
-        Log.Write ("  Is_Tracking     : " & Image_Of (Data.Mount.Flags.Is_Tracking));
-        Log.Write ("  Ra              : " & Image_Of (Data.Mount.Ra));
-        Log.Write ("  Dec             : " & Image_Of (Data.Mount.Dec));
-        Log.Write ("  Ra_Target       : " & Image_Of (Data.Mount.Ra_Target));
-        Log.Write ("  Dec_Target      : " & Image_Of (Data.Mount.Dec_Target));
-        Log.Write ("  Ra_J2000        : " & Image_Of (Data.Mount.Ra_J2000));
-        Log.Write ("  Dec_J2000       : " & Image_Of (Data.Mount.Dec_J2000));
-        Log.Write ("  Azmimuth        : " & Image_Of (Data.Mount.Azimuth));
-        Log.Write ("  Altitude        : " & Image_Of (Data.Mount.Altitude));
-        Log.Write ("  Axis_0_Enabled  : " & Image_Of (Data.Mount.Flags.Axis0_Is_Enabled));
-        Log.Write ("  Axis_0_Position : " & Image_Of (Data.Mount.Axis0.Position));
-        Log.Write ("  Axis_1_Enabled  : " & Image_Of (Data.Mount.Flags.Axis1_Is_Enabled));
-        Log.Write ("  Axis_1_Position : " & Image_Of (Data.Mount.Axis1.Position));
+        Log.Write ("  Is_Connected     : " & Image_Of (Data.Mount.Flags.Is_Connected));
+        Log.Write ("  Is_Slewing       : " & Image_Of (Data.Mount.Flags.Is_Slewing));
+        Log.Write ("  Is_Tracking      : " & Image_Of (Data.Mount.Flags.Is_Tracking));
+        Log.Write ("  Ra               : " & Image_Of (Data.Mount.Ra));
+        Log.Write ("  Dec              : " & Image_Of (Data.Mount.Dec));
+        Log.Write ("  Ra_Target        : " & Image_Of (Data.Mount.Ra_Target));
+        Log.Write ("  Dec_Target       : " & Image_Of (Data.Mount.Dec_Target));
+        Log.Write ("  Ra_J2000         : " & Image_Of (Data.Mount.Ra_J2000));
+        Log.Write ("  Dec_J2000        : " & Image_Of (Data.Mount.Dec_J2000));
+        Log.Write ("  Azmimuth         : " & Image_Of (Data.Mount.Azimuth));
+        Log.Write ("  Altitude         : " & Image_Of (Data.Mount.Altitude));
+        Log.Write ("  Axis_0_Enabled   : " & Image_Of (Data.Mount.Flags.Axis0_Is_Enabled));
+        Log.Write ("  Axis_0_Position  : " & Image_Of (Data.Mount.Axis0.Position));
+        Log.Write ("  Axis_1_Enabled   : " & Image_Of (Data.Mount.Flags.Axis1_Is_Enabled));
+        Log.Write ("  Axis_1_Position  : " & Image_Of (Data.Mount.Axis1.Position));
+        Log.Write ("  Field_Angle      : " & Image_Of (Data.Mount.Field_Angle_At_Target));
+        Log.Write ("  Field_Angle_Rate : " & Image_Of (Data.Mount.Field_Angle_Rate_At_Target));
         Log.Write ("Focuser");
         Log.Write ("  Exists       : " & Image_Of (Data.Focuser.Exists));
         Log.Write ("  Is_Connected : " & Image_Of (Data.Focuser.Is_Connected));
         Log.Write ("  Is_Enabled   : " & Image_Of (Data.Focuser.Is_Enabled));
-        Log.Write ("  Position     : " & Image_Of (Data.Focuser.Position));
         Log.Write ("  Is_Moving    : " & Image_Of (Data.Focuser.Is_Moving));
+        Log.Write ("  Position     : " & Image_Of (Data.Focuser.Position));
         Log.Write ("Rotator");
         Log.Write ("  Exists        : " & Image_Of (Data.Focuser.Exists));
         Log.Write ("  Is_Connected  : " & Image_Of (Data.Rotator.Is_Connected));
         Log.Write ("  Is_Enabled    : " & Image_Of (Data.Rotator.Is_Enabled));
-        Log.Write ("  Mech_Position : " & Image_Of (Data.Rotator.Mech_Position));
-        Log.Write ("  Field_Angle   : " & Image_Of (Data.Rotator.Field_Angle));
         Log.Write ("  Is_Moving     : " & Image_Of (Data.Rotator.Is_Moving));
         Log.Write ("  Is_Slewing    : " & Image_Of (Data.Rotator.Is_Slewing));
+        Log.Write ("  Field_Angle   : " & Image_Of (Data.Rotator.Field_Angle));
+        Log.Write ("  Mech_Position : " & Image_Of (Data.Rotator.Mech_Position));
         Log.Write ("M3");
         Log.Write ("  Exists : " & Image_Of (Data.M3.Exists));
         Log.Write ("  Port   : " & Image_Of (Data.M3.Port));

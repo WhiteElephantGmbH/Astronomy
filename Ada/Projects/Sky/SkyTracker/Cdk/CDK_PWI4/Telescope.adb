@@ -61,6 +61,14 @@ package body Telescope is
 
     entry Focuser_Goto (The_Position : Device.Microns);
 
+    entry Rotator_Goto_Field (The_Angle : Device.Degrees);
+
+    entry Rotator_Goto_Mech (The_Position : Device.Degrees);
+
+    entry Rotator_Goto (The_Offset : Device.Degrees);
+
+    entry Rotator_Start;
+
     entry New_Mount_State (New_State : Mount.State);
 
     entry New_M3_Position (New_Position : M3.Position);
@@ -148,6 +156,30 @@ package body Telescope is
   begin
     Control.Focuser_Goto (Position);
   end Focuser_Goto;
+
+
+  procedure Rotator_Goto_Field_Angle (Item : Device.Degrees) is
+  begin
+    Control.Rotator_Goto_Field (The_Angle => Item);
+  end Rotator_Goto_Field_Angle;
+
+
+  procedure Rotator_Goto_Mech_Position (Item : Device.Degrees) is
+  begin
+    Control.Rotator_Goto_Mech (The_Position => Item);
+  end Rotator_Goto_Mech_Position;
+
+
+  procedure Rotator_Goto_Offset (Item : Device.Degrees) is
+  begin
+    Control.Rotator_Goto (The_Offset => Item);
+  end Rotator_Goto_Offset;
+
+
+  procedure Rotator_Start is
+  begin
+    Control.Rotator_Start;
+  end Rotator_Start;
 
 
   Next_Id            : Name.Id;
@@ -518,12 +550,21 @@ package body Telescope is
     end Setup_Handling;
 
 
+    procedure Enabling is
+    begin
+      Mount.Enable;
+      if Cdk_700.Had_Powerup then
+        Focuser.Find_Home;
+        Rotator.Find_Home;
+      end if;
+      The_State := Enabling;
+    end Enabling;
+
+
     procedure Find_Home is
     begin
       Fans.Turn (To => Fans.Off);
       Mount.Find_Home (The_Completion_Time);
-      Focuser.Find_Home;
-      Rotator.Find_Home;
       The_State := Homing;
     end Find_Home;
 
@@ -657,8 +698,7 @@ package body Telescope is
       when Mount_Error =>
         The_State := Mount_Error;
       when Mount_Connected =>
-        Mount.Enable;
-        The_State := Enabling;
+        Enabling;
       when Mount_Enabled =>
         Find_Home;
       when Mount_Stopped =>
@@ -679,8 +719,7 @@ package body Telescope is
       when Mount_Disconnected =>
         The_State := Disconnected;
       when Startup =>
-        Mount.Enable;
-        The_State := Enabling;
+        Enabling;
       when Shutdown =>
         Mount.Disconnect;
         The_State := Disconnecting;
@@ -1008,10 +1047,10 @@ package body Telescope is
                     M3_Position_Handler'access);
     end Start;
     Log.Write ("Started");
-    if Cdk_700.Is_Started then
-      The_State := Disconnected;
-    else
+    if Cdk_700.Had_Powerup then
       The_State := Restarting;
+    else
+      The_State := Disconnected;
     end if;
     The_Next_Time := Ada.Real_Time.Clock;
     loop
@@ -1056,6 +1095,22 @@ package body Telescope is
           accept Focuser_Goto (The_Position : Device.Microns) do
             Focuser.Go_To (The_Position);
           end Focuser_Goto;
+        or
+          accept Rotator_Goto_Field (The_Angle : Device.Degrees) do
+            Rotator.Goto_Field (The_Angle);
+          end Rotator_Goto_Field;
+        or
+          accept Rotator_Goto_Mech (The_Position : Device.Degrees) do
+            Rotator.Goto_Mech (The_Position);
+          end Rotator_Goto_Mech;
+        or
+          accept Rotator_Goto (The_Offset : Device.Degrees) do
+            Rotator.Go_To (The_Offset);
+          end Rotator_Goto;
+        or
+          accept Rotator_Start do
+            Rotator.Start;
+          end Rotator_Start;
         or
           accept Execute (The_Command : Command) do
             if The_State >= Stopped then
@@ -1108,16 +1163,20 @@ package body Telescope is
             if The_State = Restarting then
               if Cdk_700.Is_Started then
                 The_State := Disconnected;
+                Log.Write ("State => " & The_State'img);
               end if;
             end if;
             The_Data.Status := The_State;
             The_Data.M3.Exists := M3.Exists;
             The_Data.M3.Position := The_M3_Position;
             The_Data.Focuser.Exists := Focuser.Exists;
-            The_Data.Focuser.Connected := Focuser.Connected;
             The_Data.Focuser.Moving := Focuser.Moving;
             The_Data.Focuser.Position := Focuser.Actual_Position;
             The_Data.Focuser.Max_Position := Max_Fucuser_Position;
+            The_Data.Rotator.Moving := Rotator.Moving;
+            The_Data.Rotator.Slewing := Rotator.Slewing;
+            The_Data.Rotator.Field_Angle := Rotator.Field_Angle;
+            The_Data.Rotator.Mech_Position := Rotator.Mech_Position;
             case The_State is
             when Approaching | Preparing | Positioning | Homing =>
               The_Data.Completion_Time := The_Completion_Time;

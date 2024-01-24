@@ -82,10 +82,16 @@ package Telescope is
 
   type Focuser_Data is record
     Exists       : Boolean;
-    Connected    : Boolean;
     Moving       : Boolean;
     Max_Position : Device.Microns;
     Position     : Device.Microns;
+  end record;
+
+  type Rotator_Data is record
+    Moving        : Boolean;
+    Slewing       : Boolean;
+    Mech_Position : Device.Degrees;
+    Field_Angle   : Device.Degrees;
   end record;
 
   type Data is record
@@ -96,6 +102,7 @@ package Telescope is
     Mount            : Mount_Data;
     M3               : M3_Data;
     Focuser          : Focuser_Data;
+    Rotator          : Rotator_Data;
     Completion_Time  : Time.Ut;
   end record;
 
@@ -129,6 +136,14 @@ package Telescope is
   procedure Position_To (Landmark : Name.Id);
 
   procedure Focuser_Goto (Position : Device.Microns);
+
+  procedure Rotator_Goto_Field_Angle (Item : Device.Degrees);
+
+  procedure Rotator_Goto_Mech_Position (Item : Device.Degrees);
+
+  procedure Rotator_Goto_Offset (Item : Device.Degrees);
+
+  procedure Rotator_Start;
 
   function Information return Data;
 

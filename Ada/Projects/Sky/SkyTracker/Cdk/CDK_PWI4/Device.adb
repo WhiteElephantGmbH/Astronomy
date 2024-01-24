@@ -72,6 +72,10 @@ package body Device is
 
   type Rotator_Action is (No_Action,
                           Find_Home,
+                          Goto_Field,
+                          Goto_Mech,
+                          Goto_Offset,
+                          Start,
                           Stop);
 
   type Parameters is record
@@ -89,6 +93,7 @@ package body Device is
     Offset_Command   : PWI4.Mount.Offset_Command;
     Wrap_Position    : PWI4.Degrees := 0.0;
     Focuser_Position : Microns      := 0.0;
+    Rotator_Value    : PWI4.Degrees := 0.0;
     Name_Id          : Name.Id;
   end record;
 
@@ -137,6 +142,12 @@ package body Device is
     procedure Go_To (Position : Microns);
 
     procedure Put (Item : Rotator_Action);
+
+    procedure Goto_Field (Position : Degrees);
+
+    procedure Goto_Mech (Position : Degrees);
+
+    procedure Goto_Offset (Distance : Degrees);
 
     procedure Finish;
 
@@ -314,6 +325,30 @@ package body Device is
     end Put;
 
 
+    procedure Goto_Field (Position : Degrees) is
+    begin
+      The_Rotator_Action := Goto_Field;
+      The_Parameter.Rotator_Value := Position;
+      Is_Pending := True;
+    end Goto_Field;
+
+
+    procedure Goto_Mech (Position : Degrees) is
+    begin
+      The_Rotator_Action := Goto_Mech;
+      The_Parameter.Rotator_Value := Position;
+      Is_Pending := True;
+    end Goto_Mech;
+
+
+    procedure Goto_Offset (Distance : Degrees) is
+    begin
+      The_Rotator_Action := Goto_Offset;
+      The_Parameter.Rotator_Value := Distance;
+      Is_Pending := True;
+    end Goto_Offset;
+
+
     procedure Finish is
     begin
       Is_Finishing := True;
@@ -366,6 +401,12 @@ package body Device is
   The_Simulated_Focuser_Position      : Microns := 4321.0;
   The_Simulated_Focuser_Goto_Position : Microns := The_Simulated_Focuser_Position;
 
+  Simulated_Rotator_Moving            : Boolean := False;
+  Simulated_Rotator_Slewing           : Boolean := False;
+  The_Simulated_Rotator_Mech_Position : Degrees := 180.0;
+  The_Simulated_Rotator_Goto_Position : Degrees := The_Simulated_Rotator_Mech_Position;
+  The_Simulated_Rotator_Field_Angle   : Degrees := 150.0;
+  The_Simulated_Rotator_Goto_Angle    : Degrees := The_Simulated_Rotator_Field_Angle;
 
   task body Control is
 
@@ -399,6 +440,7 @@ package body Device is
     use type M3.Position;
     use type PWI4.M3_Port;
     use type Microns;
+    use type Degrees;
 
   begin -- Control
     accept Start (Mount_State_Handler : Mount.State_Handler_Access;
@@ -532,10 +574,12 @@ package body Device is
           when Disconnect =>
             Simulated_Focuser_Moving := False;
             Simulated_Focuser_Connected := False;
+            Simulated_Rotator_Moving := False;
+            Simulated_Rotator_Slewing := False;
             Log.Write ("Simulated focuser disconnect");
-          when Find_Home => -- overwrites Connect in simulation
+          when Find_Home => -- overwrites Connect in simulation when powerup
             Simulated_Focuser_Connected := True;
-            Log.Write ("Simulated focuser connect and find_home");
+            Log.Write ("Simulated focuser/rotator connect and focuser.find_home (at powerup");
           when Go_To =>
             The_Simulated_Focuser_Goto_Position := The_Parameter.Focuser_Position;
             Simulated_Focuser_Moving := True;
@@ -561,14 +605,47 @@ package body Device is
           end case;
         end if;
 
-        if Is_Simulation and (The_Rotator_Action /= No_Action) then
-          Log.Write ("Simulated rotator action: " & The_Rotator_Action'image);
+        if Is_Simulation then
+          case The_Rotator_Action is
+          when No_Action =>
+            null;
+          when Find_Home =>
+            Log.Write ("Simulated rotator find_home");
+          when Goto_Mech =>
+            The_Simulated_Rotator_Goto_Position := The_Parameter.Rotator_Value;
+            Simulated_Rotator_Slewing := True;
+            Log.Write ("Simulated Rotator goto_mech : " & The_Simulated_Rotator_Goto_Position'image);
+          when Goto_Field =>
+            The_Simulated_Rotator_Goto_Angle := The_Parameter.Rotator_Value;
+            Simulated_Rotator_Moving := True;
+            Log.Write ("Simulated Rotator goto_field : " & The_Simulated_Rotator_Goto_Angle'image);
+          when Goto_Offset =>
+            The_Simulated_Rotator_Goto_Angle := The_Parameter.Rotator_Value;
+            Simulated_Rotator_Slewing := True;
+            Log.Write ("Simulated rotator goto_offset");
+          when Start =>
+            Log.Write ("Simulated rotator start");
+            Simulated_Rotator_Moving := True;
+            Simulated_Rotator_Slewing := False;
+          when Stop =>
+            Log.Write ("Simulated rotator stop");
+            Simulated_Rotator_Moving := False;
+            Simulated_Rotator_Slewing := False;
+          end case;
         else
           case The_Rotator_Action is
           when No_Action =>
             null;
           when Find_Home =>
             PWI4.Rotator.Find_Home;
+          when Goto_Mech =>
+            PWI4.Rotator.Goto_Mech (The_Parameter.Rotator_Value);
+          when Goto_Field =>
+            PWI4.Rotator.Goto_Field (The_Parameter.Rotator_Value);
+          when Goto_Offset =>
+            PWI4.Rotator.Goto_Offset (The_Parameter.Rotator_Value);
+          when Start =>
+            PWI4.Rotator.Start;
           when Stop =>
             PWI4.Rotator.Stop;
           end case;
@@ -585,13 +662,33 @@ package body Device is
               Simulated_Focuser_Moving := False;
             end if;
           end if;
+          if Simulated_Rotator_Moving then
+            if abs(The_Simulated_Rotator_Field_Angle - The_Simulated_Rotator_Goto_Angle) > 3.0 then
+              The_Simulated_Rotator_Field_Angle := @ + (The_Simulated_Rotator_Goto_Angle - @) / 2;
+            else
+              The_Simulated_Rotator_Field_Angle := The_Simulated_Rotator_Goto_Angle;
+              Simulated_Rotator_Moving := False;
+            end if;
+          end if;
+          if Simulated_Rotator_Slewing then
+            if abs(The_Simulated_Rotator_Mech_Position - The_Simulated_Rotator_Goto_Position) > 3.0 then
+              The_Simulated_Rotator_Mech_Position := @ + (The_Simulated_Rotator_Goto_Position - @) / 2;
+            else
+              The_Simulated_Rotator_Mech_Position := The_Simulated_Rotator_Goto_Position;
+              Simulated_Rotator_Slewing := False;
+            end if;
+          end if;
         end if;
       end select;
       case PWI4.Mount.Info.Status is
       when PWI4.Mount.Disconnected =>
         The_Mount_State := Mount.Disconnected;
       when PWI4.Mount.Connected =>
-        The_Mount_State := Mount.Connected;
+        if (not PWI4.Focuser.Exists) or else PWI4.Focuser.Connected or else Is_Simulation then
+          The_Mount_State := Mount.Connected;
+        else
+          The_Mount_State := Mount.Disconnected;
+        end if;
       when PWI4.Mount.Enabled =>
         The_Mount_State := Mount.Enabled;
       when PWI4.Mount.Stopped =>
@@ -986,13 +1083,44 @@ package body Device is
 
   package body Rotator is
 
-    function Exists return Boolean renames PWI4.Rotator.Exists;
-
-    procedure Stop is
+    function Moving return Boolean is
     begin
-      Log.Write ("Rotator.Stop");
-      Action.Put (Rotator_Action'(Stop));
-    end Stop;
+      if Is_Simulation then
+        return Simulated_Rotator_Moving;
+      else
+        return PWI4.Rotator.Moving;
+      end if;
+    end Moving;
+
+
+    function Slewing return Boolean is
+    begin
+      if Is_Simulation then
+        return Simulated_Rotator_Slewing;
+      else
+        return PWI4.Rotator.Slewing;
+      end if;
+    end Slewing;
+
+
+    function Field_Angle return Degrees is
+    begin
+      if Is_Simulation then
+        return The_Simulated_Rotator_Field_Angle;
+      else
+        return PWI4.Rotator.Field_Angle;
+      end if;
+    end Field_Angle;
+
+
+    function Mech_Position return Degrees is
+    begin
+      if Is_Simulation then
+        return The_Simulated_Rotator_Mech_Position;
+      else
+        return PWI4.Rotator.Mech_Position;
+      end if;
+    end Mech_Position;
 
 
     procedure Find_Home is
@@ -1000,6 +1128,42 @@ package body Device is
       Log.Write ("Rotator.Find_Home");
       Action.Put (Rotator_Action'(Find_Home));
     end Find_Home;
+
+
+    procedure Goto_Field (The_Angle : Degrees) is
+    begin
+      Log.Write ("Rotator.Goto_Field_Angle" & The_Angle'image);
+      Action.Goto_Field (The_Angle);
+    end Goto_Field;
+
+
+    procedure Goto_Mech (The_Position : Degrees) is
+    begin
+      Log.Write ("Rotator.Goto_Mech_Position" & The_Position'image);
+      Action.Goto_Mech (The_Position);
+    end Goto_Mech;
+
+
+    procedure Go_To (The_Offset : Degrees) is
+    begin
+      Log.Write ("Rotator.Goto_Offset" & The_Offset'image);
+      Action.Goto_Offset (The_Offset);
+    end Go_To;
+
+
+    procedure Start is
+    begin
+      Log.Write ("Rotator.Start");
+      Action.Put (Rotator_Action'(Start));
+    end Start;
+
+
+    procedure Stop is
+    begin
+      Log.Write ("Rotator.Stop");
+      Action.Put (Rotator_Action'(Stop));
+    end Stop;
+
 
   end Rotator;
 

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2019 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2019 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -540,7 +540,9 @@ package body Parameter is
       Set (Controller_Handle);
       Cdk_700.Startup (Ip_Address_For (Controller_Id),
                        Restart_Duration => Duration_Of (Restart_Duration_Key, Upper_Limit => 60.0));
-      PWI4.Mount.Set_Enable_Delay (Cdk_700.Enable_Delay);
+      if Cdk_700.Had_Powerup then
+        PWI4.Mount.Set_Powerup;
+      end if;
       Set (PWI_Handle);
       Is_In_Shutdown_Mode := Strings.Is_Equal (String_Value_Of (Shutdown_Key), "True");
       Define_M3_Ocular_Port;

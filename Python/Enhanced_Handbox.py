@@ -49,6 +49,10 @@ def main():
     previous_speed         = client.previous_speed
     add_point              = client.add_point
     rotate                 = client.rotate
+    goto_field             = client.goto_field
+    goto_mech              = client.goto_mech
+    goto_offset            = client.goto_offset
+    start                  = client.start
 
     color0 = sg.theme_button_color()[0]
     color1 = sg.theme_button_color()[1]
@@ -100,10 +104,33 @@ def main():
                           size=(18,18), orientation='horizontal', font='Ani 12',
                           enable_events=True)]]
 
+    moving = [[sg.Text(size=(9,1), key='-RMV-', pad=(0,0), font='Ani 12',
+                       justification='r', background_color=color0, text_color=color1)]]
+
+    sliding = [[sg.Text(size=(9,1), key='-RSL-', pad=(0,0), font='Ani 12',
+                        justification='r', background_color=color0, text_color=color1)]]
+
+    field_angle = [[sg.Text(size=(9,1), key='-FIA-', pad=(0,0), font='Ani 12',
+                            justification='r', background_color=color0, text_color=color1)]]
+
+    mech_position = [[sg.Text(size=(9,1), key='-MPO-', pad=(0,0), font='Ani 12',
+                              justification='r', background_color=color0, text_color=color1)]]
+
+    rotator = [[sg.Frame('Moving', font='Ani 8', layout=moving, element_justification='c'),
+                sg.Frame('Sliding', font='Ani 8', layout=sliding, element_justification='c')],
+               [sg.Frame('Field Angle', font='Ani 8', layout=field_angle, element_justification='c'),
+                sg.Frame('Mech Position', font='Ani 8', layout=mech_position, element_justification='c')],
+               [sg.RealtimeButton('Goto_Field', key=goto_field),
+                sg.RealtimeButton('Goto_Mech', key=goto_mech)],
+               [sg.RealtimeButton('Goto_Offset', key=goto_offset),
+                sg.RealtimeButton('Start', key=start)]]
+
     layout = [[sg.Frame('Mount', font='Ani 8', layout=mount, element_justification='c')],
               [sg.Frame('M3', font='Ani 8', key='-FM3-', layout=m3, element_justification='c',
                         visible=False)],
               [sg.Frame('Focuser', font='Ani 8', key='-FFO-', layout=focuser, element_justification='c',
+                        visible=False)],
+              [sg.Frame('Rotator', font='Ani 8', key='-FRO-', layout=rotator, element_justification='c',
                         visible=False)]]
 
     window = sg.Window('CDK700 Control',
@@ -112,7 +139,7 @@ def main():
                        finalize=True,
                        element_justification='c',
                        location=(0,0),
-                       size=(245,520))
+                       size=(250,700))
     count = 0
     pressed = False
     zoomed = False
@@ -148,6 +175,14 @@ def main():
                         window['focus'].update(range=(lower_limit,upper_limit))
                     elif event == rotate:
                         response = client.m3_rotate()
+                    elif event == goto_field:
+                        response = client.rotator_goto_field_angle(100)
+                    elif event == goto_mech:
+                        response = client.rotator_goto_mech_position(200)
+                    elif event == goto_offset:
+                        response = client.rotator_goto_offset(-10)
+                    elif event == start:
+                        response = client.rotator_start()
                     else:
                         response = client.mount_command (command = event)
             else:
@@ -164,6 +199,7 @@ def main():
                         mount = info.mount()
                         m3 = info.m3()
                         focuser = info.focuser()
+                        rotator = info.rotator()
                         if mount.exists():
                             window['-SPEED-'].update(mount.speed())
                             window['-AXIS0-'].update(mount.axis0())
@@ -172,9 +208,10 @@ def main():
                             if m3.exists():
                                 window['-FM3-'].update(visible=True)
                                 window['-M3-'].update(m3.position())
-                                if focuser.connected() and m3.at_camera():
+                                if focuser.exists() and m3.at_camera():
                                     window[rotate].update(sg.SYMBOL_LEFT)
                                     window['-FFO-'].update(visible=True)
+                                    window['-FRO-'].update(visible=True)
                                     if startup:
                                         focuser_max = focuser.max_position()
                                         upper_limit = focuser_max
@@ -186,16 +223,22 @@ def main():
                                     else:
                                         if not focuser.moving():
                                             window['focus'].update(value=focuser.position())
+                                    window['-RMV-'].update(rotator.moving())
+                                    window['-RSL-'].update(rotator.slewing())
+                                    window['-FIA-'].update(rotator.field_angle())
+                                    window['-MPO-'].update(rotator.mech_position())
                                 else:
                                     last_value = value
                                     window[rotate].update(sg.SYMBOL_RIGHT)
                                     window['-FFO-'].update(visible=False)
+                                    window['-FRO-'].update(visible=False)
                             else:
                                 window['-FM3-'].update(visible=False)
                         else:
                             window['-SPEED-'].update("")
                             window['-FM3-'].update(visible=False)
                             window['-FFO-'].update(visible=False)
+                            window['-FRO-'].update(visible=False)
         except:
             break
     window.close()

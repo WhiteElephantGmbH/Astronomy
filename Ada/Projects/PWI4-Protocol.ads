@@ -51,8 +51,8 @@ private package PWI4.Protocol is
     Is_Enabled    : Boolean;
     Is_Moving     : Boolean;
     Is_Slewing    : Boolean;
-    Mech_Position : Degrees;
     Field_Angle   : Degrees;
+    Mech_Position : Degrees;
   end record;
 
   function Arc_Second_Of (Image : String) return Arc_Second;
@@ -77,20 +77,22 @@ private package PWI4.Protocol is
   end record;
 
   type Mount_Info is record
-    Flags          : Mount_Flag;
-    Julian_Date    : Julian_Day;
-    Ra             : Hours;
-    Dec            : Degrees;
-    Ra_Target      : Hours;
-    Dec_Target     : Degrees;
-    Ra_J2000       : Hours;
-    Dec_J2000      : Degrees;
-    Azimuth        : Degrees;
-    Altitude       : Degrees;
-    Axis0          : Axis_Data;
-    Axis1          : Axis_Data;
-    Spiral_Offsets : Spiral_Data;
-    Model          : Model_Data;
+    Flags                      : Mount_Flag;
+    Julian_Date                : Julian_Day;
+    Ra                         : Hours;
+    Dec                        : Degrees;
+    Ra_Target                  : Hours;
+    Dec_Target                 : Degrees;
+    Ra_J2000                   : Hours;
+    Dec_J2000                  : Degrees;
+    Azimuth                    : Degrees;
+    Altitude                   : Degrees;
+    Axis0                      : Axis_Data;
+    Axis1                      : Axis_Data;
+    Spiral_Offsets             : Spiral_Data;
+    Model                      : Model_Data;
+    Field_Angle_At_Target      : Degrees;
+    Field_Angle_Rate_At_Target : Degrees;
   end record;
 
   type Port_Number is new Integer range -1 .. 2;

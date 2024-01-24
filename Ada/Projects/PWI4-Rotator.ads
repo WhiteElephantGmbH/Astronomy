@@ -1,18 +1,26 @@
 -- *********************************************************************************************************************
--- *                       (c) 2019 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2019 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
 package PWI4.Rotator is
 
-  function Exists return Boolean;
+  function Moving return Boolean;
 
-  procedure Connect;
+  function Slewing return Boolean;
 
-  procedure Disconnect;
+  function Field_Angle return Degrees;
+
+  function Mech_Position return Degrees;
 
   procedure Find_Home;
+
+  procedure Goto_Mech (Position : Degrees);
+
+  procedure Goto_Field (Position : Degrees);
+
+  procedure Goto_Offset (Distance : Degrees);
 
   procedure Start;
 

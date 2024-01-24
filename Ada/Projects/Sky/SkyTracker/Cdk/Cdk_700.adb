@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2022 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2022 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -30,9 +30,9 @@ package body Cdk_700 is
 
   The_Ip_Address : Network.Ip_Address;
 
+  Startup_Called     : Boolean  := False;
+  Had_Restart        : Boolean  := False;
   Is_Simulation_Mode : Boolean := False;
-
-  The_Restart_Duration : Duration := 0.0;
 
 
   function Switches return ENC.Switches is
@@ -52,8 +52,8 @@ package body Cdk_700 is
     use type Network.Ip_Address;
   begin
     Log.Write ("Startup");
+    Had_Restart := False;
     The_Ip_Address := Ip_Address;
-    The_Restart_Duration := Restart_Duration;
     Is_Simulation_Mode := Ip_Address = Network.Loopback_Address;
     if Is_Simulation_Mode then
       Log.Warning ("is in simulation mode");
@@ -68,8 +68,10 @@ package body Cdk_700 is
           end if;
         end loop;
         Progress.Start (Restart_Duration);
+        Had_Restart := True;
       end if;
     end;
+    Startup_Called := True;
   exception
   when ENC.Not_Available =>
     raise ENC_Not_Available;
@@ -81,21 +83,30 @@ package body Cdk_700 is
   function Startup_Progress return Progress.Percent renames Progress.In_Percent;
 
 
+  function Had_Powerup return Boolean is
+  begin
+    if not Startup_Called then
+      raise Program_Error;
+    end if;
+    return Had_Restart;
+  end Had_Powerup;
+
+
   function Is_Started return Boolean is
   begin
+    if not Startup_Called then
+      raise Program_Error;
+    end if;
     return not Progress.Is_Active;
   end Is_Started;
 
 
-  function Enable_Delay return Duration is
+  function Is_Simulated return Boolean is
   begin
-    if Is_Started then
-      return 0.0;
+    if not Startup_Called then
+      raise Program_Error;
     end if;
-    return The_Restart_Duration;
-  end Enable_Delay;
-
-
-  function Is_Simulated return Boolean is (Is_Simulation_Mode);
+    return Is_Simulation_Mode;
+  end Is_Simulated;
 
 end Cdk_700;

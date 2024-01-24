@@ -9,12 +9,12 @@ with Strings;
 
 package body PWI4.Mount is
 
-  The_Enable_Delay_Count : Natural := 60;
+  The_Enable_Delay_Count : Natural := 0;
 
-  procedure Set_Enable_Delay (Time : Duration) is
+  procedure Set_Powerup is
   begin
-    The_Enable_Delay_Count := Natural(Time);
-  end Set_Enable_Delay;
+    The_Enable_Delay_Count := 60; -- seconds
+  end Set_Powerup;
 
 
   procedure Execute (Command_Name : String;

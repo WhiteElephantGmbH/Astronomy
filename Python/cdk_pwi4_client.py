@@ -70,9 +70,6 @@ class Focuser:
     def exists(self):
         return self.focuser["exists"]
 
-    def connected(self):
-        return self.focuser["connected"]
-
     def moving(self):
         return self.focuser["moving"]
 
@@ -81,6 +78,26 @@ class Focuser:
 
     def position(self):
         return self.focuser["position"]
+
+
+""" Rotator Information
+    ===================
+"""
+class Rotator:
+    def __init__(self, rotator):
+        self.rotator = rotator
+
+    def moving(self):
+        return self.rotator["moving"]
+
+    def slewing(self):
+        return self.rotator["slewing"]
+
+    def field_angle(self):
+        return self.rotator["field_angle"]
+
+    def mech_position(self):
+        return self.rotator["mech_position"]
 
 
 """ Information from SkyTracker
@@ -98,6 +115,9 @@ class Information:
 
     def focuser(self):
         return Focuser(self.info["focuser"])
+
+    def rotator(self):
+        return Rotator(self.info["rotator"])
 
 
 """
@@ -128,6 +148,10 @@ class Client:
     next_speed             = 'next_speed'
     previous_speed         = 'previous_speed'
     stop                   = 'stop'
+    goto_field             = 'goto_field'
+    goto_mech              = 'goto_mech'
+    goto_offset            = 'goto_offset'
+    start                  = 'start'
 
     def mount_command(self, command):
         return self.request_with_status("/mount/" + command)
@@ -145,6 +169,21 @@ class Client:
     """
     def focuser_set_position(self, value):
         return self.request_with_status("/focuser/set/?position=" + str(value))
+
+    """ Rotator Command
+        ---------------
+    """
+    def rotator_goto_field_angle(self, value):
+        return self.request_with_status("/rotator/goto_field/?angle=" + str(value))
+
+    def rotator_goto_mech_position(self, value):
+        return self.request_with_status("/rotator/goto_mech/?position=" + str(value))
+
+    def rotator_goto_offset(self, value):
+        return self.request_with_status("/rotator/goto/?offset=" + str(value))
+
+    def rotator_start(self):
+        return self.request_with_status("/rotator/start")
 
     """ Information
         -----------

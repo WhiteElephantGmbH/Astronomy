@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2022 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2022 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -25,13 +25,15 @@ package Cdk_700 is
     ENC_Not_Available : exception;
     Startup_Failed    : exception;
 
-  function Is_Started return Boolean;
-  -- Precondition: Startup must have been called
-  
-  function Enable_Delay return Duration;
-
   function Startup_Progress return Progress.Percent;
 
+  function Had_Powerup return Boolean;
+  -- Precondition: Startup must have been called
+
+  function Is_Started return Boolean;
+  -- Precondition: Startup must have been called
+
   function Is_Simulated return Boolean;
+  -- Precondition: Startup must have been called
 
 end Cdk_700;
