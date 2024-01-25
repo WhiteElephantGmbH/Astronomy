@@ -68,12 +68,6 @@ package body PWI4.Rotator is
   end Goto_Offset;
 
 
-  procedure Start is
-  begin
-    Execute ("derotatestart");
-  end Start;
-
-
   procedure Stop is
   begin
     Execute ("stop");

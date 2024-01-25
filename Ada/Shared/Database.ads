@@ -219,7 +219,7 @@ package Database is
 
   One_Parsec_In_Light_Years : constant Float := 3.26156;
 
-  Max_Star_Magnitude : constant Magnitude := 9.5;
+  Max_Star_Magnitude : constant Magnitude := 10.0;
 
   No_Plx : constant := Parallax'first;
   No_Mag : constant := Magnitude'last;

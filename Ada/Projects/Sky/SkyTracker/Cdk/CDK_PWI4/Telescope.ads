@@ -143,8 +143,6 @@ package Telescope is
 
   procedure Rotator_Goto_Offset (Item : Device.Degrees);
 
-  procedure Rotator_Start;
-
   function Information return Data;
 
   procedure Close;

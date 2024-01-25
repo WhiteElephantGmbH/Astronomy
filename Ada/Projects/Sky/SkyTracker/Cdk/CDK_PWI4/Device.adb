@@ -75,7 +75,6 @@ package body Device is
                           Goto_Field,
                           Goto_Mech,
                           Goto_Offset,
-                          Start,
                           Stop);
 
   type Parameters is record
@@ -617,16 +616,12 @@ package body Device is
             Log.Write ("Simulated Rotator goto_mech : " & The_Simulated_Rotator_Goto_Position'image);
           when Goto_Field =>
             The_Simulated_Rotator_Goto_Angle := The_Parameter.Rotator_Value;
-            Simulated_Rotator_Moving := True;
+            Simulated_Rotator_Moving:= True;
             Log.Write ("Simulated Rotator goto_field : " & The_Simulated_Rotator_Goto_Angle'image);
           when Goto_Offset =>
-            The_Simulated_Rotator_Goto_Angle := The_Parameter.Rotator_Value;
-            Simulated_Rotator_Slewing := True;
-            Log.Write ("Simulated rotator goto_offset");
-          when Start =>
-            Log.Write ("Simulated rotator start");
+            The_Simulated_Rotator_Goto_Angle := @ + The_Parameter.Rotator_Value;
             Simulated_Rotator_Moving := True;
-            Simulated_Rotator_Slewing := False;
+            Log.Write ("Simulated rotator goto_offset");
           when Stop =>
             Log.Write ("Simulated rotator stop");
             Simulated_Rotator_Moving := False;
@@ -644,8 +639,6 @@ package body Device is
             PWI4.Rotator.Goto_Field (The_Parameter.Rotator_Value);
           when Goto_Offset =>
             PWI4.Rotator.Goto_Offset (The_Parameter.Rotator_Value);
-          when Start =>
-            PWI4.Rotator.Start;
           when Stop =>
             PWI4.Rotator.Stop;
           end case;
@@ -1149,13 +1142,6 @@ package body Device is
       Log.Write ("Rotator.Goto_Offset" & The_Offset'image);
       Action.Goto_Offset (The_Offset);
     end Go_To;
-
-
-    procedure Start is
-    begin
-      Log.Write ("Rotator.Start");
-      Action.Put (Rotator_Action'(Start));
-    end Start;
 
 
     procedure Stop is

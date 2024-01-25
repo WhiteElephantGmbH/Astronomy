@@ -52,7 +52,6 @@ def main():
     goto_field             = client.goto_field
     goto_mech              = client.goto_mech
     goto_offset            = client.goto_offset
-    start                  = client.start
 
     color0 = sg.theme_button_color()[0]
     color1 = sg.theme_button_color()[1]
@@ -104,26 +103,19 @@ def main():
                           size=(18,18), orientation='horizontal', font='Ani 12',
                           enable_events=True)]]
 
-    moving = [[sg.Text(size=(9,1), key='-RMV-', pad=(0,0), font='Ani 12',
-                       justification='r', background_color=color0, text_color=color1)]]
-
-    sliding = [[sg.Text(size=(9,1), key='-RSL-', pad=(0,0), font='Ani 12',
-                        justification='r', background_color=color0, text_color=color1)]]
-
     field_angle = [[sg.Text(size=(9,1), key='-FIA-', pad=(0,0), font='Ani 12',
                             justification='r', background_color=color0, text_color=color1)]]
 
     mech_position = [[sg.Text(size=(9,1), key='-MPO-', pad=(0,0), font='Ani 12',
                               justification='r', background_color=color0, text_color=color1)]]
 
-    rotator = [[sg.Frame('Moving', font='Ani 8', layout=moving, element_justification='c'),
-                sg.Frame('Sliding', font='Ani 8', layout=sliding, element_justification='c')],
-               [sg.Frame('Field Angle', font='Ani 8', layout=field_angle, element_justification='c'),
+    rotator = [[sg.Frame('Field Angle', font='Ani 8', layout=field_angle, element_justification='c'),
                 sg.Frame('Mech Position', font='Ani 8', layout=mech_position, element_justification='c')],
-               [sg.RealtimeButton('Goto_Field', key=goto_field),
-                sg.RealtimeButton('Goto_Mech', key=goto_mech)],
-               [sg.RealtimeButton('Goto_Offset', key=goto_offset),
-                sg.RealtimeButton('Start', key=start)]]
+               [sg.RealtimeButton('>>Field', key=goto_field),
+                sg.RealtimeButton('>>Mech', key=goto_mech),
+                sg.RealtimeButton('>>Offset', key=goto_offset)],
+               [sg.Slider(key='angle', range=(-180,180), default_value=0,
+                          size=(20,18), orientation='horizontal', font='Ani 12')]]
 
     layout = [[sg.Frame('Mount', font='Ani 8', layout=mount, element_justification='c')],
               [sg.Frame('M3', font='Ani 8', key='-FM3-', layout=m3, element_justification='c',
@@ -139,7 +131,7 @@ def main():
                        finalize=True,
                        element_justification='c',
                        location=(0,0),
-                       size=(250,700))
+                       size=(253,663))
     count = 0
     pressed = False
     zoomed = False
@@ -176,13 +168,11 @@ def main():
                     elif event == rotate:
                         response = client.m3_rotate()
                     elif event == goto_field:
-                        response = client.rotator_goto_field_angle(100)
+                       response = client.rotator_goto_field_angle(values['angle'])
                     elif event == goto_mech:
-                        response = client.rotator_goto_mech_position(200)
+                        response = client.rotator_goto_mech_position(values['angle'] + 180)
                     elif event == goto_offset:
-                        response = client.rotator_goto_offset(-10)
-                    elif event == start:
-                        response = client.rotator_start()
+                        response = client.rotator_goto_offset(values['angle'])
                     else:
                         response = client.mount_command (command = event)
             else:
@@ -223,8 +213,6 @@ def main():
                                     else:
                                         if not focuser.moving():
                                             window['focus'].update(value=focuser.position())
-                                    window['-RMV-'].update(rotator.moving())
-                                    window['-RSL-'].update(rotator.slewing())
                                     window['-FIA-'].update(rotator.field_angle())
                                     window['-MPO-'].update(rotator.mech_position())
                                 else:

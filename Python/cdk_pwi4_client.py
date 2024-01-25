@@ -151,7 +151,6 @@ class Client:
     goto_field             = 'goto_field'
     goto_mech              = 'goto_mech'
     goto_offset            = 'goto_offset'
-    start                  = 'start'
 
     def mount_command(self, command):
         return self.request_with_status("/mount/" + command)
@@ -181,9 +180,6 @@ class Client:
 
     def rotator_goto_offset(self, value):
         return self.request_with_status("/rotator/goto/?offset=" + str(value))
-
-    def rotator_start(self):
-        return self.request_with_status("/rotator/start")
 
     """ Information
         -----------

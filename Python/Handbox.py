@@ -90,7 +90,7 @@ def main():
                        finalize=True,
                        element_justification='c',
                        location=(0,0),
-                       size=(245,315))
+                       size=(253,313))
     count = 0
     pressed = False
     zoomed = False
@@ -147,7 +147,7 @@ def main():
                             if m3.exists():
                                 window['-FM3-'].update(visible=True)
                                 window['-M3-'].update(m3.position())
-                                if focuser.connected() and m3.at_camera():
+                                if focuser.exists() and m3.at_camera():
                                     window[rotate].update(sg.SYMBOL_LEFT)
                                     window['-FFO-'].update(visible=True)
                                     if startup:

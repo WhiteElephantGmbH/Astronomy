@@ -22,8 +22,6 @@ package PWI4.Rotator is
 
   procedure Goto_Offset (Distance : Degrees);
 
-  procedure Start;
-
   procedure Stop;
 
 end PWI4.Rotator;

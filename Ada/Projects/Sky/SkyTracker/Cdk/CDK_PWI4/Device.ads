@@ -168,8 +168,6 @@ package Device is
 
     procedure Go_To (The_Offset : Degrees);
 
-    procedure Start;
-
     procedure Stop;
 
   end Rotator;

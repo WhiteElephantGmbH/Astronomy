@@ -254,10 +254,6 @@ package body Http_Server is
               Telescope.Rotator_Goto_Offset (Device.Degrees'value(Value_Image));
               return AWS.Response.Acknowledge (AWS.Messages.S200, "ok");
             end;
-          elsif Command_Image = "start" then
-            Log.Write ("Rotator.Start");
-            Telescope.Rotator_Start;
-            return AWS.Response.Acknowledge (AWS.Messages.S200, "ok");
           else
             raise Program_Error;
           end if;

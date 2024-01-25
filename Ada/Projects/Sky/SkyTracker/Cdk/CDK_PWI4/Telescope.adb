@@ -67,8 +67,6 @@ package body Telescope is
 
     entry Rotator_Goto (The_Offset : Device.Degrees);
 
-    entry Rotator_Start;
-
     entry New_Mount_State (New_State : Mount.State);
 
     entry New_M3_Position (New_Position : M3.Position);
@@ -174,12 +172,6 @@ package body Telescope is
   begin
     Control.Rotator_Goto (The_Offset => Item);
   end Rotator_Goto_Offset;
-
-
-  procedure Rotator_Start is
-  begin
-    Control.Rotator_Start;
-  end Rotator_Start;
 
 
   Next_Id            : Name.Id;
@@ -1107,10 +1099,6 @@ package body Telescope is
           accept Rotator_Goto (The_Offset : Device.Degrees) do
             Rotator.Go_To (The_Offset);
           end Rotator_Goto;
-        or
-          accept Rotator_Start do
-            Rotator.Start;
-          end Rotator_Start;
         or
           accept Execute (The_Command : Command) do
             if The_State >= Stopped then
