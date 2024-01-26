@@ -239,12 +239,6 @@ package body Test is
     end Home_Rotator;
 
 
-    procedure Start_Rotator is
-    begin
-      PWI4.Rotator.Start;
-    end Start_Rotator;
-
-
     Mount_Not_At_Home     : exception;
     Mount_Must_Be_Enabled : exception;
 
@@ -359,9 +353,7 @@ package body Test is
       Home_Focuser;
       Home_Rotator;
       Home_Mount;
-    elsif Id = "start" then
-      Start_Rotator;
-    elsif Id = "input" then
+   elsif Id = "input" then
       Serial_Input ("");
     elsif Id = "turnto1" then
       Turn_M3 (To => PWI4.Port_1);
