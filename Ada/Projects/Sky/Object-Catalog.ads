@@ -16,52 +16,144 @@
 pragma Style_White_Elephant;
 
 with Database.Objects;
+with Lexicon;
 
 package Object.Catalog is
 
-  Unknown_Id : constant := Database.Unknown_Id;
-  First_Id   : constant := Unknown_Id + 1;
+  No_Image : exception;
 
-  type Star_Id is range Unknown_Id .. Database.Objects.Data_Range'last;
+  type Id is (Star_Id, Name_Id, HD, HIP, HR, M, NGC, IC, Ocl);
 
-  subtype Parallax is Database.Parallax;
+  function Main_Id_Of (Item : Index) return Id with Inline;
 
-  subtype Star_Spec_Type is Database.Star_Spec_Type;
+  function Image_Of (Item : Index) return String;
+  -- returns objects main catalog image
 
-  subtype Star_Class is Database.Star_Class;
 
-  subtype Star is Star_Id range First_Id .. Star_Id'last;
+  function Index_Of (Item : Lexicon.Word) return Number with Inline;
 
-  type HD_Id is new Database.Objects.HD_Id;
+  function Has_Name (Item : Index) return Boolean with Inline;
 
-  subtype HD is HD_Id range First_Id .. HD_Id'last;
+  function Name_Of (Item : Index) return Lexicon.Word with Inline;
 
-  type HIP_Id is new Database.Objects.HIP_Id;
+  function Name_Image_Of (Item : Index) return String;
+  -- exception : No_Image
 
-  subtype HIP is HIP_Id range First_Id .. HIP_Id'last;
 
-  type HR_Id is new Database.Objects.HR_Id;
+  subtype Star_Info is Database.Star_Info;
 
-  subtype HR is HR_Id range First_Id .. HR_Id'last;
+  function Index_Of (Item : Star_Info) return Number with Inline;
 
-  function Star_Of (Id : HD) return Star_Id with Inline;
+  function Has_Star_Info (Item : Index) return Boolean with Inline;
 
-  function Star_Of (Id : HIP) return Star_Id with Inline;
+  function Star_Info_Of (Item : Index) return Star_Info with Inline;
 
-  function Star_Of (Id : HR) return Star_Id with Inline;
+  function Star_Image_Of (Item : Index) return String;
+  -- exception : No_Image
 
-  function Ra_J2000_Of (Id : Star) return Angle.Degrees with Inline;
 
-  function Dec_J2000_Of (Id : Star) return Angle.Degrees with Inline;
+  type HD_Number is new Database.Objects.HD_Id;
 
-  function Ra_Motion_Of (Id : Star) return Angle.Degrees with Inline;
+  subtype HD_Index is HD_Number range First .. HD_Number'last;
 
-  function Dec_Motion_Of (Id : Star) return Angle.Degrees with Inline;
+  function Number_Of (Item : HD_Index) return Number with Inline;
 
-  function V_Mag_Of (Id : Star) return Magnitude with Inline;
+  function HD_Of (Item : Index) return HD_Number with Inline;
 
-  function Parallax_Of (Id : Star) return Parallax with Inline;
+  function HD_Image_Of (Item : Index) return String;
+  -- exception : No_Image
 
-  function Spec_Type_Of (Id : Star) return Star_Spec_Type with Inline;
+
+  type HIP_Number is new Database.Objects.HIP_Id;
+
+  subtype HIP_Index is HIP_Number range First .. HIP_Number'last;
+
+  function Number_Of (Item : HIP_Index) return Number with Inline;
+
+  function HIP_Of (Item : Index) return HIP_Number with Inline;
+
+  function HIP_Image_Of (Item : Index) return String;
+  -- exception : No_Image
+
+
+  type HR_Number is new Database.Objects.HR_Id;
+
+  subtype HR_Index is HR_Number range First .. HR_Number'last;
+
+  function Number_Of (Item : HR_Index) return Number with Inline;
+
+  function HR_Of (Item : Index) return HR_Number with Inline;
+
+  function HR_Image_Of (Item : Index) return String;
+  -- exception : No_Image
+
+
+  type M_Number is new Database.Objects.M_Id;
+
+  subtype M_Index is M_Number range First .. M_Number'last;
+
+  function Number_Of (Item : M_Index) return Number with Inline;
+
+  function M_Of (Item : Index) return M_Number with Inline;
+
+  function M_Image_Of (Item : Index) return String;
+  -- exception : No_Image
+
+
+  type NGC_Number is new Database.Objects.NGC_Id;
+
+  subtype NGC_Index is NGC_Number range First .. NGC_Number'last;
+
+  function Number_Of (Item : NGC_Index) return Number with Inline;
+
+  function NGC_Of (Item : Index) return NGC_Number with Inline;
+
+  function NGC_Image_Of (Item : Index) return String;
+  -- exception : No_Image
+
+
+  type IC_Number is new Database.Objects.IC_Id;
+
+  subtype IC_Index is IC_Number range First .. IC_Number'last;
+
+  function Number_Of (Item : IC_Index) return Number with Inline;
+
+  function IC_Of (Item : Index) return IC_Number with Inline;
+
+  function IC_Image_Of (Item : Index) return String;
+  -- exception : No_Image
+
+
+  type OCL_Number is new Database.Objects.OCL_Id;
+
+  subtype OCL_Index is OCL_Number range First .. OCL_Number'last;
+
+  function Number_Of (Item : OCL_Index) return Number with Inline;
+
+  function OCL_Of (Item : Index) return OCL_Number with Inline;
+
+  function OCL_Image_Of (Item : Index) return String;
+  -- exception : No_Image
+
+
+  function Ra_J2000_Of (Item : Index) return Angle.Degrees with Inline;
+
+  function Dec_J2000_Of (Item : Index) return Angle.Degrees with Inline;
+
+  function Ra_Motion_Of (Item : Index) return Angle.Degrees with Inline;
+
+  function Dec_Motion_Of (Item : Index) return Angle.Degrees with Inline;
+
+  function Magnitude_Of (Item : Index) return Magnitude with Inline;
+
+  function Distance_Of (Item : Index) return Light_Years with Inline;
+
+  function Parallax_Of (Item : Index) return Parallax with Inline;
+
+  function Spec_Type_Of (Item : Index) return Spectral_Type with Inline;
+
+  function Spec_Class_Of (Item : Number) return Spectral_Class is (Spec_Type_Of (Item).Class);
+
+  function Type_Of (Item : Index) return Object.Kind with Inline;
 
 end Object.Catalog;

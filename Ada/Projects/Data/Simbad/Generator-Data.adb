@@ -17,6 +17,7 @@ pragma Style_White_Elephant;
 
 with Ada.Containers.Doubly_Linked_Lists;
 with Ada.Text_IO;
+with Ada.Unchecked_Conversion;
 with Database;
 with Strings;
 with Traces;
@@ -715,10 +716,12 @@ package body Generator.Data is
   end Base_Name_Of;
 
 
-  type Id is new Natural;
+  subtype Id is Database.Id;
 
-  Unknown_Id : constant := Database.Unknown_Id;
-  First_Id   : constant Id := Unknown_Id + 1;
+  use type Id;
+
+  Unknown_Id : constant := Database.Unknown;
+  First_Id   : constant := Unknown_Id + 1;
 
   No_Distance : constant Database.Light_Years := Database.No_Distance;
 
@@ -732,6 +735,8 @@ package body Generator.Data is
   LN : constant Header := NC; -- Line_Number
 
   type Cat is new Header range NC .. Ocl;
+
+  Star_Cat : constant Cat :=  SC;
 
 
   function Image_Of (Item : Cat) return String is
@@ -768,11 +773,10 @@ package body Generator.Data is
   end Right_Adjusted;
 
 
-  type Id_List is array (Cat) of Id;
+  type Id_List is array (Star_Cat .. Cat'last) of Id;
 
   type Information is record
     Main_Cat  : Cat := NC;
-    Star_Id   : Database.Star_Id := Database.Unknown_Star_Id;
     Ids       : Id_List := [others => Unknown_Id];
     Ra_J2000  : Database.Degrees_Ra;
     Dec_J2000 : Database.Degrees_Dec;
@@ -1111,11 +1115,10 @@ package body Generator.Data is
       subtype Star_Number  is Database.Star_Number;
       subtype Star_Index   is Database.Star_Index;
 
-      Unknown_Star_Id : constant Database.Star_Id:= Database.Unknown_Star_Id;
-
       procedure Define_Star_Id_For (Id_Image : String) is
+        function Convert is new Ada.Unchecked_Conversion (Database.Star_Info, Database.Id);
         Id_Parts : constant Strings.Item := Strings.Item_Of (Id_Image, ' ');
-        The_Id   : Database.Star_Id; -- default unknown
+        The_Info : Database.Star_Info; -- default unknown
       begin
         if Id_Parts.Count = 3 and then Id_Parts(1) = Star_Image then
           declare
@@ -1124,8 +1127,8 @@ package body Generator.Data is
             use all type Database.Star_Count_Type;
           begin
             if P1(P1'first) in '0' .. '9' then
-              The_Id.Kind := Numeric;
-              The_Id.Count := Star_Number'value(P1);
+              The_Info.Kind := Numeric;
+              The_Info.Count := Star_Number'value(P1);
             else
               declare
                 The_Last : Natural := P1'last;
@@ -1137,11 +1140,11 @@ package body Generator.Data is
                   end if;
                 end loop;
                 if The_Last = P1'first then
-                  The_Id.Kind := Alphabetic;
-                  The_Id.Count := Star_Number(Character'pos(P1(P1'first)) - Character'pos('A'));
+                  The_Info.Kind := Alphabetic;
+                  The_Info.Count := Star_Number(Character'pos(P1(P1'first)) - Character'pos('A'));
                 else
-                  The_Id.Kind := Greek;
-                  The_Id.Count := Star_Number(Greek_Letter'pos(Greek_Letter'value(P1(P1'first .. The_Last))));
+                  The_Info.Kind := Greek;
+                  The_Info.Count := Star_Number(Greek_Letter'pos(Greek_Letter'value(P1(P1'first .. The_Last))));
                 end if;
                 if The_Last < P1'last then
                   declare
@@ -1149,19 +1152,19 @@ package body Generator.Data is
                     Index : constant String := P1(First .. P1'last);
                   begin
                     if Index /= "" then
-                      The_Id.Index := Star_Index'value(Index);
+                      The_Info.Index := Star_Index'value(Index);
                     end if;
                   end;
                 end if;
               end;
             end if;
-            The_Id.C_Id := Database.Constellation'value("C_" & P2);
+            The_Info.C_Id := Database.Constellation'value("C_" & P2);
           exception
           when others =>
             Error ("Incorrect Star Id: " & Id_Image);
           end;
         end if;
-        The_Object.Star_Id := The_Id;
+        The_Object.Ids(Star_Cat) := Convert (The_Info);
       end Define_Star_Id_For;
 
 
@@ -1186,7 +1189,6 @@ package body Generator.Data is
         Main_Id          : constant String := Part (MI);
         Name_Id          : constant Id := Name_Id_Of (Part (Name));
         The_Main_Catalog : Cat := Catalog_Id_Of (Main_Id);
-        use type Database.Star_Id;
       begin
         The_Object.Ids(Name) := Name_Id;
         case The_Main_Catalog is
@@ -1196,7 +1198,7 @@ package body Generator.Data is
           end if;
         when SC =>
           Define_Star_Id_For (Main_Id);
-          if The_Object.Star_Id = Unknown_Star_Id then
+          if The_Object.Ids(Star_Cat) = Unknown_Id then
             The_Main_Catalog := NC;
           end if;
         when NC =>
@@ -1373,22 +1375,26 @@ package body Generator.Data is
       Output;
       Output ("pragma Style_White_Elephant;");
       Output;
+      Output ("pragma Restrictions (No_Elaboration_Code);");
+      Output;
       Output ("package Database.Objects is");
       Output;
       Output ("  pragma Style_Checks (""M191"");");
       Output;
-      Output ("  type Data_Range is range 1 .." & The_Objects.Length'image & ";");
+      Output ("  type Number is range Unknown .." & The_Objects.Length'image & ";");
       Output;
-      Output ("  type Name_Id is range Unknown_Id .." & The_Names.Length'image & ";");
+      Output ("  subtype Index is Number range First .. Number'last;");
+      Output;
+      Output ("  type Name_Id is range Unknown .." & The_Names.Length'image & ";");
       for C in Ids_Cat loop
-        Output ("  type " & Left_Adjusted (C'image & "_Id", 8) & "is range Unknown_Id .." & Last_Id(C)'image & ";");
+        Output ("  type " & Left_Adjusted (C'image & "_Id", 8) & "is range Unknown .." & Last_Id(C)'image & ";");
       end loop;
       Output;
       Output ("  type Catalog_Id is range 1 .." & Cat'pos(Cat'last)'image & ";");
       Output;
       Output ("  type Information is record");
       Output ("    Catalog_Index : Catalog_Id;");
-      Output ("    Star_Id       : Natural;");
+      Output ("    Star_Id       : Id;");
       Output ("    Name_Index    : Name_Id;");
       for C in Ids_Cat loop
         Output ("    " & Left_Adjusted (C'image & "_Number", 14) & ": " & C'image & "_Id;");
@@ -1420,10 +1426,10 @@ package body Generator.Data is
       Output;
       Output ("  type Name_Map is record");
       Output ("    Item   : Name;");
-      Output ("    Object : Data_Range;");
+      Output ("    Object : Index;");
       Output ("  end record;");
       Output;
-      Output ("  type Name_List is array (Names) of Data_Range;");
+      Output ("  type Name_List is array (Names) of Index;");
       Output;
       Output ("  Name_Links : constant Name_List := [");
       for The_Association of The_Name_Associations loop
@@ -1437,10 +1443,10 @@ package body Generator.Data is
       end loop;
       Output ("  ];");
       Output;
-      Output ("  type Data is array (Data_Range) of Information;");
+      Output ("  type Data is array (Index) of Information;");
       Output;
       Output ("  List : constant Data := [");
-      Output ("-- Cat         Star Name" & Ids_Header & "           Ra J2000          Dec J2000      Ra PM     Dec PM       PLX    Distance    MagV Otype    Stype");
+      Output ("-- Cat        Star Name" & Ids_Header & "           Ra J2000          Dec J2000      Ra PM     Dec PM       PLX    Distance    MagV Otype    Stype");
     end Put_Header;
 
     procedure Put (The_Object : Information;
@@ -1450,6 +1456,7 @@ package body Generator.Data is
       Separator      : constant String := ", ";
 
       Main_Field_Size     : constant := 1;
+      Star_Field_Size     : constant := 10;
       Name_Field_Size     : constant := 3;
       Ra_Field_Size       : constant := 17;
       Dec_Field_Size      : constant := 17;
@@ -1499,25 +1506,8 @@ package body Generator.Data is
       end Name;
 
       function Star return String is
-        Star_Id     : constant Database.Star_Id := The_Object.Star_Id;
-        Kind_Image  : constant String := Strings.Trimmed (Database.Star_Count_Type'pos(Star_Id.Kind)'image);
-        Count_Image : constant String := Strings.Trimmed (Star_Id.Count'image);
-        Index_Image : constant String := Strings.Trimmed (Star_Id.Index'image);
-        C_Id_Image  : constant String := Strings.Trimmed (Database.Constellation'pos(Star_Id.C_Id)'image);
-                                   --  K Cnt Ix Con
-        Image    :          String := "0_000_00_00, ";
-                                   --  1   5  8  11
-        Image_NI : constant String := "         NI, ";
-        use type Database.Star_Id;
       begin
-        if Star_Id = Database.Unknown_Star_Id then
-          return Image_NI;
-        end if;
-        Image ( 1 -  Kind_Image'length + 1 ..  1) := Kind_Image;
-        Image ( 5 - Count_Image'length + 1 ..  5) := Count_Image;
-        Image ( 8 - Index_Image'length + 1 ..  8) := Index_Image;
-        Image (11 -  C_Id_Image'length + 1 .. 11) := C_Id_Image;
-        return Image;
+        return Image_Of (The_Object.Ids(Star_Cat), Star_Field_Size) & Separator;
       end Star;
 
       function Ids return String is

@@ -17,24 +17,14 @@ pragma Style_White_Elephant;
 
 with Object.Catalog;
 
-package Object.Star is
+package body Object.Target is
 
-  subtype Id is Object.Catalog.Star;
+  function Direction_Of (Item : Index) return Space.Direction is
+  begin
+    return Direction_Of (Ra_J2000   => Object.Catalog.Ra_J2000_Of (Item),
+                         Dec_J2000  => Object.Catalog.Dec_J2000_Of (Item),
+                         Ra_Motion  => Object.Catalog.Ra_Motion_Of (Item),
+                         Dec_Motion => Object.Catalog.Dec_Motion_Of (Item));
+  end Direction_Of;
 
-  subtype Parallax is Object.Catalog.Parallax;
-
-  subtype Spectral_Type is Object.Catalog.Star_Spec_Type;
-
-  subtype Class is Object.Catalog.Star_Class;
-
-  function Direction_Of (Item : Id) return Space.Direction;
-
-  function Magnitude_Of (Item : Id) return Magnitude with Inline;
-
-  function Parallax_Of (Item : Id) return Parallax with Inline;
-
-  function Spectral_Type_Of (Item : Id) return Spectral_Type with Inline;
-
-  function Class_Of (Item : Id) return Class with Inline;
-
-end Object.Star;
+end Object.Target;

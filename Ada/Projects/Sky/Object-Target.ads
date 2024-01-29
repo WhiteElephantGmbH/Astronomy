@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2023 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2023 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,37 +15,8 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-package body Object.Star is
+package Object.Target is
 
-  function Direction_Of (Item : Id) return Space.Direction is
-  begin
-    return Direction_Of (Ra_J2000   => Object.Catalog.Ra_J2000_Of (Item),
-                         Dec_J2000  => Object.Catalog.Dec_J2000_Of (Item),
-                         Ra_Motion  => Object.Catalog.Ra_Motion_Of (Item),
-                         Dec_Motion => Object.Catalog.Dec_Motion_Of (Item));
-  end Direction_Of;
+  function Direction_Of (Item : Index) return Space.Direction;
 
-
-  function Magnitude_Of (Item : Id) return Magnitude is
-  begin
-    return Object.Catalog.V_Mag_Of (Item);
-  end Magnitude_Of;
-
-
-  function Parallax_Of (Item : Id) return Parallax is
-  begin
-    return Object.Catalog.Parallax_Of (Item);
-  end Parallax_Of;
-
-  function Spectral_Type_Of (Item : Id) return Spectral_Type is
-  begin
-    return Object.Catalog.Spec_Type_Of (Item);
-  end Spectral_Type_Of;
-
-
-  function Class_Of (Item : Id) return Class is
-  begin
-    return Spectral_Type_Of (Item).Class;
-  end Class_Of;
-
-end Object.Star;
+end Object.Target;

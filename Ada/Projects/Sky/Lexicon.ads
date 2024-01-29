@@ -20,7 +20,7 @@ package Lexicon is
   type Word is (
 
     -- Objects Names from Simbad
-    Acamar,
+    Acamar, -- must be first in Word
     Achernar,
     Achird,
     Acrux,
@@ -602,7 +602,7 @@ package Lexicon is
     Zosma,
     Zubenelgenubi,
     Zubenelhakrabi,
-    Zubeneschamali,
+    Zubeneschamali, -- last in subtype Simbad_Names
 
     -- Objects Names not handled from Simbad
     Eskimo_Nebula,  -- NGC 2392
@@ -651,6 +651,8 @@ package Lexicon is
     Venus,
     Visible,
     West);
+
+  subtype Simbad_Names is Word range  Word'first .. Zubeneschamali;
 
   -- Names different from Simbad
   Andromeda_Galaxy  : constant Word := Andromeda;

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2023 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2023 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,6 +15,8 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with Object.Catalog;
+with Object.Target;
 with Objects;
 with Traces;
 
@@ -25,7 +27,7 @@ package body Star is
 
   The_Stars : Stars.List;
 
-  The_Directions : array (Number) of Direction;
+  The_Directions : array (Id) of Direction;
 
 
   function Data_List return List is
@@ -34,9 +36,9 @@ package body Star is
   end Data_List;
 
 
-  function Location_Of (Id : Number) return Direction is
+  function Location_Of (Item : Id) return Direction is
   begin
-    return The_Directions (Id);
+    return The_Directions (Item);
   end Location_Of;
 
 
@@ -57,16 +59,18 @@ package body Star is
     The_Directions := [others => Earth.Unknown_Direction];
     Object.Set (Ut);
     The_Stars.Clear;
-    for The_Id in Number loop
-      The_Direction := Objects.Direction_Of (Object.Star.Direction_Of (The_Id), Time.Lmst_Of (Ut));
-      if not Earth.Is_Below_Horizon (The_Direction) then
-        The_Stars.Append ((Id    => The_Id,
-                           Mag   => Magnitude(Object.Star.Magnitude_Of (The_Id)),
-                           Class => Object.Star.Class_Of (The_Id),
-                           Plx   => Object.Star.Parallax_Of (The_Id),
-                           Loc   => The_Direction));
+    for The_Id in Id loop
+      if Object.Catalog.Type_Of (The_Id) in Object.Star then
+        The_Direction := Objects.Direction_Of (Object.Target.Direction_Of (The_Id), Time.Lmst_Of (Ut));
+        if not Earth.Is_Below_Horizon (The_Direction) then
+          The_Stars.Append ((Ident => The_Id,
+                             Mag   => Object.Catalog.Magnitude_Of (The_Id),
+                             Class => Object.Catalog.Spec_Class_Of (The_Id),
+                             Plx   => Object.Catalog.Parallax_Of (The_Id),
+                             Loc   => The_Direction));
+        end if;
+        The_Directions(The_Id) := The_Direction;
       end if;
-      The_Directions(The_Id) := The_Direction;
     end loop;
     Parallax_Data.Sort (The_Stars);
     Log.Write ("Read" & The_Stars.Length'image & " visible stars");

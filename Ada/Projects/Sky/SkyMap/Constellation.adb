@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2023 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2023 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -24,8 +24,8 @@ package body Constellation is
   package Log is new Traces ("Constellation");
 
   type Part is record
-    From  : Object.Catalog.HR;
-    To    : Object.Catalog.HR;
+    From  : Object.Catalog.HR_Index;
+    To    : Object.Catalog.HR_Index;
     Const : Item;
   end record;
 
@@ -608,12 +608,12 @@ package body Constellation is
   end Visible_Lines_Of;
 
 
-  type Star_Set is array (Star.Number) of Boolean with Pack;
+  type Star_Set is array (Star.Id) of Boolean with Pack;
 
   The_Used_Stars : Star_Set;
 
 
-  function Is_Used (Id : Star.Number) return Boolean is
+  function Is_Used (Id : Star.Id) return Boolean is
   begin
     return The_Used_Stars (Id);
   end Is_Used;
@@ -725,8 +725,8 @@ package body Constellation is
       end if;
       Last_Line := @ + 1;
       declare
-        From : constant Object.Catalog.Star := Object.Catalog.Star_Of (The_Part.From);
-        To   : constant Object.Catalog.Star := Object.Catalog.Star_Of (The_Part.To);
+        From : constant Object.Number := Object.Catalog.Number_Of (The_Part.From);
+        To   : constant Object.Number := Object.Catalog.Number_Of (The_Part.To);
       begin
         The_Lines(Last_Line) := (From => (Id        => From,
                                           Direction => Star.Location_Of (From)),

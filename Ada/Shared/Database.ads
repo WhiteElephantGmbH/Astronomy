@@ -17,9 +17,15 @@ pragma Style_White_Elephant;
 
 package Database is
 
-  Unknown_Id : constant := 0;
+  Unknown : constant := 0;
 
-  NI : constant := Unknown_Id; -- no information
+  First : constant := Unknown + 1;
+
+  NI : constant := Unknown; -- no information
+
+  Id_Size : constant := 32;
+
+  type Id is range 0 .. 2**Id_Size - 1 with Size => Id_Size;
 
   type Name is access constant String;
 
@@ -59,21 +65,21 @@ package Database is
     C_Pic, C_Psc, C_Psa, C_Pup, C_Pyx, C_Ret, C_Sge, C_Sgr, C_Sco, C_Scl, C_Sct, C_Ser, C_Sex, C_Tau, C_Tel, C_Tri,
     C_Tra, C_Tuc, C_Uma, C_Umi, C_Vel, C_Vir, C_Vol, C_Vul, C_LMC, C_SMC) with Size => 8;
 
-  type Star_Count_Type is (Unknown, Greek, Alphabetic, Numeric) with Size => 4;
+  type Star_Count_Type is (None, Greek, Alphabetic, Numeric) with Size => 4;
 
   type Star_Number is range 0 .. 999 with Size => 12;
 
   type Star_Index is range 0 .. 99  with Size => 8;
 
-  type Star_Id is record
-    Kind  : Star_Count_Type := Unknown;
+  type Star_Info is record
+    Kind  : Star_Count_Type := None;
     Count : Star_Number     := 0;
     Index : Star_Index      := 0;
     C_Id  : Constellation   := Constellation'first;
   end record
-  with Pack, Size => 32;
+  with Pack, Size => Id_Size;
 
-  Unknown_Star_Id : constant Star_Id := (others => <>);
+  Unknown_Star_Info : constant Star_Info := (others => <>);
 
 
   type Object_Type is (
@@ -219,7 +225,7 @@ package Database is
 
   One_Parsec_In_Light_Years : constant Float := 3.26156;
 
-  Max_Star_Magnitude : constant Magnitude := 10.0;
+  Max_Star_Magnitude : constant Magnitude := 8.9;
 
   No_Plx : constant := Parallax'first;
   No_Mag : constant := Magnitude'last;

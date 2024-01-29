@@ -33,7 +33,7 @@ package Constellation is
   function Visible return List;
 
   type Point is record
-    Id        : Star.Number;
+    Id        : Star.Id;
     Direction : Earth.Direction;
   end record;
 
@@ -46,6 +46,6 @@ package Constellation is
 
   function Visible_Lines_Of (The_Item : Item) return Lines;
 
-  function Is_Used (Id : Star.Number) return Boolean;
+  function Is_Used (Id : Star.Id) return Boolean;
 
 end Constellation;

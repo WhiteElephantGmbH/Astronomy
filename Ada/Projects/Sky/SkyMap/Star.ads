@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2023 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2023 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -16,20 +16,20 @@
 pragma Style_White_Elephant;
 
 with Ada.Containers.Doubly_Linked_Lists;
-with Object.Star;
+with Object;
 with Earth;
 with Eps;
 with Time;
 
 package Star is
 
-  subtype Number is Object.Star.Id;
+  subtype Id is Object.Index;
 
   subtype Magnitude is Object.Magnitude;
 
-  subtype Parallax is Object.Star.Parallax;
+  subtype Parallax is Object.Parallax;
 
-  subtype Spectral_Class is Object.Star.Class;
+  subtype Spectral_Class is Object.Spectral_Class;
 
   subtype Direction is Earth.Direction;
 
@@ -38,7 +38,7 @@ package Star is
   type Colors is array (Color_Range) of Eps.Color;
 
   type Information is record
-    Id    : Number;
+    Ident : Id;
     Mag   : Magnitude;
     Class : Spectral_Class;
     Plx   : Parallax;
@@ -51,7 +51,7 @@ package Star is
 
   function Data_List return List;
 
-  function Location_Of (Id : Number) return Direction;
+  function Location_Of (Item : Id) return Direction;
 
   procedure Read (Ut : Time.Ut);
 

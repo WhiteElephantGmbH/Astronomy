@@ -189,7 +189,7 @@ package body Map is
     begin
       Eps.Set_Line (Eps.Solid);
       for The_Star of Star.Data_List loop
-        if The_Star.Mag <= Parameter.Magnitude_Max or else Constellation.Is_Used (The_Star.Id) then
+        if The_Star.Mag <= Parameter.Magnitude_Max or else Constellation.Is_Used (The_Star.Ident) then
           Eps.Add_Filled_Circle (To     => Position_Of (The_Star.Loc),
                                  Radius => Size_Of (The_Star.Mag) / 2.0,
                                  Class  => Color_Class_Of (The_Star.Class));
