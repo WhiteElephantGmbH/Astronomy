@@ -18,7 +18,6 @@ pragma Style_White_Elephant;
 with Ada.Containers.Doubly_Linked_Lists;
 with Ada.Text_IO;
 with Ada.Unchecked_Conversion;
-with Database;
 with Strings;
 with Traces;
 
@@ -818,7 +817,7 @@ package body Generator.Data is
   function Field_Size_Of (Item : Ids_Cat) return Natural is (Last_Id(Item)'image'length - 1);
 
 
-  procedure Read is
+  procedure Read (Max_Star_Magnitude : Database.Magnitude) is
 
     File : IO.File_Type;
 
@@ -1244,7 +1243,7 @@ package body Generator.Data is
       The_Object.Ra_PM := Motion_Of (Part (Ra_PM));
       The_Object.Dec_PM := Motion_Of (Part (Dec_PM));
       Define_Main_And_Star_Catalogs; -- must be last action befor append
-      if The_Object_Type in Database.Visual_Limited_Star and then The_Magnitude > Database.Max_Star_Magnitude then
+      if The_Object_Type in Database.Visual_Limited_Star and then The_Magnitude > Max_Star_Magnitude then
         if The_Object.Ids(HR) = Unknown_Id and The_Object.Ids(M) = Unknown_Id and The_Object.Ids(Name) = Unknown_Id then
           raise Skip_Object; -- !!! GNAT limitation (GNAT bug - heap overflow))
         end if;

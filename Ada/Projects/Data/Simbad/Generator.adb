@@ -15,14 +15,32 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with Ada.Command_Line;
 with Exceptions;
 with Generator.Data;
+with Database;
 
 package body Generator is
 
   procedure Execute is
+    Max_Star_Magnitude : Database.Magnitude;
   begin
-    Data.Read;
+    case Ada.Command_Line.Argument_Count is
+    when 0 =>
+      Max_Star_Magnitude := 10.0;
+    when 1 =>
+      declare
+        Magnitude : constant String := Ada.Command_Line.Argument(1);
+      begin
+        Max_Star_Magnitude := Database.Magnitude'value(Magnitude);
+      exception
+      when others =>
+        Error ("Incorrect command line argument for Magnitude value: " & Magnitude);
+      end;
+    when others =>
+      Error ("Too many command line arguments.");
+    end case;
+    Data.Read (Max_Star_Magnitude);
     Data.Generate;
   exception
   when Error_Occured =>
@@ -34,7 +52,7 @@ package body Generator is
 
   procedure Error (Text : String) is
   begin
-    IO.Put_Line ("*** " & Text & " at line" & The_Line_Number'image);
+    IO.Put_Line ("*** " & Text & (if The_Line_Number = 0 then "" else " at line" & The_Line_Number'image));
     raise Error_Occured;
   end Error;
 

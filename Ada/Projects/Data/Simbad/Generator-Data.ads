@@ -15,9 +15,11 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with Database;
+
 package Generator.Data is
 
-  procedure Read;
+  procedure Read (Max_Star_Magnitude : Database.Magnitude);
 
   procedure Generate;
 
