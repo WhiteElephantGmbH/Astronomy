@@ -18,9 +18,8 @@ pragma Style_White_Elephant;
 with Generator;
 
 pragma Build (Description => "Generate Simbad Objects",
-              Version     => (1, 0, 0, 2),
+              Version     => (1, 0, 0, 3),
               Kind        => Console,
-              Icon        => False,
               Compiler    => "GNATPRO\23.0");
 
 procedure Simbad is
