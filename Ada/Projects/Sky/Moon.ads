@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2012 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2012 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -16,14 +16,12 @@
 pragma Style_White_Elephant;
 
 with Angle;
-with Name;
 with Space;
 with Time;
 
 package Moon is
 
-  function Direction_Of (Id : Name.Id := Name.No_Id;
-                         UT : Time.Ut) return Space.Direction;
+  function Direction_Of (UT : Time.Ut) return Space.Direction;
 
   procedure Get_New_Phase (Around    :     Time.Ut;
                            Before    : out Time.Ut;

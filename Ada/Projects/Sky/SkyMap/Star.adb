@@ -15,8 +15,8 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Object.Catalog;
-with Object.Target;
+with Simbad.Catalog;
+with Target;
 with Objects;
 with Traces;
 
@@ -57,16 +57,16 @@ package body Star is
 
   begin -- Read
     The_Directions := [others => Earth.Unknown_Direction];
-    Object.Set (Ut);
+    Target.Set (Ut);
     The_Stars.Clear;
     for The_Id in Id loop
-      if Object.Catalog.Type_Of (The_Id) in Object.Star then
-        The_Direction := Objects.Direction_Of (Object.Target.Direction_Of (The_Id), Time.Lmst_Of (Ut));
+      if Simbad.Catalog.Object_Type_Of (The_Id) in Simbad.Star then
+        The_Direction := Objects.Direction_Of (Target.Direction_Of (The_Id), Time.Lmst_Of (Ut));
         if not Earth.Is_Below_Horizon (The_Direction) then
           The_Stars.Append ((Ident => The_Id,
-                             Mag   => Object.Catalog.Magnitude_Of (The_Id),
-                             Class => Object.Catalog.Spec_Class_Of (The_Id),
-                             Plx   => Object.Catalog.Parallax_Of (The_Id),
+                             Mag   => Simbad.Catalog.Magnitude_Of (The_Id),
+                             Class => Simbad.Catalog.Spec_Class_Of (The_Id),
+                             Plx   => Simbad.Catalog.Parallax_Of (The_Id),
                              Loc   => The_Direction));
         end if;
         The_Directions(The_Id) := The_Direction;

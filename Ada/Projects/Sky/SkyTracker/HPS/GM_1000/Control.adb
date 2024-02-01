@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2022 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                      *
+-- *                           (c) 2022 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                      *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -21,7 +21,6 @@ with Data;
 with Error;
 with Gui;
 with Horizon;
-with Moon;
 with Name;
 with Neo;
 with Network.Tcp;
@@ -29,7 +28,6 @@ with Os.Application;
 with Os.Process;
 with Parameter;
 with Sky_Line;
-with Solar_System;
 with Space;
 with Sssb;
 with Stellarium;
@@ -357,11 +355,11 @@ package body Control is
               Telescope.Define_Space_Access (Name.Direction_Of'access, The_Item);
               User.Show_Description (Data.Descriptor_Of (Name.Object_Of (The_Item)));
             when Name.Moon =>
-              Telescope.Define_Space_Access (Moon.Direction_Of'access, The_Item);
+              Telescope.Define_Space_Access (Targets.Moon_Direction_Of'access, The_Item);
             when Name.Sun =>
-              Telescope.Define_Space_Access (Solar_System.Direction_Of'access, The_Item);
+              Telescope.Define_Space_Access (Targets.Solar_System_Direction_Of'access, The_Item);
             when Name.Planet =>
-              Telescope.Define_Space_Access (Solar_System.Direction_Of'access, The_Item);
+              Telescope.Define_Space_Access (Targets.Solar_System_Direction_Of'access, The_Item);
               if Name.Image_Of (The_Item) = "Pluto" then
                 User.Show_Description ("Dwarf Planet");
               else

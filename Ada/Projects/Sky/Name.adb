@@ -23,10 +23,9 @@ with Application;
 with Error;
 with File;
 with Lexicon;
-with Solar_System;
 with Sssb;
-with Moon;
 with Strings;
+with Targets;
 with Traces;
 
 package body Name is
@@ -250,10 +249,10 @@ package body Name is
   end Visibility_Changed_For;
 
 
-  procedure Clear_History_For (Targets : in out Id_List) is
+  procedure Clear_History_For (The_Targets : in out Id_List) is
   begin
-    for Index in Targets.Ids'first .. Targets.Last loop
-      Targets.Ids(Index).Was_Visible := False;
+    for Index in The_Targets.Ids'first .. The_Targets.Last loop
+      The_Targets.Ids(Index).Was_Visible := False;
     end loop;
   end Clear_History_For;
 
@@ -305,11 +304,11 @@ package body Name is
             return Item;
           end if;
         when Moon =>
-          if Found_Item (Standard.Moon.Direction_Of'access) then
+          if Found_Item (Targets.Moon_Direction_Of'access) then
             return Item;
           end if;
         when Name.Sun | Name.Planet =>
-          if Found_Item (Solar_System.Direction_Of'access) then
+          if Found_Item (Targets.Solar_System_Direction_Of'access) then
             return Item;
           end if;
         when Name.Small_Solar_System_Body =>
@@ -325,14 +324,14 @@ package body Name is
   end Item_Of;
 
 
-  procedure Update (Targets : Id_List_Access;
-                    Remove  : access procedure (Index : Natural);
-                    Insert  : access procedure (Item : Id_Access; Index : Natural)) is
+  procedure Update (The_Targets : Id_List_Access;
+                    Remove      : access procedure (Index : Natural);
+                    Insert      : access procedure (Item : Id_Access; Index : Natural)) is
     List_Index : Natural := 0;
   begin
-    for Index in Targets.Ids'first .. Targets.Last loop
+    for Index in The_Targets.Ids'first .. The_Targets.Last loop
       declare
-        Item : Id renames Targets.Ids(Index);
+        Item : Id renames The_Targets.Ids(Index);
       begin
         if Item.Was_Visible then
           if Item.Is_Visible then

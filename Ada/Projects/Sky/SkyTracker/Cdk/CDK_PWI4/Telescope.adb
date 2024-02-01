@@ -178,7 +178,7 @@ package body Telescope is
   Next_Get_Direction : Get_Space_Access;
 
   procedure Define_Space_Access (Get_Direction : Get_Space_Access;
-                                 The_Id        : Name.Id) is
+                                 The_Id        : Name.Id := Name.No_Id) is
   begin
     Next_Id := The_Id;
     Next_Get_Direction := Get_Direction;

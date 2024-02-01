@@ -19,7 +19,7 @@ with Ada.Unchecked_Conversion;
 with Strings;
 with Traces;
 
-package body Object.Catalog is
+package body Simbad.Catalog is
 
   package Log is new Traces ("Object.Catalog");
 
@@ -516,9 +516,9 @@ package body Object.Catalog is
   end Spec_Type_Of;
 
 
-  function Type_Of (Item : Index) return Object.Kind is
+  function Object_Type_Of (Item : Index) return Object_Type is
   begin
-    return Object.Kind'val(Database.Objects.List(Item).Otype);
-  end Type_Of;
+    return Object_Type'val(Database.Objects.List(Item).Otype);
+  end Object_Type_Of;
 
-end Object.Catalog;
+end Simbad.Catalog;

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2012 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2012 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -16,13 +16,9 @@
 pragma Style_White_Elephant;
 
 with Astro;
-with Lexicon;
 with Objects;
-with Traces;
 
 package body Solar_System is
-
-  package Log is new Traces ("Solar_System");
 
   use Astro;
   use SPHLIB, PLALIB, PNULIB, MATLIB, SUNLIB;
@@ -84,7 +80,6 @@ package body Solar_System is
   end Direction_Of;
 
 
-
   function Direction_Of (Item : Body_Name;
                          Ut   : Time.Ut) return Space.Direction is
   begin
@@ -97,23 +92,6 @@ package body Solar_System is
   begin
     return Objects.Direction_Of (Direction => Direction_Of (Item, Ut),
                                  Lmst      => Time.Lmst_Of (Ut));
-  end Direction_Of;
-
-
-  function Direction_Of (Item : Name.Id;
-                         Ut   : Time.Ut) return Space.Direction is
-    Planet_Name : constant String := Name.Image_Of (Item);
-  begin
-    declare
-      E : constant Lexicon.Word := Lexicon.Word_Of (Planet_Name);
-      P : constant PLANET := PLANET'value(E'img);
-    begin
-      return Direction_Of (P, Ut);
-    end;
-  exception
-  when others =>
-    Log.Write ("Unknown Planet: " & Planet_Name);
-    return Space.Unknown_Direction;
   end Direction_Of;
 
 end Solar_System;

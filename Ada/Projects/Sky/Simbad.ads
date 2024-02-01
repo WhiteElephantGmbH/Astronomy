@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2023 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2023 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,51 +15,37 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Astro;
+with Database.Objects;
 
-package body Object is
+package Simbad is
 
-  use Astro;
-  use Astro.PNULIB;
-  use Astro.SPHLIB;
+  Unknown : constant := Database.Unknown;
 
-  Pn_Mat  : REAL33;
-  Ve      : VECTOR;
+  First : constant := Database.First;
 
-  The_Time : Time.Ut;
+  subtype Number is Database.Objects.Number;
 
+  subtype Index is Database.Objects.Index;
 
-  procedure Apparent (Ra  : in out REAL;
-                      Dec : in out REAL) is
-  begin
-    APPARENT (Pn_Mat, Ve, Ra, Dec);
-  end Apparent;
+  subtype Greek_Letter is Database.Greek_Letter;
 
+  subtype Constellation is Database.Constellation;
 
-  procedure Set (Ut : Time.Ut) is
-    T : constant Time.T := Time.Tut_Of (Ut);
-  begin
-    The_Time := Ut;
-    PN_MATRIX (Time.T_J2000, T, Pn_Mat);
-    ABERRAT (T, Ve);
-  end Set;
+  subtype Object_Type is Database.Object_Type;
 
+  subtype Interstellar is Object_Type range Database.Cloud .. Database.Supernova_Remnant;
+  subtype Galaxy       is Object_Type range Database.BL_Lac .. Database.Seyfert_2_Galaxy;
+  subtype Star         is Object_Type range Database.Alpha2_Cvn_Variable_Star .. Database.Young_Stellar_Object_Star;
+  subtype Stars        is Object_Type range Database.Association_Of_Stars .. Database.Stellar_Stream;
 
-  function Direction_Of (Ra_J2000   : Angle.Degrees;
-                         Dec_J2000  : Angle.Degrees;
-                         Ra_Motion  : Angle.Degrees;
-                         Dec_Motion : Angle.Degrees) return Space.Direction is
+  subtype Parallax is Database.Parallax;
 
-    Factor  : constant REAL := Time.T_Second / 36000.0;
-    Delta_T : constant REAL := REAL(The_Time) * Factor;
-    Ra, Dec : REAL;
+  subtype Light_Years is Database.Light_Years;
 
-  begin
-    Ra := Ra_J2000 + Ra_Motion * Delta_T;
-    Dec := Dec_J2000 + Dec_Motion * Delta_T;
-    Apparent (Ra, Dec);
-    return Space.Direction_Of (Dec => Dec,
-                               Ra  => Ra);
-  end Direction_Of;
+  subtype Spectral_Type is Database.Star_Spec_Type;
 
-end Object;
+  subtype Spectral_Class is Database.Star_Class;
+
+  type Magnitude is new Float;
+
+end Simbad;

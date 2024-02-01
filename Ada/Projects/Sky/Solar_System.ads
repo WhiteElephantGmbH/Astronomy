@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2012 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2012 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -16,7 +16,6 @@
 pragma Style_White_Elephant;
 
 with Earth;
-with Name;
 with Space;
 with Time;
 
@@ -29,8 +28,5 @@ package Solar_System is
 
   function Direction_Of (Item : Body_Name;
                          Ut   : Time.Ut) return Earth.Direction;
-
-  function Direction_Of (Item : Name.Id;
-                         Ut   : Time.Ut) return Space.Direction;
 
 end Solar_System;

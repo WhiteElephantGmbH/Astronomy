@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2011 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2011 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -66,14 +66,14 @@ package Name is
 
   function Actual_List return Id_List;
 
-  procedure Update (Targets : Id_List_Access;
-                    Remove  : access procedure (Index : Natural);
-                    Insert  : access procedure (Item  : Id_Access; Index : Natural));
+  procedure Update (The_Targets : Id_List_Access;
+                    Remove      : access procedure (Index : Natural);
+                    Insert      : access procedure (Item  : Id_Access; Index : Natural));
 
   function Visibility_Changed_For (Item    : in out Id;
                                    Visible :        Boolean) return Boolean;
 
-  procedure Clear_History_For (Targets : in out Id_List);
+  procedure Clear_History_For (The_Targets : in out Id_List);
 
   function Item_Of (List  : Id_List;
                     Image : String) return Id;

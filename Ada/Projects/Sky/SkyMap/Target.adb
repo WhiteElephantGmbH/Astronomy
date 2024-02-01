@@ -15,8 +15,62 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-package Object.Target is
+with Angle;
+with Astro;
+with Simbad.Catalog;
 
-  function Direction_Of (Item : Index) return Space.Direction;
+package body Target is
 
-end Object.Target;
+  use Astro;
+  use Astro.PNULIB;
+  use Astro.SPHLIB;
+
+  Pn_Mat  : REAL33;
+  Ve      : VECTOR;
+
+  The_Time : Time.Ut;
+
+
+  procedure Apparent (Ra  : in out REAL;
+                      Dec : in out REAL) is
+  begin
+    APPARENT (Pn_Mat, Ve, Ra, Dec);
+  end Apparent;
+
+
+  procedure Set (Ut : Time.Ut) is
+    T : constant Time.T := Time.Tut_Of (Ut);
+  begin
+    The_Time := Ut;
+    PN_MATRIX (Time.T_J2000, T, Pn_Mat);
+    ABERRAT (T, Ve);
+  end Set;
+
+
+  function Direction_For (Ra_J2000   : Angle.Degrees;
+                          Dec_J2000  : Angle.Degrees;
+                          Ra_Motion  : Angle.Degrees;
+                          Dec_Motion : Angle.Degrees) return Space.Direction is
+
+    Factor  : constant REAL := Time.T_Second / 36000.0;
+    Delta_T : constant REAL := REAL(The_Time) * Factor;
+    Ra, Dec : REAL;
+
+  begin
+    Ra := Ra_J2000 + Ra_Motion * Delta_T;
+    Dec := Dec_J2000 + Dec_Motion * Delta_T;
+    Apparent (Ra, Dec);
+    return Space.Direction_Of (Dec => Dec,
+                               Ra  => Ra);
+  end Direction_For;
+
+
+  function Direction_Of (Item : Simbad.Index) return Space.Direction is
+  begin
+    return Direction_For (Ra_J2000   => Simbad.Catalog.Ra_J2000_Of (Item),
+                          Dec_J2000  => Simbad.Catalog.Dec_J2000_Of (Item),
+                          Ra_Motion  => Simbad.Catalog.Ra_Motion_Of (Item),
+                          Dec_Motion => Simbad.Catalog.Dec_Motion_Of (Item));
+  end Direction_Of;
+
+end Target;

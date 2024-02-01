@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2021 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2021 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -17,6 +17,7 @@ pragma Style_White_Elephant;
 
 with Name;
 with Space;
+with Time;
 
 package Targets is
 
@@ -52,5 +53,11 @@ package Targets is
   function J2000_Direction_Of (Id : Name.Id) return Space.Direction;
 
   function Text_Of (Visible_In : Duration) return String;
+
+  function Moon_Direction_Of (Id : Name.Id := Name.No_Id;
+                              UT : Time.Ut) return Space.Direction;
+
+  function Solar_System_Direction_Of (Item : Name.Id;
+                                      Ut   : Time.Ut) return Space.Direction;
 
 end Targets;

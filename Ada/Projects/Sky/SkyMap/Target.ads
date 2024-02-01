@@ -15,16 +15,14 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Object.Catalog;
+with Simbad;
+with Space;
+with Time;
 
-package body Object.Target is
+package Target is
 
-  function Direction_Of (Item : Index) return Space.Direction is
-  begin
-    return Direction_Of (Ra_J2000   => Object.Catalog.Ra_J2000_Of (Item),
-                         Dec_J2000  => Object.Catalog.Dec_J2000_Of (Item),
-                         Ra_Motion  => Object.Catalog.Ra_Motion_Of (Item),
-                         Dec_Motion => Object.Catalog.Dec_Motion_Of (Item));
-  end Direction_Of;
+  procedure Set (Ut : Time.Ut);
 
-end Object.Target;
+  function Direction_Of (Item : Simbad.Index) return Space.Direction;
+
+end Target;

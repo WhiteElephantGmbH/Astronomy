@@ -16,20 +16,20 @@
 pragma Style_White_Elephant;
 
 with Ada.Containers.Doubly_Linked_Lists;
-with Object;
+with Simbad;
 with Earth;
 with Eps;
 with Time;
 
 package Star is
 
-  subtype Id is Object.Index;
+  subtype Id is Simbad.Index;
 
-  subtype Magnitude is Object.Magnitude;
+  subtype Magnitude is Simbad.Magnitude;
 
-  subtype Parallax is Object.Parallax;
+  subtype Parallax is Simbad.Parallax;
 
-  subtype Spectral_Class is Object.Spectral_Class;
+  subtype Spectral_Class is Simbad.Spectral_Class;
 
   subtype Direction is Earth.Direction;
 

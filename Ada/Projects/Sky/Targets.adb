@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2021 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2021 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -23,7 +23,6 @@ with Sky_Line;
 with Solar_System;
 with Sssb;
 with Sun;
-with Time;
 with Traces;
 
 package body Targets is
@@ -173,11 +172,11 @@ package body Targets is
           begin
             case Name.Kind_Of (Item) is
             when Name.Moon =>
-              return Is_To_Add (Solar_System, Moon.Direction_Of (Item, Ut));
+              return Is_To_Add (Solar_System, Moon_Direction_Of (Item, Ut));
             when Name.Planet =>
-              return Is_To_Add (Solar_System, Standard.Solar_System.Direction_Of (Item, Ut));
+              return Is_To_Add (Solar_System, Solar_System_Direction_Of (Item, Ut));
             when Name.Sun =>
-              return Is_Selected_And_Visible (Solar_System, Standard.Solar_System.Direction_Of (Item, Ut));
+              return Is_Selected_And_Visible (Solar_System, Solar_System_Direction_Of (Item, Ut));
             when Name.Small_Solar_System_Body =>
               return Is_To_Add (Solar_System, Sssb.Direction_Of (Item, Ut));
             when Name.Near_Earth_Object =>
@@ -294,9 +293,9 @@ package body Targets is
       begin
         case Name.Kind_Of (Id) is
         when Name.Moon =>
-          return Moon.Direction_Of (Id, Ut);
+          return Moon_Direction_Of (Id, Ut);
         when Name.Planet =>
-          return Standard.Solar_System.Direction_Of (Id, Ut);
+          return Solar_System_Direction_Of (Id, Ut);
         when Name.Sky_Object =>
           return Data.Direction_Of (Name.Object_Of (Id), Ut, Is_J2000 => True);
         when others =>
@@ -345,5 +344,30 @@ package body Targets is
       return Duration_Text_Of ((Delta_Time + 59) / 60, Hour, Minute);
     end if;
   end Text_Of;
+
+
+  function Moon_Direction_Of (Id : Name.Id := Name.No_Id;
+                              UT : Time.Ut) return Space.Direction is
+    pragma Unreferenced (Id);
+  begin
+    return Moon.Direction_Of (UT);
+  end Moon_Direction_Of;
+
+
+  function Solar_System_Direction_Of (Item : Name.Id;
+                                      Ut   : Time.Ut) return Space.Direction is
+    Planet_Name : constant String := Name.Image_Of (Item);
+  begin
+    declare
+      E : constant Lexicon.Word := Lexicon.Word_Of (Planet_Name);
+      P : constant Standard.Solar_System.Body_Name := Standard.Solar_System.Body_Name'value(E'img);
+    begin
+      return Standard.Solar_System.Direction_Of (P, Ut);
+    end;
+  exception
+  when others =>
+    Log.Write ("Unknown Planet: " & Planet_Name);
+    return Space.Unknown_Direction;
+  end Solar_System_Direction_Of;
 
 end Targets;

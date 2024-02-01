@@ -15,10 +15,11 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with Angle;
 with Database.Objects;
 with Lexicon;
 
-package Object.Catalog is
+package Simbad.Catalog is
 
   No_Image : exception;
 
@@ -154,6 +155,6 @@ package Object.Catalog is
 
   function Spec_Class_Of (Item : Number) return Spectral_Class is (Spec_Type_Of (Item).Class);
 
-  function Type_Of (Item : Index) return Object.Kind with Inline;
+  function Object_Type_Of (Item : Index) return Object_Type with Inline;
 
-end Object.Catalog;
+end Simbad.Catalog;

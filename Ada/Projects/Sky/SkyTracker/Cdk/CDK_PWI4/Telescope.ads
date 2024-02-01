@@ -113,7 +113,7 @@ package Telescope is
   type Get_Space_Access is new Name.Get_Space_Access;
 
   procedure Define_Space_Access (Get_Direction : Get_Space_Access;
-                                 The_Id        : Name.Id);
+                                 The_Id        : Name.Id := Name.No_Id);
 
   procedure Define_Park_Position (The_Position : Earth.Direction);
 
