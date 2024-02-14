@@ -17,12 +17,13 @@ pragma Style_White_Elephant;
 
 with Ada.IO_Exceptions;
 with Ada.Text_IO;
-with Ada.Strings.Unbounded;
 with Angle;
 with Application;
 with Error;
 with File;
 with Lexicon;
+with Sky.Catalog;
+with Sky.Data;
 with Sssb;
 with Strings;
 with Targets;
@@ -36,15 +37,10 @@ package body Name is
   Support_Land_Marks     : Boolean := False;
   Neo_Exists             : access function (Id : String) return Boolean;
 
-  type Text is new Ada.Strings.Unbounded.Unbounded_String;
-
-  type Data_Kind is (Axis_Position, Landmark, Sky_Object);
-
   type Element_Data (Item : Data_Kind) is record
     Kind      : Object_Kind;
     Number    : Natural;
-    Number_Id : Selector;
-    Name      : Text;
+    Name      : Strings.Element;
     Next      : Element_Access;
     case Item is
     when Axis_Position =>
@@ -52,19 +48,19 @@ package body Name is
     when Landmark =>
       Direction : Earth.Direction;
     when others =>
-      Object : Data.Object := Data.Undefined;
+      Object : Sky.Object := Sky.Undefined;
     end case;
   end record;
 
 
   function "=" (Left, Right : Id) return Boolean is
-    use type Data.Kind;
+    use type Sky.Catalog_Id;
   begin
     if Left.Data_Id /= Right.Data_Id then
       return False;
-    elsif Left.Data_Id = Data.Favorites then
+    elsif Left.Data_Id = Sky.Favorites then
       if Left.Element /= null and  Right.Element /= null then
-        return (Left.Element.Number_Id = Right.Element.Number_Id) and (Left.Element.Number = Right.Element.Number);
+        return Left.Element.Number = Right.Element.Number;
       else
         return Left.Element = Right.Element;
       end if;
@@ -76,20 +72,14 @@ package body Name is
 
   function "<" (Left, Right : Element_Access) return Boolean is
   begin
-    if Left.Number_Id < Right.Number_Id then
-      return True;
-    elsif Left.Number_Id = Right.Number_Id then
-      return Left.Number < Right.Number;
-    else
-      return False;
-    end if;
+    return Left.Number < Right.Number;
   end "<";
 
 
   function "<" (Left, Right : Id) return Boolean is
-    use type Data.Kind;
+    use type Sky.Catalog_Id;
   begin
-    if Left.Data_Id = Data.Favorites then
+    if Left.Data_Id = Sky.Favorites then
       return Left.Element < Right.Element;
     else
       return Left.Element_Number < Right.Element_Number;
@@ -98,9 +88,9 @@ package body Name is
 
 
   function Is_Known (Item : Id) return Boolean is
-    use type Data.Kind;
+    use type Sky.Catalog_Id;
   begin
-    return Item.Data_Id /= Data.Favorites or else Item.Element /= null;
+    return Item.Data_Id /= Sky.Favorites or else Item.Element /= null;
   end Is_Known;
 
 
@@ -111,78 +101,33 @@ package body Name is
 
 
   function Image_Of (Item : Id) return String is
-
-    function Id_And_Name return String is
-      Image  : constant String := Item.Element_Number'img;
-      Object : constant String := Data.Name_Of (Object_Of (Item));
-    begin
-      if Object = "" then
-        return Image(Image'first + 1 .. Image'last);
-      else
-        return Image(Image'first + 1 .. Image'last) & " " & Object;
-      end if;
-    end Id_And_Name;
-
+    use type Strings.Element;
   begin
     case Item.Data_Id is
-    when Data.Favorites =>
-      return To_String (Item.Element.Name);
-    when Data.Neo =>
-      return Data.Name_Of (Object_Of (Item));
-    when Data.Caldwell =>
-      return "C" & Id_And_Name;
-    when Data.Hip =>
-      return "HIP " & Id_And_Name;
-    when Data.Hr =>
-      return "HR " & Id_And_Name;
-    when Data.Messier =>
-      return "M" & Id_And_Name;
-    when Data.Ngc =>
-      return "NGC " & Id_And_Name;
-    when Data.Ocl =>
-      return "OCl " & Id_And_Name;
-    when Data.Quasars =>
-      return "3C " & Id_And_Name;
+    when Sky.Favorites =>
+      return +Item.Element.Name;
+    when Sky.Extended_Catalogs =>
+      return Sky.Data.Name_Of (Item.Element_Number, Item.Data_Id);
     end case;
   end Image_Of;
 
 
-  function Matches (Item      : Id;
-                    Number_Id : Selector;
-                    Number    : Natural) return Boolean is
-    use type Data.Kind;
+  function Matches (Item   : Id;
+                    Number : Natural) return Boolean is
   begin
     if Item.Is_Visible then
-      if Item.Data_Id = Data.Favorites then
-        return (Item.Element.Number = Number) and (Number_Id = Item.Element.Number_Id);
-      else
-        return Item.Element_Number = Number;
-      end if;
+      return Item.Element.Number = Number;
     end if;
     return False;
   end Matches;
 
 
-  function Prefix_Of (Item : Id) return String is
-    use type Data.Kind;
-  begin
-    if Item.Data_Id = Data.Favorites and then Item.Element.Number_Id = Enumerated then
-      declare
-        Id_Image  : constant String := Item.Element.Number'img & "  ";
-      begin
-        return "S" & Id_Image(Id_Image'first + 1 .. Id_Image'first + 3);
-      end;
-    end if;
-    return "";
-  end Prefix_Of;
-
-
   function Kind_Of (Item : Id) return Object_Kind is
   begin
     case Item.Data_Id is
-    when Data.Favorites =>
+    when Sky.Favorites =>
       return Item.Element.Kind;
-    when Data.Neo =>
+    when Sky.Neo =>
       return Near_Earth_Object;
     when others =>
       return Sky_Object;
@@ -190,24 +135,24 @@ package body Name is
   end Kind_Of;
 
 
-  function Object_Of (Item : Id) return Data.Object is
+  function Object_Of (Item : Id) return Sky.Object is
   begin
     case Item.Data_Id is
-    when Data.Favorites =>
+    when Sky.Favorites =>
       return Item.Element.Object;
     when others =>
-      return Data.Object_Of (Item.Element_Number, Item.Data_Id);
+      return Sky.Data.Object_Of (Item.Element_Number, Item.Data_Id);
     end case;
   end Object_Of;
 
 
-  function Type_Of (Item : Id) return Data.Object_Type is
+  function Type_Of (Item : Id) return Sky.Object_Type is
   begin
     case Kind_Of (Item) is
     when Sky_Object =>
-      return Data.Type_Of (Object_Of (Item));
+      return Sky.Data.Object_Type_Of (Object_Of (Item));
     when others =>
-      return Data.Unknown;
+      return Sky.Unknown;
     end case;
   end Type_Of;
 
@@ -215,7 +160,7 @@ package body Name is
   function Direction_Of (Item : Name.Id;
                          Ut   : Time.Ut) return Space.Direction is
   begin
-    return Data.Direction_Of (Object_Of(Item), Ut);
+    return Sky.Data.Direction_Of (Object_Of(Item), Ut);
   end Direction_Of;
 
 
@@ -231,12 +176,12 @@ package body Name is
   end Direction_Of;
 
 
-  function Magnitude_Of (Item : Name.Id) return Float is
+  function Magnitude_Of (Item : Name.Id) return Sky.Magnitude is
   begin
     if Kind_Of (Item) = Sky_Object then
-      return Data.Magnitude_Of (Object_Of(Item));
+      return Sky.Data.Magnitude_Of (Object_Of(Item));
     else
-      return Float'first; -- Unknown Magnitude
+      return Sky.Unknown_Magnitude;
     end if;
   end Magnitude_Of;
 
@@ -251,8 +196,8 @@ package body Name is
 
   procedure Clear_History_For (The_Targets : in out Id_List) is
   begin
-    for Index in The_Targets.Ids'first .. The_Targets.Last loop
-      The_Targets.Ids(Index).Was_Visible := False;
+    for The_Id of The_Targets.Ids loop
+      The_Id.Was_Visible := False;
     end loop;
   end Clear_History_For;
 
@@ -260,14 +205,10 @@ package body Name is
   function Item_Of (List  : Id_List;
                     Image : String) return Id is
   begin
-    for Index in List.Ids'first .. List.Last loop
-      declare
-        Item : constant Id := List.Ids(Index);
-      begin
-        if Image = Image_Of (Item) then
-          return Item;
-        end if;
-      end;
+    for Item of List.Ids loop
+      if Image = Image_Of (Item) then
+        return Item;
+      end if;
     end loop;
     return No_Id;
   end Item_Of;
@@ -277,9 +218,22 @@ package body Name is
                     Direction        : Space.Direction;
                     Search_Tolerance : Space.Distance) return Id is
   begin
-    for Index in List.Ids'first .. List.Last loop
+    declare
+      Element : constant Sky.Data.Element := Sky.Data.Find_Element (Direction, Search_Tolerance);
+      use type Sky.Data.Element;
+    begin
+      if Element /= Sky.Data.No_Element then
+        return Name.Id'(Data_Id        => Element.Catalog,
+                        Was_Visible    => True,
+                        Is_Visible     => True,
+                        Element_Number => Element.Number);
+      end if;
+    end;
+
+    -- search others
+    for Item of List.Ids loop
+
       declare
-        Item : constant Id := List.Ids(Index);
 
         function Found_Item (Direction_Of : Get_Space_Access) return Boolean is
         begin
@@ -324,14 +278,24 @@ package body Name is
   end Item_Of;
 
 
+  procedure For_All (In_List : in out Id_List;
+                     Handle  : access procedure (Item : in out Id)) is
+  begin
+    for The_Id of In_List.Ids loop
+      Handle.all (The_Id);
+    end loop;
+  end For_All;
+
+
   procedure Update (The_Targets : Id_List_Access;
                     Remove      : access procedure (Index : Natural);
-                    Insert      : access procedure (Item : Id_Access; Index : Natural)) is
+                    Insert      : access procedure (Item  : Id_Access; Index : Natural)) is
     List_Index : Natural := 0;
+
   begin
-    for Index in The_Targets.Ids'first .. The_Targets.Last loop
+    for Item of The_Targets.Ids loop
       declare
-        Item : Id renames The_Targets.Ids(Index);
+        Item_Pointer : constant Id_Access := Item'unrestricted_access;
       begin
         if Item.Was_Visible then
           if Item.Is_Visible then
@@ -342,7 +306,7 @@ package body Name is
           end if;
         elsif Item.Is_Visible then
           List_Index := List_Index + 1;
-          Insert (Item'unrestricted_access, List_Index);
+          Insert (Item_Pointer, List_Index);
           Item.Was_Visible := True;
         end if;
       end;
@@ -354,7 +318,7 @@ package body Name is
 
     procedure Read_Favorite_Catalog;
 
-    procedure Define_Catalog (Data_Id : Data.Kind);
+    procedure Define_Catalog (Data_Id : Sky.Catalog_Id);
 
     function List return Id_List;
 
@@ -365,19 +329,16 @@ package body Name is
 
 
   function "=" (Left, Right : Id_List) return Boolean is
-    use type Data.Kind;
+    use type Sky.Catalog_Id;
+    use type Ada.Containers.Count_Type;
+    use type Names.List;
   begin
-    if Left.Last /= Right.Last then
+    if Left.Ids.Length /= Right.Ids.Length then
       return False;
     elsif Left.Kind /= Right.Kind then
       return False;
     else
-      for Index in Left.Ids'first .. Left.Last loop
-        if Left.Ids(Index) /= Right.Ids(Index) then
-          return False;
-        end if;
-      end loop;
-      return True;
+      return Left.Ids /= Right.Ids;
     end if;
   end "=";
 
@@ -393,7 +354,7 @@ package body Name is
   end Read_Favorites;
 
 
-  procedure Define (List : Data.Kind) is
+  procedure Define (List : Sky.Catalog_Id) is
   begin
     Actual_Catalog.Define_Catalog (List);
   end Define;
@@ -423,11 +384,11 @@ package body Name is
 
         The_Element : Element_Access;
 
-      begin -- Store
+      begin -- Stored
         if Parts.Count = 0 then
           return False;
         end if;
-        declare
+        declare -- Store
           Part_1  : constant String := Part_For (Strings.First_Index);
           Parts_1 : constant Strings.Item := Strings.Item_Of (Part_1, Separator => ' ');
 
@@ -451,8 +412,7 @@ package body Name is
                 The_Element := new Element_Data (Axis_Position);
                 The_Element.Kind := Axis_Position;
                 The_Element.Number := Number;
-                The_Element.Number_Id := Enumerated;
-                The_Element.Name := To_Unbounded_String (Position_Name);
+                The_Element.Name := [Position_Name];
                 declare
                   Ra  : constant Angle.Value := Angle.Value_Of (Ra_Image);
                   Dec : constant Angle.Value := Angle.Value_Of (Dec_Image);
@@ -481,8 +441,7 @@ package body Name is
                 The_Element := new Element_Data (Landmark);
                 The_Element.Kind := Landmark;
                 The_Element.Number := Number;
-                The_Element.Number_Id := Enumerated;
-                The_Element.Name := To_Unbounded_String (Mark_Name);
+                The_Element.Name := [Mark_Name];
                 declare
                   Az  : constant Angle.Value := Angle.Value_Of (Az_Image);
                   Alt : constant Angle.Value := Angle.Value_Of (Alt_Image);
@@ -502,11 +461,11 @@ package body Name is
             Error.Raise_With ("Incorrect Location - " & Line);
           end Add_Landmark;
 
+
           procedure Add_Sky_Object is
           begin
             The_Element := new Element_Data(Sky_Object);
             The_Element.Number := Number;
-            The_Element.Number_Id := Enumerated;
             if Parts.Count = 4 then
               declare
                 Object      : constant String := Part_1;
@@ -515,105 +474,87 @@ package body Name is
                 Dec_Image   : constant String := Part_For (Strings.First_Index + 3);
               begin
                 The_Element.Kind := Sky_Object;
-                The_Element.Name := To_Unbounded_String (Object);
-                The_Element.Object := Data.New_Object_For (Name        => Object,
-                                                           Description => Description,
-                                                           Direction   => Space.Direction_Of (Ra_Image  => Ra_Image,
-                                                                                              Dec_Image => Dec_Image));
+                The_Element.Name := [Object];
+                The_Element.Object
+                  := Sky.Data.New_Object_For (Item        => Object,
+                                              Description => Description,
+                                              Direction   => Space.Direction_Of (Ra_Image  => Ra_Image,
+                                                                                 Dec_Image => Dec_Image));
               exception
               when others =>
                 Error.Raise_With ("Incorrect Location - " & Line);
               end;
             else
               declare
-                Object_Id    : constant String       := Part_For (Strings.First_Index);
-                Object_Parts : constant Strings.Item := Strings.Item_Of (Object_Id, Separator => ' ');
+                Object_Name : constant String := Part_For (Strings.First_Index);
+                use type Sky.Object;
+                use type Strings.Element;
               begin
-                if Object_Parts.Count = 0 then
-                  Error.Raise_With ("No Object defined in " & Line);
+                The_Element.Name := [Part_For (Parts.Count)];
+                if Sssb.Exists (Object_Name) then
+                  The_Element.Kind := Small_Solar_System_Body;
+                  return;
+                elsif Neo_Exists /= null and then Neo_Exists (Object_Name) then
+                  The_Element.Kind := Near_Earth_Object;
+                  The_Element.Object := Sky.Data.Neo_Object_Of (Object_Name);
+                  return;
                 end if;
                 declare
-                  Item : constant String := Object_Parts(Strings.First_Index);
+                  The_Word : Lexicon.Word;
                 begin
-                  The_Element.Name := To_Unbounded_String (Part_For (Parts.Count));
-                  if Sssb.Exists (Object_Id) then
-                    The_Element.Kind := Small_Solar_System_Body;
+                  The_Word := Lexicon.Word_Of (Object_Name);
+                  case The_Word is
+                  when Lexicon.Sun =>
+                    The_Element.Kind := Sun;
                     return;
-                  elsif Neo_Exists /= null and then Neo_Exists (Object_Id) then
-                    The_Element.Kind := Near_Earth_Object;
-                    The_Element.Object := Data.Neo_Object_Of (Object_Id);
+                  when Lexicon.Mercury =>
+                    The_Element.Kind := Planet;
                     return;
-                  end if;
-                  if Object_Parts.Count = 1 then
-                    if Lexicon.Found (Item, Lexicon.Sun) then
-                      The_Element.Kind := Sun;
-                    elsif Lexicon.Found (Item, Lexicon.Mercury) then
-                      The_Element.Kind := Planet;
-                    elsif Lexicon.Found (Item, Lexicon.Venus) then
-                      The_Element.Kind := Planet;
-                    elsif Lexicon.Found (Item, Lexicon.Moon) then
-                      The_Element.Kind := Moon;
-                    elsif Lexicon.Found (Item, Lexicon.Mars) then
-                      The_Element.Kind := Planet;
-                    elsif Lexicon.Found (Item, Lexicon.Jupiter) then
-                      The_Element.Kind := Planet;
-                    elsif Lexicon.Found (Item, Lexicon.Saturn) then
-                      The_Element.Kind := Planet;
-                    elsif Lexicon.Found (Item, Lexicon.Uranus) then
-                      The_Element.Kind := Planet;
-                    elsif Lexicon.Found (Item, Lexicon.Neptune) then
-                      The_Element.Kind := Planet;
-                    elsif Lexicon.Found (Item, Lexicon.Pluto) then
-                      The_Element.Kind := Planet;
-                    elsif (Item(Item'first) = 'C') or (Item(Item'first) = 'M') then
-                      The_Element.Kind := Sky_Object;
-                      if Parts.Count > 1 then
-                        The_Element.Name := Item & ' ' & The_Element.Name;
-                      end if;
-                      The_Element.Number := Natural'value(Item(Item'first + 1 .. Item'last));
-                      if Item(Item'first) = 'C' then
-                        The_Element.Number_Id := Caldwell;
-                        The_Element.Object := Data.Object_Of (The_Element.Number, Data.Caldwell);
-                      else
-                        The_Element.Number_Id := Messier;
-                        The_Element.Object := Data.Object_Of (The_Element.Number, Data.Messier);
-                      end if;
-                    else
-                      Error.Raise_With ("Incorrect Object id in " & Filename & ": " & Item);
-                    end if;
-                  else
-                    declare
-                      Value : constant Natural := Data.Value_Of (Object_Parts(Strings.First_Index + 1));
-                    begin
-                      The_Element.Kind := Sky_Object;
-                      begin
-                        if Item = "HR" then
-                          The_Element.Object := Data.Object_Of (Value, Data.Hr);
-                        elsif Item = "HIP" then
-                          The_Element.Object := Data.Object_Of (Value, Data.Hip);
-                        elsif Item = "NGC" then
-                          The_Element.Object := Data.Object_Of (Value, Data.Ngc);
-                        elsif Item = "OCl" then
-                          The_Element.Object := Data.Object_Of (Value, Data.Ocl);
-                        elsif Item = "3C" then
-                          The_Element.Object := Data.Object_Of (Value, Data.Quasars);
-                        else
-                          Error.Raise_With (Object_Id & " unknown in " & Filename);
-                        end if;
-                      end;
-                    end;
-                  end if;
+                  when Lexicon.Venus =>
+                    The_Element.Kind := Planet;
+                    return;
+                  when Lexicon.Moon =>
+                    The_Element.Kind := Moon;
+                    return;
+                  when Lexicon.Mars =>
+                    The_Element.Kind := Planet;
+                    return;
+                  when Lexicon.Jupiter =>
+                    The_Element.Kind := Planet;
+                    return;
+                  when Lexicon.Saturn =>
+                    The_Element.Kind := Planet;
+                    return;
+                  when Lexicon.Uranus =>
+                    The_Element.Kind := Planet;
+                    return;
+                  when Lexicon.Neptune =>
+                    The_Element.Kind := Planet;
+                    return;
+                  when Lexicon.Pluto =>
+                    The_Element.Kind := Planet;
+                    return;
+                  when others =>
+                    null;
+                  end case;
                 exception
-                when Error.Occurred =>
-                  raise;
-                when others =>
-                  Error.Raise_With ("Unknown object in " & Filename & ": " & Line);
+                when Lexicon.Not_Found =>
+                  null;
                 end;
+                The_Element.Kind := Sky_Object;
+                The_Element.Object := Sky.Catalog.Object_Of (Object_Name);
+                if The_Element.Object = Sky.Undefined then
+                  Error.Raise_With ("Unknown Name - " & Line);
+                end if;
+                The_Element.Name := [Sky.Catalog.Object_Image_Of (The_Element.Object, +The_Element.Name)];
               end;
             end if;
+          exception
+          when Item: others =>
+            Log.Termination (Item);
           end Add_Sky_Object;
 
-        begin
+        begin -- Store
           if Support_Axis_Positions and then Parts_1.Count >= 2 and then Parts_1(Strings.First_Index) = "AP" then
             Add_Axis_Position;
           elsif Support_Land_Marks and then Parts_1.Count >= 2 and then Parts_1(Strings.First_Index) = "LM" then
@@ -621,7 +562,7 @@ package body Name is
           else
             Add_Sky_Object;
           end if;
-        end;
+        end; -- Store
         if The_Element_List = null then
           The_Element_List := The_Element;
         elsif The_Element < The_Element_List then
@@ -681,28 +622,30 @@ package body Name is
           Put ("LM " & Image_Of (Lexicon.Road_Sign) & " | 259° 49' 13"" | 2° 56' 15""");
           Put ("");
         end if;
-        Put ("HIP 95947  | " & Image_Of (Lexicon.Albereo));
-        Put ("HIP 21421  | " & Image_Of (Lexicon.Aldebaran));
-        Put ("HIP 97649  | " & Image_Of (Lexicon.Altair));
-        Put ("HIP 69673  | " & Image_Of (Lexicon.Arcturus));
-        Put ("HIP 27989  | " & Image_Of (Lexicon.Betelgeuse));
-        Put ("HIP 102098 | " & Image_Of (Lexicon.Deneb));
-        Put ("HIP 65378  | " & Image_Of (Lexicon.Mizar));
-        Put ("HIP 11767  | " & Image_Of (Lexicon.Polaris));
-        Put ("HIP 37826  | " & Image_Of (Lexicon.Pollux));
-        Put ("HIP 37279  | " & Image_Of (Lexicon.Procyon));
-        Put ("HIP 49669  | " & Image_Of (Lexicon.Regulus));
-        Put ("HIP 24436  | " & Image_Of (Lexicon.Rigel));
-        Put ("HIP 32349  | " & Image_Of (Lexicon.Sirius));
-        Put ("HIP 91262  | " & Image_Of (Lexicon.Vega));
+        Put (Image_Of (Lexicon.Albereo));
+        Put (Image_Of (Lexicon.Aldebaran));
+        Put (Image_Of (Lexicon.Altair));
+        Put (Image_Of (Lexicon.Arcturus));
+        Put (Image_Of (Lexicon.Betelgeuse));
+        Put (Image_Of (Lexicon.Deneb));
+        Put (Image_Of (Lexicon.Mizar));
+        Put (Image_Of (Lexicon.Polaris));
+        Put (Image_Of (Lexicon.Pollux));
+        Put (Image_Of (Lexicon.Procyon));
+        Put (Image_Of (Lexicon.Regulus));
+        Put (Image_Of (Lexicon.Rigel));
+        Put (Image_Of (Lexicon.Sirius));
+        Put (Image_Of (Lexicon.Vega));
         Put ("");
         Put ("NGC 869   | h-Persei");
         Put ("NGC 884   | χ-Persei");
         Put ("OCl 113.0 | Cr399");
         Put ("3C 273");
         Put ("");
-        Put ("C39 | " & Image_Of (Lexicon.Eskimo_Nebula));
+        Put ("C14 | " & Image_Of (Lexicon.Persei_Clusters));
+        Put ("C33 | " & Image_Of (Lexicon.East_Veil_Nebula));
         Put ("C34 | " & Image_Of (Lexicon.Veil_Nebula));
+        Put ("C39 | " & Image_Of (Lexicon.Eskimo_Nebula));
         Put ("C46 | " & Image_Of (Lexicon.Hubbles_Nebula));
         Put ("C55 | " & Image_Of (Lexicon.Saturn_Nebula));
         Put ("");
@@ -789,7 +732,7 @@ package body Name is
     end Read_Favorite_Catalog;
 
 
-    procedure Define_Catalog (Data_Id : Data.Kind) is
+    procedure Define_Catalog (Data_Id : Sky.Catalog_Id) is
 
       The_Item_Id : Natural := 0;
       The_Element : Element_Access;
@@ -797,53 +740,57 @@ package body Name is
       function Next return Boolean is
       begin
         case Data_Id is
-        when Data.Favorites =>
+        when Sky.Favorites =>
           if The_Element = null then
             The_Element := The_Element_List;
           else
             The_Element := The_Element.Next;
           end if;
           return The_Element /= null;
-        when others =>
-          The_Item_Id := Data.Next_Of (The_Item_Id, Data_Id);
-          return True;
+        when Sky.Extended_Catalogs =>
+          The_Item_Id := Sky.Data.Next_Of (The_Item_Id, Data_Id);
+          return The_Item_Id /= Sky.Data.No_More;
         end case;
-      exception
-      when Data.End_Of_List =>
-        return False;
       end Next;
 
       function Item  return Id is
       begin
         case Data_Id is
-        when Data.Favorites =>
-          return (Data.Favorites, False, False, The_Element);
-        when Data.Caldwell =>
-          return (Data.Caldwell, False, False, The_Item_Id);
-        when Data.Hip =>
-          return (Data.Hip, False, False, The_Item_Id);
-        when Data.Hr =>
-          return (Data.Hr, False, False, The_Item_Id);
-        when Data.Messier =>
-          return (Data.Messier, False, False, The_Item_Id);
-        when Data.Neo =>
-          return (Data.Neo, False, False, The_Item_Id);
-        when Data.Ngc =>
-          return (Data.Ngc, False, False, The_Item_Id);
-        when Data.Ocl =>
-          return (Data.Ocl, False, False, The_Item_Id);
-        when Data.Quasars =>
-          return (Data.Quasars, False, False, The_Item_Id);
+        when Sky.Favorites =>
+          return (Sky.Favorites, False, False, The_Element);
+        when others =>
+          declare
+            The_Id : Id(Data_Id);
+          begin
+            The_Id.Element_Number := The_Item_Id;
+            return The_Id;
+          end;
         end case;
       end Item;
 
+      function Compare_Names (Left, Right : Id) return Boolean is
+        use type Sky.Catalog_Id;
+      begin
+        if Left.Data_Id = Sky.Name then
+          return Image_Of (Left) < Image_Of (Right);
+        else
+          raise Program_Error;
+        end if;
+      end Compare_Names;
+
+      package Name_Tool is new Names.Generic_Sorting (Compare_Names);
+
+      use type Sky.Catalog_Id;
+
     begin -- Define
-      The_Id_List.Kind := Data_Id;
-      The_Id_List.Last := 0;
+      The_Id_List.Ids.Clear;
+      The_Id_List := Id_List'(Kind => Data_Id, Ids => <>);
       while Next loop
-        The_Id_List.Last := The_Id_List.Last + 1;
-        The_Id_List.Ids(The_Id_List.Last) := Item;
+        The_Id_List.Ids.Append (Item);
       end loop;
+      if Data_Id = Sky.Name then
+        Name_Tool.Sort (The_Id_List.Ids);
+      end if;
     end Define_Catalog;
 
 

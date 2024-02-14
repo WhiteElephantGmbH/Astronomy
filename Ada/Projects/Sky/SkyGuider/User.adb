@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2021 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2021 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -19,7 +19,6 @@ with Ada.Real_Time;
 with Ada.Unchecked_Conversion;
 with Angle;
 with Application;
-with Data;
 with Earth;
 with Gui.Enumeration_Menu_Of;
 with Gui.Key_Codes;
@@ -31,6 +30,7 @@ with Persistent;
 with Picture;
 with Pole;
 with Refraction;
+with Sky.Catalog;
 with Sky_Line;
 with Site;
 with Space;
@@ -154,28 +154,9 @@ package body User is
   end Set_Target_Name;
 
 
-  use all type Targets.Selection;
-  subtype Selection is Targets.Selection range All_Objects .. Multiple_Stars;
+  subtype Selection is Targets.Selection range Targets.All_Objects .. Targets.Multiple_Stars;
 
-
-  function Image_Of (The_Selection : Selection) return String is
-
-    type Names is array (Selection) of Lexicon.Word;
-
-    Name_Of : constant Names := [All_Objects    => Lexicon.All_Objects,
-                                 Solar_System   => Lexicon.Solar_System,
-                                 Clusters       => Lexicon.Clusters,
-                                 Open_Clusters  => Lexicon.Open_Clusters,
-                                 Nebulas        => Lexicon.Nebulas,
-                                 Galaxies       => Lexicon.Galaxies,
-                                 Stars          => Lexicon.Stars,
-                                 Multiple_Stars => Lexicon.Multiple_Stars];
-  begin
-    return Lexicon.Image_Of (Name_Of(The_Selection));
-  end Image_Of;
-
-  package Selection_Menu is new Gui.Enumeration_Menu_Of (Selection, Gui.Radio, Image_Of);
-
+  package Selection_Menu is new Gui.Enumeration_Menu_Of (Selection, Gui.Radio, Targets.Image_Of);
 
   procedure Selection_Handler (The_Filter : Selection) is
   begin
@@ -188,33 +169,11 @@ package body User is
   end Selection_Handler;
 
 
-  function Image_Of (The_Selection : Data.Sky_Object) return String is
-    use all type Data.Sky_Object;
-  begin
-    case The_Selection is
-    when Favorites =>
-      return Lexicon.Image_Of (Lexicon.Favorites);
-    when Caldwell =>
-      null;
-    when Hip =>
-      return "HIP";
-    when Hr =>
-      return "HR";
-    when Messier =>
-      null;
-    when Ngc =>
-      return "NGC";
-    when Ocl =>
-      return "OCl";
-    when Quasars =>
-      return Lexicon.Image_Of (Lexicon.Quasars);
-    end case;
-    return Strings.Legible_Of (The_Selection'img);
-  end Image_Of;
+  subtype Sky_Object is Sky.Catalog_Id range Sky.Catalog_Id'first .. Sky.Quasars; -- no near earth objects
 
-  package Catalog_Menu is new Gui.Enumeration_Menu_Of (Data.Sky_Object, Gui.Radio, Image_Of);
+  package Catalog_Menu is new Gui.Enumeration_Menu_Of (Sky_Object, Gui.Radio, Sky.Catalog.Image_Of);
 
-  procedure Catalog_Handler (The_Catalog : Data.Sky_Object) is
+  procedure Catalog_Handler (The_Catalog : Sky_Object) is
   begin
     Log.Write ("Catalog: " & The_Catalog'img);
     Name.Define (The_Catalog);
@@ -828,7 +787,7 @@ package body User is
       if Name_Id = null then
         return "";
       else
-        return Name.Prefix_Of (Name_Id.all) & Name.Image_Of (Name_Id.all);
+        return Name.Image_Of (Name_Id.all);
       end if;
     else
       raise Program_Error;
@@ -1055,9 +1014,9 @@ package body User is
 
     begin -- Create_Interface
       Selection_Menu.Create (Lexicon.Image_Of (Lexicon.Selection), Selection_Handler'access);
-      Targets.Set (The_Selection => All_Objects);
+      Targets.Set (The_Selection => Targets.All_Objects);
       Catalog_Menu.Create (Lexicon.Image_Of (Lexicon.Catalog), Catalog_Handler'access);
-      Catalog_Handler (Data.Favorites);
+      Catalog_Handler (Sky.Favorites);
       Define_Control_Page;
       if Persistent_Setup.Storage_Is_Empty then
         The_Air_Pressure := 0.0;
@@ -1115,7 +1074,7 @@ package body User is
   procedure Define (New_Targets : Name.Id_List_Access) is
   begin
     The_Targets := New_Targets;
-    Gui.Set_Title (The_Targets_Column, Image_Of (The_Targets.Kind));
+    Gui.Set_Title (The_Targets_Column, Sky.Catalog.Image_Of (The_Targets.Kind));
     Update_Targets;
     Gui.Show (Display);
   end Define;

@@ -15,10 +15,10 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Data;
 with Lexicon;
 with Moon;
 with Site;
+with Sky.Data;
 with Sky_Line;
 with Solar_System;
 with Sssb;
@@ -28,6 +28,24 @@ with Traces;
 package body Targets is
 
   package Log is new Traces ("Targets");
+
+  function Image_Of (The_Selection : Selection) return String is
+
+    type Names is array (Selection) of Lexicon.Word;
+
+    Name_Of : constant Names := [All_Objects        => Lexicon.All_Objects,
+                                 Solar_System       => Lexicon.Solar_System,
+                                 Clusters           => Lexicon.Globular_Cluster,
+                                 Open_Clusters      => Lexicon.Open_Clusters,
+                                 Nebulas            => Lexicon.Nebula,
+                                 Galaxies           => Lexicon.Galaxies,
+                                 Stars              => Lexicon.Stars,
+                                 Multiple_Stars     => Lexicon.Multiple_Stars,
+                                 Near_Earth_Objects => Lexicon.Neos];
+  begin
+    return Lexicon.Image_Of (Name_Of(The_Selection));
+  end Image_Of;
+
 
   task type Handler (Clear  : access procedure;
                      Define : access procedure (List : Name.Id_List_Access);
@@ -162,63 +180,61 @@ package body Targets is
 
       Ut : constant Time.Ut := Time.Universal;
 
-    begin -- Define_Targets
-      for Index in The_Targets.Ids'first .. The_Targets.Last loop
-        declare
+      procedure Add_Visible (Item : in out Name.Id) is
 
-          Item : Name.Id renames The_Targets.Ids(Index);
-
-          function Is_To_Add return Boolean is
-          begin
-            case Name.Kind_Of (Item) is
-            when Name.Moon =>
-              return Is_To_Add (Solar_System, Moon_Direction_Of (Item, Ut));
-            when Name.Planet =>
-              return Is_To_Add (Solar_System, Solar_System_Direction_Of (Item, Ut));
-            when Name.Sun =>
-              return Is_Selected_And_Visible (Solar_System, Solar_System_Direction_Of (Item, Ut));
-            when Name.Small_Solar_System_Body =>
-              return Is_To_Add (Solar_System, Sssb.Direction_Of (Item, Ut));
-            when Name.Near_Earth_Object =>
-              return Is_Selected (Near_Earth_Objects) and then Is_Arriving (Item) and then not Sun_Is_Visible;
-            when Name.Axis_Position =>
-              return The_Actual_Selection = All_Objects;
-            when Name.Landmark =>
-              return The_Actual_Selection = All_Objects;
-            when Name.Sky_Object =>
-              declare
-                Object : constant Data.Object := Name.Object_Of (Item);
-              begin
-                case Data.Type_Of (Object) is
-                when Data.Quasar  =>
-                  return Is_To_Add (Galaxies, Data.Direction_Of (Object, Ut));
-                when Data.Galaxy  =>
-                  return Is_To_Add (Galaxies, Data.Direction_Of (Object, Ut));
-                when Data.Nebula  =>
-                  return Is_To_Add (Nebulas, Data.Direction_Of (Object, Ut));
-                when Data.Cluster =>
-                  return Is_To_Add (Clusters, Data.Direction_Of (Object, Ut));
-                when Data.Stars =>
-                  return Is_To_Add (Open_Clusters, Data.Direction_Of (Object, Ut));
-                when Data.Double =>
-                  return Is_To_Add (Multiple_Stars, Data.Direction_Of (Object, Ut));
-                when Data.Star =>
-                  return Is_To_Add (Stars, Data.Direction_Of (Object, Ut));
-                when Data.Satellite =>
-                  raise Program_Error;
-                when Data.Unknown =>
-                  return False;
-                end case;
-              end;
-            end case;
-          end Is_To_Add;
-
+        function Is_To_Add return Boolean is
         begin
-          if Name.Visibility_Changed_For (Item, Is_To_Add) then
-            The_Changes := The_Changes + 1;
-          end if;
-        end;
-      end loop;
+          case Name.Kind_Of (Item) is
+          when Name.Moon =>
+            return Is_To_Add (Solar_System, Moon_Direction_Of (Item, Ut));
+          when Name.Planet =>
+            return Is_To_Add (Solar_System, Solar_System_Direction_Of (Item, Ut));
+          when Name.Sun =>
+            return Is_Selected_And_Visible (Solar_System, Solar_System_Direction_Of (Item, Ut));
+          when Name.Small_Solar_System_Body =>
+            return Is_To_Add (Solar_System, Sssb.Direction_Of (Item, Ut));
+          when Name.Near_Earth_Object =>
+            return Is_Selected (Near_Earth_Objects) and then Is_Arriving (Item) and then not Sun_Is_Visible;
+          when Name.Axis_Position =>
+            return The_Actual_Selection = All_Objects;
+          when Name.Landmark =>
+            return The_Actual_Selection = All_Objects;
+          when Name.Sky_Object =>
+            declare
+              Object : constant Sky.Object := Name.Object_Of (Item);
+            begin
+              case Sky.Data.Object_Type_Of (Object) is
+              when Sky.Quasar  =>
+                return Is_To_Add (Galaxies, Sky.Data.Direction_Of (Object, Ut));
+              when Sky.Galaxy  =>
+                return Is_To_Add (Galaxies, Sky.Data.Direction_Of (Object, Ut));
+              when Sky.Nebula  =>
+                return Is_To_Add (Nebulas, Sky.Data.Direction_Of (Object, Ut));
+              when Sky.Cluster =>
+                return Is_To_Add (Clusters, Sky.Data.Direction_Of (Object, Ut));
+              when Sky.Stars =>
+                return Is_To_Add (Open_Clusters, Sky.Data.Direction_Of (Object, Ut));
+              when Sky.Double =>
+                return Is_To_Add (Multiple_Stars, Sky.Data.Direction_Of (Object, Ut));
+              when Sky.Star =>
+                return Is_To_Add (Stars, Sky.Data.Direction_Of (Object, Ut));
+              when Sky.Satellite =>
+                raise Program_Error;
+              when Sky.Unknown =>
+                return False;
+              end case;
+            end;
+          end case;
+        end Is_To_Add;
+
+      begin -- Add_Visible
+        if Name.Visibility_Changed_For (Item, Is_To_Add) then
+          The_Changes := The_Changes + 1;
+        end if;
+      end Add_Visible;
+
+    begin -- Define_Targets
+      Name.For_All (In_List => The_Targets, Handle => Add_Visible'access);
       if New_List or (The_Changes > 100) then
         New_List := False;
         Clear.all;
@@ -229,6 +245,10 @@ package body Targets is
         Update.all;
       end if;
     end Define_Targets;
+
+    The_Found_Id : Name.Id;
+
+    use type Name.Id;
 
   begin -- Handler
     Log.Write ("handler start");
@@ -258,6 +278,10 @@ package body Targets is
                         Target_Id   : out Name.Id)
         do
           Target_Id := Name.Item_Of (The_Targets, Target_Name);
+          if Target_Id = Name.No_Id then
+            Target_Id := The_Found_Id;
+          end if;
+          The_Found_Id := Name.No_Id;
         end Get_For;
       or
         accept Get_For (The_Direction :     Space.Direction;
@@ -265,6 +289,7 @@ package body Targets is
                         Target_Id     : out Name.Id)
         do
           Target_Id := Name.Item_Of (The_Targets, The_Direction, Tolerance);
+          The_Found_Id := Target_Id;
         end Get_For;
       or
         accept Stop;
@@ -297,7 +322,7 @@ package body Targets is
         when Name.Planet =>
           return Solar_System_Direction_Of (Id, Ut);
         when Name.Sky_Object =>
-          return Data.Direction_Of (Name.Object_Of (Id), Ut, Is_J2000 => True);
+          return Sky.Data.Direction_Of (Name.Object_Of (Id), Ut, Is_J2000 => True);
         when others =>
           return Space.Unknown_Direction;
         end case;

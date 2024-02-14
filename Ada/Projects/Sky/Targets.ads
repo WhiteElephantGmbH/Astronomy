@@ -27,7 +27,9 @@ package Targets is
                      Near_Earth_Objects);
 
   subtype Objects is Selection range Selection'succ(Selection'first) .. Selection'last;
-  
+
+  function Image_Of (The_Selection : Selection) return String;
+
   type Arriving_Handling is access function (Id : Name.Id) return Boolean;
 
   procedure Start (Clear    : access procedure;
@@ -49,7 +51,7 @@ package Targets is
                      Target_Id     : out Name.Id);
 
   procedure Stop;
-  
+
   function J2000_Direction_Of (Id : Name.Id) return Space.Direction;
 
   function Text_Of (Visible_In : Duration) return String;

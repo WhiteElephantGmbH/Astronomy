@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2023 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2023 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -19,7 +19,7 @@ with Strings;
 
 package body Alignment.Stars is
 
-    type Objects is array (Id) of Data.Object;
+    type Objects is array (Id) of Sky.Object;
 
     The_Objects : constant Objects := [
       Albireo         => 7683,
@@ -81,7 +81,7 @@ package body Alignment.Stars is
       Zuben_El_Genubi => 5801];
 
 
-  function Object_Of (The_Id : Id) return Data.Object is
+  function Object_Of (The_Id : Id) return Sky.Object is
   begin
      return The_Objects(The_Id);
   end Object_Of;

@@ -605,15 +605,126 @@ package Lexicon is
     Zubeneschamali, -- last in subtype Simbad_Names
 
     -- Objects Names not handled from Simbad
-    Eskimo_Nebula,  -- NGC 2392
-    Hubbles_Nebula, -- V* R Mon, NAME HUBBLES'VAR NEB, NGC 2261
-    Veil_Nebula,    -- NGC 6992
+    East_Veil_Nebula, -- NGC 6992
+    Eskimo_Nebula,    -- NGC 2392
+    Hubbles_Nebula,   -- V* R Mon, NAME HUBBLES'VAR NEB, NGC 2261
+    Persei_Clusters,  -- h and chi persei
+    Veil_Nebula,      -- NGC 6960
+
+    -- Object Types
+    Alpha2_Cvn_Variable,
+    Asymptotic_Giant_Branch,
+    Brown_Dwarf,
+    Be_Star,
+    Beta_Cep_Variable,
+    Blue_Straggler,
+    Blue_Supergiant,
+    BY_Dra_Variable,
+    Carbon_Star,
+    Cataclysmic_Binary,
+    Cepheid_Variable,
+    Chemically_Peculiar,
+    Classical_Cepheid,
+    Classical_Nova,
+    Composite_Object_Blend,
+    Delta_Sct_Variable,
+    Double_Or_Multiple_Star,
+    Eclipsing_Binary_Star,
+    Ellipsoidal_Variable,
+    Emission_Line_Star,
+    Eruptive_Variable_Star,
+    Evolved_Supergiant_Star,
+    Extra_Solar_Planet,
+    Gamma_Dor_Variable_Star,
+    Herbig_Ae_Be_Star,
+    High_Mass_X_Ray_Binary,
+    High_Proper_Motion_Star,
+    High_Velocity_Star,
+    Horizontal_Branch_Star,
+    Hot_Subdwarf_Star,
+    Herbig_Haro_Object,
+    Irregular_Variable,
+    Long_Period_Variable,
+    Low_Mass_Star,
+    Low_Mass_X_Ray_Binary,
+    Main_Sequence_Star,
+    Mira_Variable_Star,
+    OH_IR_Star,
+    Orion_Variable_Star,
+    Planetary_Nebula_Star,
+    Post_AGB_Star,
+    Pulsar,
+    Pulsating_Variable_Star,
+    R_Crb_Variable_Star,
+    Red_Giant_Branch_Star,
+    Red_Supergiant_Star,
+    Rotating_Variable_Star,
+    RR_Lyrae_Variable_Star,
+    RS_Cvn_Variable_Star,
+    RV_Tauri_Variable_Star,
+    S_Star,
+    Spectroscopic_Binary,
+    Star,
+    Supernova,
+    SX_Phe_Variable_Star,
+    Symbiotic_Star,
+    T_Tauri_Star,
+    Type_II_Cepheid_Variable,
+    Variable_Star,
+    White_Dwarf_Star,
+    Wolf_Rayet_Star,
+    X_Ray_Binary_Star,
+    Yellow_Supergiant_Star,
+    Young_Stellar_Object,
+
+    Association_Of_Stars,
+    Cluster_Of_Stars,
+    Globular_Cluster,
+    Open_Cluster,
+    Moving_Group,
+    Stellar_Stream,
+
+    Cloud,
+    Cometary_Globule_Pillar,
+    HII_Region,
+    Interstellar_Medium,
+    Interstellar_Shell,
+    Molecular_Cloud,
+    Nebula,
+    Reflection_Nebula,
+    Supernova_Remnant,
+
+    BL_Lac,
+    Blazar,
+    Blue_Compact_Galaxy,
+    Brightest_Cluster_Galaxy,
+    Emission_Line_Galaxy,
+    Galaxy,
+    Galaxy_In_A_Pair,
+    Galaxy_Towards_Cluster,
+    Galaxy_Towards_Group,
+    Group_Of_Galaxies,
+    Low_Surface_Galaxy,
+    Linear_Active_Nucleus,
+    Pair_Of_Galaxies,
+    Quasar,
+    Radio_Galaxy,
+    Starburst_Galaxy,
+    HII_Galaxy,
+    Seyfert_Galaxy,
+    Seyfert_1_Galaxy,
+    Seyfert_2_Galaxy,
+
+    Interacting_Galaxies,
+
+    Emission_Object,
+    Radio_Source,
+    Transient_Event,
 
     -- Other Names
     All_Objects,
     Camera,
     Catalog,
-    Clusters,
     East,
     Fans,
     Favorites,
@@ -625,8 +736,8 @@ package Lexicon is
     Mercury,
     Moon,
     Multiple_Stars,
+    Names,
     Neos,
-    Nebulas,
     Neptune,
     North,
     Ocular,
@@ -652,7 +763,9 @@ package Lexicon is
     Visible,
     West);
 
-  subtype Simbad_Names is Word range  Word'first .. Zubeneschamali;
+  subtype Simbad_Names is Word range Word'first .. Zubeneschamali;
+
+  subtype Object_Types is Word range Alpha2_Cvn_Variable .. Transient_Event;
 
   -- Names different from Simbad
   Andromeda_Galaxy  : constant Word := Andromeda;
@@ -667,8 +780,5 @@ package Lexicon is
     Not_Found : exception;
 
   function Image_Of (Item : Word) return String;
-
-  function Found (Name     : String;
-                  For_Word : Word) return Boolean;
 
 end Lexicon;

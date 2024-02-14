@@ -1,11 +1,21 @@
 -- *********************************************************************************************************************
--- *                       (c) 2019 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2023 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
+-- *                                                                                                                   *
+-- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
+-- *    Public License as published by the Free Software Foundation; either version 2 of the License, or               *
+-- *    (at your option) any later version.                                                                            *
+-- *                                                                                                                   *
+-- *    This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the     *
+-- *    implied warranty of MERCHANTABILITY or FITNESS for A PARTICULAR PURPOSE. See the GNU General Public License    *
+-- *    for more details.                                                                                              *
+-- *                                                                                                                   *
+-- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
+-- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
 with AWS.Client;
-with AWS.Messages;
 with AWS.Response;
 with Os.Process;
 with PWI4.Protocol;
@@ -83,11 +93,15 @@ package body PWI4 is
     begin
       case Status is
       when AWS.Messages.Informational =>
-        Log.Warning ("Execute response status: " & Status'image);
+        Log.Write ("Informational response: " & Status'image);
       when AWS.Messages.Success =>
         null;
+      when AWS.Messages.Client_Error =>
+        Log.Warning ("Client error: " & Status'image);
+        Protocol.Set_Error (Status);
+        return;
       when others =>
-        Log.Error ("Execute response status: " & Status'image);
+        Log.Error ("Unexpected response: " & Status'image);
         return;
       end case;
       Protocol.Parse (AWS.Response.Message_Body (Data));

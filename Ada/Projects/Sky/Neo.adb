@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2013 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2013 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -18,11 +18,11 @@ pragma Style_White_Elephant;
 with Ada.Unchecked_Deallocation;
 with Angle;
 with Astro;
-with Data;
 with Error;
 with Norad;
 with Satellite;
 with Site;
+with Sky.Data;
 with Sky_Line;
 with Traces;
 with Values;
@@ -214,9 +214,8 @@ package body Neo is
     begin
       Read (Target);
       if The_Last > 0 then
-        The_Index := Data.New_Neo_Object_For (Name        => Target,
-                                              Description => "",
-                                              The_Type    => Data.Satellite);
+        The_Index := Sky.Data.New_Neo_Object_For (Item        => Target,
+                                                  Description => "");
         if The_Index > The_Lists'last then
           Error.Raise_With ("Too many near earth objects");
         end if;
@@ -235,7 +234,7 @@ package body Neo is
   function Direction_Of (Item : Name.Id;
                          Ut   : Time.Ut) return Space.Direction is
 
-    Index : constant Positive := Data.Neo_Index_Of (Name.Object_Of (Item));
+    Index : constant Positive := Sky.Data.Neo_Index_Of (Name.Object_Of (Item));
 
     Data  : List_Access renames The_Lists(Index);
 
@@ -263,7 +262,7 @@ package body Neo is
   procedure Dispose is new Ada.Unchecked_Deallocation (List, List_Access);
 
   function Is_Arriving (Item : Name.Id) return Boolean is
-    Index : constant Positive := Data.Neo_Index_Of (Name.Object_Of (Item));
+    Index : constant Positive := Sky.Data.Neo_Index_Of (Name.Object_Of (Item));
     Data  : List_Access renames The_Lists(Index);
   begin
     if Data = null then
@@ -282,7 +281,7 @@ package body Neo is
 
 
   function Tracking_Period_Of (Item : Name.Id) return Time.Period is
-    Index : constant Positive := Data.Neo_Index_Of (Name.Object_Of (Item));
+    Index : constant Positive := Sky.Data.Neo_Index_Of (Name.Object_Of (Item));
     Data  : List_Access renames The_Lists(Index);
   begin
     if Data = null then

@@ -19,10 +19,12 @@ with Angle;
 with Application;
 with Error;
 with Gui.Registered;
+with Language;
 with Map;
 with Parameter;
 with Site;
 with Strings;
+with Simbad.Catalog;
 with Time;
 with Traces;
 
@@ -92,6 +94,20 @@ package body User is
 
   begin -- Generate
     Set_Status ("");
+    Language.Define (Language.German);
+    Log.Error ("XXX Start");
+    for The_Index in Simbad.Index loop
+      declare
+        Name  : constant String := Simbad.Catalog.Image_Of (The_Index);
+        Index : constant Simbad.Number := Simbad.Catalog.Number_Of (Name);
+        use type Simbad.Number;
+      begin
+        if Index /= The_Index then
+          Log.Error ("XXX Number_Of failed with " & Name & " at index" & The_Index'image & " with " & Index'image);
+        end if;
+      end;
+    end loop;
+    Log.Error ("XXX End");
     Parameter.Read;
     Generate_Button.Disable;
     Site.Define (Site.Data'(Latitude  => Value_Of (Latitude, Default_Latitude),

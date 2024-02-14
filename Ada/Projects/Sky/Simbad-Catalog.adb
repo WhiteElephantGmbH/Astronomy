@@ -16,12 +16,14 @@
 pragma Style_White_Elephant;
 
 with Ada.Unchecked_Conversion;
+with Ada.Containers.Ordered_Maps;
+with Ada.Containers.Vectors;
 with Strings;
 with Traces;
 
 package body Simbad.Catalog is
 
-  package Log is new Traces ("Object.Catalog");
+  package Log is new Traces ("Simbad.Catalog");
 
   type HD_List  is array (HD_Index) of Number;
   type HIP_List is array (HIP_Index) of Number;
@@ -32,6 +34,8 @@ package body Simbad.Catalog is
   type OCL_List is array (OCL_Index) of Number;
 
   use type Number;
+
+  Star_Image : constant String := Database.Star_Image;
 
 
   function Image_Of (Item : Natural) return String is
@@ -46,7 +50,14 @@ package body Simbad.Catalog is
   function Main_Id_Of (Item : Index) return Id is
     use type Database.Objects.Catalog_Id;
   begin
-    return Id'val(Database.Objects.List(Item).Catalog_Index - 1);
+    case Database.Objects.List(Item).Catalog_Index is
+    when 1 =>
+      return Star_Id;
+    when 2 =>
+      return Name_Id;
+    when others =>
+      return Id'val(Database.Objects.List(Item).Catalog_Index - 1);
+    end case;
   end Main_Id_Of;
 
 
@@ -75,17 +86,202 @@ package body Simbad.Catalog is
   end Image_Of;
 
 
+  use type Database.Id;
+
+  package Star_Ids is new Ada.Containers.Ordered_Maps (Key_Type     => Database.Id,
+                                                       Element_Type => Index);
+
+  function All_Star_Ids return Star_Ids.Map is
+    The_Map : Star_Ids.Map;
+  begin
+    for The_Index in Index loop
+      declare
+        Id : constant Database.Id := Database.Objects.List(The_Index).Star_Id;
+      begin
+        if Id /= Unknown then
+          The_Map.Insert (Key => Id, New_Item => The_Index);
+        end if;
+      exception
+      when others =>
+        Log.Error ("Star id" & Id'image & " defined twice");
+      end;
+    end loop;
+    return The_Map;
+  end All_Star_Ids;
+
+  Stars_Map : constant Star_Ids.Map := All_Star_Ids;
+
+
+  type Star_Element is record
+    Info   : Star_Info;
+    Number : Index;
+  end record;
+
+  function "<" (Left, Right : Star_Element) return Boolean is
+    use type DB.Constellation;
+    use type DB.Star_Count_Type;
+    use type DB.Star_Number;
+    use type DB.Star_Index;
+  begin
+    if Left.Info.C_Id < Right.Info.C_Id then
+      return True;
+    elsif Left.Info.C_Id = Right.Info.C_Id then
+      if Left.Info.Kind < Right.Info.Kind then
+        return True;
+      elsif Left.Info.Kind = Right.Info.Kind then
+        if Left.Info.Count < Right.Info.Count then
+          return True;
+        elsif Left.Info.Count = Right.Info.Count then
+          return Left.Info.Index < Right.Info.Index;
+        end if;
+      end if;
+    end if;
+    return False;
+  end "<";
+
+  package Star_Information is new Ada.Containers.Vectors (Index_Type   => Positive,
+                                                          Element_Type => Star_Element);
+
+  package Star_Tool is new Star_Information.Generic_Sorting;
+
+  function Star_List return Star_Information.Vector is
+    function Convert is new Ada.Unchecked_Conversion (Database.Id, Star_Info);
+    The_List : Star_Information.Vector;
+  begin
+    for The_Index in Index loop
+      declare
+        Id : constant Database.Id := Database.Objects.List(The_Index).Star_Id;
+      begin
+        if Id /= Unknown then
+          The_List.Append (New_Item => Star_Element'(Convert(Id), The_Index));
+        end if;
+      end;
+    end loop;
+    Star_Tool.Sort (The_List);
+    return The_List;
+  exception
+  when others =>
+    Log.Error ("Star_List incomplete");
+    return The_List;
+  end Star_List;
+
+  Star_Data : constant Star_Information.Vector := Star_List;
+
+
+  package Star_Numbers is new Ada.Containers.Ordered_Maps (Key_Type     => Index,
+                                                           Element_Type => Positive);
+
+  function All_Star_Numbers return Star_Numbers.Map is
+    The_Map : Star_Numbers.Map;
+  begin
+    for The_Number in Star_Data.First_Index .. Star_Data.Last_Index loop
+      declare
+        Data : constant Star_Element := Star_Data(The_Number);
+      begin
+        The_Map.Insert (Key => Data.Number, New_Item => The_Number);
+      exception
+      when others =>
+        Log.Error ("Star number" & Data.Number'image & " defined twice");
+      end;
+    end loop;
+    return The_Map;
+  end All_Star_Numbers;
+
+  Star_Positions : constant Star_Numbers.Map := All_Star_Numbers;
+
+
+  function Number_Of_Name (Item : String) return Number is
+  begin
+    return Index_Of (Lexicon.Word_Of (Item));
+  exception
+  when others =>
+    return Unknown;
+  end Number_Of_Name;
+
+
+  function Star_Number_Of (Item : Positive) return Number is
+    Data : constant Star_Element := Star_Data(Item);
+  begin
+    return Data.Number;
+  end Star_Number_Of;
+
+
+  function Number_Of_Star (Item : String) return Number is
+    Id : constant Database.Id := Database.Star_Id_Of (Item);
+  begin
+    return Stars_Map.Element (Id);
+  end Number_Of_Star;
+
+
+  function Number_Of (The_Catalog : Catalog_Id;
+                      The_Index   : Positive) return Number is
+  begin
+    case The_Catalog is
+    when Star_Id =>
+      return Star_Number_Of (The_Index);
+    when HD =>
+      return Number_Of (HD_Index(The_Index));
+    when HIP =>
+      return Number_Of (HIP_Index(The_Index));
+    when HR =>
+      return Number_Of (HR_Index(The_Index));
+    when M =>
+      return Number_Of (M_Index(The_Index));
+    when NGC =>
+      return Number_Of (NGC_Index(The_Index));
+    when IC =>
+      return Number_Of (IC_Index(The_Index));
+    when Ocl =>
+      return Number_Of (OCL_Index(The_Index));
+    end case;
+  end Number_Of;
+
+
+  function Number_Of (Image : String) return Number is
+    Parts : constant Strings.Item := Strings.Item_Of (Image, ' ');
+  begin
+    case Parts.Count is
+    when 0 =>
+      return Unknown;
+    when 1 =>
+      return Number_Of_Name (Image);
+    when others =>
+      declare
+        Catalog_Image : constant String := Parts(1);
+        Number_Image  : constant String := Parts(2);
+      begin
+        if Catalog_Image = Star_Image then
+          return Number_Of_Star (Image);
+        else
+          declare
+            Cat_Id : constant Catalog_Id := Catalog_Id'value(Catalog_Image);
+          begin
+            return Number_Of (Cat_Id, Positive'value(Number_Image));
+          end;
+        end if;
+      exception
+      when others =>
+        return Number_Of_Name (Image);
+      end;
+    end case;
+  end Number_Of;
+
+
   function Index_Of (Item : Lexicon.Word) return Number is
   begin
     case Item is
     when Lexicon.Simbad_Names =>
       return (Index(Database.Objects.Name_Links(Database.Objects.Names'val(Lexicon.Word'pos(Item)))));
     when Lexicon.Eskimo_Nebula =>
-      return Number_Of (NGC_Index'(2392));
+      return Number_Of (Eskimo_Nebula_Index);
     when Lexicon.Hubbles_Nebula =>
-      return Number_Of (NGC_Index'(2261));
+      return Number_Of (Hubbles_Nebula_Index);
+    when Lexicon.Persei_Clusters =>
+      return Number_Of (Persei_Clusters_Index);
+    when Lexicon.East_Veil_Nebula =>
+      return Number_Of (East_Veil_Nebula_Index);
     when Lexicon.Veil_Nebula =>
-      return Number_Of (NGC_Index'(6992));
+      return Number_Of (Veil_Nebula_Index);
     when others =>
       return Unknown;
     end case;
@@ -116,14 +312,16 @@ package body Simbad.Catalog is
 
 
   function Index_Of (Item : Star_Info) return Number is
+    function Convert is new Ada.Unchecked_Conversion (Star_Info, Database.Id);
   begin
-    Log.Write ("not Implemented - Index_Of " & Item'image);
+    return Stars_Map.Element (Convert (Item));
+  exception
+  when others =>
     return Unknown;
   end Index_Of;
 
 
   function Has_Star_Info (Item : Index) return Boolean is
-    use type Database.Id;
   begin
     return Database.Objects.List(Item).Star_Id /= Unknown;
   end Has_Star_Info;
@@ -136,11 +334,7 @@ package body Simbad.Catalog is
   end Star_Info_Of;
 
 
-  function Star_Image_Of (Item : Index) return String is
-
-    Greek_Alphabet : constant Strings.Item :=
-      ["α", "β", "γ", "δ", "ε", "ζ", "η", "θ", "ι", "κ", "λ", "µ",
-       "ν", "ξ", "o", "π", "ρ", "σ", "τ", "υ", "φ", "χ", "ψ", "ω"];
+  function Star_Image_Of (Item : Star_Info) return String is
 
     function Number_Image_Of (Count_Type : Database.Star_Count_Type;
                               The_Number : Database.Star_Number) return String is
@@ -150,7 +344,7 @@ package body Simbad.Catalog is
       when Alphabetic =>
         return [Character'val(Character'pos('A') + Natural(The_Number))];
       when Greek =>
-        return Greek_Alphabet(Strings.First_Index + Natural(The_Number));
+        return Database.Greek_Alphabet(Natural(The_Number));
       when Numeric =>
         return Strings.Trimmed (The_Number'image);
       when others =>
@@ -173,18 +367,27 @@ package body Simbad.Catalog is
       return Strings.Trimmed (The_Index'image);
     end Index_Image_Of;
 
+    Number_Image : constant String := Number_Image_Of (Item.Kind, Item.Count);
+    Index_Image  : constant String := Index_Image_Of (Item.Index);
+    C_Id_Image   : constant String := Constellation_Image_Of (Item.C_Id);
+
   begin -- Star_Image_Of;
+    return Star_Image & " " & Number_Image & Index_Image & " " & C_Id_Image;
+  end Star_Image_Of;
+
+
+  function Star_Of (Item : Index) return Positive is
+  begin
+    return Star_Positions(Item);
+  end Star_Of;
+
+
+  function Star_Image_Of (Item : Index) return String is
+  begin
     if not Has_Star_Info (Item) then
       raise No_Image;
     end if;
-    declare
-      Info         : constant Star_Info := Star_Info_Of (Item);
-      Number_Image : constant String := Number_Image_Of (Info.Kind, Info.Count);
-      Index_Image  : constant String := Index_Image_Of (Info.Index);
-      C_Id_Image   : constant String := Constellation_Image_Of (Info.C_Id);
-    begin
-      return Number_Image & Index_Image & " " & C_Id_Image;
-    end;
+    return Star_Image_Of (Star_Info_Of (Item));
   end Star_Image_Of;
 
 
@@ -520,5 +723,25 @@ package body Simbad.Catalog is
   begin
     return Object_Type'val(Database.Objects.List(Item).Otype);
   end Object_Type_Of;
+
+
+  function Found_For (Dec : Angle.Degrees) return Index is
+    Dec_J2000 : constant Database.Degrees_Dec := Database.Degrees_Dec(Dec);
+    use type Database.Degrees_Dec;
+  begin
+    Log.Write ("Start Find");
+    for The_Index in Simbad.Index loop
+      if Database.Objects.List(The_Index).Dec_J2000 > Dec_J2000 then
+        Log.Write ("Found Index" & The_Index'image);
+        if The_Index < Sky.Max_Search_Distance then
+          return Sky.Max_Search_Distance;
+        elsif The_Index > Index'last - Sky.Max_Search_Distance then
+          return Index'last - Sky.Max_Search_Distance;
+        end if;
+        return The_Index;
+      end if;
+    end loop;
+    raise Program_Error;
+  end Found_For;
 
 end Simbad.Catalog;

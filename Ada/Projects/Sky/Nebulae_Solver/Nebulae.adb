@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2023 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2023 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
@@ -7,7 +7,7 @@ pragma Style_White_Elephant;
 with Ada.Command_Line;
 with Ada.Text_IO;
 with Astap;
-with Catalog;
+with Sky.Catalog;
 with File;
 with Os.System;
 with Strings;
@@ -137,25 +137,23 @@ package body Nebulae is
     Size  : Astap.Pixels;
     Ra    : constant := Astap.Ra;
     Dec   : constant := Astap.Dec;
-    Id    : constant Catalog.Object := Catalog.Id_Of (Object_Name);
-    Data  : Catalog.Information;
+    Id    : constant Sky.Object := Sky.Catalog.Object_Of (Object_Name);
 
     use type Astap.Degrees;
-    use type Catalog.Object;
+    use type Sky.Object;
 
   begin -- Evaluate
     if Object_Name = "" then
       Error ("File " & Name & " is not a *.png file");
       return;
-    elsif Id = Catalog.Undefined then
+    elsif Id = Sky.Undefined then
       Error ("Object " & Object_Name & " unknown");
       return;
     end if;
-    Data := Catalog.Data_Of (Id);
     Astap.Define (Os.System.Program_Files_Folder & "astap\astap.exe");
     Astap.Solve (Filename => Filename,
                  Height   => Picture_Height,
-                 Start    => [Astap.Degrees(Data.Ra_J2000), Astap.Degrees(Data.Dec_J2000)]);
+                 Start    => [Astap.Degrees(Sky.Catalog.Ra_J2000_Of(Id)), Astap.Degrees(Sky.Catalog.Dec_J2000_Of(Id))]);
     for Unused in 1 .. 10 loop
       delay 1.0;
       if Astap.Solved (CRVAL, CD, Size) then

@@ -57,6 +57,10 @@ package Database is
     Psi,  -- ψ
     Ome); -- ω
 
+  Greek_Alphabet : constant array (Natural range <>) of String(1..2) :=
+    ["α", "β", "γ", "δ", "ε", "ζ", "η", "θ", "ι", "κ", "λ", "µ",
+     "ν", "ξ", "ο", "π", "ρ", "σ", "τ", "υ", "φ", "χ", "ψ", "ω"];
+
   type Constellation is (
     C_And, C_Ant, C_Aps, C_Aqr, C_Aql, C_Ara, C_Ari, C_Aur, C_Boo, C_Cae, C_Cam, C_Cnc, C_Cvn, C_Cma, C_Cmi, C_Cap,
     C_Car, C_Cas, C_Cen, C_Cep, C_Cet, C_Cha, C_Cir, C_Col, C_Com, C_Cra, C_Crb, C_Crv, C_Crt, C_Cru, C_Cyg, C_Del,
@@ -79,47 +83,51 @@ package Database is
   end record
   with Pack, Size => Id_Size;
 
+  Star_Image : constant String := "*";
+
   Unknown_Star_Info : constant Star_Info := (others => <>);
+
+  function Star_Id_Of (Image : String) return Id;
 
 
   type Object_Type is (
 
     -- 1. STARS
-    Alpha2_Cvn_Variable_Star,
-    Asymptotic_Giant_Branch_Star,
-    Brown_Dwarf_Star,
+    Alpha2_Cvn_Variable,
+    Asymptotic_Giant_Branch,
+    Brown_Dwarf,
     Be_Star,
-    Beta_Cep_Variable_Star,
-    Blue_Straggler_Star,
-    Blue_Supergiant_Star,
-    BY_Dra_Variable_Star,
+    Beta_Cep_Variable,
+    Blue_Straggler,
+    Blue_Supergiant,
+    BY_Dra_Variable,
     Carbon_Star,
-    Cataclysmic_Binary_Star,
-    Cepheid_Variable_Star,
-    Chemically_Peculiar_Star,
-    Classical_Cepheid_Variable_Star,
-    Classical_Nova_Star,
+    Cataclysmic_Binary,
+    Cepheid_Variable,
+    Chemically_Peculiar,
+    Classical_Cepheid,
+    Classical_Nova,
     Composite_Object_Blend,
-    Delta_Sct_Variable_Star,
+    Delta_Sct_Variable,
     Double_Or_Multiple_Star,
     Eclipsing_Binary_Star,
-    Ellipsoidal_Variable_Star,
+    Ellipsoidal_Variable,
     Emission_Line_Star,
     Eruptive_Variable_Star,
     Evolved_Supergiant_Star,
     Extra_Solar_Planet,
     Gamma_Dor_Variable_Star,
     Herbig_Ae_Be_Star,
-    High_Mass_X_Ray_Binary_Star,
+    High_Mass_X_Ray_Binary,
     High_Proper_Motion_Star,
     High_Velocity_Star,
     Horizontal_Branch_Star,
     Hot_Subdwarf_Star,
     Herbig_Haro_Object,
-    Irregular_Variable_Star,
-    Long_Period_Variable_Star,
+    Irregular_Variable,
+    Long_Period_Variable,
     Low_Mass_Star,
-    Low_Mass_X_Ray_Binary_Star,
+    Low_Mass_X_Ray_Binary,
     Main_Sequence_Star,
     Mira_Variable_Star,
     OH_IR_Star,
@@ -136,19 +144,19 @@ package Database is
     RS_Cvn_Variable_Star,
     RV_Tauri_Variable_Star,
     S_Star,
-    Spectroscopic_Binary_Star,
+    Spectroscopic_Binary,
     Star,
     Supernova,
     SX_Phe_Variable_Star,
     Symbiotic_Star,
     T_Tauri_Star,
-    Type_II_Cepheid_Variable_Star,
+    Type_II_Cepheid_Variable,
     Variable_Star,
     White_Dwarf_Star,
     Wolf_Rayet_Star,
     X_Ray_Binary_Star,
     Yellow_Supergiant_Star,
-    Young_Stellar_Object_Star,
+    Young_Stellar_Object,
 
    -- 2. SETS OF STARS
     Association_Of_Stars,
@@ -162,7 +170,7 @@ package Database is
     Cloud,
     Cometary_Globule_Pillar,
     HII_Region,
-    Interstellar_Medium_Object,
+    Interstellar_Medium,
     Interstellar_Shell,
     Molecular_Cloud,
     Nebula,
@@ -173,15 +181,15 @@ package Database is
     BL_Lac,
     Blazar,
     Blue_Compact_Galaxy,
-    Brightest_Galaxy_In_A_Cluster,
+    Brightest_Cluster_Galaxy,
     Emission_Line_Galaxy,
     Galaxy,
-    Galaxy_In_Pair_Of_Galaxies,
-    Galaxy_Towards_A_Cluster_Of_Galaxies,
-    Galaxy_Towards_A_Group_Of_Galaxies,
+    Galaxy_In_A_Pair,
+    Galaxy_Towards_Cluster,
+    Galaxy_Towards_Group,
     Group_Of_Galaxies,
-    Low_Surface_Brightness_Galaxy,
-    LINER_Type_Active_Galaxy_Nucleus,
+    Low_Surface_Galaxy,
+    Linear_Active_Nucleus,
     Pair_Of_Galaxies,
     Quasar,
     Radio_Galaxy,
@@ -197,11 +205,11 @@ package Database is
     -- 7. GENERAL SPECTRAL PROPERTIES
     Emission_Object,
     Radio_Source,
-    Transien_Event);
+    Transient_Event);
 
   subtype Interstellar  is Object_Type range Cloud .. Supernova_Remnant;
   subtype Galaxy_Object is Object_Type range BL_Lac .. Seyfert_2_Galaxy;
-  subtype Star_Object   is Object_Type range Alpha2_Cvn_Variable_Star .. Young_Stellar_Object_Star;
+  subtype Star_Object   is Object_Type range Alpha2_Cvn_Variable .. Young_Stellar_Object;
   subtype Stars_Object  is Object_Type range Association_Of_Stars .. Stellar_Stream;
 
   subtype Visual_Limited_Star is Star_Object with Predicate => Visual_Limited_Star /= Planetary_Nebula_Star;

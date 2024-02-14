@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2014 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2014 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -57,6 +57,8 @@ package Space is
   function Direction_Is_Known (The_Direction : Direction) return Boolean with Inline;
 
   function "-" (Left, Right : Direction) return Direction;
+
+  function Angle_Between (Left, Right : Direction) return Angle.Degrees;
 
   function Angle_Between (Left, Right  : Direction;
                           Smaller_Than : Angle.Degrees) return Boolean;

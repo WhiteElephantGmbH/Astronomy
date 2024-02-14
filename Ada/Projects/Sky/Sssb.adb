@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2013 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2013 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -19,9 +19,9 @@ with Ada.Containers.Doubly_Linked_Lists;
 with Ada.Text_IO;
 with Angle;
 with Application;
-with Data;
 with Error;
 with File;
+with Sky.Data;
 with Strings;
 with Traces;
 with Values;
@@ -139,12 +139,18 @@ package body Sssb is
 
 
   function Exists (Target : String) return Boolean is
-    Filename : constant String := Application.Composure (Filename_Of (Target), "sssb");
   begin
-    if File.Exists (Filename) then
-      Read (Target, Filename);
-      return True;
-    end if;
+    declare
+      Filename : constant String := Application.Composure (Filename_Of (Target), "sssb");
+    begin
+      if File.Exists (Filename) then
+        Read (Target, Filename);
+        return True;
+      end if;
+      return False;
+    end;
+  exception
+  when others =>
     return False;
   end Exists;
 
@@ -180,7 +186,7 @@ package body Sssb is
               Ra := The_Place.Ra;
               Dec := The_Place.Dec;
             end if;
-            Data.Apparent (Ra => Ra, Dec => Dec);
+            Sky.Data.Apparent (Ra => Ra, Dec => Dec);
             return Space.Direction_Of (Ra  => Ra,
                                        Dec => Dec);
           else

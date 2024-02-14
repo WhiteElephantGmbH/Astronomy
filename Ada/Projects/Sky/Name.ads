@@ -15,39 +15,26 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Data;
+with Ada.Containers.Doubly_Linked_Lists;
 with Earth;
+with Sky;
 with Space;
 with Time;
 
 package Name is
 
-  type Selector is (Enumerated, Caldwell, Messier);
-
   type Object_Kind is (Axis_Position, Landmark,
                        Moon, Sun, Planet, Near_Earth_Object, Small_Solar_System_Body, Sky_Object);
 
-  type Id is private;
+  type Id (Data_Id : Sky.Catalog_Id := Sky.Favorites) is private;
 
   No_Id : constant Id;
-
-  type Id_Access is access all Id;
 
   function "=" (Left, Right : Id) return Boolean;
 
   function "<" (Left, Right : Id) return Boolean;
 
-  type Id_Range is new Natural range 0 .. 10000;
-
-  subtype Id_Index is Id_Range range 1 .. Id_Range'last - 1;
-
-  type Id_Array is array (Id_Index) of aliased Id;
-
-  type Id_List is record
-    Kind : Data.Kind := Data.Kind'last;
-    Ids  : Id_Array;
-    Last : Id_Range := 0;
-  end record;
+  type Id_List (Kind : Sky.Catalog_Id := Sky.Catalog_Id'last) is private;
 
   type Id_List_Access is access all Id_List;
 
@@ -62,9 +49,14 @@ package Name is
                             Enable_Land_Marks     : Boolean;
                             Neo_Existing          : Neo_Exists_Handler := null);
 
-  procedure Define (List : Data.Kind);
+  procedure Define (List : Sky.Catalog_Id);
 
   function Actual_List return Id_List;
+
+  type Id_Access is access constant Id;
+
+  procedure For_All (In_List : in out Id_List;
+                     Handle  : access procedure (Item : in out Id));
 
   procedure Update (The_Targets : Id_List_Access;
                     Remove      : access procedure (Index : Natural);
@@ -88,17 +80,14 @@ package Name is
 
   function Image_Of (Item : Id) return String;
 
-  function Matches (Item      : Id;
-                    Number_Id : Selector;
-                    Number    : Natural) return Boolean;
-
-  function Prefix_Of (Item : Id) return String;
+  function Matches (Item   : Id;
+                    Number : Natural) return Boolean;
 
   function Kind_Of (Item : Id) return Object_Kind;
 
-  function Object_Of (Item : Id) return Data.Object;
+  function Object_Of (Item : Id) return Sky.Object;
 
-  function Type_Of (Item : Id) return Data.Object_Type;
+  function Type_Of (Item : Id) return Sky.Object_Type;
 
   function Direction_Of (Item : Id;
                          Ut   : Time.Ut) return Space.Direction;
@@ -107,19 +96,21 @@ package Name is
 
   function Direction_Of (Item : Id) return Earth.Direction;
 
-  function Magnitude_Of (Item : Id) return Float;
+  function Magnitude_Of (Item : Id) return Sky.Magnitude;
 
 private
 
-  type Element_Data;
+  type Data_Kind is (Axis_Position, Landmark, Sky_Object);
+
+  type Element_Data (Item : Data_Kind);
 
   type Element_Access is access Element_Data;
 
-  type Id (Data_Id : Data.Kind := Data.Favorites) is record
+  type Id (Data_Id : Sky.Catalog_Id := Sky.Favorites) is record
     Was_Visible : Boolean := False;
     Is_Visible  : Boolean := False;
     case Data_Id is
-    when Data.Favorites =>
+    when Sky.Favorites =>
       Element : Element_Access;
     when others =>
       Element_Number : Natural := 0;
@@ -127,5 +118,11 @@ private
   end record;
 
   No_Id : constant Id := (others => <>);
+
+  package Names is new Ada.Containers.Doubly_Linked_Lists (Id);
+
+  type Id_List (Kind : Sky.Catalog_Id := Sky.Catalog_Id'last) is record
+    Ids : Names.List;
+  end record;
 
 end Name;

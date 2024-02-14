@@ -18,7 +18,6 @@ pragma Style_White_Elephant;
 with Ada.Real_Time;
 with Application;
 with Cdk_700;
-with Data;
 with Error;
 with Gui;
 with Handbox;
@@ -31,6 +30,7 @@ with Os.Application;
 with Os.Process;
 with Parameter;
 with Remote;
+with Sky.Data;
 with Sky_Line;
 with Space;
 with Sssb;
@@ -375,7 +375,7 @@ package body Control is
               case Name.Kind_Of (The_Item) is
               when Name.Sky_Object =>
                 Telescope.Define_Space_Access (Name.Direction_Of'access, The_Item);
-                User.Show_Description (Data.Descriptor_Of (Name.Object_Of (The_Item)));
+                User.Show_Description (Sky.Data.Descriptor_Of (Name.Object_Of (The_Item)));
               when Name.Moon =>
                 Telescope.Define_Space_Access (Targets.Moon_Direction_Of'access, Name.No_Id);
               when Name.Sun =>

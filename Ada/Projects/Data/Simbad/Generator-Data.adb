@@ -17,7 +17,6 @@ pragma Style_White_Elephant;
 
 with Ada.Containers.Doubly_Linked_Lists;
 with Ada.Text_IO;
-with Ada.Unchecked_Conversion;
 with Strings;
 with Traces;
 
@@ -264,41 +263,41 @@ package body Generator.Data is
 
     -- 1. STARS
     elsif Item in "a2*" | "a2?" then
-      return Alpha2_Cvn_Variable_Star;
+      return Alpha2_Cvn_Variable;
     elsif Item in "AB*" | "AB?" then
-      return Asymptotic_Giant_Branch_Star;
+      return Asymptotic_Giant_Branch;
     elsif Item in "Be*" | "Be?" then
       return Be_Star;
     elsif Item in "bC*" | "bC?" then
-      return Beta_Cep_Variable_Star;
+      return Beta_Cep_Variable;
     elsif Item in "BS*" | "BS?" then
-      return Blue_Straggler_Star;
+      return Blue_Straggler;
     elsif Item = "BY*" then
-      return BY_Dra_Variable_Star;
+      return BY_Dra_Variable;
     elsif Item in "s*b" | "s?b" then
-      return Blue_Supergiant_Star;
+      return Blue_Supergiant;
     elsif Item in "BD*" | "BD?" then
-      return Brown_Dwarf_Star;
+      return Brown_Dwarf;
     elsif Item in "C*" | "C*?" then
       return Carbon_Star;
     elsif Item = "CV*" then
-      return Cataclysmic_Binary_Star;
+      return Cataclysmic_Binary;
     elsif Item in "Ce*" | "Ce?" then
-      return Cepheid_Variable_Star;
+      return Cepheid_Variable;
     elsif Item = "Pe*" then
-      return Chemically_Peculiar_Star;
+      return Chemically_Peculiar;
     elsif Item = "cC*" then
-      return Classical_Cepheid_Variable_Star;
+      return Classical_Cepheid;
     elsif Item = "No*" then
-      return Classical_Nova_Star;
+      return Classical_Nova;
     elsif Item = "dS*" then
-      return Delta_Sct_Variable_Star;
+      return Delta_Sct_Variable;
     elsif Item = "**" then
       return Double_Or_Multiple_Star;
     elsif Item in "EB*" | "EB?" then
       return Eclipsing_Binary_Star;
     elsif Item = "El*" then
-      return Ellipsoidal_Variable_Star;
+      return Ellipsoidal_Variable;
     elsif Item = "Em*" then
       return Emission_Line_Star;
     elsif Item = "Er*" then
@@ -312,7 +311,7 @@ package body Generator.Data is
     elsif Item in "Ae*" | "Ae?" then
       return Herbig_Ae_Be_Star;
     elsif Item = "HXB" then
-      return High_Mass_X_Ray_Binary_Star;
+      return High_Mass_X_Ray_Binary;
     elsif Item = "PM*" then
       return High_Proper_Motion_Star;
     elsif Item = "HV*" then
@@ -324,13 +323,13 @@ package body Generator.Data is
     elsif Item = "HH" then
       return Herbig_Haro_Object;
     elsif Item = "Ir*" then
-      return Irregular_Variable_Star;
+      return Irregular_Variable;
     elsif Item in "LP*" | "LP?" then
-      return Long_Period_Variable_Star;
+      return Long_Period_Variable;
     elsif Item = "LM*" then
       return Low_Mass_Star;
     elsif Item = "LXB" then
-      return Low_Mass_X_Ray_Binary_Star;
+      return Low_Mass_X_Ray_Binary;
     elsif Item in "MS*" | "MS?" then
       return Main_Sequence_Star;
     elsif Item = "Mi*" then
@@ -366,7 +365,7 @@ package body Generator.Data is
     elsif Item in "S*" | "S*?" then
       return S_Star;
     elsif Item in "SB*" | "SB?" then
-      return Spectroscopic_Binary_Star;
+      return Spectroscopic_Binary;
     elsif Item = "*" then
       return Star;
     elsif Item in "SN*" | "SN?" then
@@ -378,7 +377,7 @@ package body Generator.Data is
     elsif Item = "TT*" then
       return T_Tauri_Star;
     elsif Item = "WV*" then
-      return Type_II_Cepheid_Variable_Star;
+      return Type_II_Cepheid_Variable;
     elsif Item in "V*" | "V*?" then
       return Variable_Star;
     elsif Item = "WD*" then
@@ -390,7 +389,7 @@ package body Generator.Data is
     elsif Item in "s*y" | "s?y" then
       return Yellow_Supergiant_Star;
     elsif Item in "Y*O" | "Y*?" then
-      return Young_Stellar_Object_Star;
+      return Young_Stellar_Object;
 
   -- 2. SETS OF STARS
     elsif Item in "As*" | "As?" then
@@ -414,7 +413,7 @@ package body Generator.Data is
     elsif Item = "HII" then
       return HII_Region;
     elsif Item = "ISM" then
-      return Interstellar_Medium_Object;
+      return Interstellar_Medium;
     elsif Item = "sh" then
       return Interstellar_Shell;
     elsif Item = "MoC" then
@@ -428,7 +427,7 @@ package body Generator.Data is
 
     -- 4. GALAXIES
     elsif Item in "AGN" | "AG?" then
-      return Galaxy_Towards_A_Group_Of_Galaxies;
+      return Galaxy_Towards_Group;
     elsif Item in "BLL" | "BL?" then
       return BL_Lac;
     elsif Item in "Bla" | "Bz?" then
@@ -436,23 +435,23 @@ package body Generator.Data is
     elsif Item = "bCG" then
       return Blue_Compact_Galaxy;
     elsif Item = "BiC" then
-      return Brightest_Galaxy_In_A_Cluster;
+      return Brightest_Cluster_Galaxy;
     elsif Item = "EmG" then
       return Emission_Line_Galaxy;
     elsif Item in "G" | "G?" then
       return Galaxy;
     elsif Item = "GiP" then
-      return Galaxy_In_Pair_Of_Galaxies;
+      return Galaxy_In_A_Pair;
     elsif Item = "GiC" then
-      return Galaxy_Towards_A_Cluster_Of_Galaxies;
+      return Galaxy_Towards_Cluster;
     elsif Item = "GiG" then
-      return Galaxy_Towards_A_Group_Of_Galaxies;
+      return Galaxy_Towards_Group;
     elsif Item = "H2G" then
       return HII_Galaxy;
     elsif Item = "LSB" then
-      return Low_Surface_Brightness_Galaxy;
+      return Low_Surface_Galaxy;
     elsif Item = "LIN" then
-      return LINER_Type_Active_Galaxy_Nucleus;
+      return Linear_Active_Nucleus;
     elsif Item = "PaG" then
       return Pair_Of_Galaxies;
     elsif Item in "QSO" | "Q?"then
@@ -482,12 +481,12 @@ package body Generator.Data is
     elsif Item = "Rad" then
       return Radio_Source;
     elsif Item = "ev" then
-      return Transien_Event;
+      return Transient_Event;
 
     -- 8. BLENDS, ERRORS, NOT WELL DEFINED OBJECTS
     elsif Item in "err" | "PoC" | "PoG" | "reg" | "?" then
       Warning_And_Skip ("Otype: " & Item);
-      return Galaxy_Towards_A_Group_Of_Galaxies;
+      return Galaxy_Towards_Group;
     else
       Warning_And_Skip ("Unknown Otype " & Item);
     end if;
@@ -788,14 +787,19 @@ package body Generator.Data is
     Stype     : Database.Star_Spec_Type;
   end record;
 
-  function "=" (Left, Right : Information) return Boolean is (Left.Ids(Left.Main_Cat) = Right.Ids(Right.Main_Cat));
+
+  function "=" (Left, Right : Information) return Boolean is
+    use type Database.Degrees_Dec;
+  begin
+    return (Left.Ids(Left.Main_Cat) = Right.Ids(Right.Main_Cat) and then Left.Dec_J2000 = Right.Dec_J2000);
+  end "=";
 
 
   package Object_Data is new Ada.Containers.Doubly_Linked_Lists (Information);
 
-  use type Database.Degrees_Ra;
+  use type Database.Degrees_Dec;
 
-  function "<" (Left, Right : Information) return Boolean is (Left.Ra_J2000 < Right.Ra_J2000);
+  function "<" (Left, Right : Information) return Boolean is (Left.Dec_J2000 < Right.Dec_J2000);
 
   package Objects is new Object_Data.Generic_Sorting ("<" => "<");
 
@@ -1110,63 +1114,6 @@ package body Generator.Data is
       end Catalog_Id_Of;
 
 
-      subtype Greek_Letter is Database.Greek_Letter;
-      subtype Star_Number  is Database.Star_Number;
-      subtype Star_Index   is Database.Star_Index;
-
-      procedure Define_Star_Id_For (Id_Image : String) is
-        function Convert is new Ada.Unchecked_Conversion (Database.Star_Info, Database.Id);
-        Id_Parts : constant Strings.Item := Strings.Item_Of (Id_Image, ' ');
-        The_Info : Database.Star_Info; -- default unknown
-      begin
-        if Id_Parts.Count = 3 and then Id_Parts(1) = Star_Image then
-          declare
-            P1     : constant String := Id_Parts(2);
-            P2     : constant String := Id_Parts(3);
-            use all type Database.Star_Count_Type;
-          begin
-            if P1(P1'first) in '0' .. '9' then
-              The_Info.Kind := Numeric;
-              The_Info.Count := Star_Number'value(P1);
-            else
-              declare
-                The_Last : Natural := P1'last;
-              begin
-                for The_Index in P1'first .. P1'last loop
-                  if not (Strings.Lowercase_Of (P1(The_Index)) in 'a' .. 'z') then
-                    The_Last := The_Index - 1;
-                    exit;
-                  end if;
-                end loop;
-                if The_Last = P1'first then
-                  The_Info.Kind := Alphabetic;
-                  The_Info.Count := Star_Number(Character'pos(P1(P1'first)) - Character'pos('A'));
-                else
-                  The_Info.Kind := Greek;
-                  The_Info.Count := Star_Number(Greek_Letter'pos(Greek_Letter'value(P1(P1'first .. The_Last))));
-                end if;
-                if The_Last < P1'last then
-                  declare
-                    First : constant Positive := (if P1(The_Last + 1) = '.' then The_Last + 2 else The_Last + 1);
-                    Index : constant String := P1(First .. P1'last);
-                  begin
-                    if Index /= "" then
-                      The_Info.Index := Star_Index'value(Index);
-                    end if;
-                  end;
-                end if;
-              end;
-            end if;
-            The_Info.C_Id := Database.Constellation'value("C_" & P2);
-          exception
-          when others =>
-            Error ("Incorrect Star Id: " & Id_Image);
-          end;
-        end if;
-        The_Object.Ids(Star_Cat) := Convert (The_Info);
-      end Define_Star_Id_For;
-
-
       procedure Define_Catalogs is
         The_Id        : Id;
         Found_Catalog : Boolean := False;
@@ -1196,7 +1143,7 @@ package body Generator.Data is
             The_Main_Catalog := NC;
           end if;
         when SC =>
-          Define_Star_Id_For (Main_Id);
+          The_Object.Ids(Star_Cat) := Database.Star_Id_Of (Main_Id);
           if The_Object.Ids(Star_Cat) = Unknown_Id then
             The_Main_Catalog := NC;
           end if;
@@ -1422,11 +1369,6 @@ package body Generator.Data is
         end;
       end loop;
       Output ("  );");
-      Output;
-      Output ("  type Name_Map is record");
-      Output ("    Item   : Name;");
-      Output ("    Object : Index;");
-      Output ("  end record;");
       Output;
       Output ("  type Name_List is array (Names) of Index;");
       Output;

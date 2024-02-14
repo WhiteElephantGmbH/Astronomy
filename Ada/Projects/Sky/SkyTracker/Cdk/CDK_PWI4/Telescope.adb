@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2019 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2023 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -670,15 +670,9 @@ package body Telescope is
     -----------
     procedure Error_State is
     begin
-      case The_Event is
-      when Shutdown =>
-        Do_Disable;
-        delay 3.0;
-        Mount.Disconnect;
-        The_State := Disconnecting;
-      when others =>
-        null;
-      end case;
+      Remote.Define (Is_On_Target => False);
+      delay 3.0;
+      Gui.Close;
     end Error_State;
 
     ----------------
@@ -1196,6 +1190,8 @@ package body Telescope is
             Update_Target_Direction;
           when Waiting =>
             The_Event := Mount_Stopped;
+          when Mount_Error =>
+            Error_State;
           when others =>
             null;
           end case;

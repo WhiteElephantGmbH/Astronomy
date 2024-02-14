@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2019 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2023 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -18,7 +18,7 @@ pragma Style_White_Elephant;
 with Ada.Real_Time;
 with Application;
 with Cdk_700;
-with Data;
+with Sky.Data;
 with Error;
 with Gui;
 with Handbox;
@@ -370,7 +370,7 @@ package body Control is
               case Name.Kind_Of (The_Item) is
               when Name.Sky_Object =>
                 Telescope.Define_Space_Access (Name.Direction_Of'access, The_Item);
-                User.Show_Description (Data.Descriptor_Of (Name.Object_Of (The_Item)));
+                User.Show_Description (Sky.Data.Descriptor_Of (Name.Object_Of (The_Item)));
               when Name.Moon =>
                 Telescope.Define_Space_Access (Targets.Moon_Direction_Of'access, The_Item);
               when Name.Sun =>

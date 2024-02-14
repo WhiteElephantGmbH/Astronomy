@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2023 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2023 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,8 +15,8 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Data;
 with Discrete_Set;
+with Sky;
 
 private package Alignment.Stars is
 
@@ -85,7 +85,7 @@ private package Alignment.Stars is
 
   subtype Set is Ids.Set;
 
-  function Object_Of (The_Id : Id) return Data.Object;
+  function Object_Of (The_Id : Id) return Sky.Object;
 
   function Image_Of (The_Id : Id) return String;
 

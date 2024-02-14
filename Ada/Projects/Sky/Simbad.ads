@@ -16,27 +16,40 @@
 pragma Style_White_Elephant;
 
 with Database.Objects;
+with Sky;
 
 package Simbad is
 
-  Unknown : constant := Database.Unknown;
+  package DB renames Database;
 
-  First : constant := Database.First;
+  Unknown : constant := DB.Unknown;
 
-  subtype Number is Database.Objects.Number;
+  First : constant := DB.First;
 
-  subtype Index is Database.Objects.Index;
+  subtype Number is DB.Objects.Number;
 
-  subtype Greek_Letter is Database.Greek_Letter;
+  subtype Index is DB.Objects.Index;
 
-  subtype Constellation is Database.Constellation;
+  subtype Object_Type is DB.Object_Type;
 
-  subtype Object_Type is Database.Object_Type;
+  subtype Spectral     is Object_Type range DB.Emission_Object .. DB.Transient_Event;
+  subtype Galaxy       is Object_Type range DB.BL_Lac .. DB.Interacting_Galaxies;
 
-  subtype Interstellar is Object_Type range Database.Cloud .. Database.Supernova_Remnant;
-  subtype Galaxy       is Object_Type range Database.BL_Lac .. Database.Seyfert_2_Galaxy;
-  subtype Star         is Object_Type range Database.Alpha2_Cvn_Variable_Star .. Database.Young_Stellar_Object_Star;
-  subtype Stars        is Object_Type range Database.Association_Of_Stars .. Database.Stellar_Stream;
+  subtype Nebula is Object_Type with Static_Predicate
+    => Nebula in DB.Cloud .. DB.Supernova_Remnant | DB.Planetary_Nebula_Star;
+
+  subtype Star is Object_Type with Static_Predicate
+    => Star in DB.Alpha2_Cvn_Variable .. DB.Delta_Sct_Variable |
+               DB.Eclipsing_Binary_Star .. DB.Orion_Variable_Star |
+               DB.Post_AGB_Star .. DB.Young_Stellar_Object;
+
+  Multiple_Star : constant Object_Type := DB.Double_Or_Multiple_Star;
+
+  subtype Stars is Object_Type with Static_Predicate
+    => Stars in DB.Association_Of_Stars .. DB.Cluster_Of_Stars | DB.Open_Cluster .. DB.Stellar_Stream;
+
+  Globular_Cluster : constant Object_Type := DB.Globular_Cluster;
+
 
   subtype Parallax is Database.Parallax;
 
@@ -46,6 +59,6 @@ package Simbad is
 
   subtype Spectral_Class is Database.Star_Class;
 
-  type Magnitude is new Float;
+  subtype Magnitude is Sky.Magnitude;
 
 end Simbad;

@@ -168,9 +168,15 @@ def main():
                     elif event == rotate:
                         response = client.m3_rotate()
                     elif event == goto_field:
-                       response = client.rotator_goto_field_angle(values['angle'])
+                        position = values['angle']
+                        if position < 0:
+                            position += 360
+                        response = client.rotator_goto_field_angle(position)
                     elif event == goto_mech:
-                        response = client.rotator_goto_mech_position(values['angle'] + 180)
+                        position = values['angle']
+                        if position < 0:
+                            position += 360
+                        response = client.rotator_goto_mech_position(position)
                     elif event == goto_offset:
                         response = client.rotator_goto_offset(values['angle'])
                     else:

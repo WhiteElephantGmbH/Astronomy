@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2023 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2023 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -17,9 +17,9 @@ pragma Style_White_Elephant;
 
 with Angle;
 with Alignment.Stars;
-with Data;
 with Earth;
 with Objects;
+with Sky.Data;
 with Sky_Line;
 with Traces;
 
@@ -132,7 +132,7 @@ package body Alignment is
       for The_Star in Stars.Id loop
         if not (The_Star < Visited_Stars) then
           declare
-            Direction : constant Space.Direction := Data.Direction_Of (Stars.Object_Of(The_Star), Time.Universal);
+            Direction : constant Space.Direction := Sky.Data.Direction_Of (Stars.Object_Of(The_Star), Time.Universal);
            begin
             if Sky_Line.Is_Above (Direction, Time.Lmst, Use_Upper => True) then
               Evaluate_Quality_Of (The_Star, Direction);

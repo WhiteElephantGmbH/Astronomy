@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2012 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2012 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -16,7 +16,9 @@
 pragma Style_White_Elephant;
 
 with Angle;
+with Sky.Catalog;
 with Error;
+with Strings;
 
 package body Data is
 
@@ -31,11 +33,19 @@ package body Data is
 
   use type Object;
 
-  First_Extension : constant Object := Catalog.Last_Index + 1;
+  First_Extension : constant Object := Sky.Catalog.Number'last + 1;
 
   subtype Extension_Object is Object range First_Extension .. First_Extension + Number_Of_Extension_Objects - 1;
 
-  type Extension_Objects is array (Extension_Object) of Catalog.Information;
+  type Information is record
+    Name        : Strings.Element;
+    Descriptor  : Strings.Element;
+    Object_Kind : Object_Type;
+    Ra_J2000    : Angle.Degrees;
+    Dec_J2000   : Angle.Degrees;
+  end record;
+
+  type Extension_Objects is array (Extension_Object) of Information;
 
   The_Extension_Table : Extension_Objects;
 
@@ -73,49 +83,87 @@ package body Data is
   end Direction_Of;
 
 
-  function Table_Of (Id : Object) return Catalog.Information with Inline is
+  function Name_Of (Id : Index) return String is
+    use type Strings.Element;
   begin
-    if Id <= Catalog.Last_Index then
-      return Catalog.Data_Of (Id);
+    if Id in Sky.Catalog.Index'first .. Sky.Catalog.Index'last then
+      return Sky.Catalog.Name_Of (Sky.Catalog.Index(Id));
     else
-      return The_Extension_Table(Id);
+      return +The_Extension_Table(Id).Name;
     end if;
-  end Table_Of;
+  end Name_Of;
 
 
-  function Ra_J2000_Of (Id : Object) return REAL with Inline is
+  function Descriptor_Of (Id : Index) return String is
+    use type Strings.Element;
   begin
-    return REAL(Table_Of(Id).Ra_J2000);
+    if Id in Catalog.Object then
+      return Catalog.Descriptor_Of (Id);
+    else
+      return +The_Extension_Table(Id).Descriptor;
+    end if;
+  end Descriptor_Of;
+
+
+  function Object_Type_Of (Id : Index) return Object_Type is
+  begin
+    if Id in Catalog.Index'range then
+      return Catalog.Object_Type_Of (Id);
+    else
+      return The_Extension_Table(Id).Object_Kind;
+    end if;
+  end Object_Type_Of;
+
+
+  function Ra_J2000_Of (Id : Index) return REAL with Inline is
+  begin
+    if Id in Catalog.Index then
+      return Catalog.Ra_J2000_Of (Id);
+    else
+      return The_Extension_Table(Id).Ra_J2000;
+    end if;
   end Ra_J2000_Of;
 
 
-  function Dec_J2000_Of (Id : Object) return REAL with Inline is
+  function Dec_J2000_Of (Id : Index) return REAL with Inline is
   begin
-    return REAL(Table_Of(Id).Dec_J2000);
+    if Id in Catalog.Index then
+      return Catalog.Dec_J2000_Of (Id);
+    else
+      return The_Extension_Table(Id).Dec_J2000;
+    end if;
   end Dec_J2000_Of;
 
 
-  function Ra_Motion_Of (Id : Object) return REAL with Inline is
+  function Ra_Motion_Of (Id : Index) return REAL with Inline is
   begin
-    return REAL(Table_Of(Id).Ra_Motion);
+    if Id in Catalog.Index then
+      return Catalog.Ra_Motion_Of (Id);
+    else
+      return 0.0;
+    end if;
   end Ra_Motion_Of;
 
 
-  function Dec_Motion_Of (Id : Object) return REAL with Inline is
+  function Dec_Motion_Of (Id : Index) return REAL with Inline is
   begin
-    return REAL(Table_Of(Id).Dec_Motion);
+    if Id in Catalog.Index then
+      return Catalog.Dec_Motion_Of (Id);
+    else
+      return 0.0;
+    end if;
   end Dec_Motion_Of;
 
 
-  function Value_Of (Item : String) return Natural is
+  function Magnitude_Of (Id : Index) return Sky.Magnitude is
   begin
-    for The_Index in Item'range loop
-      if Item(The_Index) = '.' then
-        return Natural'value(Item(Item'first .. The_Index - 1));
-      end if;
-    end loop;
-    return Natural'value(Item);
-  end Value_Of;
+    if Id in Catalog.Index then
+      return Catalog.Magnitude_Of (Id);
+    else
+      return Sky.Unknown_Magnitude;
+    end if;
+  end Magnitude_Of;
+
 
 
   function Object_Of (Item     : Positive;
@@ -191,19 +239,7 @@ package body Data is
   end Next_Of;
 
 
-  function Name_Of (Id : Object) return String is
-  begin
-    return Table_Of(Id).Name.all;
-  end Name_Of;
-
-
-  function Descriptor_Of (Id : Object) return String is
-  begin
-    return Table_Of(Id).Descriptor.all;
-  end Descriptor_Of;
-
-
-  function Direction_Of (Id       : Object;
+  function Direction_Of (Id       : Index;
                          Ut       : Time.Ut;
                          Is_J2000 : Boolean := False) return Space.Direction is
   begin
@@ -216,22 +252,10 @@ package body Data is
   end Direction_Of;
 
 
-  function Magnitude_Of (Id : Object) return Float is
-  begin
-    return Float(Table_Of(Id).Vmag);
-  end Magnitude_Of;
-
-
-  function Type_Of (Id : Object) return Object_Type is
-  begin
-    return Object_Type(Table_Of(Id).Kind);
-  end Type_Of;
-
-
   function New_Object_For (Name        : String;
                            Description : String;
                            The_Type    : Object_Type := Star;
-                           Direction   : Space.Direction := Space.Unknown_Direction) return Object is
+                           Direction   : Space.Direction := Space.Unknown_Direction) return Index is
     use all type Angle.Value;
   begin
     if The_Last_Extension = The_Extension_Table'last then
@@ -240,27 +264,33 @@ package body Data is
     The_Last_Extension := The_Last_Extension + 1;
     if Space.Direction_Is_Known (Direction) then
       The_Extension_Table (The_Last_Extension) :=
-       (Name       => new String'(Name),
-        Descriptor => new String'(Description),
-        Ra_J2000   => Catalog.Degrees(Angle.Degrees'(+Space.Ra_Of (Direction))),
-        Dec_J2000  => Catalog.Degrees(Angle.Degrees'(+Space.Dec_Of (Direction))),
-        Ra_Motion  => 0.0,
-        Dec_Motion => 0.0,
-        Vmag       => 0.0,
-        Kind       => Catalog.Object_Type(The_Type));
+       (Name        => [Name],
+        Descriptor  => [Description],
+        Ra_J2000    => Angle.Degrees'(+Space.Ra_Of (Direction)),
+        Dec_J2000   => Angle.Degrees'(+Space.Dec_Of (Direction)),
+        Object_Kind => The_Type);
     else
       The_Extension_Table (The_Last_Extension) :=
-       (Name       => new String'(Name),
-        Descriptor => new String'(Description),
-        Ra_J2000   => 0.0,
-        Dec_J2000  => 0.0,
-        Ra_Motion  => 0.0,
-        Dec_Motion => 0.0,
-        Vmag       => 0.0,
-        Kind       => Catalog.Object_Type(The_Type));
+       (Name        => [Name],
+        Descriptor  => [Description],
+        Ra_J2000    => 0.0,
+        Dec_J2000   => 0.0,
+        Object_Kind => The_Type);
     end if;
     return The_Last_Extension;
   end New_Object_For;
+
+
+  function Neo_Object_Of (Name : String) return Index is
+    use type Strings.Element;
+  begin
+    for The_Index in The_First_Neo .. The_Last_Neo loop
+      if The_Extension_Table(The_Index).Name = Name then
+        return The_Index;
+      end if;
+    end loop;
+    raise Program_Error;
+  end Neo_Object_Of;
 
 
   function New_Neo_Object_For (Name        : String;
@@ -277,20 +307,9 @@ package body Data is
   end New_Neo_Object_For;
 
 
-  function Neo_Object_Of (Name : String) return Object is
+  function Neo_Index_Of (Id : Index) return Positive is
   begin
-    for The_Index in The_First_Neo .. The_Last_Neo loop
-      if The_Extension_Table(The_Index).Name.all = Name then
-        return The_Index;
-      end if;
-    end loop;
-    raise Program_Error;
-  end Neo_Object_Of;
-
-
-  function Neo_Index_Of (Id : Object) return Positive is
-  begin
-    return Natural(Id + 1 - The_First_Neo);
+    return Positive(Id + 1 - The_First_Neo);
   end Neo_Index_Of;
 
   T : constant Time.T := Time.Tut;

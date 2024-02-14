@@ -1,6 +1,17 @@
 -- *********************************************************************************************************************
 -- *                       (c) 2023 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
+-- *                                                                                                                   *
+-- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
+-- *    Public License as published by the Free Software Foundation; either version 2 of the License, or               *
+-- *    (at your option) any later version.                                                                            *
+-- *                                                                                                                   *
+-- *    This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the     *
+-- *    implied warranty of MERCHANTABILITY or FITNESS for A PARTICULAR PURPOSE. See the GNU General Public License    *
+-- *    for more details.                                                                                              *
+-- *                                                                                                                   *
+-- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
+-- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
@@ -64,6 +75,7 @@ private package PWI4.Protocol is
   function Image_Of (Item : Error_Code) return String;
 
   type Mount_Flag is record
+    Has_Error        : Boolean := False;
     Is_Connected     : Boolean;
     Is_Slewing       : Boolean;
     Is_Tracking      : Boolean;
@@ -122,6 +134,8 @@ private package PWI4.Protocol is
   end record;
 
   procedure Parse (Data : String);
+
+  procedure Set_Error (Status : Client_Error);
 
   package Mount is
 

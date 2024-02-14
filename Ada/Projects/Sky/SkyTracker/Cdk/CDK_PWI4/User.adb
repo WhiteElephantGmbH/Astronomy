@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2019 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2023 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -18,15 +18,14 @@ pragma Style_White_Elephant;
 with Ada.Real_Time;
 with Ada.Unchecked_Conversion;
 with Cwe;
-with Data;
 with Gui.Enumeration_Menu_Of;
 with Gui.Registered;
 with Lexicon;
 with Parameter;
 with Persistent;
 with Remote;
+with Sky.Catalog;
 with SkyTracker;
-with Strings;
 with Targets;
 with Traces;
 with User.Input;
@@ -87,29 +86,9 @@ package body User is
   end Set_Target_Name;
 
 
-  use all type Targets.Selection;
   subtype Selection is Targets.Selection;
 
-
-  function Image_Of (The_Selection : Selection) return String is
-
-    type Names is array (Selection) of Lexicon.Word;
-
-    Name_Of : constant Names := [All_Objects        => Lexicon.All_Objects,
-                                 Solar_System       => Lexicon.Solar_System,
-                                 Clusters           => Lexicon.Clusters,
-                                 Open_Clusters      => Lexicon.Open_Clusters,
-                                 Nebulas            => Lexicon.Nebulas,
-                                 Galaxies           => Lexicon.Galaxies,
-                                 Stars              => Lexicon.Stars,
-                                 Multiple_Stars     => Lexicon.Multiple_Stars,
-                                 Near_Earth_Objects => Lexicon.Neos];
-  begin
-    return Lexicon.Image_Of (Name_Of(The_Selection));
-  end Image_Of;
-
-  package Selection_Menu is new Gui.Enumeration_Menu_Of (Selection, Gui.Radio, Image_Of);
-
+  package Selection_Menu is new Gui.Enumeration_Menu_Of (Selection, Gui.Radio, Targets.Image_Of);
 
   procedure Selection_Handler (The_Filter : Selection) is
   begin
@@ -122,42 +101,17 @@ package body User is
   end Selection_Handler;
 
 
-  function Image_Of (The_Selection : Data.Kind) return String is
-    use all type Data.Kind;
-  begin
-    case The_Selection is
-    when Favorites =>
-      return Lexicon.Image_Of (Lexicon.Favorites);
-    when Caldwell =>
-      null;
-    when Hip =>
-      return "HIP";
-    when Hr =>
-      return "HR";
-    when Messier =>
-      null;
-    when Neo =>
-      return "NEO";
-    when Ngc =>
-      return "NGC";
-    when Ocl =>
-      return "OCl";
-    when Quasars =>
-      return Lexicon.Image_Of (Lexicon.Quasars);
-    end case;
-    return Strings.Legible_Of (The_Selection'img);
-  end Image_Of;
+  package Catalog_Menu is new Gui.Enumeration_Menu_Of (Sky.Catalog_Id, Gui.Radio, Sky.Catalog.Image_Of);
 
-  package Catalog_Menu is new Gui.Enumeration_Menu_Of (Data.Kind, Gui.Radio, Image_Of);
-
-  procedure Catalog_Handler (The_Catalog : Data.Kind) is
+  procedure Catalog_Handler (The_Catalog : Sky.Catalog_Id) is
   begin
     Log.Write ("Catalog: " & The_Catalog'img);
     Name.Define (The_Catalog);
     Signal_Action (Define_Catalog);
   exception
-  when others =>
+  when Item: others =>
     Log.Error ("Catalog_Handler");
+    Log.Termination (Item);
   end Catalog_Handler;
 
 
@@ -358,16 +312,12 @@ package body User is
       The_Status := Information.Status;
       Last_Target_Selection := The_Target_Selection;
       case The_Status is
-      when Telescope.Unknown | Telescope.Restarting =>
+      when Telescope.Unknown | Telescope.Restarting | Telescope.Mount_Error =>
         Disable_Startup_Button;
         Disable_Stop_Button;
       when Telescope.Disconnected =>
         Enable_Startup_Button;
         Disable_Shutdown_Button;
-      when Telescope.Mount_Error =>
-        Disable_Startup_Button;
-        Disable_Stop_Button;
-        Enable_Shutdown_Button;
       when Telescope.Connected | Telescope.Enabled =>
         Enable_Startup_Button;
         Enable_Shutdown_Button;
@@ -454,7 +404,7 @@ package body User is
       if Name_Id = null then
         return "";
       else
-        return Name.Prefix_Of (Name_Id.all) & Name.Image_Of (Name_Id.all);
+        return Name.Image_Of (Name_Id.all);
       end if;
     else
       raise Program_Error;
@@ -541,9 +491,9 @@ package body User is
 
     begin -- Create_Interface
       Selection_Menu.Create (Lexicon.Image_Of (Lexicon.Selection), Selection_Handler'access);
-      Targets.Set (The_Selection => All_Objects);
+      Targets.Set (The_Selection => Targets.All_Objects);
       Catalog_Menu.Create (Lexicon.Image_Of (Lexicon.Catalog), Catalog_Handler'access);
-      Catalog_Handler (Data.Favorites);
+      Catalog_Handler (Sky.Favorites);
       Cwe_Menu.Create ("CWE", Cwe_Handler'access);
       if Parameter.Remote_Configured then
         Demo_21_Menu.Create ("Demo 21", Demo_21_Handler'access);
@@ -593,7 +543,7 @@ package body User is
   procedure Define (New_Targets : Name.Id_List_Access) is
   begin
     The_Targets := New_Targets;
-    Gui.Set_Title (The_Targets_Column, Image_Of (The_Targets.Kind));
+    Gui.Set_Title (The_Targets_Column, Sky.Catalog.Image_Of (The_Targets.Kind));
     Update_Targets;
     Gui.Show (Display);
   end Define;

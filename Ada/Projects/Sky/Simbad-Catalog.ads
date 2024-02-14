@@ -23,13 +23,19 @@ package Simbad.Catalog is
 
   No_Image : exception;
 
-  type Id is (Star_Id, Name_Id, HD, HIP, HR, M, NGC, IC, Ocl);
+  type Id is (Name_Id, Star_Id, HD, HIP, HR, M, NGC, IC, Ocl);
+
+  subtype Catalog_Id is Id range Star_Id .. Id'last;
 
   function Main_Id_Of (Item : Index) return Id with Inline;
 
   function Image_Of (Item : Index) return String;
   -- returns objects main catalog image
 
+  function Number_Of (The_Catalog : Catalog_Id;
+                      The_Index   : Positive) return Number;
+
+  function Number_Of (Image : String) return Number;
 
   function Index_Of (Item : Lexicon.Word) return Number with Inline;
 
@@ -45,9 +51,15 @@ package Simbad.Catalog is
 
   function Index_Of (Item : Star_Info) return Number with Inline;
 
+  function Star_Number_Of (Item : Positive) return Number with Inline;
+
   function Has_Star_Info (Item : Index) return Boolean with Inline;
 
   function Star_Info_Of (Item : Index) return Star_Info with Inline;
+
+  function Star_Image_Of (Item : Star_Info) return String;
+
+  function Star_Of (Item : Index) return Positive;
 
   function Star_Image_Of (Item : Index) return String;
   -- exception : No_Image
@@ -136,6 +148,12 @@ package Simbad.Catalog is
   function OCL_Image_Of (Item : Index) return String;
   -- exception : No_Image
 
+  Persei_Clusters_Index  : constant HD_Index  := 14250; -- C14 between the two clusters
+  East_Veil_Nebula_Index : constant NGC_Index := 6992;  -- C33
+  Veil_Nebula_Index      : constant NGC_Index := 6960;  -- C34
+  Eskimo_Nebula_Index    : constant NGC_Index := 2392;  -- C39
+  Hubbles_Nebula_Index   : constant NGC_Index := 2261;  -- C46
+
 
   function Ra_J2000_Of (Item : Index) return Angle.Degrees with Inline;
 
@@ -156,5 +174,7 @@ package Simbad.Catalog is
   function Spec_Class_Of (Item : Number) return Spectral_Class is (Spec_Type_Of (Item).Class);
 
   function Object_Type_Of (Item : Index) return Object_Type with Inline;
+
+  function Found_For (Dec : Angle.Degrees) return Index;
 
 end Simbad.Catalog;
