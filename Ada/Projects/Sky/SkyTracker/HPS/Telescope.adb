@@ -18,7 +18,6 @@ pragma Style_White_Elephant;
 with Ada.Real_Time;
 with Camera;
 with Clock;
-with Parameter;
 with Picture;
 with Pole_Axis;
 with Remote;
@@ -304,7 +303,7 @@ package body Telescope is
     procedure Get_Information is
     begin
       if The_Information.Status = Disconnected then
-        Ten_Micron.Startup (Parameter.Ten_Micron_Ip_Address, Parameter.Ten_Micron_Port);
+        Ten_Micron.Startup;
       end if;
       The_Information := Ten_Micron.Get;
       if The_Information.Status /= Disconnected and then User.In_Setup_Mode then

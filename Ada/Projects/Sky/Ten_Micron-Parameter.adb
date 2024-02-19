@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2023 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                               (c) 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,20 +15,33 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Angle;
-with Space;
+with Section;
+with Strings;
 
-package Sun is
+package body Ten_Micron.Parameter is
 
-  function Is_Visible return Boolean;
+  Expert_Mode_Key : constant String := "Expert Mode";
+  Ip_Address_Key  : constant String := Section.Ip_Address_Key;
+  Port_Key        : constant String := Section.Port_Key;
 
-  function Is_In_Safe_Distance (To_Target : Space.Direction) return Boolean;
-  -- PRECONDITION: Is_Visible must have been called;
+  procedure Define (Handle : Configuration.File_Handle) is
+  begin
+    Section.Set (Configuration.Handle_For (Handle, Id));
+    Is_In_Expert_Mode := Strings.Is_Equal (Section.String_Value_Of (Expert_Mode_Key), "True");
+    Log.Write ("Expert Mode: " & Is_In_Expert_Mode'image);
+    The_Server_Address := Section.Ip_Address_For (Id);
+    The_Server_Port := Section.Port_For (Id);
+  end Define;
 
-private
 
-  Id : constant String := "Sun";
+  procedure Defaults (Put        : access procedure (Item : String);
+                      Ip_Address : String;
+                      Port       : String) is
+  begin
+    Put ("[" & Id & "]");
+    Put (Expert_Mode_Key & " = False");
+    Put (Ip_Address_Key & "  = " & Ip_Address);
+    Put (Port_Key & "        = " & Port);
+  end Defaults;
 
-  procedure Define (Safety_Angle : Angle.Degrees);
-
-end Sun;
+end Ten_Micron.Parameter;

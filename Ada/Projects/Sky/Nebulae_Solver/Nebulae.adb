@@ -6,6 +6,7 @@ pragma Style_White_Elephant;
 
 with Ada.Command_Line;
 with Ada.Text_IO;
+with Angle;
 with Astap;
 with Sky.Catalog;
 with File;
@@ -28,7 +29,7 @@ package body Nebulae is
 
 
   procedure Evaluate (Name           : String;
-                      Picture_Height : Astap.Degrees) is
+                      Picture_Height : Angle.Degrees) is
 
     File_Extension : constant String := "png";
 
@@ -85,7 +86,7 @@ package body Nebulae is
 
           function Corner (Corner : Astap.Location) return String is
 
-            function Image_Of (Item : Astap.Degrees) return String is
+            function Image_Of (Item : Angle.Degrees) return String is
               type Degrees is delta 10.0**(-5) range -360.0 .. 360.0;
             begin
               return Strings.Trimmed (Degrees(Item)'image);
@@ -139,7 +140,7 @@ package body Nebulae is
     Dec   : constant := Astap.Dec;
     Id    : constant Sky.Object := Sky.Catalog.Object_Of (Object_Name);
 
-    use type Astap.Degrees;
+    use type Angle.Degrees;
     use type Sky.Object;
 
   begin -- Evaluate
@@ -153,7 +154,7 @@ package body Nebulae is
     Astap.Define (Os.System.Program_Files_Folder & "astap\astap.exe");
     Astap.Solve (Filename => Filename,
                  Height   => Picture_Height,
-                 Start    => [Astap.Degrees(Sky.Catalog.Ra_J2000_Of(Id)), Astap.Degrees(Sky.Catalog.Dec_J2000_Of(Id))]);
+                 Start    => [Sky.Catalog.Ra_J2000_Of(Id), Sky.Catalog.Dec_J2000_Of(Id)]);
     for Unused in 1 .. 10 loop
       delay 1.0;
       if Astap.Solved (CRVAL, CD, Size) then
@@ -161,8 +162,8 @@ package body Nebulae is
         IO.Put_Line ("  Size RA =" & Size(Ra)'image & " - DEC =" & Size(Dec)'image);
         declare
           use type Astap.Location;
-          D_1 : constant Astap.Degrees := Astap.Degrees(Size(Ra) / 2);
-          D_2 : constant Astap.Degrees := Astap.Degrees(Size(Dec) / 2);
+          D_1 : constant Angle.Degrees := Angle.Degrees(Size(Ra) / 2);
+          D_2 : constant Angle.Degrees := Angle.Degrees(Size(Dec) / 2);
         begin
           Write_Textures (C00 => [-D_1, -D_2] * CD + CRVAL,
                           C01 => [-D_1, +D_2] * CD + CRVAL,
@@ -182,7 +183,7 @@ package body Nebulae is
 
   procedure Solve is
     Argument_Count : constant Natural := Cmd.Argument_Count;
-    Picture_Height : Astap.Degrees := 1.0; -- default
+    Picture_Height : Angle.Degrees := 1.0; -- default
   begin
     if Argument_Count = 0 then
       Error ("Filename parameter missing");
@@ -191,7 +192,7 @@ package body Nebulae is
     else
       if Argument_Count = 2 then
         begin
-          Picture_Height := Astap.Degrees'value(Cmd.Argument(2));
+          Picture_Height := Angle.Degrees'value(Cmd.Argument(2));
         exception
         when others =>
           Error ("Invalid picture height");

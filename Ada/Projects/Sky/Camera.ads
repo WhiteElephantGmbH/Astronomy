@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2023 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2023 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -17,12 +17,16 @@ pragma Style_White_Elephant;
 
 package Camera is
 
-  procedure Define (Command    : String;
-                    Parameters : String;
-                    Picture    : String);
-
   procedure Capture;
 
   procedure Stop;
+
+private
+
+  Id : constant String := "Camera";
+
+  procedure Define (Command    : String;
+                    Parameters : String;
+                    Picture    : String);
 
 end Camera;

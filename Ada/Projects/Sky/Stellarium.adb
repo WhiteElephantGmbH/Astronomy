@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2013 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2013 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -24,12 +24,9 @@ with Network.Tcp.Servers;
 with Os.Process;
 with Site;
 with Strings;
-with Traces;
 with Unsigned;
 
 package body Stellarium is
-
-  package Log is new Traces ("Stellarium");
 
   package IO renames Ada.Text_IO;
 
@@ -154,6 +151,12 @@ package body Stellarium is
       return "";
     end if;
   end Satellites_Filename;
+
+
+  function Search_Tolerance return Angle.Degrees is
+  begin
+    return The_Search_Tolerance;
+  end Search_Tolerance;
 
 
   procedure Read_Location is
@@ -409,11 +412,17 @@ package body Stellarium is
   end Message_Handler;
 
 
-  procedure Start (Used_Port : Port_Number) is
+  procedure Start is
   begin
-    Log.Write ("start - port:" & Used_Port'img);
-    Server.Start (Message_Handler'access, Used_Port);
+    Log.Write ("start - port:" & The_Port_Number'img);
+    Server.Start (Message_Handler'access, The_Port_Number);
   end Start;
+
+
+  function Port_Number return Network.Port_Number is
+  begin
+    return The_Port_Number;
+  end Port_Number;
 
 
   procedure Set (Direction : Space.Direction) is

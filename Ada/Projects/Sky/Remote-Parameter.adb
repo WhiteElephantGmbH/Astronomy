@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2023 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                               (c) 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,20 +15,33 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Angle;
-with Space;
+with Section;
 
-package Sun is
+package body Remote.Parameter is
 
-  function Is_Visible return Boolean;
+  Ip_Address_Key : constant String := Section.Ip_Address_Key;
+  Port_Key       : constant String := Section.Port_Key;
+  Telescope_Key  : constant String := "Telescope";
 
-  function Is_In_Safe_Distance (To_Target : Space.Direction) return Boolean;
-  -- PRECONDITION: Is_Visible must have been called;
 
-private
+  procedure Define (Handle : Configuration.File_Handle) is
+  begin
+    Section.Set (Configuration.Handle_For (Handle, Id));
+    The_Telescope_Name := [Section.String_Value_Of (Telescope_Key)];
+    if Configured then
+      The_Remote_Address := Section.Ip_Address_For (Id);
+      The_Remote_Port := Section.Port_For (Id);
+    end if;
+  end Define;
 
-  Id : constant String := "Sun";
 
-  procedure Define (Safety_Angle : Angle.Degrees);
+  procedure Defaults (Put       : access procedure (Item : String);
+                      Telescope : String) is
+  begin
+    Put ("[" & Id & "]");
+    Put (Telescope_Key & "  = " & Telescope);
+    Put (Ip_Address_Key & " = 217.160.64.198");
+    Put (Port_Key & "       = 5000");
+  end Defaults;
 
-end Sun;
+end Remote.Parameter;

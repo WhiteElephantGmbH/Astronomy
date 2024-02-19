@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2019 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2019 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -19,7 +19,6 @@ with Angle;
 with Device;
 with PWI2;
 with Network;
-with Space;
 
 package Parameter is
 
@@ -62,25 +61,5 @@ package Parameter is
   -----------
 
   function Lx200_Port return Network.Port_Number;
-
-  ------------
-  -- Remote --
-  ------------
-
-  function Remote_Configured return Boolean;
-
-  function Telescope_Name return String;
-
-  function Remote_Address return Network.Ip_Address;
-
-  function Remote_Port return Network.Port_Number;
-
-  ----------------
-  -- Stellarium --
-  ----------------
-
-  function Stellarium_Port return Network.Port_Number;
-
-  function Search_Tolerance return Space.Distance;
 
 end Parameter;

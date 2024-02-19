@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2022 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2022 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,43 +15,8 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Network.Udp;
-with Space;
-
 package Parameter is
 
-  type Udp_Connection is record
-    Socket  : Network.Udp.Socket;
-    Address : Network.Address;
-  end record;
-
-
   procedure Read;
-
-  --------------
-  -- 10micron --
-  --------------
-
-  function Is_Expert_Mode return Boolean;
-
-  function Ten_Micron_Ip_Address return Network.Ip_Address;
-
-  function Ten_Micron_Port return Network.Port_Number;
-
-  -----------
-  -- Clock --
-  -----------
-
-  function Clock_Configured return Boolean;
-
-  function Clock_Socket return Network.Udp.Socket;
-
-  ----------------
-  -- Stellarium --
-  ----------------
-
-  function Stellarium_Port return Network.Port_Number;
-
-  function Search_Tolerance return Space.Distance;
 
 end Parameter;

@@ -21,7 +21,6 @@ with Cwe;
 with Gui.Enumeration_Menu_Of;
 with Gui.Registered;
 with Lexicon;
-with Parameter;
 with Persistent;
 with Remote;
 with Sky.Catalog;
@@ -495,7 +494,7 @@ package body User is
       Catalog_Menu.Create (Lexicon.Image_Of (Lexicon.Catalog), Catalog_Handler'access);
       Catalog_Handler (Sky.Favorites);
       Cwe_Menu.Create ("CWE", Cwe_Handler'access);
-      if Parameter.Remote_Configured then
+      if Remote.Configured then
         Demo_21_Menu.Create ("Demo 21", Demo_21_Handler'access);
       end if;
       Define_Page;

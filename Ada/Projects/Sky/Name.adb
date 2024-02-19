@@ -549,9 +549,6 @@ package body Name is
                 The_Element.Name := [Sky.Catalog.Object_Image_Of (The_Element.Object, +The_Element.Name)];
               end;
             end if;
-          exception
-          when Item: others =>
-            Log.Termination (Item);
           end Add_Sky_Object;
 
         begin -- Store

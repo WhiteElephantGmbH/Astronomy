@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2021 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                      *
+-- *                           (c) 2021 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                      *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -32,10 +32,6 @@ package Picture is
   Maximum_Heigth : constant Angle.Degrees := 5.0;
   Maximum_Width  : constant Angle.Degrees := 5.0;
 
-  procedure Define (Name   : String;
-                    Height : Angle.Degrees;
-                    Width  : Angle.Degrees);
-
   function Filename return String;
 
   function Exists return Boolean;
@@ -62,5 +58,13 @@ package Picture is
   function Direction return Earth.Direction;
   -- PRECONDITION: The site must be defined (persistent type in package Site) or the camera must provide the location.
   -- returns the center of the picture in alt/az coordinates.
+
+private
+
+  Id : constant String := "Picture";
+
+  procedure Define (Name   : String;
+                    Height : Angle.Degrees;
+                    Width  : Angle.Degrees);
 
 end Picture;

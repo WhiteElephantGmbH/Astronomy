@@ -18,15 +18,10 @@ pragma Style_White_Elephant;
 with Ada.Calendar.Time_Zones;
 with Ten_Micron;
 with Time;
-with Network.Udp;
-with Parameter;
 with System;
-with Traces;
 with Unsigned;
 
 package body Clock is
-
-  package Log is new Traces ("Clock");
 
   Pc_Time_Tolerance : constant Duration := 1.0;
 
@@ -44,8 +39,6 @@ package body Clock is
 
 
   task body Control is
-
-    The_Socket : Network.Udp.Socket;
 
     One_Microsecond : constant := 10.0**(-6);
 
@@ -77,8 +70,8 @@ package body Clock is
       The_Data := Undefined_Data;
       Network.Udp.Send (Message     => Sentinel'address,
                         Size        => Sentinel'size / 8,
-                        Used_Socket => The_Socket);
-      The_Data := Datagram_From (The_Socket);
+                        Used_Socket => The_Udp_Socket);
+      The_Data := Datagram_From (The_Udp_Socket);
     exception
     when Network.Timeout =>
       Log.Error ("RECEIVE TIMEOUT");
@@ -88,11 +81,16 @@ package body Clock is
 
     Pc_Time_Offset : Duration;
 
+    function Udp_Configured return Boolean is
+      use type Network.Udp.Socket;
+    begin
+      return The_Udp_Socket /= Network.Udp.No_Socket;
+    end Udp_Configured;
+
     use type Time.JD;
 
   begin -- Control
     accept Start;
-    The_Socket := Parameter.Clock_Socket;
     loop
       select
         accept Finalize;
@@ -103,7 +101,7 @@ package body Clock is
             Pc_Time_Offset := Duration((Time.Julian_Date - Ten_Micron.Julian_Date) / One_Second);
             Log.Write ("GPS is synchronized - PC time offset =" & Pc_Time_Offset'image);
           else
-            if Parameter.Clock_Configured then
+            if Udp_Configured then
               declare
                 Julian_Date     : constant Time.JD := Time.Julian_Date;
                 Last_Minute     : Time.JD;
@@ -141,7 +139,7 @@ package body Clock is
         end Define_Time;
       end select;
     end loop;
-    Network.Udp.Close (The_Socket);
+    Network.Udp.Close (The_Udp_Socket);
   exception
   when Occurrence: others =>
     Log.Termination (Occurrence);
@@ -158,7 +156,9 @@ package body Clock is
 
   procedure Define_Time is
   begin
-    The_Control.Define_Time;
+    if The_Control /= null then
+      The_Control.Define_Time;
+    end if;
   end Define_Time;
 
 

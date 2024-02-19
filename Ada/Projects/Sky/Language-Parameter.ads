@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2021 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                      *
+-- *                               (c) 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,44 +15,12 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Ada.Numerics.Generic_Real_Arrays;
-with Strings;
+with Configuration;
 
-package Astap is
+package Language.Parameter is
 
-  type Degrees is new Long_Float;
+  procedure Define (Handle : Configuration.File_Handle);
 
-  package Numeric is new Ada.Numerics.Generic_Real_Arrays (Degrees);
+  procedure Defaults (Put : access procedure (Item : String));
 
-  Ra  : constant := Strings.First_Index;
-  Dec : constant := Ra + 1;
-
-  subtype Index is Integer range Ra .. Dec;
-
-  subtype Location is Numeric.Real_Vector (Index);
-
-  subtype Matrix is Numeric.Real_Matrix (Index, Index);
-
-  type Pixels is array (Index) of Positive;
-
-  Not_Solved : exception;
-
-  procedure Define (Executable : String);
-
-  procedure Solve (Filename : String;
-                   Height   : Degrees;
-                   Start    : Location);
-  -- exception: Not_Solved 
-
-  function Solved (The_Ra  : out Degrees;
-                   The_Dec : out Degrees) return Boolean;
-  -- exception: Not_Solved if no sulution found
-
-  function Solved (CRVAL : out Location;
-                   CD    : out Matrix;
-                   Size  : out Pixels) return Boolean;
-  -- exception: Not_Solved if no sulution found
-
-  procedure Stop;
-
-end Astap;
+end Language.Parameter;

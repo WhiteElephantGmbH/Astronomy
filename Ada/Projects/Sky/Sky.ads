@@ -15,13 +15,19 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with Database;
+
 package Sky is
 
   type Catalog_Id is (Favorites, Caldwell, Name, Star, Hd, Hip, Hr, Messier, Ngc, Ic, Ocl, Quasars, Neo);
 
   subtype Catalogs is Catalog_Id range Caldwell .. Quasars;
 
+  subtype Constellation is Database.Constellation;
+
   subtype Extended_Catalogs is Catalog_Id range Caldwell .. Neo;
+
+  subtype Greek_Letter is Database.Greek_Letter;
 
   subtype Simbad_Catalog is Catalog_Id range Star .. Ocl;
 

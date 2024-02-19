@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2021 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2021 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -19,7 +19,6 @@ with AWS.Client;
 with AWS.Response;
 with Key;
 with Persistent_String;
-with Strings;
 with Traces;
 
 package body Remote is
@@ -47,9 +46,7 @@ package body Remote is
 
   task type Handler is
 
-    entry Start (Telescope_Name : String;
-                 Ip_Address     : Network.Ip_Address;
-                 Port           : Network.Port_Number);
+    entry Start;
 
     entry Execute (The_Command : Command);
 
@@ -63,13 +60,24 @@ package body Remote is
   The_Handler : access Handler;
 
 
-  procedure Start (Telescope_Name : String;
-                   Ip_Address     : Network.Ip_Address;
-                   Port           : Network.Port_Number) is
+  function Telescope_Name return String is
+    use type Strings.Element;
+  begin
+    return +The_Telescope_Name;
+  end Telescope_Name;
+
+
+  function Configured return Boolean is
+  begin
+    return not (Strings.Is_Equal (Telescope_Name, "none") or Telescope_Name = "");
+  end Configured;
+
+
+  procedure Start is
   begin
     Log.Write ("start");
     The_Handler := new Handler;
-    The_Handler.Start (Telescope_Name, Ip_Address, Port);
+    The_Handler.Start;
   end Start;
 
 
@@ -135,15 +143,10 @@ package body Remote is
 
   task body Handler is
 
-     The_Telescope_Name : Strings.Element;
-     The_Remote_Address : Network.Ip_Address;
-     The_Remote_Port    : Network.Port_Number;
-
-     use type Strings.Element;
+    use type Strings.Element;
 
     procedure Send (Info : String) is
 
-      Telescope_Name : constant String := +The_Telescope_Name;
       Remote_Address : constant String := Network.Image_Of (The_Remote_Address);
       Remote_Port    : constant String := Network.Image_Of (The_Remote_Port);
       Parameters     : constant String := "?tele=" & Telescope_Name & "&" & Info;
@@ -205,14 +208,7 @@ package body Remote is
     end Send_Actual;
 
   begin -- Handler
-    accept Start (Telescope_Name : String;
-                  Ip_Address     : Network.Ip_Address;
-                  Port           : Network.Port_Number)
-    do
-      The_Telescope_Name := [Telescope_Name];
-      The_Remote_Address := Ip_Address;
-      The_Remote_Port := Port;
-    end Start;
+    accept Start;
     Log.Write ("started");
     loop
       select

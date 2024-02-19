@@ -22,7 +22,6 @@ with Gui;
 with Horizon;
 with Name;
 with Neo;
-with Network.Tcp;
 with Os.Application;
 with Os.Process;
 with Parameter;
@@ -94,7 +93,7 @@ package body Control is
     The_Target : Name.Id;
     use type Name.Id;
   begin
-    Targets.Get_For (The_Direction, Parameter.Search_Tolerance, The_Target);
+    Targets.Get_For (The_Direction, Stellarium.Search_Tolerance, The_Target);
     if The_Target = Name.No_Id then
       if not Sun.Is_Visible or else Sun.Is_In_Safe_Distance (To_Target => The_Direction) then
         Action_Handler.Put_Goto (The_Direction);
@@ -457,13 +456,12 @@ package body Control is
     end Termination;
 
     function Started_Stellarium_Server return Boolean is
-      Used_Port : constant Network.Port_Number := Parameter.Stellarium_Port;
     begin
-      Stellarium.Start (Used_Port);
+      Stellarium.Start;
       return True;
     exception
-    when Network.Tcp.Port_In_Use =>
-      User.Show_Error ("TCP port" & Used_Port'img & " for Stellarium in use");
+    when Stellarium.Port_In_Use =>
+      User.Show_Error ("TCP port" & Stellarium.Port_Number'img & " for Stellarium in use");
       return False;
     when others =>
       User.Show_Error ("could not start stellarium server");

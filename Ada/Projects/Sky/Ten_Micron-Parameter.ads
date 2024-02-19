@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2023 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                               (c) 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,11 +15,14 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-package body Clock is
+with Configuration;
 
-  procedure Define_Time is
-  begin
-    null; -- no implementation
-  end Define_Time;
+package Ten_Micron.Parameter is
 
-end Clock;
+  procedure Define (Handle : Configuration.File_Handle);
+
+  procedure Defaults (Put        : access procedure (Item : String);
+                      Ip_Address : String;
+                      Port       : String);
+
+end Ten_Micron.Parameter;

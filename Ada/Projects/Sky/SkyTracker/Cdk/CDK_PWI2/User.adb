@@ -1046,7 +1046,7 @@ package body User is
       M3_Menu.Create (Lexicon.Image_Of (Lexicon.Optic), M3_Handler'access);
       Menu_Disable;
       Cwe_Menu.Create ("CWE", Cwe_Handler'access);
-      if Parameter.Remote_Configured then
+      if Remote.Configured then
         Demo_21_Menu.Create ("Demo 21", Demo_21_Handler'access);
       end if;
       Define_Control_Page;

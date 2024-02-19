@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2023 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                               (c) 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,20 +15,12 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Angle;
-with Space;
+with Configuration;
 
-package Sun is
+package Camera.Parameter is
 
-  function Is_Visible return Boolean;
+  procedure Define (Handle : Configuration.File_Handle);
 
-  function Is_In_Safe_Distance (To_Target : Space.Direction) return Boolean;
-  -- PRECONDITION: Is_Visible must have been called;
+  procedure Defaults (Put : access procedure (Item : String));
 
-private
-
-  Id : constant String := "Sun";
-
-  procedure Define (Safety_Angle : Angle.Degrees);
-
-end Sun;
+end Camera.Parameter;

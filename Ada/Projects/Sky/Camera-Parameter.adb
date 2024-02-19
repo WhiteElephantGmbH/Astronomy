@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2023 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                               (c) 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,20 +15,36 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Angle;
-with Space;
+with Os.System;
+with Picture;
+with Section;
 
-package Sun is
+package body Camera.Parameter is
 
-  function Is_Visible return Boolean;
+  Command_Key    : constant String := "Command";
+  Parameters_Key : constant String := "Parameters";
 
-  function Is_In_Safe_Distance (To_Target : Space.Direction) return Boolean;
-  -- PRECONDITION: Is_Visible must have been called;
 
-private
+  procedure Define (Handle : Configuration.File_Handle) is
+  begin
+    Section.Set (Configuration.Handle_For (Handle, Id));
+    declare
+      Command : constant String := Section.String_Value_Of (Command_Key);
+    begin
+      if Command /= "" then
+        Define (Command    => Section.Filename_Of (Command_Key, Id),
+                Parameters => Section.String_Of (Parameters_Key, Id),
+                Picture    => Picture.Filename);
+      end if;
+    end;
+  end Define;
 
-  Id : constant String := "Sun";
 
-  procedure Define (Safety_Angle : Angle.Degrees);
+  procedure Defaults (Put : access procedure (Item : String)) is
+  begin
+    Put ("[" & Id & "]");
+    Put (Command_Key & "    = " & Os.System.Program_Files_X86_Folder & "digiCamControl\CameraControlCmd.exe");
+    Put (Parameters_Key & " = " & "/capturenoaf /filename %picture% /iso 6400 /shutter 10");
+  end Defaults;
 
-end Sun;
+end Camera.Parameter;

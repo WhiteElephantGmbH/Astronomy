@@ -352,11 +352,27 @@ package body Simbad.Catalog is
       end case;
     end Number_Image_Of;
 
+
     function Constellation_Image_Of (C_Id : Database.Constellation) return String is
       Image : constant String := C_Id'image;
+      use all type Database.Constellation;
     begin
-      return Strings.Legible_Of (Image(Image'first + 1 ..Image'last));
+      case C_Id is
+      when C_Cvn => return "CVn";
+      when C_Cma => return "CMa";
+      when C_Cmi => return "CMi";
+      when C_Cra => return "CrA";
+      when C_Crb => return "CrB";
+      when C_Lmi => return "LMi";
+      when C_Psa => return "PsA";
+      when C_Tra => return "TrA";
+      when C_Uma => return "UMa";
+      when C_Umi => return "UMi";
+      when others =>
+        return Strings.Legible_Of (Image(Image'first + 1 ..Image'last));
+      end case;
     end Constellation_Image_Of;
+
 
     function Index_Image_Of (The_Index : Database.Star_Index) return String is
       use type Database.Star_Index;

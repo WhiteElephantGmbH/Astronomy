@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2021 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2021 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -16,12 +16,13 @@
 pragma Style_White_Elephant;
 
 with Network;
+with Strings;
 
 package Remote is
 
-  procedure Start (Telescope_Name : String;
-                   Ip_Address     : Network.Ip_Address;
-                   Port           : Network.Port_Number);
+  function Configured return Boolean;
+
+  procedure Start;
 
   procedure Define (Target : String);
 
@@ -32,5 +33,13 @@ package Remote is
   procedure Execute (The_Command : Command);
 
   procedure Close;
+
+private
+
+  Id : constant String := "Remote";
+
+  The_Telescope_Name : Strings.Element;
+  The_Remote_Address : Network.Ip_Address;
+  The_Remote_Port    : Network.Port_Number;
 
 end Remote;

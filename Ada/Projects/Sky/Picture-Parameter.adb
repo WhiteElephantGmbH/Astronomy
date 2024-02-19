@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2023 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                               (c) 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,20 +15,50 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Angle;
-with Space;
+with Os.System;
+with Section;
 
-package Sun is
+package body Picture.Parameter is
 
-  function Is_Visible return Boolean;
+  Astap_Key      : constant String := "ASTAP";
+  Filename_Key   : constant String := "Filename";
+  Height_Key     : constant String := "Height";
+  Width_Key      : constant String := "Width";
 
-  function Is_In_Safe_Distance (To_Target : Space.Direction) return Boolean;
-  -- PRECONDITION: Is_Visible must have been called;
 
-private
+  procedure Define (Handle : Configuration.File_Handle) is
+  begin
+    Section.Set (Configuration.Handle_For (Handle, Id));
+    Astap.Define (Executable => Section.Filename_Of (Astap_Key));
+    declare
+      Picture_Filename : constant String := Section.String_Of (Filename_Key);
+    begin
+      Define (Name   => Picture_Filename,
+              Height => Section.Degrees_Of (Height_Key, Maximum_Heigth),
+              Width  => Section.Degrees_Of (Width_Key, Maximum_Width));
+    end;
+  end Define;
 
-  Id : constant String := "Sun";
 
-  procedure Define (Safety_Angle : Angle.Degrees);
+  function Default_Astap_Executable return String is
+  begin
+    return Os.System.Program_Files_Folder & "astap\astap.exe";
+  end Default_Astap_Executable;
 
-end Sun;
+
+  function Default_Picture_Filename return String is
+  begin
+    return "D:\Picture\Image.CR2";
+  end Default_Picture_Filename;
+
+
+  procedure Defaults (Put : access procedure (Item : String)) is
+  begin
+    Put ("[" & Id & "]");
+    Put (Astap_Key & "    = " & Default_Astap_Executable);
+    Put (Filename_Key & " = " & Default_Picture_Filename);
+    Put (Height_Key & "   = 0.51" & Angle.Degree);
+    Put (Width_Key & "    = 0.74" & Angle.Degree);
+  end Defaults;
+
+end Picture.Parameter;

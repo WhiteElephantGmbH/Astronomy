@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2023 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                           (c) 2021 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                      *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,20 +15,43 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with Ada.Numerics.Generic_Real_Arrays;
 with Angle;
-with Space;
+with Strings;
 
-package Sun is
+package Astap is
 
-  function Is_Visible return Boolean;
+  package Numeric is new Ada.Numerics.Generic_Real_Arrays (Angle.Degrees);
 
-  function Is_In_Safe_Distance (To_Target : Space.Direction) return Boolean;
-  -- PRECONDITION: Is_Visible must have been called;
+  Ra  : constant := Strings.First_Index;
+  Dec : constant := Ra + 1;
 
-private
+  subtype Index is Integer range Ra .. Dec;
 
-  Id : constant String := "Sun";
+  subtype Location is Numeric.Real_Vector (Index);
 
-  procedure Define (Safety_Angle : Angle.Degrees);
+  subtype Matrix is Numeric.Real_Matrix (Index, Index);
 
-end Sun;
+  type Pixels is array (Index) of Positive;
+
+  Not_Solved : exception;
+
+  procedure Define (Executable : String);
+
+  procedure Solve (Filename : String;
+                   Height   : Angle.Degrees;
+                   Start    : Location);
+  -- exception: Not_Solved 
+
+  function Solved (The_Ra  : out Angle.Degrees;
+                   The_Dec : out Angle.Degrees) return Boolean;
+  -- exception: Not_Solved if no sulution found
+
+  function Solved (CRVAL : out Location;
+                   CD    : out Matrix;
+                   Size  : out Pixels) return Boolean;
+  -- exception: Not_Solved if no sulution found
+
+  procedure Stop;
+
+end Astap;

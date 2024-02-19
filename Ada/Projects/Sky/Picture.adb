@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2021 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                      *
+-- *                           (c) 2021 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                      *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -24,7 +24,7 @@ with Traces;
 
 package body Picture is
 
-  package Log is new Traces ("Picture");
+  package Log is new Traces (Id);
 
   The_Filename : Strings.Element;
   The_Height   : Angle.Degrees;
@@ -165,7 +165,7 @@ package body Picture is
 
   function Solve (Search_From : Space.Direction) return Boolean is
 
-    Actual_Height : Astap.Degrees;
+    Actual_Height : Angle.Degrees;
 
     use type Angle.Value;
     use type Angle.Degrees;
@@ -181,14 +181,14 @@ package body Picture is
       Log.Error ("Image size undefined");
       raise Not_Solved;
     elsif Exif.Image_Height < Exif.Image_Width then
-      Actual_Height := Astap.Degrees(The_Height);
+      Actual_Height := The_Height;
     else
-      Actual_Height := Astap.Degrees(The_Width);
+      Actual_Height := The_Width;
     end if;
     Astap.Solve (Filename => Filename,
                  Height   => Actual_Height,
-                 Start    => [Astap.Degrees(Angle.Degrees'(+Space.Ra_Of (Search_From))),
-                              Astap.Degrees(Angle.Degrees'(+Space.Dec_Of (Search_From)))]);
+                 Start    => [Angle.Degrees'(+Space.Ra_Of (Search_From)),
+                              Angle.Degrees'(+Space.Dec_Of (Search_From))]);
     Is_Solving := True;
     return True;
   exception
@@ -200,8 +200,8 @@ package body Picture is
   end Solve;
 
 
-  The_Ra    : Astap.Degrees;
-  The_Dec   : Astap.Degrees;
+  The_Ra    : Angle.Degrees;
+  The_Dec   : Angle.Degrees;
   Is_Solved : Boolean := False;
 
   function Solved return Boolean is
@@ -283,8 +283,8 @@ package body Picture is
     if not Solved then
       raise Undefined_Value;
     end if;
-    return Space.Direction_Of (Ra  => Angle.Degrees(The_Ra),
-                               Dec => Angle.Degrees(The_Dec));
+    return Space.Direction_Of (Ra  => The_Ra,
+                               Dec => The_Dec);
   end Direction;
 
 

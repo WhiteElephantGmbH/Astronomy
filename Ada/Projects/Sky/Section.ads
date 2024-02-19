@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2023 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                           (c) 2024 by White Elephant GmbH, Schaffhausen, Switzerland                              *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,20 +15,52 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with Ada.Containers.Doubly_Linked_Lists;
 with Angle;
-with Space;
+with Configuration;
+with Earth;
+with Network;
 
-package Sun is
+package Section is
 
-  function Is_Visible return Boolean;
+  use type Angle.Value;
 
-  function Is_In_Safe_Distance (To_Target : Space.Direction) return Boolean;
-  -- PRECONDITION: Is_Visible must have been called;
+  package Angles is new Ada.Containers.Doubly_Linked_Lists (Angle.Value);
 
-private
+  Ip_Address_Key  : constant String := "IP Address";
+  Port_Key        : constant String := "Port";
 
-  Id : constant String := "Sun";
+  procedure Set (Handle : Configuration.Section_Handle);
 
-  procedure Define (Safety_Angle : Angle.Degrees);
+  function Angles_Of (Key     : String;
+                      Maximum : Natural; -- in degrees
+                      Unit    : String := "") return Angles.List;
 
-end Sun;
+  function Degrees_Of (Key     : String;
+                       Maximum : Angle.Degrees) return Angle.Degrees;
+
+  function Direction_Of (Key : String) return Earth.Direction;
+
+  function Duration_Of (Key         : String;
+                        Lower_Limit : Duration := 0.0;
+                        Upper_Limit : Duration) return Duration;
+
+  function Filename_Of (Key  : String;
+                        Name : String := "") return String;
+
+  function Image_Of (Item : String;
+                     Unit : String := "") return String;
+
+  function Ip_Address_For (Name : String) return Network.Ip_Address;
+
+  function Port_For (Name : String) return Network.Port_Number;
+
+  function String_Of (Key  : String;
+                      Name : String := "") return String;
+
+  function String_Value_Of (Key : String) return String;
+
+  function Value_Of (Key  : String;
+                     Name : String := "") return Integer;
+
+end Section;

@@ -89,7 +89,7 @@ package body Control is
     The_Target : Name.Id;
     use type Name.Id;
   begin
-    Targets.Get_For (The_Direction, Parameter.Search_Tolerance, The_Target);
+    Targets.Get_For (The_Direction, Stellarium.Search_Tolerance, The_Target);
     if The_Target = Name.No_Id then
       Action_Handler.Put_Goto (The_Direction);
     else
@@ -454,12 +454,11 @@ package body Control is
     end Termination;
 
     procedure Start_Stellarium_Server is
-      Used_Port : constant Network.Port_Number := Parameter.Stellarium_Port;
     begin
-      Stellarium.Start (Used_Port);
+      Stellarium.Start;
     exception
     when Network.Tcp.Port_In_Use =>
-      Error.Raise_With (Application.Name & " - TCP port" & Used_Port'img & " for Stellarium in use");
+      Error.Raise_With (Application.Name & " - TCP port" & Stellarium.Port_Number'img & " for Stellarium in use");
     when others =>
       Error.Raise_With (Application.Name & " - could not start stellarium server");
     end Start_Stellarium_Server;

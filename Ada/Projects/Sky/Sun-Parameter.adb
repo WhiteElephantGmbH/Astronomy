@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2023 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                               (c) 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,20 +15,24 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Angle;
-with Space;
+with Section;
 
-package Sun is
+package body Sun.Parameter is
 
-  function Is_Visible return Boolean;
+  Safety_Angle_Key : constant String := "Safety Angle";
 
-  function Is_In_Safe_Distance (To_Target : Space.Direction) return Boolean;
-  -- PRECONDITION: Is_Visible must have been called;
 
-private
+  procedure Define (Handle : Configuration.File_Handle) is
+  begin
+    Section.Set (Configuration.Handle_For (Handle, Id));
+    Define (Section.Degrees_Of (Safety_Angle_Key, Maximum => 180.0));
+  end Define;
 
-  Id : constant String := "Sun";
 
-  procedure Define (Safety_Angle : Angle.Degrees);
+  procedure Defaults (Put : access procedure (Item : String)) is
+  begin
+    Put ("[" & Id & "]");
+    Put (Safety_Angle_Key & " = 30" & Angle.Degree);
+  end Defaults;
 
-end Sun;
+end Sun.Parameter;

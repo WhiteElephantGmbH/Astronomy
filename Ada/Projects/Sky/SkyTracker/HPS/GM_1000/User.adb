@@ -27,7 +27,6 @@ with Lexicon;
 with Lx200;
 with Objects;
 with Os;
-with Parameter;
 with Persistent;
 with Pole_Axis;
 with Refraction;
@@ -37,6 +36,7 @@ with SkyTracker;
 with Space;
 with Strings;
 with Targets;
+with Ten_Micron;
 with Time;
 with Traces;
 
@@ -1018,7 +1018,7 @@ package body User is
       Catalog_Menu.Create (Lexicon.Image_Of (Lexicon.Catalog), Catalog_Handler'access);
       Catalog_Handler (Sky.Favorites);
       Define_Control_Page;
-      Is_Expert_Mode := Parameter.Is_Expert_Mode;
+      Is_Expert_Mode := Ten_Micron.Is_Expert_Mode;
       if Is_Expert_Mode then
         Define_Display_Page;
         Define_Setup_Page;

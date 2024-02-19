@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2023 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                               (c) 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,20 +15,45 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Angle;
-with Space;
+with Error;
+with Section;
 
-package Sun is
+package body Clock.Parameter is
 
-  function Is_Visible return Boolean;
+  Ip_Address_Key : constant String := Section.Ip_Address_Key;
+  Port_Key       : constant String := Section.Port_Key;
 
-  function Is_In_Safe_Distance (To_Target : Space.Direction) return Boolean;
-  -- PRECONDITION: Is_Visible must have been called;
 
-private
+  procedure Connect_Clock is
 
-  Id : constant String := "Sun";
+    Name_Or_Address  : constant String := Section.String_Value_Of (Ip_Address_Key);
+    Datagram_Timeout : constant Duration := 0.3;
 
-  procedure Define (Safety_Angle : Angle.Degrees);
+  begin
+    if Name_Or_Address /= "" then
+      The_Udp_Socket := Network.Udp.Socket_For (Name_Or_Address => Name_Or_Address,
+                                                Port            => Section.Port_For (Id),
+                                                Receive_Timeout => Datagram_Timeout);
+      Log.Write ("Clock connected to " & Name_Or_Address);
+    end if;
+  exception
+  when Network.Not_Found =>
+    Error.Raise_With ("Clock not connected to " & Name_Or_Address);
+  end Connect_Clock;
 
-end Sun;
+
+  procedure Define (Handle : Configuration.File_Handle) is
+  begin
+    Section.Set (Configuration.Handle_For (Handle, Id));
+    Connect_Clock;
+  end Define;
+
+
+  procedure Defaults (Put : access procedure (Item : String)) is
+  begin
+    Put ("[" & Id & "]");
+    Put (Ip_Address_Key & " = 169.254.42.43");
+    Put (Port_Key & "       = 44422");
+  end Defaults;
+
+end Clock.Parameter;

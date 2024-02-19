@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2021 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                      *
+-- *                           (c) 2021 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                      *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -79,16 +79,18 @@ package body Astap is
 
 
   procedure Solve (Filename : String;
-                   Height   : Degrees;
+                   Height   : Angle.Degrees;
                    Start    : Location) is
 
     Directory : constant String := File.Containing_Directory_Of (Filename);
     Base_Name : constant String := File.Base_Name_Of (Filename);
     Name      : constant String := Directory & File.Folder_Separator & Base_Name; -- without extension
 
+    use type Angle.Degrees;
+
     function Ra_Image return String is
       type Ra_Value is delta 0.001 range 0.0 .. 24.0;
-      Value : constant Degrees := Start(Ra) / 15.0;
+      Value : constant Angle.Degrees := Start(Ra) / 15.0;
     begin
       return Ra_Value(Value)'img;
     end Ra_Image;
@@ -96,7 +98,7 @@ package body Astap is
     type Value is delta 0.01 range 0.0 .. 360.0;
 
     function Spd_Image return String is
-      Spd : Degrees := Start(Dec) + 90.0;
+      Spd : Angle.Degrees := Start(Dec) + 90.0;
     begin
       if Spd > 360.0 then
         Spd := Spd - 360.0;
@@ -135,8 +137,8 @@ package body Astap is
   end Solve;
 
 
-  function Solved (The_Ra  : out Degrees;
-                   The_Dec : out Degrees) return Boolean is
+  function Solved (The_Ra  : out Angle.Degrees;
+                   The_Dec : out Angle.Degrees) return Boolean is
     CRVAL : Location;
     Unused_CD : Matrix;
     Unused_Size : Pixels;
@@ -174,8 +176,9 @@ package body Astap is
       if Warning /= "" then
         Log.Warning (Warning);
       end if;
-      CRVAL := [Degrees'value(CRVAL1), Degrees'value(CRVAL2)];
-      CD := [[Degrees'value(CD1_1), Degrees'value(CD1_2)], [Degrees'value(CD2_1), Degrees'value(CD2_2)]];
+      CRVAL := [Angle.Degrees'value(CRVAL1), Angle.Degrees'value(CRVAL2)];
+      CD := [[Angle.Degrees'value(CD1_1), Angle.Degrees'value(CD1_2)],
+             [Angle.Degrees'value(CD2_1), Angle.Degrees'value(CD2_2)]];
       declare
         Dimension_Images : constant Strings.Item := Strings.Item_Of (Dimensions, Separator => 'x');
       begin

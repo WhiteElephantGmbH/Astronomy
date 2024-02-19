@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2013 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2013 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -17,12 +17,11 @@ pragma Style_White_Elephant;
 
 with Angle;
 with Language;
-with Network;
+with Network.Tcp;
 with Space;
+with Traces;
 
 package Stellarium is
-
-  subtype Port_Number is Network.Port_Number;
 
   type Magnitude is delta 0.1 range -30.0 .. 30.0;
 
@@ -49,12 +48,29 @@ package Stellarium is
 
   function Satellites_Filename return String;
 
-  procedure Start (Used_Port : Port_Number);
+  function Search_Tolerance return Angle.Degrees;
+
+  procedure Start;
+  Port_In_Use : exception renames Network.Tcp.Port_In_Use;
+
+  function Port_Number return Network.Port_Number;
 
   procedure Define_Handler (The_Handler : Goto_Handler);
 
   procedure Set (Direction : Space.Direction);
 
   procedure Close;
+
+private
+
+  Id : constant String := "Stellarium";
+
+  package Log is new Traces (Id);
+
+  The_Port_Number : Network.Port_Number;
+
+  The_Search_Tolerance : Angle.Degrees;
+
+  Has_Satellites : Boolean := False;
 
 end Stellarium;

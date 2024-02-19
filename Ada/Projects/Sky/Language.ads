@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2017 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2017 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -19,8 +19,12 @@ package Language is
 
   type Kind is (English, French, German, Greek, Italian, Spanish);
 
-  procedure Define (The_Kind : Kind);
-
   function Actual return Kind;
+
+private
+
+  Id : constant String := "Language";
+
+  procedure Define (The_Kind : Kind);
 
 end Language;

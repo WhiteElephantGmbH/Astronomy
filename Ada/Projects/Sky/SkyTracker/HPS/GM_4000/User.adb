@@ -27,7 +27,6 @@ with Lexicon;
 with Lx200;
 with Objects;
 with Os;
-with Parameter;
 with Persistent;
 with Pole_Axis;
 with Refraction;
@@ -38,6 +37,7 @@ with SkyTracker;
 with Space;
 with Strings;
 with Targets;
+with Ten_Micron;
 with Time;
 with Traces;
 
@@ -1041,11 +1041,11 @@ package body User is
       Targets.Set (The_Selection => Targets.All_Objects);
       Catalog_Menu.Create (Lexicon.Image_Of (Lexicon.Catalog), Catalog_Handler'access);
       Catalog_Handler (Sky.Favorites);
-      if Parameter.Remote_Configured then
+      if Remote.Configured then
         Demo_21_Menu.Create ("Demo 21", Demo_21_Handler'access);
       end if;
       Define_Control_Page;
-      Is_Expert_Mode := Parameter.Is_Expert_Mode;
+      Is_Expert_Mode := Ten_Micron.Is_Expert_Mode;
       if Is_Expert_Mode then
         Define_Display_Page;
         Define_Setup_Page;

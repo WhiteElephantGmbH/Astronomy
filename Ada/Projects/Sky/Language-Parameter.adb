@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2023 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                               (c) 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,20 +15,40 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Angle;
-with Space;
+with Error;
+with Section;
+with Stellarium;
+with Strings;
 
-package Sun is
+package body Language.Parameter is
 
-  function Is_Visible return Boolean;
+  Localization_Id : constant String := "Localization";
+  Language_Key    : constant String := Id;
 
-  function Is_In_Safe_Distance (To_Target : Space.Direction) return Boolean;
-  -- PRECONDITION: Is_Visible must have been called;
 
-private
+  procedure Define (Handle : Configuration.File_Handle) is
+  begin
+    Section.Set (Configuration.Handle_For (Handle, Localization_Id));
+    declare
+      Image : constant String := Section.String_Value_Of (Language_Key);
+    begin
+      if Image = "" then
+        Error.Raise_With ("No language defined");
+      end if;
+      begin
+        Define (Kind'value(Image));
+      exception
+      when others =>
+        Error.Raise_With ("Incorrect " & Language_Key & ": <" & Image & ">");
+      end;
+    end;
+  end Define;
 
-  Id : constant String := "Sun";
 
-  procedure Define (Safety_Angle : Angle.Degrees);
+  procedure Defaults (Put : access procedure (Item : String)) is
+  begin
+    Put (Strings.Bom_8 & "[" & Localization_Id & "]");
+    Put (Language_Key & " = " & Strings.Legible_Of (Stellarium.Language'img));
+  end Defaults;
 
-end Sun;
+end Language.Parameter;

@@ -60,7 +60,7 @@ package body Star is
     Target.Set (Ut);
     The_Stars.Clear;
     for The_Id in Id loop
-      if Simbad.Catalog.Object_Type_Of (The_Id) in Simbad.Star then
+      if Simbad.Catalog.Object_Type_Of (The_Id) in Simbad.Star | Simbad.Multiple_Star then
         The_Direction := Objects.Direction_Of (Target.Direction_Of (The_Id), Time.Lmst_Of (Ut));
         if not Earth.Is_Below_Horizon (The_Direction) then
           The_Stars.Append ((Ident => The_Id,

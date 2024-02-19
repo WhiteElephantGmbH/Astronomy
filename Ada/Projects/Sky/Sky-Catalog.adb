@@ -16,7 +16,6 @@
 pragma Style_White_Elephant;
 
 with Ada.Containers.Ordered_Maps;
-with Lexicon;
 with Simbad.Catalog;
 with Strings;
 with Traces;
@@ -368,6 +367,23 @@ package body Sky.Catalog is
       return "3C " & Id_And_Name;
     end case;
   end Name_Of;
+
+
+  function Object_Of (Item : Lexicon.Word) return Object is
+  begin
+    return Object(Simbad.Catalog.Index_Of (Item));
+  end Object_Of;
+
+
+  function Object_Of (Letter : Greek_Letter;
+                      Const  : Constellation) return Object is
+    use all type Database.Star_Count_Type;
+  begin
+    return Object(SC.Index_Of (SC.Star_Info'(Kind  => Greek,
+                                             Count => Greek_Letter'pos(Letter),
+                                             Index => 0,
+                                             C_Id  => Const)));
+  end Object_Of;
 
 
   function Object_Of (Item     : Positive;

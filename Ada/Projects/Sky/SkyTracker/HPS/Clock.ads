@@ -15,6 +15,9 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+private with Network.Udp;
+private with Traces;
+
 package Clock is
 
   procedure Start;
@@ -22,5 +25,13 @@ package Clock is
   procedure Define_Time;
 
   procedure Finish;
+
+private
+
+  Id : constant String := "Clock";
+
+  package Log is new Traces (Id);
+
+  The_Udp_Socket : Network.Udp.Socket := Network.Udp.No_Socket;
 
 end Clock;

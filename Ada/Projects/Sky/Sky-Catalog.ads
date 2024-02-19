@@ -16,6 +16,7 @@
 pragma Style_White_Elephant;
 
 with Angle;
+with Lexicon;
 with Simbad;
 
 package Sky.Catalog is
@@ -36,6 +37,11 @@ package Sky.Catalog is
 
   function Name_Of (Item     : Positive;
                     The_Kind : Catalogs) return String;
+
+  function Object_Of (Item : Lexicon.Word) return Object;
+
+  function Object_Of (Letter : Greek_Letter;
+                      Const  : Constellation) return Object;
 
   function Object_Of (Item     : Positive;
                       The_Kind : Catalogs) return Object;

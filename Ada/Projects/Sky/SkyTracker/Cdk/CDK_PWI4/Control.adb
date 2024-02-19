@@ -26,7 +26,6 @@ with Horizon;
 with Http_Server;
 with Name;
 with Neo;
-with Network.Tcp;
 with Os.Application;
 with Os.Process;
 with Parameter;
@@ -86,7 +85,7 @@ package body Control is
     The_Target : Name.Id;
     use type Name.Id;
   begin
-    Targets.Get_For (The_Direction, Parameter.Search_Tolerance, The_Target);
+    Targets.Get_For (The_Direction, Stellarium.Search_Tolerance, The_Target);
     if The_Target = Name.No_Id then
       if not Sun.Is_Visible or else Sun.Is_In_Safe_Distance (To_Target => The_Direction) then
         Action_Handler.Put_Goto (The_Direction);
@@ -348,8 +347,8 @@ package body Control is
     Log.Write ("manager start");
     Http_Server.Start;
     Handbox.Start;
-    if Parameter.Remote_Configured then
-      Remote.Start (Parameter.Telescope_Name, Parameter.Remote_Address, Parameter.Remote_Port);
+    if Remote.Configured then
+      Remote.Start;
     end if;
     loop
       select Action_Handler.Get (The_Command);
@@ -481,12 +480,11 @@ package body Control is
     end Termination;
 
     procedure Start_Stellarium_Server is
-      Used_Port : constant Network.Port_Number := Parameter.Stellarium_Port;
     begin
-      Stellarium.Start (Used_Port);
+      Stellarium.Start;
     exception
-    when Network.Tcp.Port_In_Use =>
-      Error.Raise_With (Application.Name & " - TCP port" & Used_Port'img & " for Stellarium in use");
+    when Stellarium.Port_In_Use =>
+      Error.Raise_With (Application.Name & " - TCP port" & Stellarium.Port_Number'img & " for Stellarium in use");
     when others =>
       Error.Raise_With (Application.Name & " - could not start stellarium server");
     end Start_Stellarium_Server;

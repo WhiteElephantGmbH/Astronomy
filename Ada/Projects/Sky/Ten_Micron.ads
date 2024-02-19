@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2022 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2022 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
@@ -9,6 +9,8 @@ with Network;
 with Refraction;
 with Space;
 with Time;
+
+private with Traces;
 
 package Ten_Micron is
 
@@ -86,8 +88,9 @@ package Ten_Micron is
                    Increase_Moving_Rate,
                    Decrease_Moving_Rate);
 
-  procedure Startup (Server_Address : Network.Ip_Address;
-                     Server_Port    : Network.Port_Number);
+  function Is_Expert_Mode return Boolean;
+
+  procedure Startup;
 
   procedure Define (The_Air_Pressure : Refraction.Hectopascal);
 
@@ -143,5 +146,15 @@ package Ten_Micron is
   function Image_Of (Value : Time_Offset) return String;
 
   procedure Disconnect;
+
+private
+
+  Id : constant String := "10micron";
+  
+  package Log is new Traces (Id);
+  
+  Is_In_Expert_Mode  : Boolean;
+  The_Server_Address : Network.Ip_Address;
+  The_Server_Port    : Network.Port_Number;
 
 end Ten_Micron;

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2017 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2017 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,12 +15,18 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with Strings;
+with Traces;
+
 package body Language is
+
+  package Log is new Traces (Id);
 
   The_Language : Kind := English;
 
   procedure Define (The_Kind : Kind) is
   begin
+    Log.Write (Id & ": " & Strings.Legible_Of(The_Kind'image));
     The_Language := The_Kind;
   end Define;
 

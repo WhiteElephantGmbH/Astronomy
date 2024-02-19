@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2022 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2022 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
@@ -10,11 +10,8 @@ with Lx200;
 with Network.Tcp;
 with Satellite;
 with Strings;
-with Traces;
 
 package body Ten_Micron is
-
-  package Log is new Traces ("Ten_Micron");
 
   Socket_Protocol : constant Network.Tcp.Protocol := Network.Tcp.Raw;
 
@@ -34,6 +31,12 @@ package body Ten_Micron is
 
   Has_New_Alignment : Boolean := False;
   Is_Legacy         : Boolean := False;
+
+
+  function Is_Expert_Mode return Boolean is
+  begin
+    return Is_In_Expert_Mode;
+  end Is_Expert_Mode;
 
 
   procedure Set_Status (Item : State) is
@@ -336,14 +339,13 @@ package body Ten_Micron is
   procedure Define_Moving_Rate;
 
 
-  procedure Startup (Server_Address : Network.Ip_Address;
-                     Server_Port    : Network.Port_Number) is
+  procedure Startup is
   begin
     case The_Status is
     when Disconnected =>
       begin
-        The_Socket := Network.Tcp.Socket_For (The_Address     => Server_Address,
-                                              The_Port        => Server_Port,
+        The_Socket := Network.Tcp.Socket_For (The_Address     => The_Server_Address,
+                                              The_Port        => The_Server_Port,
                                               The_Protocol    => Socket_Protocol,
                                               Receive_Timeout => Receive_Timeout);
       exception
