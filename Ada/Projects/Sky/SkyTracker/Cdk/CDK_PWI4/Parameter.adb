@@ -17,16 +17,16 @@ pragma Style_White_Elephant;
 
 with Ada.Text_IO;
 with Application;
-with Cdk_700;
+with Cdk_700.Parameter;
 with Configuration;
 with Cwe;
 with Device;
 with Doubly_Linked_Lists_Extension;
 with Error;
 with File;
+with Http_Server.Parameter;
 with Language.Parameter;
 with Network.Tcp;
-with Os.Process;
 with Os.System;
 with Picture.Parameter;
 with PWI4.Mount;
@@ -54,13 +54,7 @@ package body Parameter is
   Cwe_Distance_Key      : constant String := "CWE Distance";
   Park_Position_Az_Key  : constant String := "Park Position Az";
   Focuser_Maximum_Key   : constant String := "Focuser Maximum";
-
-  Controller_Id        : constant String := "Controller";
-  Ip_Address_Key       : constant String := "IP Address";
-  Restart_Duration_Key : constant String := "Restart Duration";
-
-  Server_Id      : constant String := "Server";
-  Gui_Client_Key : constant String := "GUI Client";
+  Ip_Address_Key        : constant String := Section.Ip_Address_Key;
 
   Is_In_Shutdown_Mode : Boolean := False;
   The_M3_Ocular_Port  : PWI4.Port;
@@ -70,9 +64,6 @@ package body Parameter is
   The_Cwe_Distance  : Angle.Degrees;
   The_PWI_Address   : Network.Ip_Address;
   The_PWI_Port      : Network.Port_Number;
-
-  -- Server
-  The_Server_Port : Network.Port_Number;
 
 
   function Value_Of (Key  : String;
@@ -115,9 +106,7 @@ package body Parameter is
       end;
       Language.Parameter.Defaults (Put'access);
       Put ("");
-      Put ("[" & Controller_Id & "]");
-      Put (Ip_Address_Key & "       = 192.168.10.160");
-      Put (Restart_Duration_Key & " = 10s");
+      Cdk_700.Parameter.Defaults (Put'access);
       Put ("");
       Put ("[" & PWI_Id & "]");
       Put (Program_Key & "           = " & PWI_Program_Files & "\PlaneWave interface 4\PWI4.exe");
@@ -131,9 +120,7 @@ package body Parameter is
       Put (Park_Position_Az_Key & "  = 75" & Angle.Degree);
       Put (Focuser_Maximum_Key & "   = 10000");
       Put ("");
-      Put ("[" & Server_Id & "]");
-      Put (Port_Key & "       = 9000");
-      Put (Gui_Client_Key & " = " & Os.System.Program_Files_Folder & "White Elephant\Handbox.exe");
+      Http_Server.Parameter.Defaults (Put'access, "Handbox");
       Put ("");
       Sun.Parameter.Defaults (Put'access);
       Put ("");
@@ -155,10 +142,8 @@ package body Parameter is
 
     procedure Read_Values is
 
-      Handle            : constant Configuration.File_Handle    := Configuration.Handle_For (Filename);
-      PWI_Handle        : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, PWI_Id);
-      Controller_Handle : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Controller_Id);
-      Server_Handle     : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Server_Id);
+      Handle     : constant Configuration.File_Handle    := Configuration.Handle_For (Filename);
+      PWI_Handle : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, PWI_Id);
 
 
       procedure Startup_PWI is
@@ -218,24 +203,6 @@ package body Parameter is
       end Startup_PWI;
 
 
-      procedure Startup_Gui_Client is
-        Client_Filename : constant String := Section.String_Value_Of (Gui_Client_Key);
-      begin
-        if Client_Filename /= "" then
-          Log.Write ("GUI client program file: """ & Client_Filename & """");
-          if not File.Exists (Client_Filename) then
-            Error.Raise_With ("GUI client program file """ & Client_Filename & """ not found");
-          end if;
-          begin
-            Os.Process.Create (Client_Filename);
-          exception
-          when others =>
-            Error.Raise_With ("GUI client not started");
-          end;
-        end if;
-      end Startup_Gui_Client;
-
-
       procedure Define_M3_Ocular_Port is
         Port : constant String := Section.String_Value_Of (M3_Ocular_Port_Key);
       begin
@@ -268,12 +235,12 @@ package body Parameter is
     begin -- Read_Values
       Language.Parameter.Define (Handle);
 
-      Section.Set (Controller_Handle);
-      Cdk_700.Startup (Section.Ip_Address_For (Controller_Id),
-                       Restart_Duration => Section.Duration_Of (Restart_Duration_Key, Upper_Limit => 60.0));
+      Cdk_700.Parameter.Define (Handle);
+      Cdk_700.Startup;
       if Cdk_700.Had_Powerup then
         PWI4.Mount.Set_Powerup;
       end if;
+
       Section.Set (PWI_Handle);
       Is_In_Shutdown_Mode := Strings.Is_Equal (Section.String_Value_Of (Shutdown_Key), "True");
       Define_M3_Ocular_Port;
@@ -287,10 +254,7 @@ package body Parameter is
       Telescope.Define_Park_Position (Section.Direction_Of (Park_Position_Az_Key));
       Telescope.Define_Max_Focuser_Position (Value_Of (Focuser_Maximum_Key));
 
-      Section.Set (Server_Handle);
-      The_Server_Port :=  Section.Port_For (Server_Id);
-      Startup_Gui_Client;
-
+      Http_Server.Parameter.Define (Handle);
       Sun.Parameter.Define (Handle);
       Remote.Parameter.Define (Handle);
       Picture.Parameter.Define (Handle);
@@ -362,15 +326,5 @@ package body Parameter is
   begin
     return The_Cwe_Distance;
   end Cwe_Distance;
-
-
-  ------------
-  -- Server --
-  ------------
-
-  function Server_Port return Network.Port_Number is
-  begin
-    return The_Server_Port;
-  end Server_Port;
 
 end Parameter;

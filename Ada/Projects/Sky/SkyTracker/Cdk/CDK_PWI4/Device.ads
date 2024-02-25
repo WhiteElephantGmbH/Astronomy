@@ -23,21 +23,6 @@ with Time;
 
 package Device is
 
-  type Command is (End_Command,
-                   Move_Left,
-                   Move_Right,
-                   Move_Up,
-                   Move_Down,
-                   Next_Speed,
-                   Previous_Speed,
-                   Spiral_Offset_Center,
-                   Spiral_Offset_Next,
-                   Spiral_Offset_Previous,
-                   Go_Back,
-                   Rotate,
-                   Add_Point,
-                   Stop);
-
   subtype Degrees is PWI4.Degrees;
 
   function Image_Of (Item : Degrees) return String renames PWI4.Image_Of;
@@ -187,6 +172,8 @@ package Device is
 
     procedure Rotate;
 
+    procedure Turn_To_Occular;
+    
   end M3;
 
   package Fans is

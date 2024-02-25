@@ -22,7 +22,7 @@ with Telescope;
 
 package User is
 
-  type Action is (Define_Catalog, Define_Target, Startup, Shutdown, Stop, Go_To, Back, Update, Close);
+  type Action is (Define_Catalog, Define_Target, Startup, Shutdown, Stop, Go_To, Update, Close);
 
   subtype Button_Action is Action range Startup .. Go_To;
 
@@ -45,8 +45,6 @@ package User is
   procedure Execute (The_Startup_Handler     : not null access procedure;
                      The_Action_Handler      : Action_Handler;
                      The_Termination_Handler : not null access procedure);
-
-  procedure Back_Handling;
 
   procedure Perform_Goto;
 

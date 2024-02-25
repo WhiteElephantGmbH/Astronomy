@@ -17,27 +17,11 @@ pragma Style_White_Elephant;
 
 with Traces;
 
-package body User.Input is
+package body Input is
 
   package Log is new Traces ("Input");
 
-  type Command is (Close,
-                   Move_Up,
-                   Move_Down,
-                   Move_Left,
-                   Move_Right,
-                   End_Command,
-                   Next_Speed,
-                   Previous_Speed,
-                   Spiral_Offset_Center,
-                   Spiral_Offset_Next,
-                   Spiral_Offset_Previous,
-                   Go_Back,
-                   Rotate,
-                   Add_Point,
-                   Stop);
-
-  subtype Move is Command range Move_Up .. Move_Right;
+  subtype Move is Command range Move_Left .. Move_Down;
 
   subtype Change_Speed is Command range Next_Speed .. Previous_Speed;
 
@@ -45,16 +29,16 @@ package body User.Input is
 
   protected Manager is
 
-    procedure Set (The_Command : Device.Command;
+    procedure Set (The_Command : Command;
                    From        : Source);
-
-    function In_Action return Boolean;
 
     procedure Finish;
 
-    entry Take (The_Command : out Command);
+    entry Take (The_Command : out Command;
+                Is_Closing  : out Boolean);
 
   private
+    Finishing      : Boolean := False;
     New_Command    : Boolean := False;
     Is_Active      : Boolean := False;
     Active_Command : Command;
@@ -64,57 +48,34 @@ package body User.Input is
 
   protected body Manager is
 
-    procedure Set (The_Command : Device.Command;
+    procedure Set (The_Command : Command;
                    From        : Source) is
-      use type Device.Command;
     begin
-      if Is_Active then
+      if Finishing then
+        return;
+      elsif Is_Active then
         case Active_Command is
-        when Close | Stop =>
+        when Stop =>
           return;
         when Move =>
-          if From_Source = From and The_Command = Device.End_Command then
+          if From_Source = From and The_Command = End_Command then
             Active_Command := End_Command;
             New_Command := True;
           end if;
-        when End_Command | Go_Back | Change_Speed | Spiral_Offset | Add_Point | Rotate =>
+        when End_Command | Go_Back | Change_Speed | Spiral_Offset | Time_Change | Add_Point | Rotate =>
           null;
         end case;
-        if The_Command = Device.Stop then
+        if The_Command = Stop then
           Active_Command := Stop;
           From_Source := From;
           New_Command := True;
         end if;
       else
         case The_Command is
-        when Device.Stop =>
-          Active_Command := Stop;
-        when Device.Go_Back =>
-          Active_Command := Go_Back;
-        when Device.Move_Up =>
-          Active_Command := Move_Up;
-        when Device.Move_Down =>
-          Active_Command := Move_Down;
-        when Device.Move_Left =>
-          Active_Command := Move_Left;
-        when Device.Move_Right =>
-          Active_Command := Move_Right;
-        when Device.Spiral_Offset_Center =>
-          Active_Command := Spiral_Offset_Center;
-        when Device.Spiral_Offset_Next =>
-          Active_Command := Spiral_Offset_Next;
-        when Device.Spiral_Offset_Previous =>
-          Active_Command := Spiral_Offset_Previous;
-        when Device.Previous_Speed =>
-          Active_Command := Previous_Speed;
-        when Device.Next_Speed =>
-          Active_Command := Next_Speed;
-        when Device.Rotate =>
-          Active_Command := Rotate;
-        when Device.Add_Point =>
-          Active_Command := Add_Point;
-        when Device.End_Command =>
+        when End_Command =>
           return;
+        when others =>
+          Active_Command := The_Command;
         end case;
         New_Command := True;
         From_Source := From;
@@ -123,21 +84,14 @@ package body User.Input is
     end Set;
 
 
-    function In_Action return Boolean is
-    begin
-      return Active_Command in Move;
-    end In_Action;
-
-
     procedure Finish is
     begin
-      Active_Command := Close;
-      Is_Active := True;
-      New_Command := True;
+      Finishing := True;
     end Finish;
 
 
-    entry Take (The_Command : out Command) when New_Command is
+    entry Take (The_Command : out Command;
+                Is_Closing  : out Boolean) when New_Command or Finishing is
     begin
       The_Command := Active_Command;
       case The_Command is
@@ -147,23 +101,19 @@ package body User.Input is
         Is_Active := False;
       end case;
       New_Command := False;
+      Is_Closing := Finishing;
+      Finishing := False;
     end Take;
 
   end Manager;
 
 
-  procedure Put (The_Command : Device.Command;
+  procedure Put (The_Command : Command;
                  From        : Source) is
   begin
     Log.Write ("Command => " & The_Command'img & " from " & From'img);
     Manager.Set (The_Command, From);
   end Put;
-
-
-  function Is_Active return Boolean is
-  begin
-    return Manager.In_Action;
-  end Is_Active;
 
 
   procedure Close is
@@ -172,58 +122,33 @@ package body User.Input is
   end Close;
 
 
-  task type Handler;
+  task type Handler (Execute : access procedure (Item : Command));
 
   task body Handler is
     The_Command : Command;
+    Is_Closing  : Boolean;
     Is_Changing : Boolean := False;
   begin
     Log.Write ("Started");
     loop
       select
-        Manager.Take (The_Command);
+        Manager.Take (The_Command, Is_Closing);
+        exit when Is_Closing;
         Log.Write ("Manager.Execute " & The_Command'img);
         case The_Command is
-        when Close =>
-          exit;
-        when Stop =>
-          User.Perform_Stop;
-        when Go_Back =>
-          User.Back_Handling;
-        when Move_Up =>
-          Telescope.Execute (Telescope.Move_Up);
-          Is_Changing := True;
-        when Move_Down =>
-          Telescope.Execute (Telescope.Move_Down);
-          Is_Changing := True;
-        when Move_Left =>
-          Telescope.Execute (Telescope.Move_Left);
-          Is_Changing := True;
-        when Move_Right =>
-          Telescope.Execute (Telescope.Move_Right);
+        when Move =>
+          Execute (The_Command);
           Is_Changing := True;
         when End_Command =>
           Is_Changing := False;
-          Telescope.Execute (Telescope.End_Command);
-        when Previous_Speed =>
-          Telescope.Execute (Telescope.Previous_Speed);
-        when Next_Speed =>
-          Telescope.Execute (Telescope.Next_Speed);
-        when Spiral_Offset_Center =>
-          Telescope.Execute (Telescope.Spiral_Offset_Center);
-        when Spiral_Offset_Next =>
-          Telescope.Execute (Telescope.Spiral_Offset_Next);
-        when Spiral_Offset_Previous =>
-          Telescope.Execute (Telescope.Spiral_Offset_Previous);
-        when Add_Point =>
-          Telescope.Execute (Telescope.Add_Point);
-        when Rotate =>
-          Telescope.Execute (Telescope.Rotate);
+          Execute (End_Command);
+        when others =>
+          Execute (The_Command);
         end case;
       or
         delay 20.0;
         if Is_Changing then
-          Telescope.Execute (Telescope.End_Command);
+          Execute (End_Command);
           Is_Changing := False;
         end if;
       end select;
@@ -237,9 +162,9 @@ package body User.Input is
 
   The_Handler : access Handler with Unreferenced;
 
-  procedure Open is
+  procedure Open (Execute : access procedure (Item : Command)) is
   begin
-    The_Handler := new Handler;
+    The_Handler := new Handler (Execute);
   end Open;
 
-end User.Input;
+end Input;

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2023 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                               (c) 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,29 +15,13 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Angle;
-with PWI4;
+with Configuration;
 
-package Parameter is
+package Http_Server.Parameter is
 
-  Speed_Unit : constant String := "/s";
+  procedure Define (Handle : Configuration.File_Handle);
 
-  procedure Read;
+  procedure Defaults (Put    : access procedure (Item : String);
+                      Client : String);
 
-  procedure Shutdown;
-
-  ---------
-  -- PWI --
-  ---------
-
-  function M3_Ocular_Port return PWI4.Port;
-
-  function M3_Camera_Port return PWI4.Port;
-
-  function Turn_Fans_On return Boolean;
-
-  function Moving_Speeds return Angle.Values; -- in angle / s
-
-  function Cwe_Distance return Angle.Degrees;
-
-end Parameter;
+end Http_Server.Parameter;

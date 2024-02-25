@@ -22,7 +22,6 @@ with Alignment;
 with Earth;
 with Gui.Enumeration_Menu_Of;
 with Gui.Registered;
-with Keys;
 with Lexicon;
 with Lx200;
 with Objects;
@@ -699,7 +698,6 @@ package body User is
     The_Page := Is_Control;
     Catalog_Menu.Enable;
     Selection_Menu.Enable;
-    Gui.Enable_Key_Handler;
   end Enter_Control_Page;
 
 
@@ -708,7 +706,6 @@ package body User is
     The_Page := Is_Display;
     Catalog_Menu.Disable;
     Selection_Menu.Disable;
-    Gui.Enable_Key_Handler;
   exception
   when others =>
     Log.Error ("Enter_Display_Page failed");
@@ -720,52 +717,10 @@ package body User is
     The_Page := Is_Setup;
     Catalog_Menu.Disable;
     Selection_Menu.Disable;
-    Gui.Disable_Key_Handler;
   exception
   when others =>
     Log.Error ("Enter_Setup_Page");
   end Enter_Setup_Page;
-
-
-  procedure Put_Key (The_Key : Keys.Command) is
-    use all type Keys.Command;
-    use all type Telescope.Command;
-    use all type Telescope.Update_Command;
-  begin
-    Log.Write ("Command " & The_Key'image);
-    case The_Key is
-    when Move_Left =>
-      Telescope.Execute (Move_Left);
-    when Move_Right=>
-      Telescope.Execute (Move_Right);
-    when Move_Up=>
-      Telescope.Execute (Move_Up);
-    when Move_Down=>
-      Telescope.Execute (Move_Down);
-    when Move_Left_End=>
-      Telescope.Execute (Move_Left_End);
-    when Move_Right_End=>
-      Telescope.Execute (Move_Right_End);
-    when Move_Up_End=>
-      Telescope.Execute (Move_Up_End);
-    when Move_Down_End=>
-      Telescope.Execute (Move_Down_End);
-    when Increase_Speed=>
-      Telescope.Execute (Increase_Moving_Rate);
-    when Decrease_Speed=>
-      Telescope.Execute (Decrease_Moving_Rate);
-    when Increase_Time=>
-      Telescope.Update (Start_Time_Increase);
-    when Decrease_Time=>
-      Telescope.Update (Start_Time_Decrease);
-    when Change_Time_End=>
-      Telescope.Update (End_Time_Change);
-    when Enter=>
-      null;
-    end case;
-  end Put_Key;
-
-  procedure Key_Handler is new Keys.Handler (Put_Key);
 
 
   function Convertion is new Ada.Unchecked_Conversion (Gui.Information, Name.Id_Access);
@@ -861,7 +816,6 @@ package body User is
                                               The_Title         => "",
                                               The_Width         => The_Display_Data.Width,
                                               The_Justification => Gui.Left);
-        Gui.Install_Key_Handler (Key_Handler'access);
       end Define_Control_Page;
 
 
@@ -1050,7 +1004,6 @@ package body User is
         Define_Display_Page;
         Define_Setup_Page;
       end if;
-      Gui.Enable_Key_Handler;
       The_Startup_Handler.all;
     exception
     when Item: others =>

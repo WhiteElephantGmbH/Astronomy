@@ -15,10 +15,9 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Device;
 with Serial_Io.Usb;
 with Traces;
-with User.Input;
+with Input;
 
 package body Handbox is
 
@@ -93,9 +92,9 @@ package body Handbox is
 
   task body Reader is
 
-    procedure Execute (Command : Device.Command) is
+    procedure Execute (Command : Input.Command) is
     begin
-      User.Input.Put (Command, User.Input.Handbox);
+      Input.Put (Command, Input.Handbox);
     end Execute;
 
     Is_Moving           : Boolean := False;
@@ -122,33 +121,33 @@ package body Handbox is
             case The_Character is
             when 'u' =>
               if Center_Is_Pressed then
-                Execute (Device.Next_Speed);
+                Execute (Input.Next_Speed);
                 Is_Active := True;
               elsif not Is_Moving then
-                Execute (Device.Move_Up);
+                Execute (Input.Move_Up);
                 Is_Moving := True;
               end if;
             when 'd' =>
               if Center_Is_Pressed then
-                Execute (Device.Previous_Speed);
+                Execute (Input.Previous_Speed);
                 Is_Active := True;
               elsif not Is_Moving then
-                Execute (Device.Move_Down);
+                Execute (Input.Move_Down);
                 Is_Moving := True;
               end if;
             when 'l' =>
               if Center_Is_Pressed then
                 Left_Action_Pending := True;
               elsif not Is_Moving then
-                Execute (Device.Move_Left);
+                Execute (Input.Move_Left);
                 Is_Moving := True;
               end if;
             when 'r' =>
               if Center_Is_Pressed then
-                Execute (Device.Spiral_Offset_Next);
+                Execute (Input.Spiral_Offset_Next);
                 Is_Active := True;
               elsif not Is_Moving then
-                Execute (Device.Move_Right);
+                Execute (Input.Move_Right);
                 Is_Moving := True;
               end if;
             when 'c' =>
@@ -159,19 +158,19 @@ package body Handbox is
             when 'U' | 'D' | 'L' | 'R' =>
               if Is_Moving then
                 Is_Moving := False;
-                Execute (Device.End_Command);
+                Execute (Input.End_Command);
               elsif Left_Action_Pending then
-                Execute (Device.Spiral_Offset_Previous);
+                Execute (Input.Spiral_Offset_Previous);
                 Is_Active := True;
               end if;
               Left_Action_Pending := False;
             when 'C' =>
               if not Is_Moving then
                 if Left_Action_Pending then
-                  Execute (Device.Spiral_Offset_Center);
+                  Execute (Input.Spiral_Offset_Center);
                   Left_Action_Pending := False;
                 elsif not Is_Active then
-                  Execute (Device.Go_Back);
+                  Execute (Input.Go_Back);
                 end if;
               end if;
               Center_Is_Pressed := False;

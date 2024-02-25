@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2022 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2022 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
@@ -12,7 +12,7 @@ with Network.Tcp;
 with Strings;
 with Time;
 
-package body Test is
+package body Simulator is
 
   Start_Hiding : Boolean := False;
   Hiding       : Boolean := False;
@@ -296,6 +296,9 @@ package body Test is
             when others =>
               Send (Alignment_Information);
             end case;
+          elsif Data = ":GMs#" then
+            Put_Line ("Get Maximum Slewing Speed");
+            Send ("8#");
           elsif Data = ":MaX#" then
             The_State := Positioning;
             Put_Line ("Slew to Axis Position");
@@ -663,4 +666,4 @@ package body Test is
     Put_Line (Exceptions.Information_Of (Event));
   end Execute;
 
-end Test;
+end Simulator;

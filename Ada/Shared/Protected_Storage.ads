@@ -1,12 +1,15 @@
 -- *********************************************************************************************************************
--- *                           (c) 2022 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                           (c) 2024 by White Elephant GmbH, Schaffhausen, Switzerland                              *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-package Test is
+generic
+  type Element is private;
+package Protected_Storage is
 
-   procedure Execute;
+  procedure Set (Item : Element);
 
-end Test;
+  function Data return Element;
 
+end Protected_Storage;

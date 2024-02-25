@@ -20,8 +20,7 @@ with Progress;
 
 package Cdk_700 is
 
-  procedure Startup (Ip_Address       : Network.Ip_Address;
-                     Restart_Duration : Duration);
+  procedure Startup;
     ENC_Not_Available : exception;
     Startup_Failed    : exception;
 
@@ -36,4 +35,7 @@ package Cdk_700 is
   function Is_Simulated return Boolean;
   -- Precondition: Startup must have been called
 
+private
+  The_Ip_Address       : Network.Ip_Address;
+  The_Restart_Duration : Duration;
 end Cdk_700;

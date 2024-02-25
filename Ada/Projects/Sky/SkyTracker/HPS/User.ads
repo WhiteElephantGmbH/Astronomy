@@ -48,6 +48,8 @@ package User is
 
   procedure Perform_Goto_Next;
 
+  procedure Perform_Stop;
+
   procedure Clear_Targets;
 
   procedure Define (New_Targets : Name.Id_List_Access);

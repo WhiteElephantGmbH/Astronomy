@@ -21,6 +21,7 @@ with Camera.Parameter;
 with Configuration;
 with Error;
 with File;
+with Http_Server.Parameter;
 with Language.Parameter;
 with Picture.Parameter;
 with Remote.Parameter;
@@ -58,6 +59,8 @@ package body Parameter is
       Put ("");
       Ten_Micron.Parameter.Defaults (Put'access, Ip_Address => "192.168.26.180", Port => "3490");
       Put ("");
+      Http_Server.Parameter.Defaults (Put'access, "HPS_Handbox");
+      Put ("");
       Sun.Parameter.Defaults (Put'access);
       Put ("");
       Picture.Parameter.Defaults (Put'access);
@@ -79,10 +82,11 @@ package body Parameter is
 
 
     procedure Read_Values is
-      Handle : constant Configuration.File_Handle    := Configuration.Handle_For (Filename);
+      Handle : constant Configuration.File_Handle := Configuration.Handle_For (Filename);
     begin
       Language.Parameter.Define (Handle);
       Ten_Micron.Parameter.Define (Handle);
+      Http_Server.Parameter.Define (Handle);
       Sun.Parameter.Define (Handle);
       Remote.Parameter.Define (Handle);
       Picture.Parameter.Define (Handle);

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2021 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2021 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
@@ -113,6 +113,8 @@ package body Lx200 is
       return Command_For ("SaXa" & Parameter);
     when Set_Axis_Dec_Position =>
       return Command_For ("SaXb" & Parameter);
+    when Get_Maximum_Slew_Rate =>
+      return Command_For ("GMs");
     when Get_Number_Of_Alignment_Stars =>
       return Command_For ("getalst");
     when Get_Alignment_Information =>
@@ -300,6 +302,17 @@ package body Lx200 is
     Log.Error ("Position_Of failed with " & Item);
     raise Protocol_Error;
   end Position_Of;
+
+
+  function Rate_Of (Item : String) return Angle.Value is
+    use type Angle.Value;
+  begin
+    return +Angle.Degrees'value(Item);
+  exception
+  when others =>
+    Log.Error ("Rate_Of failed with " & Item);
+    raise Protocol_Error;
+  end Rate_Of;
 
 
   function Air_Pressure_Of (Item : Refraction.Hectopascal) return String is

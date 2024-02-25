@@ -24,23 +24,6 @@ with Time;
 
 package Telescope is
 
-  type Command is (Move_Left,
-                   Move_Right,
-                   Move_Up,
-                   Move_Down,
-                   End_Command,
-                   Spiral_Offset_Center,
-                   Spiral_Offset_Next,
-                   Spiral_Offset_Previous,
-                   Add_Point,
-                   Next_Speed,
-                   Previous_Speed,
-                   Rotate);
-
-  subtype Adjust is Command range Move_Left .. Add_Point;
-
-  subtype Setup is Command range Next_Speed .. Rotate;
-
   type State is (Unknown,    -- PWI server not available
                  Restarting, -- restarting CDK 700 PC
                  Disconnected,
@@ -76,7 +59,6 @@ package Telescope is
   end record;
 
   type M3_Data is record
-    Exists   : Boolean;
     Position : Device.M3.Position;
   end record;
 
@@ -121,27 +103,15 @@ package Telescope is
 
   procedure Define_Max_Focuser_Position (The_Position : Device.Microns);
 
-  procedure Execute (The_Command : Command);
-
   procedure Startup;
 
   procedure Shutdown;
 
   procedure Halt;
 
-  procedure Back;
-
   procedure Follow (Tracking_Period : Time.Period);
 
   procedure Position_To (Landmark : Name.Id);
-
-  procedure Focuser_Goto (Position : Device.Microns);
-
-  procedure Rotator_Goto_Field_Angle (Item : Device.Degrees);
-
-  procedure Rotator_Goto_Mech_Position (Item : Device.Degrees);
-
-  procedure Rotator_Goto_Offset (Item : Device.Degrees);
 
   function Information return Data;
 

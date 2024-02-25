@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2023 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                               (c) 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,29 +15,41 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Angle;
-with PWI4;
+with Error;
+with File;
+with Os.System;
+with Section;
 
-package Parameter is
+package body Http_Server.Parameter is
 
-  Speed_Unit : constant String := "/s";
+  Gui_Client_Key : constant String := "GUI Client";
+  Port_Key       : constant String := Section.Port_Key;
 
-  procedure Read;
 
-  procedure Shutdown;
+  procedure Define (Handle : Configuration.File_Handle) is
+  begin
+    Section.Set (Configuration.Handle_For (Handle, Id));
+    The_Server_Port :=  Section.Port_For (Id);
+    declare
+      Client_Filename : constant String := Section.String_Value_Of (Gui_Client_Key);
+    begin
+      if Client_Filename /= "" then
+        Log.Write ("GUI client program file: """ & Client_Filename & """");
+        if not File.Exists (Client_Filename) then
+          Error.Raise_With ("GUI client program file """ & Client_Filename & """ not found");
+        end if;
+      end if;
+      The_Client_Filename := [Client_Filename];
+    end;
+  end Define;
 
-  ---------
-  -- PWI --
-  ---------
 
-  function M3_Ocular_Port return PWI4.Port;
+  procedure Defaults (Put    : access procedure (Item : String);
+                      Client : String) is
+  begin
+    Put ("[" & Id & "]");
+    Put (Port_Key & "       = 9000");
+    Put (Gui_Client_Key & " = " & Os.System.Program_Files_Folder & "White_Elephant\" & Client & ".exe");
+  end Defaults;
 
-  function M3_Camera_Port return PWI4.Port;
-
-  function Turn_Fans_On return Boolean;
-
-  function Moving_Speeds return Angle.Values; -- in angle / s
-
-  function Cwe_Distance return Angle.Degrees;
-
-end Parameter;
+end Http_Server.Parameter;

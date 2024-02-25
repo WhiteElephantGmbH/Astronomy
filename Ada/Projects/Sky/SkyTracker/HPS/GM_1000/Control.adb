@@ -20,6 +20,7 @@ with Clock;
 with Error;
 with Gui;
 with Horizon;
+with Http_Server;
 with Name;
 with Neo;
 with Os.Application;
@@ -333,6 +334,7 @@ package body Control is
 
   begin -- Manager
     Log.Write ("manager start");
+    Http_Server.Start;
     loop
       Action_Handler.Get (The_Command);
       case The_Command is
@@ -402,6 +404,7 @@ package body Control is
       when New_Telescope_Information =>
         Handle_Telescope_Information;
       when Close =>
+        Http_Server.Shutdown;
         Targets.Stop;
         Telescope.Close;
         Stellarium.Close;
@@ -413,6 +416,7 @@ package body Control is
   exception
   when Occurrence: others =>
     Log.Termination (Occurrence);
+    Http_Server.Shutdown;
     Targets.Stop;
     Gui.Close;
     Telescope.Close;

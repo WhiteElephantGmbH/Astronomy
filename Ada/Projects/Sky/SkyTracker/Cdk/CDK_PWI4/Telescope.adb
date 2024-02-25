@@ -19,12 +19,16 @@ with Ada.Real_Time;
 with Cdk_700;
 with Cwe;
 with Gui;
+with Http_Server;
+with Input;
 with Objects;
 with Parameter;
 with Remote;
+with Strings;
 with System;
 with Targets;
 with Traces;
+with User;
 
 package body Telescope is
 
@@ -41,11 +45,22 @@ package body Telescope is
   package Fans renames Device.Fans;
 
 
+  subtype Command is Input.Mount_Command;
+
+  subtype Adjust is Input.Adjust_Command;
+
+  subtype Setup is Input.Setup_Command;
+
+  use all type Input.Command;
+
+
   task type Control_Task with Priority => System.Max_Priority is
 
     entry Start;
 
     entry Execute (The_Command : Command);
+
+    entry Go_Back;
 
     entry Halt;
 
@@ -54,8 +69,6 @@ package body Telescope is
     entry Shutdown;
 
     entry Follow (Tracking_Period : Time.Period);
-
-    entry Back;
 
     entry Position_To (Landmark : Name.Id);
 
@@ -82,6 +95,68 @@ package body Telescope is
   Control : Control_Access;
 
 
+  procedure Focuser_Goto (Position : Http_Server.Microns) is
+  begin
+    Control.Focuser_Goto (Device.Microns(Position));
+  end Focuser_Goto;
+
+
+  procedure Rotator_Goto_Field_Angle (Item : Http_Server.Degrees) is
+  begin
+    Control.Rotator_Goto_Field (The_Angle => Device.Degrees(Item));
+  end Rotator_Goto_Field_Angle;
+
+
+  procedure Rotator_Goto_Mech_Position (Item : Http_Server.Degrees) is
+  begin
+    Control.Rotator_Goto_Mech (The_Position => Device.Degrees(Item));
+  end Rotator_Goto_Mech_Position;
+
+
+  procedure Rotator_Goto_Offset (Item : Http_Server.Degrees) is
+  begin
+    Control.Rotator_Goto (The_Offset => Device.Degrees(Item));
+  end Rotator_Goto_Offset;
+
+
+  procedure Set_Server_Information (The_Data : Data) is
+
+    function Mount_Data return Http_Server.Mount_Data is
+      (if The_Data.Status > Homing then
+        (Exists       => True,
+         Axis0        => Http_Server.Degrees(The_Data.Mount.Axis0),
+         Axis1        => Http_Server.Degrees(The_Data.Mount.Axis1),
+         Model_Points => Natural(The_Data.Mount.Model_Points))
+       else
+         (others => <>));
+
+    function Focuser_Data return Http_Server.Focuser_Data is
+      ((Exists       => The_Data.Focuser.Exists,
+        Moving       => The_Data.Focuser.Moving,
+        Max_Position => Http_Server.Microns(The_Data.Focuser.Max_Position),
+        Position     => Http_Server.Microns(The_Data.Focuser.Position),
+        Set_Position => Focuser_Goto'access));
+
+    function Rotator_Data return Http_Server.Rotator_Data is
+     ((Exists             => The_Data.Focuser.Exists,
+       Moving             => The_Data.Rotator.Moving,
+       Slewing            => The_Data.Rotator.Slewing,
+       Mech_Position      => Http_Server.Degrees(The_Data.Rotator.Mech_Position),
+       Field_Angle        => Http_Server.Degrees(The_Data.Rotator.Field_Angle),
+       Goto_Field_Angle   => Rotator_Goto_Field_Angle'access,
+       Goto_Mech_Position => Rotator_Goto_Mech_Position'access,
+       Goto_Offset        => Rotator_Goto_Offset'access));
+
+  begin -- Set_Server_Information
+    Http_Server.Set_State (Strings.Legible_Of (The_Data.Status'image));
+    Http_Server.Set_Moving (Speed => The_Data.Moving_Speed);
+    Http_Server.Set (Position => Http_Server.Mirror_Position'val(Device.M3.Position'pos(The_Data.M3.Position)));
+    Http_Server.Set (Mount_Data);
+    Http_Server.Set (Focuser_Data);
+    Http_Server.Set (Rotator_Data);
+  end Set_Server_Information;
+
+
   procedure Mount_State_Handler (New_State : Mount.State) is
   begin
     if not Control'terminated then
@@ -100,18 +175,27 @@ package body Telescope is
 
   Signal_Information_Update : Information_Update_Handler;
 
+
+  procedure Execute (The_Command : Input.Command) is
+  begin
+    case The_Command is
+    when Command =>
+      Control.Execute (The_Command);
+    when Go_Back =>
+     Control.Go_Back;
+    when Stop =>
+      User.Perform_Stop;
+    end case;
+  end Execute;
+
+
   procedure Start (Update_Handler : Information_Update_Handler) is
   begin
     Signal_Information_Update := Update_Handler;
+    Input.Open (Execute'access);
     Control := new Control_Task;
     Control.Start;
   end Start;
-
-
-  procedure Execute (The_Command : Command) is
-  begin
-    Control.Execute (The_Command);
-  end Execute;
 
 
   procedure Startup is
@@ -132,12 +216,6 @@ package body Telescope is
   end Halt;
 
 
-  procedure Back is
-  begin
-    Control.Back;
-  end Back;
-
-
   procedure Follow (Tracking_Period : Time.Period) is
   begin
     Control.Follow (Tracking_Period);
@@ -148,30 +226,6 @@ package body Telescope is
   begin
     Control.Position_To (Landmark);
   end Position_To;
-
-
-  procedure Focuser_Goto (Position : Device.Microns) is
-  begin
-    Control.Focuser_Goto (Position);
-  end Focuser_Goto;
-
-
-  procedure Rotator_Goto_Field_Angle (Item : Device.Degrees) is
-  begin
-    Control.Rotator_Goto_Field (The_Angle => Item);
-  end Rotator_Goto_Field_Angle;
-
-
-  procedure Rotator_Goto_Mech_Position (Item : Device.Degrees) is
-  begin
-    Control.Rotator_Goto_Mech (The_Position => Item);
-  end Rotator_Goto_Mech_Position;
-
-
-  procedure Rotator_Goto_Offset (Item : Device.Degrees) is
-  begin
-    Control.Rotator_Goto (The_Offset => Item);
-  end Rotator_Goto_Offset;
 
 
   Next_Id            : Name.Id;
@@ -512,6 +566,12 @@ package body Telescope is
         Mount.Spiral_Offset_Next;
       when Spiral_Offset_Previous =>
         Mount.Spiral_Offset_Previous;
+      when Start_Time_Increase =>
+        null; -- not implemented
+      when Start_Time_Decrease =>
+        null; -- not implemented
+      when End_Time_Change =>
+        null; -- not implemented
       when Add_Point =>
         Add_Target_J2000_Direction_To_Model;
       end case;
@@ -553,12 +613,13 @@ package body Telescope is
     end Enabling;
 
 
-    procedure Find_Home is
+    procedure Find_Home_And_Set_Defaults is
     begin
       Fans.Turn (To => Fans.Off);
+      M3.Turn_To_Occular;
       Mount.Find_Home (The_Completion_Time);
       The_State := Homing;
-    end Find_Home;
+    end Find_Home_And_Set_Defaults;
 
 
   --=============
@@ -686,7 +747,7 @@ package body Telescope is
       when Mount_Connected =>
         Enabling;
       when Mount_Enabled =>
-        Find_Home;
+        Find_Home_And_Set_Defaults;
       when Mount_Stopped =>
         The_State := Stopped;
       when Halt =>
@@ -743,7 +804,7 @@ package body Telescope is
       when Mount_Error =>
         The_State := Mount_Error;
       when Mount_Enabled =>
-        Find_Home;
+        Find_Home_And_Set_Defaults;
       when Mount_Stopped =>
         The_State := Stopped;
       when Halt =>
@@ -764,7 +825,7 @@ package body Telescope is
       when Mount_Connected =>
         The_State := Connected;
       when Startup =>
-        Find_Home;
+        Find_Home_And_Set_Defaults;
       when Shutdown =>
         Do_Disable;
         The_State := Disabling;
@@ -1046,6 +1107,10 @@ package body Telescope is
           accept Close;
           exit;
         or
+          accept Go_Back;
+          Reset_Adjustments;
+          The_Event := Back;
+        or
           accept Halt;
           Remote.Define (Target => "");
           The_Event := Halt;
@@ -1060,10 +1125,6 @@ package body Telescope is
           end if;
           Reset_Adjustments;
           The_Event := Follow;
-        or
-          accept Back;
-          Reset_Adjustments;
-          The_Event := Back;
         or
           accept Startup;
           The_Event := Startup;
@@ -1103,7 +1164,7 @@ package body Telescope is
               when Setup =>
                 The_Event := User_Setup;
                 The_User_Setup := The_Command;
-              end case;
+               end case;
             end if;
           end Execute;
         or
@@ -1149,7 +1210,6 @@ package body Telescope is
               end if;
             end if;
             The_Data.Status := The_State;
-            The_Data.M3.Exists := M3.Exists;
             The_Data.M3.Position := The_M3_Position;
             The_Data.Focuser.Exists := Focuser.Exists;
             The_Data.Focuser.Moving := Focuser.Moving;
@@ -1181,6 +1241,7 @@ package body Telescope is
             The_Data.Target_Lost := Target_Is_Lost;
             Target_Is_Lost := False;
             The_Data.Moving_Speed := Moving_Speeds(Moving_Index);
+            Set_Server_Information (The_Data);
           end Get;
         or
           delay until The_Next_Time;
@@ -1232,6 +1293,7 @@ package body Telescope is
         Log.Termination (Item);
       end;
     end loop;
+    Input.Close;
     Device.Finalize;
     Log.Write ("Control end");
   exception

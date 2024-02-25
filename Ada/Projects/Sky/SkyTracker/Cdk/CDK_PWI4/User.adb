@@ -27,7 +27,6 @@ with Sky.Catalog;
 with SkyTracker;
 with Targets;
 with Traces;
-with User.Input;
 
 package body User is
 
@@ -386,12 +385,6 @@ package body User is
   The_Targets : Name.Id_List_Access;
 
 
-  procedure Back_Handling is
-  begin
-    Signal_Action (Back);
-  end Back_Handling;
-
-
   function Convertion is new Ada.Unchecked_Conversion (Gui.Information, Name.Id_Access);
 
   function Display_Text_Handler (For_Column       : Natural;
@@ -509,7 +502,6 @@ package body User is
 
     procedure Termination is
     begin
-      Input.Close;
       The_Display_Data.Width := Gui.Width_Of (The_Targets_Column);
       Signal_Action (Close);
       Log.Write ("Teminating");
@@ -520,7 +512,6 @@ package body User is
     end Termination;
 
   begin -- Execute
-    Input.Open;
     Action_Routine := The_Action_Handler;
     Gui.Registered.Execute (The_Application_Name    => SkyTracker.Title,
                             The_Startup_Routine     => Create_Interface'access,

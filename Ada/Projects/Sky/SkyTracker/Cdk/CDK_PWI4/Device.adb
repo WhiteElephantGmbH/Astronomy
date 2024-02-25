@@ -1166,6 +1166,14 @@ package body Device is
       Action.Put (M3_Action'(Toggle));
     end Rotate;
 
+    procedure Turn_To_Occular is
+      use type PWI4.Port;
+    begin
+      if Exists and then PWI4.M3.Actual_Port = Parameter.M3_Camera_Port then
+        Rotate;
+      end if;
+    end Turn_To_Occular;
+
   end M3;
 
 

@@ -28,8 +28,6 @@ package body Cdk_700 is
 
   Expected_Switches : constant ENC.Switches := [On, On, Off, On];
 
-  The_Ip_Address : Network.Ip_Address;
-
   Startup_Called     : Boolean  := False;
   Had_Restart        : Boolean  := False;
   Is_Simulation_Mode : Boolean := False;
@@ -46,15 +44,13 @@ package body Cdk_700 is
   end Switches;
 
 
-  procedure Startup (Ip_Address       : Network.Ip_Address;
-                     Restart_Duration : Duration) is
+  procedure Startup is
     use type ENC.Switches;
     use type Network.Ip_Address;
   begin
     Log.Write ("Startup");
     Had_Restart := False;
-    The_Ip_Address := Ip_Address;
-    Is_Simulation_Mode := Ip_Address = Network.Loopback_Address;
+    Is_Simulation_Mode := The_Ip_Address = Network.Loopback_Address;
     if Is_Simulation_Mode then
       Log.Warning ("is in simulation mode");
     end if;
@@ -67,7 +63,7 @@ package body Cdk_700 is
             ENC.Set (Port, Expected_Switches(Port), The_Ip_Address);
           end if;
         end loop;
-        Progress.Start (Restart_Duration);
+        Progress.Start (The_Restart_Duration);
         Had_Restart := True;
       end if;
     end;

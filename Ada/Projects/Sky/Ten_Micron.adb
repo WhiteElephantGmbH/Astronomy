@@ -4,7 +4,6 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Angle;
 with Error;
 with Lx200;
 with Network.Tcp;
@@ -268,6 +267,7 @@ package body Ten_Micron is
          | Get_Air_Pressure
          | Get_Temperature
          | Get_Julian_Date
+         | Get_Maximum_Slew_Rate
          | Get_Number_Of_Alignment_Stars
          | Get_Pointing_State
          | Get_Right_Ascension
@@ -337,7 +337,6 @@ package body Ten_Micron is
 
 
   procedure Define_Moving_Rate;
-
 
   procedure Startup is
   begin
@@ -524,6 +523,8 @@ package body Ten_Micron is
   end Gps_Is_Synchronized;
 
 
+  function Actual_Moving_Speed return Angle.Value;
+
   function Get return Information is
     The_Information : Information;
   begin
@@ -534,6 +535,7 @@ package body Ten_Micron is
       The_Information.Direction := Actual_Direction;
       The_Information.Position := Actual_Position;
       The_Information.Pier_Side := Pier_Side;
+      The_Information.Moving_Speed := Actual_Moving_Speed;
       if The_Status = Stopped then
         The_Information.Date_Time := Time.Ut_Of (Julian_Date);
         Refraction.Set (Air_Pressure);
@@ -699,7 +701,7 @@ package body Ten_Micron is
   end Unpark;
 
 
-  subtype Move_Command is Command range Move_Left .. Move_Down_End;
+  subtype Move_Command is Command range Move_Left .. Move_End;
 
   procedure Move (The_Command : Lx200.Command) is
   begin
@@ -878,6 +880,11 @@ package body Ten_Micron is
       Direct_EW.Clear (East);
     when Move_Left_End =>
       Direct_EW.Clear (West);
+    when Move_End =>
+      Direct_NS.Clear (North);
+      Direct_NS.Clear (South);
+      Direct_EW.Clear (East);
+      Direct_EW.Clear (West);
     end case;
   end Move;
 
@@ -895,7 +902,11 @@ package body Ten_Micron is
 
   Moving_Factors : constant Moving_Factor_Table := [Moving_Factor'first, 4, 16, 60, 240, Moving_Factor'last];
 
-  The_Moving_Index : Natural := 0; -- Undefined
+  Undefined : constant := 0;
+
+  The_Moving_Index : Natural := Undefined;
+
+  The_Maximum_Moving_Rate : Angle.Value := Angle.Zero;
 
 
   procedure Set_Moving_Rate (The_Factor : Moving_Factor) is
@@ -928,11 +939,28 @@ package body Ten_Micron is
 
   procedure Define_Moving_Rate is
   begin
-    if The_Status /= Parked and then The_Moving_Index = 0 then -- Undefined
+    if The_Status in Parked | Disconnected then
+      The_Moving_Index := Undefined;
+    elsif The_Moving_Index = Undefined then
+      The_Maximum_Moving_Rate := Lx200.Rate_Of (Reply_For (Lx200.Get_Maximum_Slew_Rate));
       The_Moving_Index := Moving_Factors'first + 2; -- first Increment at startup -> default rate = 60
       Increase;
     end if;
   end Define_Moving_Rate;
+
+
+  function Actual_Moving_Speed return Angle.Value is
+    use type Angle.Degrees;
+    Sideral_Tracking_Rate : constant Angle.Degrees := 15.0 / 3600.0; -- per second
+    use type Angle.Value;
+  begin
+    if The_Moving_Index = 0 then
+      return Angle.Zero;
+    elsif The_Moving_Index = Moving_Factors'last then
+      return The_Maximum_Moving_Rate;
+    end if;
+    return +(Angle.Degrees(Moving_Factors(The_Moving_Index)) * Sideral_Tracking_Rate);
+  end Actual_Moving_Speed;
 
 
   procedure Execute (The_Command : Command) is

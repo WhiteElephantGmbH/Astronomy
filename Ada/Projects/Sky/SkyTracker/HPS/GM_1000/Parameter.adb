@@ -22,6 +22,7 @@ with Clock.Parameter;
 with Configuration;
 with Error;
 with File;
+with Http_Server.Parameter;
 with Language.Parameter;
 with Picture.Parameter;
 with Stellarium.Parameter;
@@ -57,6 +58,8 @@ package body Parameter is
       Put ("");
       Ten_Micron.Parameter.Defaults (Put'access, Ip_Address => "169.254.42.42", Port => "3490");
       Put ("");
+      Http_Server.Parameter.Defaults (Put'access, "HPS_Handbox");
+      Put ("");
       Sun.Parameter.Defaults (Put'access);
       Put ("");
       Clock.Parameter.Defaults (Put'access);
@@ -83,6 +86,7 @@ package body Parameter is
     begin
       Language.Parameter.Define (Handle); -- must be first
       Ten_Micron.Parameter.Define (Handle);
+      Http_Server.Parameter.Define (Handle);
       Sun.Parameter.Define (Handle);
       Clock.Parameter.Define (Handle);
       Picture.Parameter.Define (Handle);

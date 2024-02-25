@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2023 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                               (c) 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,19 +15,28 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Device;
+with Section;
 
-package User.Input is
+package body Cdk_700.Parameter is
 
-  procedure Open;
+  Id                   : constant String := "Controller";
+  Ip_Address_Key       : constant String := Section.Ip_Address_Key;
+  Restart_Duration_Key : constant String := "Restart Duration";
 
-  type Source is (Handbox, Server);
 
-  procedure Put (The_Command : Device.Command;
-                 From        : Source);
+  procedure Define (Handle : Configuration.File_Handle) is
+  begin
+    Section.Set (Configuration.Handle_For (Handle, Id));
+    The_Ip_Address := Section.Ip_Address_For (Id);
+    The_Restart_Duration := Section.Duration_Of (Restart_Duration_Key, Upper_Limit => 60.0);
+  end Define;
 
-  function Is_Active return Boolean;
 
-  procedure Close;
+  procedure Defaults (Put : access procedure (Item : String)) is
+  begin
+    Put ("[" & Id & "]");
+    Put (Ip_Address_Key & "       = 192.168.10.160");
+    Put (Restart_Duration_Key & " = 10s");
+  end Defaults;
 
-end User.Input;
+end Cdk_700.Parameter;

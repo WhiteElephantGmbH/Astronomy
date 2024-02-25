@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2022 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2022 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -33,10 +33,6 @@ package Telescope is
 
   use all type State;
 
-  subtype Command is Ten_Micron.Command;
-
-  type Update_Command is (Start_Time_Increase, Start_Time_Decrease, End_Time_Change);
-
   subtype Time_Offset is Ten_Micron.Time_Offset;
 
   function Image_Of (Time_Delta : Time_Offset) return String renames Ten_Micron.Image_Of;
@@ -48,6 +44,7 @@ package Telescope is
     Actual_Position    : Space.Direction;
     Picture_Direction  : Space.Direction;
     Mount_Pier_Side    : Character := Ten_Micron.Undefined_Pier;
+    Moving_Speed       : Angle.Value := Angle.Zero;
     Align_Points       : Natural := 0;
     Alignment_Info     : Alignment.Information;
     Cone_Error         : Angle.Value := Angle.Zero;
@@ -84,10 +81,6 @@ package Telescope is
   procedure Stop;
 
   procedure Unpark;
-
-  procedure Execute (The_Command : Command);
-
-  procedure Update (The_Command : Update_Command);
 
   function Information return Data;
 

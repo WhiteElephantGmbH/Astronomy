@@ -17,7 +17,7 @@ pragma Style_White_Elephant;
 
 with Ada.Text_IO;
 with Application;
-with Cdk_700;
+with Cdk_700.Parameter;
 with Configuration;
 with Cwe;
 with Doubly_Linked_Lists_Extension;
@@ -60,8 +60,7 @@ package body Parameter is
   Time_Adjustment_Key   : constant String := "Time Adjustment";
   Park_Position_Az_Key  : constant String := "Park Position Az";
 
-  Controller_Id  : constant String := "Controller";
-  Ip_Address_Key : constant String := "IP Address";
+  Ip_Address_Key : constant String := Section.Ip_Address_Key;
 
   Lx200_Id : constant String := "Lx200";
 
@@ -134,8 +133,7 @@ package body Parameter is
       Put (Time_Adjustment_Key & "   = 0.5s");
       Put (Park_Position_Az_Key & "  = 225°");
       Put ("");
-      Put ("[" & Controller_Id & "]");
-      Put (Ip_Address_Key & " = 192.168.10.160");
+      Cdk_700.Parameter.Defaults (Put'access);
       Put ("");
       Sun.Parameter.Defaults (Put'access);
       Put ("");
@@ -157,10 +155,9 @@ package body Parameter is
 
     procedure Read_Values is
 
-      Handle            : constant Configuration.File_Handle    := Configuration.Handle_For (Filename);
-      PWI_Handle        : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, PWI_Id);
-      Lx200_Handle      : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Lx200_Id);
-      Controller_Handle : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Controller_Id);
+      Handle       : constant Configuration.File_Handle    := Configuration.Handle_For (Filename);
+      PWI_Handle   : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, PWI_Id);
+      Lx200_Handle : constant Configuration.Section_Handle := Configuration.Handle_For (Handle, Lx200_Id);
 
       procedure Define_Site_Parameters is
         Settings_Filename : constant String := Section.String_Value_Of (Settings_Key);
@@ -316,10 +313,9 @@ package body Parameter is
       The_Time_Adjustment := Section.Duration_Of (Time_Adjustment_Key, Lower_Limit => -2.0, Upper_Limit => 2.0);
       Telescope.Define_Park_Position (Section.Direction_Of (Park_Position_Az_Key));
 
-      Section.Set (Controller_Handle);
+      Cdk_700.Parameter.Define (Handle);
       if not Is_In_Simulation_Mode or else Is_In_Expert_Mode then
-        Cdk_700.Startup (Section.Ip_Address_For (Controller_Id),
-                         Restart_Duration => 60.0); -- 1 Minute
+        Cdk_700.Startup;
       end if;
 
       Sun.Parameter.Define (Handle);

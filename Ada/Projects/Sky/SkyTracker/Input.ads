@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2023 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                           (c) 2024 by White Elephant GmbH, Schaffhausen, Switzerland                              *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,29 +15,47 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Angle;
-with PWI4;
+package Input is
 
-package Parameter is
+  type Command is (Move_Left,
+                   Move_Right,
+                   Move_Up,
+                   Move_Down,
+                   End_Command,
 
-  Speed_Unit : constant String := "/s";
+                   Spiral_Offset_Center,
+                   Spiral_Offset_Next,
+                   Spiral_Offset_Previous,
 
-  procedure Read;
+                   Start_Time_Increase,
+                   Start_Time_Decrease,
+                   End_Time_Change,
 
-  procedure Shutdown;
+                   Add_Point,
 
-  ---------
-  -- PWI --
-  ---------
+                   Next_Speed,
+                   Previous_Speed,
+                   Rotate,
 
-  function M3_Ocular_Port return PWI4.Port;
+                   Go_Back,
+                   Stop);
 
-  function M3_Camera_Port return PWI4.Port;
+  subtype Adjust_Command is Command range Move_Left .. Add_Point;
 
-  function Turn_Fans_On return Boolean;
+  subtype Setup_Command is Command range Next_Speed .. Rotate;
 
-  function Moving_Speeds return Angle.Values; -- in angle / s
+  subtype Time_Change is Command range Start_Time_Increase .. End_Time_Change;
 
-  function Cwe_Distance return Angle.Degrees;
+  subtype Mount_Command is Command range Move_Left .. Rotate;
 
-end Parameter;
+
+  procedure Open (Execute : access procedure (Item : Command));
+
+  type Source is (Handbox, Server);
+
+  procedure Put (The_Command : Command;
+                 From        : Source);
+
+  procedure Close;
+
+end Input;

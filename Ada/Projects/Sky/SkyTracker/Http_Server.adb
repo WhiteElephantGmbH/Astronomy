@@ -4,29 +4,35 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Angle;
 with AWS.Messages;
 with AWS.Status;
 with AWS.Server;
 with AWS.Response;
-with Cdk_700;
 with GNATCOLL.JSON;
-with Device;
+with Input;
 with Lexicon;
-with Parameter;
-with Strings;
-with Telescope;
-with Traces;
-with User.Input;
+with Os.Process;
+with Protected_Storage;
 
 package body Http_Server is
 
-  package Log is new Traces ("Http_Server");
-
   package JS renames GNATCOLL.JSON;
 
+  package Protected_Mount is new Protected_Storage (Mount_Data);
 
-  type Degrees is delta 0.00001 range -999.0 .. 999.0;
+  package Protected_Mount_State is new Protected_Storage (Strings.Element);
+
+  package Protected_Moving_Speed is new Protected_Storage (Angle.Value);
+
+  package Protected_Mirror_Position is new Protected_Storage (Mirror_Position);
+
+  package Protected_Focuser is new Protected_Storage (Focuser_Data);
+
+  package Protected_Rotator is new Protected_Storage (Rotator_Data);
+
+
+  use type Strings.Element;
+
 
   function Image_Of (Item : Degrees) return String is
   begin
@@ -34,7 +40,7 @@ package body Http_Server is
   end Image_Of;
 
 
-  function Image_Of (Item : Angle.Value) return String is
+  function Moving_Speed return String is
 
     Arc_Delta : constant := 0.01;
     type Arc is delta Arc_Delta range 0.0 .. 100.0 - Arc_Delta with Small => Arc_Delta;
@@ -42,10 +48,12 @@ package body Http_Server is
     use type Angle.Degrees;
     use type Angle.Value;
 
-    Speed : Angle.Degrees := +Item;
+    Speed : Angle.Degrees := +Protected_Moving_Speed.Data;
 
   begin
-    if Speed >= 1.0 then
+    if Speed = 0.0 then
+      return "";
+    elsif Speed >= 1.0 then
       return Strings.Trimmed (Arc(Speed)'image & Angle.Degree & "/s");
     else
       Speed := @ * 60.0;
@@ -55,115 +63,95 @@ package body Http_Server is
         return Strings.Trimmed (Natural(Speed * 60.0)'image & """/s");
       end if;
     end if;
-  end Image_Of;
+  end Moving_Speed;
 
 
-  function Image_Of (Item : Device.M3.Position) return String is
-    use all type Device.M3.Position;
+  function Mirror_Direction_Image return String is
   begin
-    case Item is
-    when Unknown =>
-      return "";
-    when Between =>
+    case Protected_Mirror_Position.Data is
+    when Unknown | Between =>
       return "";
     when Ocular =>
       return Lexicon.Image_Of (Lexicon.Ocular);
     when Camera =>
       return Lexicon.Image_Of (Lexicon.Camera);
     end case;
-  end Image_Of;
+  end Mirror_Direction_Image;
 
-
-  At_Camera_Simulation : Boolean := False;
 
   function Information return String is
 
-    Is_Simulation : constant Boolean := Cdk_700.Is_Simulated;
-
-    Data : constant Telescope.Data := Telescope.Information;
     Info : constant JS.JSON_Value := JS.Create_Object;
-
-    Mount_Exists : constant Boolean := not (Data.Status in Telescope.Startup_State);
-    At_Camera    : Boolean;
 
     procedure Set_Mount_Values is
       Mount  : constant JS.JSON_Value := JS.Create_Object;
-      Exists : constant JS.JSON_Value := JS.Create (Mount_Exists);
-      Speed  : constant JS.JSON_Value := JS.Create (Image_Of (Data.Moving_Speed));
-      Axis0  : constant JS.JSON_Value := JS.Create (Device.Image_Of (Data.Mount.Axis0));
-      Axis1  : constant JS.JSON_Value := JS.Create (Device.Image_Of (Data.Mount.Axis1));
-      Points : constant JS.JSON_Value := JS.Create (Device.Image_Of (Data.Mount.Model_Points));
+      Data   : constant Mount_Data    := Protected_Mount.Data;
+      State  : constant String        := +Protected_Mount_State.Data;
+      Speed  : constant String        := Moving_Speed;
+      Axis0  : constant String        := Image_Of (Data.Axis0);
+      Axis1  : constant String        := Image_Of (Data.Axis1);
+      Points : constant String        := Strings.Trimmed (Data.Model_Points'image);
     begin
-      JS.Set_Field (Mount, "exists", Exists);
-      JS.Set_Field (Mount, "speed", Speed);
-      JS.Set_Field (Mount, "axis0", Axis0);
-      JS.Set_Field (Mount, "axis1", Axis1);
-      JS.Set_Field (Mount, "points", Points);
+      JS.Set_Field (Mount, "state", JS.Create (State));
+      JS.Set_Field (Mount, "speed", JS.Create (Speed));
+      JS.Set_Field (Mount, "exists", JS.Create (Data.Exists));
+      JS.Set_Field (Mount, "axis0", JS.Create (Axis0));
+      JS.Set_Field (Mount, "axis1", JS.Create (Axis1));
+      JS.Set_Field (Mount, "points", JS.Create (Points));
       JS.Set_Field (Info, "mount", Mount);
-      Log.Write ("Mount Exists: " & Mount_Exists'image);
+      Log.Write ("Mount State  : " & State);
+      Log.Write ("Mount Speed  : " & Speed);
+      Log.Write ("Mount Exists : " & Data.Exists'image);
+      Log.Write ("Mount axis0  : " & Axis0);
+      Log.Write ("Mount axis1  : " & Axis1);
+      Log.Write ("Mount Points : " & Points);
     end Set_Mount_Values;
 
     procedure Set_M3_Values is
-      use type Device.M3.Position;
+      Position  : constant Mirror_Position := Protected_Mirror_Position.Data;
       M3        : constant JS.JSON_Value := JS.Create_Object;
-      Exists    : Boolean;
-      Position  : Device.M3.Position;
+      Exists    : constant Boolean       := Position /= Unknown;
+      At_Camera : constant Boolean       := Position = Camera;
     begin
-      if Is_Simulation then
-        Exists := Mount_Exists;
-        At_Camera := At_Camera_Simulation;
-        Position := (if At_Camera then Device.M3.Camera else Device.M3.Ocular);
-      else
-        Exists := Data.M3.Exists;
-        At_Camera := Data.M3.Position = Device.M3.Camera;
-        Position := Data.M3.Position;
-      end if;
       JS.Set_Field (M3, "exists", JS.Create (Exists));
       JS.Set_Field (M3, "at_camera", JS.Create (At_Camera));
-      JS.Set_Field (M3, "position", JS.Create (Image_Of (Position)));
+      JS.Set_Field (M3, "position", JS.Create (Mirror_Direction_Image));
       JS.Set_Field (Info, "m3", M3);
-      Log.Write ("M3 Exists: " & Exists'image);
-      Log.Write ("M3 At_Camera: " & At_Camera'image);
+      Log.Write ("M3 Exists    : " & Exists'image);
+      Log.Write ("M3 At_Camera : " & At_Camera'image);
     end Set_M3_Values;
 
     procedure Set_Focuser_Values is
-      Focuser      : constant JS.JSON_Value := JS.Create_Object;
-      Moving       : constant Boolean := Data.Focuser.Moving;
-      Max_Position : constant Integer := Integer(Data.Focuser.Max_Position);
-      Position     : constant Integer := Integer(Data.Focuser.Position);
-      Exists       : Boolean;
+      Focuser : constant JS.JSON_Value := JS.Create_Object;
+      Data    : constant Focuser_Data  := Protected_Focuser.Data;
     begin
-      if Is_Simulation then
-        Exists := True;
-      else
-        Exists := Data.Focuser.Exists;
-      end if;
-      JS.Set_Field (Focuser, "exists", JS.Create (Exists));
-      JS.Set_Field (Focuser, "moving", JS.Create (Moving));
-      JS.Set_Field (Focuser, "max_position", JS.Create (Max_Position));
-      JS.Set_Field (Focuser, "position", JS.Create (Position));
+      JS.Set_Field (Focuser, "exists", JS.Create (Data.Exists));
+      JS.Set_Field (Focuser, "moving", JS.Create (Data.Moving));
+      JS.Set_Field (Focuser, "max_position", JS.Create (Data.Max_Position));
+      JS.Set_Field (Focuser, "position", JS.Create (Data.Position));
       JS.Set_Field (Info, "focuser", Focuser);
-      Log.Write ("Focuser Exists   : " & Exists'image);
-      Log.Write ("Focuser Moving   : " & Moving'image);
-      Log.Write ("Focuser Position :" & Position'image);
+      Log.Write ("Focuser Exists        : " & Data.Exists'image);
+      Log.Write ("Focuser Moving        : " & Data.Moving'image);
+      Log.Write ("Focuser Max Position  :"  & Data.Max_Position'image);
+      Log.Write ("Focuser Position      :"  & Data.Position'image);
     end Set_Focuser_Values;
 
     procedure Set_Rotator_Values is
       Rotator       : constant JS.JSON_Value := JS.Create_Object;
-      Moving        : constant Boolean := Data.Rotator.Moving;
-      Slewing       : constant Boolean := Data.Rotator.Slewing;
-      Field_Angle   : constant Degrees := Degrees(Data.Rotator.Field_Angle);
-      Mech_Position : constant Degrees := Degrees(Data.Rotator.Mech_Position);
+      Data          : constant Rotator_Data  := Protected_Rotator.Data;
+      Field_Angle   : constant String        := Image_Of (Data.Field_Angle);
+      Mech_Position : constant String        := Image_Of (Data.Mech_Position);
     begin
-      JS.Set_Field (Rotator, "moving", JS.Create (Moving'image));
-      JS.Set_Field (Rotator, "slewing", JS.Create (Slewing'image));
-      JS.Set_Field (Rotator, "field_angle", JS.Create (Image_Of (Field_Angle)));
-      JS.Set_Field (Rotator, "mech_position", JS.Create (Image_Of (Mech_Position)));
+      JS.Set_Field (Rotator, "exists", JS.Create (Data.Exists));
+      JS.Set_Field (Rotator, "moving", JS.Create (Data.Moving));
+      JS.Set_Field (Rotator, "slewing", JS.Create (Data.Slewing));
+      JS.Set_Field (Rotator, "field_angle", JS.Create (Field_Angle));
+      JS.Set_Field (Rotator, "mech_position", JS.Create (Mech_Position));
       JS.Set_Field (Info, "rotator", Rotator);
-      Log.Write ("Rotator Moving        : " & Moving'image);
-      Log.Write ("Rotator Slewing       : " & Slewing'image);
-      Log.Write ("Rotator Field Angle   :" & Field_Angle'image);
-      Log.Write ("Rotator Mech Position :" & Mech_Position'image);
+      Log.Write ("Rotator Moving        : " & Data.Moving'image);
+      Log.Write ("Rotator Slewing       : " & Data.Slewing'image);
+      Log.Write ("Rotator Field Angle   : " & Field_Angle);
+      Log.Write ("Rotator Mech Position : " & Mech_Position);
     end Set_Rotator_Values;
 
   begin -- Information
@@ -188,19 +176,15 @@ package body Http_Server is
           Command_Image : constant String := Parts(2);
         begin
           declare
-            Command : constant Device.Command := Device.Command'value(Parts(2));
-            use type Device.Command;
+            Command : constant Input.Command := Input.Command'value(Parts(2));
           begin
-            User.Input.Put (Command, From => User.Input.Server);
-            if Command = Device.Rotate then
-              At_Camera_Simulation := not At_Camera_Simulation;
-            end if;
+            Input.Put (Command, From => Input.Server);
             return AWS.Response.Acknowledge (AWS.Messages.S200, "ok");
           end;
         exception
         when others =>
           Log.Error ("Unknown Command: " & Command_Image);
-          User.Input.Put (Device.End_Command, From => User.Input.Server);
+          Input.Put (Input.End_Command, From => Input.Server);
           return AWS.Response.Acknowledge (AWS.Messages.S400, "unknown command");
         end;
       elsif Subsystem = "focuser" then
@@ -214,7 +198,7 @@ package body Http_Server is
             return AWS.Response.Acknowledge (AWS.Messages.S400, "no position parameter");
           end if;
           Log.Write ("Focuser.Set_Position: " & Value_Image);
-          Telescope.Focuser_Goto (Device.Microns'value(Value_Image));
+          Protected_Focuser.Data.Set_Position (Microns'value(Value_Image));
           return AWS.Response.Acknowledge (AWS.Messages.S200, "ok");
         end;
       elsif Subsystem = "rotator" then
@@ -229,7 +213,7 @@ package body Http_Server is
                 return AWS.Response.Acknowledge (AWS.Messages.S400, "no field angle parameter");
               end if;
               Log.Write ("Rotator.Goto_Field_Angle: " & Value_Image);
-              Telescope.Rotator_Goto_Field_Angle (Device.Degrees'value(Value_Image));
+              Protected_Rotator.Data.Goto_Field_Angle (Degrees'value(Value_Image));
               return AWS.Response.Acknowledge (AWS.Messages.S200, "ok");
             end;
           elsif Command_Image = "goto_mech" then
@@ -240,7 +224,7 @@ package body Http_Server is
                 return AWS.Response.Acknowledge (AWS.Messages.S400, "no mech position parameter");
               end if;
               Log.Write ("Rotator.Goto_Mech_Position: " & Value_Image);
-              Telescope.Rotator_Goto_Mech_Position (Device.Degrees'value(Value_Image));
+              Protected_Rotator.Data.Goto_Mech_Position (Degrees'value(Value_Image));
               return AWS.Response.Acknowledge (AWS.Messages.S200, "ok");
             end;
           elsif Command_Image = "goto" then
@@ -251,7 +235,7 @@ package body Http_Server is
                 return AWS.Response.Acknowledge (AWS.Messages.S400, "no offset parameter");
               end if;
               Log.Write ("Rotator.Goto_Offset: " & Value_Image);
-              Telescope.Rotator_Goto_Offset (Device.Degrees'value(Value_Image));
+              Protected_Rotator.Data.Goto_Offset (Degrees'value(Value_Image));
               return AWS.Response.Acknowledge (AWS.Messages.S200, "ok");
             end;
           else
@@ -275,18 +259,49 @@ package body Http_Server is
 
   procedure Start  is
   begin
-    Log.Write ("Start");
-    AWS.Server.Start (Web_Server => The_Server,
-                      Name       => "Skytracker",
-                      Callback   => Call_Back'access,
-                      Port       => Natural(Parameter.Server_Port));
+    if Strings.Is_Null (The_Client_Filename) then
+      Log.Warning ("No GUI client");
+    else
+      declare
+        Client_Filename : constant String := +The_Client_Filename;
+      begin
+        Log.Write ("Start " & Client_Filename);
+        AWS.Server.Start (Web_Server => The_Server,
+                          Name       => "Skytracker",
+                          Callback   => Call_Back'access,
+                          Port       => Natural(The_Server_Port));
+        Os.Process.Create (Client_Filename);
+      exception
+      when others =>
+        Log.Error ("GUI client not started");
+      end;
+    end if;
   end Start;
+
+
+  procedure Set_State (Image : String) is
+  begin
+    Protected_Mount_State.Set ([Image]);
+  end Set_State;
+
+
+  procedure Set_Moving (Speed : Angle.Value) renames Protected_Moving_Speed.Set;
+
+  procedure Set (Data : Mount_Data) renames Protected_Mount.Set;
+
+  procedure Set (Position : Mirror_Position) renames Protected_Mirror_Position.Set;
+
+  procedure Set (Data : Focuser_Data) renames Protected_Focuser.Set;
+
+  procedure Set (Data : Rotator_Data) renames Protected_Rotator.Set;
 
 
   procedure Shutdown is
   begin
-    Log.Write ("Shutdown");
-    AWS.Server.Shutdown (The_Server);
+    if not Strings.Is_Null (The_Client_Filename) then
+      Log.Write ("Shutdown");
+      AWS.Server.Shutdown (The_Server);
+    end if;
   exception
   when others =>
     null;

@@ -4,6 +4,7 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with Angle;
 with Earth;
 with Network;
 with Refraction;
@@ -47,11 +48,12 @@ package Ten_Micron is
   Undefined_Pier : constant Character := ' ';
 
   type Information is record
-    Status     : State := Disconnected;
-    Date_Time  : Time.Ut := Time.Unknown;
-    Direction  : Space.Direction;
-    Position   : Space.Direction;
-    Pier_Side  : Character := Undefined_Pier;
+    Status       : State := Disconnected;
+    Date_Time    : Time.Ut := Time.Unknown;
+    Direction    : Space.Direction;
+    Position     : Space.Direction;
+    Pier_Side    : Character := Undefined_Pier;
+    Moving_Speed : Angle.Value := Angle.Zero;
   end record;
 
   type Polar_Error is delta 0.01 range 0.0 .. 99.9999;
@@ -85,6 +87,7 @@ package Ten_Micron is
                    Move_Right_End,
                    Move_Up_End,
                    Move_Down_End,
+                   Move_End,
                    Increase_Moving_Rate,
                    Decrease_Moving_Rate);
 
@@ -150,9 +153,9 @@ package Ten_Micron is
 private
 
   Id : constant String := "10micron";
-  
+
   package Log is new Traces (Id);
-  
+
   Is_In_Expert_Mode  : Boolean;
   The_Server_Address : Network.Ip_Address;
   The_Server_Port    : Network.Port_Number;
