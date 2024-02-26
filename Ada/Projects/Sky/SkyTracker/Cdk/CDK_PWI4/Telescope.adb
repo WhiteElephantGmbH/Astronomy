@@ -23,6 +23,7 @@ with Http_Server;
 with Input;
 with Objects;
 with Parameter;
+with Picture;
 with Remote;
 with Strings;
 with System;
@@ -622,6 +623,39 @@ package body Telescope is
     end Find_Home_And_Set_Defaults;
 
 
+    function Solve_Picture return Boolean is
+    begin
+      if not Picture.Solve (Mount.Actual_Info.Actual_Direction) then
+        Log.Warning ("solve picture not started");
+        return False;
+      end if;
+      return True;
+    exception
+    when Picture.Not_Solved =>
+      Log.Warning ("solve picture terminated");
+      return False;
+    when Item: others =>
+      Log.Error ("solve picture failed");
+      Log.Termination (Item);
+      return False;
+    end Solve_Picture;
+
+
+    procedure Picture_Solving is
+      The_Direction : Space.Direction;
+    begin
+      if Picture.Solved then
+        The_State := Tracking;
+        The_Direction := Picture.Direction;
+        Mount.Add_To_Model (The_Direction);
+        Log.Write ("Added to Model Picture Direction: " & Space.Image_Of (The_Direction));
+      end if;
+    exception
+    when Picture.Not_Solved =>
+      The_State := Tracking;
+    end Picture_Solving;
+
+
   --=============
   --==  States ==
   --=============
@@ -1081,6 +1115,29 @@ package body Telescope is
       end case;
     end Tracking_State;
 
+    --------------
+    -- Solving --
+    --------------
+    procedure Solving_State is
+    begin
+      case The_Event is
+      when Mount_Startup =>
+        Picture.Stop_Solving;
+        The_State := Mount_Startup_State (The_Event);
+      when Mount_Stopped =>
+        Picture.Stop_Solving;
+        The_State := Stopped;
+      when Mount_Approach =>
+        Picture.Stop_Solving;
+        The_State := Approaching;
+      when Halt =>
+        Picture.Stop_Solving;
+        Stop_Target;
+      when others =>
+        null;
+      end case;
+    end Solving_State;
+
     Has_New_Data : Boolean := True;
 
     The_Next_Time : Ada.Real_Time.Time;
@@ -1249,6 +1306,11 @@ package body Telescope is
           case The_State is
           when Tracking =>
             Update_Target_Direction;
+            if Picture.Exists and then Solve_Picture then
+              The_State := Solving;
+            end if;
+          when Solving =>
+            Picture_Solving;
           when Waiting =>
             The_Event := Mount_Stopped;
           when Mount_Error =>
@@ -1281,6 +1343,7 @@ package body Telescope is
           when Waiting       => Waiting_State;
           when Approaching   => Approaching_State;
           when Is_Tracking   => Tracking_State;
+          when Solving       => Solving_State;
           end case;
           Has_New_Data := True;
         end if;

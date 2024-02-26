@@ -44,7 +44,8 @@ package Telescope is
                  Waiting,
                  Approaching,
                  Following,
-                 Tracking);
+                 Tracking,
+                 Solving);
 
   subtype Is_Tracking is State range Following .. Tracking;
 

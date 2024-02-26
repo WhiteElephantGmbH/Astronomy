@@ -334,6 +334,9 @@ package body User is
       when Telescope.Positioning | Telescope.Preparing | Telescope.Approaching | Telescope.Is_Tracking =>
         Enable_Goto_Button;
         Enable_Stop_Button;
+      when Telescope.Solving =>
+        Disable_Goto_Button;
+        Enable_Stop_Button;     
       when Telescope.Stopping =>
         Disable_Goto_Button;
         Disable_Stop_Button;

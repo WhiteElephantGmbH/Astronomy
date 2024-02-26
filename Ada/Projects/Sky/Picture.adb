@@ -280,7 +280,7 @@ package body Picture is
 
   function Direction return Space.Direction is
   begin
-    if not Solved then
+    if not Is_Solved then
       raise Undefined_Value;
     end if;
     return Space.Direction_Of (Ra  => The_Ra,
