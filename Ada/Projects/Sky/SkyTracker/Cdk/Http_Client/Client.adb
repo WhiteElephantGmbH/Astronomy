@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2023 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2023 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
@@ -8,7 +8,7 @@ with Ada.Text_IO;
 with AWS.Client;
 with AWS.Response;
 with Exceptions;
-with Strings;
+with Text;
 
 package body Client is
 
@@ -19,9 +19,9 @@ package body Client is
     loop
       IO.Put (">");
       declare
-        Data    : constant String := Strings.Trimmed (IO.Get_Line);
-        The_Url : Strings.Element := ["http://127.0.0.1:9000"];
-        use type Strings.Element;
+        Data    : constant String := Text.Trimmed (IO.Get_Line);
+        The_Url : Text.String := ["http://127.0.0.1:9000"];
+        use type Text.String;
       begin
         exit when Data = "";
         case Data(Data'first) is

@@ -19,45 +19,47 @@ with AWS.Client;
 with AWS.Response;
 with Os.Process;
 with PWI4.Protocol;
-with Strings;
+with Text;
 with Traces;
 
 package body PWI4 is
 
   package Log is new Traces ("PWI");
 
-  The_Process_Id : Os.Process.Id;
+  use type Text.String;
 
-  The_Ip_Address_And_Port : Strings.Element := ["127.0.0.1:8220"];
+  The_Ip_Address_And_Port : Text.String := ["127.0.0.1:8220"];
+
+  The_Process_Id : Os.Process.Id;
 
 
   function Image_Of (Item : Arc_Second) return String is
   begin
-    return Strings.Trimmed (Item'image);
+    return Text.Trimmed (Item'image);
   end Image_Of;
 
 
   function Image_Of (Item : Degrees) return String is
   begin
-    return Strings.Trimmed (Item'image);
+    return Text.Trimmed (Item'image);
   end Image_Of;
 
 
   function Image_Of (Item : Hours) return String is
   begin
-    return Strings.Trimmed (Item'image);
+    return Text.Trimmed (Item'image);
   end Image_Of;
 
 
   function Image_Of (Item : Microns) return String is
   begin
-    return Strings.Trimmed (Integer(Item)'image);
+    return Text.Trimmed (Integer(Item)'image);
   end Image_Of;
 
 
   function Image_Of (Item : Points) return String is
   begin
-    return Strings.Trimmed (Item'image);
+    return Text.Trimmed (Item'image);
   end Image_Of;
 
 
@@ -83,7 +85,6 @@ package body PWI4 is
 
 
   procedure Execute (Item : String) is
-    use type Strings.Element;
     Url : constant String := "http://" & The_Ip_Address_And_Port;
   begin
     Log.Write ("Execute " & Item);

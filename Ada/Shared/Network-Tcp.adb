@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2016 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2016 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
@@ -7,8 +7,8 @@ pragma Style_White_Elephant;
 with Ada.Calendar;
 with Ada.Unchecked_Conversion;
 with Log;
-with Strings;
 with System;
+with Text;
 
 package body Network.Tcp is
 
@@ -461,7 +461,7 @@ package body Network.Tcp is
                             Terminator      : Character;
                             Receive_Timeout : Duration := Use_Socket_Timeout) return String is
     use type Ada.Calendar.Time;
-    use type Strings.Element;
+    use type Text.String;
     The_Timeout  : Duration;
     The_Deadline : Ada.Calendar.Time;
   begin
@@ -481,7 +481,7 @@ package body Network.Tcp is
     declare
       The_Data      : Data (1..1);
       The_Character : Character;
-      The_String    : Strings.Element;
+      The_String    : Text.String;
       function Convert is new Ada.Unchecked_Conversion (Data_Item, Character);
     begin
       loop
@@ -493,7 +493,7 @@ package body Network.Tcp is
           raise Timeout;
         end if;
         The_Character := Convert(The_Data(The_Data'first));
-        Strings.Append (The_String, The_Character);
+        The_String.Append (The_Character);
         exit when The_Character = Terminator;
       end loop;
       return +The_String;

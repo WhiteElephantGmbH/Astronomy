@@ -25,8 +25,8 @@ with Lexicon;
 with Sky.Catalog;
 with Sky.Data;
 with Sssb;
-with Strings;
 with Targets;
+with Text;
 with Traces;
 
 package body Name is
@@ -40,7 +40,7 @@ package body Name is
   type Element_Data (Item : Data_Kind) is record
     Kind      : Object_Kind;
     Number    : Natural;
-    Name      : Strings.Element;
+    Name      : Text.String;
     Next      : Element_Access;
     case Item is
     when Axis_Position =>
@@ -51,6 +51,7 @@ package body Name is
       Object : Sky.Object := Sky.Undefined;
     end case;
   end record;
+  use type Text.String;
 
 
   function "=" (Left, Right : Id) return Boolean is
@@ -101,7 +102,6 @@ package body Name is
 
 
   function Image_Of (Item : Id) return String is
-    use type Strings.Element;
   begin
     case Item.Data_Id is
     when Sky.Favorites =>
@@ -375,11 +375,11 @@ package body Name is
       function Stored (Line   : String;
                        Number : Positive) return Boolean is
 
-        Parts : constant Strings.Item := Strings.Item_Of (Strings.Trimmed (Line), Separator => '|');
+        Parts : constant Text.Strings := Text.Strings_Of (Text.Trimmed (Line), Separator => '|');
 
-        function Part_For (Index : Strings.Element_Index) return String is
+        function Part_For (Index : Text.String_Index) return String is
         begin
-          return Strings.Trimmed (Parts(Index));
+          return Text.Trimmed (Parts(Index));
         end Part_For;
 
         The_Element : Element_Access;
@@ -389,8 +389,8 @@ package body Name is
           return False;
         end if;
         declare -- Store
-          Part_1  : constant String := Part_For (Strings.First_Index);
-          Parts_1 : constant Strings.Item := Strings.Item_Of (Part_1, Separator => ' ');
+          Part_1  : constant String := Part_For (Text.First_Index);
+          Parts_1 : constant Text.Strings := Text.Strings_Of (Part_1, Separator => ' ');
 
           function Pixels_Of (The_Value : Angle.Value) return Integer is
             use type Angle.Value;
@@ -404,10 +404,10 @@ package body Name is
           begin
             if Parts.Count = 3 then
               declare
-                Words         : constant Strings.Item := Parts_1.Part (Strings.First_Index + 1, Parts_1.Count);
+                Words         : constant Text.Strings := Parts_1.Part (Text.First_Index + 1, Parts_1.Count);
                 Position_Name : constant String := Words.To_Data (Separator => " ");
-                Ra_Image      : constant String := Part_For (Strings.First_Index + 1);
-                Dec_Image     : constant String := Part_For (Strings.First_Index + 2);
+                Ra_Image      : constant String := Part_For (Text.First_Index + 1);
+                Dec_Image     : constant String := Part_For (Text.First_Index + 2);
               begin
                 The_Element := new Element_Data (Axis_Position);
                 The_Element.Kind := Axis_Position;
@@ -433,10 +433,10 @@ package body Name is
           begin
             if Parts.Count = 3 then
               declare
-                Words     : constant Strings.Item := Parts_1.Part (Strings.First_Index + 1, Parts_1.Count);
+                Words     : constant Text.Strings := Parts_1.Part (Text.First_Index + 1, Parts_1.Count);
                 Mark_Name : constant String := Words.To_Data (Separator => " ");
-                Az_Image  : constant String := Part_For (Strings.First_Index + 1);
-                Alt_Image : constant String := Part_For (Strings.First_Index + 2);
+                Az_Image  : constant String := Part_For (Text.First_Index + 1);
+                Alt_Image : constant String := Part_For (Text.First_Index + 2);
               begin
                 The_Element := new Element_Data (Landmark);
                 The_Element.Kind := Landmark;
@@ -469,9 +469,9 @@ package body Name is
             if Parts.Count = 4 then
               declare
                 Object      : constant String := Part_1;
-                Description : constant String := Part_For (Strings.First_Index + 1);
-                Ra_Image    : constant String := Part_For (Strings.First_Index + 2);
-                Dec_Image   : constant String := Part_For (Strings.First_Index + 3);
+                Description : constant String := Part_For (Text.First_Index + 1);
+                Ra_Image    : constant String := Part_For (Text.First_Index + 2);
+                Dec_Image   : constant String := Part_For (Text.First_Index + 3);
               begin
                 The_Element.Kind := Sky_Object;
                 The_Element.Name := [Object];
@@ -486,9 +486,8 @@ package body Name is
               end;
             else
               declare
-                Object_Name : constant String := Part_For (Strings.First_Index);
+                Object_Name : constant String := Part_For (Text.First_Index);
                 use type Sky.Object;
-                use type Strings.Element;
               begin
                 The_Element.Name := [Part_For (Parts.Count)];
                 if Sssb.Exists (Object_Name) then
@@ -546,15 +545,15 @@ package body Name is
                 if The_Element.Object = Sky.Undefined then
                   Error.Raise_With ("Unknown Name - " & Line);
                 end if;
-                The_Element.Name := [Sky.Catalog.Object_Image_Of (The_Element.Object, +The_Element.Name)];
+                The_Element.Name := [Sky.Catalog.Object_Image_Of (The_Element.Object, +@)];
               end;
             end if;
           end Add_Sky_Object;
 
         begin -- Store
-          if Support_Axis_Positions and then Parts_1.Count >= 2 and then Parts_1(Strings.First_Index) = "AP" then
+          if Support_Axis_Positions and then Parts_1.Count >= 2 and then Parts_1(Text.First_Index) = "AP" then
             Add_Axis_Position;
-          elsif Support_Land_Marks and then Parts_1.Count >= 2 and then Parts_1(Strings.First_Index) = "LM" then
+          elsif Support_Land_Marks and then Parts_1.Count >= 2 and then Parts_1(Text.First_Index) = "LM" then
             Add_Landmark;
           else
             Add_Sky_Object;
@@ -599,7 +598,7 @@ package body Name is
 
       begin -- Create_Default_Favorites
         Ada.Text_IO.Create (The_File, Name => Filename);
-        Ada.Text_IO.Put (The_File, Strings.Bom_8);
+        Ada.Text_IO.Put (The_File, Text.Bom_8);
         if Support_Axis_Positions then
           Put ("AP Home | 30° 00' 00"" | -125° 00' 00""");
           Put ("");
@@ -710,13 +709,13 @@ package body Name is
       end if;
       Ada.Text_IO.Open (The_File, Ada.Text_IO.In_File, Filename);
       declare
-        Has_Bom : constant Boolean := Strings.Has_Skipped_Bom_8 (The_File);
+        Has_Bom : constant Boolean := Text.Has_Skipped_Bom_8 (The_File);
       begin
         while not Ada.Text_IO.End_Of_File (The_File) loop
           declare
             Line : constant String := Ada.Text_IO.Get_Line (The_File);
           begin
-            if Stored ((if Has_Bom then Line else Strings.Utf8_Of (Line)), The_Target_Number) then
+            if Stored ((if Has_Bom then Line else Text.Utf8_Of (Line)), The_Target_Number) then
               The_Target_Number := Positive'succ(The_Target_Number);
             end if;
           end;

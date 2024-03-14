@@ -34,7 +34,7 @@ with Sky.Catalog;
 with Sky_Line;
 with Site;
 with Space;
-with Strings;
+with Text;
 with Targets;
 with Time;
 with Traces;
@@ -88,9 +88,9 @@ package body User is
     Temperature  : Refraction.Celsius;
   end record;
 
-  The_Error_Text : Strings.Element;
+  The_Error_Text : Text.String;
 
-  use type Strings.Element;
+  use type Text.String;
 
   package Persistent_Setup is new Persistent (Setup_Data_Storage, "Setup");
 
@@ -193,7 +193,7 @@ package body User is
 
   procedure Clear_Error is
   begin
-    Strings.Clear (The_Error_Text);
+    Text.Clear (The_Error_Text);
   end Clear_Error;
 
 
@@ -288,7 +288,7 @@ package body User is
     use type Time.Ut;
 
   begin -- Show
-    if not Strings.Is_Null (The_Error_Text) then
+    if not Text.Is_Null (The_Error_Text) then
       Gui.Set_Text (First_Control_Button, "Reset");
       Gui.Set_Text (Clear_Button, "Reset");
       Gui.Set_Status_Line ("ERROR - " & The_Error_Text);
@@ -391,12 +391,12 @@ package body User is
         end if;
         Gui.Set_Text (Local_Time, Time.Image_Of (Information.Universal_Time, Time_Only => True));
       end if;
-      Gui.Set_Text (Moving_Rate, Strings.Legible_Of (Information.Actual_Moving_Rate'image));
+      Gui.Set_Text (Moving_Rate, Text.Legible_Of (Information.Actual_Moving_Rate'image));
     when Is_Setup =>
       begin
         Gui.Set_Text (Longitude, Angle.Image_Of (Site.Longitude));
         Gui.Set_Text (Latitude, Angle.Image_Of (Site.Latitude, Show_Signed => True));
-        Gui.Set_Text (Elevation, Strings.Trimmed (Site.Elevation'img) & 'm');
+        Gui.Set_Text (Elevation, Text.Trimmed (Site.Elevation'img) & 'm');
       exception
       when Site.Not_Defined =>
         Gui.Set_Text (Longitude, "");
@@ -442,7 +442,7 @@ package body User is
 
 
   function Identifier_Of (Item : String) return String is
-    The_Image : String := Strings.Trimmed (Item);
+    The_Image : String := Text.Trimmed (Item);
   begin
     for Index in The_Image'range loop
       if The_Image(Index) = ' ' then
@@ -544,14 +544,14 @@ package body User is
 
   function Image_Of (The_Value : Refraction.Hectopascal) return String is
   begin
-    return Strings.Trimmed (The_Value'img) & "hPa";
+    return Text.Trimmed (The_Value'img) & "hPa";
   end Image_Of;
 
 
   procedure Define_Air_Pressure is
   begin
     declare
-      Value : constant String := Strings.Trimmed (Gui.Contents_Of (Air_Pressure));
+      Value : constant String := Text.Trimmed (Gui.Contents_Of (Air_Pressure));
       Last  : Natural := Value'last;
     begin
       loop
@@ -573,14 +573,14 @@ package body User is
 
   function Image_Of (The_Value : Refraction.Celsius) return String is
   begin
-    return Strings.Trimmed (The_Value'img) & "°C";
+    return Text.Trimmed (The_Value'img) & "°C";
   end Image_Of;
 
 
   procedure Define_Temperature is
   begin
     declare
-      Value : constant String := Strings.Trimmed (Gui.Contents_Of (Temperature));
+      Value : constant String := Text.Trimmed (Gui.Contents_Of (Temperature));
       Last  : Natural := Value'last;
     begin
       loop
@@ -600,7 +600,7 @@ package body User is
   procedure Goto_Pole (Item : Get_Pole) is
   begin
     The_Target_Selection := No_Target;
-    Gui.Set_Text (Target, Strings.Legible_Of (Item'image));
+    Gui.Set_Text (Target, Text.Legible_Of (Item'image));
     Signal_Action (Define_Target);
     Perform_Goto;
   end Goto_Pole;
@@ -995,9 +995,9 @@ package body User is
                                      The_Size           => Text_Size,
                                      The_Title_Size     => Title_Size);
         for Value in Setup_Object'range loop
-          Gui.Add_Text (Setup_Control, Strings.Legible_Of (Value'img));
+          Gui.Add_Text (Setup_Control, Text.Legible_Of (Value'img));
         end loop;
-        Gui.Select_Text (Setup_Control, Strings.Legible_Of (The_Setup_Object'img));
+        Gui.Select_Text (Setup_Control, Text.Legible_Of (The_Setup_Object'img));
         Cone_Error := Gui.Create (Setup_Page, "Cone Error", "",
                                   Is_Modifiable  => False,
                                   The_Size       => Text_Size,

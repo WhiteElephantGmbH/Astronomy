@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2022 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2022 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
@@ -8,7 +8,7 @@ with Ada.IO_Exceptions;
 with AWS.Client;
 with AWS.Response;
 with GNATCOLL.JSON;
-with Strings;
+with Text;
 with Traces;
 
 package body ENC_2302_Client is
@@ -77,8 +77,8 @@ package body ENC_2302_Client is
   begin
     Log.Write ("Set " & The_Port'image & " to " & The_Switch'image);
     The_Switches := Client_Get (Host,
-                                P => Strings.Trimmed(Port_Number'image),
-                                S => Strings.Trimmed(Switch_Value'image));
+                                P => Text.Trimmed(Port_Number'image),
+                                S => Text.Trimmed(Switch_Value'image));
     if The_Switches(The_Port) /= The_Switch then
       raise Not_Set;
     end if;

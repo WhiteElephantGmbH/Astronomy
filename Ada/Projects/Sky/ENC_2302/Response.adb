@@ -1,10 +1,10 @@
 -- *********************************************************************************************************************
--- *                           (c) 2022 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2022 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Strings;
+with Text;
 
 package body Response is
 
@@ -13,7 +13,7 @@ package body Response is
 
     function S (The_Port : ENC.Port) return String is
     begin
-      return """state"":" & Strings.Trimmed(ENC.Switch'pos(With_Switches(The_Port))'image);
+      return """state"":" & Text.Trimmed(ENC.Switch'pos(With_Switches(The_Port))'image);
     end S;
 
   begin

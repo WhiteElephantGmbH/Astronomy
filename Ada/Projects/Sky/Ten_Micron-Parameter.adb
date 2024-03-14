@@ -16,7 +16,7 @@
 pragma Style_White_Elephant;
 
 with Section;
-with Strings;
+with Text;
 
 package body Ten_Micron.Parameter is
 
@@ -27,7 +27,7 @@ package body Ten_Micron.Parameter is
   procedure Define (Handle : Configuration.File_Handle) is
   begin
     Section.Set (Configuration.Handle_For (Handle, Id));
-    Is_In_Expert_Mode := Strings.Is_Equal (Section.String_Value_Of (Expert_Mode_Key), "True");
+    Is_In_Expert_Mode := Text.Matches (Section.String_Value_Of (Expert_Mode_Key), "True");
     Log.Write ("Expert Mode: " & Is_In_Expert_Mode'image);
     The_Server_Address := Section.Ip_Address_For (Id);
     The_Server_Port := Section.Port_For (Id);

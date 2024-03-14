@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2023 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2023 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
@@ -11,16 +11,18 @@ with GNATCOLL.JSON;
 with Key;
 with Persistent_String;
 with Site;
-with Strings;
+with Text;
 with Traces;
 
 package body Weather is
 
-  package Log is new Traces ("Weather");
+  Id : constant String := "Weather";
+
+  package Log is new Traces (Id);
 
   package JS renames GNATCOLL.JSON;
 
-  package Weather_Key is new Key ("Weather");
+  package Weather_Key is new Key (Id);
 
   package Persistent_Key is new Persistent_String (Weather_Key.Name);
 
@@ -47,7 +49,7 @@ package body Weather is
       Small : constant := 10.0**(-7);
       type Value is delta Small range -((2 ** 63 - 1) * Small) .. +((2 ** 63 - 1) * Small);
     begin
-      return Strings.Trimmed (Value(Item)'image);
+      return Text.Trimmed (Value(Item)'image);
     end Image_Of;
 
     use type Angle.Value;

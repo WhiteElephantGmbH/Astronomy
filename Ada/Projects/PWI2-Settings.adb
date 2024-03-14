@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2019 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2019 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
@@ -8,7 +8,7 @@ with Ada.Numerics;
 with Ada.Text_IO;
 with Angle;
 with Site;
-with Strings;
+with Text;
 
 package body PWI2.Settings is
 
@@ -48,7 +48,7 @@ package body PWI2.Settings is
     begin
       while not IO.End_Of_File (The_File) loop
         declare
-          Line : constant String := Strings.Trimmed (IO.Get_Line (The_File));
+          Line : constant String := Text.Trimmed (IO.Get_Line (The_File));
         begin
           if Line(Line'first .. Line'first + Start_Mark'length - 1) = Start_Mark and then
              Line(Line'last - End_Mark'length + 1 .. Line'last) = End_Mark

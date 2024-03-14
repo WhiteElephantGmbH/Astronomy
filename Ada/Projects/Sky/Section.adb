@@ -17,7 +17,7 @@ pragma Style_White_Elephant;
 
 with Error;
 with File;
-with Strings;
+with Text;
 
 package body Section is
 
@@ -34,7 +34,7 @@ package body Section is
                       Unit    : String := "") return Angles.List is
 
     function Image_Of (The_Ordinal : Positive) return String is
-      Image : constant String := Strings.Trimmed (The_Ordinal'img);
+      Image : constant String := Text.Trimmed (The_Ordinal'img);
     begin
       if not (The_Ordinal in 4 .. 20) then
         case The_Ordinal mod 10 is
@@ -52,11 +52,11 @@ package body Section is
     end Image_Of;
 
     Item     : constant String := String_Of (Key);
-    Images   : constant Strings.Item := Strings.Item_Of (Item, ',');
+    Images   : constant Text.Strings := Text.Strings_Of (Item, ',');
     The_List : Angles.List;
 
   begin -- Angles_Of
-    for Index in Strings.First_Index .. Images.Count loop
+    for Index in Text.First_Index .. Images.Count loop
       begin
         declare
           Image : constant String := Image_Of (Images(Index), Unit);
@@ -115,7 +115,7 @@ package body Section is
     function Image_Of (Item : Duration) return String is
       type Value is delta 0.1 range Duration'first .. Duration'last;
     begin
-      return Strings.Trimmed (Value(Item)'image) & 's';
+      return Text.Trimmed (Value(Item)'image) & 's';
     end Image_Of;
 
   begin -- Duration_Of

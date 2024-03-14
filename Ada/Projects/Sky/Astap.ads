@@ -17,13 +17,13 @@ pragma Style_White_Elephant;
 
 with Ada.Numerics.Generic_Real_Arrays;
 with Angle;
-with Strings;
+with Text;
 
 package Astap is
 
   package Numeric is new Ada.Numerics.Generic_Real_Arrays (Angle.Degrees);
 
-  Ra  : constant := Strings.First_Index;
+  Ra  : constant := Text.First_Index;
   Dec : constant := Ra + 1;
 
   subtype Index is Integer range Ra .. Dec;
@@ -41,7 +41,7 @@ package Astap is
   procedure Solve (Filename : String;
                    Height   : Angle.Degrees;
                    Start    : Location);
-  -- exception: Not_Solved 
+  -- exception: Not_Solved
 
   function Solved (The_Ra  : out Angle.Degrees;
                    The_Dec : out Angle.Degrees) return Boolean;

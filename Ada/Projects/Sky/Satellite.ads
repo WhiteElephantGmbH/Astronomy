@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2013 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2013 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -16,7 +16,7 @@
 pragma Style_White_Elephant;
 
 with Norad;
-with Strings;
+with Text;
 
 package Satellite is
 
@@ -24,7 +24,7 @@ package Satellite is
 
   procedure Read_Stellarium_Data;
 
-  function Names return Strings.List;
+  function Names return Text.List;
 
   function Exists (Name : String) return Boolean;
 

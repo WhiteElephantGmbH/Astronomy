@@ -16,7 +16,7 @@
 pragma Style_White_Elephant;
 
 with Ada.Unchecked_Conversion;
-with Strings;
+with Text;
 
 package body Database is
 
@@ -24,7 +24,7 @@ package body Database is
 
     function Convert is new Ada.Unchecked_Conversion (Star_Info, Id);
 
-    Id_Parts : constant Strings.Item := Strings.Item_Of (Image, ' ');
+    Id_Parts : constant Text.Strings := Text.Strings_Of (Image, ' ');
     The_Info : Star_Info; -- default unknown
 
   begin -- Star_Id_Of
@@ -43,7 +43,7 @@ package body Database is
             for The_Index in Greek_Alphabet'range loop
               declare
                 Letter   : constant String  := Greek_Alphabet(The_Index);
-                Location : constant Natural := Strings.Location_Of (Letter, P1);
+                Location : constant Natural := Text.Location_Of (Letter, P1);
               begin
                 if Location = P1'first then
                   The_Last := P1'first + Letter'length - 1; -- always > P1'first
@@ -56,7 +56,7 @@ package body Database is
             if The_Last = P1'first then
               The_Last := P1'last;
               for The_Index in P1'range loop
-                if not (Strings.Lowercase_Of (P1(The_Index)) in 'a' .. 'z') then
+                if not (Text.Lowercase_Of (P1(The_Index)) in 'a' .. 'z') then
                   The_Last := The_Index - 1;
                   exit;
                 end if;

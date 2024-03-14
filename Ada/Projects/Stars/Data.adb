@@ -1,25 +1,22 @@
 -- *********************************************************************************************************************
--- *                       (c) 2010 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2010 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 -->Style: White_Elephant
 
 with Ada.IO_Exceptions;
 with Ada.Text_IO;
-with Ada.Strings.Unbounded;
-with Strings;
+with Text;
 
 package body Data is
 
   Max_Number_Of_Stars : constant := 9999;
 
-  type Text is new Ada.Strings.Unbounded.Unbounded_String;
-
   type Star is record
     Ra   : Coordinate.Right_Ascension;
     Dec  : Coordinate.Declination;
     Mag  : Magnitude;
-    Name : Text;
+    Name : Text.String;
     Show : Boolean := False;
   end record;
 
@@ -27,6 +24,7 @@ package body Data is
   The_Stars : array (Positive range 1..Max_Number_Of_Stars) of Star;
   HR_Number : Natural;
 
+  use type Text.String;
 
   procedure Reset is
   begin
@@ -64,7 +62,7 @@ package body Data is
 
   function Name return String is
   begin
-    return To_String (The_Stars(HR_Number).Name);
+    return +The_Stars(HR_Number).Name;
   end Name;
 
 
@@ -126,7 +124,7 @@ package body Data is
   function Image_Of (HR : Natural) return String is
   begin
     if HR > 0 then
-      return Strings.Trimmed (Natural'image(HR));
+      return Text.Trimmed (Natural'image(HR));
     end if;
     return "";
   end Image_Of;
@@ -135,7 +133,7 @@ package body Data is
   function Name_Of (HR : Natural) return String is
   begin
     if HR > 0 then
-      return To_String (The_Stars (HR).Name);
+      return +The_Stars (HR).Name;
     end if;
     return "";
   end Name_Of;
@@ -165,18 +163,18 @@ package body Data is
           The_Last := The_Index;
           The_Index := The_Index + 1;
         end loop;
-        return Strings.Trimmed(Line(First .. The_Last));
+        return Text.Trimmed(Line(First .. The_Last));
       end Next;
 
       The_Star : Star;
 
     begin -- Store
-      if Strings.Trimmed (Line) /= "" then
+      if Text.Trimmed (Line) /= "" then
         The_Star.Ra := Coordinate.Ra_Of (Next);
         The_Star.Dec := Coordinate.Dec_Of (Next);
         The_Star.Mag := Magnitude'value(Next);
         HR_Number := Natural'value(Next);
-        The_Star.Name := To_Unbounded_String (Next);
+        The_Star.Name := Text.String_Of (Next);
         The_Star.Show := True;
         if HR_Number > The_Stars'last then
           Error ("HR Nummer zu gross:" & Line);

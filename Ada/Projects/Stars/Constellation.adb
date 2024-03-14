@@ -1,25 +1,23 @@
 -- *********************************************************************************************************************
--- *                       (c) 2010 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2010 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 -->Style: White_Elephant
 
 with Ada.IO_Exceptions;
-with Ada.Strings.Unbounded;
 with Ada.Text_IO;
-with Strings;
+with Text;
 
 package body Constellation is
 
   Max_Nr_Of_Parts : constant := 1000;
 
-  type Text is new Ada.Strings.Unbounded.Unbounded_String;
-
   type Element is record
     Key  : Part;
-    Name : Text;
+    Name : Text.String;
   end record;
 
+  use type Text.String;
 
   The_Data : array (1..Max_Nr_Of_Parts) of Element;
   The_Last : Natural := 0;
@@ -47,16 +45,16 @@ package body Constellation is
           The_Index := The_Index + 1;
           exit when The_Index > Line'last;
         end loop;
-        return Strings.Trimmed(Line(First .. Last));
+        return Text.Trimmed(Line(First .. Last));
       end Next;
 
       The_Element : Element;
 
     begin -- Store
-      if Strings.Trimmed (Line) /= "" then
+      if Text.Trimmed (Line) /= "" then
         The_Element.Key.From := Natural'value(Next);
         The_Element.Key.To := Natural'value(Next);
-        The_Element.Name := To_Unbounded_String (Next);
+        The_Element.Name := [Next];
       end if;
       The_Last := The_Last + 1;
       The_Data(The_Last) := The_Element;
@@ -86,7 +84,7 @@ package body Constellation is
   begin
     The_Last := The_Last + 1;
     The_Data(The_Last).Key := Item;
-    The_Data(The_Last).Name := To_Unbounded_String (Name);
+    The_Data(The_Last).Name := [Name];
   end Add;
 
 
@@ -142,7 +140,7 @@ package body Constellation is
       Ada.Text_IO.Put_Line (File,
                             Image_Of (The_Data(Index).Key.From) & ", " &
                             Image_Of (The_Data(Index).Key.To) & ", " &
-                            To_String (The_Data(Index).Name));
+                            The_Data(Index).Name);
     end loop;
     Ada.Text_IO.Close (File);
   end Save;

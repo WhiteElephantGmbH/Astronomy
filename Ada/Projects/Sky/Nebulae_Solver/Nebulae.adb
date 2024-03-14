@@ -11,7 +11,7 @@ with Astap;
 with Sky.Catalog;
 with File;
 with Os.System;
-with Strings;
+with Text;
 with Traces;
 
 package body Nebulae is
@@ -89,7 +89,7 @@ package body Nebulae is
             function Image_Of (Item : Angle.Degrees) return String is
               type Degrees is delta 10.0**(-5) range -360.0 .. 360.0;
             begin
-              return Strings.Trimmed (Degrees(Item)'image);
+              return Text.Trimmed (Degrees(Item)'image);
             end Image_Of;
 
           begin -- Corner
@@ -125,7 +125,7 @@ package body Nebulae is
       IO.Create (Output, Name => Object_Name & ".json");
       Put_Line ("{");
       Put_Field ("imageCredits", Image_Credits);
-      Put_Field ("imageUrl", + Strings.Lowercase_Of (Filename));
+      Put_Field ("imageUrl", + Text.Lowercase_Of (Filename));
       Put_Field ("worldCoords", World_Coords);
       Put_Field ("textureCoords", "[[[0,0], [1,0], [1,1], [0,1]]]");
       Put_Field ("minResolution", "1.0");

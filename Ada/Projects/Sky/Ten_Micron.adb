@@ -8,7 +8,7 @@ with Error;
 with Lx200;
 with Network.Tcp;
 with Satellite;
-with Strings;
+with Text;
 
 package body Ten_Micron is
 
@@ -356,7 +356,7 @@ package body Ten_Micron is
       declare
         Product  : constant String := Reply_For (Lx200.Get_Product_Name);
         Version  : constant String := Reply_For (Lx200.Get_Firmware_Number);
-        Versions : constant Strings.Item := Strings.Item_Of (Version, '.');
+        Versions : constant Text.Strings := Text.Strings_Of (Version, '.');
         type Number_Part is range 0 .. 99;
         function Value (Item : String) return Firmware_Version is (Firmware_Version(Number_Part'value(Item)));
       begin
@@ -914,7 +914,7 @@ package body Ten_Micron is
     if The_Factor = Moving_Factor'last then
       Execute (Lx200.Set_Slewing_Rate); -- set maximum slew rate
     else
-      Execute (Lx200.Set_Centering_Rate_Factor, Strings.Trimmed(The_Factor'image));
+      Execute (Lx200.Set_Centering_Rate_Factor, Text.Trimmed(The_Factor'image));
     end if;
   end Set_Moving_Rate;
 
@@ -1045,7 +1045,7 @@ package body Ten_Micron is
     Has_New_Alignment := False;
     declare
       Reply : constant String := Reply_For (Lx200.Get_Alignment_Information);
-      Data  : constant Strings.Item := Strings.Item_Of (Reply, Separator => ',');
+      Data  : constant Text.Strings := Text.Strings_Of (Reply, Separator => ',');
 
       function Parameter (Index   : Positive;
                           Default : String := "0.0") return String is

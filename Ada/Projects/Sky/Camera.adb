@@ -18,7 +18,7 @@ pragma Style_White_Elephant;
 with File;
 with Traces;
 with Os.Process;
-with Strings;
+with Text;
 
 package body Camera is
 
@@ -26,33 +26,30 @@ package body Camera is
 
   The_Id : Os.Process.Id;
 
-  The_Command    : Strings.Element;
-  The_Work_Area  : Strings.Element;
-  The_Parameters : Strings.Element;
+  The_Command    : Text.String;
+  The_Work_Area  : Text.String;
+  The_Parameters : Text.String;
   Is_Defined     : Boolean := False;
+
+  use type Text.String;
+
 
   procedure Define (Command    : String;
                     Parameters : String;
                     Picture    : String) is
     Picture_Id : constant String := "%picture%";
-    The_Index  : Natural;
-    use all type Strings.Element;
   begin
     Log.Write ("Command: " & Command);
     The_Command := [Command];
     The_Work_Area := [File.Containing_Directory_Of (Command)];
     The_Parameters := [Parameters];
-    The_Index := Index (The_Parameters, Pattern => Picture_Id);
-    if The_Index >= Parameters'first then
-      Replace_Slice (The_Parameters, The_Index, The_Index + Picture_Id'length - 1, Picture);
-    end if;
+    The_Parameters.Replace (Picture_Id, By => Picture);
     Log.Write ("Parameters: " & The_Parameters);
     Is_Defined := True;
   end Define;
 
 
   procedure Capture is
-    use type Strings.Element;
   begin
     if Is_Defined then
       The_Id := Os.Process.Created (Executable     => +The_Command,

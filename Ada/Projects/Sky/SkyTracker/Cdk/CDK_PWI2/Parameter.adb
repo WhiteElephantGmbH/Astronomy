@@ -31,16 +31,16 @@ with PWI2.Settings;
 with Remote.Parameter;
 with Section;
 with Stellarium.Parameter;
-with Strings;
 with Sun.Parameter;
 with Telescope;
+with Text;
 with Traces;
 
 package body Parameter is
 
   package Log is new Traces ("Parameter");
 
-  use type Strings.Element;
+  use type Text.String;
 
   Filename : constant String := Application.Composure (Application.Name, "ini");
 
@@ -70,7 +70,7 @@ package body Parameter is
   The_M3_Default_Place  : Device.M3.Place;
   The_M3_Ocular_Port    : PWI2.Port;
   Fans_On               : Boolean;
-  The_Pointing_Model    : Strings.Element;
+  The_Pointing_Model    : Text.String;
 
   The_Moving_Speeds   : Section.Angles.List;
   The_Cwe_Distance    : Angle.Degrees;
@@ -239,9 +239,9 @@ package body Parameter is
         Place : constant String := Section.String_Value_Of (M3_Default_Place_Key);
       begin
         Log.Write (M3_Default_Place_Key & ": " & Place);
-        if Strings.Is_Equal (Place, "Camera") then
+        if Text.Matches (Place, "Camera") then
           The_M3_Default_Place := Device.M3.Camera;
-        elsif Strings.Is_Equal (Place, "Ocular") then
+        elsif Text.Matches (Place, "Ocular") then
           The_M3_Default_Place := Device.M3.Ocular;
         else
           Error.Raise_With (M3_Default_Place_Key & " must be either Camera or Ocular");
@@ -253,9 +253,9 @@ package body Parameter is
         Port : constant String := Section.String_Value_Of (M3_Ocular_Port_Key);
       begin
         Log.Write (M3_Ocular_Port_Key & ": " & Port);
-        if Strings.Is_Equal (Port, "1") then
+        if Port = "1" then
           The_M3_Ocular_Port := PWI2.Port_1;
-        elsif Strings.Is_Equal (Port, "2") then
+        elsif Port = "2" then
           The_M3_Ocular_Port := PWI2.Port_2;
         else
           Error.Raise_With (M3_Ocular_Port_Key & " must be either 1 or 2");
@@ -267,9 +267,9 @@ package body Parameter is
         Fans_State : constant String := Section.String_Value_Of (Fans_Key);
       begin
         Log.Write ("Fans: " & Fans_State);
-        if Strings.Is_Equal (Fans_State, "On") then
+        if Text.Matches (Fans_State, "On") then
           Fans_On := True;
-        elsif Strings.Is_Equal (Fans_State, "Off") then
+        elsif Text.Matches (Fans_State, "Off") then
           Fans_On := False;
         else
           Error.Raise_With ("Fans must be either On or Off");
@@ -296,9 +296,9 @@ package body Parameter is
       Section.Set (PWI_Handle);
       Define_Site_Parameters;
 
-      Is_In_Shutdown_Mode := Strings.Is_Equal (Section.String_Value_Of (Shutdown_Key), "True");
-      Is_In_Expert_Mode := Strings.Is_Equal (Section.String_Value_Of (Expert_Mode_Key), "True");
-      Is_In_Simulation_Mode := Strings.Is_Equal (Section.String_Value_Of (Simulation_Mode_Key), "True");
+      Is_In_Shutdown_Mode := Text.Matches (Section.String_Value_Of (Shutdown_Key), "True");
+      Is_In_Expert_Mode := Text.Matches (Section.String_Value_Of (Expert_Mode_Key), "True");
+      Is_In_Simulation_Mode := Text.Matches (Section.String_Value_Of (Simulation_Mode_Key), "True");
       Define_M3_Default_Place;
       Define_M3_Ocular_Port;
       Define_Fans_State;

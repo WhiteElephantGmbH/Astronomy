@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2021 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2021 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
@@ -11,7 +11,7 @@ with Network.Tcp;
 with Objects;
 with Picture;
 with Site;
-with Strings;
+with Text;
 with Time;
 with Traces;
 
@@ -46,7 +46,7 @@ package body M_Zero is
   The_Alignment   : Alignment;
   The_Target_Kind : Target_Kind;
 
-  The_Error : Strings.Element;
+  The_Error : Text.String;
 
   procedure Set_Status (Item : State) is
   begin
@@ -85,13 +85,13 @@ package body M_Zero is
 
 
   function Error_Message return String is
-    use type Strings.Element;
+    use type Text.String;
     Message : constant String := +The_Error;
   begin
     if Message = "" then
       return "No Error";
     end if;
-    Strings.Clear (The_Error);
+    Text.Clear (The_Error);
     Set_Status (Last_State);
     return Message;
   end Error_Message;

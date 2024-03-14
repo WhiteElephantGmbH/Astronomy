@@ -16,7 +16,7 @@
 pragma Style_White_Elephant;
 
 with PWI4.Protocol;
-with Strings;
+with Text;
 
 package body PWI4.Mount is
 
@@ -205,7 +205,7 @@ package body PWI4.Mount is
   function Command_For (Axis : Offset_Axis;
                         Command : Offset_Command) return String is
   begin
-    return Strings.Lowercase_Of (Axis'image) & "_" & Strings.Lowercase_Of (Command'image);
+    return Text.Lowercase_Of (Axis'image) & "_" & Text.Lowercase_Of (Command'image);
   end Command_For;
 
 

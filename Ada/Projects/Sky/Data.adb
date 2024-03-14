@@ -38,8 +38,8 @@ package body Data is
   subtype Extension_Object is Object range First_Extension .. First_Extension + Number_Of_Extension_Objects - 1;
 
   type Information is record
-    Name        : Strings.Element;
-    Descriptor  : Strings.Element;
+    Name        : Text.String;
+    Descriptor  : Text.String;
     Object_Kind : Object_Type;
     Ra_J2000    : Angle.Degrees;
     Dec_J2000   : Angle.Degrees;
@@ -84,7 +84,7 @@ package body Data is
 
 
   function Name_Of (Id : Index) return String is
-    use type Strings.Element;
+    use type Text.String;
   begin
     if Id in Sky.Catalog.Index'first .. Sky.Catalog.Index'last then
       return Sky.Catalog.Name_Of (Sky.Catalog.Index(Id));
@@ -95,7 +95,7 @@ package body Data is
 
 
   function Descriptor_Of (Id : Index) return String is
-    use type Strings.Element;
+    use type Text.String;
   begin
     if Id in Catalog.Object then
       return Catalog.Descriptor_Of (Id);
@@ -282,7 +282,7 @@ package body Data is
 
 
   function Neo_Object_Of (Name : String) return Index is
-    use type Strings.Element;
+    use type Text.String;
   begin
     for The_Index in The_First_Neo .. The_Last_Neo loop
       if The_Extension_Table(The_Index).Name = Name then

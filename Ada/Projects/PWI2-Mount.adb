@@ -1,12 +1,12 @@
 -- *********************************************************************************************************************
--- *                       (c) 2019 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2019 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
 with Ada.Numerics;
 with PWI2.XML;
-with Strings;
+with Text;
 
 package body PWI2.Mount is
 
@@ -164,8 +164,8 @@ package body PWI2.Mount is
                   From_J2000 : Boolean := False) is
 
     Kind      : constant String := (if From_J2000 then "2000" else "");
-    Ra_Image  : constant String := Strings.Trimmed (Ra'img);
-    Dec_Image : constant String := Strings.Trimmed (Dec'img);
+    Ra_Image  : constant String := Text.Trimmed (Ra'img);
+    Dec_Image : constant String := Text.Trimmed (Dec'img);
 
   begin
     Execute (Command_Name => "move",
@@ -180,10 +180,10 @@ package body PWI2.Mount is
                   From_J2000 : Boolean := False) is
 
     Kind           : constant String := (if From_J2000 then "2000" else "");
-    Ra_Image       : constant String := Strings.Trimmed (Ra'img);
-    Dec_Image      : constant String := Strings.Trimmed (Dec'img);
-    Ra_Rate_Image  : constant String := Strings.Trimmed (Ra_Rate'img);
-    Dec_Rate_Image : constant String := Strings.Trimmed (Dec_Rate'img);
+    Ra_Image       : constant String := Text.Trimmed (Ra'img);
+    Dec_Image      : constant String := Text.Trimmed (Dec'img);
+    Ra_Rate_Image  : constant String := Text.Trimmed (Ra_Rate'img);
+    Dec_Rate_Image : constant String := Text.Trimmed (Dec_Rate'img);
 
   begin
     Execute (Command_Name => "move",
@@ -195,8 +195,8 @@ package body PWI2.Mount is
   procedure Move (Alt : Degrees;
                   Azm : Degrees) is
 
-    Alt_Image : constant String := Strings.Trimmed (Alt'img);
-    Azm_Image : constant String := Strings.Trimmed (Azm'img);
+    Alt_Image : constant String := Text.Trimmed (Alt'img);
+    Azm_Image : constant String := Text.Trimmed (Azm'img);
 
   begin
     Execute (Command_Name => "move",
@@ -207,8 +207,8 @@ package body PWI2.Mount is
   procedure Jog (Alt_Rate : Axis_Rate;
                  Azm_Rate : Axis_Rate) is
 
-    Alt_Image : constant String := Strings.Trimmed (Alt_Rate'img);
-    Azm_Image : constant String := Strings.Trimmed (Azm_Rate'img);
+    Alt_Image : constant String := Text.Trimmed (Alt_Rate'img);
+    Azm_Image : constant String := Text.Trimmed (Azm_Rate'img);
 
   begin
     Execute (Command_Name => "jog",

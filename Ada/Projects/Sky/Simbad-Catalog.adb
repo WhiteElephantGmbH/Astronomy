@@ -18,7 +18,7 @@ pragma Style_White_Elephant;
 with Ada.Unchecked_Conversion;
 with Ada.Containers.Ordered_Maps;
 with Ada.Containers.Vectors;
-with Strings;
+with Text;
 with Traces;
 
 package body Simbad.Catalog is
@@ -238,7 +238,7 @@ package body Simbad.Catalog is
 
 
   function Number_Of (Image : String) return Number is
-    Parts : constant Strings.Item := Strings.Item_Of (Image, ' ');
+    Parts : constant Text.Strings := Text.Strings_Of (Image, ' ');
   begin
     case Parts.Count is
     when 0 =>
@@ -346,7 +346,7 @@ package body Simbad.Catalog is
       when Greek =>
         return Database.Greek_Alphabet(Natural(The_Number));
       when Numeric =>
-        return Strings.Trimmed (The_Number'image);
+        return Text.Trimmed (The_Number'image);
       when others =>
         raise Program_Error;
       end case;
@@ -369,7 +369,7 @@ package body Simbad.Catalog is
       when C_Uma => return "UMa";
       when C_Umi => return "UMi";
       when others =>
-        return Strings.Legible_Of (Image(Image'first + 1 ..Image'last));
+        return Text.Legible_Of (Image(Image'first + 1 ..Image'last));
       end case;
     end Constellation_Image_Of;
 
@@ -380,7 +380,7 @@ package body Simbad.Catalog is
       if The_Index = 0 then
         return "";
       end if;
-      return Strings.Trimmed (The_Index'image);
+      return Text.Trimmed (The_Index'image);
     end Index_Image_Of;
 
     Number_Image : constant String := Number_Image_Of (Item.Kind, Item.Count);

@@ -7,7 +7,7 @@ pragma Style_White_Elephant;
 with Angle;
 
 private with Network;
-private with Strings;
+private with Text;
 private with Traces;
 
 package Http_Server is
@@ -67,6 +67,6 @@ private
   package Log is new Traces (Id);
 
   The_Server_Port     : Network.Port_Number;
-  The_Client_Filename : Strings.Element;
+  The_Client_Filename : Text.String;
 
 end Http_Server;

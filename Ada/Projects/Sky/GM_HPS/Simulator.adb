@@ -9,7 +9,7 @@ with Ada.Text_IO;
 with Exceptions;
 with Log;
 with Network.Tcp;
-with Strings;
+with Text;
 with Time;
 
 package body Simulator is
@@ -18,7 +18,7 @@ package body Simulator is
   Hiding       : Boolean := False;
   Log_All      : Boolean := False;
 
-  use type Strings.Element;
+  use type Text.String;
   use type Time.JD;
 
   type Mount is (GM_1000, GM_4000);
@@ -100,7 +100,7 @@ package body Simulator is
     The_Points_Count   : Natural := 0;
     Last_Points_Count : Natural := 0;
 
-    Loaded_TLE_Data      : Strings.Element;
+    Loaded_TLE_Data      : Text.String;
     Tle_Is_Precalculated : Boolean := False;
     Jd_Start             : Time.JD := 0.0;
     Jd_End               : Time.JD := 0.0;
@@ -116,12 +116,12 @@ package body Simulator is
 
     function Julian_Date_Image return String is
     begin
-      return Strings.Trimmed (Time.Julian_Date'image) & '#';
+      return Text.Trimmed (Time.Julian_Date'image) & '#';
     end Julian_Date_Image;
 
 
     function Points_Image return String is
-      Image : constant String := "00" & Strings.Trimmed (The_Points_Count'image);
+      Image : constant String := "00" & Text.Trimmed (The_Points_Count'image);
     begin
       return Image(Image'last - 2 .. Image'last);
     end Points_Image;
@@ -167,7 +167,7 @@ package body Simulator is
 
         The_Id : Id;
 
-        Items : constant Strings.Item := Strings.Item_Of (Image, ',', Symbols => "#");
+        Items : constant Text.Strings := Text.Strings_Of (Image, ',', Symbols => "#");
 
       begin -- Get_Offset
         if The_State = Following then
@@ -305,7 +305,7 @@ package body Simulator is
             Send ("0"); -- OK
             Send_Delay := Delay_Counter;
           elsif Data = ":TLEG#" then
-            if Strings.Is_Null (Loaded_TLE_Data) then
+            if Text.Is_Null (Loaded_TLE_Data) then
               Put_Line ("TLE not loaded");
               Send ("E#");
             else
@@ -365,12 +365,12 @@ package body Simulator is
             Send ("1");
           elsif Command_4 = ":TLEP" then
             Tle_Is_Precalculated := False;
-            if Strings.Is_Null (Loaded_TLE_Data) then
+            if Text.Is_Null (Loaded_TLE_Data) then
               Put_Line ("TLE not loaded");
               Send ("E#");
             else
               declare
-                Items     : constant Strings.Item := Strings.Item_Of (Image_4, ',', Symbols => "#");
+                Items     : constant Text.Strings := Text.Strings_Of (Image_4, ',', Symbols => "#");
                 Jd_Image  : constant String := Items(1);
                 Min_Image : constant String := Items(2);
                 Jd        : constant Time.JD := Time.JD'value(Jd_Image);
@@ -382,7 +382,7 @@ package body Simulator is
                 else
                   Jd_End := Jd_Start + 0.0005;
                   Put_Line ("TLE Precalculation within next " & Min_Image & " minutes");
-                  Send (Strings.Trimmed (Jd_Start'image) & ',' & Strings.Trimmed (Jd_End'image)  & ",F#");
+                  Send (Text.Trimmed (Jd_Start'image) & ',' & Text.Trimmed (Jd_End'image)  & ",F#");
                   Tle_Is_Precalculated := True;
                 end if;
               end;

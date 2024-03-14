@@ -17,7 +17,7 @@ pragma Style_White_Elephant;
 
 with Lexicon;
 with Sky.Catalog;
-with Strings;
+with Text;
 
 package body Alignment.Stars is
 
@@ -52,7 +52,7 @@ package body Alignment.Stars is
 
   function Image_Of (The_Id : Id) return String is
   begin
-    return Strings.Legible_Of (The_Id'image);
+    return Text.Legible_Of (The_Id'image);
   end Image_Of;
 
 end Alignment.Stars;

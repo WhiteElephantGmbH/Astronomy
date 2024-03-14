@@ -33,9 +33,9 @@ with PWI4.Mount;
 with Remote.Parameter;
 with Section;
 with Stellarium.Parameter;
-with Strings;
 with Sun.Parameter;
 with Telescope;
+with Text;
 with Traces;
 
 package body Parameter is
@@ -207,9 +207,9 @@ package body Parameter is
         Port : constant String := Section.String_Value_Of (M3_Ocular_Port_Key);
       begin
         Log.Write (M3_Ocular_Port_Key & ": " & Port);
-        if Strings.Is_Equal (Port, "1") then
+        if Port = "1" then
           The_M3_Ocular_Port := PWI4.Port_1;
-        elsif Strings.Is_Equal (Port, "2") then
+        elsif Port = "2" then
           The_M3_Ocular_Port := PWI4.Port_2;
         else
           Error.Raise_With (M3_Ocular_Port_Key & " must be either 1 or 2");
@@ -221,9 +221,9 @@ package body Parameter is
         Fans_State : constant String := Section.String_Value_Of (Fans_Key);
       begin
         Log.Write ("Fans: " & Fans_State);
-        if Strings.Is_Equal (Fans_State, "On") then
+        if Text.Matches (Fans_State, "On") then
           Fans_On := True;
-        elsif Strings.Is_Equal (Fans_State, "Off") then
+        elsif Text.Matches (Fans_State, "Off") then
           Fans_On := False;
         else
           Error.Raise_With ("Fans must be either On or Off");
@@ -242,7 +242,7 @@ package body Parameter is
       end if;
 
       Section.Set (PWI_Handle);
-      Is_In_Shutdown_Mode := Strings.Is_Equal (Section.String_Value_Of (Shutdown_Key), "True");
+      Is_In_Shutdown_Mode := Text.Matches (Section.String_Value_Of (Shutdown_Key), "True");
       Define_M3_Ocular_Port;
       Define_Fans_State;
       Startup_PWI;

@@ -16,7 +16,7 @@
 pragma Style_White_Elephant;
 
 with Network;
-with Strings;
+with Text;
 
 package Remote is
 
@@ -38,7 +38,7 @@ private
 
   Id : constant String := "Remote";
 
-  The_Telescope_Name : Strings.Element;
+  The_Telescope_Name : Text.String;
   The_Remote_Address : Network.Ip_Address;
   The_Remote_Port    : Network.Port_Number;
 

@@ -15,7 +15,7 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Strings;
+with Text;
 with Traces;
 
 package body Language is
@@ -26,7 +26,7 @@ package body Language is
 
   procedure Define (The_Kind : Kind) is
   begin
-    Log.Write (Id & ": " & Strings.Legible_Of(The_Kind'image));
+    Log.Write (Id & ": " & Text.Legible_Of(The_Kind'image));
     The_Language := The_Kind;
   end Define;
 

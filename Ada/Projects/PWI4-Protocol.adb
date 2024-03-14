@@ -16,7 +16,7 @@
 pragma Style_White_Elephant;
 
 with Traces;
-with Strings;
+with Text;
 
 package body PWI4.Protocol is
 
@@ -25,7 +25,7 @@ package body PWI4.Protocol is
 
   function Boolean_Of (Image : String) return Boolean is
   begin
-    return Boolean'value(Strings.Uppercase_Of (Image));
+    return Boolean'value(Text.Uppercase_Of (Image));
   exception
   when others =>
     Log.Error ("Boolean_Of (Image -> """ & Image & """)");
@@ -35,7 +35,7 @@ package body PWI4.Protocol is
 
   function Image_Of (Item : Boolean) return String is
   begin
-    return Strings.Legible_Of (Item'img);
+    return Text.Legible_Of (Item'img);
   end Image_Of;
 
 
@@ -80,7 +80,7 @@ package body PWI4.Protocol is
 
   function Image_Of (Item : Meters) return String is
   begin
-    return Strings.Trimmed (Item'image);
+    return Text.Trimmed (Item'image);
   end Image_Of;
 
 
@@ -101,7 +101,7 @@ package body PWI4.Protocol is
 
   function Image_Of (Item : Julian_Day) return String is
   begin
-    return Strings.Trimmed (Item'img);
+    return Text.Trimmed (Item'img);
   end Image_Of;
 
 
@@ -137,7 +137,7 @@ package body PWI4.Protocol is
 
   function Image_Of (Item : Error_Code) return String is
   begin
-    return Strings.Trimmed (Item'img);
+    return Text.Trimmed (Item'img);
   end Image_Of;
 
 
@@ -153,7 +153,7 @@ package body PWI4.Protocol is
 
   function Image_Of (Item : Port_Number) return String is
   begin
-    return Strings.Trimmed (Item'img);
+    return Text.Trimmed (Item'img);
   end Image_Of;
 
 
@@ -287,7 +287,7 @@ package body PWI4.Protocol is
       while not (Next_Character in '.' | '[' | '=') loop
         null;
       end loop;
-      return Identifier'value ("I_" & Strings.Uppercase_Of (Data(First .. The_Index - 1)));
+      return Identifier'value ("I_" & Text.Uppercase_Of (Data(First .. The_Index - 1)));
     exception
     when others =>
       Log.Error ("Next_Identifier unknown <" & Data(First .. The_Index - 1) & ">");
@@ -295,12 +295,11 @@ package body PWI4.Protocol is
     end Next_Identifier;
 
 
-    The_Value : Strings.Element;
+    The_Value : Text.String;
 
     function Value return String is
-      use type Strings.Element;
     begin
-      return +The_Value;
+      return The_Value.To_String;
     end Value;
 
 

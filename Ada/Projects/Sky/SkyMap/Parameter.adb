@@ -20,7 +20,7 @@ with Application;
 with Configuration;
 with Error;
 with File;
-with Strings;
+with Text;
 with Traces;
 
 package body Parameter is
@@ -163,7 +163,7 @@ package body Parameter is
   function Value_Of (Key : String) return Eps.Color is
 
     Line  : constant String := String_Of (Key);
-    Parts : constant Strings.Item := Strings.Item_Of (Line, Separator => '|');
+    Parts : constant Text.Strings := Text.Strings_Of (Line, Separator => '|');
 
     The_Color : Eps.Color := (others => 0.0);
 
@@ -175,7 +175,7 @@ package body Parameter is
     end if;
     for Part of Parts loop
       declare
-        Items : constant Strings.Item := Strings.Item_Of (Part, Separator => ' ');
+        Items : constant Text.Strings := Text.Strings_Of (Part, Separator => ' ');
 
         function Value return Eps.Color_Value is
         begin
@@ -315,7 +315,7 @@ package body Parameter is
       when others =>
         Error.Raise_With ("Can't create " & Filename);
       end;
-      Put (Strings.Bom_8 & "[" & Sky_Id & "]");
+      Put (Text.Bom_8 & "[" & Sky_Id & "]");
       Put (Day_Color_Key & "   = C 0.80 | M 0.40 | Y 0.00 | K 0.00");
       Put (Night_Color_Key & " = C 0.00 | M 0.00 | Y 0.00 | K 1.00");
       Put ("");

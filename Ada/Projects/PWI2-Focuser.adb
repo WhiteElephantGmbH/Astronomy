@@ -1,11 +1,11 @@
 -- *********************************************************************************************************************
--- *                       (c) 2019 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2019 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
 with PWI2.XML;
-with Strings;
+with Text;
 
 package body PWI2.Focuser is
 
@@ -34,7 +34,7 @@ package body PWI2.Focuser is
   procedure Move (On          : Port;
                   To_Position : Microns) is
   begin
-    Execute ("move", On, Parameters => "position=" & Strings.Trimmed (To_Position'img));
+    Execute ("move", On, Parameters => "position=" & Text.Trimmed (To_Position'img));
   end Move;
 
 

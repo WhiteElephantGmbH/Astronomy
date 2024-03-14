@@ -17,7 +17,7 @@ pragma Style_White_Elephant;
 
 with Ada.Containers.Doubly_Linked_Lists;
 with Ada.Text_IO;
-with Strings;
+with Text;
 with Traces;
 
 package body Generator.Data is
@@ -683,12 +683,12 @@ package body Generator.Data is
   begin -- Base_Name_Of
     if Item = Undefined then
       return Item;
-    elsif Strings.Is_Lowercase (Name_Image(Name_Image'first)) then
+    elsif Text.Is_Lowercase (Name_Image(Name_Image'first)) then
       Log.Warning ("Not a proper Name: " & Item);
       return Undefined;
     end if;
     for The_Character of Name_Image loop
-      case Strings.Lowercase_Of (The_Character) is
+      case Text.Lowercase_Of (The_Character) is
       when '0'..'9' =>
         Append (The_Character);
         if The_Index /= Item'last then
@@ -696,10 +696,10 @@ package body Generator.Data is
         end if;
       when 'a'..'z' =>
         if Is_First then
-          Append (Strings.Uppercase_Of (The_Character));
+          Append (Text.Uppercase_Of (The_Character));
           Is_First := False;
         else
-          Append (Strings.Lowercase_Of (The_Character));
+          Append (Text.Lowercase_Of (The_Character));
         end if;
       when ' ' | ''' | '_'=>
         if not Is_First then
@@ -755,19 +755,19 @@ package body Generator.Data is
   subtype Ids_Cat is Cat range HD .. Cat'last; -- catalogs containing data
 
 
-  function Left_Adjusted (Text       : String;
+  function Left_Adjusted (Item       : String;
                           Field_Size : Positive) return String is
-    Postfix : constant String(1 .. Field_Size - Text'length) := [others => ' '];
+    Postfix : constant String(1 .. Field_Size - Item'length) := [others => ' '];
   begin
-    return Text & Postfix;
+    return Item & Postfix;
   end Left_Adjusted;
 
 
-  function Right_Adjusted (Text       : String;
+  function Right_Adjusted (Item       : String;
                            Field_Size : Positive) return String is
-    Prefix : constant String(1 .. Field_Size - Text'length) := [others => ' '];
+    Prefix : constant String(1 .. Field_Size - Item'length) := [others => ' '];
   begin
-    return Prefix & Text;
+    return Prefix & Item;
   end Right_Adjusted;
 
 
@@ -804,7 +804,7 @@ package body Generator.Data is
   package Objects is new Object_Data.Generic_Sorting ("<" => "<");
 
   The_Objects : Object_Data.List;
-  The_Names   : Strings.List;
+  The_Names   : Text.List;
 
   type Id_Flag is array (Id range 1 .. 500000) of Boolean with Pack;
 
@@ -887,7 +887,7 @@ package body Generator.Data is
                          After : Cat) return String is
         Cat_Name : constant String := Image_Of (After);
       begin
-        if Strings.Location_Of (Cat_Name, In_String => Item) = Strings.Not_Found then
+        if Text.Location_Of (Cat_Name, In_String => Item) = Text.Not_Found then
           Error (Cat_Name & " not found at begin of " & Item);
         end if;
         return Item (Item'first + Cat_Name'length + 1 .. Item'last);
@@ -900,7 +900,7 @@ package body Generator.Data is
 
           function Found (Name_Part : String) return Boolean is
           begin
-            return Strings.Location_Of (Name_Part, Item) /= Strings.Not_Found;
+            return Text.Location_Of (Name_Part, Item) /= Text.Not_Found;
           end Found;
 
         begin -- Corrected_Name
@@ -991,9 +991,9 @@ package body Generator.Data is
 
       function Corrected (Item : String) return String is
         The_Line        : String := Item;
-        String_Position : constant Natural := Strings.Location_Of ('"', Item);
+        String_Position : constant Natural := Text.Location_Of ('"', Item);
       begin
-        if String_Position = Strings.Not_Found then
+        if String_Position = Text.Not_Found then
           return Item;
         else
           for The_Character of The_Line(String_Position + 1 .. The_Line'last) loop
@@ -1011,7 +1011,7 @@ package body Generator.Data is
       end Corrected;
 
       Line  : constant String := IO.Get_Line (File);
-      Parts : constant Strings.Item := Strings.Item_Of (Corrected(Line), ',', Purge => False);
+      Parts : constant Text.Strings := Text.Strings_Of (Corrected(Line), ',', Purge => False);
       Count : constant Natural := Parts.Count;
 
       subtype Magnitude is Database.Magnitude;
@@ -1020,7 +1020,7 @@ package body Generator.Data is
 
       use type Magnitude;
 
-      function Part (Item : Header) return String is (Strings.Trimmed (Parts(Header'pos(Item) + Strings.First_Index)));
+      function Part (Item : Header) return String is (Text.Trimmed (Parts(Header'pos(Item) + Text.First_Index)));
 
       function Cat_Of (Item : Header) return Cat is (Cat(Item));
 
@@ -1092,7 +1092,7 @@ package body Generator.Data is
       Cl_Image     : constant String := "Cl"; -- Cl Berkeley
 
       function Catalog_Id_Of (Main_Image : String) return Cat is
-        Name_Parts : constant Strings.Item := Strings.Item_Of (Main_Image, ' ');
+        Name_Parts : constant Text.Strings := Text.Strings_Of (Main_Image, ' ');
         Cat_Id     : constant String := Name_Parts(1);
       begin
         if Cat_Id in Star_Image | V_Star_Image then
@@ -1172,7 +1172,7 @@ package body Generator.Data is
       The_Object_Type  : Object_Type;
 
     begin -- Add_Next_Object
-      if Count /= Strings.First_Index + Header'pos(Header'last) then
+      if Count /= Text.First_Index + Header'pos(Header'last) then
         Log.Write (Line);
         Error ("Incorrect column count (actual:" & Parts.Count'image & ")");
       end if;
@@ -1244,7 +1244,7 @@ package body Generator.Data is
     The_Name_Map : Name_Map(First_Id .. Id(The_Names.Length)) := [others => Unknown_Id];
 
     type Name_Association is record
-      Name : Strings.Element;
+      Name : Text.String;
       Key  : Id;
     end record;
 
@@ -1255,7 +1255,7 @@ package body Generator.Data is
 
     procedure Sort_Names is
 
-      use type Strings.Element;
+      use type Text.String;
 
       function "<" (Left, Right : Name_Association) return Boolean is (Left.Name < Right.Name);
 
@@ -1288,11 +1288,11 @@ package body Generator.Data is
     procedure Put_Header is
 
       function Ids_Header return String is
-        Header_Image : Strings.Element;
-        use type Strings.Element;
+        Header_Image : Text.String;
+        use type Text.String;
       begin
         for C in Ids_Cat loop
-          Strings.Append (Header_Image, Right_Adjusted (Image_Of (C), Field_Size_Of (C) + 2));
+          Text.Append (Header_Image, Right_Adjusted (Image_Of (C), Field_Size_Of (C) + 2));
         end loop;
         return +Header_Image;
       end Ids_Header;
@@ -1310,7 +1310,7 @@ package body Generator.Data is
         end loop;
       end Evaluate_Object_Id_For_Names;
 
-      use type Strings.Element;
+      use type Text.String;
 
     begin -- Put_Header
       Output ("-- *********************************************************************************************************************");
@@ -1410,7 +1410,7 @@ package body Generator.Data is
 
       function Image_Of (Item       : Id;
                          Field_Size : Positive) return String is
-        Image : constant String := (if Item = Unknown_Id then No_Information else Strings.Trimmed(Item'image));
+        Image : constant String := (if Item = Unknown_Id then No_Information else Text.Trimmed(Item'image));
       begin
         return Right_Adjusted (Image, Field_Size);
       end Image_Of;
@@ -1434,7 +1434,7 @@ package body Generator.Data is
       function Value_Item (Image      : String;
                            Fiels_Size : Natural) return String is
       begin
-        return Right_Adjusted (Strings.Trimmed (Image), Fiels_Size) & Separator;
+        return Right_Adjusted (Text.Trimmed (Image), Fiels_Size) & Separator;
       end Value_Item;
 
       function Main return String is (Value_Item (Cat'pos(The_Object.Main_Cat)'image, Main_Field_Size));
@@ -1452,11 +1452,11 @@ package body Generator.Data is
       end Star;
 
       function Ids return String is
-        Ids_Image : Strings.Element;
-        use type Strings.Element;
+        Ids_Image : Text.String;
+        use type Text.String;
       begin
         for C in Ids_Cat loop
-          Strings.Append (Ids_Image, Image_Of (The_Object.Ids(C), Field_Size_Of (C)) & Separator);
+          Text.Append (Ids_Image, Image_Of (The_Object.Ids(C), Field_Size_Of (C)) & Separator);
         end loop;
         return +Ids_Image;
       end Ids;

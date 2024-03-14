@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2002 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2002 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -16,12 +16,12 @@
 pragma Style_White_Elephant;
 
 with GNAT.Traceback.Symbolic;
-with Strings;
+with Text;
 
 package body Exceptions is
 
   function Name_Of (Occurrence : Ada.Exceptions.Exception_Occurrence) return String is
-    Message : constant String := Strings.Trimmed (Ada.Exceptions.Exception_Message (Occurrence));
+    Message : constant String := Text.Trimmed (Ada.Exceptions.Exception_Message (Occurrence));
     Name    : constant String := Ada.Exceptions.Exception_Name (Occurrence);
   begin
     if Message = "" then
@@ -38,7 +38,7 @@ package body Exceptions is
       Header    : constant String := "Exception: " & Name_Of (Occurrence) & Ascii.Lf;
       Traceback : constant String := GNAT.Traceback.Symbolic.Symbolic_Traceback (Occurrence);
     begin
-      if Strings.Trimmed (Traceback) = "" then
+      if Text.Trimmed (Traceback) = "" then
         return Header & Ada.Exceptions.Exception_Information (Occurrence);
       else
         return Header & Traceback;

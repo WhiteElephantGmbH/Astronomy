@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2019 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2019 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
@@ -13,7 +13,7 @@ with PWI2.M3;
 with PWI2.Focuser;
 with PWI2.Rotator;
 with Serial_Io.Usb;
-with Strings;
+with Text;
 
 package body Test is
 
@@ -439,11 +439,11 @@ package body Test is
         declare
           Info : constant PWI2.Mount.Information := PWI2.Mount.Info;
         begin
-          Put ("Mount State    : " & Strings.Legible_Of (Info.Status'img));
-          Put ("      Ra       : " & Strings.Legible_Of (Info.Ra'img));
-          Put ("      Dec      : " & Strings.Legible_Of (Info.Dec'img));
-          Put ("      Ra 2000  : " & Strings.Legible_Of (Info.Ra_2000'img));
-          Put ("      Dec 2000 : " & Strings.Legible_Of (Info.Dec_2000'img));
+          Put ("Mount State    : " & Text.Legible_Of (Info.Status'img));
+          Put ("      Ra       : " & Text.Legible_Of (Info.Ra'img));
+          Put ("      Dec      : " & Text.Legible_Of (Info.Dec'img));
+          Put ("      Ra 2000  : " & Text.Legible_Of (Info.Ra_2000'img));
+          Put ("      Dec 2000 : " & Text.Legible_Of (Info.Dec_2000'img));
           if Info.Status = PWI2.Mount.Tracking then
             exit;
           end if;
@@ -474,7 +474,7 @@ package body Test is
       PWI2.Mount.Disconnect;
     end Shutdown;
 
-    Id : constant String := Strings.Lowercase_Of (Command);
+    Id : constant String := Text.Lowercase_Of (Command);
 
     use type PWI2.Mount.Degrees;
     use type PWI2.Mount.Hours;

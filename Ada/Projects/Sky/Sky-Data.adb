@@ -18,7 +18,7 @@ pragma Style_White_Elephant;
 with Angle;
 with Error;
 with Sky.Catalog;
-with Strings;
+with Text;
 with Traces;
 
 package body Sky.Data is
@@ -41,12 +41,14 @@ package body Sky.Data is
   subtype Extension_Object is Object range First_Extension .. First_Extension + Number_Of_Extension_Objects - 1;
 
   type Information is record
-    Name        : Strings.Element;
-    Descriptor  : Strings.Element;
+    Name        : Text.String;
+    Descriptor  : Text.String;
     Object_Kind : Object_Type;
     Ra_J2000    : Angle.Degrees;
     Dec_J2000   : Angle.Degrees;
   end record;
+
+  use type Text.String;
 
   type Extension_Objects is array (Extension_Object) of Information;
 
@@ -151,7 +153,6 @@ package body Sky.Data is
 
 
   function Name_Of (Id : Index) return String is
-    use type Strings.Element;
   begin
     if Id in Catalog.Index then
       return Catalog.Name_Of (Catalog.Index(Id));
@@ -166,8 +167,6 @@ package body Sky.Data is
 
     Number : constant Object := Object_Of (Item, The_Kind);
 
-    use type Strings.Element;
-
   begin -- Name_Of
     case The_Kind is
     when Neo =>
@@ -179,7 +178,6 @@ package body Sky.Data is
 
 
   function Descriptor_Of (Id : Index) return String is
-    use type Strings.Element;
   begin
     if Id in Catalog.Index then
       return Catalog.Descriptor_Of (Id);
@@ -339,7 +337,6 @@ package body Sky.Data is
 
 
   function Neo_Object_Of (Item : String) return Index is
-    use type Strings.Element;
   begin
     for The_Index in The_First_Neo .. The_Last_Neo loop
       if The_Extension_Table(The_Index).Name = Item then

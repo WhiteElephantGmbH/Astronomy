@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2021 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2021 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
@@ -7,8 +7,8 @@ pragma Style_White_Elephant;
 with Ada.Command_Line;
 with Ada.Text_IO;
 with Os.Horizon;
-with Strings;
 with Traces;
+with Text;
 
 package body Request is
 
@@ -16,32 +16,32 @@ package body Request is
 
   procedure Handle (Target : String) is
 
-    procedure Evaluate (Text : String) is
+    procedure Evaluate (Item : String) is
 
-      The_Index : Natural := Text'first;
+      The_Index : Natural := Item'first;
       The_First : Natural;
 
       function Next_Line return String is
       begin
-        while The_Index < Text'last loop
-          if Text(The_Index .. The_Index + 1) = "\n" then
+        while The_Index < Item'last loop
+          if Item(The_Index .. The_Index + 1) = "\n" then
             The_Index := The_Index + 2;
-            return Text(The_First .. The_Index - 3);
+            return Item(The_First .. The_Index - 3);
           end if;
           The_Index := The_Index + 1;
         end loop;
-        The_Index := Text'last + 1;
-        return Text(The_First..Text'last);
+        The_Index := Item'last + 1;
+        return Item(The_First..Item'last);
       end Next_Line;
 
     begin -- Evaluate
-      if Strings.Location_Of ("Traceback", Text) = Text'first then
-        Ada.Text_IO.Put_Line (Text);
+      if Text.Location_Of ("Traceback", Item) = Item'first then
+        Ada.Text_IO.Put_Line (Item);
         Ada.Text_IO.Put_Line ("<<< ERROR: No Connection to Nasa Horizon >>>");
         return;
       end if;
       Ada.Text_IO.Put_Line ("<<< cleaned result >>>");
-      while The_Index <= Text'last loop
+      while The_Index <= Item'last loop
         The_First := The_Index;
         declare
           Line : constant String := Next_Line;

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2002 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2002 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -23,14 +23,14 @@ with Date_Time;
 with Exceptions;
 with File;
 with Os;
-with Strings;
 with System;
+with Text;
 
 package body Log is
 
   package Io renames Ada.Text_IO;
 
-  subtype List is Strings.List;
+  subtype List is  Text.List;
 
   File_Section_Name   : constant String := "File";
   Name_Item           : constant String := "Name";
@@ -71,11 +71,11 @@ package body Log is
 
     begin -- Create_Default_Configuration
       Io.Create (The_File, Name => Filename);
-      Put (Strings.Bom_8 & "[" & File_Section_Name & "]");
+      Put ( Text.Bom_8 & "[" & File_Section_Name & "]");
       Put (";" & Name_Item & "        = " & Default_Log_Filename);
-      Put (Multiple_Item & "     = " & Strings.Legible_Of (Default_Multiple_Files'img));
+      Put (Multiple_Item & "     = " &  Text.Legible_Of (Default_Multiple_Files'img));
       Put (Maximum_Size_Item & " =" & Default_Maximum_Size'img);
-      Put (Flush_Item & "        = " & Strings.Legible_Of (Default_Flush_After_Write'img));
+      Put (Flush_Item & "        = " &  Text.Legible_Of (Default_Flush_After_Write'img));
       Put ("");
       Put ("[" & Filter_Section_Name & "]");
       Put (Categories_Item & " = Data");
@@ -139,7 +139,7 @@ package body Log is
   private
     Flush_After_Write : Boolean := Default_Flush_After_Write;
     Multiple_Files    : Boolean := Default_Multiple_Files;
-    Category_Names    : Strings.List;
+    Category_Names    :  Text.List;
   end Guarded;
 
 
@@ -157,9 +157,9 @@ package body Log is
 
       function Derived_Filename_From (The_Filename : String;
                                       Suffix       : String) return String is
-        Dot_Position : constant Natural := Strings.Location_Of ('.', The_Filename, The_Direction => Strings.Backward);
+        Dot_Position : constant Natural :=  Text.Location_Of ('.', The_Filename, The_Direction =>  Text.Backward);
       begin
-        if Dot_Position = Strings.Not_Found then -- No file extension
+        if Dot_Position =  Text.Not_Found then -- No file extension
           return The_Filename & "_" & Suffix;
         else
           return The_Filename (The_Filename'first .. Dot_Position - 1) & "_" & Suffix &
@@ -172,7 +172,7 @@ package body Log is
       begin
         for The_Name of The_List loop
           declare
-            Name : constant String := Strings.Legible_Of (The_Name);
+            Name : constant String :=  Text.Legible_Of (The_Name);
           begin
             if Name /= No_Categories_Id then
               if Name = All_Categories_Id then
@@ -211,7 +211,7 @@ package body Log is
 
       function Address_Size return String is
       begin
-        return Strings.Trimmed (System.Address'size'img) & " bit ";
+        return  Text.Trimmed (System.Address'size'img) & " bit ";
       end Address_Size;
 
     begin -- Open
@@ -244,7 +244,7 @@ package body Log is
           Categories := 2 ** Enabled_Categories - 1;
         end if;
       end;
-      Io.Put_Line (The_File, Strings.Bom_8 & Address_Size & Application.Name &" version " & Application.Version);
+      Io.Put_Line (The_File,  Text.Bom_8 & Address_Size & Application.Name &" version " & Application.Version);
       Io.Put_Line (The_File, "Log created " & Date_And_Time);
       if Categories = All_Categories then
         Io.Put_Line (The_File, "Logging all categories");
@@ -266,7 +266,7 @@ package body Log is
         Io.Close (The_File);
         Rename_File (Primary_Filename.all, New_Name => Secondary_Filename.all);
         Io.Create (The_File, Name => Primary_Filename.all);
-        Io.Put_Line (The_File, Strings.Bom_8 &
+        Io.Put_Line (The_File,  Text.Bom_8 &
                                "The log file reached it's maximum size of" & The_Maximum_Size'img & " records");
         Io.Put_Line (The_File, "These records are now stored in the file " & Secondary_Filename.all);
         The_Current_Size := 2;
@@ -352,7 +352,7 @@ package body Log is
 
 
   function Lookup (The_Category : String) return Category is
-    Name : constant String := Strings.Legible_Of (The_Category);
+    Name : constant String :=  Text.Legible_Of (The_Category);
   begin
     Write ("Log.Lookup: Category = " & Name);
     return Guarded.Lookup_Category (Name);

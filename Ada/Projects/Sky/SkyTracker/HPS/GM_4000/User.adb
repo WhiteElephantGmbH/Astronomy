@@ -34,9 +34,9 @@ with Site;
 with Sky.Catalog;
 with SkyTracker;
 with Space;
-with Strings;
 with Targets;
 with Ten_Micron;
+with Text;
 with Time;
 with Traces;
 
@@ -245,7 +245,7 @@ package body User is
   procedure Perform_Setup_Goto is
 
     function Identifier_Of (Item : String) return String is
-      The_Image : String := Strings.Trimmed (Item);
+      The_Image : String := Text.Trimmed (Item);
     begin
       for Index in The_Image'range loop
         if The_Image(Index) = ' ' then
@@ -304,13 +304,13 @@ package body User is
 
   function Image_Of (The_Value : Refraction.Hectopascal) return String is
   begin
-    return Strings.Trimmed (The_Value'img) & "hPa";
+    return Text.Trimmed (The_Value'img) & "hPa";
   end Image_Of;
 
 
   function Image_Of (The_Value : Refraction.Celsius) return String is
   begin
-    return Strings.Trimmed (The_Value'img) & "°C";
+    return Text.Trimmed (The_Value'img) & "°C";
   end Image_Of;
 
 
@@ -491,7 +491,7 @@ package body User is
 
     function Image_Of (Item         : String;
                        No_Value_For : String := "") return String is
-      Image : constant String := Strings.Trimmed (Item);
+      Image : constant String := Text.Trimmed (Item);
     begin
       if Image = No_Value_For then
         return "";
@@ -921,9 +921,9 @@ package body User is
                                      The_Size           => Text_Size,
                                      The_Title_Size     => Title_Size);
         for Value in Setup_Object'range loop
-          Gui.Add_Text (Setup_Control, Strings.Legible_Of (Value'img));
+          Gui.Add_Text (Setup_Control, Text.Legible_Of (Value'img));
         end loop;
-        Gui.Select_Text (Setup_Control, Strings.Legible_Of (The_Setup_Object'img));
+        Gui.Select_Text (Setup_Control, Text.Legible_Of (The_Setup_Object'img));
 
         Picture_Ra := Gui.Create (Setup_Page, "Picture RA", "",
                                   Is_Modifiable  => False,

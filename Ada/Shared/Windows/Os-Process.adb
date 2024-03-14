@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2002 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2002 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -16,7 +16,7 @@
 pragma Style_White_Elephant;
 
 with Log;
-with Strings;
+with Text;
 with Win32.Winbase;
 with Win32.Winerror;
 with Win32.Winnt;
@@ -226,7 +226,7 @@ package body Os.Process is
     The_Data     : String (1..1000);
     The_Length   : aliased Win32.DWORD;
     Unused       : Win32.BOOL;
-    The_Result   : Strings.Element;
+    The_Result   : Text.String;
 
     use type Win32.BOOL;
     use type Win32.DWORD;
@@ -249,7 +249,7 @@ package body Os.Process is
       end if;
     end Standard_Output;
 
-    use type Strings.Element;
+    use type Text.String;
 
   begin -- Execution_Of
     Security.nLength             := Win32.DWORD (Base.SECURITY_ATTRIBUTES'size / 8);
@@ -296,7 +296,7 @@ package body Os.Process is
         Log.Write ("!!! Process.Readfile Error =" & Win32.DWORD'image(Base.GetLastError));
         raise Execution_Failed;
       else
-        Strings.Append (The_Result, The_Data (The_Data'first .. The_Data'first + Natural(The_Length) - 1));
+        The_Result.Append (The_Data (The_Data'first .. The_Data'first + Natural(The_Length) - 1));
       end if;
     end loop;
     Unused := Base.CloseHandle (Inbound); -- No longer used

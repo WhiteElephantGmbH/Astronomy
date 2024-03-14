@@ -1,11 +1,11 @@
 -- *********************************************************************************************************************
--- *                       (c) 2019 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2019 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
 with Traces;
-with Strings;
+with Text;
 
 package body PWI2.XML is
 
@@ -13,13 +13,13 @@ package body PWI2.XML is
 
   function Zero_And (Item : String) return String is
   begin
-    return '0' & Strings.Trimmed (Item);
+    return '0' & Text.Trimmed (Item);
   end Zero_And;
 
 
   function Boolean_Of (Image : String) return Boolean is
   begin
-    return Boolean'value(Strings.Uppercase_Of (Image));
+    return Boolean'value(Text.Uppercase_Of (Image));
   exception
   when others =>
     Log.Error ("Boolean_Of (Image -> """ & Image & """)");
@@ -29,7 +29,7 @@ package body PWI2.XML is
 
   function Image_Of (Item : Boolean) return String is
   begin
-    return Strings.Legible_Of (Item'img);
+    return Text.Legible_Of (Item'img);
   end Image_Of;
 
 
@@ -87,7 +87,7 @@ package body PWI2.XML is
     Seconds       : constant String := Zero_And (Item.Seconds'img);
     Milli_Seconds : constant String := '0' & Zero_And (Item.Milli_Seconds'img);
   begin
-    return Strings.Trimmed (Item.Hours'img) & ' ' &
+    return Text.Trimmed (Item.Hours'img) & ' ' &
            Minutes(Minutes'last - 1 .. Minutes'last) & ' ' &
            Seconds(Seconds'last - 1 .. Seconds'last) & '.' &
            Milli_Seconds(Milli_Seconds'last - 2 .. Milli_Seconds'last);
@@ -111,7 +111,7 @@ package body PWI2.XML is
 
   function Image_Of (Item : Julian_Day) return String is
   begin
-    return Strings.Trimmed (Item'img);
+    return Text.Trimmed (Item'img);
   end Image_Of;
 
 
@@ -127,7 +127,7 @@ package body PWI2.XML is
 
   function Image_Of (Item : Microns) return String is
   begin
-    return Strings.Trimmed (Item'img);
+    return Text.Trimmed (Item'img);
   end Image_Of;
 
 
@@ -143,7 +143,7 @@ package body PWI2.XML is
 
   function Image_Of (Item : Rotator_Position) return String is
   begin
-    return Strings.Trimmed (Item'img);
+    return Text.Trimmed (Item'img);
   end Image_Of;
 
 
@@ -175,7 +175,7 @@ package body PWI2.XML is
     Seconds       : constant String := Zero_And (Item.Seconds'img);
     Centi_Seconds : constant String := Zero_And (Item.Centi_Seconds'img);
   begin
-    return (if Item.Is_Positive then '+' else '-') & Strings.Trimmed (Item.Degrees'img) & ' ' &
+    return (if Item.Is_Positive then '+' else '-') & Text.Trimmed (Item.Degrees'img) & ' ' &
            Minutes(Minutes'last - 1 .. Minutes'last) & ' ' &
            Seconds(Seconds'last - 1 .. Seconds'last) & '.' &
            Centi_Seconds(Centi_Seconds'last - 1 .. Centi_Seconds'last);
@@ -194,7 +194,7 @@ package body PWI2.XML is
 
   function Image_Of (Item : Radian) return String is
   begin
-    return Strings.Trimmed (Item'img);
+    return Text.Trimmed (Item'img);
   end Image_Of;
 
 
@@ -210,7 +210,7 @@ package body PWI2.XML is
 
   function Image_Of (Item : Encoder_Degrees) return String is
   begin
-    return Strings.Trimmed (Item'img);
+    return Text.Trimmed (Item'img);
   end Image_Of;
 
 
@@ -226,7 +226,7 @@ package body PWI2.XML is
 
   function Image_Of (Item : Arc_Second) return String is
   begin
-    return Strings.Trimmed (Item'img);
+    return Text.Trimmed (Item'img);
   end Image_Of;
 
 
@@ -242,7 +242,7 @@ package body PWI2.XML is
 
   function Image_Of (Item : Error_Code) return String is
   begin
-    return Strings.Trimmed (Item'img);
+    return Text.Trimmed (Item'img);
   end Image_Of;
 
 
@@ -258,7 +258,7 @@ package body PWI2.XML is
 
   function Image_Of (Item : Port_Number) return String is
   begin
-    return Strings.Trimmed (Item'img);
+    return Text.Trimmed (Item'img);
   end Image_Of;
 
 
@@ -274,13 +274,13 @@ package body PWI2.XML is
 
   function Image_Of (Item : M3_Position) return String is
   begin
-    return Strings.Trimmed (Item'img);
+    return Text.Trimmed (Item'img);
   end Image_Of;
 
 
   function Celsius_Of (Image : String) return Celsius is
   begin
-    if Strings.Found ('.', Image) then
+    if Text.Found ('.', Image) then
       return Celsius'value(Image);
     else
       return Celsius'value(Image & ".0");
@@ -297,7 +297,7 @@ package body PWI2.XML is
     if Item = Undefined then
       return "";
     end if;
-    return Strings.Trimmed (Item'img);
+    return Text.Trimmed (Item'img);
   end Image_Of;
 
 
@@ -426,7 +426,7 @@ package body PWI2.XML is
         while Next_Character /= '>' loop
           null;
         end loop;
-        return Tags'value ("T_" & Strings.Uppercase_Of (Data(First .. The_Index - 1)));
+        return Tags'value ("T_" & Text.Uppercase_Of (Data(First .. The_Index - 1)));
       exception
       when others =>
         raise Parsing_Error;
@@ -651,7 +651,7 @@ package body PWI2.XML is
         if Pointing_Model = "" then
           return False;
         end if;
-        return Strings.Is_Equal (Pointing_Model, Mount.Defined_Pointing_Model);
+        return Text.Matches (Pointing_Model, Mount.Defined_Pointing_Model);
       end Pointing_Model_Has_Been_Set;
 
     begin -- Parse_Mount
@@ -881,9 +881,9 @@ package body PWI2.XML is
 
   package body Mount is
 
-    The_Pointing_Model : Strings.Element;
+    The_Pointing_Model : Text.String;
 
-    use type Strings.Element;
+    use type Text.String;
 
     procedure Define_Pointing_Model (Filename : String) is
     begin

@@ -22,7 +22,7 @@ with Gui.Registered;
 with Map;
 with Parameter;
 with Site;
-with Strings;
+with Text;
 with Time;
 with Traces;
 
@@ -68,7 +68,7 @@ package body User is
     end Value_Of;
 
     function Universal_Time return Time.Ut is
-      Image      : constant String := Strings.Trimmed (Gui.Contents_Of (Date_Time));
+      Image      : constant String := Text.Trimmed (Gui.Contents_Of (Date_Time));
       Local_Time : constant String := Time.Image_Of (Time.Universal);
       Time_Value : Time.Calendar_Value;
     begin

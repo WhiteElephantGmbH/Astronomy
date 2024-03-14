@@ -17,7 +17,7 @@ pragma Style_White_Elephant;
 
 with Ada.Containers.Ordered_Maps;
 with Simbad.Catalog;
-with Strings;
+with Text;
 with Traces;
 
 package body Sky.Catalog is
@@ -232,7 +232,7 @@ package body Sky.Catalog is
     when Quasars =>
       return Lexicon.Image_Of (Lexicon.Quasars);
     end case;
-    return Strings.Legible_Of (Id'img);
+    return Text.Legible_Of (Id'img);
   end Image_Of;
 
 
@@ -284,13 +284,13 @@ package body Sky.Catalog is
     if Item = Quasar_Index then
       return "3C" & Quasar_3C_Id'image;
     elsif Messier_Number /= Simbad.Unknown then
-      return "M" & Strings.Trimmed (Messier_Number'image);
+      return "M" & Text.Trimmed (Messier_Number'image);
     end if;
     declare
       Caldwell_Number : constant C_Number := C_Number_Of (Item);
     begin
       if Caldwell_Number /= Undefined then
-        return "C" & Strings.Trimmed (Caldwell_Number'image);
+        return "C" & Text.Trimmed (Caldwell_Number'image);
       end if;
     end;
     return SC.Image_Of (Simbad.Index(Item));

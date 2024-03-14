@@ -22,7 +22,7 @@ with Application;
 with Error;
 with File;
 with Sky.Data;
-with Strings;
+with Text;
 with Traces;
 with Values;
 
@@ -78,12 +78,12 @@ package body Sssb is
     while not Ada.Text_IO.End_Of_File (The_File) loop
       declare
 
-        Line  : constant String := Strings.Trimmed (Ada.Text_IO.Get_Line (The_File));
-        Parts : constant Strings.Item := Strings.Item_Of (Line, Separator => ',', Purge => False);
+        Line  : constant String := Text.Trimmed (Ada.Text_IO.Get_Line (The_File));
+        Parts : constant Text.Strings := Text.Strings_Of (Line, Separator => ',', Purge => False);
 
         function Image_Of (Item : Header) return String is
         begin
-          return Strings.Trimmed (Parts(Strings.First_Index + Header'pos(Item)));
+          return Text.Trimmed (Parts(Text.First_Index + Header'pos(Item)));
         end Image_Of;
 
       begin

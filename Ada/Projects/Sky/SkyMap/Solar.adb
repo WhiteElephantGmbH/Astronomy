@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2023 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2023 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -17,7 +17,7 @@ pragma Style_White_Elephant;
 
 with Moon;
 with Objects;
-with Strings;
+with Text;
 with Traces;
 
 package body Solar is
@@ -65,7 +65,7 @@ package body Solar is
 
   function Image_Of (Item : Planet) return String is
   begin
-    return Strings.Legible_Of (Item'image);
+    return Text.Legible_Of (Item'image);
   end Image_Of;
 
 

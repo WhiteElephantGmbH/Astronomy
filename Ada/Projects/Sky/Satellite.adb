@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2013 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2013 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -118,9 +118,9 @@ package body Satellite is
   end Read_Stellarium_Data;
 
 
-  function Names return Strings.List is
+  function Names return Text.List is
 
-    The_Names : Strings.List;
+    The_Names : Text.List;
 
     procedure Add (Position : Tle_Data.Cursor) is
     begin

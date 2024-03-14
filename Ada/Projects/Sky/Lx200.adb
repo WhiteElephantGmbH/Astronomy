@@ -4,7 +4,7 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Strings;
+with Text;
 with Traces;
 
 package body Lx200 is
@@ -200,7 +200,7 @@ package body Lx200 is
 
     Decimals : constant Angle.Decimal_Places := (if Has_Ultra_Precision then 1 else 0);
 
-    The_Image : String := Strings.Ansi_Of (Angle.Image_Of (The_Value   => Item,
+    The_Image : String := Text.Ansi_Of_Utf8 (Angle.Image_Of (The_Value   => Item,
                                                            Unit        => Angle.In_Degrees,
                                                            Decimals    => Decimals,
                                                            Show_Signed => True));
@@ -240,7 +240,7 @@ package body Lx200 is
 
     Decimals : constant Angle.Decimal_Places := (if Has_Ultra_Precision then 2 else 0);
 
-    The_Image : String := Strings.Ansi_Of (Angle.Image_Of (The_Value   => Item,
+    The_Image : String := Text.Ansi_Of_Utf8 (Angle.Image_Of (The_Value   => Item,
                                                            Unit        => Angle.In_Hours,
                                                            Decimals    => Decimals,
                                                            Show_Signed => False));
@@ -284,7 +284,7 @@ package body Lx200 is
     end if;
     declare
       type Degrees is delta 0.0001 range -180.0 .. 180.0;
-      Image : constant String := Strings.Trimmed (Degrees'image(Degrees(abs The_Value)));
+      Image : constant String := Text.Trimmed (Degrees'image(Degrees(abs The_Value)));
       Sign  : constant Character := (if The_Value >= 0.0 then '+' else '-');
       Zeros : constant String := "00";
     begin
@@ -316,7 +316,7 @@ package body Lx200 is
 
 
   function Air_Pressure_Of (Item : Refraction.Hectopascal) return String is
-    Image : constant String := "000" & Strings.Trimmed (Item'image);
+    Image : constant String := "000" & Text.Trimmed (Item'image);
   begin
     return Image(Image'last - 5 .. Image'last);
   end Air_Pressure_Of;
@@ -325,7 +325,7 @@ package body Lx200 is
   function Temperature_Of (Item : Refraction.Celsius) return String is
     use type Refraction.Celsius;
     Value : constant Refraction.Celsius := abs Item;
-    Image : constant String := "00" & Strings.Trimmed (Value'image);
+    Image : constant String := "00" & Text.Trimmed (Value'image);
   begin
     return (if Item < 0.0 then '-' else '+') & Image (Image'last - 4 .. Image'last);
   end Temperature_Of;
@@ -335,13 +335,13 @@ package body Lx200 is
     Jd_Delta : constant := 10.0**(-8);
     type Julian_Date is delta Jd_Delta range 0.0 .. ((2 ** 64 - 1) * Jd_Delta) with Small => Jd_Delta, Size => 64;
   begin
-    return Strings.Trimmed (Julian_Date(Item)'image);
+    return Text.Trimmed (Julian_Date(Item)'image);
   end Julian_Date_Of;
 
 
   function Time_Offset_Of (Item : Duration) return String is
     type Offset is delta 0.1 range -28.0 .. 28.0;
-    Image : constant String := "0" & Strings.Trimmed (Offset'(abs Item / 3600.0)'image);
+    Image : constant String := "0" & Text.Trimmed (Offset'(abs Item / 3600.0)'image);
   begin
     return (if Item > 0.0 then '-' else '+') & Image(Image'last - 3 .. Image'last);
   end Time_Offset_Of;

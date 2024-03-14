@@ -24,10 +24,10 @@ package body Astap is
 
   package Log is new Traces ("Astap");
 
-  use type Strings.Element;
+  use type Text.String;
 
-  The_Executable : Strings.Element;
-  The_Filename   : Strings.Element; -- without extension
+  The_Executable : Text.String;
+  The_Filename   : Text.String; -- without extension
   The_Process_Id : Os.Process.Id;
 
   Is_Solving : Boolean := False;
@@ -180,7 +180,7 @@ package body Astap is
       CD := [[Angle.Degrees'value(CD1_1), Angle.Degrees'value(CD1_2)],
              [Angle.Degrees'value(CD2_1), Angle.Degrees'value(CD2_2)]];
       declare
-        Dimension_Images : constant Strings.Item := Strings.Item_Of (Dimensions, Separator => 'x');
+        Dimension_Images : constant Text.Strings := Text.Strings_Of (Dimensions, Separator => 'x');
       begin
         Size := [Positive'value(Dimension_Images(Ra)), Positive'value(Dimension_Images(Dec))];
       end;

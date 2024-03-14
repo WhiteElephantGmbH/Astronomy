@@ -59,9 +59,10 @@ package body Remote is
 
   The_Handler : access Handler;
 
+  use type Text.String;
+
 
   function Telescope_Name return String is
-    use type Strings.Element;
   begin
     return +The_Telescope_Name;
   end Telescope_Name;
@@ -69,7 +70,7 @@ package body Remote is
 
   function Configured return Boolean is
   begin
-    return not (Strings.Is_Equal (Telescope_Name, "none") or Telescope_Name = "");
+    return not (Text.Matches (Telescope_Name, "none") or Telescope_Name = "");
   end Configured;
 
 
@@ -143,8 +144,6 @@ package body Remote is
 
   task body Handler is
 
-    use type Strings.Element;
-
     procedure Send (Info : String) is
 
       Remote_Address : constant String := Network.Image_Of (The_Remote_Address);
@@ -166,14 +165,14 @@ package body Remote is
           Log.Write ("Information accepted");
         else
           declare
-            Last : Natural := Strings.Location_Of ("Call stack", Response);
+            Last : Natural := Text.Location_Of ("Call stack", Response);
           begin
-            if Last = Strings.Not_Found then
+            if Last = Text.Not_Found then
               Last := Response'last;
             else
               Last := Last - 1;
             end if;
-            Log.Error (Strings.Trimmed (Response(Response'first .. Last)));
+            Log.Error (Text.Trimmed (Response(Response'first .. Last)));
           end;
         end if;
       end;
@@ -192,7 +191,7 @@ package body Remote is
     The_State          : Telescope_State := Unknown;
     Is_Cleared         : Boolean := True;
     The_Actual_Command : Command;
-    The_Actual_Target  : Strings.Element;
+    The_Actual_Target  : Text.String;
 
     procedure Send_Actual (Clear : Boolean := False) is
     begin

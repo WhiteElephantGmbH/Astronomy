@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2012 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2012 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -17,7 +17,7 @@ pragma Style_White_Elephant;
 
 with Ada.Calendar.Time_Zones;
 with Site;
-with Strings;
+with Text;
 
 package body Time is
 
@@ -107,9 +107,9 @@ package body Time is
   function Calendar_Value_Of (Image : String) return Calendar_Value is
   begin
     declare
-      Images      : constant Strings.Item := Strings.Item_Of (Image, Separator => ' ');
-      Date_Image  : constant Strings.Item := Strings.Item_Of (Images(1), Separator => '.', Purge => False);
-      Time_Image  : constant Strings.Item := Strings.Item_Of (Images(2), Separator => ':', Purge => False);
+      Images      : constant Text.Strings := Text.Strings_Of (Image, Separator => ' ');
+      Date_Image  : constant Text.Strings := Text.Strings_Of (Images(1), Separator => '.', Purge => False);
+      Time_Image  : constant Text.Strings := Text.Strings_Of (Images(2), Separator => ':', Purge => False);
       Year_Image  : constant String := Date_Image(3);
       The_Year    : constant Integer := Integer'value(Year_Image);
       The_Seconds : Duration;

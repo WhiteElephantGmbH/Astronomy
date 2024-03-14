@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2002 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2002 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -23,7 +23,7 @@ package body Configuration is
                           In_File : File_Handle) return Section is
   begin
     for The_Section of In_File.all loop
-      if Strings.Is_Equal (The_Section.Name, Name) then
+      if Text.Matches (The_Section.Name, Name) then
         return The_Section;
       end if;
     end loop;
@@ -38,7 +38,7 @@ package body Configuration is
                        In_Section : Section_Handle) return Item is
   begin
     for The_Item of In_Section.all loop
-      if Strings.Is_Equal (The_Item.Key, Key) then
+      if Text.Matches (The_Item.Key, Key) then
         return The_Item;
       end if;
     end loop;
@@ -63,12 +63,12 @@ package body Configuration is
              Mode => IO.In_File,
              Name => File_Name);
     declare
-      Has_Bom : constant Boolean := Strings.Has_Skipped_Bom_8 (The_File);
+      Has_Bom : constant Boolean := Text.Has_Skipped_Bom_8 (The_File);
     begin
       while not IO.End_Of_File (The_File) loop
         declare
-          Trimmed_Line : constant String := Strings.Trimmed (Ada.Text_IO.Get_Line (The_File));
-          Line         : constant String := (if Has_Bom then Trimmed_Line else Strings.Utf8_Of (Trimmed_Line));
+          Trimmed_Line : constant String := Text.Trimmed (Ada.Text_IO.Get_Line (The_File));
+          Line         : constant String := (if Has_Bom then Trimmed_Line else Text.Utf8_Of (Trimmed_Line));
         begin
           if Line'length > 1 then
             case Line(Line'first) is
@@ -98,14 +98,14 @@ package body Configuration is
                 The_Handle.Append (The_Section);
               end if;
               declare
-                Separator_Index : constant Natural := Strings.Location_Of ('=', Line);
+                Separator_Index : constant Natural := Text.Location_Of ('=', Line);
               begin
-                if Separator_Index = Strings.Not_Found then
+                if Separator_Index = Text.Not_Found then
                   exit;
                 else
                   declare
-                    Key   : constant String := Strings.Trimmed (Line(Line'first .. Separator_Index - 1));
-                    Value : constant String := Strings.Trimmed (Line(Separator_Index + 1 .. Line'last));
+                    Key   : constant String := Text.Trimmed (Line(Line'first .. Separator_Index - 1));
+                    Value : constant String := Text.Trimmed (Line(Separator_Index + 1 .. Line'last));
                   begin
                     if Found_Item (Key, The_Section.Items) = null then
                       The_Section.Items.Append (new Item_Data'(Key_Length   => Key'length,
@@ -166,7 +166,7 @@ package body Configuration is
                      Key         : String;
                      Default     : List := []) return List is
   begin
-    return Strings.Item_Of (Found_Item (Key, The_Section).Value, Separator => ',').To_Trimmed_List;
+    return Text.List_Of (Found_Item (Key, The_Section).Value, Separator => ',');
   exception
   when others =>
     return Default;

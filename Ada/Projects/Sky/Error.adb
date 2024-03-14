@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2013 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2013 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,19 +15,18 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Strings;
+with Text;
 
 package body Error is
 
-  The_Message : Strings.Element;
-
-  use type Strings.Element;
+  The_Message : Text.String;
 
 
   procedure Raise_With (Item       : String;
                         Clear_Rest : Boolean := False) is
+    use type Text.String;
   begin
-    if Strings.Is_Null (The_Message) or Clear_Rest then
+    if Text.Is_Null (The_Message) or Clear_Rest then
       The_Message := [Item];
     else
       The_Message := Item & " (" & The_Message & ")";
@@ -37,9 +36,9 @@ package body Error is
 
 
   function Message return String is
-    Image : constant String := +The_Message;
+    Image : constant String := The_Message.To_String;
   begin
-    Strings.Clear (The_Message);
+    Text.Clear (The_Message);
     return Image;
   end Message;
 

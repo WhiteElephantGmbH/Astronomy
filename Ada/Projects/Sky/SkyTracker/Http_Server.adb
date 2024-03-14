@@ -20,7 +20,7 @@ package body Http_Server is
 
   package Protected_Mount is new Protected_Storage (Mount_Data);
 
-  package Protected_Mount_State is new Protected_Storage (Strings.Element);
+  package Protected_Mount_State is new Protected_Storage (Text.String);
 
   package Protected_Moving_Speed is new Protected_Storage (Angle.Value);
 
@@ -30,13 +30,12 @@ package body Http_Server is
 
   package Protected_Rotator is new Protected_Storage (Rotator_Data);
 
-
-  use type Strings.Element;
+  use type Text.String;
 
 
   function Image_Of (Item : Degrees) return String is
   begin
-    return Strings.Trimmed (Item'image);
+    return Text.Trimmed (Item'image);
   end Image_Of;
 
 
@@ -54,13 +53,13 @@ package body Http_Server is
     if Speed = 0.0 then
       return "";
     elsif Speed >= 1.0 then
-      return Strings.Trimmed (Arc(Speed)'image & Angle.Degree & "/s");
+      return Text.Trimmed (Arc(Speed)'image & Angle.Degree & "/s");
     else
       Speed := @ * 60.0;
       if Speed >= 1.0 then
-        return Strings.Trimmed (Arc(Speed)'image & "'/s");
+        return Text.Trimmed (Arc(Speed)'image & "'/s");
       else
-        return Strings.Trimmed (Natural(Speed * 60.0)'image & """/s");
+        return Text.Trimmed (Natural(Speed * 60.0)'image & """/s");
       end if;
     end if;
   end Moving_Speed;
@@ -90,7 +89,7 @@ package body Http_Server is
       Speed  : constant String        := Moving_Speed;
       Axis0  : constant String        := Image_Of (Data.Axis0);
       Axis1  : constant String        := Image_Of (Data.Axis1);
-      Points : constant String        := Strings.Trimmed (Data.Model_Points'image);
+      Points : constant String        := Text.Trimmed (Data.Model_Points'image);
     begin
       JS.Set_Field (Mount, "state", JS.Create (State));
       JS.Set_Field (Mount, "speed", JS.Create (Speed));
@@ -168,7 +167,7 @@ package body Http_Server is
     Log.Write ("Callback - URI: " & AWS.Status.URI (Data));
     declare
       Uri       : constant String := AWS.Status.URI (Data);
-      Parts     : constant Strings.Item := Strings.Item_Of (Uri, Separator => '/');
+      Parts     : constant Text.Strings := Text.Strings_Of (Uri, Separator => '/');
       Subsystem : constant String := Parts(1);
     begin
       if Subsystem in "mount" | "m3" then
@@ -259,7 +258,7 @@ package body Http_Server is
 
   procedure Start  is
   begin
-    if Strings.Is_Null (The_Client_Filename) then
+    if Text.Is_Null (The_Client_Filename) then
       Log.Warning ("No GUI client");
     else
       declare
@@ -298,7 +297,7 @@ package body Http_Server is
 
   procedure Shutdown is
   begin
-    if not Strings.Is_Null (The_Client_Filename) then
+    if not Text.Is_Null (The_Client_Filename) then
       Log.Write ("Shutdown");
       AWS.Server.Shutdown (The_Server);
     end if;

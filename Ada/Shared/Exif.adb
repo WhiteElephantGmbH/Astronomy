@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                               (c) 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                        (c) 2021 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                         *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -17,18 +17,16 @@ pragma Style_White_Elephant;
 
 with GNAT.OS_Lib;
 with System;
-with Strings;
+with Text;
 with Traces;
 
 package body Exif is
 
   package Log is new Traces ("Exif");
 
-  use type Strings.Element;
-
   The_Orientation : Image_Orientation := Undefined;
 
-  The_Date_Time_Digitized : Strings.Element;
+  The_Date_Time_Digitized : Text.String;
 
   The_Image_Width  : Size := Undefined_Size;
   The_Image_Height : Size := Undefined_Size;
@@ -114,7 +112,7 @@ package body Exif is
 
   function Date_Time_Digitized return String is
   begin
-    return +The_Date_Time_Digitized;
+    return The_Date_Time_Digitized.To_String;
   end Date_Time_Digitized;
 
 
@@ -373,11 +371,9 @@ package body Exif is
     end Unsigned_Shorts_Of;
 
 
-    function Trimmed (Item : String) return String renames Strings.Trimmed;
-
     function Image_Of (Value : Rational_Value) return String is
     begin
-      return Trimmed (Value.Nominator'image) & '/' & Trimmed (Value.Denominator'image);
+      return Text.Trimmed (Value.Nominator'image) & '/' & Text.Trimmed (Value.Denominator'image);
     end Image_Of;
 
 
@@ -394,9 +390,10 @@ package body Exif is
         end if;
       end Image_Of;
 
-    begin
-      return Trimmed (Image_Of ("", The_Values));
+    begin -- Image_Of
+      return Text.Trimmed (Image_Of ("", The_Values));
     end Image_Of;
+
 
     procedure Get_Sub_Image_File_Directory is
       Entry_Count : constant Natural := Natural(Word'(Get));
@@ -583,7 +580,7 @@ package body Exif is
       The_Longitude := Undefined_Values;
       The_Time_Stamp := Undefined_Values;
       The_Date_Stamp := Undefined_Date;
-      Strings.Clear (The_Date_Time_Digitized);
+      Text.Clear (The_Date_Time_Digitized);
       if File = OS.Invalid_FD then
         raise File_Not_Found;
       end if;

@@ -19,14 +19,14 @@ with Ada.Calendar;
 with Astro;
 with File;
 with Site;
-with Strings;
+with Text;
 with Traces;
 
 package body Picture is
 
   package Log is new Traces (Id);
 
-  The_Filename : Strings.Element;
+  The_Filename : Text.String;
   The_Height   : Angle.Degrees;
   The_Width    : Angle.Degrees;
 
@@ -42,9 +42,8 @@ package body Picture is
 
 
   function Filename return String is
-    use type Strings.Element;
   begin
-    return +The_Filename;
+    return The_Filename.To_String;
   end Filename;
 
 

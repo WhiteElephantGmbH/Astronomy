@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2014 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2014 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -17,7 +17,7 @@ pragma Style_White_Elephant;
 
 with Ada.Unchecked_Conversion;
 with Error;
-with Strings;
+with Text;
 
 package body Angle is
 
@@ -28,7 +28,7 @@ package body Angle is
 
   Degree_Symbol : constant Character := '°';
 
-  function Degree return String is (Strings.Utf8_Of ("" & Degree_Symbol));
+  function Degree return String is (Text.Utf8_Of ("" & Degree_Symbol));
 
 
   function "+" (Item : Degrees) return Value is
@@ -225,7 +225,7 @@ package body Angle is
                      Show_Signed : Boolean := False) return String is
 
     use type Degrees;
-    use type Strings.Element;
+    use type Text.String;
 
     Factor : constant Seconds := Seconds(Degrees'(10.0 ** Natural(Decimals)));
 
@@ -238,18 +238,18 @@ package body Angle is
     Half_Circle : constant := Full_Circle / 2;
 
     The_Seconds  : Seconds := Seconds(Degrees'(+The_Value) * One_Degree);
-    The_Text     : Strings.Element;
+    The_Text     : Text.String;
     The_Number   : Natural;
     The_Minutes  : Natural;
     The_Fraction : Seconds;
 
-  begin
+  begin -- Image_Of
     if Show_Signed then
       if The_Seconds > Half_Circle then
         The_Seconds := Full_Circle - The_Seconds;
-        Strings.Append (The_Text, '-');
+        The_Text.Append ('-');
       else
-        Strings.Append (The_Text, '+');
+        The_Text.Append ('+');
       end if;
     end if;
     if Unit = In_Hours then
@@ -262,33 +262,33 @@ package body Angle is
     The_Number := @ / 60;
     The_Minutes := The_Number mod 60;
     The_Number := @ / 60;
-    Strings.Append (The_Text, Strings.Trimmed(The_Number'img) & Actual_Units(First));
+    The_Text.Append (Text.Trimmed(The_Number'img) & Actual_Units(First));
     if The_Minutes < 10 then
-      Strings.Append (The_Text, '0');
+      The_Text.Append ('0');
     end if;
-    Strings.Append (The_Text, Strings.Trimmed(The_Minutes'img) & Actual_Units(Minute));
+    The_Text.Append (Text.Trimmed(The_Minutes'img) & Actual_Units(Minute));
     if The_Seconds < 10.0 then
-      Strings.Append (The_Text, '0');
+      The_Text.Append ('0');
     end if;
     case Decimals is
     when 0 =>
-      Strings.Append (The_Text, String'(Strings.Trimmed(Natural(The_Seconds)'img)));
+      The_Text.Append (String'(Text.Trimmed(Natural(The_Seconds)'img)));
     when 1 =>
-      Strings.Append (The_Text, String'(Strings.Trimmed(Decimals_1'image(The_Seconds))));
+      The_Text.Append (String'(Text.Trimmed(Decimals_1'image(The_Seconds))));
     when 2 =>
-      Strings.Append (The_Text, String'(Strings.Trimmed(Decimals_2'image(The_Seconds))));
+      The_Text.Append (String'(Text.Trimmed(Decimals_2'image(The_Seconds))));
     when 3 =>
-      Strings.Append (The_Text, String'(Strings.Trimmed(Decimals_3'image(The_Seconds))));
+      The_Text.Append (String'(Text.Trimmed(Decimals_3'image(The_Seconds))));
     end case;
-    Strings.Append (The_Text, Actual_Units(Second));
-    return Strings.Utf8_Of (+The_Text);
+    The_Text.Append (Actual_Units(Second));
+    return Text.Utf8_Of (+The_Text);
   end Image_Of;
 
 
   function Value_Of (The_Image  : String;
                      With_Units : Units := Default_Degrees) return Value is
 
-    Image : constant String := Strings.Trimmed (Strings.Ansi_Of (The_Image));
+    Image : constant String := Text.Trimmed (Text.Ansi_Of_Utf8 (The_Image));
 
     type State is (At_Begin, At_Minutes, At_Seconds, At_End);
 
@@ -453,7 +453,7 @@ package body Angle is
       The_Unit := In_Hours;
       The_State := At_End;
     when others =>
-      Error.Raise_With ("unexpected character " & Strings.Utf8_Of ("" & Image(The_Next - 1)));
+      Error.Raise_With ("unexpected character " & Text.Utf8_Of ("" & Image(The_Next - 1)));
     end case;
     Skip_Spaces;
     if The_State = At_Minutes then
@@ -493,7 +493,7 @@ package body Angle is
         The_Unit := In_Hours;
         The_State := At_End;
       when others =>
-        Error.Raise_With ("unexpected character in minutes " & Strings.Utf8_Of ("" & Image(The_Next - 1)));
+        Error.Raise_With ("unexpected character in minutes " & Text.Utf8_Of ("" & Image(The_Next - 1)));
       end case;
     end if;
     Skip_Spaces;
@@ -517,12 +517,12 @@ package body Angle is
         The_Seconds := @ + Seconds(The_Number);
         The_Unit := In_Hours;
       when others =>
-        Error.Raise_With ("unexpected character in seconds " & Strings.Utf8_Of ("" & Image(The_Next - 1)));
+        Error.Raise_With ("unexpected character in seconds " & Text.Utf8_Of ("" & Image(The_Next - 1)));
       end case;
     end if;
     Skip_Spaces;
     if The_State /= At_End then
-      Error.Raise_With ("unexpected end " & Strings.Utf8_Of (Image(The_Next..Image'last)));
+      Error.Raise_With ("unexpected end " & Text.Utf8_Of (Image(The_Next..Image'last)));
     end if;
     if Is_Negative then
       The_Seconds := -@;
@@ -573,7 +573,7 @@ package body Angle is
   function Degrees_Of (The_Image : String;
                        Limit     : Degrees) return Degrees is
 
-    Image : constant String := Strings.Ansi_Of (Strings.Trimmed(The_Image));
+    Image : constant String := Text.Ansi_Of_Utf8 (Text.Trimmed(The_Image));
     Unit  : constant Character := (if Image'length > 0 then Image(Image'last) else Ascii.Nul);
     Last  : constant Natural := (if Unit in '°' | ''' | '"' then Image'last - 1 else Image'last);
 

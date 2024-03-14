@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2022 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2022 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
@@ -12,7 +12,7 @@ with File;
 with Os.Horizon;
 with Site;
 with Stellarium; pragma Unreferenced (Stellarium); -- imported to define site location
-with Strings;
+with Text;
 with Traces;
 
 package body Request is
@@ -34,10 +34,10 @@ package body Request is
 
     Day   : constant String := Date.Day (Time)'image;
     Month : constant String := Date.Month (Time)'image;
-    Year  : constant String := Strings.Trimmed (Date.Year (Time)'image);
+    Year  : constant String := Text.Trimmed (Date.Year (Time)'image);
 
     function Part_Of (Item : String) return String is
-      Image : constant String := '0' & Strings.Trimmed (Item);
+      Image : constant String := '0' & Text.Trimmed (Item);
     begin
       return Image(Image'last-1 .. Image'last);
     end Part_Of;
@@ -54,7 +54,7 @@ package body Request is
     function Image_Of (Item : Angle.Degrees) return String is
       type Value is delta 10.0**(-9) range -((2 ** 63 - 1) * 10.0**(-9)) .. +((2 ** 63 - 1) * 10.0**(-9));
     begin
-      return Strings.Trimmed (Value(Item)'image);
+      return Text.Trimmed (Value(Item)'image);
     end Image_Of;
 
   begin -- Site_Location
@@ -65,7 +65,7 @@ package body Request is
       use type Angle.Value;
       Longitude : constant Angle.Degrees := +Site.Longitude;
       Latitude  : constant Angle.Degrees := +Site.Latitude;
-      Elevation : constant String        := Strings.Trimmed(Site.Elevation'image);
+      Elevation : constant String        := Text.Trimmed(Site.Elevation'image);
     begin
       return Image_Of (Longitude) & ',' & Image_Of (Latitude) & ',' & Elevation;
     end;
@@ -86,7 +86,7 @@ package body Request is
     Home   : constant String := Site_Location;
     Start  : constant String := Image_Of (Date.Clock);
     Stop   : constant String := Image_Of (Date.Clock + (The_Days * One_Day));
-    Steps  : constant String := Strings.Trimmed (The_Steps'image) & 'm';
+    Steps  : constant String := Text.Trimmed (The_Steps'image) & 'm';
 
     New_Target : Boolean := True;
 
@@ -111,36 +111,36 @@ package body Request is
           return Data(The_First..Data'last);
         end Next_Line;
 
-        The_Target_Name : Strings.Element;
+        The_Target_Name : Text.String;
 
         procedure Evaluate_Target_Name (Item : String) is
           Is_Natural : Boolean := False;
         begin
-          Strings.Clear (The_Target_Name);
+          Text.Clear (The_Target_Name);
           for The_Character of Item loop
             case The_Character is
             when '0' .. '9' =>
               Is_Natural := True;
-              Strings.Append (The_Target_Name, The_Character);
+              Text.Append (The_Target_Name, The_Character);
             when ' ' =>
               if Is_Natural then
                 Is_Natural := False;
-                Strings.Clear (The_Target_Name);
+                Text.Clear (The_Target_Name);
               else
                 exit;
               end if;
             when '/' =>
               Is_Natural := False;
-              Strings.Append (The_Target_Name, '-');
+              Text.Append (The_Target_Name, '-');
             when others =>
               Is_Natural := False;
-              Strings.Append (The_Target_Name, The_Character);
+              Text.Append (The_Target_Name, The_Character);
             end case;
           end loop;
         end Evaluate_Target_Name;
 
         function Filename return String is
-          use type Strings.Element;
+          use type Text.String;
         begin
           return The_Target_Name & ".sssb";
         end Filename;
@@ -149,12 +149,12 @@ package body Request is
         To_File  : Boolean := False;
 
       begin -- Evaluate
-        if Strings.Location_Of ("Traceback", Data) = Data'first then
+        if Text.Location_Of ("Traceback", Data) = Data'first then
           Error ("No Connection to Nasa Horizon");
           return;
         end if;
-        The_Index := Strings.Location_Of ("****************", Data);
-        if The_Index = Strings.Not_Found then
+        The_Index := Text.Location_Of ("****************", Data);
+        if The_Index = Text.Not_Found then
           Error ("Unknown Answer from Nasa Horizon");
           return;
         end if;
@@ -165,18 +165,18 @@ package body Request is
             Name_Tag : constant String := "Target body name:";
             Line     : constant String := Next_Line;
           begin
-            exit when Strings.Location_Of ("""}", Line) = Line'first;
-            if Strings.Location_Of ("$$SOE", Line) = Line'first then
+            exit when Text.Location_Of ("""}", Line) = Line'first;
+            if Text.Location_Of ("$$SOE", Line) = Line'first then
               IO.Create (The_File, Name => Filename, Mode =>IO.Out_File);
               To_File := True;
             end if;
             if To_File then
               IO.Put_Line (File => The_File,
                            Item => Line);
-              exit when Strings.Location_Of ("$$EOE", Line) = Line'first;
+              exit when Text.Location_Of ("$$EOE", Line) = Line'first;
             else
-              if Strings.Location_Of (Name_Tag, Line) = Line'first then
-                Evaluate_Target_Name (Strings.Trimmed (Line(Line'first + Name_Tag'length .. Line'last)));
+              if Text.Location_Of (Name_Tag, Line) = Line'first then
+                Evaluate_Target_Name (Text.Trimmed (Line(Line'first + Name_Tag'length .. Line'last)));
               end if;
               IO.Put_Line (Line);
             end if;
@@ -194,7 +194,7 @@ package body Request is
         return;
       end if;
       declare
-        Url    : constant Strings.Item := [Target, Home, Start, Stop, Steps];
+        Url    : constant Text.Strings := [Target, Home, Start, Stop, Steps];
         Result : constant String := Os.Horizon.Result_Of_Get_With (Url);
       begin
         Evaluate (Result);

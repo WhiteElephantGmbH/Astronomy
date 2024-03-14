@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2019 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2019 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
@@ -13,7 +13,7 @@ with PWI4.Rotator;
 with PWI4.Mount;
 with PWI4.M3;
 with Serial_Io.Usb;
-with Strings;
+with Text;
 
 package body Test is
 
@@ -303,11 +303,11 @@ package body Test is
         declare
           Info : constant PWI4.Mount.Information := PWI4.Mount.Info;
         begin
-          Put ("Mount State     : " & Strings.Legible_Of (Info.Status'img));
-          Put ("      Ra        : " & Strings.Legible_Of (Info.Ra'img));
-          Put ("      Dec       : " & Strings.Legible_Of (Info.Dec'img));
-          Put ("      Ra J2000  : " & Strings.Legible_Of (Info.Ra_J2000'img));
-          Put ("      Dec j2000 : " & Strings.Legible_Of (Info.Dec_J2000'img));
+          Put ("Mount State     : " & Text.Legible_Of (Info.Status'img));
+          Put ("      Ra        : " & Text.Legible_Of (Info.Ra'img));
+          Put ("      Dec       : " & Text.Legible_Of (Info.Dec'img));
+          Put ("      Ra J2000  : " & Text.Legible_Of (Info.Ra_J2000'img));
+          Put ("      Dec j2000 : " & Text.Legible_Of (Info.Dec_J2000'img));
           if Info.Status = PWI4.Mount.Tracking then
             exit;
           end if;
@@ -338,7 +338,7 @@ package body Test is
       PWI4.Mount.Disconnect;
     end Shutdown;
 
-    Id : constant String := Strings.Lowercase_Of (Command);
+    Id : constant String := Text.Lowercase_Of (Command);
 
     use type PWI4.Degrees;
     use type PWI4.Hours;

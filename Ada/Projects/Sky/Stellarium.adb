@@ -23,7 +23,7 @@ with File;
 with Network.Tcp.Servers;
 with Os.Process;
 with Site;
-with Strings;
+with Text;
 with Unsigned;
 
 package body Stellarium is
@@ -44,7 +44,10 @@ package body Stellarium is
   end Magnitude_Maximum;
 
 
-  The_Set_Satellite_Group : Strings.Element;
+  The_Set_Satellite_Group : Text.String;
+
+  use type Text.String;
+
 
   procedure Set_Satellite_Group (Name : String) is
   begin
@@ -54,7 +57,6 @@ package body Stellarium is
 
 
   function Satellite_Group return String is
-    use type Strings.Element;
   begin
     return +The_Set_Satellite_Group;
   end Satellite_Group;
@@ -181,9 +183,9 @@ package body Stellarium is
     begin
       if Location = "auto" and then Last_Location /= "" then
         declare
-          Items           : constant Strings.Item := Strings.Item_Of (Last_Location, Separator => ',');
-          Latitude_Image  : constant String       := Items(Strings.First_Index);
-          Longitude_Image : constant String       := Items(Strings.First_Index + 1);
+          Items           : constant Text.Strings := Text.Strings_Of (Last_Location, Separator => ',');
+          Latitude_Image  : constant String       := Items(Text.First_Index);
+          Longitude_Image : constant String       := Items(Text.First_Index + 1);
         begin
           Site.Define (Site.Data'(Latitude  => Value_Of (Latitude_Image),
                                   Longitude => Value_Of (Longitude_Image),
@@ -227,15 +229,15 @@ package body Stellarium is
                Name => User_Locations_Filename);
       while not IO.End_Of_File (The_File) loop
         declare
-          Items   : constant Strings.Item := Strings.Item_Of (IO.Get_Line (The_File), Separator => Ascii.Ht);
-          Place   : constant String       := Items(Strings.First_Index);
-          Country : constant String       := Items(Strings.First_Index + 2);
+          Items   : constant Text.Strings := Text.Strings_Of (IO.Get_Line (The_File), Separator => Ascii.Ht);
+          Place   : constant String       := Items(Text.First_Index);
+          Country : constant String       := Items(Text.First_Index + 2);
         begin
           if Location = Place & ", " & Country then
             declare
-              Lat_Image : constant String := Items(Strings.First_Index + 5);
-              Lon_Image : constant String := Items(Strings.First_Index + 6);
-              Alt_Image : constant String := Items(Strings.First_Index + 7);
+              Lat_Image : constant String := Items(Text.First_Index + 5);
+              Lon_Image : constant String := Items(Text.First_Index + 6);
+              Alt_Image : constant String := Items(Text.First_Index + 7);
             begin
               Site.Define (Site.Data'(Latitude  => Value_Of (Lat_Image(Lat_Image'first .. Lat_Image'last - 1),
                                                              Is_Positive => Lat_Image(Lat_Image'last) = 'N'),

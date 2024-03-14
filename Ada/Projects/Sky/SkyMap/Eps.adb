@@ -1,11 +1,11 @@
 -- *********************************************************************************************************************
--- *                       (c) 2010 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2010 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 -->Style: White_Elephant
 
 with Ada.Text_IO;
-with Strings;
+with Text;
 
 package body Eps is
 
@@ -103,7 +103,7 @@ package body Eps is
     Write ("  fill");
     Write ("} def");
     for The_Class in Colors'range loop
-      Write ("/Filled_Circle_" & Strings.Trimmed(The_Class'image) & " {");
+      Write ("/Filled_Circle_" & Text.Trimmed(The_Class'image) & " {");
       Set_Color (Colors(The_Class));
       Write ("  newpath");
       Write ("  0 360 arc");
@@ -244,7 +244,7 @@ package body Eps is
                                Radius : Value;
                                Class  : Color_Class) is
   begin
-    Write (" " & X_Y_Of (To) & Image_Of (Radius) & " Filled_Circle_" & Strings.Trimmed(Class'image));
+    Write (" " & X_Y_Of (To) & Image_Of (Radius) & " Filled_Circle_" & Text.Trimmed(Class'image));
   end Add_Filled_Circle;
 
 

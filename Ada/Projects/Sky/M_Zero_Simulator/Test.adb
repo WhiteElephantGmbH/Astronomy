@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2021 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2021 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
@@ -9,7 +9,7 @@ with Ada.Text_IO;
 with Exceptions;
 with Log;
 with Network.Tcp;
-with Strings;
+with Text;
 
 package body Test is
 
@@ -82,7 +82,7 @@ package body Test is
         Network.Tcp.Send (Item, The_Client_Socket);
       end Send;
 
-      function Image_Of is new Strings.Image_Of (Natural);
+      function Image_Of is new Text.Image_Of (Natural);
 
     begin -- Message_Handler
       if Data'length > 3  and then Data(Data'last) = Terminator then

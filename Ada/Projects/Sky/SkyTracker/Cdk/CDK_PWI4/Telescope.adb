@@ -25,7 +25,7 @@ with Objects;
 with Parameter;
 with Picture;
 with Remote;
-with Strings;
+with Text;
 with System;
 with Targets;
 with Traces;
@@ -149,7 +149,7 @@ package body Telescope is
        Goto_Offset        => Rotator_Goto_Offset'access));
 
   begin -- Set_Server_Information
-    Http_Server.Set_State (Strings.Legible_Of (The_Data.Status'image));
+    Http_Server.Set_State (Text.Legible_Of (The_Data.Status'image));
     Http_Server.Set_Moving (Speed => The_Data.Moving_Speed);
     Http_Server.Set (Position => Http_Server.Mirror_Position'val(Device.M3.Position'pos(The_Data.M3.Position)));
     Http_Server.Set (Mount_Data);

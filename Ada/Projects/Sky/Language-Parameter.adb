@@ -18,7 +18,7 @@ pragma Style_White_Elephant;
 with Error;
 with Section;
 with Stellarium;
-with Strings;
+with Text;
 
 package body Language.Parameter is
 
@@ -47,8 +47,8 @@ package body Language.Parameter is
 
   procedure Defaults (Put : access procedure (Item : String)) is
   begin
-    Put (Strings.Bom_8 & "[" & Localization_Id & "]");
-    Put (Language_Key & " = " & Strings.Legible_Of (Stellarium.Language'img));
+    Put (Text.Bom_8 & "[" & Localization_Id & "]");
+    Put (Language_Key & " = " & Text.Legible_Of (Stellarium.Language'img));
   end Defaults;
 
 end Language.Parameter;

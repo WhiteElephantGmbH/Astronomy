@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2017 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2017 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -19,7 +19,7 @@ with Angle;
 with Device;
 with Network.Tcp.Server;
 with Sky_Line;
-with Strings;
+with Text;
 with Traces;
 with Time;
 with User.Input;
@@ -58,7 +58,7 @@ package body Lx200_Server is
 
       use type Angle.Units;
 
-      The_Image : String := Strings.Ansi_Of (Angle.Image_Of (The_Value   => The_Value,
+      The_Image : String := Text.Ansi_Of_Utf8 (Angle.Image_Of (The_Value   => The_Value,
                                                              Unit        => Unit,
                                                              Decimals    => 0,
                                                              Show_Signed => Unit = Angle.In_Degrees));

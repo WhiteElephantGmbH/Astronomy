@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2012 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2012 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -22,7 +22,7 @@ with Application;
 with Error;
 with File;
 with Objects;
-with Strings;
+with Text;
 with Traces;
 with Values;
 
@@ -105,7 +105,7 @@ package body Sky_Line is
     Log.Write ("Create; " & Filename);
     Ada.Directories.Create_Path (Directory);
     Ada.Text_IO.Create (The_File, Name => Filename);
-    Ada.Text_IO.Put (The_File, Strings.Bom_8);
+    Ada.Text_IO.Put (The_File, Text.Bom_8);
   end Create_File;
 
 
@@ -152,7 +152,7 @@ package body Sky_Line is
           The_Last := The_Index;
           The_Index := The_Index + 1;
         end loop;
-        return Strings.Trimmed(Line(First .. The_Last));
+        return Text.Trimmed(Line(First .. The_Last));
       end Next;
 
       The_Azimuth      : Angle.Value;
@@ -160,7 +160,7 @@ package body Sky_Line is
       The_Top_Altitude : Angle.Value;
 
     begin -- Store
-      if Strings.Trimmed (Line) /= "" then
+      if Text.Trimmed (Line) /= "" then
         begin
           The_Azimuth := Angle.Value_Of (Next);
         exception
@@ -240,13 +240,13 @@ package body Sky_Line is
         Error.Raise_With (Filename & " is empty");
       end if;
       declare
-        Has_Bom : constant Boolean := Strings.Has_Skipped_Bom_8 (The_File);
+        Has_Bom : constant Boolean := Text.Has_Skipped_Bom_8 (The_File);
       begin
         while not Ada.Text_IO.End_Of_File (The_File) loop
           declare
             Line : constant String := Ada.Text_IO.Get_Line (The_File);
           begin
-            Store ((if Has_Bom then Line else Strings.Utf8_Of (Line)));
+            Store ((if Has_Bom then Line else Text.Utf8_Of (Line)));
           end;
         end loop;
       end;

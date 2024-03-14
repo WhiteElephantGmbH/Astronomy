@@ -32,8 +32,8 @@ with Site;
 with Sky.Catalog;
 with SkyTracker;
 with Space;
-with Strings;
 with Targets;
+with Text;
 with Time;
 with Traces;
 with User.Input;
@@ -423,7 +423,7 @@ package body User is
 
   function Image_Of (The_Position : Device.Microns) return String is
   begin
-    return Strings.Trimmed (The_Position'img) & "μm";
+    return Text.Trimmed (The_Position'img) & "μm";
   end Image_Of;
 
 
@@ -541,11 +541,11 @@ package body User is
       Gui.Set_Text (Alt_Lower_Limit, Device.Image_Of (Device.Limits.Alt_Lower_Goto));
       Gui.Set_Text (Alt_Upper_Limit, Device.Image_Of (Device.Limits.Alt_Upper_Goto));
       Gui.Set_Text (Moving_Speed, Angle.Image_Of (Information.Moving_Speed, Decimals => 2) & "/s");
-      Gui.Set_Text (Fans_State, Strings.Legible_Of (Information.Fans_State'img));
-      Gui.Set_Text (M3_Position, Strings.Legible_Of (Information.M3_Position'img));
+      Gui.Set_Text (Fans_State, Text.Legible_Of (Information.Fans_State'img));
+      Gui.Set_Text (M3_Position, Text.Legible_Of (Information.M3_Position'img));
       Gui.Set_Text (Longitude, Angle.Image_Of (Site.Longitude, Decimals => 2));
       Gui.Set_Text (Latitude, Angle.Image_Of (Site.Latitude, Decimals => 2, Show_Signed => True));
-      Gui.Set_Text (Elevation, Strings.Trimmed (Site.Elevation'img) & 'm');
+      Gui.Set_Text (Elevation, Text.Trimmed (Site.Elevation'img) & 'm');
       if Information.Universal_Time = Time.In_The_Past then
         Gui.Set_Text (Lmst, "");
         Gui.Set_Text (Local_Time, "");
@@ -591,7 +591,7 @@ package body User is
 
 
   function Identifier_Of (Item : String) return String is
-    The_Image : String := Strings.Trimmed (Item);
+    The_Image : String := Text.Trimmed (Item);
   begin
     for Index in The_Image'range loop
       if The_Image(Index) = ' ' then
@@ -670,7 +670,7 @@ package body User is
   procedure Define_Focuser_Position is
   begin
     declare
-      Value : constant String := Strings.Trimmed (Gui.Contents_Of (Focuser_Goto));
+      Value : constant String := Text.Trimmed (Gui.Contents_Of (Focuser_Goto));
       Last  : Natural := Value'last;
     begin
       if Value = "" then
@@ -1032,9 +1032,9 @@ package body User is
                                        The_Size           => Text_Size,
                                        The_Title_Size     => Title_Size);
         for Value in Telescope.Orientation'range loop
-          Gui.Add_Text (Orientation_Box, Strings.Legible_Of (Value'img));
+          Gui.Add_Text (Orientation_Box, Text.Legible_Of (Value'img));
         end loop;
-        Gui.Select_Text (Orientation_Box, Strings.Legible_Of (The_Image_Orientation'img));
+        Gui.Select_Text (Orientation_Box, Text.Legible_Of (The_Image_Orientation'img));
      end Define_Setup_Page;
 
     begin -- Create_Interface
