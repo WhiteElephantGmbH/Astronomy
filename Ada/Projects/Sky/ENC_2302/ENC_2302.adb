@@ -5,7 +5,7 @@
 pragma Style_White_Elephant;
 
 pragma Build (Description => "ENC 2302 Simulator",
-              Version     => (1, 0, 0, 1),
+              Version     => (1, 0, 0, 2),
               Kind        => Console,
               Libraries   => ("AWS64", "COLL64"),
               Compiler    => "GNATPRO\23.0");
