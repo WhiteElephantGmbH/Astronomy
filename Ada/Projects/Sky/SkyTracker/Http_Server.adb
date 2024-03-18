@@ -1,6 +1,17 @@
 -- *********************************************************************************************************************
 -- *                       (c) 2023 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
+-- *                                                                                                                   *
+-- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
+-- *    Public License as published by the Free Software Foundation; either version 2 of the License, or               *
+-- *    (at your option) any later version.                                                                            *
+-- *                                                                                                                   *
+-- *    This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the     *
+-- *    implied warranty of MERCHANTABILITY or FITNESS for A PARTICULAR PURPOSE. See the GNU General Public License    *
+-- *    for more details.                                                                                              *
+-- *                                                                                                                   *
+-- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
+-- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
@@ -17,6 +28,8 @@ with Protected_Storage;
 package body Http_Server is
 
   package JS renames GNATCOLL.JSON;
+
+  package Protected_Control is new Protected_Storage (Control_Data);
 
   package Protected_Mount is new Protected_Storage (Mount_Data);
 
@@ -82,6 +95,14 @@ package body Http_Server is
 
     Info : constant JS.JSON_Value := JS.Create_Object;
 
+    procedure Set_Control_Values is
+      Control : constant JS.JSON_Value := JS.Create_Object;
+      Data    : constant Control_Data  := Protected_Control.Data;
+    begin
+      JS.Set_Field (Control, "window_minimized", JS.Create (Data.Window_Minimized));
+      JS.Set_Field (Info, "control", Control);
+    end Set_Control_Values;
+
     procedure Set_Mount_Values is
       Mount  : constant JS.JSON_Value := JS.Create_Object;
       Data   : constant Mount_Data    := Protected_Mount.Data;
@@ -127,11 +148,13 @@ package body Http_Server is
       JS.Set_Field (Focuser, "exists", JS.Create (Data.Exists));
       JS.Set_Field (Focuser, "moving", JS.Create (Data.Moving));
       JS.Set_Field (Focuser, "max_position", JS.Create (Data.Max_Position));
+      JS.Set_Field (Focuser, "zoom_size", JS.Create (Data.Zoom_Size));
       JS.Set_Field (Focuser, "position", JS.Create (Data.Position));
       JS.Set_Field (Info, "focuser", Focuser);
       Log.Write ("Focuser Exists        : " & Data.Exists'image);
       Log.Write ("Focuser Moving        : " & Data.Moving'image);
       Log.Write ("Focuser Max Position  :"  & Data.Max_Position'image);
+      Log.Write ("Focuser Zoom Size     :"  & Data.Zoom_Size'image);
       Log.Write ("Focuser Position      :"  & Data.Position'image);
     end Set_Focuser_Values;
 
@@ -154,6 +177,7 @@ package body Http_Server is
     end Set_Rotator_Values;
 
   begin -- Information
+    Set_Control_Values;
     Set_Mount_Values;
     Set_M3_Values;
     Set_Focuser_Values;
@@ -278,11 +302,12 @@ package body Http_Server is
   end Start;
 
 
+  procedure Set (Data : Control_Data) renames Protected_Control.Set;
+
   procedure Set_State (Image : String) is
   begin
     Protected_Mount_State.Set ([Image]);
   end Set_State;
-
 
   procedure Set_Moving (Speed : Angle.Value) renames Protected_Moving_Speed.Set;
 

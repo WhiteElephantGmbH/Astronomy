@@ -385,6 +385,9 @@ package body User is
   end Show_Description;
 
 
+  function Window_Minimized return Boolean is (Gui.Application_Is_Minimized);
+
+
   The_Targets : Name.Id_List_Access;
 
 

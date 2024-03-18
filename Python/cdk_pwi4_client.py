@@ -20,6 +20,17 @@
 import json
 import requests
 
+""" Control Information
+    ===================
+"""
+class Control:
+    def __init__(self, control):
+        self.control = control
+
+    def window_minimized(self):
+        return self.control["window_minimized"]
+
+
 """ Mount Information
     =================
 """
@@ -76,6 +87,9 @@ class Focuser:
     def max_position(self):
         return self.focuser["max_position"]
 
+    def zoom_size(self):
+        return self.focuser["zoom_size"]
+
     def position(self):
         return self.focuser["position"]
 
@@ -106,6 +120,9 @@ class Rotator:
 class Information:
     def __init__(self, data):
         self.info = json.loads(data)
+
+    def control(self):
+        return Control(self.info["control"])
 
     def mount(self):
         return Mount(self.info["mount"])

@@ -54,6 +54,7 @@ package body Parameter is
   Cwe_Distance_Key      : constant String := "CWE Distance";
   Park_Position_Az_Key  : constant String := "Park Position Az";
   Focuser_Maximum_Key   : constant String := "Focuser Maximum";
+  Focuser_Zoom_Size_Key : constant String := "Focuser Zoom Size";
   Ip_Address_Key        : constant String := Section.Ip_Address_Key;
 
   Is_In_Shutdown_Mode : Boolean := False;
@@ -119,6 +120,7 @@ package body Parameter is
       Put (Cwe_Distance_Key & "      = 30'");
       Put (Park_Position_Az_Key & "  = 75" & Angle.Degree);
       Put (Focuser_Maximum_Key & "   = 10000");
+      Put (Focuser_Zoom_Size_Key & " = 300");
       Put ("");
       Http_Server.Parameter.Defaults (Put'access, "Handbox");
       Put ("");
@@ -253,6 +255,7 @@ package body Parameter is
       The_Cwe_Distance := Section.Degrees_Of (Cwe_Distance_Key, Cwe.Maximum_Distance);
       Telescope.Define_Park_Position (Section.Direction_Of (Park_Position_Az_Key));
       Telescope.Define_Max_Focuser_Position (Value_Of (Focuser_Maximum_Key));
+      Telescope.Define_Fucuser_Zoom_Size (Value_Of (Focuser_Zoom_Size_Key));
 
       Http_Server.Parameter.Define (Handle);
       Sun.Parameter.Define (Handle);

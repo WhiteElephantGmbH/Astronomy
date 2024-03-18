@@ -33,7 +33,7 @@ def main():
 
     focuser_min = 1
     focuser_max = 10000 # default
-    zoom_delta  = 150
+    zoom_size   = 100   # default
 
     #events
     go_back                = client.go_back
@@ -94,6 +94,7 @@ def main():
     count = 0
     pressed = False
     zoomed = False
+    minimized = False
     startup = True
     while True:
         try:
@@ -113,15 +114,15 @@ def main():
                             window['zoom'].update(text='🔎')
                         else:
                             zoomed = True
-                            upper_limit = value + (zoom_delta / 2)
+                            upper_limit = value + (zoom_size / 2)
                             if upper_limit > focuser_max:
-                                lower_limit = focuser_max - zoom_delta
+                                lower_limit = focuser_max - zoom_size
                                 upper_limit = focuser_max
                             else:
-                                lower_limit = value - (zoom_delta / 2)
+                                lower_limit = value - (zoom_size / 2)
                                 if lower_limit < focuser_min:
                                     lower_limit = focuser_min
-                                    upper_limit = focuser_min + zoom_delta
+                                    upper_limit = focuser_min + zoom_size
                             window['zoom'].update(text='⇔')
                         window['focus'].update(range=(lower_limit,upper_limit))
                     elif event == rotate:
@@ -139,6 +140,15 @@ def main():
                     if count == 5: # every half second
                         count = 0;
                         info = client.info()
+                        control = info.control()
+                        if control.window_minimized():
+                            if not minimized:
+                                window.Hide()
+                                minimized = True
+                        else:
+                            if minimized:
+                                window.UnHide()
+                                minimized = False
                         mount = info.mount()
                         m3 = info.m3()
                         focuser = info.focuser()
@@ -152,6 +162,7 @@ def main():
                                     window['-FFO-'].update(visible=True)
                                     if startup:
                                         focuser_max = focuser.max_position()
+                                        zoom_size = focuser.zoom_size()
                                         upper_limit = focuser_max
                                         window['focus'].update(range=(lower_limit,upper_limit))
                                         startup = False

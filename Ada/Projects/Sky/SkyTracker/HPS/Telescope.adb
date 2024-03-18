@@ -77,6 +77,9 @@ package body Telescope is
 
   procedure Set_Server_Information (The_Data : Data) is
 
+    function Control_Data return Http_Server.Control_Data is
+      ((Window_Minimized => User.Window_Minimized));
+
     function Mount_Data return Http_Server.Mount_Data is
       (if not (The_Data.Status in Disconnected | Unknown) then
         (Exists       => True,
@@ -87,6 +90,7 @@ package body Telescope is
          (others => <>));
 
   begin -- Set_Server_Information
+    Http_Server.Set (Control_Data);
     Http_Server.Set_State (Text.Legible_Of (The_Data.Status'image));
     Http_Server.Set_Moving (Speed => The_Data.Moving_Speed);
     Http_Server.Set (Mount_Data);

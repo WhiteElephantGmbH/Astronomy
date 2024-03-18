@@ -1049,6 +1049,9 @@ package body User is
   end Enable_Align_On_Picture;
 
 
+  function Window_Minimized return Boolean is (Gui.Application_Is_Minimized);
+
+
   function In_Setup_Mode return Boolean is
   begin
     case The_Page is

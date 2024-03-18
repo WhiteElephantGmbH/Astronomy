@@ -67,6 +67,7 @@ package Telescope is
     Exists       : Boolean;
     Moving       : Boolean;
     Max_Position : Device.Microns;
+    Zoom_Size    : Device.Microns;
     Position     : Device.Microns;
   end record;
 
@@ -103,6 +104,8 @@ package Telescope is
   function Park_Position_Defined return Boolean;
 
   procedure Define_Max_Focuser_Position (The_Position : Device.Microns);
+
+  procedure Define_Fucuser_Zoom_Size (The_Size : Device.Microns);
 
   procedure Startup;
 

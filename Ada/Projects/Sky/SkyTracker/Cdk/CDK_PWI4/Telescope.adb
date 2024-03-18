@@ -122,6 +122,9 @@ package body Telescope is
 
   procedure Set_Server_Information (The_Data : Data) is
 
+    function Control_Data return Http_Server.Control_Data is
+      ((Window_Minimized => User.Window_Minimized));
+
     function Mount_Data return Http_Server.Mount_Data is
       (if The_Data.Status > Homing then
         (Exists       => True,
@@ -135,6 +138,7 @@ package body Telescope is
       ((Exists       => The_Data.Focuser.Exists,
         Moving       => The_Data.Focuser.Moving,
         Max_Position => Http_Server.Microns(The_Data.Focuser.Max_Position),
+        Zoom_Size    => Http_Server.Microns(The_Data.Focuser.Zoom_Size),
         Position     => Http_Server.Microns(The_Data.Focuser.Position),
         Set_Position => Focuser_Goto'access));
 
@@ -149,6 +153,7 @@ package body Telescope is
        Goto_Offset        => Rotator_Goto_Offset'access));
 
   begin -- Set_Server_Information
+    Http_Server.Set (Control_Data);
     Http_Server.Set_State (Text.Legible_Of (The_Data.Status'image));
     Http_Server.Set_Moving (Speed => The_Data.Moving_Speed);
     Http_Server.Set (Position => Http_Server.Mirror_Position'val(Device.M3.Position'pos(The_Data.M3.Position)));
@@ -257,6 +262,15 @@ package body Telescope is
     Log.Write ("define max focuser position =>" & The_Position'image);
     Max_Fucuser_Position := The_Position;
   end Define_Max_Focuser_Position;
+
+
+  Fucuser_Zoom_Size : Device.Microns;
+
+  procedure Define_Fucuser_Zoom_Size (The_Size : Device.Microns) is
+  begin
+    Log.Write ("define focuser zoom size =>" & The_Size'image);
+    Fucuser_Zoom_Size := The_Size;
+  end Define_Fucuser_Zoom_Size;
 
 
   function Information return Data is
@@ -1272,6 +1286,7 @@ package body Telescope is
             The_Data.Focuser.Moving := Focuser.Moving;
             The_Data.Focuser.Position := Focuser.Actual_Position;
             The_Data.Focuser.Max_Position := Max_Fucuser_Position;
+            The_Data.Focuser.Zoom_Size := Fucuser_Zoom_Size;
             The_Data.Rotator.Moving := Rotator.Moving;
             The_Data.Rotator.Slewing := Rotator.Slewing;
             The_Data.Rotator.Field_Angle := Rotator.Field_Angle;

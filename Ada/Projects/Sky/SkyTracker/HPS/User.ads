@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2022 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2022 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -58,6 +58,8 @@ package User is
   -- PRECONDITION: Targets defined
 
   procedure Enable_Align_On_Picture;
+
+  function Window_Minimized return Boolean;
 
   function In_Setup_Mode return Boolean;
 

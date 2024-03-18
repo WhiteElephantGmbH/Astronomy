@@ -173,7 +173,7 @@ package Device is
     procedure Rotate;
 
     procedure Turn_To_Occular;
-    
+
   end M3;
 
   package Fans is

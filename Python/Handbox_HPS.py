@@ -69,6 +69,7 @@ def main():
                        size=(245,186))
     count = 0
     pressed = False
+    minimized = False
     while True:
         try:
             event, values = window.read(timeout=100)
@@ -89,6 +90,15 @@ def main():
                     if count == 5: # every half second
                         count = 0;
                         info = client.info()
+                        control = info.control()
+                        if control.window_minimized():
+                            if not minimized:
+                                window.Hide()
+                                minimized = True
+                        else:
+                            if minimized:
+                                window.UnHide()
+                                minimized = False
                         mount = info.mount()
                         if mount.exists():
                             window['-SPEED-'].update(mount.speed())
