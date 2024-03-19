@@ -49,7 +49,7 @@ package body Http_Server.Parameter is
   begin
     Put ("[" & Id & "]");
     Put (Port_Key & "       = 9000");
-    Put (Gui_Client_Key & " = " & Os.System.Program_Files_Folder & "White_Elephant\" & Client & ".exe");
+    Put (Gui_Client_Key & " = " & Os.System.Program_Files_Folder & "White Elephant\Client\" & Client & ".exe");
   end Defaults;
 
 end Http_Server.Parameter;
