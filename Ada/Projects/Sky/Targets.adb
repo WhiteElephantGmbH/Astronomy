@@ -233,7 +233,13 @@ package body Targets is
         end if;
       end Add_Visible;
 
+      use type Sky.Catalog_Id;
+
     begin -- Define_Targets
+      if The_Targets.Kind = Sky.Favorites then
+        Name.Sort_Favorites (The_Targets);
+        New_List := True;
+      end if;
       Name.For_All (In_List => The_Targets, Handle => Add_Visible'access);
       if New_List or (The_Changes > 100) then
         New_List := False;
@@ -294,7 +300,7 @@ package body Targets is
       or
         accept Stop;
         exit;
-      or delay 10.0;
+      or delay 20.0;
         if Site.Is_Defined then
           Define_Targets;
         end if;

@@ -22,6 +22,7 @@ with Application;
 with Error;
 with File;
 with Lexicon;
+with Objects;
 with Sky.Catalog;
 with Sky.Data;
 with Sssb;
@@ -157,26 +158,26 @@ package body Name is
   end Type_Of;
 
 
-  function Direction_Of (Item : Name.Id;
+  function Direction_Of (Item : Id;
                          Ut   : Time.Ut) return Space.Direction is
   begin
     return Sky.Data.Direction_Of (Object_Of(Item), Ut);
   end Direction_Of;
 
 
-  function Direction_Of (Item : Name.Id) return Space.Direction is
+  function Direction_Of (Item : Id) return Space.Direction is
   begin
     return Item.Element.Position;
   end Direction_Of;
 
 
-  function Direction_Of (Item : Name.Id) return Earth.Direction is
+  function Direction_Of (Item : Id) return Earth.Direction is
   begin
     return Item.Element.Direction;
   end Direction_Of;
 
 
-  function Magnitude_Of (Item : Name.Id) return Sky.Magnitude is
+  function Magnitude_Of (Item : Id) return Sky.Magnitude is
   begin
     if Kind_Of (Item) = Sky_Object then
       return Sky.Data.Magnitude_Of (Object_Of(Item));
@@ -358,6 +359,37 @@ package body Name is
   begin
     Actual_Catalog.Define_Catalog (List);
   end Define;
+
+
+  procedure Sort_Favorites (The_List : in out Id_List) is
+
+    function Altitude_Of (Object : Id) return Angle.Signed is
+      Space_Direction : constant Space.Direction := Direction_Of (Object, Time.Universal);
+      Earth_Direction : constant Earth.Direction := Objects.Direction_Of (Space_Direction, Time.Lmst);
+      use type Angle.Signed;
+    begin
+      return Angle.Signed'(+Earth.Alt_Of (Earth_Direction));
+    end Altitude_Of;
+
+    function Compare_Altitude (Left, Right : Id) return Boolean is
+      use type Angle.Signed;
+    begin
+      if Kind_Of (Left) = Sky_Object and Kind_Of (Right) = Sky_Object then
+        return Altitude_Of (Left) > Altitude_Of (Right);
+      end if;
+      return False; -- don't sort others than sky objects
+    end Compare_Altitude;
+
+    package Favorite_Tool is new Names.Generic_Sorting (Compare_Altitude);
+
+  begin -- Sort
+    case The_List.Kind is
+    when Sky.Favorites =>
+      Favorite_Tool.Sort (The_List.Ids);
+    when others =>
+      raise Program_Error;
+    end case;
+  end Sort_Favorites;
 
 
   function Actual_List return Id_List is
@@ -776,17 +808,18 @@ package body Name is
 
       package Name_Tool is new Names.Generic_Sorting (Compare_Names);
 
-      use type Sky.Catalog_Id;
-
     begin -- Define
       The_Id_List.Ids.Clear;
       The_Id_List := Id_List'(Kind => Data_Id, Ids => <>);
       while Next loop
         The_Id_List.Ids.Append (Item);
       end loop;
-      if Data_Id = Sky.Name then
+      case Data_Id is
+      when Sky.Name =>
         Name_Tool.Sort (The_Id_List.Ids);
-      end if;
+      when others =>
+        null;
+      end case;
     end Define_Catalog;
 
 

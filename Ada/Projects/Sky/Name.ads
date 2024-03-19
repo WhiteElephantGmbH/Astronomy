@@ -51,6 +51,8 @@ package Name is
 
   procedure Define (List : Sky.Catalog_Id);
 
+  procedure Sort_Favorites (The_List : in out Id_List);
+
   function Actual_List return Id_List;
 
   type Id_Access is access constant Id;
