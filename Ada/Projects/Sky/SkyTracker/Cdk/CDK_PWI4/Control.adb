@@ -290,7 +290,7 @@ package body Control is
       case The_Data.Status is
       when Telescope.Restarting =>
         User.Show (The_Progress => Cdk_700.Startup_Progress);
-      when Telescope.Homing | Telescope.Positioning | Telescope.Approaching =>
+      when Telescope.Homing | Telescope.Positioning | Telescope.Approaching | Telescope.Enabling =>
         declare
           Actual_Duration : Time.Ut := The_Data.Completion_Time - Time.Universal;
         begin

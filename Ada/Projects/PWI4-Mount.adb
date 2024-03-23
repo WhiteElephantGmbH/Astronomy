@@ -62,10 +62,24 @@ package body PWI4.Mount is
   end Initialize_Homing;
 
 
+  Last_Mech_Position : Degrees := Degrees'last;
+
   function Info return Information is
 
     Data  : constant Protocol.Mount_Info := Protocol.Mount.Info;
     Flags : Protocol.Mount_Flag renames Data.Flags;
+
+    function Rotator_Stopped return Boolean is
+      Mech_Position : constant Degrees := Protocol.Rotator.Info.Mech_Position;
+    begin
+      if abs (Last_Mech_Position - Mech_Position) < 0.001 then
+        Last_Mech_Position := Degrees'last;
+        return True;
+      end if;
+      Last_Mech_Position := Mech_Position;
+      return False;
+    end Rotator_Stopped;
+
 
     function Status return State is
       Delta_Axis0 : Degrees;
@@ -98,9 +112,16 @@ package body PWI4.Mount is
         Last_Axis0_Position := Data.Axis0.Position;
         Last_Axis1_Position := Data.Axis1.Position;
         if The_Enable_Delay_Count > 0 then
-          The_Enable_Delay_Count := @ - 1;
+          -- restart handling
+          if The_Enable_Delay_Count = 1 then
+            if Rotator_Stopped then
+              return Enabled; -- rotator at home and motors enabled
+            end if;
+          else
+            The_Enable_Delay_Count := @ - 1;
+          end if;
           return Connected;
-        else
+        else --
           return Enabled;
         end if;
       elsif not (Flags.Is_Tracking or Flags.Is_Slewing) then
@@ -118,7 +139,7 @@ package body PWI4.Mount is
       end if;
     end Status;
 
-  begin
+  begin -- Info
     Spiral_Offsets := Data.Spiral_Offsets;
     return (Status    => Status,
             Ra        => Data.Ra,

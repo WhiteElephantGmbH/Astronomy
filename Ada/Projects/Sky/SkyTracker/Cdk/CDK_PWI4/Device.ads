@@ -117,8 +117,12 @@ package Device is
 
   package Focuser is
 
+    type State is (Unknown, Disconnected, Connected);
+  
+    type State_Handler_Access is access procedure (The_State : State);
+   
     function Exists return Boolean;
-
+    
     function Moving return Boolean;
 
     function Actual_Position return Microns;
@@ -186,8 +190,9 @@ package Device is
 
   end Fans;
 
-  procedure Start (Mount_State_Handler : Mount.State_Handler_Access;
-                   M3_Position_Handler : M3.Position_Handler_Access);
+  procedure Start (Mount_State_Handler   : Mount.State_Handler_Access;
+                   Focuser_State_Handler : Focuser.State_Handler_Access;
+                   M3_Position_Handler   : M3.Position_Handler_Access);
 
   procedure Finalize;
 

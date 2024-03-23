@@ -23,6 +23,7 @@ with Http_Server;
 with Input;
 with Objects;
 with Parameter;
+with Persistent;
 with Picture;
 with Remote;
 with Text;
@@ -45,6 +46,13 @@ package body Telescope is
 
   package Fans renames Device.Fans;
 
+  package Persistent_Focuser is new Persistent (Device.Microns, Name => "Focuser");
+
+  Persistent_Focuser_Data : Persistent_Focuser.Data;
+
+  Default_Focuser_Position : constant Device.Microns := Device.Microns(6500);
+
+  Focuser_Position : Device.Microns renames Persistent_Focuser_Data.Storage;
 
   subtype Command is Input.Mount_Command;
 
@@ -82,6 +90,8 @@ package body Telescope is
     entry Rotator_Goto (The_Offset : Device.Degrees);
 
     entry New_Mount_State (New_State : Mount.State);
+
+    entry New_Focuser_State (New_State : Focuser.State);
 
     entry New_M3_Position (New_Position : M3.Position);
 
@@ -169,6 +179,14 @@ package body Telescope is
       Control.New_Mount_State (New_State);
     end if;
   end Mount_State_Handler;
+
+
+  procedure Focuser_State_Handler (New_State : Focuser.State) is
+  begin
+    if not Control'terminated then
+      Control.New_Focuser_State (New_State);
+    end if;
+  end Focuser_State_Handler;
 
 
   procedure M3_Position_Handler (New_Position : M3.Position) is
@@ -314,6 +332,7 @@ package body Telescope is
                    Mount_Unknown,
                    Mount_Disconnected,
                    Mount_Error,
+                   Focuser_Connected,
                    Mount_Connected,
                    Mount_Enabled,
                    Mount_Stopped,
@@ -328,7 +347,9 @@ package body Telescope is
 
     Mount_Is_Stopped : Boolean := True;
 
-    The_M3_Position : M3.Position := M3.Unknown;
+    The_Focuser_State : Focuser.State := Focuser.Unknown;
+    The_Mount_State   : Mount.State := Mount.Unknown;
+    The_M3_Position   : M3.Position := M3.Unknown;
 
     The_User_Adjust : Adjust;
     The_User_Setup  : Setup;
@@ -618,11 +639,16 @@ package body Telescope is
 
 
     procedure Enabling is
+      Enabling_Duration : constant Duration := 120.0;
+      use type Time.Ut;
     begin
       Mount.Enable;
       if Cdk_700.Had_Powerup then
+        The_Completion_Time := Time.Universal + Enabling_Duration;
         Focuser.Find_Home;
         Rotator.Find_Home;
+      else
+        The_Completion_Time := Time.In_The_Past;
       end if;
       The_State := Enabling;
     end Enabling;
@@ -633,6 +659,8 @@ package body Telescope is
       Fans.Turn (To => Fans.Off);
       M3.Turn_To_Occular;
       Mount.Find_Home (The_Completion_Time);
+      Focuser.Go_To (Focuser_Position);
+      Rotator.Goto_Mech (180.0);
       The_State := Homing;
     end Find_Home_And_Set_Defaults;
 
@@ -685,6 +713,8 @@ package body Telescope is
 
 
     function Mount_Startup_State (The_Startup_Event : Mount_Startup) return State is
+      use type Focuser.State;
+      use type Mount.State;
     begin
       case The_Startup_Event is
       when Mount_Disconnected =>
@@ -692,7 +722,17 @@ package body Telescope is
       when Mount_Error =>
         return Mount_Error;
       when Mount_Connected =>
-        return Connected;
+        if The_Focuser_State > Focuser.Disconnected then
+          return Connected;
+        else
+          return Disconnected;
+        end if;
+      when Focuser_Connected =>
+        if The_Mount_State > Mount.Disconnected then
+          return Connected;
+        else
+          return Disconnected;
+        end if;
       when Mount_Enabled =>
         return Enabled;
       end case;
@@ -788,12 +828,20 @@ package body Telescope is
     -- Connecting --
     ----------------
     procedure Connecting_State is
+      use type Focuser.State;
+      use type Mount.State;
     begin
       case The_Event is
       when Mount_Error =>
         The_State := Mount_Error;
       when Mount_Connected =>
-        Enabling;
+        if The_Focuser_State > Focuser.Disconnected then
+          Enabling;
+        end if;
+      when Focuser_Connected =>
+        if The_Mount_State > Mount.Disconnected then
+          Enabling;
+        end if;
       when Mount_Enabled =>
         Find_Home_And_Set_Defaults;
       when Mount_Stopped =>
@@ -1159,9 +1207,13 @@ package body Telescope is
     use type Ada.Real_Time.Time;
 
   begin -- Control_Task
+    if Persistent_Focuser.Storage_Is_Empty then
+      Focuser_Position := Default_Focuser_Position;
+    end if;
     Reset_Adjustments;
     accept Start do
       Device.Start (Mount_State_Handler'access,
+                    Focuser_State_Handler'access,
                     M3_Position_Handler'access);
     end Start;
     Log.Write ("Started");
@@ -1241,6 +1293,7 @@ package body Telescope is
         or
           accept New_Mount_State (New_State : Mount.State) do
             Log.Write ("Mount State " & New_State'img);
+            The_Mount_State := New_State;
             Mount_Is_Stopped := True;
             case New_State is
             when Mount.Unknown =>
@@ -1267,6 +1320,18 @@ package body Telescope is
             Has_New_Data := True;
           end New_Mount_State;
         or
+          accept New_Focuser_State (New_State : Focuser.State) do
+            Log.Write ("Focuser State " & New_State'img);
+            The_Focuser_State := New_State;
+            case New_State is
+            when Focuser.Unknown | Focuser.Disconnected =>
+              null;
+            when Focuser.Connected =>
+              The_Event := Focuser_Connected;
+              Has_New_Data := True;
+            end case;
+          end New_Focuser_State;
+        or
           accept New_M3_Position (New_Position : M3.Position) do
             Log.Write ("M3 Position " & New_Position'img);
             The_M3_Position := New_Position;
@@ -1285,6 +1350,9 @@ package body Telescope is
             The_Data.Focuser.Exists := Focuser.Exists;
             The_Data.Focuser.Moving := Focuser.Moving;
             The_Data.Focuser.Position := Focuser.Actual_Position;
+            if The_State >= Stopped then
+              Focuser_Position := Focuser.Actual_Position;
+            end if;
             The_Data.Focuser.Max_Position := Max_Fucuser_Position;
             The_Data.Focuser.Zoom_Size := Fucuser_Zoom_Size;
             The_Data.Rotator.Moving := Rotator.Moving;
@@ -1292,7 +1360,7 @@ package body Telescope is
             The_Data.Rotator.Field_Angle := Rotator.Field_Angle;
             The_Data.Rotator.Mech_Position := Rotator.Mech_Position;
             case The_State is
-            when Approaching | Preparing | Positioning | Homing =>
+            when Approaching | Preparing | Positioning | Homing | Enabling =>
               The_Data.Completion_Time := The_Completion_Time;
             when others =>
               The_Data.Completion_Time := Time.In_The_Past;

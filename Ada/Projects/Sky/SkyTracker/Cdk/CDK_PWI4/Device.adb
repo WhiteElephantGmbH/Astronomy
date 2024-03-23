@@ -386,8 +386,9 @@ package body Device is
 
   task type Control with Priority => System.Max_Priority is
 
-    entry Start (Mount_State_Handler : Mount.State_Handler_Access;
-                 M3_Position_Handler : M3.Position_Handler_Access);
+    entry Start (Mount_State_Handler   : Mount.State_Handler_Access;
+                 Focuser_State_Handler : Focuser.State_Handler_Access;
+                 M3_Position_Handler   : M3.Position_Handler_Access);
 
   end Control;
 
@@ -395,6 +396,7 @@ package body Device is
   The_Control : access Control;
 
   Is_Simulation                       : Boolean := False;
+  Simulated_Mount_Connected           : Boolean := False;
   Simulated_Focuser_Connected         : Boolean := False;
   Simulated_Focuser_Moving            : Boolean := False;
   The_Simulated_Focuser_Position      : Microns := 4321.0;
@@ -417,8 +419,9 @@ package body Device is
                              Line_3 => Tle(2));
     end Follow_Tle;
 
-    The_Mount_State_Handler : Mount.State_Handler_Access;
-    The_M3_Position_Handler : M3.Position_Handler_Access;
+    The_Mount_State_Handler   : Mount.State_Handler_Access;
+    The_Focuser_State_Handler : Focuser.State_Handler_Access;
+    The_M3_Position_Handler   : M3.Position_Handler_Access;
 
     Is_Finishing       : Boolean := False;
     The_Fan_Action     : Fan_Action := No_Action;
@@ -429,6 +432,8 @@ package body Device is
     The_Rotator_Action : Rotator_Action := No_Action;
     The_Mount_State    : Mount.State := Mount.Unknown;
     Last_Mount_State   : Mount.State := Mount.Unknown;
+    The_Focuser_State  : Focuser.State := Focuser.Unknown;
+    Last_Focuser_State : Focuser.State := Focuser.Unknown;
     The_M3_Position    : M3.Position := M3.Unknown;
     Last_M3_Position   : M3.Position := M3.Unknown;
     The_Parameter      : Parameters;
@@ -436,16 +441,19 @@ package body Device is
     Simulated_M3_Position : M3.Position := M3.Ocular;
 
     use type Mount.State;
+    use type Focuser.State;
     use type M3.Position;
     use type PWI4.M3_Port;
     use type Microns;
     use type Degrees;
 
   begin -- Control
-    accept Start (Mount_State_Handler : Mount.State_Handler_Access;
-                  M3_Position_Handler : M3.Position_Handler_Access)
+    accept Start (Mount_State_Handler   : Mount.State_Handler_Access;
+                  Focuser_State_Handler : Focuser.State_Handler_Access;
+                  M3_Position_Handler   : M3.Position_Handler_Access)
     do
       The_Mount_State_Handler := Mount_State_Handler;
+      The_Focuser_State_Handler := Focuser_State_Handler;
       The_M3_Position_Handler := M3_Position_Handler;
     end Start;
     Log.Write ("Control started");
@@ -493,8 +501,10 @@ package body Device is
         when Stop =>
           PWI4.Mount.Stop;
         when Connect =>
+          Simulated_Mount_Connected := True;
           PWI4.Mount.Connect;
         when Disconnect =>
+          Simulated_Mount_Connected := False;
           PWI4.Mount.Disconnect;
         when Enable =>
           PWI4.Mount.Enable;
@@ -576,9 +586,8 @@ package body Device is
             Simulated_Rotator_Moving := False;
             Simulated_Rotator_Slewing := False;
             Log.Write ("Simulated focuser disconnect");
-          when Find_Home => -- overwrites Connect in simulation when powerup
-            Simulated_Focuser_Connected := True;
-            Log.Write ("Simulated focuser/rotator connect and focuser.find_home (at powerup");
+          when Find_Home =>
+            Log.Write ("Simulated focuser find_home");
           when Go_To =>
             The_Simulated_Focuser_Goto_Position := The_Parameter.Focuser_Position;
             Simulated_Focuser_Moving := True;
@@ -673,17 +682,23 @@ package body Device is
           end if;
         end if;
       end select;
+
       case PWI4.Mount.Info.Status is
       when PWI4.Mount.Disconnected =>
         The_Mount_State := Mount.Disconnected;
       when PWI4.Mount.Connected =>
-        if (not PWI4.Focuser.Exists) or else PWI4.Focuser.Connected or else Is_Simulation then
-          The_Mount_State := Mount.Connected;
-        else
-          The_Mount_State := Mount.Disconnected;
-        end if;
+        The_Mount_State := Mount.Connected;
       when PWI4.Mount.Enabled =>
-        The_Mount_State := Mount.Enabled;
+        if Is_Simulation then
+          if Simulated_Mount_Connected then
+            The_Mount_State := Mount.Connected;
+            Simulated_Mount_Connected := False;
+          else
+            The_Mount_State := Mount.Enabled;
+          end if;
+        else
+          The_Mount_State := Mount.Enabled;
+        end if;
       when PWI4.Mount.Stopped =>
         The_Mount_State := Mount.Stopped;
       when PWI4.Mount.Approaching =>
@@ -693,6 +708,25 @@ package body Device is
       when PWI4.Mount.Error =>
         The_Mount_State := Mount.Error;
       end case;
+
+      if Is_Simulation then
+        if Simulated_Focuser_Connected then
+          The_Focuser_State := Focuser.Connected;
+        else
+          The_Focuser_State := Focuser.Disconnected;
+        end if;
+      else
+        if PWI4.Focuser.Exists then
+          if PWI4.Focuser.Connected then
+            The_Focuser_State := Focuser.Connected;
+          else
+            The_Focuser_State := Focuser.Disconnected;
+          end if;
+        else
+          The_Focuser_State := Focuser.Unknown;
+        end if;
+      end if;
+
       case PWI4.M3.Actual_Port is
       when PWI4.Unknown =>
         if Is_Simulation and then The_Mount_State > Mount.Enabled then
@@ -709,9 +743,14 @@ package body Device is
           The_M3_Position := M3.Ocular;
         end if;
       end case;
+
       if The_Mount_State /= Last_Mount_State then
         The_Mount_State_Handler (The_Mount_State);
         Last_Mount_State := The_Mount_State;
+      end if;
+      if The_Focuser_State /= Last_Focuser_State then
+        The_Focuser_State_Handler (The_Focuser_State);
+        Last_Focuser_State := The_Focuser_State;
       end if;
       if The_M3_Position /= Last_M3_Position then
         The_M3_Position_Handler (The_M3_Position);
@@ -725,12 +764,14 @@ package body Device is
   end Control;
 
 
-  procedure Start (Mount_State_Handler : Mount.State_Handler_Access;
-                   M3_Position_Handler : M3.Position_Handler_Access) is
+  procedure Start (Mount_State_Handler   : Mount.State_Handler_Access;
+                   Focuser_State_Handler : Focuser.State_Handler_Access;
+                   M3_Position_Handler   : M3.Position_Handler_Access) is
   begin
     The_Control := new Control;
-    The_Control.Start (Mount_State_Handler => Mount_State_Handler,
-                       M3_Position_Handler => M3_Position_Handler);
+    The_Control.Start (Mount_State_Handler   => Mount_State_Handler,
+                       Focuser_State_Handler => Focuser_State_Handler,
+                       M3_Position_Handler   => M3_Position_Handler);
   end Start;
 
 
