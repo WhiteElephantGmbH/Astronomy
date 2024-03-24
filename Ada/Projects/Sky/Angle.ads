@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2014 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2014 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -36,6 +36,11 @@ package Angle is
   Quadrant : constant Value; -- 90 degrees
 
   Semi_Circle : constant Value; -- 180 degrees
+
+  North : constant Value; -- 0 degrees
+  East  : constant Value; -- 90 degrees
+  South : constant Value; -- 180 degrees
+  West  : constant Value; -- 270 degrees
 
   One_Minute : constant Value;
 
@@ -95,6 +100,9 @@ package Angle is
 
   function "<" (Left, Right : Value) return Boolean with Inline;
 
+  function In_Range (The_Value, From, To : Value) return Boolean with Inline;
+  -- returns True if From = To; range over zero if from > to
+
   type Decimal_Places is range 0 .. 3;
 
   type Units is (In_Degrees, In_Hours, Default_Degrees, Default_Hours);
@@ -140,5 +148,10 @@ private
   Quadrant    : constant Value := 16#4000_0000#; -- 90 degrees
   Semi_Circle : constant Value := 16#8000_0000#; -- 180 degrees
   One_Minute  : constant Value := Quadrant / (90 * 60);
+
+  North : constant Value := Zero;
+  East  : constant Value := Quadrant;
+  South : constant Value := Semi_Circle;
+  West  : constant Value := 3 * Quadrant;
 
 end Angle;

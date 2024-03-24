@@ -15,8 +15,10 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with Earth;
 with Lexicon;
 with Moon;
+with Objects;
 with Site;
 with Sky.Data;
 with Sky_Line;
@@ -52,6 +54,8 @@ package body Targets is
                      Update : access procedure) is
 
     entry Define_Catalog;
+
+    entry Set (The_Range : Az_Range);
 
     entry Set (The_Selection : Selection);
 
@@ -90,6 +94,12 @@ package body Targets is
   begin
     The_Handler.Define_Catalog;
   end Define_Catalog;
+
+
+  procedure Set (The_Range : Az_Range) is
+  begin
+    The_Handler.Set (The_Range);
+  end Set;
 
 
   procedure Set (The_Selection : Selection) is
@@ -131,9 +141,11 @@ package body Targets is
     Targets_Defined : Boolean := False;
     New_List        : Boolean := False;
 
+    The_Actual_Az_Range  : Az_Range;
     The_Actual_Selection : Selection;
 
-    function Is_Selected (The_Objects : Objects) return Boolean is
+
+    function Is_Selected (The_Objects : Object_Kind) return Boolean is
     begin
       case The_Actual_Selection is
       when All_Objects =>
@@ -156,9 +168,10 @@ package body Targets is
       Sun_Is_Visible : constant Boolean := Sun.Is_Visible;
 
       function Is_Visible (Direction : Space.Direction) return Boolean is
+        Position : constant Earth.Direction := Objects.Direction_Of (Direction, Time.Lmst);
       begin
-        return Sky_Line.Is_Above (Direction => Direction,
-                                  Lmst      => Time.Lmst);
+        return Angle.In_Range (Earth.Az_Of (Position), The_Actual_Az_Range.From, The_Actual_Az_Range.To)
+               and then Sky_Line.Is_Above (Direction => Position);
       end Is_Visible;
 
       function Is_Selected_And_Visible (Item      : Selection;
@@ -267,6 +280,10 @@ package body Targets is
         if Site.Is_Defined then
           Define_Targets;
         end if;
+      or
+        accept Set (The_Range : Az_Range) do
+          The_Actual_Az_Range := The_Range;
+        end Set;
       or
         accept Set (The_Selection : Selection) do
           The_Actual_Selection := The_Selection;

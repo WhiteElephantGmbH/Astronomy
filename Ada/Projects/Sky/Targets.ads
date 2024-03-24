@@ -15,6 +15,8 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+private with Angle;
+
 with Name;
 with Space;
 with Time;
@@ -26,7 +28,7 @@ package Targets is
   type Selection is (All_Objects, Solar_System, Clusters, Open_Clusters, Nebulas, Galaxies, Stars, Multiple_Stars,
                      Near_Earth_Objects);
 
-  subtype Objects is Selection range Selection'succ(Selection'first) .. Selection'last;
+  subtype Object_Kind is Selection range Selection'succ(Selection'first) .. Selection'last;
 
   function Image_Of (The_Selection : Selection) return String;
 
@@ -61,5 +63,14 @@ package Targets is
 
   function Solar_System_Direction_Of (Item : Name.Id;
                                       Ut   : Time.Ut) return Space.Direction;
+
+private
+
+  type Az_Range is record
+    From : Angle.Value := Angle.Zero; -- all directions
+    To   : Angle.Value := Angle.Zero;
+  end record;
+
+  procedure Set (The_Range : Az_Range);
 
 end Targets;

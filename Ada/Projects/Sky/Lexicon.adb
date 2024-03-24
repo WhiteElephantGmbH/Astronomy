@@ -771,8 +771,9 @@ package body Lexicon is
     Transient_Event           => E (Transient_Event,           "Transient Event",          "Transient Event",              "Vorübergehendes Ereignis",     "Transient Event",                "Transient Event",                  "Transient Event"),
 
     All_Objects               => E (All_Objects,               "All",                      "Tous",                         "Alle",                         "όλα",                            "Tutti",                            "Todos"),
-    Camera                    => E (Camera,                    "Camera",                   "Caméra",                       "Kamera",                       "κάμερα",                         "Telecamera",                       "Cámara"),
+    Camera                    => E (Camera,                    "Camera",                   "Caméra",                       "Kamera",                       "Κάμερα",                         "Telecamera",                       "Cámara"),
     Catalog                   => E (Catalog,                   "Catalog",                  "Catalogue",                    "Katalog",                      "Κατάλογος",                      "Catalogo",                         "Catálogo"),
+    Direction                 => E (Direction,                 "Direction",                "Direction",                    "Richtung",                     "Κατεύθυνση",                     "Direzione",                        "Dirección"),
     East                      => E (East,                      "E",                        "E",                            "O",                            "Α",                              "E",                                "E"),
     Fans                      => E (Fans,                      "Fans",                     "Ventilateurs",                 "Ventilatoren",                 "Ανεμιστήρες",                    "Fan",                              "Ventiladores"),
     Favorites                 => E (Favorites,                 "Favorites",                "Favoris",                      "Favoriten",                    "Αγαπημένα",                      "Preferiti",                        "Favoritos"),

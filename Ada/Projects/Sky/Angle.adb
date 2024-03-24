@@ -205,6 +205,18 @@ package body Angle is
   end "<";
 
 
+  function In_Range (The_Value, From, To : Value) return Boolean is
+  begin
+    if From = To then
+      return True;
+    elsif From < To then
+      return The_Value >= From and The_Value <= To;
+    else
+      return The_Value >= From or The_Value <= To;
+    end if;
+  end In_Range;
+
+
   type Place is (First, Minute, Second);
 
   type Unit_Images is array (Place) of Character;

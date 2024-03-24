@@ -725,6 +725,7 @@ package Lexicon is
     All_Objects,
     Camera,
     Catalog,
+    Direction,
     East,
     Fans,
     Favorites,

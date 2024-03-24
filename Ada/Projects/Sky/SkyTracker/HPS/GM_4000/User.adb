@@ -34,7 +34,7 @@ with Site;
 with Sky.Catalog;
 with SkyTracker;
 with Space;
-with Targets;
+with Targets.Filter;
 with Ten_Micron;
 with Text;
 with Time;
@@ -152,21 +152,6 @@ package body User is
     Gui.Set_Text (Target, Item);
     Gui.Set_Text (Description, "");
   end Set_Target_Name;
-
-
-  subtype Selection is Targets.Selection;
-
-  package Selection_Menu is new Gui.Enumeration_Menu_Of (Selection, Gui.Radio, Targets.Image_Of);
-
-  procedure Selection_Handler (The_Filter : Selection) is
-  begin
-    Log.Write ("Filter: " & The_Filter'img);
-    Targets.Set (The_Selection => The_Filter);
-    Signal_Action (Update);
-  exception
-  when others =>
-    Log.Error ("Selection_Handler");
-  end Selection_Handler;
 
 
   package Catalog_Menu is new Gui.Enumeration_Menu_Of (Sky.Catalog_Id, Gui.Radio, Sky.Catalog.Image_Of);
@@ -697,7 +682,6 @@ package body User is
   begin
     The_Page := Is_Control;
     Catalog_Menu.Enable;
-    Selection_Menu.Enable;
   end Enter_Control_Page;
 
 
@@ -705,7 +689,6 @@ package body User is
   begin
     The_Page := Is_Display;
     Catalog_Menu.Disable;
-    Selection_Menu.Disable;
   exception
   when others =>
     Log.Error ("Enter_Display_Page failed");
@@ -716,7 +699,6 @@ package body User is
   begin
     The_Page := Is_Setup;
     Catalog_Menu.Disable;
-    Selection_Menu.Disable;
   exception
   when others =>
     Log.Error ("Enter_Setup_Page");
@@ -771,6 +753,12 @@ package body User is
   The_Display_Data : Display_Data renames The_Persistent_Display_Data.Storage;
 
   The_Targets_Column : Gui.Column;
+
+
+  procedure Update_Signal is
+  begin
+    Signal_Action (Update);
+  end Update_Signal;
 
 
   procedure Execute (The_Startup_Handler     : not null access procedure;
@@ -991,10 +979,9 @@ package body User is
       end Define_Setup_Page;
 
     begin -- Create_Interface
-      Selection_Menu.Create (Lexicon.Image_Of (Lexicon.Selection), Selection_Handler'access);
-      Targets.Set (The_Selection => Targets.All_Objects);
       Catalog_Menu.Create (Lexicon.Image_Of (Lexicon.Catalog), Catalog_Handler'access);
       Catalog_Handler (Sky.Favorites);
+      Targets.Filter.Create_Menu (Update_Signal'access);
       if Remote.Configured then
         Demo_21_Menu.Create ("Demo 21", Demo_21_Handler'access);
       end if;
