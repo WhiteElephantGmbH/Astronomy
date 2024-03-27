@@ -355,13 +355,13 @@ package body Name is
   end Read_Favorites;
 
 
-  procedure Define (List : Sky.Catalog_Id) is
+  procedure Define (Catalog : Sky.Catalog_Id) is
   begin
-    Actual_Catalog.Define_Catalog (List);
+    Actual_Catalog.Define_Catalog (Catalog);
   end Define;
 
 
-  procedure Sort_Favorites (The_List : in out Id_List) is
+  procedure Sort (The_List : in out Id_List) is
 
     function Altitude_Of (Object : Id) return Angle.Signed is
       Space_Direction : constant Space.Direction := Direction_Of (Object, Time.Universal);
@@ -380,16 +380,16 @@ package body Name is
       return False; -- don't sort others than sky objects
     end Compare_Altitude;
 
-    package Favorite_Tool is new Names.Generic_Sorting (Compare_Altitude);
+    package Tool is new Names.Generic_Sorting (Compare_Altitude);
 
   begin -- Sort
     case The_List.Kind is
-    when Sky.Favorites =>
-      Favorite_Tool.Sort (The_List.Ids);
-    when others =>
-      raise Program_Error;
+    when Sky.Favorites | Sky.Catalogs=>
+      Tool.Sort (The_List.Ids);
+    when Sky.Neo =>
+      null;
     end case;
-  end Sort_Favorites;
+  end Sort;
 
 
   function Actual_List return Id_List is

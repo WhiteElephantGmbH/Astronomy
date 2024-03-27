@@ -73,4 +73,8 @@ private
 
   procedure Set (The_Range : Az_Range);
 
+  type Switch is (Off, On);
+
+  procedure Set (Sorted : Switch);
+
 end Targets;

@@ -20,10 +20,10 @@ with Ada.Real_Time;
 with Ada.Unchecked_Conversion;
 with Alignment;
 with Earth;
-with Gui.Enumeration_Menu_Of;
 with Gui.Registered;
 with Lexicon;
 with Lx200;
+with Name.Catalog;
 with Objects;
 with Os;
 with Persistent;
@@ -151,19 +151,6 @@ package body User is
     Gui.Set_Text (Target, Item);
     Gui.Set_Text (Description, "");
   end Set_Target_Name;
-
-
-  package Catalog_Menu is new Gui.Enumeration_Menu_Of (Sky.Catalog_Id, Gui.Radio, Sky.Catalog.Image_Of);
-
-  procedure Catalog_Handler (The_Catalog : Sky.Catalog_Id) is
-  begin
-    Log.Write ("Catalog: " & The_Catalog'img);
-    Name.Define (The_Catalog);
-    Signal_Action (Define_Catalog);
-  exception
-  when others =>
-    Log.Error ("Catalog_Handler");
-  end Catalog_Handler;
 
 
   procedure Perform_Park is
@@ -657,27 +644,18 @@ package body User is
   procedure Enter_Control_Page is
   begin
     The_Page := Is_Control;
-    Catalog_Menu.Enable;
   end Enter_Control_Page;
 
 
   procedure Enter_Display_Page is
   begin
     The_Page := Is_Display;
-    Catalog_Menu.Disable;
-  exception
-  when others =>
-    Log.Error ("Enter_Display_Page failed");
   end Enter_Display_Page;
 
 
   procedure Enter_Setup_Page is
   begin
     The_Page := Is_Setup;
-    Catalog_Menu.Disable;
-  exception
-  when others =>
-    Log.Error ("Enter_Setup_Page");
   end Enter_Setup_Page;
 
 
@@ -729,6 +707,12 @@ package body User is
   The_Display_Data : Display_Data renames The_Persistent_Display_Data.Storage;
 
   The_Targets_Column : Gui.Column;
+
+
+  procedure Define_Signal is
+  begin
+    Signal_Action (Define_Catalog);
+  end Define_Signal;
 
 
   procedure Update_Signal is
@@ -955,8 +939,7 @@ package body User is
       end Define_Setup_Page;
 
     begin -- Create_Interface
-      Catalog_Menu.Create (Lexicon.Image_Of (Lexicon.Catalog), Catalog_Handler'access);
-      Catalog_Handler (Sky.Favorites);
+      Name.Catalog.Create_Menu (Define_Signal'access);
       Targets.Filter.Create_Menu (Update_Signal'access);
       Define_Control_Page;
       Is_Expert_Mode := Ten_Micron.Is_Expert_Mode;

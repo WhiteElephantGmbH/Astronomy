@@ -48,9 +48,10 @@ def main():
 
     color0 = sg.theme_button_color()[0]
     color1 = sg.theme_button_color()[1]
+    red    = 'IndianRed1'
 
-    value      = focuser_min
-    last_value = value
+    focuser_position      = focuser_min
+    last_focuser_position = focuser_position
 
     lower_limit = focuser_min
     upper_limit = focuser_max
@@ -74,7 +75,7 @@ def main():
                    justification='c', background_color=color0, text_color=color1)]]
 
     focuser = [[sg.RealtimeButton('🔎', key='zoom', font='Ani 11', size=(2,1)),
-                sg.Slider(key='focus', range=(lower_limit,upper_limit), default_value=value,
+                sg.Slider(key='focus', range=(lower_limit,upper_limit), default_value=focuser_position,
                           size=(18,18), orientation='horizontal', font='Ani 12',
                           enable_events=True)]]
 
@@ -100,7 +101,7 @@ def main():
         try:
             event, values = window.read(timeout=100)
             if event == 'focus':
-                value = values['focus']
+                focuser_position = values['focus']
             elif event != sg.TIMEOUT_EVENT:
                 # if not a timeout event, then it's a button that's being held down
                 if not pressed:
@@ -114,12 +115,12 @@ def main():
                             window['zoom'].update(text='🔎')
                         else:
                             zoomed = True
-                            upper_limit = value + (zoom_size / 2)
+                            upper_limit = focuser_position + (zoom_size / 2)
                             if upper_limit > focuser_max:
                                 lower_limit = focuser_max - zoom_size
                                 upper_limit = focuser_max
                             else:
-                                lower_limit = value - (zoom_size / 2)
+                                lower_limit = focuser_position - (zoom_size / 2)
                                 if lower_limit < focuser_min:
                                     lower_limit = focuser_min
                                     upper_limit = focuser_min + zoom_size
@@ -165,15 +166,22 @@ def main():
                                         zoom_size = focuser.zoom_size()
                                         upper_limit = focuser_max
                                         window['focus'].update(range=(lower_limit,upper_limit))
+                                        focuser_position = focuser.position()
+                                        last_focuser_position = focuser_position
+                                        window['focus'].update(value=focuser_position)
                                         startup = False
-                                    if value != last_value:
-                                        last_value = value;
-                                        response = client.focuser_set_position (int(last_value))
                                     else:
-                                        if not focuser.moving():
-                                            window['focus'].update(value=focuser.position())
+                                        if focuser_position != last_focuser_position:
+                                            last_focuser_position = focuser_position;
+                                            response = client.focuser_set_position (int(focuser_position))
+                                            window['zoom'].update(button_color=(color0, color1))
+                                        else:
+                                            if focuser.moving():
+                                                window['zoom'].update(button_color=(red, color1))
+                                            else:
+                                                window['focus'].update(value=focuser.position())
+                                                window['zoom'].update(button_color=(color0, color1))
                                 else:
-                                    last_value = value
                                     window[rotate].update(sg.SYMBOL_RIGHT)
                                     window['-FFO-'].update(visible=False)
                             else:

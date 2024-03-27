@@ -21,6 +21,7 @@ with Cwe;
 with Gui.Enumeration_Menu_Of;
 with Gui.Registered;
 with Lexicon;
+with Name.Catalog;
 with Persistent;
 with Remote;
 with Sky.Catalog;
@@ -82,20 +83,6 @@ package body User is
     Gui.Set_Text (Target, Item);
     Gui.Set_Text (Description, "");
   end Set_Target_Name;
-
-
-  package Catalog_Menu is new Gui.Enumeration_Menu_Of (Sky.Catalog_Id, Gui.Radio, Sky.Catalog.Image_Of);
-
-  procedure Catalog_Handler (The_Catalog : Sky.Catalog_Id) is
-  begin
-    Log.Write ("Catalog: " & The_Catalog'img);
-    Name.Define (The_Catalog);
-    Signal_Action (Define_Catalog);
-  exception
-  when Item: others =>
-    Log.Error ("Catalog_Handler");
-    Log.Termination (Item);
-  end Catalog_Handler;
 
 
   function Image_Of (The_Mode : Cwe.Mode) return String is
@@ -426,6 +413,12 @@ package body User is
   The_Targets_Column : Gui.Column;
 
 
+  procedure Define_Signal is
+  begin
+    Signal_Action (Define_Catalog);
+  end Define_Signal;
+
+
   procedure Update_Signal is
   begin
     Signal_Action (Update);
@@ -479,15 +472,13 @@ package body User is
       end Define_Page;
 
     begin -- Create_Interface
-      Catalog_Menu.Create (Lexicon.Image_Of (Lexicon.Catalog), Catalog_Handler'access);
-      Catalog_Handler (Sky.Favorites);
+      Name.Catalog.Create_Menu (Define_Signal'access);
       Targets.Filter.Create_Menu (Update_Signal'access);
       Cwe_Menu.Create ("CWE", Cwe_Handler'access);
       if Remote.Configured then
         Demo_21_Menu.Create ("Demo 21", Demo_21_Handler'access);
       end if;
       Define_Page;
-      Catalog_Menu.Enable;
       The_Startup_Handler.all;
     exception
     when Item: others =>

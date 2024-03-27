@@ -23,6 +23,29 @@ package body Targets.Filter is
 
   package Log is new Traces ("Targets.Filter");
 
+  function Image_Of (The_Switch : Switch) return String is
+  begin
+    case The_Switch is
+    when Off =>
+      return Lexicon.Image_Of (Lexicon.Off);
+    when On =>
+      return Lexicon.Image_Of (Lexicon.On);
+    end case;
+  end Image_Of;
+
+  package Sort_Menu is new Gui.Enumeration_Menu_Of (Switch, Gui.Radio, Image_Of);
+
+  procedure Sort_Handler (Sorted : Switch) is
+  begin
+    Log.Write ("Sorted: " & Sorted'img);
+    Set (Sorted);
+    Define_Catalog;
+  exception
+  when others =>
+    Log.Error ("Sort_Handler");
+  end Sort_Handler;
+
+
   User_Signal_Update : Update_Signal;
 
 
@@ -31,7 +54,7 @@ package body Targets.Filter is
   procedure Selection_Handler (The_Filter : Selection) is
   begin
     Log.Write ("Filter: " & The_Filter'img);
-    Targets.Set (The_Selection => The_Filter);
+    Set (The_Selection => The_Filter);
     User_Signal_Update.all;
   exception
   when others =>
@@ -81,10 +104,12 @@ package body Targets.Filter is
 
 
   procedure Create_Menu (Signal_Update : Update_Signal) is
+    Sort_In_Altitude : constant String := "↑";
   begin
     User_Signal_Update := Signal_Update;
+    Sort_Menu.Create (Sort_In_Altitude, Sort_Handler'access);
     Selection_Menu.Create (Lexicon.Image_Of (Lexicon.Selection), Selection_Handler'access);
-    Set (The_Selection => Targets.All_Objects);
+    Set (The_Selection => All_Objects);
     Direction_Menu.Create (Lexicon.Image_Of (Lexicon.Direction), Direction_Handler'access);
   end Create_Menu;
 

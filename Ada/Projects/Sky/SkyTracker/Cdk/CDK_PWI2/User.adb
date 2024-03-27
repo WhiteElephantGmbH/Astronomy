@@ -25,6 +25,7 @@ with Gui.Enumeration_Menu_Of;
 with Gui.Registered;
 with Keys;
 with Lexicon;
+with Name.Catalog;
 with Parameter;
 with Persistent;
 with Remote;
@@ -150,19 +151,6 @@ package body User is
     Gui.Set_Text (Target, Item);
     Gui.Set_Text (Description, "");
   end Set_Target_Name;
-
-
-  package Catalog_Menu is new Gui.Enumeration_Menu_Of (Sky.Catalog_Id, Gui.Radio, Sky.Catalog.Image_Of);
-
-  procedure Catalog_Handler (The_Catalog : Sky.Catalog_Id) is
-  begin
-    Log.Write ("Catalog: " & The_Catalog'img);
-    Name.Define (The_Catalog);
-    Signal_Action (Define_Catalog);
-  exception
-  when others =>
-    Log.Error ("Catalog_Handler");
-  end Catalog_Handler;
 
 
   function Image_Of (The_State : Fans.State) return String is
@@ -679,7 +667,6 @@ package body User is
   procedure Enter_Control_Page is
   begin
     The_Page := Is_Control;
-    Catalog_Menu.Enable;
     Gui.Enable_Key_Handler;
   end Enter_Control_Page;
 
@@ -687,7 +674,6 @@ package body User is
   procedure Enter_Display_Page is
   begin
     The_Page := Is_Display;
-    Catalog_Menu.Disable;
     Gui.Enable_Key_Handler;
   exception
   when others =>
@@ -698,7 +684,6 @@ package body User is
   procedure Enter_Setup_Page is
   begin
     The_Page := Is_Setup;
-    Catalog_Menu.Disable;
     Gui.Disable_Key_Handler;
   exception
   when others =>
@@ -802,6 +787,12 @@ package body User is
   The_Display_Data : Display_Data renames The_Persistent_Display_Data.Storage;
 
   The_Targets_Column : Gui.Column;
+
+
+  procedure Define_Signal is
+  begin
+    Signal_Action (Define_Catalog);
+  end Define_Signal;
 
 
   procedure Update_Signal is
@@ -1025,8 +1016,7 @@ package body User is
      end Define_Setup_Page;
 
     begin -- Create_Interface
-      Catalog_Menu.Create (Lexicon.Image_Of (Lexicon.Catalog), Catalog_Handler'access);
-      Catalog_Handler (Sky.Favorites);
+      Name.Catalog.Create_Menu (Define_Signal'access);
       Targets.Filter.Create_Menu (Update_Signal'access);
       Fans_Menu.Create (Lexicon.Image_Of (Lexicon.Fans), Fans_Handler'access);
       M3_Menu.Create (Lexicon.Image_Of (Lexicon.Optic), M3_Handler'access);

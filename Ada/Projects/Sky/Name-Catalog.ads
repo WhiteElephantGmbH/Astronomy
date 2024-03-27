@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2019 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                      *
+-- *                           (c) 2024 by White Elephant GmbH, Schaffhausen, Switzerland                              *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,15 +15,10 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-pragma Build (Description => "SkyTracker control program for CDK700 (PWI2)",
-              Version     => (2, 3, 2, 1),
-              Kind        => Windows,
-              Libraries   => ("AWS64", "COLL64"),
-              Compiler    => "GNATPRO\23.0");
+package Name.Catalog is
 
-with Control;
+  type Define_Signal is access procedure;
 
-procedure CDK_PWI2 is
-begin
-  Control.Start;
-end CDK_PWI2;
+  procedure Create_Menu (Signal_Define : Define_Signal);
+
+end Name.Catalog;

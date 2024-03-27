@@ -59,6 +59,8 @@ package body Targets is
 
     entry Set (The_Selection : Selection);
 
+    entry Set (Sorted : Switch);
+
     entry Update_List;
 
     entry Get_For (Target_Name :     String;
@@ -108,6 +110,12 @@ package body Targets is
   end Set;
 
 
+  procedure Set (Sorted : Switch) is
+  begin
+    The_Handler.Set (Sorted);
+  end Set;
+
+
   procedure Update_List is
   begin
     The_Handler.Update_List;
@@ -143,7 +151,7 @@ package body Targets is
 
     The_Actual_Az_Range  : Az_Range;
     The_Actual_Selection : Selection;
-
+    Is_Az_Sorted         : Boolean := False;
 
     function Is_Selected (The_Objects : Object_Kind) return Boolean is
     begin
@@ -246,11 +254,9 @@ package body Targets is
         end if;
       end Add_Visible;
 
-      use type Sky.Catalog_Id;
-
     begin -- Define_Targets
-      if The_Targets.Kind = Sky.Favorites then
-        Name.Sort_Favorites (The_Targets);
+      if Is_Az_Sorted then
+        Name.Sort (The_Targets);
         New_List := True;
       end if;
       Name.For_All (In_List => The_Targets, Handle => Add_Visible'access);
@@ -287,6 +293,11 @@ package body Targets is
       or
         accept Set (The_Selection : Selection) do
           The_Actual_Selection := The_Selection;
+        end Set;
+      or
+        accept Set (Sorted : Switch) do
+          Is_Az_Sorted := Sorted = On;
+
         end Set;
       or
         accept Update_List;

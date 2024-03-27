@@ -49,9 +49,9 @@ package Name is
                             Enable_Land_Marks     : Boolean;
                             Neo_Existing          : Neo_Exists_Handler := null);
 
-  procedure Define (List : Sky.Catalog_Id);
+  procedure Define (Catalog : Sky.Catalog_Id);
 
-  procedure Sort_Favorites (The_List : in out Id_List);
+  procedure Sort (The_List : in out Id_List);
 
   function Actual_List return Id_List;
 
