@@ -19,6 +19,8 @@ private with AWS.Messages;
 
 package PWI4 is
 
+  Request_Rate : constant := 2; -- per second
+
   Arc_Second_Delta : constant := 0.000_1;
   Arc_Second_Limit : constant := 10_000_000.0 - Arc_Second_Delta;
 

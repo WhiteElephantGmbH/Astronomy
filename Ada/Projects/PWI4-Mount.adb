@@ -24,7 +24,7 @@ package body PWI4.Mount is
 
   procedure Set_Powerup is
   begin
-    The_Enable_Delay_Count := 60; -- seconds
+    The_Enable_Delay_Count := Request_Rate * 60; -- seconds
   end Set_Powerup;
 
 

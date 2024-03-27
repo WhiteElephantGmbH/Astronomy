@@ -395,19 +395,15 @@ package body Device is
 
   The_Control : access Control;
 
-  Is_Simulation                       : Boolean := False;
-  Simulated_Mount_Connected           : Boolean := False;
-  Simulated_Focuser_Connected         : Boolean := False;
-  Simulated_Focuser_Moving            : Boolean := False;
-  The_Simulated_Focuser_Position      : Microns := 4321.0;
-  The_Simulated_Focuser_Goto_Position : Microns := The_Simulated_Focuser_Position;
+  Is_Simulation : Boolean := False;
+
+  The_Simulated_Focuser_Position : Microns;
 
   Simulated_Rotator_Moving            : Boolean := False;
   Simulated_Rotator_Slewing           : Boolean := False;
   The_Simulated_Rotator_Mech_Position : Degrees := 180.0;
-  The_Simulated_Rotator_Goto_Position : Degrees := The_Simulated_Rotator_Mech_Position;
   The_Simulated_Rotator_Field_Angle   : Degrees := 150.0;
-  The_Simulated_Rotator_Goto_Angle    : Degrees := The_Simulated_Rotator_Field_Angle;
+
 
   task body Control is
 
@@ -438,6 +434,15 @@ package body Device is
     Last_M3_Position   : M3.Position := M3.Unknown;
     The_Parameter      : Parameters;
 
+    Simulated_Mount_Connected : Boolean := False;
+
+    Simulated_Focuser_Connected         : Boolean := False;
+    Simulated_Focuser_Moving            : Boolean := False;
+    The_Simulated_Focuser_Goto_Position : Microns;
+
+    The_Simulated_Rotator_Goto_Position : Degrees := The_Simulated_Rotator_Mech_Position;
+    The_Simulated_Rotator_Goto_Angle    : Degrees := The_Simulated_Rotator_Field_Angle;
+
     Simulated_M3_Position : M3.Position := M3.Ocular;
 
     use type Mount.State;
@@ -447,7 +452,12 @@ package body Device is
     use type Microns;
     use type Degrees;
 
+    Default_Focuser_Position : constant Microns := Microns(6500);
+
   begin -- Control
+    if Focuser.Persistent_Position.Storage_Is_Empty then
+      Focuser.Stored_Position := Default_Focuser_Position;
+    end if;
     accept Start (Mount_State_Handler   : Mount.State_Handler_Access;
                   Focuser_State_Handler : Focuser.State_Handler_Access;
                   M3_Position_Handler   : M3.Position_Handler_Access)
@@ -458,6 +468,10 @@ package body Device is
     end Start;
     Log.Write ("Control started");
     Is_Simulation := Cdk_700.Is_Simulated;
+    if Is_Simulation then
+      The_Simulated_Focuser_Position := Focuser.Stored_Position;
+      The_Simulated_Focuser_Goto_Position := The_Simulated_Focuser_Position;
+    end if;
     loop
       select
         Action.Get (New_Fan_Action     => The_Fan_Action,
@@ -588,6 +602,8 @@ package body Device is
             Log.Write ("Simulated focuser disconnect");
           when Find_Home =>
             Log.Write ("Simulated focuser find_home");
+            The_Simulated_Focuser_Position := 1000.0;
+            The_Simulated_Focuser_Goto_Position := 1000.0;
           when Go_To =>
             The_Simulated_Focuser_Goto_Position := The_Parameter.Focuser_Position;
             Simulated_Focuser_Moving := True;
@@ -619,6 +635,8 @@ package body Device is
             null;
           when Find_Home =>
             Log.Write ("Simulated rotator find_home");
+            The_Simulated_Rotator_Mech_Position := 0.0;
+            The_Simulated_Rotator_Goto_Position := 0.0;
           when Goto_Mech =>
             The_Simulated_Rotator_Goto_Position := The_Parameter.Rotator_Value;
             Simulated_Rotator_Slewing := True;
@@ -653,14 +671,23 @@ package body Device is
           end case;
         end if;
       or
-        delay 1.0;
+        delay 1.0 / PWI4.Request_Rate;
         PWI4.Get_System;
         if Is_Simulation then
           if Simulated_Focuser_Moving then
-            if abs(The_Simulated_Focuser_Position - The_Simulated_Focuser_Goto_Position) > 3.0 then
+            if abs(The_Simulated_Focuser_Position - The_Simulated_Focuser_Goto_Position) > 4.0 then
               The_Simulated_Focuser_Position := @ + (The_Simulated_Focuser_Goto_Position - @) / 2;
+            elsif The_Simulated_Focuser_Position > The_Simulated_Focuser_Goto_Position then
+              The_Simulated_Focuser_Position := @ - 1.0;
+              if The_Simulated_Focuser_Position < The_Simulated_Focuser_Goto_Position then
+                The_Simulated_Focuser_Position := The_Simulated_Focuser_Goto_Position;
+              end if;
+            elsif The_Simulated_Focuser_Position < The_Simulated_Focuser_Goto_Position then
+              The_Simulated_Focuser_Position := @ + 1.0;
+              if The_Simulated_Focuser_Position > The_Simulated_Focuser_Goto_Position then
+                The_Simulated_Focuser_Position := The_Simulated_Focuser_Goto_Position;
+              end if;
             else
-              The_Simulated_Focuser_Position := The_Simulated_Focuser_Goto_Position;
               Simulated_Focuser_Moving := False;
             end if;
           end if;
@@ -711,14 +738,22 @@ package body Device is
 
       if Is_Simulation then
         if Simulated_Focuser_Connected then
-          The_Focuser_State := Focuser.Connected;
+          if Simulated_Focuser_Moving then
+            The_Focuser_State := Focuser.Moving;
+          else
+            The_Focuser_State := Focuser.Connected;
+          end if;
         else
           The_Focuser_State := Focuser.Disconnected;
         end if;
       else
         if PWI4.Focuser.Exists then
           if PWI4.Focuser.Connected then
-            The_Focuser_State := Focuser.Connected;
+            if PWI4.Focuser.Moving then
+              The_Focuser_State := Focuser.Moving;
+            else
+              The_Focuser_State := Focuser.Connected;
+            end if;
           else
             The_Focuser_State := Focuser.Disconnected;
           end if;
@@ -1044,26 +1079,6 @@ package body Device is
 
     function Exists return Boolean renames PWI4.Focuser.Exists;
 
-    function Connected return Boolean is
-    begin
-      if Is_Simulation then
-        return Simulated_Focuser_Connected;
-      else
-        return PWI4.Focuser.Connected;
-      end if;
-    end Connected;
-
-
-    function Moving return Boolean is
-    begin
-      if Is_Simulation then
-        return Simulated_Focuser_Moving;
-      else
-        return PWI4.Focuser.Moving;
-      end if;
-    end Moving;
-
-
     function Actual_Position return Microns is
     begin
       if Is_Simulation then
@@ -1098,11 +1113,7 @@ package body Device is
     procedure Go_To (The_Position : Microns) is
     begin
       Log.Write ("Focuser.Goto" & The_Position'image);
-      if Connected then
-        Action.Go_To (The_Position);
-      else
-        Log.Warning ("Focuser not connected");
-      end if;
+      Action.Go_To (The_Position);
     end Go_To;
 
 

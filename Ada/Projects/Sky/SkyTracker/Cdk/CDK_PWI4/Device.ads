@@ -17,6 +17,7 @@ pragma Style_White_Elephant;
 
 with Earth;
 with Name;
+with Persistent;
 with PWI4;
 with Space;
 with Time;
@@ -117,13 +118,17 @@ package Device is
 
   package Focuser is
 
-    type State is (Unknown, Disconnected, Connected);
-  
+    package Persistent_Position is new Persistent (Microns, Name => "Focuser");
+
+    Persistent_Position_Data : Persistent_Position.Data;
+
+    Stored_Position : Microns renames Persistent_Position_Data.Storage;
+
+    type State is (Unknown, Disconnected, Connected, Moving);
+
     type State_Handler_Access is access procedure (The_State : State);
-   
+
     function Exists return Boolean;
-    
-    function Moving return Boolean;
 
     function Actual_Position return Microns;
 

@@ -23,7 +23,6 @@ with Http_Server;
 with Input;
 with Objects;
 with Parameter;
-with Persistent;
 with Picture;
 with Remote;
 with Text;
@@ -45,14 +44,6 @@ package body Telescope is
   package Rotator renames Device.Rotator;
 
   package Fans renames Device.Fans;
-
-  package Persistent_Focuser is new Persistent (Device.Microns, Name => "Focuser");
-
-  Persistent_Focuser_Data : Persistent_Focuser.Data;
-
-  Default_Focuser_Position : constant Device.Microns := Device.Microns(6500);
-
-  Focuser_Position : Device.Microns renames Persistent_Focuser_Data.Storage;
 
   subtype Command is Input.Mount_Command;
 
@@ -316,9 +307,7 @@ package body Telescope is
 
     The_Adjusted_Offset : Earth.Direction;
 
-
     The_Landmark : Name.Id;
-
 
     type Event is (No_Event,
                    Startup,
@@ -333,6 +322,7 @@ package body Telescope is
                    Mount_Disconnected,
                    Mount_Error,
                    Focuser_Connected,
+                   Focuser_Moving,
                    Mount_Connected,
                    Mount_Enabled,
                    Mount_Stopped,
@@ -350,6 +340,9 @@ package body Telescope is
     The_Focuser_State : Focuser.State := Focuser.Unknown;
     The_Mount_State   : Mount.State := Mount.Unknown;
     The_M3_Position   : M3.Position := M3.Unknown;
+
+    use type Focuser.State;
+    use type Mount.State;
 
     The_User_Adjust : Adjust;
     The_User_Setup  : Setup;
@@ -659,7 +652,7 @@ package body Telescope is
       Fans.Turn (To => Fans.Off);
       M3.Turn_To_Occular;
       Mount.Find_Home (The_Completion_Time);
-      Focuser.Go_To (Focuser_Position);
+      Focuser.Go_To (Focuser.Stored_Position);
       Rotator.Goto_Mech (180.0);
       The_State := Homing;
     end Find_Home_And_Set_Defaults;
@@ -713,8 +706,6 @@ package body Telescope is
 
 
     function Mount_Startup_State (The_Startup_Event : Mount_Startup) return State is
-      use type Focuser.State;
-      use type Mount.State;
     begin
       case The_Startup_Event is
       when Mount_Disconnected =>
@@ -727,11 +718,11 @@ package body Telescope is
         else
           return Disconnected;
         end if;
-      when Focuser_Connected =>
-        if The_Mount_State > Mount.Disconnected then
+      when Focuser_Connected | Focuser_Moving =>
+        if The_Mount_State = Mount.Connected then
           return Connected;
         else
-          return Disconnected;
+          return The_State;
         end if;
       when Mount_Enabled =>
         return Enabled;
@@ -828,8 +819,6 @@ package body Telescope is
     -- Connecting --
     ----------------
     procedure Connecting_State is
-      use type Focuser.State;
-      use type Mount.State;
     begin
       case The_Event is
       when Mount_Error =>
@@ -842,6 +831,8 @@ package body Telescope is
         if The_Mount_State > Mount.Disconnected then
           Enabling;
         end if;
+      when Focuser_Moving =>
+        raise Program_Error;
       when Mount_Enabled =>
         Find_Home_And_Set_Defaults;
       when Mount_Stopped =>
@@ -1207,9 +1198,6 @@ package body Telescope is
     use type Ada.Real_Time.Time;
 
   begin -- Control_Task
-    if Persistent_Focuser.Storage_Is_Empty then
-      Focuser_Position := Default_Focuser_Position;
-    end if;
     Reset_Adjustments;
     accept Start do
       Device.Start (Mount_State_Handler'access,
@@ -1329,6 +1317,9 @@ package body Telescope is
             when Focuser.Connected =>
               The_Event := Focuser_Connected;
               Has_New_Data := True;
+            when Focuser.Moving =>
+              The_Event := Focuser_Moving;
+              Has_New_Data := True;
             end case;
           end New_Focuser_State;
         or
@@ -1348,10 +1339,10 @@ package body Telescope is
             The_Data.Status := The_State;
             The_Data.M3.Position := The_M3_Position;
             The_Data.Focuser.Exists := Focuser.Exists;
-            The_Data.Focuser.Moving := Focuser.Moving;
+            The_Data.Focuser.Moving := The_Focuser_State = Focuser.Moving;
             The_Data.Focuser.Position := Focuser.Actual_Position;
             if The_State >= Stopped then
-              Focuser_Position := Focuser.Actual_Position;
+              Focuser.Stored_Position := The_Data.Focuser.Position;
             end if;
             The_Data.Focuser.Max_Position := Max_Fucuser_Position;
             The_Data.Focuser.Zoom_Size := Fucuser_Zoom_Size;
