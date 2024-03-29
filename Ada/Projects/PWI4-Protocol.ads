@@ -24,18 +24,10 @@ private package PWI4.Protocol is
   function Image_Of (Item : Boolean) return String;
 
 
-  Meters_Delta : constant := 0.1;
-
-  Meters_Lower_Limit : constant := -728.0; -- Dead See when dryed up
-  Meters_Upper_Limit : constant := 8848.0; -- Himalaya
-
-  type Meters is delta Meters_Delta range Meters_Lower_Limit .. Meters_Upper_Limit with Small => Meters_Delta;
-
-  Undefined_Meters : constant Meters := Meters_Lower_Limit;
-
   function Meters_Of (Image : String) return Meters;
 
   function Image_Of (Item : Meters) return String;
+
 
   Day_Delta : constant := 0.000_000_01;
 
@@ -118,13 +110,6 @@ private package PWI4.Protocol is
     Port   : Port_Number;
  end record;
 
-  type Site_Info is record
-    Latitude  : Degrees;
-    Longitude : Degrees;
-    Height    : Meters;
-    Lmst      : Hours;
-  end record;
-
   type Response is record
     Site    : Site_Info;
     Mount   : Mount_Info;
@@ -160,5 +145,11 @@ private package PWI4.Protocol is
     function Info return M3_Info;
 
   end M3;
+
+  package Site is
+
+    function Info return Site_Info;
+
+  end Site;
 
 end PWI4.Protocol;

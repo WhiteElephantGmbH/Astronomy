@@ -26,6 +26,7 @@ with Parameter;
 with Picture;
 with Remote;
 with Text;
+with Site;
 with System;
 with Targets;
 with Traces;
@@ -767,9 +768,13 @@ package body Telescope is
     begin
       case The_Event is
       when Startup =>
-        Mount.Connect;
-        Focuser.Connect;
-        The_State := Connecting;
+        if Site.Verified (Device.Site_Info) then
+          Mount.Connect;
+          Focuser.Connect;
+          The_State := Connecting;
+        else
+          The_State := Mount_Error;
+        end if;
       when Mount_Startup =>
         The_State := Mount_Startup_State (The_Event);
       when Mount_Stopped =>
@@ -930,6 +935,8 @@ package body Telescope is
       when Mount_Error =>
         The_State := Mount_Error;
       when Mount_Stopped =>
+        Log.Write ("Site LMST: " & Time.Image_Of (Device.Site_Lmst));
+        Log.Write ("Time LMST: " & Time.Image_Of (Time.Lmst));
         The_State := Stopped;
       when Halt =>
         The_State := Enabled;

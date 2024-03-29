@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2021 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2021 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -84,5 +84,31 @@ package body Site is
     Check_Defined;
     return The_Site.Elevation;
   end Elevation;
+
+
+  function Verified (Item : Data) return Boolean is
+    use type Angle.Value;
+    Delta_Latitude  : constant Angle.Degrees := Item.Latitude - The_Site.Latitude;
+    Delta_Longitude : constant Angle.Degrees := Item.Longitude - The_Site.Longitude;
+    Delta_Elevation : constant Integer       := Item.Elevation - The_Site.Elevation;
+    use type Angle.Degrees;
+    Max_Angle_Error     : constant Angle.Degrees := 1.0 / 36000.0; -- a 10th of an arc second
+    Max_Elevation_Error : constant Integer       := 1; -- meter
+  begin
+    Log.Write ("Delta_Latitude  :" & Delta_Latitude'image);
+    Log.Write ("Delta_Longitude :" & Delta_Longitude'image);
+    Log.Write ("Delta_Elevation :" & Delta_Elevation'image);
+    if abs Delta_Latitude > Max_Angle_Error then
+      Log.Error ("Incorrect Latitude : " & Angle.Signed_Degrees_Image_Of (Item.Latitude));
+      return False;
+    elsif abs Delta_Longitude > Max_Angle_Error then
+      Log.Error ("Incorrect Longitude : " & Angle.Signed_Degrees_Image_Of (Item.Longitude));
+      return False;
+    elsif abs Delta_Elevation > Max_Elevation_Error then
+      Log.Error ("Incorrect Elevation :" & Item.Elevation'image);
+      return False;
+    end if;
+    return True;
+  end Verified;
 
 end Site;

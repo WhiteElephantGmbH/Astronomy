@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2021 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2021 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -26,7 +26,7 @@ package Site is
   end record;
 
   Not_Defined : exception;
-  
+
   procedure Clear;
 
   procedure Define (Item : Data);
@@ -38,5 +38,7 @@ package Site is
   function Longitude return Angle.Value;
 
   function Elevation return Integer;
+
+  function Verified (Item : Data) return Boolean;
 
 end Site;

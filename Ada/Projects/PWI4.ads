@@ -35,6 +35,15 @@ package PWI4 is
 
   function Image_Of (Item : Degrees) return String;
 
+  Meters_Delta : constant := 0.1;
+
+  Meters_Lower_Limit : constant := -728.0; -- Dead See when dryed up
+  Meters_Upper_Limit : constant := 8848.0; -- Himalaya
+
+  type Meters is delta Meters_Delta range Meters_Lower_Limit .. Meters_Upper_Limit with Small => Meters_Delta;
+
+  Undefined_Meters : constant Meters := Meters_Lower_Limit;
+
   Hours_Delta : constant := 0.000_000_000_01;
   Hours_Limit : constant := 24.0;
 
@@ -43,6 +52,13 @@ package PWI4 is
   Undefined_Hours : constant := Hours'first;
 
   function Image_Of (Item : Hours) return String;
+
+  type Site_Info is record
+    Latitude  : Degrees;
+    Longitude : Degrees;
+    Height    : Meters;
+    Lmst      : Hours;
+  end record;
 
   type Axis_Data is record
     Position : Degrees;

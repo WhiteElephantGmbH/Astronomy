@@ -171,6 +171,8 @@ package body PWI4.Protocol is
 
     function M3_Data return Protocol.M3_Info;
 
+    function Site_Data return Site_Info;
+
   private
     The_Data : Protocol.Response;
   end System;
@@ -771,6 +773,16 @@ package body PWI4.Protocol is
   end Rotator;
 
 
+  package body Site is
+
+    function Info return Site_Info is
+    begin
+      return System.Site_Data;
+    end Info;
+
+  end Site;
+
+
   protected body System is
 
     procedure Set (Status : Client_Error) is
@@ -853,6 +865,12 @@ package body PWI4.Protocol is
     begin
       return The_Data.Rotator;
     end Rotator_Data;
+
+
+    function Site_Data return Site_Info is
+    begin
+      return The_Data.Site;
+    end Site_Data;
 
   end System;
 

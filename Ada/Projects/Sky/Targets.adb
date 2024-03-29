@@ -285,6 +285,8 @@ package body Targets is
         New_List := True;
         if Site.Is_Defined then
           Define_Targets;
+        else
+          Log.Warning ("Site not defined");
         end if;
       or
         accept Set (The_Range : Az_Range) do

@@ -19,6 +19,7 @@ with Earth;
 with Name;
 with Persistent;
 with PWI4;
+with Site;
 with Space;
 with Time;
 
@@ -37,6 +38,10 @@ package Device is
   subtype Points is PWI4.Points;
 
   function Image_Of (Item : Points) return String renames PWI4.Image_Of;
+
+  function Site_Info return Site.Data;
+
+  function Site_Lmst return Time.Value;
 
   package Mount is
 
@@ -194,7 +199,7 @@ package Device is
     procedure Turn_On_Or_Off;
 
   end Fans;
-
+  
   procedure Start (Mount_State_Handler   : Mount.State_Handler_Access;
                    Focuser_State_Handler : Focuser.State_Handler_Access;
                    M3_Position_Handler   : M3.Position_Handler_Access);

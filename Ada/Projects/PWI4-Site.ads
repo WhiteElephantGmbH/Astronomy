@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2023 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                           (c) 2024 by White Elephant GmbH, Schaffhausen, Switzerland                              *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,15 +15,8 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-pragma Build (Description => "SkyTracker control program for CDK700 (PWI4)",
-              Version     => (4, 0, 0, 6),
-              Kind        => Windows,
-              Libraries   => ("AWS64", "COLL64"),
-              Compiler    => "GNATPRO\23.0");
+package PWI4.Site is
 
-with Control;
+  function Info return Site_Info;
 
-procedure CDK_PWI4 is
-begin
-  Control.Start;
-end CDK_PWI4;
+end PWI4.Site;

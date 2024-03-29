@@ -270,6 +270,16 @@ package Text is
   function Trimmed (Item : String) return Standard.String is (Trimmed (Item.To_String));
   -- Trims left and right whitespace.
 
+  procedure Truncate (Item       : in out String;
+                      New_Length : Natural);
+
+  function Truncation_Of (Item       : String;
+                          New_Length : Natural) return String;
+
+  --  This procedure sets the length of the string. If the specified length is
+  --  greater than the current length of the string the current length remains
+  --  unchanged.
+
   --*******************************************************************************************************************
   --**  List of Strings                                                                                              **
   --*******************************************************************************************************************

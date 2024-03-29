@@ -569,7 +569,26 @@ package body Text is
   end Trim;
 
 
-  procedure Update (Item : in out String;
+  procedure Truncate (Item       : in out String;
+                      New_Length : Natural) is
+  begin
+    if Item.Count > New_Length then
+      Item.Delete (Index => New_Length + 1,
+                   Count => Count_Type(Item.Count - New_Length));
+    end if;
+  end Truncate;
+
+
+  function Truncation_Of (Item       : String;
+                          New_Length : Natural) return String is
+    The_Item : String := Item;
+  begin
+    The_Item.Truncate (New_Length);
+    return The_Item;
+  end Truncation_Of;
+
+
+   procedure Update (Item : in out String;
                     From :        Positive;
                     By   :        Standard.String) is
     The_Cursor : Cursor := Item.To_Cursor (From);

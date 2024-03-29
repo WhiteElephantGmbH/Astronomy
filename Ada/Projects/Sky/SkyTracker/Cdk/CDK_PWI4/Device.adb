@@ -23,6 +23,7 @@ with PWI4.Focuser;
 with PWI4.Mount;
 with PWI4.M3;
 with PWI4.Rotator;
+with PWI4.Site;
 with Satellite;
 with System;
 with Traces;
@@ -607,7 +608,7 @@ package body Device is
           when Go_To =>
             The_Simulated_Focuser_Goto_Position := The_Parameter.Focuser_Position;
             Simulated_Focuser_Moving := True;
-            Log.Write ("Simulated focuser goto : " & The_Simulated_Focuser_Goto_Position'image);
+            Log.Write ("Simulated focuser goto :" & The_Simulated_Focuser_Goto_Position'image);
           when Stop =>
             Simulated_Focuser_Moving := False;
             Log.Write ("Simulated focuser stop");
@@ -640,11 +641,11 @@ package body Device is
           when Goto_Mech =>
             The_Simulated_Rotator_Goto_Position := The_Parameter.Rotator_Value;
             Simulated_Rotator_Slewing := True;
-            Log.Write ("Simulated Rotator goto_mech : " & The_Simulated_Rotator_Goto_Position'image);
+            Log.Write ("Simulated Rotator goto_mech :" & The_Simulated_Rotator_Goto_Position'image);
           when Goto_Field =>
             The_Simulated_Rotator_Goto_Angle := The_Parameter.Rotator_Value;
             Simulated_Rotator_Moving:= True;
-            Log.Write ("Simulated Rotator goto_field : " & The_Simulated_Rotator_Goto_Angle'image);
+            Log.Write ("Simulated Rotator goto_field :" & The_Simulated_Rotator_Goto_Angle'image);
           when Goto_Offset =>
             The_Simulated_Rotator_Goto_Angle := @ + The_Parameter.Rotator_Value;
             Simulated_Rotator_Moving := True;
@@ -814,6 +815,24 @@ package body Device is
   begin
     Action.Finish;
   end Finalize;
+
+
+  function Site_Info return Standard.Site.Data is
+    Data : constant PWI4.Site_Info := PWI4.Site.Info;
+    use type Angle.Value;
+  begin
+    return (Latitude  => +Angle.Degrees(Data.Latitude),
+            Longitude => +Angle.Degrees(Data.Longitude),
+            Elevation => Integer(Data.Height));
+  end Site_Info;
+
+
+  function Site_Lmst return Time.Value is
+    Data : constant PWI4.Site_Info := PWI4.Site.Info;
+    use type Time.Value;
+  begin
+    return +Angle.Degrees(Data.Lmst * 15.0);
+  end Site_Lmst;
 
 
   package body Mount is
