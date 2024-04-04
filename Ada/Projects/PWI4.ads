@@ -33,6 +33,8 @@ package PWI4 is
 
   type Degrees is delta Degrees_Delta range -Degrees_Limit .. Degrees_Limit with Small => Degrees_Delta;
 
+  Undefined_Degrees : constant := 0.0;
+
   function Image_Of (Item : Degrees) return String;
 
   Meters_Delta : constant := 0.1;
@@ -91,9 +93,15 @@ package PWI4 is
 
   procedure Get_System;
 
+  procedure Test_Crash;
+
+  procedure Test_Error;
+
+  function Error_Info return String;
+
 private
 
-  subtype Client_Error is AWS.Messages.Client_Error;
+  subtype Status_Code is AWS.Messages.Status_Code;
 
   procedure Execute (Device     : String;
                      Command    : String;

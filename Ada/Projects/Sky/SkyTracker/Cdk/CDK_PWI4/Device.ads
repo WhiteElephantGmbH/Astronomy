@@ -43,6 +43,8 @@ package Device is
 
   function Site_Lmst return Time.Value;
 
+  function Error_Info return String renames PWI4.Error_Info;
+
   package Mount is
 
     type State is (Unknown,
@@ -199,7 +201,7 @@ package Device is
     procedure Turn_On_Or_Off;
 
   end Fans;
-  
+
   procedure Start (Mount_State_Handler   : Mount.State_Handler_Access;
                    Focuser_State_Handler : Focuser.State_Handler_Access;
                    M3_Position_Handler   : M3.Position_Handler_Access);

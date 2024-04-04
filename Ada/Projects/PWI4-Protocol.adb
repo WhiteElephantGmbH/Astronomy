@@ -44,8 +44,8 @@ package body PWI4.Protocol is
     return Degrees'value(Image);
   exception
   when others =>
-    Log.Error ("Degrees_Of (Image -> """ & Image & """)");
-    raise Parsing_Error;
+    Log.Error ("Degrees_Of (Image -> """ & Image & """) out of range");
+    return Undefined_Degrees;
   end Degrees_Of;
 
 
@@ -63,7 +63,7 @@ package body PWI4.Protocol is
     return Meters'value(Image);
   exception
   when others =>
-    Log.Warning ("Meters_Of (Image -> """ & Image & """)");
+    Log.Error ("Meters_Of (Image -> """ & Image & """) out of range");
     return Undefined_Meters;
   end Meters_Of;
 
@@ -159,7 +159,7 @@ package body PWI4.Protocol is
 
   protected System is
 
-    procedure Set (Status : Client_Error);
+    procedure Set (Status : Status_Code);
 
     procedure Set (Data : Protocol.Response);
 
@@ -727,7 +727,7 @@ package body PWI4.Protocol is
   end Parse;
 
 
-  procedure Set_Error (Status : Client_Error) is
+  procedure Set_Error (Status : Status_Code) is
   begin
     System.Set (Status);
   end Set_Error;
@@ -785,9 +785,9 @@ package body PWI4.Protocol is
 
   protected body System is
 
-    procedure Set (Status : Client_Error) is
+    procedure Set (Status : Status_Code) is
     begin
-      Log.Write ("Set Client Error : " & Status'image);
+      Log.Write ("Set Error : " & Status'image);
       The_Data.Mount.Flags.Has_Error := True;
       The_Data.Mount.Flags.Is_Connected := False;
     end Set;

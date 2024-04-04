@@ -120,7 +120,7 @@ private package PWI4.Protocol is
 
   procedure Parse (Data : String);
 
-  procedure Set_Error (Status : Client_Error);
+  procedure Set_Error (Status : Status_Code);
 
   package Mount is
 

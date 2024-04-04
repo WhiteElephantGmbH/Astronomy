@@ -43,10 +43,10 @@ package body PWI4.Mount is
   Is_Leaving : Boolean := False;
 
   Homing_Check_Count : constant Natural := 3;
-  Homing_Counter     : Natural;
+  Homing_Counter     : Natural := Homing_Check_Count;
 
-  Last_Axis0_Position : Degrees;
-  Last_Axis1_Position : Degrees;
+  Last_Axis0_Position : Degrees := 0.0;
+  Last_Axis1_Position : Degrees := 0.0;
 
   Spiral_Offsets : PWI4.Protocol.Spiral_Data;
 
@@ -101,6 +101,7 @@ package body PWI4.Mount is
           if abs(Delta_Axis0) < 0.0002 and abs(Delta_Axis1) < 0.0002 then
             Homing_Counter := @ - 1;
             if Homing_Counter = 0 then
+              Homing_Counter := Homing_Check_Count;
               Is_Homed := True;
               Is_Homing := False;
               return Stopped;

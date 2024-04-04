@@ -673,39 +673,41 @@ package body Device is
         end if;
       or
         delay 1.0 / PWI4.Request_Rate;
-        PWI4.Get_System;
-        if Is_Simulation then
-          if Simulated_Focuser_Moving then
-            if abs(The_Simulated_Focuser_Position - The_Simulated_Focuser_Goto_Position) > 4.0 then
-              The_Simulated_Focuser_Position := @ + (The_Simulated_Focuser_Goto_Position - @) / 2;
-            elsif The_Simulated_Focuser_Position > The_Simulated_Focuser_Goto_Position then
-              The_Simulated_Focuser_Position := @ - 1.0;
-              if The_Simulated_Focuser_Position < The_Simulated_Focuser_Goto_Position then
-                The_Simulated_Focuser_Position := The_Simulated_Focuser_Goto_Position;
+        if The_Mount_State /= Mount.Error then
+          PWI4.Get_System;
+          if Is_Simulation then
+            if Simulated_Focuser_Moving then
+              if abs(The_Simulated_Focuser_Position - The_Simulated_Focuser_Goto_Position) > 4.0 then
+                The_Simulated_Focuser_Position := @ + (The_Simulated_Focuser_Goto_Position - @) / 2;
+              elsif The_Simulated_Focuser_Position > The_Simulated_Focuser_Goto_Position then
+                The_Simulated_Focuser_Position := @ - 1.0;
+                if The_Simulated_Focuser_Position < The_Simulated_Focuser_Goto_Position then
+                  The_Simulated_Focuser_Position := The_Simulated_Focuser_Goto_Position;
+                end if;
+              elsif The_Simulated_Focuser_Position < The_Simulated_Focuser_Goto_Position then
+                The_Simulated_Focuser_Position := @ + 1.0;
+                if The_Simulated_Focuser_Position > The_Simulated_Focuser_Goto_Position then
+                  The_Simulated_Focuser_Position := The_Simulated_Focuser_Goto_Position;
+                end if;
+              else
+                Simulated_Focuser_Moving := False;
               end if;
-            elsif The_Simulated_Focuser_Position < The_Simulated_Focuser_Goto_Position then
-              The_Simulated_Focuser_Position := @ + 1.0;
-              if The_Simulated_Focuser_Position > The_Simulated_Focuser_Goto_Position then
-                The_Simulated_Focuser_Position := The_Simulated_Focuser_Goto_Position;
+            end if;
+            if Simulated_Rotator_Moving then
+              if abs(The_Simulated_Rotator_Field_Angle - The_Simulated_Rotator_Goto_Angle) > 3.0 then
+                The_Simulated_Rotator_Field_Angle := @ + (The_Simulated_Rotator_Goto_Angle - @) / 2;
+              else
+                The_Simulated_Rotator_Field_Angle := The_Simulated_Rotator_Goto_Angle;
+                Simulated_Rotator_Moving := False;
               end if;
-            else
-              Simulated_Focuser_Moving := False;
             end if;
-          end if;
-          if Simulated_Rotator_Moving then
-            if abs(The_Simulated_Rotator_Field_Angle - The_Simulated_Rotator_Goto_Angle) > 3.0 then
-              The_Simulated_Rotator_Field_Angle := @ + (The_Simulated_Rotator_Goto_Angle - @) / 2;
-            else
-              The_Simulated_Rotator_Field_Angle := The_Simulated_Rotator_Goto_Angle;
-              Simulated_Rotator_Moving := False;
-            end if;
-          end if;
-          if Simulated_Rotator_Slewing then
-            if abs(The_Simulated_Rotator_Mech_Position - The_Simulated_Rotator_Goto_Position) > 3.0 then
-              The_Simulated_Rotator_Mech_Position := @ + (The_Simulated_Rotator_Goto_Position - @) / 2;
-            else
-              The_Simulated_Rotator_Mech_Position := The_Simulated_Rotator_Goto_Position;
-              Simulated_Rotator_Slewing := False;
+            if Simulated_Rotator_Slewing then
+              if abs(The_Simulated_Rotator_Mech_Position - The_Simulated_Rotator_Goto_Position) > 3.0 then
+                The_Simulated_Rotator_Mech_Position := @ + (The_Simulated_Rotator_Goto_Position - @) / 2;
+              else
+                The_Simulated_Rotator_Mech_Position := The_Simulated_Rotator_Goto_Position;
+                Simulated_Rotator_Slewing := False;
+              end if;
             end if;
           end if;
         end if;

@@ -55,6 +55,8 @@ package body Test is
     Put ("  MoveM110");
     Put ("  Stop");
     Put ("  Shutdown");
+    Put ("  Crash");
+    Put ("  Error");
   end Input_Error;
 
 
@@ -167,7 +169,8 @@ package body Test is
         for Unused_Count in 1 .. Connect_Timeout loop
           delay 1.0;
           PWI4.Get_System;
-          if PWI4.Mount.Info.Status = PWI4.Mount.Connected then
+          Put ("State: " & PWI4.Mount.Info.Status'image);
+          if PWI4.Mount.Info.Status >= PWI4.Mount.Connected then
             return;
           end if;
         end loop;
@@ -338,6 +341,22 @@ package body Test is
       PWI4.Mount.Disconnect;
     end Shutdown;
 
+    procedure Test_Crash is
+    begin
+      PWI4.Test_Crash;
+      Put ("State: " & PWI4.Mount.Info.Status'image);
+      Put ("Error: " & PWI4.Error_Info);
+    end Test_Crash;
+
+
+    procedure Test_Error is
+    begin
+      PWI4.Test_Error;
+      Put ("State: " & PWI4.Mount.Info.Status'image);
+      Put ("Error: " & PWI4.Error_Info);
+    end Test_Error;
+
+
     Id : constant String := Text.Lowercase_Of (Command);
 
     use type PWI4.Degrees;
@@ -353,7 +372,7 @@ package body Test is
       Home_Focuser;
       Home_Rotator;
       Home_Mount;
-   elsif Id = "input" then
+    elsif Id = "input" then
       Serial_Input ("");
     elsif Id = "turnto1" then
       Turn_M3 (To => PWI4.Port_1);
@@ -371,6 +390,10 @@ package body Test is
       Stop;
     elsif Id = "shutdown" then
       Shutdown;
+    elsif Id = "crash" then
+      Test_Crash;
+    elsif Id = "error" then
+      Test_Error;
     else
       Input_Error ("unknown command");
     end if;

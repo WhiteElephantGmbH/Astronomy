@@ -84,6 +84,17 @@ package body PWI4 is
   end Shutdown;
 
 
+  The_Error_Info : Text.String;
+
+  procedure Set_Error_Info (Data : AWS.Response.Data) is
+  begin
+    The_Error_Info := [Text.Trimmed (AWS.Response.Message_Body (Data))];
+    Log.Error (Error_Info);
+  end Set_Error_Info;
+
+  function Error_Info return String is (+The_Error_Info);
+
+
   procedure Execute (Item : String) is
     Url : constant String := "http://" & The_Ip_Address_And_Port;
   begin
@@ -98,11 +109,19 @@ package body PWI4 is
       when AWS.Messages.Success =>
         null;
       when AWS.Messages.Client_Error =>
-        Log.Warning ("Client error: " & Status'image);
+        Log.Error ("Client error: " & Status'image);
+        Set_Error_Info (Data);
+        Protocol.Set_Error (Status);
+        return;
+      when AWS.Messages.Server_Error =>
+        Log.Error ("Server error: " & Status'image);
+        Set_Error_Info (Data);
         Protocol.Set_Error (Status);
         return;
       when others =>
         Log.Error ("Unexpected response: " & Status'image);
+        Set_Error_Info (Data);
+        Protocol.Set_Error (Status);
         return;
       end case;
       Protocol.Parse (AWS.Response.Message_Body (Data));
@@ -114,6 +133,18 @@ package body PWI4 is
   begin
     Execute ("status");
   end Get_System;
+
+
+  procedure Test_Crash is
+  begin
+    Execute ("/internal/crash");
+  end Test_Crash;
+
+
+  procedure Test_Error is
+  begin
+    Execute ("/command/notfound");
+  end Test_Error;
 
 
   procedure Execute (Device     : String;

@@ -334,6 +334,7 @@ package body Telescope is
 
     The_State  : State := Unknown;
     Is_Closing : Boolean := False;
+    Is_Ending  : Boolean := False;
     The_Event  : Event := No_Event;
 
     Mount_Is_Stopped : Boolean := True;
@@ -815,9 +816,12 @@ package body Telescope is
     -----------
     procedure Error_State is
     begin
-      Remote.Define (Is_On_Target => False);
-      delay 3.0;
-      Gui.Close;
+      if not Is_Ending then
+        Is_Ending := True;
+        Remote.Define (Is_On_Target => False);
+        User.Show_Error (Device.Error_Info);
+        Gui.Close;
+      end if;
     end Error_State;
 
     ----------------
