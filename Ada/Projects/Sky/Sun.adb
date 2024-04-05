@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2023 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2023 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -44,6 +44,13 @@ package body Sun is
     return not Earth.Is_Below_Horizon (Objects.Direction_Of (Direction => The_Sun_Direction,
                                                              Lmst      => Time.Lmst_Of (Ut)));
   end Is_Visible;
+
+
+  function Protection_Is_Disabled return Boolean is
+    use type Angle.Degrees;
+  begin
+    return The_Safety_Angle = 0.0 or else not Is_Visible;
+  end Protection_Is_Disabled;
 
 
   function Is_In_Safe_Distance (To_Target : Space.Direction) return Boolean is

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2023 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2023 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -21,6 +21,8 @@ with Space;
 package Sun is
 
   function Is_Visible return Boolean;
+
+  function Protection_Is_Disabled return Boolean;
 
   function Is_In_Safe_Distance (To_Target : Space.Direction) return Boolean;
   -- PRECONDITION: Is_Visible must have been called;
