@@ -18,6 +18,7 @@ pragma Style_White_Elephant;
 with Ada.Calendar;
 with Astro;
 with File;
+with Fits;
 with Site;
 with Text;
 with Traces;
@@ -172,17 +173,26 @@ package body Picture is
 
   begin
     Log.Write ("Read - RA: " & Space.Ra_Image_Of (Search_From) & " - DEC: " & Space.Dec_Image_Of (Search_From));
-    Exif.Read (Filename);
-    if not Site.Is_Defined then
-      Define_Site;
-    end if;
-    if (Exif.Image_Height = Exif.Undefined_Size) or (Exif.Image_Width = Exif.Undefined_Size) then
-      Log.Error ("Image size undefined");
-      raise Not_Solved;
-    elsif Exif.Image_Height < Exif.Image_Width then
-      Actual_Height := The_Height;
+    if Fits.Read_Header (Filename) then
+     Log.Write ("Read - Fits Header");
+     if Fits.Is_Landscape then
+       Actual_Height := The_Height;
+     else
+       Actual_Height := The_Width;
+     end if;
     else
-      Actual_Height := The_Width;
+      Exif.Read (Filename);
+      if not Site.Is_Defined then
+        Define_Site;
+      end if;
+      if (Exif.Image_Height = Exif.Undefined_Size) or (Exif.Image_Width = Exif.Undefined_Size) then
+        Log.Error ("Image size undefined");
+        raise Not_Solved;
+      elsif Exif.Image_Height < Exif.Image_Width then
+        Actual_Height := The_Height;
+      else
+        Actual_Height := The_Width;
+      end if;
     end if;
     Astap.Solve (Filename => Filename,
                  Height   => Actual_Height,
@@ -194,7 +204,7 @@ package body Picture is
   when Not_Solved =>
     File.Delete (Filename);
     return False;
-  when Exif.File_Not_Found =>
+  when Exif.File_Not_Found | Fits.File_Not_Found =>
     return False;
   end Solve;
 

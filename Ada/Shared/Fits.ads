@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2023 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                               (c) 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,15 +15,20 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-pragma Build (Description => "SkyTracker control program for CDK700 (PWI4)",
-              Version     => (4, 0, 0, 8),
-              Kind        => Windows,
-              Libraries   => ("AWS64", "COLL64"),
-              Compiler    => "GNATPRO\23.0");
+with Time;
 
-with Control;
+package Fits is
 
-procedure CDK_PWI4 is
-begin
-  Control.Start;
-end CDK_PWI4;
+  File_Not_Found  : exception;
+  Invalid_File    : exception;
+  Undefined_Value : exception;
+
+  function Read_Header (Filename : String) return Boolean;
+  
+  function Is_Landscape return Boolean;
+  -- Read_Header must have been called
+
+  function Mid_Exposer_Date return Time.JD;
+  -- Read_Header must have been called
+
+end Fits;
