@@ -16,6 +16,8 @@
 pragma Style_White_Elephant;
 
 with Ada.Direct_IO;
+with Ada.IO_Exceptions;
+with Exceptions;
 with Text;
 with Traces;
 
@@ -40,62 +42,80 @@ package body Fits is
   The_Mid_Exposer_Date : Time.JD := Undefined_Date;
 
   function Read_Header (Filename : String) return Boolean is
+
     The_File   : Fits_Io.File_Type;
     The_Header : Header;
     Has_Header : Boolean := False;
-  begin
+
+    function Opened_File return Boolean is
+    begin
+      for Unused_Count in 1 .. 3 loop
+        begin
+          Fits_Io.Open (The_File, Fits_Io.In_File, Filename);
+          return True;
+        exception
+        when Ada.IO_Exceptions.Use_Error =>
+          Log.Write ("Retry opening " & Filename);
+          delay 0.3;
+        when Item: others =>
+          Log.Error ("Opening " & Filename & " failed with " & Exceptions.Name_Of (Item));
+          return False;
+        end;
+      end loop;
+      Log.Warning ("Opening " & Filename & " failed");
+      return False;
+    end Opened_File;
+
+  begin -- Read_Header
     The_Axis_Elements_1 := Undefined;
     The_Axis_Elements_2 := Undefined;
     The_Mid_Exposer_Date := Undefined_Date;
-    Fits_Io.Open (The_File, Fits_Io.In_File, Filename);
-    begin
-      Fits_Io.Read (The_File, The_Header);
-      Fits_Io.Close (The_File);
-      for The_Card of The_Header loop
-        declare
-          Parts : constant Text.Strings := Text.Strings_Of (The_Card, Separator => ' ', Symbols => "=/");
-          Id    : constant String := Parts(1);
-        begin
-          if Id = "END" then
-            exit;
-          elsif Parts.Count >= 3 and Parts(2) = "=" then
-            declare
-              Value : constant String := Parts(3);
-            begin
-              if not Has_Header then
-                if Id = "SIMPLE" and then Value = "T" then
-                  Log.Write ("Standard header detected");
-                  Has_Header := True;
-                else
-                  return False;
-                end if;
-              elsif Id = "INSTRUME" then
-                Log.Write ("Instrument: " & Value);
-              elsif Id = "NAXIS1" then
-                The_Axis_Elements_1 := Positive'value(Value);
-                Log.Write ("Axis 1 elements:" & The_Axis_Elements_1'image);
-              elsif Id = "NAXIS2" then
-                The_Axis_Elements_2 := Positive'value(Value);
-                Log.Write ("Axis 2 elements:" & The_Axis_Elements_2'image);
-              elsif Id = "JD_UTC" then
-                The_Mid_Exposer_Date := Time.JD'value(Value);
-                Log.Write ("Mid exposure time: " & Time.Image_Of (Time.Ut_Of (The_Mid_Exposer_Date)));
+    if not Opened_File then
+      return False;
+    end if;
+    Fits_Io.Read (The_File, The_Header);
+    Fits_Io.Close (The_File);
+    for The_Card of The_Header loop
+      declare
+        Parts : constant Text.Strings := Text.Strings_Of (The_Card, Separator => ' ', Symbols => "=/");
+        Id    : constant String := Parts(1);
+      begin
+        if Id = "END" then
+          exit;
+        elsif Parts.Count >= 3 and Parts(2) = "=" then
+          declare
+            Value : constant String := Parts(3);
+          begin
+            if not Has_Header then
+              if Id = "SIMPLE" and then Value = "T" then
+                Log.Write ("Standard header detected");
+                Has_Header := True;
               else
-                null;
+                return False;
               end if;
-            end;
-          end if;
-        end;
-      end loop;
-      return Has_Header;
-    exception
-    when others =>
-      Fits_Io.Close (The_File);
-    end;
-    return False;
+            elsif Id = "INSTRUME" then
+              Log.Write ("Instrument: " & Value);
+            elsif Id = "NAXIS1" then
+              The_Axis_Elements_1 := Positive'value(Value);
+              Log.Write ("Axis 1 elements:" & The_Axis_Elements_1'image);
+            elsif Id = "NAXIS2" then
+              The_Axis_Elements_2 := Positive'value(Value);
+              Log.Write ("Axis 2 elements:" & The_Axis_Elements_2'image);
+            elsif Id = "JD_UTC" then
+              The_Mid_Exposer_Date := Time.JD'value(Value);
+              Log.Write ("Mid exposure time: " & Time.Image_Of (Time.Ut_Of (The_Mid_Exposer_Date)));
+            else
+              null;
+            end if;
+          end;
+        end if;
+      end;
+    end loop;
+    return Has_Header;
   exception
   when others =>
-    raise File_Not_Found;
+    Fits_Io.Close (The_File);
+    return False;
   end Read_Header;
 
 

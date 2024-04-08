@@ -274,6 +274,7 @@ package body Text is
     Legible_String : Standard.String (1 .. Item'length);
     The_Size       : Natural := 0;
     Am_In_Gap      : Boolean := True;
+    Am_After_Dot   : Boolean := False;
     The_Character  : Character;
   begin
     for The_Index in Item'range loop
@@ -288,9 +289,14 @@ package body Text is
         else
           Am_In_Gap := True;
         end if;
+      elsif The_Character = '.' then
+        Am_After_Dot := True;
       elsif Am_In_Gap then
         The_Character := Uppercase_Of (The_Character);
         Am_In_Gap := False;
+      elsif Am_After_Dot then
+        The_Character := Uppercase_Of (The_Character);
+        Am_After_Dot := False;
       else
         The_Character := Lowercase_Of (The_Character);
       end if;

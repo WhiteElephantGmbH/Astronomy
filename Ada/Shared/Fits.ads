@@ -19,8 +19,6 @@ with Time;
 
 package Fits is
 
-  File_Not_Found  : exception;
-  Invalid_File    : exception;
   Undefined_Value : exception;
 
   function Read_Header (Filename : String) return Boolean;

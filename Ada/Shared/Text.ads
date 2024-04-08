@@ -121,8 +121,8 @@ package Text is
   --    Underscores are replaced with spaces.
   --    Leading & trailing spaces are removed.
   --    Multiple spaces are condensed into a single space.
-  --    The first character and characters following a space are
-  --    capitalized, otherwise the string is reduced to lowercase.
+  --    The first character and characters following a space or a '.'
+  --    are capitalized, otherwise the string is reduced to lowercase.
 
   function Reduced (Item : Standard.String) return Standard.String;
   -- Function to return a "reduced" version of the supplied string.

@@ -161,7 +161,8 @@ package body Picture is
   end Set_Site;
 
 
-  Is_Solving : Boolean := False;
+  Is_Solving       : Boolean := False;
+  Fits_Header_Read : Boolean := False;
 
   function Solve (Search_From : Space.Direction) return Boolean is
 
@@ -172,15 +173,18 @@ package body Picture is
     use type Exif.Size;
 
   begin
-    Log.Write ("Read - RA: " & Space.Ra_Image_Of (Search_From) & " - DEC: " & Space.Dec_Image_Of (Search_From));
-    if Fits.Read_Header (Filename) then
-     Log.Write ("Read - Fits Header");
-     if Fits.Is_Landscape then
-       Actual_Height := The_Height;
-     else
-       Actual_Height := The_Width;
-     end if;
-    else
+    Log.Write ("Solve - RA: " & Space.Ra_Image_Of (Search_From) & " - DEC: " & Space.Dec_Image_Of (Search_From));
+    if Fits.Read_Header (Filename) then -- try first
+      Log.Write ("Use Fits information");
+      Fits_Header_Read := True;
+      if Fits.Is_Landscape then
+        Actual_Height := The_Height;
+      else
+        Actual_Height := The_Width;
+      end if;
+    else -- no fits type file -> try exif
+      Log.Write ("Use Exif information");
+      Fits_Header_Read := False;
       Exif.Read (Filename);
       if not Site.Is_Defined then
         Define_Site;
@@ -201,10 +205,10 @@ package body Picture is
     Is_Solving := True;
     return True;
   exception
-  when Not_Solved =>
+  when Not_Solved | Fits.Undefined_Value =>
     File.Delete (Filename);
     return False;
-  when Exif.File_Not_Found | Fits.File_Not_Found =>
+  when Exif.File_Not_Found =>
     return False;
   end Solve;
 
@@ -265,7 +269,16 @@ package body Picture is
   end Universal_Of;
 
 
-  function Time_Stamp return Time.Ut is
+  function Fits_Time_Stamp return Time.Ut is
+  begin
+    return Time.Ut_Of (Fits.Mid_Exposer_Date);
+  exception
+  when Fits.Undefined_Value =>
+    raise Undefined_Value;
+  end Fits_Time_Stamp;
+
+
+  function Exif_Time_Stamp return Time.Ut is
 
     Date      : constant Exif.Date := Exif.Date_Stamp;
     TS        : constant Exif.Values := Exif.Time_Stamp;
@@ -283,6 +296,16 @@ package body Picture is
       return Universal_Of (Date_Time);
     else
       raise Undefined_Value;
+    end if;
+  end Exif_Time_Stamp;
+
+
+  function Time_Stamp return Time.Ut is
+  begin
+    if Fits_Header_Read then
+      return Fits_Time_Stamp;
+    else
+      return Exif_Time_Stamp;
     end if;
   end Time_Stamp;
 
@@ -302,7 +325,6 @@ package body Picture is
   procedure Evaluate_Actual (Ra   : out REAL;
                              Dec  : out REAL;
                              Lmst : out Time.Value) is
-
     use Astro.PNULIB;
     use Astro.SPHLIB;
 
