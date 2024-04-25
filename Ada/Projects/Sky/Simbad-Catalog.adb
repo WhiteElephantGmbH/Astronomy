@@ -368,6 +368,8 @@ package body Simbad.Catalog is
       when C_Tra => return "TrA";
       when C_Uma => return "UMa";
       when C_Umi => return "UMi";
+      when C_LMC => return "LMC";
+      when C_SMC => return "SMC";
       when others =>
         return Text.Legible_Of (Image(Image'first + 1 ..Image'last));
       end case;

@@ -21,6 +21,9 @@ package Picture.Parameter is
 
   procedure Define (Handle : Configuration.File_Handle);
 
-  procedure Defaults (Put : access procedure (Item : String));
+  procedure Defaults (Put       : access procedure (Item : String);
+                      Extension : String := "D:\Picture\Image.Fits";
+                      Height    : String := "0.44";
+                      Width     : String := "0.66");
 
 end Picture.Parameter;

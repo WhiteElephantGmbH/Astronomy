@@ -37,6 +37,8 @@ package Remote is
 private
 
   Id : constant String := "Remote";
+  
+  The_Key : Text.String;
 
   The_Telescope_Name : Text.String;
   The_Remote_Address : Network.Ip_Address;

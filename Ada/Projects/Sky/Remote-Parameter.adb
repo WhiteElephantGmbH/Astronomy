@@ -15,9 +15,25 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with Key;
+with Persistent_String;
 with Section;
 
 package body Remote.Parameter is
+
+  package Remote_Key is new Key (Id);
+
+  package Persistent_Key is new Persistent_String (Remote_Key.Name);
+
+  Key_Data : Persistent_Key.Data;
+
+  function Actual_Key return String is
+  begin
+    if Key_Data.Item = "" then
+      Key_Data.Store (Remote_Key.New_Item);
+    end if;
+    return Key_Data.Item;
+  end Actual_Key;
 
   Ip_Address_Key : constant String := Section.Ip_Address_Key;
   Port_Key       : constant String := Section.Port_Key;
@@ -26,6 +42,7 @@ package body Remote.Parameter is
 
   procedure Define (Handle : Configuration.File_Handle) is
   begin
+    The_Key := [Actual_Key];
     Section.Set (Configuration.Handle_For (Handle, Id));
     The_Telescope_Name := [Section.String_Value_Of (Telescope_Key)];
     if Configured then

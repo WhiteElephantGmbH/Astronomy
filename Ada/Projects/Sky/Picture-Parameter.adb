@@ -46,19 +46,16 @@ package body Picture.Parameter is
   end Default_Astap_Executable;
 
 
-  function Default_Picture_Filename return String is
-  begin
-    return "D:\Picture\Image.CR2";
-  end Default_Picture_Filename;
-
-
-  procedure Defaults (Put : access procedure (Item : String)) is
+  procedure Defaults (Put       : access procedure (Item : String);
+                      Extension : String := "D:\Picture\Image.Fits";
+                      Height    : String := "0.44";
+                      Width     : String := "0.66") is
   begin
     Put ("[" & Id & "]");
     Put (Astap_Key & "    = " & Default_Astap_Executable);
-    Put (Filename_Key & " = " & Default_Picture_Filename);
-    Put (Height_Key & "   = 0.51" & Angle.Degree);
-    Put (Width_Key & "    = 0.74" & Angle.Degree);
+    Put (Filename_Key & " = " & Extension);
+    Put (Height_Key & "   = " & Height & Angle.Degree);
+    Put (Width_Key & "    = " & Width & Angle.Degree);
   end Defaults;
 
 end Picture.Parameter;

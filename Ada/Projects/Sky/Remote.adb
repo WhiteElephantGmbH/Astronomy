@@ -17,29 +17,11 @@ pragma Style_White_Elephant;
 
 with AWS.Client;
 with AWS.Response;
-with Key;
-with Persistent_String;
 with Traces;
 
 package body Remote is
 
-  package Log is new Traces ("Remote");
-
-  package Remote_Key is new Key ("Remote");
-
-  package Persistent_Key is new Persistent_String (Remote_Key.Name);
-
-  Key_Data : Persistent_Key.Data;
-
-  function Get return String is
-  begin
-    if Key_Data.Item = "" then
-      Key_Data.Store (Remote_Key.New_Item);
-    end if;
-    return Key_Data.Item;
-  end Get;
-
-  Api_Key : constant String := Get;
+  package Log is new Traces (Id);
 
   type Telescope_State is (Unknown, On_Target, Not_On_Target);
 
@@ -146,10 +128,12 @@ package body Remote is
 
     procedure Send (Info : String) is
 
+      Key : constant String := The_Key.To_String;
+
       Remote_Address : constant String := Network.Image_Of (The_Remote_Address);
       Remote_Port    : constant String := Network.Image_Of (The_Remote_Port);
       Parameters     : constant String := "?tele=" & Telescope_Name & "&" & Info;
-      URL            : constant String := "http://" & Remote_Address & ':' & Remote_Port & '/' & Api_Key & Parameters;
+      URL            : constant String := "http://" & Remote_Address & ':' & Remote_Port & '/' & Key & Parameters;
 
       Timeouts : constant AWS.Client.Timeouts_Values := AWS.Client.Timeouts (Connect  => 1.0,
                                                                              Send     => 1.0,

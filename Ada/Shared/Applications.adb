@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2015 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2015 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -48,6 +48,12 @@ package body Applications is
   end Main_Version;
 
 
+  function Title return String is
+  begin
+    return Name & " " & Main_Version;
+  end Title;
+
+
   function Version return String is
   begin
     return Os.Application.Version;
@@ -59,56 +65,38 @@ package body Applications is
 
   function Created_Application_Data_Directory return String is
 
-    Is_Hidden : Boolean := False;
-
     function Main_Directory return String is
+      App_Directory : constant String := To_Utf8 (Ada.Environment_Variables.Value ("AppData"));
     begin
-      case Os.Family is
-      when Os.Windows =>
-        declare
-          App_Directory : constant String := To_Utf8 (Ada.Environment_Variables.Value ("AppData"));
-        begin
-          if Company = "" then
-            return App_Directory;
-          else
-            return FS.Compose (App_Directory, Company);
-          end if;
-        end;
-      when Os.Osx =>
-        declare
-          Home_Directory        : constant String := Ada.Environment_Variables.Value ("HOME");
-          Library_Directory     : constant String := FS.Compose (Home_Directory, "Library");
-          Application_Directory : constant String := FS.Compose (Library_Directory, "Application Support");
-        begin
-          if Company = "" then
-            return Application_Directory;
-          else
-            return FS.Compose (Application_Directory, Company);
-          end if;
-        end;
-      when Os.Linux =>
-        declare
-          Home_Directory : constant String := Ada.Environment_Variables.Value ("HOME");
-        begin
-          if Company = "" then
-            Is_Hidden := True;
-            return Home_Directory;
-          else
-            return FS.Compose (Home_Directory, "." & Company);
-          end if;
-        end;
-      end case;
+      if Company = "" then
+        return App_Directory;
+      else
+        return FS.Compose (App_Directory, Company);
+      end if;
     end Main_Directory;
 
-    function Prefix return String is (if Is_Hidden then "." else "");
+    function Family return String is
+    begin
+      if Product = "" then
+        declare
+          Application_Name : constant String := Os.Application.Name;
+          Family_Name      : constant String := FS.Simple_Name (Os.Application.Origin_Folder);
+        begin
+          if Family_Name /= Application_Name then
+            return Family_Name;
+          end if;
+        end;
+      end if;
+      return "";
+    end Family;
 
   begin -- Created_Application_Data_Directory
     declare
-      Main_Data_Directory        : constant String := Main_Directory;
-      Application_Data_Directory : constant String := FS.Compose (Main_Data_Directory, Prefix & Name);
+      Name_Directory : constant String := FS.Compose (Main_Directory, Name);
+      App_Directory  : constant String := (if Family = "" then Name_Directory else FS.Compose (Name_Directory, Family));
     begin
-      FS.Create_Path (Application_Data_Directory);
-      return Application_Data_Directory;
+      FS.Create_Path (App_Directory);
+      return App_Directory;
     end;
   exception
   when others =>

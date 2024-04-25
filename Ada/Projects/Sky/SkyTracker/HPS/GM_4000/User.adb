@@ -19,6 +19,7 @@ with Angle;
 with Ada.Real_Time;
 with Ada.Unchecked_Conversion;
 with Alignment;
+with Application;
 with Earth;
 with Gui.Enumeration_Menu_Of;
 with Gui.Registered;
@@ -33,7 +34,6 @@ with Refraction;
 with Remote;
 with Site;
 with Sky.Catalog;
-with SkyTracker;
 with Space;
 with Targets.Filter;
 with Ten_Micron;
@@ -995,7 +995,7 @@ package body User is
 
   begin -- Execute
     Action_Routine := The_Action_Handler;
-    Gui.Registered.Execute (The_Application_Name    => SkyTracker.Title,
+    Gui.Registered.Execute (The_Application_Name    => Application.Title,
                             The_Startup_Routine     => Create_Interface'access,
                             The_Termination_Routine => Termination'access,
                             Initial_Metrics         => (Width  => Windows_Width,

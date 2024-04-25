@@ -58,13 +58,13 @@ package body Parameter is
       Put ("");
       Ten_Micron.Parameter.Defaults (Put'access, Ip_Address => "169.254.42.42", Port => "3490");
       Put ("");
-      Http_Server.Parameter.Defaults (Put'access, "HPS_Handbox");
+      Http_Server.Parameter.Defaults (Put'access, "Handbox_HPS");
       Put ("");
       Sun.Parameter.Defaults (Put'access);
       Put ("");
       Clock.Parameter.Defaults (Put'access);
       Put ("");
-      Picture.Parameter.Defaults (Put'access);
+      Picture.Parameter.Defaults (Put'access, "D:\Picture\Image.CR2", Height => "0.51", Width => "0.74");
       Put ("");
       Camera.Parameter.Defaults (Put'access);
       Put ("");

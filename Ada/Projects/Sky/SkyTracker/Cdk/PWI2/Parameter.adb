@@ -141,6 +141,7 @@ package body Parameter is
       Put (Port_Key & " = 4030");
       Put ("");
       Remote.Parameter.Defaults (Put'access, "cdk_west");
+      Put ("");
       Stellarium.Parameter.Defaults (Put'access, "CDK");
       Ada.Text_IO.Close (The_File);
     exception

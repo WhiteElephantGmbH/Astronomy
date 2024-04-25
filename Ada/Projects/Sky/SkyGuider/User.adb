@@ -43,9 +43,6 @@ package body User is
 
   package Log is new Traces ("User");
 
-  Application_Name : constant String := Application.Name;
-  Version          : constant String := Application.Main_Version;
-
   Setup_Object_Key : constant String := "Setup Object";
 
   Control_Page         : Gui.Page;
@@ -1034,12 +1031,6 @@ package body User is
     end Create_Interface;
 
 
-    function Title return String is
-    begin
-      return Application_Name;
-    end Title;
-
-
     procedure Termination is
     begin
       The_Display_Data.Width := Gui.Width_Of (The_Targets_Column);
@@ -1053,8 +1044,7 @@ package body User is
 
   begin -- Execute
     Action_Routine := The_Action_Handler;
-    Gui.Registered.Execute (The_Application_Name    => Title,
-                            The_Version             => Version,
+    Gui.Registered.Execute (The_Application_Name    => Application.Title,
                             The_Startup_Routine     => Create_Interface'access,
                             The_Termination_Routine => Termination'access,
                             Initial_Metrics         => (Width  => Windows_Width,

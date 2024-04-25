@@ -17,6 +17,7 @@ pragma Style_White_Elephant;
 
 with Ada.Real_Time;
 with Ada.Unchecked_Conversion;
+with Application;
 with Cwe;
 with Gui.Enumeration_Menu_Of;
 with Gui.Registered;
@@ -25,7 +26,6 @@ with Name.Catalog;
 with Persistent;
 with Remote;
 with Sky.Catalog;
-with SkyTracker;
 with Targets.Filter;
 with Traces;
 
@@ -499,7 +499,7 @@ package body User is
 
   begin -- Execute
     Action_Routine := The_Action_Handler;
-    Gui.Registered.Execute (The_Application_Name    => SkyTracker.Title,
+    Gui.Registered.Execute (The_Application_Name    => Application.Title,
                             The_Startup_Routine     => Create_Interface'access,
                             The_Termination_Routine => Termination'access,
                             Initial_Metrics         => (Width  => Windows_Width,
