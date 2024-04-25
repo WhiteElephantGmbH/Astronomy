@@ -16,14 +16,14 @@
 pragma Style_White_Elephant;
 
 pragma Build (Description => "SkyTracker control program for GM 4000 HPS",
-              Version     => (2, 4, 0, 4),
+              Version     => (2, 4, 1, 0),
               Kind        => Windows,
               Libraries   => ("AWSS64", "COLL64"),
               Compiler    => "GNATPRO\23.0");
 
 with Control;
 
-procedure GM_4000 is
+procedure SkyTracker is
 begin
   Control.Start;
-end GM_4000;
+end SkyTracker;
