@@ -21,6 +21,11 @@ package body Error is
 
   The_Message : Text.String;
 
+  procedure Set (Item : String) is
+  begin
+    The_Message := [Item];
+  end Set;
+
 
   procedure Raise_With (Item       : String;
                         Clear_Rest : Boolean := False) is

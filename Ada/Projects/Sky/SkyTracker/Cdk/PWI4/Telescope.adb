@@ -18,6 +18,7 @@ pragma Style_White_Elephant;
 with Ada.Real_Time;
 with Cdk_700;
 with Cwe;
+with Error;
 with Gui;
 with Http_Server;
 with Input;
@@ -774,6 +775,7 @@ package body Telescope is
           Focuser.Connect;
           The_State := Connecting;
         else
+          Error.Set ("Incorrect Location");
           The_State := Mount_Error;
         end if;
       when Mount_Startup =>
@@ -819,7 +821,7 @@ package body Telescope is
       if not Is_Ending then
         Is_Ending := True;
         Remote.Define (Is_On_Target => False);
-        User.Show_Error (Device.Error_Info);
+        User.Show_Error;
         Gui.Close;
       end if;
     end Error_State;
@@ -1314,6 +1316,7 @@ package body Telescope is
               The_Event := Mount_Track;
               Mount_Is_Stopped := False;
             when Mount.Error =>
+              Error.Set (Device.Error_Info);
               The_Event := Mount_Error;
             end case;
             Has_New_Data := True;
