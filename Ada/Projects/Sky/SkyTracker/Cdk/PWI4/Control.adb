@@ -390,6 +390,7 @@ package body Control is
             end if;
           end;
         when Startup =>
+          Gui.Disable_Close_Button;
           Telescope.Startup;
         when Shutdown =>
           Telescope.Shutdown;

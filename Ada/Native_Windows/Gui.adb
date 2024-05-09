@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2002 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2002 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -1741,6 +1741,17 @@ package body Gui is
       null;
     end select;
   end Display;
+
+
+  procedure Disable_Close_Button is
+    Unused : Win32.BOOL;
+  begin
+    Unused := Win32.Winuser.EnableMenuItem (Win32.Winuser.GetSystemMenu (Private_Window, Win32.FALSE),
+                                            Win32.Winuser.SC_CLOSE,
+                                            Win32.UINT(Win32.Winuser.MF_BYCOMMAND +
+                                                       Win32.Winuser.MF_DISABLED +
+                                                       Win32.Winuser.MF_GRAYED));
+  end Disable_Close_Button;
 
 
   procedure Close is
