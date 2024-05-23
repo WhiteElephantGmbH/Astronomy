@@ -52,6 +52,7 @@ package body Device is
                         Set_Gradual_Offsets,
                         Set_Offset,
                         Stop_Rates,
+                        Set_Moving,
                         Spiral_Offset_Center,
                         Spiral_Offset_Next,
                         Spiral_Offset_Previous,
@@ -91,6 +92,8 @@ package body Device is
     Delta_Dec        : PWI4.Arc_Second := 0.0;
     Offset_Axis      : PWI4.Mount.Offset_Axis;
     Offset_Command   : PWI4.Mount.Offset_Command;
+    Alt_Speed        : Speed := 0.0;
+    Az_Speed         : Speed := 0.0;
     Wrap_Position    : PWI4.Degrees := 0.0;
     Focuser_Position : Microns      := 0.0;
     Rotator_Value    : PWI4.Degrees := 0.0;
@@ -113,6 +116,9 @@ package body Device is
                           Item : PWI4.Arc_Second);
 
     procedure Stop_Rates;
+
+    procedure Set_Moving (Alt_Speed : Speed;
+                          Az_Speed  : Speed);
 
     procedure Spiral_Offset_Center;
 
@@ -218,6 +224,16 @@ package body Device is
       The_Mount_Action := Stop_Rates;
       Is_Pending := True;
     end Stop_Rates;
+
+
+    procedure Set_Moving (Alt_Speed : Speed;
+                          Az_Speed  : Speed) is
+    begin
+      The_Mount_Action := Set_Moving;
+      The_Parameter.Alt_Speed := Alt_Speed;
+      The_Parameter.Az_Speed := Az_Speed;
+      Is_Pending := True;
+    end Set_Moving;
 
 
     procedure Spiral_Offset_Center is
@@ -543,6 +559,9 @@ package body Device is
                                  Item    => The_Parameter.Arc_Seconds);
         when Stop_Rates =>
           PWI4.Mount.Stop_Rates;
+        when Set_Moving =>
+          PWI4.Mount.Set_Moving (Alt_Speed => The_Parameter.Alt_Speed,
+                                 Az_Speed  => The_Parameter.Az_Speed);
         when Spiral_Offset_Center =>
           PWI4.Mount.Spiral_Offset_Center;
         when Spiral_Offset_Next =>
@@ -1013,6 +1032,14 @@ package body Device is
       Log.Write ("Mount.Stop_Rate");
       Action.Stop_Rates;
     end Stop_Rate;
+
+
+    procedure Set_Moving (Alt_Speed : Speed;
+                          Az_Speed  : Speed) is
+    begin
+      Log.Write ("Mount.Set_Moving");
+      Action.Set_Moving (Alt_Speed, Az_Speed);
+    end Set_Moving;
 
 
     procedure Spiral_Offset_Center is

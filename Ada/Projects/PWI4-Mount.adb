@@ -259,6 +259,17 @@ package body PWI4.Mount is
   end Stop_Rates;
 
 
+  procedure Set_Moving (Alt_Speed : Arc_Second;
+                        Az_Speed  : Arc_Second) is
+    Move_Axis0 : constant String := Command_For (Axis0, Set_Rate_Arcsec_Per_Sec) & "=" & Image_Of (Az_Speed);
+    Move_Axis1 : constant String := Command_For (Axis1, Set_Rate_Arcsec_Per_Sec) & "=" & Image_Of (Alt_Speed);
+  begin
+    Execute (Command_Name => "tracking_on");
+    Execute (Command_Name => "offset",
+             Parameters   => Move_Axis0 & "&" & Move_Axis1);
+  end Set_Moving;
+
+
   procedure Spiral_Offset_Center is
     X_Step : constant String := Image_Of (Spiral_Offsets.X_Step);
     Y_Step : constant String := Image_Of (Spiral_Offsets.Y_Step);

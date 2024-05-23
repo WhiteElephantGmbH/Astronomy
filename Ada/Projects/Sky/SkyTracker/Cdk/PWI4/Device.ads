@@ -100,6 +100,9 @@ package Device is
 
     procedure Stop_Rate;
 
+    procedure Set_Moving (Alt_Speed : Speed;
+                          Az_Speed  : Speed);
+
     procedure Spiral_Offset_Center;
 
     procedure Spiral_Offset_Next;

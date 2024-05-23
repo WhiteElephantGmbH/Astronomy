@@ -78,6 +78,9 @@ package PWI4.Mount is
 
   procedure Stop_Rates;
 
+  procedure Set_Moving (Alt_Speed : Arc_Second;
+                        Az_Speed  : Arc_Second);
+
   procedure Spiral_Offset_Center;
 
   procedure Spiral_Offset_Next;

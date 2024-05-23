@@ -311,6 +311,14 @@ package body Telescope is
 
     The_Landmark : Name.Id;
 
+    The_Land_Position : Earth.Direction;
+
+    Seconds_Per_Hour : constant := Time.One_Hour;
+
+    Sideral_Correction_Alt : Device.Speed;
+    Sideral_Correction_Az  : Device.Speed;
+
+
     type Event is (No_Event,
                    Startup,
                    Shutdown,
@@ -391,6 +399,23 @@ package body Telescope is
     end Set_Wrap_Position_For;
 
 
+    procedure Define_Sideral_Speeds (Position : Earth.Direction) is
+      use type Time.Ut;
+      use type Earth.Direction;
+      use type Angle.Signed;
+      use type Angle.Degrees;
+      Actual_Direction : constant Space.Direction := Objects.Direction_Of (Position, Time.Universal);
+      One_Second_Later : constant Time.Value := Time.Lmst_Of (Time.Universal + Duration'(1.0));
+      New_Position     : constant Earth.Direction := Objects.Direction_Of (Actual_Direction, One_Second_Later);
+      Delta_Position   : constant Earth.Direction := Position - New_Position;
+    begin
+      Sideral_Correction_Alt := Device.Speed(Angle.Degrees'(+Angle.Signed'(+Earth.Alt_Of (Delta_Position)))
+                                             * Seconds_Per_Hour);
+      Sideral_Correction_Az :=  Device.Speed(Angle.Degrees'(+Angle.Signed'(+Earth.Az_Of (Delta_Position)))
+                                             * Seconds_Per_Hour);
+    end Define_Sideral_Speeds;
+
+
     procedure Goto_Target is
     begin
       if Get_Direction = null then
@@ -440,6 +465,14 @@ package body Telescope is
     end Back_To_Target;
 
 
+    procedure Back_To_Mark is
+    begin
+      if Earth.Direction_Is_Known (The_Land_Position) then
+        Mount.Goto_Mark (The_Land_Position, The_Completion_Time);
+      end if;
+    end Back_To_Mark;
+
+
     procedure Goto_Mark (The_Position : Earth.Direction) is
     begin
       The_Start_Time := Time.Universal;
@@ -450,6 +483,7 @@ package body Telescope is
 
     procedure Goto_Waiting_Position is
     begin
+      The_Land_Position := Earth.Unknown_Direction;
       declare
         Arrival_Position : constant Earth.Direction := Objects.Direction_Of (Get_Direction (Id, The_Arrival_Time),
                                                                              Time.Lmst_Of (The_Arrival_Time));
@@ -513,6 +547,7 @@ package body Telescope is
 
     procedure Do_Park is
     begin
+      The_Land_Position := Earth.Unknown_Direction;
       Goto_Mark (The_Park_Position);
       Log.Write ("do park");
       The_State := Parking;
@@ -521,7 +556,9 @@ package body Telescope is
 
     procedure Do_Position is
     begin
-      Goto_Mark (Name.Direction_Of (The_Landmark));
+      The_Land_Position := Name.Direction_Of (The_Landmark);
+      Define_Sideral_Speeds (The_Land_Position);
+      Goto_Mark (The_Land_Position);
       Log.Write ("position to Landmark");
       The_State := Positioning;
     end Do_Position;
@@ -541,12 +578,15 @@ package body Telescope is
       use type M3.Position;
       use type Device.Speed;
     begin
-      if Is_Fast_Tracking then
-        Mount.Set_Rate_Transverse (Device.Speed(Moving_Speed * 3600.0));
+      if The_State = Positioned then
+        Mount.Set_Moving (Alt_Speed => Sideral_Correction_Alt,
+                          Az_Speed  => Sideral_Correction_Az - Device.Speed(Moving_Speed * Seconds_Per_Hour));
+      elsif Is_Fast_Tracking then
+        Mount.Set_Rate_Transverse (Device.Speed(Moving_Speed * Seconds_Per_Hour));
       elsif The_M3_Position = M3.Camera then
-        Mount.Set_Rate_Ra (-Device.Speed(Moving_Speed * 3600.0));
+        Mount.Set_Rate_Ra (-Device.Speed(Moving_Speed * Seconds_Per_Hour));
       else
-        Mount.Set_Rate_Axis0 (Device.Speed(Moving_Speed * 3600.0));
+        Mount.Set_Rate_Axis0 (Device.Speed(Moving_Speed * Seconds_Per_Hour));
       end if;
     end Adjust_First;
 
@@ -558,12 +598,15 @@ package body Telescope is
       use type M3.Position;
       use type Device.Speed;
     begin
-      if Is_Fast_Tracking then
-        Mount.Set_Rate_Path (Device.Speed(Moving_Speed * 3600.0));
+      if The_State = Positioned then
+        Mount.Set_Moving (Alt_Speed => Sideral_Correction_Alt - Device.Speed(Moving_Speed * Seconds_Per_Hour),
+                          Az_Speed  => Sideral_Correction_Az);
+      elsif Is_Fast_Tracking then
+        Mount.Set_Rate_Path (Device.Speed(Moving_Speed * Seconds_Per_Hour));
       elsif The_M3_Position = M3.Camera then
-        Mount.Set_Rate_Dec (Device.Speed(Moving_Speed * 3600.0));
+        Mount.Set_Rate_Dec (Device.Speed(Moving_Speed * Seconds_Per_Hour));
       else
-        Mount.Set_Rate_Axis1 (-Device.Speed(Moving_Speed * 3600.0));
+        Mount.Set_Rate_Axis1 (-Device.Speed(Moving_Speed * Seconds_Per_Hour));
       end if;
     end Adjust_Second;
 
@@ -591,7 +634,11 @@ package body Telescope is
       when Move_Down =>
         Adjust_Second (-Speed);
       when End_Command =>
-        Mount.Stop_Rate;
+        if The_State = Positioned then
+          Mount.Stop;
+        else
+          Mount.Stop_Rate;
+        end if;
       when Spiral_Offset_Center =>
         Mount.Spiral_Offset_Center;
       when Spiral_Offset_Next =>
@@ -1036,8 +1083,6 @@ package body Telescope is
         Mount.Stop;
       when Halt =>
         Stop_Target;
-      when User_Adjust =>
-        Offset_Handling;
       when User_Setup =>
         Setup_Handling;
       when Follow =>
@@ -1067,6 +1112,8 @@ package body Telescope is
         Follow_New_Target;
       when Position =>
         Do_Position;
+      when Back =>
+        Back_To_Mark;
       when others =>
         null;
       end case;
