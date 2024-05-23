@@ -1180,6 +1180,8 @@ package body Telescope is
         Offset_Handling;
       when User_Setup =>
         Setup_Handling;
+      when Back =>
+        Back_To_Target;
       when others =>
         null;
       end case;
