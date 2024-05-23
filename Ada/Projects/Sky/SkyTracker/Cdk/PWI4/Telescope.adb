@@ -481,19 +481,6 @@ package body Telescope is
     end Goto_Mark;
 
 
-    procedure Goto_Waiting_Position is
-    begin
-      The_Land_Position := Earth.Unknown_Direction;
-      declare
-        Arrival_Position : constant Earth.Direction := Objects.Direction_Of (Get_Direction (Id, The_Arrival_Time),
-                                                                             Time.Lmst_Of (The_Arrival_Time));
-      begin
-        Goto_Mark (Arrival_Position);
-        The_State := Preparing;
-      end;
-    end Goto_Waiting_Position;
-
-
     procedure Follow_Target (Neo_Id : Name.Id) is
     begin
       Mount.Follow_Tle (Neo_Id);
@@ -534,10 +521,9 @@ package body Telescope is
                                                   & " until " & Time.Image_Of (The_Next_Tracking_Period.Leaving_Time));
         The_Arrival_Time := The_Next_Tracking_Period.Arrival_Time;
         if Time.Universal < The_Arrival_Time then
-          Goto_Waiting_Position;
-        else
-          Follow_Target (Id);
+          The_State := Preparing;
         end if;
+        Follow_Target (Id);
       else
         Log.Write ("follow from " & The_State'img);
         Goto_Target;
