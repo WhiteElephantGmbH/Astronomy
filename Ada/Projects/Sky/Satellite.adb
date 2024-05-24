@@ -15,6 +15,7 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with Ada.Calendar;
 with Ada.Direct_IO;
 with Ada.Directories;
 with Ada.Containers.Indefinite_Ordered_Maps;
@@ -28,22 +29,25 @@ package body Satellite is
 
   Json_Filename : constant String := Stellarium.Satellites_Filename;
 
-  Json_Filesize : constant  Natural := (if Json_Filename = "" then 0 else Natural(Ada.Directories.Size(Json_Filename)));
+  function Json_Data return String is
 
-  subtype Json_String is String (1 .. Json_Filesize);
+    Json_Filesize : constant  Natural := Natural(Ada.Directories.Size(Json_Filename));
 
-  Json_Data : Json_String;
+    subtype Json_String is String (1 .. Json_Filesize);
 
-  package Json_Io is new Ada.Direct_IO (Json_String);
+    The_Data : Json_String;
 
+    package Json_Io is new Ada.Direct_IO (Json_String);
 
-  procedure Read_Json_Data is
     File : Json_Io.File_Type;
+
   begin
+    Log.Write ("Filesize:" & Json_Filesize'image);
     Json_Io.Open (File, Json_Io.In_File, Json_Filename);
-    Json_Io.Read (File, Json_Data);
+    Json_Io.Read (File, The_Data);
     Json_Io.Close (File);
-  end Read_Json_Data;
+    return The_Data;
+  end Json_Data;
 
 
   function "=" (Unused_Left, Unused_Right : Tle) return Boolean is
@@ -109,10 +113,40 @@ package body Satellite is
 
 
   procedure Read_Stellarium_Data is
-  begin
-    if Json_Filesize > 0 then
-      Log.Write ("Filesize:" & Json_Filesize'image);
-      Read_Json_Data;
+
+    subtype Hours is Duration delta 0.1;
+
+    function Age_Of_Data return Hours is
+      use type Ada.Calendar.Time;
+      Modification_Time : constant Ada.Calendar.Time := Ada.Directories.Modification_Time (Json_Filename);
+    begin
+      return (Ada.Calendar.Clock - Modification_Time) / 3600.0;
+    end Age_Of_Data;
+
+    Age_Limit : constant Hours := 12.0;
+    Seconds   : Natural := 0;
+
+    Timeout : constant Natural := 60; -- seconds;
+
+  begin -- Read_Stellarium_Data
+    if Json_Filename /= "" then
+      if Age_Of_Data < Age_Limit then
+        Log.Write ("Age of data:" & Age_Of_Data'image & " hours");
+      else
+        Log.Write ("Waiting for newer data");
+        loop
+          delay 1.0;
+          if Age_Of_Data < Age_Limit then
+            Log.Write ("Data update after" & Seconds'image & "seconds");
+            exit;
+          end if;
+          Seconds := @ + 1;
+          if Seconds > Timeout then
+            Log.Warning ("Data too old");
+            return;
+          end if;
+        end loop;
+      end if;
       Build_Satellite_Data;
     end if;
   end Read_Stellarium_Data;

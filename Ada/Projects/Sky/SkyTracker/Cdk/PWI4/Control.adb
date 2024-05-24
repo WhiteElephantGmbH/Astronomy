@@ -498,8 +498,8 @@ package body Control is
     Os.Process.Set_Priority_Class (Os.Process.Realtime);
     Parameter.Read;
     begin
-      Read_Data;
       Start_Stellarium_Server;
+      Read_Data;
       Telescope.Start (Information_Update_Handler'access);
       Targets.Start (Clear    => User.Clear_Targets'access,
                      Define   => User.Define'access,

@@ -145,7 +145,7 @@ package body Neo is
           if Sky_Line.Is_Above (The_Direction, The_Lmst) then
             if The_Step = Time.One_Second then
               loop
-                The_Entry := The_Entry + 1;
+                The_Entry := @ + 1;
                 if The_Entry > The_List'last then
                   Log.Warning ("slow object");
                   The_Last := 0;
@@ -223,7 +223,7 @@ package body Neo is
       end if;
     end Process;
 
-  begin -- Add_Near_Earth_Objects
+  begin -- Add_Objects
     Satellite.Read_Stellarium_Data;
     for Target of Satellite.Names loop
       Process (Target);
