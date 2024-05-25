@@ -413,7 +413,6 @@ package body Control is
           Targets.Stop;
           Telescope.Close;
           Remote.Close;
-          Stellarium.Close;
           exit;
         end case;
       or
@@ -436,7 +435,6 @@ package body Control is
     Gui.Close;
     Telescope.Close;
     Remote.Close;
-    Stellarium.Close;
     Action_Handler.Enable_Termination;
   end Manager;
 
@@ -508,9 +506,11 @@ package body Control is
       User.Execute (Startup'access,
                     User_Action_Handler'access,
                     Termination'access);
+      Stellarium.Close;
       Parameter.Shutdown;
     exception
     when others =>
+      Stellarium.Close;
       Parameter.Shutdown;
       raise;
     end;

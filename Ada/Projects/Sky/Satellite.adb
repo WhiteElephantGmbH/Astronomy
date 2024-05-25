@@ -20,6 +20,7 @@ with Ada.Direct_IO;
 with Ada.Directories;
 with Ada.Containers.Indefinite_Ordered_Maps;
 with GNATCOLL.JSON;
+with Gui;
 with Stellarium;
 with Traces;
 
@@ -124,22 +125,28 @@ package body Satellite is
     end Age_Of_Data;
 
     Age_Limit : constant Hours := 12.0;
-    Seconds   : Natural := 0;
 
-    Timeout : constant Natural := 60; -- seconds;
+    Timeout       : constant := 60; -- seconds
+    Startup_Delay : constant := 3;  -- seconds;
+
+    Seconds : Natural := Startup_Delay;
 
   begin -- Read_Stellarium_Data
-    if Json_Filename /= "" then
-      if Age_Of_Data < Age_Limit then
-        Log.Write ("Age of data:" & Age_Of_Data'image & " hours");
-      else
-        Log.Write ("Waiting for newer data");
+    if Json_Filename = "" then
+      return;
+    end if;
+    if Age_Of_Data < Age_Limit then
+      Log.Write ("Age of data:" & Age_Of_Data'image & " hours");
+    else
+      Gui.Beep;
+      delay Duration(Startup_Delay);
+      if Gui.Is_Confirmed ("Update Satellite Data ?") then
         loop
-          delay 1.0;
           if Age_Of_Data < Age_Limit then
-            Log.Write ("Data update after" & Seconds'image & "seconds");
+            Log.Write ("Data update after" & Seconds'image & " seconds");
             exit;
           end if;
+          delay 1.0;
           Seconds := @ + 1;
           if Seconds > Timeout then
             Log.Warning ("Data too old");
@@ -147,8 +154,8 @@ package body Satellite is
           end if;
         end loop;
       end if;
-      Build_Satellite_Data;
     end if;
+    Build_Satellite_Data;
   end Read_Stellarium_Data;
 
 

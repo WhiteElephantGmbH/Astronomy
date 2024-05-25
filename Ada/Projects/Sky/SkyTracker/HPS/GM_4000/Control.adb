@@ -411,7 +411,6 @@ package body Control is
         Targets.Stop;
         Telescope.Close;
         Remote.Close;
-        Stellarium.Close;
         exit;
       end case;
     end loop;
@@ -425,7 +424,6 @@ package body Control is
     Gui.Close;
     Telescope.Close;
     Remote.Close;
-    Stellarium.Close;
     Action_Handler.Enable_Termination;
   end Manager;
 
@@ -464,18 +462,15 @@ package body Control is
       Action_Handler.Wait_For_Termination;
     end Termination;
 
-    function Started_Stellarium_Server return Boolean is
+    procedure Start_Stellarium_Server is
     begin
       Stellarium.Start;
-      return True;
     exception
     when Stellarium.Port_In_Use =>
-      User.Show_Error ("TCP port" & Stellarium.Port_Number'img & " for Stellarium in use");
-      return False;
+      Error.Raise_With (Application.Name & " - TCP port" & Stellarium.Port_Number'img & " for Stellarium in use");
     when others =>
-      User.Show_Error ("could not start stellarium server");
-      return False;
-    end Started_Stellarium_Server;
+      Error.Raise_With (Application.Name & " - could not start stellarium server");
+    end Start_Stellarium_Server;
 
   begin -- Start
     if (not Os.Is_Osx) and then (not Os.Application.Is_First_Instance) then
@@ -491,21 +486,22 @@ package body Control is
     end if;
     Os.Process.Set_Priority_Class (Os.Process.Realtime);
     Parameter.Read;
+    Start_Stellarium_Server;
     Read_Data;
-    if Started_Stellarium_Server then
-      Telescope.Start (Information_Update_Handler'access);
-      Targets.Start (Clear    => User.Clear_Targets'access,
-                     Define   => User.Define'access,
-                     Update   => User.Update_Targets'access,
-                     Arriving => Neo.Is_Arriving'access);
-      User.Execute (Startup'access,
-                    User_Action_Handler'access,
-                    Termination'access);
-      Stellarium.Shutdown;
-    end if;
+    Telescope.Start (Information_Update_Handler'access);
+    Targets.Start (Clear    => User.Clear_Targets'access,
+                   Define   => User.Define'access,
+                   Update   => User.Update_Targets'access,
+                   Arriving => Neo.Is_Arriving'access);
+    User.Execute (Startup'access,
+                  User_Action_Handler'access,
+                  Termination'access);
+    Stellarium.Close;
+    Stellarium.Shutdown;
   exception
   when Error.Occurred =>
     User.Show_Error (Error.Message);
+    Stellarium.Close;
     Stellarium.Shutdown;
   when Occurrence: others =>
     Log.Termination (Occurrence);

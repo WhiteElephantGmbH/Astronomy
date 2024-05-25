@@ -425,7 +425,6 @@ package body Control is
           Targets.Stop;
           Telescope.Close;
           Remote.Close;
-          Stellarium.Close;
           Lx200_Server.Close;
           exit;
         end case;
@@ -448,7 +447,6 @@ package body Control is
     Gui.Close;
     Telescope.Close;
     Remote.Close;
-    Stellarium.Close;
     Lx200_Server.Close;
     Action_Handler.Enable_Termination;
   end Manager;
@@ -523,15 +521,9 @@ package body Control is
     Os.Process.Set_Priority_Class (Os.Process.Realtime);
     Parameter.Read;
     begin
-      Read_Data;
       Start_Stellarium_Server;
-      begin
-        Start_Lx200_Server;
-      exception
-      when others =>
-        Stellarium.Close;
-        raise;
-      end;
+      Read_Data;
+      Start_Lx200_Server;
       Telescope.Start (Information_Update_Handler'access);
       Targets.Start (Clear    => User.Clear_Targets'access,
                      Define   => User.Define'access,
@@ -540,9 +532,11 @@ package body Control is
       User.Execute (Startup'access,
                     User_Action_Handler'access,
                     Termination'access);
+      Stellarium.Close;
       Parameter.Shutdown;
     exception
     when others =>
+      Stellarium.Close;
       Parameter.Shutdown;
       raise;
     end;
