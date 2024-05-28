@@ -44,6 +44,7 @@ package PWI4.Mount is
     Alt       : Degrees;
     Az_Axis   : Axis_Data;
     Alt_Axis  : Axis_Data;
+    Wrap_Min  : Degrees;
     Model     : Model_Data;
   end record;
 

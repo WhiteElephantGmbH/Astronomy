@@ -59,7 +59,7 @@ package body Device is
                         Reset_Moving_Target);
 
   type Mount_Setup is (No_Setup,
-                       Set_Axis0_Wrap,
+                       Set_Az_Axis_Wrap,
                        Add_To_Model);
 
   type M3_Action is (No_Action,
@@ -136,7 +136,7 @@ package body Device is
 
     procedure Follow_Tle (Id : Name.Id);
 
-    procedure Set_Axis0_Wrap (Range_Min : Degrees);
+    procedure Set_Az_Axis_Wrap (Range_Min : Degrees);
 
     procedure Add_To_Model (Ra_J2000  : PWI4.Hours;
                             Dec_J2000 : PWI4.Degrees);
@@ -294,12 +294,12 @@ package body Device is
     end Follow_Tle;
 
 
-    procedure Set_Axis0_Wrap (Range_Min : Degrees) is
+    procedure Set_Az_Axis_Wrap (Range_Min : Degrees) is
     begin
-      The_Mount_Setup := Set_Axis0_Wrap;
+      The_Mount_Setup := Set_Az_Axis_Wrap;
       The_Parameter.Wrap_Position := Range_Min;
       Is_Pending := True;
-    end Set_Axis0_Wrap;
+    end Set_Az_Axis_Wrap;
 
 
     procedure Add_To_Model (Ra_J2000  : PWI4.Hours;
@@ -445,6 +445,7 @@ package body Device is
     The_Rotator_Action : Rotator_Action := No_Action;
     The_Mount_State    : Mount.State := Mount.Unknown;
     Last_Mount_State   : Mount.State := Mount.Unknown;
+    Last_Az_Position   : Degrees := 0.0;
     The_Focuser_State  : Focuser.State := Focuser.Unknown;
     Last_Focuser_State : Focuser.State := Focuser.Unknown;
     The_M3_Position    : M3.Position := M3.Unknown;
@@ -578,7 +579,7 @@ package body Device is
         case The_Mount_Setup is
         when No_Setup =>
           null;
-        when Set_Axis0_Wrap =>
+        when Set_Az_Axis_Wrap =>
           PWI4.Mount.Set_Axis0_Wrap (Range_Min => The_Parameter.Wrap_Position);
         when Add_To_Model =>
           PWI4.Mount.Add_Point (Ra_J2000  => The_Parameter.Ra_J2000,
@@ -732,31 +733,41 @@ package body Device is
         end if;
       end select;
 
-      case PWI4.Mount.Info.Status is
-      when PWI4.Mount.Disconnected =>
-        The_Mount_State := Mount.Disconnected;
-      when PWI4.Mount.Connected =>
-        The_Mount_State := Mount.Connected;
-      when PWI4.Mount.Enabled =>
-        if Is_Simulation then
-          if Simulated_Mount_Connected then
-            The_Mount_State := Mount.Connected;
-            Simulated_Mount_Connected := False;
+      declare
+        Mount_Info : constant PWI4.Mount.Information := PWI4.Mount.Info;
+      begin
+        case Mount_Info.Status is
+        when PWI4.Mount.Disconnected =>
+          The_Mount_State := Mount.Disconnected;
+        when PWI4.Mount.Connected =>
+          The_Mount_State := Mount.Connected;
+        when PWI4.Mount.Enabled =>
+          if Is_Simulation then
+            if Simulated_Mount_Connected then
+              The_Mount_State := Mount.Connected;
+              Simulated_Mount_Connected := False;
+            else
+              The_Mount_State := Mount.Enabled;
+            end if;
           else
             The_Mount_State := Mount.Enabled;
           end if;
-        else
-          The_Mount_State := Mount.Enabled;
+        when PWI4.Mount.Stopped =>
+          The_Mount_State := Mount.Stopped;
+        when PWI4.Mount.Approaching =>
+          The_Mount_State := Mount.Approaching;
+        when PWI4.Mount.Tracking =>
+          The_Mount_State := Mount.Tracking;
+        when PWI4.Mount.Error =>
+          The_Mount_State := Mount.Error;
+        end case;
+        if Last_Az_Position /= Mount_Info.Az_Axis.Position then
+          Log.Write ("Alt Position: " & Image_Of (Mount_Info.Alt_Axis.Position));
+          Log.Write ("Az Position : " & Image_Of (Mount_Info.Az_Axis.Position));
+          Log.Write ("Wrap Minimum: " & Image_Of (Mount_Info.Wrap_Min));
+          Last_Az_Position := Mount_Info.Az_Axis.Position;
         end if;
-      when PWI4.Mount.Stopped =>
-        The_Mount_State := Mount.Stopped;
-      when PWI4.Mount.Approaching =>
-        The_Mount_State := Mount.Approaching;
-      when PWI4.Mount.Tracking =>
-        The_Mount_State := Mount.Tracking;
-      when PWI4.Mount.Error =>
-        The_Mount_State := Mount.Error;
-      end case;
+      end;
 
       if Is_Simulation then
         if Simulated_Focuser_Connected then
@@ -888,10 +899,13 @@ package body Device is
     end Image_Of;
 
 
+    The_Az_Axis_Minimum : Degrees := PWI4.Undefined_Degrees;
+
     function Actual_Info return Information is
       Mount_Info : constant PWI4.Mount.Information := PWI4.Mount.Info;
       use type Angle.Value;
     begin
+      The_Az_Axis_Minimum := Mount_Info.Az_Axis.Min_Position;
       return (J2000_Direction  => Space.Direction_Of (Ra  => Angle.Value'(+Angle.Hours(Mount_Info.Ra_J2000)),
                                                       Dec => Angle.Value'(+Angle.Degrees(Mount_Info.Dec_J2000))),
               Actual_Direction => Space.Direction_Of (Ra  => Angle.Value'(+Angle.Hours(Mount_Info.Ra)),
@@ -902,6 +916,16 @@ package body Device is
               Alt_Axis         => Mount_Info.Alt_Axis,
               Model            => Mount_Info.Model);
     end Actual_Info;
+
+
+    function Az_Axis_Minimum return Degrees is
+      use type Degrees;
+    begin
+      if The_Az_Axis_Minimum = PWI4.Undefined_Degrees then
+        raise Program_Error;
+      end if;
+      return The_Az_Axis_Minimum;
+    end Az_Axis_Minimum;
 
 
     procedure Connect is
@@ -1096,11 +1120,11 @@ package body Device is
     end Follow_Tle;
 
 
-    procedure Set_Axis0_Wrap (Range_Min : Degrees) is
+    procedure Set_Az_Axis_Wrap (Range_Min : Degrees) is
     begin
-      Log.Write ("Mount.Set_Axis0_Wrap " & Image_Of (Range_Min));
-      Action.Set_Axis0_Wrap (Range_Min);
-    end Set_Axis0_Wrap;
+      Log.Write ("Mount.Set_Az_Axis_Wrap " & Image_Of (Range_Min));
+      Action.Set_Az_Axis_Wrap (Range_Min);
+    end Set_Az_Axis_Wrap;
 
 
     procedure Add_To_Model (Direction : Space.Direction) is

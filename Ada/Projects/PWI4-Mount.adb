@@ -151,6 +151,7 @@ package body PWI4.Mount is
             Alt       => Data.Altitude,
             Az_Axis   => Data.Axis0,
             Alt_Axis  => Data.Axis1,
+            Wrap_Min  => Data.Wrap_Range_Min,
             Model     => Data.Model);
   end Info;
 

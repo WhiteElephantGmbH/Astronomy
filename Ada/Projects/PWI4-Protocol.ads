@@ -93,6 +93,7 @@ private package PWI4.Protocol is
     Altitude                   : Degrees;
     Axis0                      : Axis_Data;
     Axis1                      : Axis_Data;
+    Wrap_Range_Min             : Degrees;
     Spiral_Offsets             : Spiral_Data;
     Model                      : Model_Data;
     Field_Angle_At_Target      : Degrees;

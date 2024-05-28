@@ -395,7 +395,7 @@ package body Telescope is
       use type Device.Degrees;
     begin
       The_Start_Az := +Earth.Az_Of (The_Direction);
-      Mount.Set_Axis0_Wrap (Device.Degrees(The_Start_Az) - 180.0);
+      Mount.Set_Az_Axis_Wrap (Device.Degrees(The_Start_Az) - 180.0);
     end Set_Wrap_Position_For;
 
 
@@ -483,6 +483,7 @@ package body Telescope is
 
     procedure Follow_Target (Neo_Id : Name.Id) is
     begin
+      Mount.Set_Az_Axis_Wrap (Mount.Az_Axis_Minimum);
       Mount.Follow_Tle (Neo_Id);
     end Follow_Target;
 

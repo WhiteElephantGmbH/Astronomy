@@ -33,7 +33,7 @@ package PWI4 is
 
   type Degrees is delta Degrees_Delta range -Degrees_Limit .. Degrees_Limit with Small => Degrees_Delta;
 
-  Undefined_Degrees : constant := 0.0;
+  Undefined_Degrees : constant := Degrees'first;
 
   function Image_Of (Item : Degrees) return String;
 
@@ -63,7 +63,9 @@ package PWI4 is
   end record;
 
   type Axis_Data is record
-    Position : Degrees;
+    Min_Position : Degrees;
+    Max_Position : Degrees;
+    Position     : Degrees;
   end record;
 
   type Points is new Natural range 0 .. 255;

@@ -23,12 +23,29 @@ package body PWI4.Protocol is
   package Log is new Traces ("PWI.Protocol");
 
 
+  The_Actual_Message : Text.String;
+  use type Text.String;
+
+  procedure Log_Write (Message : String) is
+  begin
+    The_Actual_Message := [Message];
+    Log.Write (Message);
+  end Log_Write;
+
+
+  procedure Log_Error (Message : String) is
+  begin
+    Log.Error (The_Actual_Message & Message);
+    Log.Force_Enable;
+  end Log_Error;
+
+
   function Boolean_Of (Image : String) return Boolean is
   begin
     return Boolean'value(Text.Uppercase_Of (Image));
   exception
   when others =>
-    Log.Error ("Boolean_Of (Image -> """ & Image & """)");
+    Log_Error ("Boolean_Of (Image -> """ & Image & """)");
     raise Parsing_Error;
   end Boolean_Of;
 
@@ -44,7 +61,7 @@ package body PWI4.Protocol is
     return Degrees'value(Image);
   exception
   when others =>
-    Log.Error ("Degrees_Of (Image -> """ & Image & """) out of range");
+    Log_Error ("Degrees_Of (Image -> """ & Image & """) out of range");
     return Undefined_Degrees;
   end Degrees_Of;
 
@@ -63,7 +80,7 @@ package body PWI4.Protocol is
     return Meters'value(Image);
   exception
   when others =>
-    Log.Error ("Meters_Of (Image -> """ & Image & """) out of range");
+    Log_Error ("Meters_Of (Image -> """ & Image & """) out of range");
     return Undefined_Meters;
   end Meters_Of;
 
@@ -73,7 +90,7 @@ package body PWI4.Protocol is
     return Points'value(Image);
   exception
   when others =>
-    Log.Error ("Points_Of (Image -> """ & Image & """)");
+    Log_Error ("Points_Of (Image -> """ & Image & """)");
     return 0;
   end Points_Of;
 
@@ -93,7 +110,7 @@ package body PWI4.Protocol is
       return Julian_Day'value(Image & ".0");
     exception
     when others =>
-      Log.Error ("Jd_Of (Image -> """ & Image & """)");
+      Log_Error ("Jd_Of (Image -> """ & Image & """)");
       raise Parsing_Error;
     end;
   end Jd_Of;
@@ -110,7 +127,7 @@ package body PWI4.Protocol is
     return Microns'value(Image);
   exception
   when others =>
-    Log.Error ("Focuser_Position_Of (Image -> """ & Image & """)");
+    Log_Error ("Focuser_Position_Of (Image -> """ & Image & """)");
     raise Parsing_Error;
   end Focuser_Position_Of;
 
@@ -120,7 +137,7 @@ package body PWI4.Protocol is
     return Arc_Second'value(Image);
   exception
   when others =>
-    Log.Error ("Arc_Second_Of (Image -> """ & Image & """)");
+    Log_Error ("Arc_Second_Of (Image -> """ & Image & """)");
     raise Parsing_Error;
   end Arc_Second_Of;
 
@@ -130,7 +147,7 @@ package body PWI4.Protocol is
     return Error_Code'value(Image);
   exception
   when others =>
-    Log.Error ("Error_Code_Of (Image -> """ & Image & """)");
+    Log_Error ("Error_Code_Of (Image -> """ & Image & """)");
     raise Parsing_Error;
   end Error_Code_Of;
 
@@ -146,7 +163,7 @@ package body PWI4.Protocol is
     return Port_Number'value(Image);
   exception
   when others =>
-    Log.Error ("Port_Number_Of (Image -> """ & Image & """)");
+    Log_Error ("Port_Number_Of (Image -> """ & Image & """)");
     raise Parsing_Error;
   end Port_Number_Of;
 
@@ -292,7 +309,7 @@ package body PWI4.Protocol is
       return Identifier'value ("I_" & Text.Uppercase_Of (Data(First .. The_Index - 1)));
     exception
     when others =>
-      Log.Error ("Next_Identifier unknown <" & Data(First .. The_Index - 1) & ">");
+      Log_Error ("Next_Identifier unknown <" & Data(First .. The_Index - 1) & ">");
       raise Parsing_Error;
     end Next_Identifier;
 
@@ -325,9 +342,9 @@ package body PWI4.Protocol is
     begin
       case Next_Identifier is
       when I_Version =>
-        Log.Write ("pwi4.version=" & Next_Value);
+        Log_Write ("pwi4.version=" & Next_Value);
       when I_Version_Field =>
-        Log.Write ("pwi4.version_field" & Next_Value);
+        Log_Write ("pwi4.version_field=" & Next_Value);
       when others =>
         raise Parsing_Error;
       end case;
@@ -338,7 +355,7 @@ package body PWI4.Protocol is
     begin
       case Next_Identifier is
       when I_Timestamp_Utc =>
-        Log.Write ("response.timestamp_utc=" & Next_Value);
+        Log_Write ("response.timestamp_utc=" & Next_Value);
       when others =>
         raise Parsing_Error;
       end case;
@@ -349,16 +366,16 @@ package body PWI4.Protocol is
     begin
       case Next_Identifier is
       when I_Latitude_Degs =>
-        Log.Write ("site.latitude_degs=" & Next_Value);
+        Log_Write ("site.latitude_degs=" & Next_Value);
         The_Response.Site.Latitude := Degrees_Of (Value);
       when I_Longitude_Degs =>
-        Log.Write ("site.longitude_degs=" & Next_Value);
+        Log_Write ("site.longitude_degs=" & Next_Value);
         The_Response.Site.Longitude := Degrees_Of (Value);
       when I_Height_Meters =>
-        Log.Write ("site.height_meters=" & Next_Value);
+        Log_Write ("site.height_meters=" & Next_Value);
         The_Response.Site.Height := Meters_Of (Value);
       when I_Lmst_Hours =>
-        Log.Write ("site.lmst_hours=" & Next_Value);
+        Log_Write ("site.lmst_hours=" & Next_Value);
         The_Response.Site.Lmst := Hours_Of (Value);
       when others =>
         raise Parsing_Error;
@@ -370,132 +387,133 @@ package body PWI4.Protocol is
     begin
       case Next_Identifier is
       when I_Is_Connected =>
-        Log.Write ("mount.is_connected=" & Next_Value);
+        Log_Write ("mount.is_connected=" & Next_Value);
         The_Response.Mount.Flags.Is_Connected := Boolean_Of (Value);
       when I_Geometry =>
-        Log.Write ("mount.geometry=" & Next_Value);
+        Log_Write ("mount.geometry=" & Next_Value);
       when I_Timestamp_Utc =>
-        Log.Write ("mount.timestamp_utc=" & Next_Value);
+        Log_Write ("mount.timestamp_utc=" & Next_Value);
       when I_Julian_Date =>
-        Log.Write ("mount.julian_date=" & Next_Value);
+        Log_Write ("mount.julian_date=" & Next_Value);
         The_Response.Mount.Julian_Date := Jd_Of (Value);
       when I_Update_Duration_Msec =>
-        Log.Write ("mount.update_duration_msec=" & Next_Value);
+        Log_Write ("mount.update_duration_msec=" & Next_Value);
       when I_Update_Count =>
-        Log.Write ("mount.update_count=" & Next_Value);
+        Log_Write ("mount.update_count=" & Next_Value);
       when I_Slew_Time_Constant =>
-        Log.Write ("mount.slew_time_constant=" & Next_Value);
+        Log_Write ("mount.slew_time_constant=" & Next_Value);
       when I_Ra_Apparent_Hours =>
-        Log.Write ("mount.ra_apparent_hours=" & Next_Value);
+        Log_Write ("mount.ra_apparent_hours=" & Next_Value);
         The_Response.Mount.Ra := Hours_Of (Value);
       when I_Dec_Apparent_Degs =>
-        Log.Write ("mount.dec_apparent_degs=" & Next_Value);
+        Log_Write ("mount.dec_apparent_degs=" & Next_Value);
         The_Response.Mount.Dec := Degrees_Of (Value);
       when I_Ra_J2000_Hours =>
-        Log.Write ("mount.ra_j2000_hours=" & Next_Value);
+        Log_Write ("mount.ra_j2000_hours=" & Next_Value);
         The_Response.Mount.Ra_J2000 := Hours_Of (Value);
       when I_Dec_J2000_Degs =>
-        Log.Write ("mount.dec_j2000_degs=" & Next_Value);
+        Log_Write ("mount.dec_j2000_degs=" & Next_Value);
         The_Response.Mount.Dec_J2000 := Degrees_Of (Value);
       when I_Target_Ra_Apparent_Hours =>
-        Log.Write ("mount.target_ra_apparent_hours=" & Next_Value);
+        Log_Write ("mount.target_ra_apparent_hours=" & Next_Value);
         The_Response.Mount.Ra_Target := Hours_Of (Value);
       when I_Target_Dec_Apparent_Degs =>
-        Log.Write ("mount.target_dec_apparent_degs=" & Next_Value);
+        Log_Write ("mount.target_dec_apparent_degs=" & Next_Value);
         The_Response.Mount.Dec_Target := Degrees_Of (Value);
       when I_Azimuth_Degs =>
-        Log.Write ("mount.azimuth_degs=" & Next_Value);
+        Log_Write ("mount.azimuth_degs=" & Next_Value);
         The_Response.Mount.Azimuth := Degrees_Of (Value);
       when I_Altitude_Degs =>
-        Log.Write ("mount.altitude_degs=" & Next_Value);
+        Log_Write ("mount.altitude_degs=" & Next_Value);
         The_Response.Mount.Altitude := Degrees_Of (Value);
       when I_Is_Slewing =>
-        Log.Write ("mount.is_slewing=" & Next_Value);
+        Log_Write ("mount.is_slewing=" & Next_Value);
         The_Response.Mount.Flags.Is_Slewing := Boolean_Of (Value);
       when I_Is_Tracking =>
-        Log.Write ("mount.is_tracking=" & Next_Value);
+        Log_Write ("mount.is_tracking=" & Next_Value);
         The_Response.Mount.Flags.Is_Tracking := Boolean_Of (Value);
       when I_Field_Angle_Here_Degs =>
-        Log.Write ("mount.field_angle_here=" & Next_Value);
+        Log_Write ("mount.field_angle_here=" & Next_Value);
       when I_Field_Angle_At_Target_Degs =>
-        Log.Write ("mount.field_angle_at_target=" & Next_Value);
+        Log_Write ("mount.field_angle_at_target=" & Next_Value);
         The_Response.Mount.Field_Angle_At_Target := Degrees_Of (Value);
       when I_Field_Angle_Rate_At_Target_Degs_Per_Sec =>
-        Log.Write ("mount.field_angle_rate_at_target=" & Next_Value);
+        Log_Write ("mount.field_angle_rate_at_target=" & Next_Value);
         The_Response.Mount.Field_Angle_Rate_At_Target := Degrees_Of (Value);
       when I_Path_Angle_At_Target_Degs =>
-        Log.Write ("mount.path_angle_at_target=" & Next_Value);
+        Log_Write ("mount.path_angle_at_target=" & Next_Value);
       when I_Path_Angle_Rate_At_Target_Degs_Per_Sec =>
-        Log.Write ("mount.path_angle_rate_at_target=" & Next_Value);
+        Log_Write ("mount.path_angle_rate_at_target=" & Next_Value);
       when I_Distance_To_Sun_Degs =>
-        Log.Write ("mount.distance_to_sun=" & Next_Value);
+        Log_Write ("mount.distance_to_sun=" & Next_Value);
       when I_Axis0_Wrap_Range_Min_Degs =>
-        Log.Write ("mount.axis0_wrap_range_min=" & Next_Value);
+        Log_Write ("mount.axis0_wrap_range_min=" & Next_Value);
+        The_Response.Mount.Wrap_Range_Min := Degrees_Of (Value);
       when I_Offsets =>
         case Next_Identifier is
         when I_Ra_Arcsec =>
           case Next_Identifier is
           when I_Total =>
-            Log.Write ("mount.ra_arcsec.total=" & Next_Value);
+            Log_Write ("mount.ra_arcsec.total=" & Next_Value);
           when I_Rate =>
-            Log.Write ("mount.ra_arcsec.rate=" & Next_Value);
+            Log_Write ("mount.ra_arcsec.rate=" & Next_Value);
           when I_Gradual_Offset_Progress =>
-            Log.Write ("mount.ra_arcsec.gradual_offset_progress=" & Next_Value);
+            Log_Write ("mount.ra_arcsec.gradual_offset_progress=" & Next_Value);
           when others =>
             raise Parsing_Error;
           end case;
         when I_Dec_Arcsec =>
           case Next_Identifier is
           when I_Total =>
-            Log.Write ("mount.dec_arcsec.total=" & Next_Value);
+            Log_Write ("mount.dec_arcsec.total=" & Next_Value);
           when I_Rate =>
-            Log.Write ("mount.dec_arcsec.rate=" & Next_Value);
+            Log_Write ("mount.dec_arcsec.rate=" & Next_Value);
           when I_Gradual_Offset_Progress =>
-            Log.Write ("mount.dec_arcsec.gradual_offset_progress=" & Next_Value);
+            Log_Write ("mount.dec_arcsec.gradual_offset_progress=" & Next_Value);
           when others =>
             raise Parsing_Error;
           end case;
         when I_Axis0_Arcsec =>
           case Next_Identifier is
           when I_Total =>
-            Log.Write ("mount.axis0_arcsec.total=" & Next_Value);
+            Log_Write ("mount.axis0_arcsec.total=" & Next_Value);
           when I_Rate =>
-            Log.Write ("mount.axis0_arcsec.rate=" & Next_Value);
+            Log_Write ("mount.axis0_arcsec.rate=" & Next_Value);
           when I_Gradual_Offset_Progress =>
-            Log.Write ("mount.axis0_arcsec.gradual_offset_progress=" & Next_Value);
+            Log_Write ("mount.axis0_arcsec.gradual_offset_progress=" & Next_Value);
           when others =>
             raise Parsing_Error;
           end case;
         when I_Axis1_Arcsec =>
           case Next_Identifier is
           when I_Total =>
-            Log.Write ("mount.axis1_arcsec.total=" & Next_Value);
+            Log_Write ("mount.axis1_arcsec.total=" & Next_Value);
           when I_Rate =>
-            Log.Write ("mount.axis1_arcsec.rate=" & Next_Value);
+            Log_Write ("mount.axis1_arcsec.rate=" & Next_Value);
           when I_Gradual_Offset_Progress =>
-            Log.Write ("mount.axis1_arcsec.gradual_offset_progress=" & Next_Value);
+            Log_Write ("mount.axis1_arcsec.gradual_offset_progress=" & Next_Value);
           when others =>
             raise Parsing_Error;
           end case;
         when I_Path_Arcsec =>
           case Next_Identifier is
           when I_Total =>
-            Log.Write ("mount.path_arcsec.total=" & Next_Value);
+            Log_Write ("mount.path_arcsec.total=" & Next_Value);
           when I_Rate =>
-            Log.Write ("mount.path_arcsec.rate=" & Next_Value);
+            Log_Write ("mount.path_arcsec.rate=" & Next_Value);
           when I_Gradual_Offset_Progress =>
-            Log.Write ("mount.path_arcsec.gradual_offset_progress=" & Next_Value);
+            Log_Write ("mount.path_arcsec.gradual_offset_progress=" & Next_Value);
           when others =>
             raise Parsing_Error;
           end case;
         when I_Transverse_Arcsec =>
           case Next_Identifier is
           when I_Total =>
-            Log.Write ("mount.traverse_arcsec.total=" & Next_Value);
+            Log_Write ("mount.traverse_arcsec.total=" & Next_Value);
           when I_Rate =>
-            Log.Write ("mount.traverse_arcsec.rate=" & Next_Value);
+            Log_Write ("mount.traverse_arcsec.rate=" & Next_Value);
           when I_Gradual_Offset_Progress =>
-            Log.Write ("mount.traverse_arcsec.gradual_offset_progress=" & Next_Value);
+            Log_Write ("mount.traverse_arcsec.gradual_offset_progress=" & Next_Value);
           when others =>
             raise Parsing_Error;
           end case;
@@ -505,14 +523,14 @@ package body PWI4.Protocol is
       when I_Spiral_Offset =>
         case Next_Identifier is
         when I_X =>
-          Log.Write ("mount.spiral_offsets.x=" & Next_Value);
+          Log_Write ("mount.spiral_offsets.x=" & Next_Value);
         when I_Y =>
-          Log.Write ("mount.spiral_offsets.y=" & Next_Value);
+          Log_Write ("mount.spiral_offsets.y=" & Next_Value);
         when I_X_Step_Arcsec =>
-          Log.Write ("mount.spiral_offsets.x_step_arcsec=" & Next_Value);
+          Log_Write ("mount.spiral_offsets.x_step_arcsec=" & Next_Value);
           The_Response.Mount.Spiral_Offsets.X_Step := Arc_Second_Of (Value);
         when I_Y_Step_Arcsec =>
-          Log.Write ("mount.spiral_offsets.y_step_arcsec=" & Next_Value);
+          Log_Write ("mount.spiral_offsets.y_step_arcsec=" & Next_Value);
           The_Response.Mount.Spiral_Offsets.Y_Step := Arc_Second_Of (Value);
         when others =>
           raise Parsing_Error;
@@ -520,85 +538,89 @@ package body PWI4.Protocol is
       when I_Axis0 =>
         case Next_Identifier is
         when I_Is_Enabled =>
-          Log.Write ("mount.axis0.is_enabled=" & Next_Value);
+          Log_Write ("mount.axis0.is_enabled=" & Next_Value);
           The_Response.Mount.Flags.Axis0_Is_Enabled := Boolean_Of (Value);
         when I_Rms_Error_Arcsec =>
-          Log.Write ("mount.axis0.rms_error_arcsec=" & Next_Value);
+          Log_Write ("mount.axis0.rms_error_arcsec=" & Next_Value);
         when I_Dist_To_Target_Arcsec =>
-          Log.Write ("mount.axis0.dist_to_target_arcsec=" & Next_Value);
+          Log_Write ("mount.axis0.dist_to_target_arcsec=" & Next_Value);
         when I_Servo_Error_Arcsec =>
-          Log.Write ("mount.axis0.servo_error_arcsec=" & Next_Value);
+          Log_Write ("mount.axis0.servo_error_arcsec=" & Next_Value);
         when I_Min_Mech_Position_Degs =>
-          Log.Write ("mount.axis0.min_mech_position_degs=" & Next_Value);
+          Log_Write ("mount.axis0.min_mech_position_degs=" & Next_Value);
+          The_Response.Mount.Axis0.Min_Position := Degrees_Of (Value);
         when I_Max_Mech_Position_Degs =>
-          Log.Write ("mount.axis0.max_mech_position_degs=" & Next_Value);
+          Log_Write ("mount.axis0.max_mech_position_degs=" & Next_Value);
+          The_Response.Mount.Axis0.Max_Position := Degrees_Of (Value);
         when I_Target_Mech_Position_Degs =>
-          Log.Write ("mount.axis0.target_mech_position_degs=" & Next_Value);
+          Log_Write ("mount.axis0.target_mech_position_degs=" & Next_Value);
         when I_Position_Degs =>
-          Log.Write ("mount.axis0.position_degs=" & Next_Value);
+          Log_Write ("mount.axis0.position_degs=" & Next_Value);
           The_Response.Mount.Axis0.Position := Degrees_Of (Value);
         when I_Position_Timestamp =>
-          Log.Write ("mount.axis0.position_timestamp=" & Next_Value);
+          Log_Write ("mount.axis0.position_timestamp=" & Next_Value);
         when I_Max_Velocity_Degs_Per_Sec =>
-          Log.Write ("mount.axis0.max_velocity_degs_per_sec=" & Next_Value);
+          Log_Write ("mount.axis0.max_velocity_degs_per_sec=" & Next_Value);
         when I_Setpoint_Velocity_Degs_Per_Sec =>
-          Log.Write ("mount.axis0.setpoint_velocity_degs_per_sec=" & Next_Value);
+          Log_Write ("mount.axis0.setpoint_velocity_degs_per_sec=" & Next_Value);
         when I_Measured_Velocity_Degs_Per_Sec =>
-          Log.Write ("mount.axis0.measured_velocity_degs_per_sec=" & Next_Value);
+          Log_Write ("mount.axis0.measured_velocity_degs_per_sec=" & Next_Value);
         when I_Acceleration_Degs_Per_Sec_Sqr =>
-          Log.Write ("mount.axis0.acceleration_degs_per_sec_sqr=" & Next_Value);
+          Log_Write ("mount.axis0.acceleration_degs_per_sec_sqr=" & Next_Value);
         when I_Measured_Current_Amps =>
-          Log.Write ("mount.axis0.measured_current_amp=" & Next_Value);
+          Log_Write ("mount.axis0.measured_current_amp=" & Next_Value);
         when others =>
           raise Parsing_Error;
         end case;
       when I_Axis1 =>
         case Next_Identifier is
         when I_Is_Enabled =>
-          Log.Write ("mount.axis1.is_enabled=" & Next_Value);
+          Log_Write ("mount.axis1.is_enabled=" & Next_Value);
           The_Response.Mount.Flags.Axis1_Is_Enabled := Boolean_Of (Value);
         when I_Rms_Error_Arcsec =>
-          Log.Write ("mount.axis1.rms_error_arcsec=" & Next_Value);
+          Log_Write ("mount.axis1.rms_error_arcsec=" & Next_Value);
         when I_Dist_To_Target_Arcsec =>
-          Log.Write ("mount.axis1.dist_to_target_arcsec=" & Next_Value);
+          Log_Write ("mount.axis1.dist_to_target_arcsec=" & Next_Value);
         when I_Servo_Error_Arcsec =>
-          Log.Write ("mount.axis1.servo_error_arcsec=" & Next_Value);
+          Log_Write ("mount.axis1.servo_error_arcsec=" & Next_Value);
         when I_Min_Mech_Position_Degs =>
-          Log.Write ("mount.axis1.min_mech_position_degs=" & Next_Value);
+          Log_Write ("mount.axis1.min_mech_position_degs=" & Next_Value);
+          The_Response.Mount.Axis1.Min_Position := Degrees_Of (Value);
         when I_Max_Mech_Position_Degs =>
-          Log.Write ("mount.axis1.max_mech_position_degs=" & Next_Value);
+          Log_Write ("mount.axis1.max_mech_position_degs=" & Next_Value);
+          The_Response.Mount.Axis1.Max_Position := Degrees_Of (Value);
         when I_Target_Mech_Position_Degs =>
-          Log.Write ("mount.axis1.target_mech_position_degs=" & Next_Value);
+          Log_Write ("mount.axis1.target_mech_position_degs=" & Next_Value);
         when I_Position_Degs =>
-          Log.Write ("mount.axis1.position_degs=" & Next_Value);
+          Log_Write ("mount.axis1.position_degs=" & Next_Value);
           The_Response.Mount.Axis1.Position := Degrees_Of (Value);
         when I_Position_Timestamp =>
-          Log.Write ("mount.axis1.position_timestamp=" & Next_Value);
+          Log_Write ("mount.axis1.position_timestamp=" & Next_Value);
         when I_Max_Velocity_Degs_Per_Sec =>
-          Log.Write ("mount.axis1.max_velocity_degs_per_sec=" & Next_Value);
+          Log_Write ("mount.axis1.max_velocity_degs_per_sec=" & Next_Value);
         when I_Setpoint_Velocity_Degs_Per_Sec =>
-          Log.Write ("mount.axis1.setpoint_velocity_degs_per_sec=" & Next_Value);
+          Log_Write ("mount.axis1.setpoint_velocity_degs_per_sec=" & Next_Value);
         when I_Measured_Velocity_Degs_Per_Sec =>
-          Log.Write ("mount.axis1.measured_velocity_degs_per_sec=" & Next_Value);
+          Log_Write ("mount.axis1.measured_velocity_degs_per_sec=" & Next_Value);
         when I_Acceleration_Degs_Per_Sec_Sqr =>
-          Log.Write ("mount.axis1.acceleration_degs_per_sec_sqr=" & Next_Value);
+          Log_Write ("mount.axis1.acceleration_degs_per_sec_sqr=" & Next_Value);
         when I_Measured_Current_Amps =>
-          Log.Write ("mount.axis1.measured_current_amp=" & Next_Value);
+          Log_Write ("mount.axis1.measured_current_amp=" & Next_Value);
         when others =>
           raise Parsing_Error;
         end case;
       when I_Model =>
         case Next_Identifier is
         when I_Filename =>
-          Log.Write ("mount.model.filename=" & Next_Value);
+          Log_Write ("mount.model.filename=" & Next_Value);
         when I_Num_Points_Total =>
-          Log.Write ("mount.model.num_points_total=" & Next_Value);
+          Log_Write ("mount.model.num_points_total=" & Next_Value);
           The_Response.Mount.Model.Points_Total := Points_Of (Value);
         when I_Num_Points_Enabled =>
-          Log.Write ("mount.model.num_points_enabled=" & Next_Value);
+          Log_Write ("mount.model.num_points_enabled=" & Next_Value);
           The_Response.Mount.Model.Points_Enabled := Points_Of (Value);
         when I_Rms_Error_Arcsec =>
-          Log.Write ("mount.model.rms_error_arcsec=" & Next_Value);
+          Log_Write ("mount.model.rms_error_arcsec=" & Next_Value);
         when others =>
           raise Parsing_Error;
         end case;
@@ -612,19 +634,19 @@ package body PWI4.Protocol is
     begin
       case Next_Identifier is
       when I_Exists =>
-        Log.Write ("focuser.exists=" & Next_Value);
+        Log_Write ("focuser.exists=" & Next_Value);
         The_Response.Focuser.Exists := Boolean_Of (Value);
       when I_Is_Connected =>
-        Log.Write ("focuser.is_connected=" & Next_Value);
+        Log_Write ("focuser.is_connected=" & Next_Value);
         The_Response.Focuser.Is_Connected := Boolean_Of (Value);
       when I_Is_Enabled =>
-        Log.Write ("focuser.is_enabled=" & Next_Value);
+        Log_Write ("focuser.is_enabled=" & Next_Value);
         The_Response.Focuser.Is_Enabled := Boolean_Of (Value);
       when I_Position =>
-        Log.Write ("focuser.position=" & Next_Value);
+        Log_Write ("focuser.position=" & Next_Value);
         The_Response.Focuser.Position := Focuser_Position_Of (Value);
       when I_Is_Moving =>
-        Log.Write ("focuser.is_moving=" & Next_Value);
+        Log_Write ("focuser.is_moving=" & Next_Value);
         The_Response.Focuser.Is_Moving := Boolean_Of (Value);
       when others =>
         raise Parsing_Error;
@@ -636,25 +658,25 @@ package body PWI4.Protocol is
     begin
       case Next_Identifier is
       when I_Exists =>
-        Log.Write ("rotator.exists=" & Next_Value);
+        Log_Write ("rotator.exists=" & Next_Value);
         The_Response.Rotator.Exists := Boolean_Of (Value);
       when I_Is_Connected =>
-        Log.Write ("rotator.is_connected=" & Next_Value);
+        Log_Write ("rotator.is_connected=" & Next_Value);
         The_Response.Rotator.Is_Connected := Boolean_Of (Value);
       when I_Is_Enabled =>
-        Log.Write ("rotator.is_enabled=" & Next_Value);
+        Log_Write ("rotator.is_enabled=" & Next_Value);
         The_Response.Rotator.Is_Enabled := Boolean_Of (Value);
       when I_Field_Angle_Degs =>
-        Log.Write ("rotator.field_angle_degs=" & Next_Value);
+        Log_Write ("rotator.field_angle_degs=" & Next_Value);
         The_Response.Rotator.Field_Angle := Degrees_Of (Value);
       when I_Mech_Position_Degs =>
-        Log.Write ("rotator.mech_position_degs=" & Next_Value);
+        Log_Write ("rotator.mech_position_degs=" & Next_Value);
         The_Response.Rotator.Mech_Position := Degrees_Of (Value);
       when I_Is_Moving =>
-        Log.Write ("rotator.is_moving=" & Next_Value);
+        Log_Write ("rotator.is_moving=" & Next_Value);
         The_Response.Rotator.Is_Moving := Boolean_Of (Value);
       when I_Is_Slewing =>
-        Log.Write ("rotator.is_slewing=" & Next_Value);
+        Log_Write ("rotator.is_slewing=" & Next_Value);
         The_Response.Rotator.Is_Slewing := Boolean_Of (Value);
       when others =>
         raise Parsing_Error;
@@ -666,10 +688,10 @@ package body PWI4.Protocol is
     begin
       case Next_Identifier is
       when I_Exists =>
-        Log.Write ("m3.exists=" & Next_Value);
+        Log_Write ("m3.exists=" & Next_Value);
         The_Response.M3.Exists := Value /= "0";
       when I_Port =>
-        Log.Write ("m3.port=" & Next_Value);
+        Log_Write ("m3.port=" & Next_Value);
         The_Response.M3.Port := Port_Number'value(Value);
       when others =>
         raise Parsing_Error;
@@ -681,13 +703,13 @@ package body PWI4.Protocol is
     begin
       case Next_Identifier is
       when I_Is_Running =>
-        Log.Write ("autofocus.is_running=" & Next_Value);
+        Log_Write ("autofocus.is_running=" & Next_Value);
       when I_Success =>
-        Log.Write ("autofocus.success=" & Next_Value);
+        Log_Write ("autofocus.success=" & Next_Value);
       when I_Best_Position =>
-        Log.Write ("autofocus.best_position=" & Next_Value);
+        Log_Write ("autofocus.best_position=" & Next_Value);
       when I_Tolerance =>
-        Log.Write ("autofocus.tolerance=" & Next_Value);
+        Log_Write ("autofocus.tolerance=" & Next_Value);
       when others =>
         raise Parsing_Error;
       end case;
@@ -720,6 +742,8 @@ package body PWI4.Protocol is
       end case;
     end loop;
     System.Set (The_Response);
+    Log.Normal;
+    The_Actual_Message := [];
   exception
   when others =>
     Log.Write (Data);

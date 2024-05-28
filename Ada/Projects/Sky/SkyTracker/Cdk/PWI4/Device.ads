@@ -69,6 +69,8 @@ package Device is
 
     function Actual_Info return Information;
 
+    function Az_Axis_Minimum return Degrees;
+
     procedure Connect;
 
     procedure Disconnect;
@@ -118,7 +120,7 @@ package Device is
 
     procedure Follow_Tle (Id : Name.Id);
 
-    procedure Set_Axis0_Wrap (Range_Min : Degrees);
+    procedure Set_Az_Axis_Wrap (Range_Min : Degrees);
 
     procedure Add_To_Model (Direction : Space.Direction);
 
