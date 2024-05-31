@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2013 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2013 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,6 +15,7 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with Earth;
 with Name;
 with Space;
 with Time;
@@ -31,5 +32,7 @@ package Neo is
   function Is_Arriving (Item : Name.Id) return Boolean;
 
   function Tracking_Period_Of (Item : Name.Id) return Time.Period;
+
+  function Wrap_Location_Of (Item : Name.Id) return Earth.Direction;
 
 end Neo;

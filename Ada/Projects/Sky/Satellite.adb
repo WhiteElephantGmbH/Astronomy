@@ -16,9 +16,10 @@
 pragma Style_White_Elephant;
 
 with Ada.Calendar;
-with Ada.Direct_IO;
+with Ada.Text_IO;
 with Ada.Directories;
 with Ada.Containers.Indefinite_Ordered_Maps;
+with Ada.Strings.Unbounded;
 with GNATCOLL.JSON;
 with Gui;
 with Stellarium;
@@ -30,23 +31,21 @@ package body Satellite is
 
   Json_Filename : constant String := Stellarium.Satellites_Filename;
 
-  function Json_Data return String is
+  function Json_Data return Ada.Strings.Unbounded.Unbounded_String is
 
-    Json_Filesize : constant  Natural := Natural(Ada.Directories.Size(Json_Filename));
+    Json_Filesize : constant Natural := Natural(Ada.Directories.Size(Json_Filename));
 
-    subtype Json_String is String (1 .. Json_Filesize);
+    The_Data : Ada.Strings.Unbounded.Unbounded_String;
 
-    The_Data : Json_String;
-
-    package Json_Io is new Ada.Direct_IO (Json_String);
-
-    File : Json_Io.File_Type;
+    File : Ada.Text_IO.File_Type;
 
   begin
     Log.Write ("Filesize:" & Json_Filesize'image);
-    Json_Io.Open (File, Json_Io.In_File, Json_Filename);
-    Json_Io.Read (File, The_Data);
-    Json_Io.Close (File);
+    Ada.Text_IO.Open (File, Ada.Text_IO.In_File, Json_Filename);
+    while not Ada.Text_IO.End_Of_File (File) loop
+      Ada.Strings.Unbounded.Append (The_Data, Ada.Text_IO.Get_Line (File) & Ascii.Cr);
+    end loop;
+    Ada.Text_IO.Close (File);
     return The_Data;
   end Json_Data;
 

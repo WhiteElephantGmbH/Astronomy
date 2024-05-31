@@ -20,6 +20,7 @@ with Angle;
 with Astro;
 with Error;
 with Norad;
+with Objects;
 with Satellite;
 with Site;
 with Sky.Data;
@@ -45,10 +46,12 @@ package body Neo is
     Dec : Angle.Value := Angle.Zero;
   end record;
 
-  type List is array (Positive range <>) of Element;
+  type Trajectory is array (Positive range <>) of Element;
 
-  The_List : List(1 .. 10000);
-  The_Last : Natural := 0;
+  The_Trajectory : Trajectory(1 .. 10000);
+  The_Last       : Natural := 0;
+
+  The_Wrap_Location : Earth.Direction;
 
 
   procedure Read (Target : String) is
@@ -75,6 +78,7 @@ package body Neo is
       The_Time      : Time.Ut;
       The_Lmst      : Time.Value;
       The_Direction : Space.Direction;
+      The_Location  : Earth.Direction;
 
       --procedure Write (Text  : String;
       --                 Value : VECTOR) is
@@ -114,6 +118,7 @@ package body Neo is
         POLAR (The_Topocentric_Vector, R, The_Dec, The_Ra);
         The_Direction := Space.Direction_Of (Dec => The_Dec,
                                              Ra  => The_Ra);
+        The_Location := Objects.Direction_Of (The_Direction, The_Lmst);
       end Evaluate_Location;
 
       procedure Log_Image_Of (Lable : String;
@@ -129,6 +134,8 @@ package body Neo is
       The_Step  : Duration;
       The_Pause : Duration;
 
+      The_Max_Alt : Angle.Degrees;
+
     begin -- Find_Norad_Entries
       if Log.Is_Enabled then
         Log.Write ("NORAD: " & Norad_Lines(1));
@@ -142,22 +149,33 @@ package body Neo is
           The_Time := The_Time + The_Step;
           The_Lmst := Time.Lmst_Of (The_Time);
           Evaluate_Location;
-          if Sky_Line.Is_Above (The_Direction, The_Lmst) then
+          if Sky_Line.Is_Above (The_Location) then
             if The_Step = Time.One_Second then
+              The_Max_Alt := 0.0;
               loop
                 The_Entry := @ + 1;
-                if The_Entry > The_List'last then
+                if The_Entry > The_Trajectory'last then
                   Log.Warning ("slow object");
                   The_Last := 0;
                   exit;
                 end if;
-                The_List(The_Entry).Ut := The_Time;
-                The_List(The_Entry).Ra := Space.Ra_Of (The_Direction);
-                The_List(The_Entry).Dec := Space.Dec_Of (The_Direction);
+                The_Trajectory(The_Entry).Ut := The_Time;
+                The_Trajectory(The_Entry).Ra := Space.Ra_Of (The_Direction);
+                The_Trajectory(The_Entry).Dec := Space.Dec_Of (The_Direction);
                 The_Time := The_Time + Time.One_Second;
                 The_Lmst := Time.Lmst_Of (The_Time);
                 Evaluate_Location;
-                if Sky_Line.Is_Above (The_Direction, The_Lmst) then
+                declare
+                  use type Angle.Signed;
+                  use type Angle.Value;
+                  Alt : constant Angle.Degrees := +Angle.Signed'(+Earth.Alt_Of (The_Location));
+                begin
+                  if Alt > The_Max_Alt then
+                    The_Max_Alt := Alt;
+                    The_Wrap_Location := The_Location;
+                  end if;
+                end;
+                if Sky_Line.Is_Above (The_Location) then
                   The_Last := The_Entry;
                   The_Pause := Maximum_Pause;
                 else
@@ -167,10 +185,12 @@ package body Neo is
                   end if;
                 end if;
               end loop;
-              if The_Last > The_List'first then
+              if The_Last > The_Trajectory'first then
                 if Log.Is_Enabled then
-                  Log_Image_Of ("start: ", The_List(The_List'first));
-                  Log_Image_Of ("end  : ", The_List(The_Last));
+                  Log_Image_Of ("start: ", The_Trajectory(The_Trajectory'first));
+                  Log_Image_Of ("end  : ", The_Trajectory(The_Last));
+                  Log.Write ("Max Alt: " & Earth.Alt_Image_Of (The_Wrap_Location));
+                  Log.Write ("Wrap Az: " & Earth.Az_Image_Of (The_Wrap_Location));
                 end if;
                 return;
               end if;
@@ -202,9 +222,14 @@ package body Neo is
   end Read;
 
 
-  type List_Access is access List;
+  type Trajectory_Access is access Trajectory;
 
-  The_Lists : array (1..500) of List_Access;
+  type Data is record
+    List : Trajectory_Access;
+    Wrap : Earth.Direction;
+  end record;
+
+  The_Trajectories : array (1..500) of Data;
 
 
   procedure Add_Objects is
@@ -216,10 +241,11 @@ package body Neo is
       if The_Last > 0 then
         The_Index := Sky.Data.New_Neo_Object_For (Item        => Target,
                                                   Description => "");
-        if The_Index > The_Lists'last then
+        if The_Index > The_Trajectories'last then
           Error.Raise_With ("Too many near earth objects");
         end if;
-        The_Lists(The_Index) := new List'(The_List(1..The_Last));
+        The_Trajectories(The_Index).List := new Trajectory'(The_Trajectory(1..The_Last));
+        The_Trajectories(The_Index).Wrap := The_Wrap_Location;
       end if;
     end Process;
 
@@ -236,22 +262,22 @@ package body Neo is
 
     Index : constant Positive := Sky.Data.Neo_Index_Of (Name.Object_Of (Item));
 
-    Data  : List_Access renames The_Lists(Index);
+    The_Data : Trajectory_Access renames The_Trajectories(Index).List;
 
   begin
-    if Data /= null then
-      for The_Index in Data.all'range loop
-        if The_Index < Data.all'last and then Data(The_Index + 1).Ut >= Ut then
+    if The_Data /= null then
+      for The_Index in The_Data.all'range loop
+        if The_Index < The_Data.all'last and then The_Data(The_Index + 1).Ut >= Ut then
           return Space.Direction_Of (Ra => Values.Interpolation_Of (T  => Ut,
-                                                                    T1 => Data(The_Index).Ut,
-                                                                    T2 => Data(The_Index + 1).Ut,
-                                                                    V1 => Data(The_Index).Ra,
-                                                                    V2 => Data(The_Index + 1).Ra),
+                                                                    T1 => The_Data(The_Index).Ut,
+                                                                    T2 => The_Data(The_Index + 1).Ut,
+                                                                    V1 => The_Data(The_Index).Ra,
+                                                                    V2 => The_Data(The_Index + 1).Ra),
                                      Dec => Values.Interpolation_Of (T  => Ut,
-                                                                     T1 => Data(The_Index).Ut,
-                                                                     T2 => Data(The_Index + 1).Ut,
-                                                                     V1 => Data(The_Index).Dec,
-                                                                     V2 => Data(The_Index + 1).Dec));
+                                                                     T1 => The_Data(The_Index).Ut,
+                                                                     T2 => The_Data(The_Index + 1).Ut,
+                                                                     V1 => The_Data(The_Index).Dec,
+                                                                     V2 => The_Data(The_Index + 1).Dec));
         end if;
       end loop;
     end if;
@@ -259,37 +285,46 @@ package body Neo is
   end Direction_Of;
 
 
-  procedure Dispose is new Ada.Unchecked_Deallocation (List, List_Access);
+  procedure Dispose is new Ada.Unchecked_Deallocation (Trajectory, Trajectory_Access);
 
   function Is_Arriving (Item : Name.Id) return Boolean is
-    Index : constant Positive := Sky.Data.Neo_Index_Of (Name.Object_Of (Item));
-    Data  : List_Access renames The_Lists(Index);
+    Index    : constant Positive := Sky.Data.Neo_Index_Of (Name.Object_Of (Item));
+    The_Data : Data renames The_Trajectories(Index);
   begin
-    if Data = null then
+    if The_Data.List = null then
       return False;
-    elsif Data(Data'last).Ut < Time.Universal then
-      Dispose (Data);
+    elsif The_Data.List(The_Data.List'last).Ut < Time.Universal then
+      Dispose (The_Data.List);
       Read (Name.Image_Of (Item));
       if The_Last = 0 then
-        Data := null;
+        The_Data.List := null;
         return False;
       end if;
-      Data := new List'(The_List(1..The_Last));
+      The_Data.List := new Trajectory'(The_Trajectory(1..The_Last));
+      The_Data.Wrap := The_Wrap_Location;
     end if;
-    return Data(Data'first).Ut < Time.Universal + Time.One_Minute * 15;
+    return The_Data.List(The_Data.List'first).Ut < Time.Universal + Time.One_Minute * 15;
   end Is_Arriving;
 
 
   function Tracking_Period_Of (Item : Name.Id) return Time.Period is
-    Index : constant Positive := Sky.Data.Neo_Index_Of (Name.Object_Of (Item));
-    Data  : List_Access renames The_Lists(Index);
+    Index    : constant Positive := Sky.Data.Neo_Index_Of (Name.Object_Of (Item));
+    The_Data : Data renames The_Trajectories(Index);
   begin
-    if Data = null then
+    if The_Data.List = null then
       return Time.Undefined;
     else
-      return (Arrival_Time => Data(Data'first).Ut,
-              Leaving_Time => Data(Data'last).Ut);
+      return (Arrival_Time => The_Data.List(The_Data.List'first).Ut,
+              Leaving_Time => The_Data.List(The_Data.List'last).Ut);
     end if;
   end Tracking_Period_Of;
+
+
+  function Wrap_Location_Of (Item : Name.Id) return Earth.Direction is
+    Index    : constant Positive := Sky.Data.Neo_Index_Of (Name.Object_Of (Item));
+    The_Data : Data renames The_Trajectories(Index);
+  begin
+    return The_Data.Wrap;
+  end Wrap_Location_Of;
 
 end Neo;

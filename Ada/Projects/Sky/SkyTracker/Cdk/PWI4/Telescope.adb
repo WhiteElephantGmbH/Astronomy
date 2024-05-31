@@ -22,6 +22,7 @@ with Error;
 with Gui;
 with Http_Server;
 with Input;
+with Neo;
 with Objects;
 with Parameter;
 with Picture;
@@ -300,9 +301,6 @@ package body Telescope is
 
   task body Control_Task is
 
-    Wrap_Reserve           : constant Device.Degrees := 90.0;
-    Satellite_Wrap_Reserve : constant Device.Degrees := 10.0;
-
     The_Next_Tracking_Period : Time.Period := Time.Undefined;
     The_Completion_Time      : Time.Ut := Time.In_The_Past;
     The_Start_Time           : Time.Ut := Time.In_The_Past;
@@ -395,18 +393,40 @@ package body Telescope is
     end Reset_Adjustments;
 
 
-    procedure Set_Wrap_Position_For (The_Direction : Earth.Direction;
-                                     The_Reserve   : Device.Degrees) is
+    procedure Set_Wrap_Position_For (The_Direction : Earth.Direction) is
       The_Az : Device.Degrees;
       use type Angle.Value;
       use type Device.Degrees;
     begin
-      The_Az := Device.Degrees(Angle.Degrees'(+Earth.Az_Of (The_Direction))) - 360.0 + The_Reserve;
-      if The_Az < Mount.Az_Axis_Minimum + The_Reserve then
-        The_Az := Mount.Az_Axis_Minimum + The_Reserve;
+      Log.Write ("Set wrap position for: " & Earth.Az_Image_Of (The_Direction));
+      The_Az := Device.Degrees(Angle.Degrees'(+Earth.Az_Of (The_Direction))) - 180.0;
+      if The_Az < Mount.Az_Axis_Minimum then
+        The_Az :=  Mount.Az_Axis_Minimum;
       end if;
       Mount.Set_Az_Axis_Wrap (The_Az);
     end Set_Wrap_Position_For;
+
+
+    procedure Set_Satellite_Wrap_Position (Wrap    : Earth.Direction;
+                                           Leaving : Earth.Direction) is
+      The_Leaving_Az : Device.Degrees;
+      The_Wrap_Az    : Device.Degrees;
+      use type Angle.Value;
+      use type Device.Degrees;
+    begin
+      Log.Write ("Set wrap position for: " & Earth.Az_Image_Of (Wrap));
+      The_Wrap_Az := Device.Degrees(Angle.Degrees'(+Earth.Az_Of (Wrap)));
+      The_Leaving_Az := Device.Degrees(Angle.Degrees'(+Earth.Az_Of (Leaving)));
+      if The_Wrap_Az > The_Leaving_Az then -- decreasing angle
+        The_Wrap_Az := @ - 180.0;
+        if The_Wrap_Az < Mount.Az_Axis_Minimum then
+          The_Wrap_Az :=  Mount.Az_Axis_Minimum;
+        end if;
+      else -- increasing angle
+        The_Wrap_Az :=  Mount.Az_Axis_Minimum;
+      end if;
+      Mount.Set_Az_Axis_Wrap (The_Wrap_Az);
+    end Set_Satellite_Wrap_Position;
 
 
     procedure Define_Sideral_Speeds (Position : Earth.Direction) is
@@ -433,7 +453,7 @@ package body Telescope is
       end if;
       The_Start_Time := Time.Universal;
       The_Start_Direction := Target_Direction (At_Time => The_Start_Time);
-      Set_Wrap_Position_For (Objects.Direction_Of (The_Start_Direction, Time.Lmst_Of (The_Start_Time)), Wrap_Reserve);
+      Set_Wrap_Position_For (Objects.Direction_Of (The_Start_Direction, Time.Lmst_Of (The_Start_Time)));
       Mount.Goto_Target (Direction       => The_Start_Direction,
                          Completion_Time => The_Completion_Time);
       The_State := Approaching;
@@ -486,7 +506,7 @@ package body Telescope is
     procedure Goto_Mark (The_Position : Earth.Direction) is
     begin
       The_Start_Time := Time.Universal;
-      Set_Wrap_Position_For (The_Position, Wrap_Reserve);
+      Set_Wrap_Position_For (The_Position);
       Mount.Goto_Mark (The_Position, The_Completion_Time);
     end Goto_Mark;
 
@@ -546,7 +566,8 @@ package body Telescope is
                                                       Time.Lmst_Of (The_Leaving_Time));
         Log.Write ("arrival az: " & Earth.Az_Image_Of (The_Arrival_Position));
         Log.Write ("leaving az: " & Earth.Az_Image_Of (The_Leaving_Position));
-        Set_Wrap_Position_For (The_Arrival_Position, Satellite_Wrap_Reserve);
+        Set_Satellite_Wrap_Position (Wrap    => Neo.Wrap_Location_Of (Id),
+                                     Leaving => The_Leaving_Position);
         if Time.Universal < The_Arrival_Time then
           Goto_Waiting_Position;
         else
