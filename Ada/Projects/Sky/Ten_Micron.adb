@@ -120,7 +120,7 @@ package body Ten_Micron is
                                                                 Terminator      => Lx200.Terminator,
                                                                 Receive_Timeout => Flush_Timeout);
     begin
-      Log.Write ("Flushed: " & Flushed);
+      Log.Warning ("Flushed: " & Flushed);
     end;
   exception
   when others =>
@@ -198,7 +198,7 @@ package body Ten_Micron is
   when Network.Tcp.No_Client =>
     Disconnect_Device ("Set_Device_Status - no client");
   when Network.Timeout =>
-    Log.Warning ("Reply timeout");
+    Log.Warning ("Reply status timeout");
     Timeout_Detected := True;
     Flush_Input;
   end Set_Device_Status;
@@ -318,10 +318,9 @@ package body Ten_Micron is
       Log.Error (Error.Message);
       Disconnect_Device ("Error.Message");
     when Network.Timeout =>
-      Log.Warning ("Reply timeout");
       Flush_Input;
       Timeout_Detected := True;
-      Error.Raise_With ("Reply Timeout");
+      Error.Raise_With ("Reply timeout");
     when Network.Tcp.No_Client =>
       Disconnect_Device ("Reply_For - no client");
     when Item: others =>
