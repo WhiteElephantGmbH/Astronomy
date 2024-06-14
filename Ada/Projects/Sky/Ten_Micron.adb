@@ -62,7 +62,12 @@ package body Ten_Micron is
   procedure Disconnect_Device (Message : String) with No_Return is
   begin
     Has_New_Alignment := False;
-    Network.Tcp.Close (The_Socket);
+    begin
+      Network.Tcp.Close (The_Socket);
+    exception
+    when others =>
+      null; -- ignore when disconnected
+    end;
     Set_Status (Disconnected);
     Error.Raise_With (Message);
   end Disconnect_Device;
@@ -158,7 +163,7 @@ package body Ten_Micron is
             null;
           end case;
         end if;
-        Log.Error ("Unexpected Transient State: " & Reply);
+        Log.Warning ("Unexpected Transient State: " & Reply);
       end;
     end Set_Transit_Status;
 
@@ -178,7 +183,7 @@ package body Ten_Micron is
           The_State := Failure;
         when others =>
           if State_Number > 11 then
-            Log.Error ("Overloaded State");
+            Log.Warning ("Overloaded State");
             The_State := Failure;
           else
             The_State := State'val(State_Number);
@@ -192,7 +197,7 @@ package body Ten_Micron is
       return;
     exception
     when others =>
-      Error.Raise_With ("Unknown device status <" & Reply & ">");
+      Disconnect_Device ("Unknown device status <" & Reply & ">");
     end;
   exception
   when Network.Tcp.No_Client =>
@@ -315,8 +320,7 @@ package body Ten_Micron is
       end case;
     exception
     when Error.Occurred =>
-      Log.Error (Error.Message);
-      Disconnect_Device ("Error.Message");
+      Disconnect_Device (Error.Message);
     when Network.Timeout =>
       Flush_Input;
       Timeout_Detected := True;
@@ -337,7 +341,7 @@ package body Ten_Micron is
 
   procedure Define_Moving_Rate;
 
-  procedure Startup is
+  procedure Startup_If_Disconnected is
   begin
     case The_Status is
     when Disconnected =>
@@ -352,34 +356,39 @@ package body Ten_Micron is
       when Item: others =>
         Error.Raise_With (Network.Exception_Kind (Item)'image);
       end;
-      declare
-        Product  : constant String := Reply_For (Lx200.Get_Product_Name);
-        Version  : constant String := Reply_For (Lx200.Get_Firmware_Number);
-        Versions : constant Text.Strings := Text.Strings_Of (Version, '.');
-        type Number_Part is range 0 .. 99;
-        function Value (Item : String) return Firmware_Version is (Firmware_Version(Number_Part'value(Item)));
       begin
-        Log.Write ("Product " & Product);
+        declare
+          Product  : constant String := Reply_For (Lx200.Get_Product_Name);
+          Version  : constant String := Reply_For (Lx200.Get_Firmware_Number);
+          Versions : constant Text.Strings := Text.Strings_Of (Version, '.');
+          type Number_Part is range 0 .. 99;
+          function Value (Item : String) return Firmware_Version is (Firmware_Version(Number_Part'value(Item)));
         begin
-          The_Firmware_Version := Value(Versions(1)) + Value(Versions(2)) * 0.01 + Value (Versions(3)) * 0.0001;
-          Log.Write ("Firmware " & Version);
-        exception
-        when others =>
-          Error.Raise_With ("Incorrect firmware version " & Version);
+          Log.Write ("Product " & Product);
+          begin
+            The_Firmware_Version := Value(Versions(1)) + Value(Versions(2)) * 0.01 + Value (Versions(3)) * 0.0001;
+            Log.Write ("Firmware " & Version);
+          exception
+          when others =>
+            Error.Raise_With ("Incorrect firmware version " & Version);
+          end;
+          Is_Legacy := The_Firmware_Version < 3.0;
+          Has_New_Alignment := True;
         end;
-        Is_Legacy := The_Firmware_Version < 3.0;
-        Has_New_Alignment := True;
+        Set_Ultra_Precision_Mode;
+        Set_Device_Status;
+        Define_Moving_Rate;
+      exception
+      when others =>
+        Disconnect_Device ("Startup failed");
       end;
-      Set_Ultra_Precision_Mode;
-      Set_Device_Status;
-      Define_Moving_Rate;
     when others =>
-      Log.Error ("already connected");
+      null;
     end case;
   exception
   when Error.Occurred =>
-    Log.Error (Error.Message);
-  end Startup;
+    Log.Warning (Error.Message);
+  end Startup_If_Disconnected;
 
 
   procedure Execute (The_Command : Lx200.Extended_Command;
@@ -429,7 +438,7 @@ package body Ten_Micron is
     Refraction.Set (The_Air_Pressure);
   exception
   when Error.Occurred =>
-    Log.Error (Error.Message);
+    Log.Warning (Error.Message);
   end Define;
 
 
@@ -439,7 +448,7 @@ package body Ten_Micron is
     Refraction.Set (The_Temperature);
   exception
   when Error.Occurred =>
-    Log.Error (Error.Message);
+    Log.Warning (Error.Message);
   end Define;
 
 
@@ -448,7 +457,7 @@ package body Ten_Micron is
     Execute (Lx200.Set_Julian_Date, Lx200.Julian_Date_Of (Item), Expected => "1");
   exception
   when Error.Occurred =>
-    Log.Error (Error.Message);
+    Log.Warning (Error.Message);
   end Set_Julian_Date;
 
 
@@ -457,7 +466,7 @@ package body Ten_Micron is
    Execute (Lx200.Set_Time_Offset, Lx200.Time_Offset_Of (Item), Expected => "1");
   exception
   when Error.Occurred =>
-    Log.Error (Error.Message);
+    Log.Warning (Error.Message);
   end Set_Time_Offset;
 
 
@@ -465,8 +474,11 @@ package body Ten_Micron is
   begin
     return Refraction.Hectopascal'value (Reply_For (Lx200.Get_Air_Pressure));
   exception
-  when others =>
-    Log.Error ("invalid air pressure");
+  when Error.Occurred =>
+    Log.Warning (Error.Message);
+    return Refraction.Undefined_Air_Pressure;
+   when others =>
+    Log.Warning ("invalid air pressure");
     return Refraction.Undefined_Air_Pressure;
   end Air_Pressure;
 
@@ -481,13 +493,13 @@ package body Ten_Micron is
       elsif Reply = "West" then
         return 'W';
       else
-        Log.Error ("unknown pier side");
+        Log.Warning ("unknown pier side");
         return Undefined_Pier;
       end if;
     end;
   exception
-  when others =>
-    Log.Error ("invalid pier side");
+  when Error.Occurred =>
+    Log.Warning (Error.Message);
     return Undefined_Pier;
   end Pier_Side;
 
@@ -496,8 +508,11 @@ package body Ten_Micron is
   begin
     return Refraction.Celsius'value (Reply_For (Lx200.Get_Temperature));
   exception
-  when others =>
-    Log.Error ("invalid temperature");
+  when Error.Occurred =>
+    Log.Warning (Error.Message);
+    return Refraction.Undefined_Temperature;
+   when others =>
+    Log.Warning ("invalid temperature");
     return Refraction.Undefined_Temperature;
   end Temperature;
 
@@ -507,7 +522,10 @@ package body Ten_Micron is
     return Time.JD'value (Reply_For (Lx200.Get_Julian_Date));
   exception
   when Error.Occurred =>
-    Log.Error ("invalid julian date");
+    Log.Warning (Error.Message);
+    return Time.Julian_Date;
+  when others =>
+    Log.Warning ("invalid julian date");
     return Time.Julian_Date;
   end Julian_Date;
 
@@ -517,7 +535,7 @@ package body Ten_Micron is
     return Execute (Lx200.Gps_Test_Synchronized, Ok => "1", Failed => "0");
   exception
   when Error.Occurred =>
-    Log.Error (Error.Message);
+    Log.Warning (Error.Message);
     return False;
   end Gps_Is_Synchronized;
 
@@ -549,7 +567,7 @@ package body Ten_Micron is
     Flush_Input;
     return The_Information;
   when Error.Occurred =>
-    Log.Error (Error.Message);
+    Log.Warning (Error.Message);
     return The_Information;
   end Get;
 
@@ -563,7 +581,7 @@ package body Ten_Micron is
       Reply : constant String := Reply_For (Tle_Precalculate, Lx200.Julian_Date_Of (Time.Julian_Date) & ",60");
     begin
       if Reply in "E" | "N" then
-        Log.Error ("TLE precalculation failed");
+        Log.Warning ("TLE precalculation failed");
         return False;
       else
         Log.Write ("Precalculation result: " & Reply);
@@ -577,9 +595,9 @@ package body Ten_Micron is
       if Reply'length = 1 then
         case Reply(Reply'first) is
         when 'E' =>
-          Log.Error ("NEO no transient precalculated");
+          Log.Warning ("NEO no transient precalculated");
         when 'F' =>
-          Log.Error ("NEO mount parked");
+          Log.Warning ("NEO mount parked");
         when 'Q' =>
           Log.Warning ("NEO transit already ended");
         when 'S' =>
@@ -587,10 +605,10 @@ package body Ten_Micron is
         when 'V' =>
           Log.Write ("NEO slew to start position");
         when others =>
-          Log.Error ("Neo unknown relpy <" & Reply & '>');
+          Log.Warning ("Neo unknown relpy <" & Reply & '>');
         end case;
       else
-        Log.Error ("Neo bad relpy <" & Reply & '>');
+        Log.Warning ("Neo bad relpy <" & Reply & '>');
       end if;
     end Neo_Slew;
 
@@ -614,7 +632,7 @@ package body Ten_Micron is
     end case;
   exception
   when Error.Occurred =>
-    Log.Error (Error.Message);
+    Log.Warning (Error.Message);
   end Slew_To;
 
 
@@ -629,7 +647,7 @@ package body Ten_Micron is
     Execute (Synchronize, Expected => Lx200.Synch_Ok);
   exception
   when Error.Occurred =>
-    Log.Error (Error.Message);
+    Log.Warning (Error.Message);
   end Synch_To;
 
 
@@ -668,7 +686,7 @@ package body Ten_Micron is
     Execute (Lx200.Tle_Load_Satellite, Two_Line_Element, Expected => "V");
   exception
   when Error.Occurred =>
-    Log.Error (Error.Message);
+    Log.Warning (Error.Message);
   end Load_Tle;
 
 
@@ -677,7 +695,7 @@ package body Ten_Micron is
     Execute (Lx200.Slew_To_Park_Position);
   exception
   when Error.Occurred =>
-    Log.Error (Error.Message);
+    Log.Warning (Error.Message);
   end Park;
 
 
@@ -686,7 +704,7 @@ package body Ten_Micron is
     Execute (Lx200.Stop);
   exception
   when Error.Occurred =>
-    Log.Error (Error.Message);
+    Log.Warning (Error.Message);
   end Stop;
 
 
@@ -696,7 +714,7 @@ package body Ten_Micron is
     Define_Moving_Rate;
   exception
   when Error.Occurred =>
-    Log.Error (Error.Message);
+    Log.Warning (Error.Message);
   end Unpark;
 
 
@@ -981,7 +999,7 @@ package body Ten_Micron is
     Execute (Lx200.New_Alignment_Start, Expected => "V");
   exception
   when Error.Occurred =>
-    Log.Error (Error.Message);
+    Log.Warning (Error.Message);
   end Start_Alignment;
 
 
@@ -1009,7 +1027,7 @@ package body Ten_Micron is
     end;
   exception
   when Error.Occurred =>
-    Log.Error (Error.Message);
+    Log.Warning (Error.Message);
     Points := 0;
   end Add_Alignment_Point;
 
@@ -1020,7 +1038,7 @@ package body Ten_Micron is
     return Execute (Lx200.New_Alignment_End, Ok => "V", Failed => "E");
   exception
   when Error.Occurred =>
-    Log.Error (Error.Message);
+    Log.Warning (Error.Message);
     return False;
   end End_Alignment;
 
@@ -1102,7 +1120,7 @@ package body Ten_Micron is
     end if;
   exception
   when Error.Occurred =>
-    Log.Error (Error.Message);
+    Log.Warning (Error.Message);
     return False;
   end Updated;
 

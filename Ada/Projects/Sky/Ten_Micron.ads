@@ -93,7 +93,7 @@ package Ten_Micron is
 
   function Is_Expert_Mode return Boolean;
 
-  procedure Startup;
+  procedure Startup_If_Disconnected;
 
   procedure Define (The_Air_Pressure : Refraction.Hectopascal);
 

@@ -346,9 +346,7 @@ package body Telescope is
 
     procedure Get_Information is
     begin
-      if The_Information.Status = Disconnected then
-        Ten_Micron.Startup;
-      end if;
+      Ten_Micron.Startup_If_Disconnected;
       The_Information := Ten_Micron.Get;
       if The_Information.Status /= Disconnected and then User.In_Setup_Mode then
         Alignment.Update_Info;
