@@ -5,7 +5,7 @@
 pragma Style_White_Elephant;
 
 pragma Build (Description => "GM HPS Simulator",
-              Version     => (3, 1, 10, 2),
+              Version     => (3, 1, 10, 3),
               Kind        => Console,
               Compiler    => "GNATPRO\23.0");
 with Simulator;

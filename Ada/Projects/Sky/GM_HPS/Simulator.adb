@@ -16,7 +16,6 @@ package body Simulator is
 
   Start_Hiding : Boolean := False;
   Hiding       : Boolean := False;
-  Log_All      : Boolean := False;
 
   use type Text.String;
   use type Time.JD;
@@ -31,6 +30,7 @@ package body Simulator is
 
   procedure Put_Line (Item : String) is
   begin
+    Log.Write (Item);
     if not Hiding then
       Ada.Text_IO.Put_Line (Item);
     end if;
@@ -445,7 +445,6 @@ package body Simulator is
           elsif Command = ":GV" then
             case Data(Data'first + 3) is
             when 'P' => -- GVP
-              The_State := Parked;
               Put_Line ("Get Product Name");
               case Mount_Type is
               when GM_1000 =>
@@ -604,7 +603,7 @@ package body Simulator is
             if Command in ":Gstat#" | ":TLESCK#"
               | ":GD#" | ":GR#" | ":GaXa#" | ":GaXb#" | ":GRPRS#" | ":GRTMP#" | ":GJD1#" | ":pS#"
             then
-              if not Hiding and not Log_All then
+              if not Hiding then
                 Start_Hiding := True;
               end if;
             else
@@ -616,17 +615,20 @@ package body Simulator is
               Hiding := True;
             end if;
             Ada.Text_IO.Get_Immediate (The_Character, Is_Available);
-            if Is_Available and The_Character in '1' | '9' then
+            if Is_Available and The_Character in '1' .. '9' then
+              End_Hiding;
+              Put_Line ("@ delay " & The_Character & 's');
               delay Duration(Character'pos(The_Character) - Character'pos('0'));
-              Put_Line (" Delay " & The_Character & 's');
-              Log_All := True;
             end if;
           end;
         end loop;
       exception
+      when Network.Tcp.Aborted =>
+        End_Hiding;
+        Put_Line ("### GM HPS aborted");
       when Network.Tcp.No_Client =>
         End_Hiding;
-        Put_Line ("GM HPS has disconnected");
+        Put_Line ("### GM HPS has disconnected");
       end;
     end loop Main;
   exception
@@ -637,7 +639,7 @@ package body Simulator is
       use all type Network.Exception_Type;
     begin
       if Network_Error /= Cannot_Resolve_Error then
-        Put_Line ("Network Error: " & Network_Error'image);
+        Put_Line ("### Network Error: " & Network_Error'image);
       end if;
       Put_Line (Exceptions.Name_Of (Item));
     end;
