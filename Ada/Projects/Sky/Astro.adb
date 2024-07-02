@@ -16,6 +16,7 @@
 pragma Style_White_Elephant;
 
 with Ada.Numerics.Generic_Elementary_Functions;
+with Log;
 
 package body Astro is
 
@@ -393,7 +394,7 @@ package body Astro is
     --  . Es duerfen nur heliozentrische Planetenkoordinaten oder geozentrische
     --    Mondkoordinaten entwickelt werden!
     -----------------------------------------------------------------------------
-    procedure T_FIT_LBR (Position_Access:          access procedure (T:REAL; LL,BB,RR: out REAL);
+    procedure T_FIT_LBR (Position_Access:          access procedure (T:REAL; LS,BS:REAL; LL,BB,RR: out REAL);
                          TA,TB:                    REAL;
                          N:                        Integer;
                          L_POLY,B_POLY,R_POLY: out TPOLYNOM) is
@@ -419,7 +420,7 @@ package body Astro is
         T(K) := H(2*K-1)*BMA+BPA; -- Stuetzstellen
       end loop;
       for K in 1 .. N+1 loop
-        Position_Access(T(K),L(K),B(K),R(K));
+        Position_Access(T(K),0.0,0.0,L(K),B(K),R(K));
       end loop;
       for K in 2 .. N+1 loop
         if L(K-1)<L(K) then       -- stetig machen in
@@ -1953,6 +1954,10 @@ package body Astro is
 
   package body MOOLIB is
 
+    ER : constant REAL := Earth_Equatorial_Radius;
+    MR : constant REAL := 1737.4; -- Moon_Radius in km
+
+
     ----------------------------------------------------------------------------
     -- MINI_MOON: Mondkoordinaten geringer Genauigkeit (ca.5'/1')
     --            T  : Zeit in jul.Jahrh. seit J2000  ( T=(JD-2451545)/36525 )
@@ -2263,18 +2268,155 @@ package body Astro is
       R     := ARC / SINPI;
     end MOON;
 
+    -------------------------------------------------------
+    -- Berechnung der Liberation des Mondes (Jean Meeus) --
+    -------------------------------------------------------
+    procedure LIB (T  :     REAL;
+                   L  :     REAL; -- scheinbare geozentrische Länge des Mondes (ohne Nutation)
+                   B  :     REAL; -- scheinbare geozentrische Breite des Mondes
+                   LL : out REAL; -- liberation in Länge
+                   LB : out REAL) -- liberation in Breite
+    is
+      T2 : constant REAL := T * T;
+      T3 : constant REAL := T * T2;
+      T4 : constant REAL := T * T3;
+
+      function RED (A : REAL) return REAL is
+        F : REAL := 360.0 * FRAC(A / 360.0);
+      begin
+        if F < -180.0 then
+          F := F + 360.0;
+        elsif F > 180.0 then
+          F := F - 360.0;
+        end if;
+        return F;
+      end RED;
+
+      -- Mittlere Elongation des Mondes -> Kapitel 45.2
+      D : constant REAL := RED(297.850_1921+445_267.111_4034*T-0.001_8819*T2+T3/545_868.0-T4/113_065_000.0); -- 1998
+    --D : constant REAL := RED(297.850_2042+445_267.111_5168*T-0.001_6300*T2+T3/545_868.0-T4/113_065_000.0); -- 1992
+
+      -- Mittlere Anomalie der Sonne -> Kapitel 45.3
+      MS : constant REAL := RED(357.529_1092 + 35_999.050_2909 * T - 0.000_1535 * T2 + T3 / 24_490_000.0); -- 1998
+    --MS : constant REAL := RED(357.529_1092 + 35_999.050_2909 * T - 0.000_1536 * T2 + T3 / 24_490_000.0); -- 1992
+
+      -- Mittlere Anomalie des Mondes -> Kapitel 45.4
+      MM : constant REAL := RED(134.963_3964+477_198.867_5055*T+0.008_7414*T2+T3/69_699.0-T4/14_712_000.0); -- 1998
+    --MM : constant REAL := RED(134.963_4114+477_198.867_6313*T+0.008_9970*T2+T3/69_699.0-T4/14_712_000.0); -- 1992
+
+      -- mittlerer Abstand des Mondes von seinem aussteigenden Knoten -> Kapitel 45.5
+      F : constant REAL := RED(93.272_095+483_202.017_5233*T-0.003_6539*T2-T3/3_526_000.0+T4/863_310_000.0);  -- 1998
+    --F : constant REAL := RED(93.272_0993+483_202.017_5273*T-0.003_4029*T2-T3/3_526_000.0+T4/863_310_000.0); -- 1992
+
+      --> Kapitel 45.6
+      E: constant REAL := RED(1.0-0.002_516*T-0.000_0074*T2);
+
+      -- Länge des mittleren aufsteigenden Knotens -> Kapitel 45.7
+      O : constant REAL := RED(125.044_5579-1934.136_2891*T+0.002_0762*T2+T3/467_410.0-T4/60_616_000.0); -- 1998
+    --O : constant REAL := RED(125.044_5550-1934.136_1849*T+0.002_0762*T2+T3/467_410.0-T4/60_616_000.0); -- 1992
+
+      A : REAL;
+
+      OLL,OLB : REAL; -- optische liberation in Länge und Breite
+      PLL,PLB : REAL; -- physische liberation in Länge und Breite
+
+
+      -- Optische Liberation
+      procedure OLIB is
+
+        I  : constant REAL := 1.54242; -- Neigung des mittleren Mondäquators gegen die Ekliptik
+        SI : constant REAL := SN(I);
+        CI : constant REAL := CS(I);
+
+        W : constant REAL := L-O;
+
+      begin -- OLIB
+        A := ATN2(SN(W)*CS(B)*CI-SN(B)*SI,CS(W)*CS(B));
+        OLL := A-F;
+        OLB := ASN(-SN(W)*CS(B)*SI-SN(B)*CI);
+      end OLIB;
+
+
+      -- Physische Liberation
+      procedure PLIB is
+
+        K1 : constant REAL := 119.75+131.849*T;
+        K2 : constant REAL := 72.56+20.186*T;
+
+        ROH : constant REAL := -0.027_52*CS(MM)-0.022_45*SN(F)+0.006_84*CS(MM-2.0*F)-0.002_93*CS(2.0*F)
+                               -0.000_85*CS(2.0*(F-D))-0.000_54*CS(MM-2.0*D)-0.000_2*SN(MM+F)-0.000_2*CS(MM+2.0*F)
+                               -0.000_2*CS(MM-F)+0.000_14*CS(MM+2.0*(F-D));
+
+        SIG : constant REAL := -0.028_16*SN(MM)+0.022_44*CS(F)-0.006_82*SN(MM-2.0*F)-0.002_79*SN(2.0*F)
+                               -0.000_83*SN(2.0*(F-D))+0.000_69*SN(MM-2.0*D)+0.000_4*CS(MM+F)-0.000_25*SN(2.0*MM)
+                               -0.000_23*SN(MM+2.0*F)+0.000_2*CS(MM-F)+0.000_19*SN(MM-F)+0.000_13*SN(MM+2.0*(F-D))
+                               -0.000_1*CS(MM-3.0*F);
+
+        TAU : constant REAL := +0.025_2 *SN(MS)*E+0.004_73*SN(2.0*(MM-F))-0.004_67*SN(MM)+0.003_96*SN(K1)
+                               +0.002_76*SN(2.0*(MM-D))+0.001_96*SN(O)-0.001_83*CS(MM-F)+0.001_15*SN(MM-2.0*D)
+                               -0.000_96*SN(MM-D)+0.000_46*SN(2.0*(F-D))-0.000_39*SN(MM-F)-0.000_32*SN(MM-MS-D)
+                               +0.000_27*SN(2.0*(MM-D)-MS)+0.000_23*SN(K2)-0.000_14*SN(2.0*D)+0.000_14*CS(2.0*(MM-F))
+                               -0.000_12*SN(MM-2.0*F)-0.000_12*SN(2.0*MM)+0.000_11*SN(2.0*(MM-MS-D));
+
+      begin -- PLIB
+        PLL := -TAU+(ROH*CS(A)+SIG*SN(A))*TN(OLB);
+        PLB := SIG*CS(A)-ROH*SN(A);
+      end PLIB;
+
+    begin -- LIB
+      OLIB;
+      PLIB;
+      LL := RED(OLL+PLL);
+      LB := RED(OLB+PLB);
+    end LIB;
+
     -----------------------------------------------------------------------------
     -- MOONEQU: aequatoriale Mondkoordinaten
     --          (Rektaszension RA und Deklination DEC in Grad, R in Erdradien)
     --          T in julian.Jahrhndt. seit J2000 ( T:= (JD - 2451545.0)/36525 )
+    --          LS, LB: Selenografischen Länge (E+) und Breite (N+)
     --          Die Koord. beziehen sich auf das wahre Aequinoktium des Datums.
     -----------------------------------------------------------------------------
     procedure MOONEQU(T:            REAL;
+                      LS,BS:        REAL;
                       RA,DEC,R: out REAL) is
-      L,B,X,Y,Z: REAL;
+      L,B,LL,LB,LSC,BSC,X,Y,Z,X1,Y1,Z1,X2,Y2,Z2,XS,YS,ZS: REAL;
     begin
-      MOON(T,L,B,R);         -- ekliptikale Moondkoordinaten
-      CART(R,B,L,X,Y,Z);     -- (mittleres Aequinoktium des Datums)
+      MOON(T,L,B,R); -- ekliptikale Moondkoordinaten
+
+      if LS = 0.0 and BS = 0.0 then
+        Log.Write ("XXX Center");
+        CART(R,B,L,X,Y,Z); -- mittleres Aequinoktium des Datums
+      else
+        Log.Write ("XXX LS:" & LS'image & " - BS:" & BS'image);
+        -- Liberations Korrektur der selenografischen Koordinaten
+        LIB (T,L,B,LL,LB);
+        LSC := LL-LS; -- west negtive
+        BSC := BS-LB;
+
+        CART(MR,BSC,LSC,X1,Y1,Z1); -- Umwandlung der selenografischen Koordinaten in kartesische Koordinaten
+
+        -- Rotation um die ekliptikale Länge des Mondes
+        X2 := X1*CS(L)-Y1*SN(L);
+        Y2 := X1*SN(L)+Y1*CS(L);
+        Z2 := Z1;
+
+        -- Rotation um die ekliptikale Breite des Mondes
+        XS := X2;
+        YS := Y2*CS(B)-Z2*SN(B);
+        ZS := Y2*SN(B)+Z2*CS(B);
+
+        -- Addition der geozentrischen Koordinaten des Mondes
+        CART(R*ER,B,L,X,Y,Z);
+        X := X+XS;
+        Y := Y+YS;
+        Z := Z+ZS;
+
+        X := X/ER;
+        Y := Y/ER;
+        Z := Z/ER;
+      end if;
+
       ECLEQU(T,X,Y,Z);       -- Umwandlung in aequatoriale Koordinaten
       NUTEQU(T,X,Y,Z);       -- Nutation
       POLAR(X,Y,Z,R,DEC,RA);
@@ -2318,21 +2460,21 @@ package body Astro is
 
       -- periodische Stoerungen der Laengen von Mond und Sonne (in ")
       DLM := + 22640.0*SIN(L) - 4586.0*SIN(L-2.0*D) + 2370.0*SIN(2.0*D) + 769.0*SIN(2.0*L)
-             - 668.0*SIN(LS) - 412.0*SIN(2.0*F) - 212.0*SIN(2.0*L-2.0*D) 
+             - 668.0*SIN(LS) - 412.0*SIN(2.0*F) - 212.0*SIN(2.0*L-2.0*D)
              - 206.0*SIN(L+LS-2.0*D) + 192.0*SIN(L+2.0*D) - 165.0*SIN(LS-2.0*D)
              - 125.0*SIN(D) - 110.0*SIN(L+LS) + 148.0*SIN(L-LS) - 55.0*SIN(2.0*F-2.0*D);
       DLS := + 6893.0*SIN(LS) + 72.0*SIN(2.0*LS);
 
       -- Differenz der wahren Laengen von Mond und Sonne (in Umlaeufen)
       DLAMBDA  := D / P2   +   ( DLM - DLS) / 1296000.0;
-      
+
       -- Korrektur der Neumondzeit
       T   := T  - DLAMBDA / D1;
-      
+
       -- ekliptikale Breite B des Mondes (in Grad)
-      B  := ( + 18520.0*SIN(F+DLM/ARC) - 526.0*SIN(F-2.0*D) ) / 3600.0; 
+      B  := ( + 18520.0*SIN(F+DLM/ARC) - 526.0*SIN(F-2.0*D) ) / 3600.0;
     end IMPROVE;
-  
+
   end MOOLIB;
 
 
@@ -2521,8 +2663,10 @@ package body Astro is
     --         Die Koord. beziehen sich auf das wahre Aequinoktium des Datums.
     ----------------------------------------------------------------------------
     procedure SUNEQU(T       :     REAL;
+                     LS,BS   :     REAL;
                      RA,DEC,R: out REAL) is
       DT,L,B,X,Y,Z: REAL;
+      pragma Unreferenced (LS, BS); -- not implemented
     begin
       DT := (8.32/1440.0)/36525.0; -- Retardierung um 8.32 Minuten
       SUN200(T-DT,L,B,R);          -- geozentrische ekliptikale

@@ -21,7 +21,15 @@ with Time;
 
 package Moon is
 
-  function Direction_Of (UT : Time.Ut) return Space.Direction;
+  type Coordinate is record
+    Longitude : Angle.Value := Angle.Zero; -- East positive
+    Latitude  : Angle.Value := Angle.Zero; -- North positive
+  end record;
+
+  Center : constant Coordinate := (others => <>);
+
+  function Direction_Of (UT       : Time.Ut;
+                         Location : Coordinate := Center) return Space.Direction;
 
   procedure Get_New_Phase (Around    :     Time.Ut;
                            Before    : out Time.Ut;

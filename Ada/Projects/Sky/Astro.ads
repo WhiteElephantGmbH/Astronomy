@@ -20,8 +20,10 @@ package Astro is
 -- ********************************************************************
 -- *   developed by:                                                  *
 -- *      Oliver Montenbruck and Thomas Pfleger                       *
+-- *      and Jean Meeus for the evaluation of object on the moon     *
 -- *   original source from:                                          *
 -- *      Astronomie mit dem Personal Computer (Zweite Ausgabe 1994)  *
+-- *      Astronomische Algorithmen 1998                              *
 -- *   translated to Ada by:                                          *
 -- *      Urs Maurer, White Elephant GmbH                             *
 -- ********************************************************************
@@ -211,7 +213,7 @@ package Astro is
     --  . Es duerfen nur heliozentrische Planetenkoordinaten oder geozentrische
     --    Mondkoordinaten entwickelt werden!
     -----------------------------------------------------------------------------
-    procedure T_FIT_LBR (Position_Access:          access procedure (T:REAL; LL,BB,RR: out REAL);
+    procedure T_FIT_LBR (Position_Access:          access procedure (T:REAL; LS,BS:REAL; LL,BB,RR: out REAL);
                          TA,TB:                    REAL;
                          N:                        Integer;
                          L_POLY,B_POLY,R_POLY: out TPOLYNOM);
@@ -536,9 +538,11 @@ package Astro is
     -- MOONEQU: aequatoriale Mondkoordinaten
     --          (Rektaszension RA und Deklination DEC in Grad, R in Erdradien)
     --          T in julian.Jahrhndt. seit J2000 ( T:= (JD - 2451545.0)/36525 )
+    --          LS, LB: Selenografischen Länge (E+) und Breite (N+)
     --          Die Koord. beziehen sich auf das wahre Aequinoktium des Datums.
     -----------------------------------------------------------------------------
     procedure MOONEQU(T:            REAL;
+                      LS,BS:        REAL;
                       RA,DEC,R: out REAL);
 
     ------------------------------------------------------------------------------
@@ -563,7 +567,7 @@ package Astro is
                                   -- Laengen von Mond und Sonne
                                   -- dD/dT = 1236.85 Umlaeufe/Jahrhundert
     D0 : constant := 0.827361;    -- Diff. der mittl. Laengen von Mond und
-                                  -- Sonne fuer J2000 (in Umlaeufen)                              
+                                  -- Sonne fuer J2000 (in Umlaeufen)
     procedure IMPROVE (T : in out REAL;
                        B :    out REAL);
 
@@ -606,6 +610,7 @@ package Astro is
     --         Die Koord. beziehen sich auf das wahre Aequinoktium des Datums.
     ----------------------------------------------------------------------------
     procedure SUNEQU(T       :     REAL;
+                     LS,BS   :     REAL; -- not implemented
                      RA,DEC,R: out REAL);
 
     ------------------------------------------------------------------------------

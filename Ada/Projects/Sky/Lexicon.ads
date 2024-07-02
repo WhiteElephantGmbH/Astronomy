@@ -721,6 +721,24 @@ package Lexicon is
     Radio_Source,
     Transient_Event,
 
+    -- Moon Feature Types
+    Swirl,
+    Catena,
+    Crater,
+    Lacus,
+    Mare,
+    Mons,
+    Palus,
+    Promontorium,
+    Rima,
+    Rupes,
+    Sinus,
+    Vallis,
+
+    -- Moon Feature Names
+    Kepler,
+    Vallis_Alpes,
+
     -- Other Names
     All_Objects,
     Camera,

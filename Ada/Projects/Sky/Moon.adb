@@ -27,7 +27,8 @@ package body Moon is
   use Astro;
   use MATLIB;
 
-  function Direction_Of (UT : Time.Ut) return Space.Direction is
+  function Direction_Of (UT       : Time.Ut;
+                         Location : Coordinate := Center) return Space.Direction is
 
     DEC, RA, R, RSPHI, RCPHI, LMST : REAL;
     G: VECTOR; -- geozentric moon vector
@@ -37,6 +38,8 @@ package body Moon is
 
   begin -- Direction_Of
     MOOLIB.MOONEQU (T   => Time.Tet_Of (UT),
+                    LS  => +Location.Longitude,
+                    BS  => +Location.Latitude,
                     RA  => RA,
                     DEC => DEC,
                     R   => R);

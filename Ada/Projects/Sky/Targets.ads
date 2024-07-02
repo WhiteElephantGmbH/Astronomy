@@ -64,6 +64,8 @@ package Targets is
   function Solar_System_Direction_Of (Item : Name.Id;
                                       Ut   : Time.Ut) return Space.Direction;
 
+  function Description_Of (Id : Name.Id) return String;
+
 private
 
   type Az_Range is record

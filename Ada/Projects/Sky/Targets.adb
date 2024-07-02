@@ -17,7 +17,7 @@ pragma Style_White_Elephant;
 
 with Earth;
 with Lexicon;
-with Moon;
+with Moon.Data;
 with Objects;
 with Site;
 with Sky.Data;
@@ -408,11 +408,7 @@ package body Targets is
 
 
   function Moon_Direction_Of (Id : Name.Id := Name.No_Id;
-                              UT : Time.Ut) return Space.Direction is
-    pragma Unreferenced (Id);
-  begin
-    return Moon.Direction_Of (UT);
-  end Moon_Direction_Of;
+                              UT : Time.Ut) return Space.Direction is (Moon.Data.Direction_Of (Id, UT));
 
 
   function Solar_System_Direction_Of (Item : Name.Id;
@@ -427,8 +423,31 @@ package body Targets is
     end;
   exception
   when others =>
-    Log.Write ("Unknown Planet: " & Planet_Name);
+    Log.Warning ("Unknown Planet: " & Planet_Name);
     return Space.Unknown_Direction;
   end Solar_System_Direction_Of;
+
+
+  function Description_Of (Id : Name.Id) return String is
+    use type Name.Id;
+  begin
+    if Id /= Name.No_Id then
+      case Name.Kind_Of (Id) is
+      when Name.Sky_Object =>
+        return Sky.Data.Descriptor_Of (Name.Object_Of (Id));
+      when Name.Moon =>
+        return Moon.Data.Feature_Kind_Of (Id);
+      when Name.Planet =>
+        if Name.Image_Of (Id) = "Pluto" then
+          return "Dwarf Planet"; -- Zwergplanet
+        else
+          return "Planet";
+        end if;
+      when others =>
+        null;
+      end case;
+    end if;
+    return "";
+  end Description_Of;
 
 end Targets;
