@@ -693,13 +693,19 @@ package body Telescope is
 
 
     procedure Update_Target_Direction is
-      Actual_Direction : constant Space.Direction := Target_Direction (At_Time => Time.Universal);
-      use type Space.Direction;
-      Delta_Direction  : constant Space.Direction := Actual_Direction - The_Start_Direction;
     begin
-      if Space.Direction_Is_Known (Delta_Direction) then
-        Mount.Update_Target (Delta_Direction);
-      end if;
+      declare
+        Actual_Direction : constant Space.Direction := Target_Direction (At_Time => Time.Universal);
+        use type Space.Direction;
+        Delta_Direction  : constant Space.Direction := Actual_Direction - The_Start_Direction;
+      begin
+        if Space.Direction_Is_Known (Delta_Direction) then
+          Mount.Update_Target (Delta_Direction);
+        end if;
+      end;
+    exception
+    when Target_Lost =>
+      Stop_Target;
     end Update_Target_Direction;
 
 
