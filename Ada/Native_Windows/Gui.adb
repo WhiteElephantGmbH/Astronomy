@@ -231,12 +231,13 @@ package body Gui is
     The_Information : Information;
     The_Id          : Positive;
     The_Parent_Menu : Menu;
+    Previous        : Menu_Item_Access;
     Next            : Menu_Item_Access;
   end record;
 
-  Last_Menu_Item     : Menu_Item_Access := null;
-  First_Menu_Item_Id : constant Positive := 1000;
-  Next_Menu_Item_Id  : Positive := First_Menu_Item_Id;
+  Last_Menu_Item         : Menu_Item_Access := null;
+  First_Menu_Item_Id     : constant Positive := 1000;
+  The_Next_Menu_Item_Id  : Positive := First_Menu_Item_Id;
 
   Nr_Of_Pages  : Natural := 0;
   Current_Page : Page;
@@ -2006,25 +2007,50 @@ package body Gui is
   end Add_Menu_Separator;
 
 
+  package Menu_Store is
+
+    procedure Put (Id : Positive);
+
+    function Has_Id return Boolean;
+
+    function Id return Positive;
+
+  end Menu_Store;
+
+
+  function New_Menu_Item_Id  return Positive is
+  begin
+    if Menu_Store.Has_Id then
+      return Menu_Store.Id;
+    end if;
+    return Id : constant Positive := The_Next_Menu_Item_Id do
+      The_Next_Menu_Item_Id := Id + 1;
+    end return;
+  end New_Menu_Item_Id;
+
+
   function Menu_Item_Access_Of (The_Text         : String;
                                 To_Menu          : Menu;
                                 The_Menu_Handler : access procedure (Item : Information);
                                 The_Information  : Information := No_Information) return Menu_Item_Access is
 
     The_Item_Access : constant Menu_Item_Access := new Menu_Item_Information'(The_Information => The_Information,
-                                                                              The_Id          => Next_Menu_Item_Id,
+                                                                              The_Id          => New_Menu_Item_Id,
                                                                               The_Parent_Menu => To_Menu,
+                                                                              Previous        => null,
                                                                               Next            => Last_Menu_Item);
     Unused   : Win32.BOOL;
     Text     : aliased constant Wide_String := To_Wide (The_Text) & Wide_Nul;
   begin
+    if Last_Menu_Item /= null then
+      Last_Menu_Item.Previous := The_Item_Access;
+    end if;
     To_Menu.The_Callback := Convert(The_Menu_Handler);
     Last_Menu_Item := The_Item_Access;
     Unused := Win32.Winuser.AppendMenuW (To_Menu.The_Handle,
                                          Win32.Winuser.MF_STRING,
-                                         Win32.UINT_PTR(Next_Menu_Item_Id),
+                                         Win32.UINT_PTR(The_Item_Access.The_Id),
                                          Win32.Addr(Text));
-    Next_Menu_Item_Id := Next_Menu_Item_Id + 1;
     return The_Item_Access;
   end Menu_Item_Access_Of;
 
@@ -2089,6 +2115,65 @@ package body Gui is
   begin
     return Add_Menu_Item (The_Text, To_Menu, null);
   end Add_Menu_Item;
+
+
+  package body Menu_Store is
+
+    The_Ids    : array (1..1000) of Positive;
+    Last_Index : Natural := 0;
+
+    procedure Put (Id : Positive) is
+    begin
+      Last_Index := @ + 1;
+      The_Ids(Last_Index) := Id;
+    end Put;
+
+    function Has_Id return Boolean is (Last_Index > 0);
+
+    function Id return Positive is
+    begin
+      Last_Index := @ - 1;
+      return The_Ids(Last_Index + 1);
+    end Id;
+
+  end Menu_Store;
+
+
+  procedure Delete_Menu_Item (Item : Radio_Menu_Item) is
+    Menu_Item : Menu_Item_Access renames Item.The_Menu_Item;
+    Id        : constant Positive := Menu_Item.The_Id;
+    Parent    : Menu renames Menu_Item.The_Parent_Menu;
+    use type Win32.BOOL;
+  begin
+    Menu_Store.Put (Id);
+    if Win32.Winuser.DeleteMenu (Parent.The_Handle,
+                                 Win32.UINT(Id),
+                                 Win32.Winuser.MF_BYCOMMAND) /= Win32.TRUE
+    then
+      raise Program_Error;
+    end if;
+    if Menu_Item.Next = null then
+      if Menu_Item.Previous = null then
+        Last_Menu_Item := null; -- menu item list becomes empty
+      else
+        Last_Menu_Item := Menu_Item.Previous; -- previous becomes last
+        Last_Menu_Item.Next := null;
+      end if;
+    else
+      if Menu_Item.Previous /= null then
+        Menu_Item.Previous.Next := Menu_Item.Next;
+      end if;
+      Menu_Item.Next.Previous := Menu_Item.Previous;
+    end if;
+  end Delete_Menu_Item;
+
+
+  procedure Dispose_Menu_Item (Item : in out Radio_Menu_Item) is
+    procedure Dispose is new Ada.Unchecked_Deallocation (Menu_Item_Information, Menu_Item_Access);
+  begin
+    Dispose (Item.The_Menu_Item);
+    Item.The_Menu_Item := null;
+  end Dispose_Menu_Item;
 
 
   procedure Set_Menubar (The_Flags : Win32.UINT) is

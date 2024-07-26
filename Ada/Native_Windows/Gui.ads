@@ -729,4 +729,8 @@ private
   type Checked_Combo_Box is new Combo_Box with null record;
   type Plain_Combo_Box is new Combo_Box with null record;
 
+  procedure Delete_Menu_Item (Item : Radio_Menu_Item);
+
+  procedure Dispose_Menu_Item (Item : in out Radio_Menu_Item);
+
 end Gui;
