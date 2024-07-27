@@ -90,6 +90,12 @@ package body Lx200 is
       return Command_For ("Qw");
     when Quit_Move =>
       return Command_For ("Q");
+    when Set_Lunar_Tracking_Rate =>
+      return Command_For ("RT0");
+    when Set_Solar_Tracking_Rate =>
+      return Command_For ("RT1");
+    when Set_Sideral_Tracking_Rate =>
+      return Command_For ("RT2");
     when Set_Centering_Rate =>
       return Command_For ("RC" & Parameter);
     when Set_Guiding_Rate =>
@@ -150,7 +156,7 @@ package body Lx200 is
     when Slew_To_Park_Position =>
       return Command_For ("KA");
     when Set_Ultra_Precision_Mode =>
-      Has_Ultra_Precision := True;
+      Set_Ultra_Precision;
       return Command_For ("U2");
     when Stop =>
       return Command_For ("STOP");
@@ -232,6 +238,12 @@ package body Lx200 is
     Log.Error ("Signed_Degrees_Of failed with " & Item);
     raise Protocol_Error;
   end Signed_Degrees_Of;
+
+
+  procedure Set_Ultra_Precision is
+  begin
+    Has_Ultra_Precision := True;
+  end Set_Ultra_Precision;
 
 
   function Hours_Of (Item : Angle.Value) return String is

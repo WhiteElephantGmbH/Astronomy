@@ -55,6 +55,9 @@ package Lx200 is
     Quit_Move_South,
     Quit_Move_West,
     Quit_Move,
+    Set_Lunar_Tracking_Rate,
+    Set_Solar_Tracking_Rate,
+    Set_Sideral_Tracking_Rate,
     Set_Centering_Rate,
     Set_Guiding_Rate,
     Set_Finding_Rate,
@@ -103,6 +106,8 @@ package Lx200 is
                               Front_Digits : Natural := 2) return String;
 
   function Signed_Degrees_Of (Item : String) return Angle.Value;
+
+  procedure Set_Ultra_Precision;
 
   function Hours_Of (Item : Angle.Value) return String;
 

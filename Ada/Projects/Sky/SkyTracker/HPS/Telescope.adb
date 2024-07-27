@@ -191,6 +191,10 @@ package body Telescope is
         return Ten_Micron.Axis_Position;
       when Name.Near_Earth_Object =>
         return Ten_Micron.Near_Earth_Object;
+      when Name.Moon =>
+        return Ten_Micron.Moon;
+      when Name.Sun =>
+        return Ten_Micron.Sun;
       when others =>
         return Ten_Micron.Other_Targets;
       end case;

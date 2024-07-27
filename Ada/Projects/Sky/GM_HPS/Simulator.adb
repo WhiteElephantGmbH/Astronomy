@@ -5,14 +5,19 @@
 pragma Style_White_Elephant;
 
 with Ada.Command_Line;
+with Ada.Real_Time;
 with Ada.Text_IO;
+with Angle;
 with Exceptions;
 with Log;
+with Lx200;
 with Network.Tcp;
 with Text;
 with Time;
 
 package body Simulator is
+
+  package Real renames Ada.Real_Time;
 
   Start_Hiding : Boolean := False;
   Hiding       : Boolean := False;
@@ -111,7 +116,44 @@ package body Simulator is
 
     type Offset is delta 0.1 range -9999.0 .. 9999.0 with Small => 0.1;
 
-    The_Time_Offset : Offset := 0.0;
+    The_Time_Offset  : Offset := 0.0;
+
+    type Arc_Seconds is new Duration;
+
+    Lunar_Tracking_Increment : constant Arc_Seconds := 0.356; -- per second
+    Solar_Tracking_Increment : constant Arc_Seconds := 0.041; -- per second
+
+    The_Ra_Increment : Arc_Seconds := 0.0;
+
+    Undefined_Time : constant Duration := Duration'first;
+
+    The_Start_Time : Real.Time;
+    The_Time_Delta : Duration := Undefined_Time;
+
+
+    procedure Increment_Ra_Image is
+      The_Ra        : Angle.Value;
+      The_End_Time  : Real.Time;
+      The_Increment : Arc_Seconds;
+      use type Angle.Value;
+      use type Real.Time;
+    begin
+      if The_Time_Delta = Undefined_Time then
+        The_Start_Time := Real.Clock;
+        The_Time_Delta := 0.0;
+      else
+        The_Ra := Lx200.Hours_Of (Ra_Image(Ra_Image'first .. Ra_Image'last - 1));
+        The_End_Time := Real.Clock;
+        The_Time_Delta := Real.To_Duration (The_End_Time - The_Start_Time);
+        The_Start_Time := The_End_Time;
+        The_Increment := Arc_Seconds(The_Time_Delta) * The_Ra_Increment;
+        The_Ra := @ + Angle.Degrees(The_Increment / 3600);
+        Ra_Image := Lx200.Hours_Of (The_Ra) & "#";
+      end if;
+    exception
+    when Event : others =>
+      Ada.Text_IO.Put_Line ("EXCEPTION: " & Exceptions.Information_Of (Event));
+    end Increment_Ra_Image;
 
 
     function Julian_Date_Image return String is
@@ -503,7 +545,7 @@ package body Simulator is
             when Parked =>
               Ra_Image := Ra_Park_Image;
             when others =>
-              null;
+              Increment_Ra_Image;
             end case;
             Send (Ra_Image);
           elsif Command = ":GZ" then
@@ -519,7 +561,7 @@ package body Simulator is
             end;
           elsif Command = ":Sr" then
             Ra_Image := Image;
-            Put_Line ("Set Object RA " & Image);
+            Put_Line ("Set Object RA " & Ra_Image);
             Send ("1");
           elsif Command = ":Sd" then
             Dec_Image := Image;
@@ -572,6 +614,20 @@ package body Simulator is
             Put_Line ("Set slew rate to maximum");
           elsif Command = ":Rc" then
             Put_Line ("Set centering rate to " & Image(Image'first .. Image'last - 1) & "x");
+          elsif Command = ":RT" then
+            case Data(Data'first + 3) is
+            when '0' => -- RT0
+              Put_Line ("Set lunar tracking rate");
+              The_Ra_Increment := Lunar_Tracking_Increment;
+            when '1' => -- RT1
+              Put_Line ("Set solar tracking rate");
+              The_Ra_Increment := Solar_Tracking_Increment;
+            when '2' => -- RT2
+              The_Ra_Increment := 0.0;
+              Put_Line ("Set sideral tracking rate");
+            when others =>
+              Put_Line ("Not supported tracking rate " & Data);
+            end case;
           else
             Put_Line ("Unknown Command " & Data);
           end if;
@@ -668,4 +724,6 @@ package body Simulator is
     Put_Line (Exceptions.Information_Of (Event));
   end Execute;
 
+begin
+  Lx200.Set_Ultra_Precision;
 end Simulator;

@@ -304,6 +304,9 @@ package body Ten_Micron is
          | Quit_Move_North
          | Quit_Move_South
          | Quit_Move_West
+         | Set_Lunar_Tracking_Rate
+         | Set_Solar_Tracking_Rate
+         | Set_Sideral_Tracking_Rate
          | Set_Guiding_Rate
          | Set_Centering_Rate
          | Set_Finding_Rate
@@ -625,9 +628,17 @@ package body Ten_Micron is
       if Neo_Prepared then
         Neo_Slew;
       end if;
-    when Other_Targets =>
+    when Tracking_Target_Kind =>
       Execute (Set_Right_Ascension, Lx200.Hours_Of (Space.Ra_Of (Location)), Expected => "1");
       Execute (Set_Declination, Lx200.Signed_Degrees_Of (Space.Dec_Of (Location)), Expected => "1");
+      case Tracking_Target_Kind(Target) is
+      when Moon =>
+        Execute (Set_Lunar_Tracking_Rate);
+      when Sun =>
+        Execute (Set_Solar_Tracking_Rate);
+      when Other_Targets =>
+        Execute (Set_Sideral_Tracking_Rate);
+      end case;
       Execute (Slew, Expected => Lx200.Slew_Ok);
     end case;
   exception

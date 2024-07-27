@@ -41,7 +41,9 @@ package Ten_Micron is
 
   subtype Transit_State is State range Preparing .. Ended;
 
-  type Target_Kind is (Axis_Position, Near_Earth_Object, Other_Targets);
+  type Target_Kind is (Axis_Position, Near_Earth_Object, Moon, Sun, Other_Targets);
+
+  subtype Tracking_Target_Kind is Target_Kind range Moon .. Other_Targets;
 
   type Time_Offset is delta 0.0001 range -9.9999 .. 9.9999 with Small => 0.0001;
 
