@@ -24,6 +24,7 @@ with Error;
 with File;
 with Http_Server.Parameter;
 with Language.Parameter;
+with Moon.Parameter;
 with Picture.Parameter;
 with Stellarium.Parameter;
 with Sun.Parameter;
@@ -62,6 +63,8 @@ package body Parameter is
       Put ("");
       Sun.Parameter.Defaults (Put'access);
       Put ("");
+      Moon.Parameter.Defaults (Put'access);
+      Put ("");
       Clock.Parameter.Defaults (Put'access);
       Put ("");
       Picture.Parameter.Defaults (Put'access, "D:\Picture\Image.CR2", Height => "0.51", Width => "0.74");
@@ -88,6 +91,7 @@ package body Parameter is
       Ten_Micron.Parameter.Define (Handle);
       Http_Server.Parameter.Define (Handle);
       Sun.Parameter.Define (Handle);
+      Moon.Parameter.Define (Handle);
       Clock.Parameter.Define (Handle);
       Picture.Parameter.Define (Handle);
       Camera.Parameter.Define (Handle);

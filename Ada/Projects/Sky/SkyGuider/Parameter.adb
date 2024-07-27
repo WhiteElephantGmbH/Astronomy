@@ -21,6 +21,7 @@ with Configuration;
 with Error;
 with File;
 with Language.Parameter;
+with Moon.Parameter;
 with Picture.Parameter;
 with Section;
 with Stellarium.Parameter;
@@ -64,7 +65,10 @@ package body Parameter is
       Put (Ip_Address_Key & " = 192.168.4.1");
       Put (Port_Key & "       = 4040");
       Put ("");
+      Moon.Parameter.Defaults (Put'access);
+      Put ("");
       Picture.Parameter.Defaults (Put'access);
+      Put ("");
       Stellarium.Parameter.Defaults (Put'access);
       Ada.Text_IO.Close (The_File);
     exception
@@ -100,6 +104,7 @@ package body Parameter is
       when others =>
         Error.Raise_With ("M-Zero port number out of range");
       end;
+      Moon.Parameter.Define (Handle);
       Picture.Parameter.Define (Handle);
       Stellarium.Parameter.Define (Handle, With_Satellites => False);
     end Read_Values;

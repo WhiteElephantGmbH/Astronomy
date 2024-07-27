@@ -116,6 +116,8 @@ package Text is
   function Purge_Of (Item : Standard.String) return Standard.String;
   -- Removes all whitespace.
 
+  function Capitalized_Of (Item : Standard.String) return Standard.String;
+
   function Legible_Of (Item : Standard.String) return Standard.String;
   -- Function to return a "legible" version of the supplied string.
   --    Underscores are replaced with spaces.

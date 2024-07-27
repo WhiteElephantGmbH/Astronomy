@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2012 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2012 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -1652,6 +1652,24 @@ package body Astro is
   --========================================
   -- Unit PNULIB: Praezession und Nutation
   --========================================
+
+  procedure NUT (T            :     REAL;
+                 EPS,DEPS,DPSI: out REAL) is -- in RAD
+    ARC : constant := 206264.8062; -- Bogensekunden pro radian = 3600*180/pi
+    LS,D,F,N: REAL;
+  begin
+    LS  := P2*FRAC(0.993133+  99.997306*T);   -- mittl. Anomalie Sonne
+    D   := P2*FRAC(0.827362+1236.853087*T);   -- Diff. Laenge Mond-Sonne
+    F   := P2*FRAC(0.259089+1342.227826*T);   -- Knotenabstand
+    N   := P2*FRAC(0.347346-   5.372447*T);   -- Laenge des aufst.Knotens
+    EPS := 0.4090928-2.2696E-4*T;             -- Ekliptikschiefe
+    DPSI := ( -17.200*SIN(N) - 1.319*SIN(2.0*(F-D+N)) - 0.227*SIN(2.0*(F+N))
+              + 0.206*SIN(2.0*N) + 0.143*SIN(LS) ) / ARC;
+    DEPS := ( + 9.203*COS(N) + 0.574*COS(2.0*(F-D+N)) + 0.098*COS(2.0*(F+N))
+              - 0.090*COS(2.0*N) ) / ARC;
+  end NUT;
+
+
   package body PNULIB is
 
     --------------------------------------------------------------
@@ -1661,20 +1679,10 @@ package body Astro is
     --------------------------------------------------------------
     procedure NUTEQU (T    :        REAL;
                       X,Y,Z: in out REAL) is
-      ARC : constant := 206264.8062; -- Bogensekunden pro radian = 3600*180/pi
-      LS,D,F,N,EPS : REAL;
-      DPSI,DEPS,C,S: REAL;
-      DX,DY,DZ     : REAL;
+      EPS,DPSI,DEPS: REAL;
+      C,S,DX,DY,DZ : REAL;
     begin
-      LS  := P2*FRAC(0.993133+  99.997306*T);   -- mittl. Anomalie Sonne
-      D   := P2*FRAC(0.827362+1236.853087*T);   -- Diff. Laenge Mond-Sonne
-      F   := P2*FRAC(0.259089+1342.227826*T);   -- Knotenabstand
-      N   := P2*FRAC(0.347346-   5.372447*T);   -- Laenge des aufst.Knotens
-      EPS := 0.4090928-2.2696E-4*T;             -- Ekliptikschiefe
-      DPSI := ( -17.200*SIN(N)   - 1.319*SIN(2.0*(F-D+N)) - 0.227*SIN(2.0*(F+N))
-                + 0.206*SIN(2.0*N) + 0.143*SIN(LS) ) / ARC;
-      DEPS := ( + 9.203*COS(N)   + 0.574*COS(2.0*(F-D+N)) + 0.098*COS(2.0*(F+N))
-                - 0.090*COS(2.0*N)                 ) / ARC;
+      NUT (T,EPS,DEPS,DPSI);
       C := DPSI*COS(EPS);  S := DPSI*SIN(EPS);
       DX := -(C*Y+S*Z); DY := (C*X-DEPS*Z); DZ := (S*X+DEPS*Y);
       X  :=  X + DX;    Y  := Y + DY;       Z  := Z + DZ;
@@ -2267,14 +2275,15 @@ package body Astro is
     -- MOONEQU: aequatoriale Mondkoordinaten
     --          (Rektaszension RA und Deklination DEC in Grad, R in Erdradien)
     --          T in julian.Jahrhndt. seit J2000 ( T:= (JD - 2451545.0)/36525 )
+    --          LS, LB: Selenografischen Länge (E+) und Breite (N+)
     --          Die Koord. beziehen sich auf das wahre Aequinoktium des Datums.
     -----------------------------------------------------------------------------
     procedure MOONEQU(T:            REAL;
                       RA,DEC,R: out REAL) is
       L,B,X,Y,Z: REAL;
     begin
-      MOON(T,L,B,R);         -- ekliptikale Moondkoordinaten
-      CART(R,B,L,X,Y,Z);     -- (mittleres Aequinoktium des Datums)
+      MOON(T,L,B,R); -- ekliptikale Moondkoordinaten
+      CART(R,B,L,X,Y,Z); -- mittleres Aequinoktium des Datums
       ECLEQU(T,X,Y,Z);       -- Umwandlung in aequatoriale Koordinaten
       NUTEQU(T,X,Y,Z);       -- Nutation
       POLAR(X,Y,Z,R,DEC,RA);
@@ -2318,21 +2327,174 @@ package body Astro is
 
       -- periodische Stoerungen der Laengen von Mond und Sonne (in ")
       DLM := + 22640.0*SIN(L) - 4586.0*SIN(L-2.0*D) + 2370.0*SIN(2.0*D) + 769.0*SIN(2.0*L)
-             - 668.0*SIN(LS) - 412.0*SIN(2.0*F) - 212.0*SIN(2.0*L-2.0*D) 
+             - 668.0*SIN(LS) - 412.0*SIN(2.0*F) - 212.0*SIN(2.0*L-2.0*D)
              - 206.0*SIN(L+LS-2.0*D) + 192.0*SIN(L+2.0*D) - 165.0*SIN(LS-2.0*D)
              - 125.0*SIN(D) - 110.0*SIN(L+LS) + 148.0*SIN(L-LS) - 55.0*SIN(2.0*F-2.0*D);
       DLS := + 6893.0*SIN(LS) + 72.0*SIN(2.0*LS);
 
       -- Differenz der wahren Laengen von Mond und Sonne (in Umlaeufen)
       DLAMBDA  := D / P2   +   ( DLM - DLS) / 1296000.0;
-      
+
       -- Korrektur der Neumondzeit
       T   := T  - DLAMBDA / D1;
-      
+
       -- ekliptikale Breite B des Mondes (in Grad)
-      B  := ( + 18520.0*SIN(F+DLM/ARC) - 526.0*SIN(F-2.0*D) ) / 3600.0; 
+      B  := ( + 18520.0*SIN(F+DLM/ARC) - 526.0*SIN(F-2.0*D) ) / 3600.0;
     end IMPROVE;
-  
+
+
+    ------------------------------------------------------
+    --          Berechnung der Mond Parameter           --
+    -- nach Jean Meeus - Astronomische Algorithmen 1998 --
+    ------------------------------------------------------
+    procedure MOONPAR (T    :     REAL; -- T  : Zeit in Jahrhunderten seit dem Jahr 2000
+                       RA   :     REAL; -- α  : geozentrische rektazension des Mondes
+                       LAM  :     REAL; -- λ  : scheinbare geozentrische Länge des Mondes
+                       BET  :     REAL; -- β  : scheinbare geozentrische Breite des Mondes
+                       DEL  :     REAL; -- Δ  : Distanz zum Mond in km
+                       L    : out REAL; -- l  : Liberation in Länge
+                       B    : out REAL; -- b  : Liberation in Breite
+                       B0   : out REAL; -- b0 : subsolare Breite
+                       C0   : out REAL; -- c0 : Colongitude
+                       P    : out REAL) -- P  : Positionswinkel der Achse
+    is
+
+      function RED (V : REAL) return REAL is
+        R : REAL := V;
+      begin
+        while R < 0.0 loop
+          R := @ + 360.0;
+        end loop;
+        while R > 360.0 loop
+          R := @ - 360.0;
+        end loop;
+        return R;
+      end RED;
+
+      AE     : constant REAL := Astronomical_Unit;
+      RADDEC : constant := 180.0 / Ada.Numerics.Pi;
+
+      EPS0 : REAL; -- ε0: mittlere Schiefe der Ekliptik
+      DEPS : REAL; -- Δε: Nutation Delta Epsilon
+      DPSI : REAL; -- Δψ: Nutation Delta Psi
+      SL   : REAL; -- Solare Länge
+      SB   : REAL; -- Solare Breite
+      SR   : REAL; -- Distanz zur Sonne in km
+
+    begin -- MOONPAR
+      NUT (T,EPS0,DEPS,DPSI);
+      EPS0 := EPS0 * RADDEC;
+      DEPS := DEPS * RADDEC;
+      DPSI := DPSI * RADDEC;
+
+      SUNLIB.SUN200 (T,SL,SB,SR);
+      SR := SR*AE;
+
+      declare
+        T2 : constant REAL := T * T;
+        T3 : constant REAL := T * T2;
+        T4 : constant REAL := T * T3;
+
+        EPS : constant REAL := EPS0+DEPS; -- wahre Schiefe der Ekliptik
+
+        -- mittlere Elongation des Mondes -> Kapitel 45.2
+        D : constant REAL := RED(297.850_1921+445_267.111_4034*T-0.001_8819*T2+T3/545_868.0-T4/113_065_000.0); -- 1998
+      --D : constant REAL := RED(297.850_2042+445_267.111_5168*T-0.001_6300*T2+T3/545_868.0-T4/113_065_000.0); -- 1992
+
+        -- mittlere Anomalie der Sonne -> Kapitel 45.3
+        MS : constant REAL := RED(357.529_1092 + 35_999.050_2909 * T - 0.000_1535 * T2 + T3 / 24_490_000.0); -- 1998
+      --MS : constant REAL := RED(357.529_1092 + 35_999.050_2909 * T - 0.000_1536 * T2 + T3 / 24_490_000.0); -- 1992
+
+        -- mittlere Anomalie des Mondes -> Kapitel 45.4
+        MM : constant REAL := RED(134.963_3964+477_198.867_5055*T+0.008_7414*T2+T3/69_699.0-T4/14_712_000.0); -- 1998
+      --MM : constant REAL := RED(134.963_4114+477_198.867_6313*T+0.008_9970*T2+T3/69_699.0-T4/14_712_000.0); -- 1992
+
+        -- mittlerer Abstand des Mondes von seinem aussteigenden Knoten -> Kapitel 45.5
+        F : constant REAL := RED(93.272_095+483_202.017_5233*T-0.003_6539*T2-T3/3_526_000.0+T4/863_310_000.0);  -- 1998
+      --F : constant REAL := RED(93.272_0993+483_202.017_5273*T-0.003_4029*T2-T3/3_526_000.0+T4/863_310_000.0); -- 1992
+
+        --> Kapitel 45.6
+        E: constant REAL := RED(1.0-0.002_516*T-0.000_0074*T2);
+
+        -- Länge des mittleren aufsteigenden Knotens -> Kapitel 45.7
+        OME : constant REAL := RED(125.044_5579-1934.136_2891*T+0.002_0762*T2+T3/467_410.0-T4/60_616_000.0); -- 1998
+      --OME : constant REAL := RED(125.044_5550-1934.136_1849*T+0.002_0762*T2+T3/467_410.0-T4/60_616_000.0); -- 1992
+
+
+        --  Ephemerde zur physischen Beobachtung (Kapitel 51)
+        --  -------------------------------------------------
+
+        I  : constant REAL := 1.54242; -- Neigung des mittleren Mondäquators gegen die Ekliptik
+        SI : constant REAL := SN(I);
+        CI : constant REAL := CS(I);
+
+        -- optische Liberation in Länge und Breite
+
+        W : constant REAL := RED(LAM-DPSI-OME);
+        A : constant REAL := RED(ATN2(SN(W)*CS(BET)*CI-SN(BET)*SI,CS(W)*CS(BET)));
+
+        L1 : constant REAL := A-F;
+        B1 : constant REAL := ASN(-SN(W)*CS(BET)*SI-SN(BET)*CI);
+
+        -- physische Liberation in Länge und Breite
+        K1 : constant REAL := 119.75+131.849*T;
+        K2 : constant REAL := 72.56+20.186*T;
+
+        SIG : constant REAL := -0.028_16*SN(MM)+0.022_44*CS(F)-0.006_82*SN(MM-2.0*F)-0.002_79*SN(2.0*F)
+                               -0.000_83*SN(2.0*(F-D))+0.000_69*SN(MM-2.0*D)+0.000_4*CS(MM+F)-0.000_25*SN(2.0*MM)
+                               -0.000_23*SN(MM+2.0*F)+0.000_2*CS(MM-F)+0.000_19*SN(MM-F)+0.000_13*SN(MM+2.0*(F-D))
+                               -0.000_1*CS(MM-3.0*F);
+
+        RHO : constant REAL := -0.027_52*CS(MM)-0.022_45*SN(F)+0.006_84*CS(MM-2.0*F)-0.002_93*CS(2.0*F)
+                               -0.000_85*CS(2.0*(F-D))-0.000_54*CS(MM-2.0*D)-0.000_2*SN(MM+F)-0.000_2*CS(MM+2.0*F)
+                               -0.000_2*CS(MM-F)+0.000_14*CS(MM+2.0*(F-D));
+
+        TAU : constant REAL := +0.025_2 *SN(MS)*E+0.004_73*SN(2.0*(MM-F))-0.004_67*SN(MM)+0.003_96*SN(K1)
+                               +0.002_76*SN(2.0*(MM-D))+0.001_96*SN(OME)-0.001_83*CS(MM-F)+0.001_15*SN(MM-2.0*D)
+                               -0.000_96*SN(MM-D)+0.000_46*SN(2.0*(F-D))-0.000_39*SN(MM-F)-0.000_32*SN(MM-MS-D)
+                               +0.000_27*SN(2.0*(MM-D)-MS)+0.000_23*SN(K2)-0.000_14*SN(2.0*D)+0.000_14*CS(2.0*(MM-F))
+                               -0.000_12*SN(MM-2.0*F)-0.000_12*SN(2.0*MM)+0.000_11*SN(2.0*(MM-MS-D));
+
+        L2 : constant REAL := -TAU+(RHO*CS(A)+SIG*SN(A))*TN(B1);
+        B2 : constant REAL := SIG*CS(A)-RHO*SN(A);
+
+        -- Positionswinkel der Achse
+        SIR : constant REAL := SN(I+RHO);
+        V   : constant REAL := OME+DPSI+SIG/SI;
+        Y   : constant REAL := SIR*SN(V);
+        X   : constant REAL := SIR*CS(V)*CS(EPS)-CS(I+RHO)*SN(EPS);
+        WA  : constant REAL := RED(ATN2(Y,X));
+
+        -- selenografische Position der Sonne
+        LH  : constant REAL := SL+180.0+DEL/SR*57.296*CS(BET)*SN(SL-LAM);
+        BH  : constant REAL := DEL/SR*BET;
+        WH  : constant REAL := RED(LH-OME);
+        AH  : constant REAL := RED(ATN2(SN(WH)*CS(BH)*CI-SN(BH)*SI,CS(WH)*CS(BH)));
+        L10 : constant REAL := AH-F;
+        B10 : constant REAL := ASN(-SN(WH)*CS(BH)*SI-SN(BH)*CI);
+        L20 : constant REAL := -TAU+(RHO*CS(AH)+SIG*SN(AH))*TN(B10);
+        B20 : constant REAL := SIG*CS(AH)-RHO*SN(AH);
+
+      begin
+        L := L1 + L2;
+        B := B1 + B2;
+        P := ASN((SQRT(X*X+Y*Y)*CS(RA-WA))/CS(B));
+        B0 := B10 + B20;
+        C0 := RED(90.0-(L10 + L20));
+      end;
+    end MOONPAR;
+
+
+    procedure MOONSUNH (ETA  :     REAL; -- η  : selenographische Länge
+                        TET  :     REAL; -- θ  : selenographische Breite
+                        B0   :     REAL; -- b0 : subsolare Breite
+                        C0   :     REAL; -- c0 : Colongitude
+                        H    : out REAL) -- H  : Höhe der Sonne
+    is
+    begin
+      H := ASN(SN(B0)*SN(TET)+CS(B0)*CS(TET)*SN(C0+ETA));
+    end MOONSUNH;
+
   end MOOLIB;
 
 

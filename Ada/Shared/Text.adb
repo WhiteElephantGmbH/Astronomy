@@ -270,6 +270,24 @@ package body Text is
   end Purge_Of;
 
 
+  function Capitalized_Of (Item : Standard.String) return Standard.String is
+    Result_String : Standard.String := Item;
+    Am_In_Gap     : Boolean := True;
+  begin
+    for The_Index in Item'range loop
+      if Item (The_Index) = '_' then
+        Am_In_Gap := True;
+      elsif Am_In_Gap then
+        Result_String(The_Index) := Uppercase_Of (@);
+        Am_In_Gap := False;
+      else
+        Result_String(The_Index) := Lowercase_Of (@);
+      end if;
+    end loop;
+    return Result_String;
+  end Capitalized_Of;
+
+
   function Legible_Of (Item : Standard.String) return Standard.String is
     Legible_String : Standard.String (1 .. Item'length);
     The_Size       : Natural := 0;

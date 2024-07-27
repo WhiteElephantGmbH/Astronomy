@@ -28,9 +28,33 @@ package Targets is
   type Selection is (All_Objects, Solar_System, Clusters, Open_Clusters, Nebulas, Galaxies, Stars, Multiple_Stars,
                      Near_Earth_Objects);
 
+  subtype Deep_Sky_Selection is Selection range Clusters .. Multiple_Stars;
+
   subtype Object_Kind is Selection range Selection'succ(Selection'first) .. Selection'last;
 
   function Image_Of (The_Selection : Selection) return String;
+
+  function Selection_Of (Image : String) return Selection;
+
+  type Moon_Feature_Selection is (All_Features,       --
+                                  Bays,      -- Sinus (Buchten)
+                                  Cliffs,    -- Rupes (Klippen)
+                                  Craters,   -- Craters & Catenas (Krater und Kraterketten)
+                                  Rilles,    -- Rimas (Rillen)
+                                  Lakes,     -- Lacus (Seeen)
+                                  Mountains, -- Mons & Promontorium (Gebirge und Vorgebirge)
+                                  Oceans,    -- Oceanus (Ozeane)
+                                  Seas,      -- Mares (Meere)
+                                  Swamps,    -- Palus (Sümpfe)
+                                  Swirls,    -- Swirl (Wirbel)
+                                  Valleys);  -- Vallis (Täler)
+
+  subtype Feature_Kind is Moon_Feature_Selection
+    range Moon_Feature_Selection'succ(Moon_Feature_Selection'first) .. Moon_Feature_Selection'last;
+
+  function Image_Of (The_Feature_Selection : Moon_Feature_Selection) return String;
+
+  function Feature_Of (Image : String) return Moon_Feature_Selection;
 
   type Arriving_Handling is access function (Id : Name.Id) return Boolean;
 
@@ -42,6 +66,8 @@ package Targets is
   procedure Define_Catalog;
 
   procedure Set (The_Selection : Selection);
+
+  procedure Set (The_Feature : Moon_Feature_Selection);
 
   procedure Update_List;
 
@@ -63,6 +89,8 @@ package Targets is
 
   function Solar_System_Direction_Of (Item : Name.Id;
                                       Ut   : Time.Ut) return Space.Direction;
+
+  function Description_Of (Id : Name.Id) return String;
 
 private
 

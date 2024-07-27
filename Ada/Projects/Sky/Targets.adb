@@ -49,6 +49,68 @@ package body Targets is
   end Image_Of;
 
 
+  function Selection_Of (Image : String) return Selection is
+    Selection_Name : constant Lexicon.Word := Lexicon.Word_Of (Image);
+  begin
+    case Selection_Name is
+    when Lexicon.All_Objects      => return All_Objects;
+    when Lexicon.Solar_System     => return Solar_System;
+    when Lexicon.Globular_Cluster => return Clusters;
+    when Lexicon.Open_Clusters    => return Open_Clusters;
+    when Lexicon.Nebula           => return Nebulas;
+    when Lexicon.Galaxies         => return Galaxies;
+    when Lexicon.Stars            => return Stars;
+    when Lexicon.Multiple_Stars   => return Multiple_Stars;
+    when Lexicon.Neos             => return Near_Earth_Objects;
+    when others =>
+      raise Program_Error;
+    end case;
+  end Selection_Of;
+
+
+  function Image_Of (The_Feature_Selection : Moon_Feature_Selection) return String is
+
+    type Names is array (Moon_Feature_Selection) of Lexicon.Word;
+
+    Name_Of : constant Names := [All_Features       => Lexicon.All_Objects,
+                                 Bays               => Lexicon.Bays,
+                                 Cliffs             => Lexicon.Cliffs,
+                                 Craters            => Lexicon.Craters,
+                                 Rilles             => Lexicon.Rilles,
+                                 Lakes              => Lexicon.Lakes,
+                                 Mountains          => Lexicon.Mountains,
+                                 Oceans             => Lexicon.Oceans,
+                                 Seas               => Lexicon.Seas,
+                                 Swamps             => Lexicon.Swamps,
+                                 Swirls             => Lexicon.Swirls,
+                                 Valleys            => Lexicon.Valleys];
+  begin
+    return Lexicon.Image_Of (Name_Of(The_Feature_Selection));
+  end Image_Of;
+
+
+  function Feature_Of (Image : String) return Moon_Feature_Selection is
+    Feature_Name : constant Lexicon.Word := Lexicon.Word_Of (Image);
+  begin
+    case Feature_Name is
+    when Lexicon.All_Objects => return All_Features;
+    when Lexicon.Bays        => return Bays;
+    when Lexicon.Cliffs      => return Cliffs;
+    when Lexicon.Craters     => return Craters;
+    when Lexicon.Rilles      => return Rilles;
+    when Lexicon.Lakes       => return Lakes;
+    when Lexicon.Mountains   => return Mountains;
+    when Lexicon.Oceans      => return Oceans;
+    when Lexicon.Seas        => return Seas;
+    when Lexicon.Swamps      => return Swamps;
+    when Lexicon.Swirls      => return Swirls;
+    when Lexicon.Valleys     => return Valleys;
+    when others =>
+      raise Program_Error;
+    end case;
+  end Feature_Of;
+
+
   task type Handler (Clear  : access procedure;
                      Define : access procedure (List : Name.Id_List_Access);
                      Update : access procedure) is
@@ -58,6 +120,8 @@ package body Targets is
     entry Set (The_Range : Az_Range);
 
     entry Set (The_Selection : Selection);
+
+    entry Set (The_Selection : Moon_Feature_Selection);
 
     entry Set (Sorted : Switch);
 
@@ -110,6 +174,12 @@ package body Targets is
   end Set;
 
 
+  procedure Set (The_Feature : Moon_Feature_Selection) is
+  begin
+    The_Handler.Set (The_Feature);
+  end Set;
+
+
   procedure Set (Sorted : Switch) is
   begin
     The_Handler.Set (Sorted);
@@ -149,9 +219,10 @@ package body Targets is
     Targets_Defined : Boolean := False;
     New_List        : Boolean := False;
 
-    The_Actual_Az_Range  : Az_Range;
-    The_Actual_Selection : Selection;
-    Is_Az_Sorted         : Boolean := False;
+    The_Actual_Az_Range   : Az_Range;
+    The_Actual_Selection  : Selection;
+    The_Feature_Selection : Moon_Feature_Selection := All_Features;
+    Is_Az_Sorted          : Boolean := False;
 
     function Is_Selected (The_Objects : Object_Kind) return Boolean is
     begin
@@ -167,6 +238,48 @@ package body Targets is
         end case;
       when others =>
         return The_Objects = The_Actual_Selection;
+      end case;
+    end Is_Selected;
+
+
+    function Is_Selected (The_Feature : Moon.Feature_Type) return Boolean is
+      use all type Moon.Feature_Type;
+    begin
+      case The_Feature_Selection is
+      when All_Features =>
+        return True;
+      when Bays =>
+        return The_Feature = Sinus;
+      when Cliffs =>
+        return The_Feature = Rupes;
+      when Craters =>
+        case The_Feature is
+        when Crater | Catena  =>
+          return True;
+        when others =>
+          return False;
+        end case;
+      when Lakes =>
+        return The_Feature = Lacus;
+      when Mountains =>
+        case The_Feature is
+        when Mons | Promontorium  =>
+          return True;
+        when others =>
+          return False;
+        end case;
+      when Oceans =>
+        return The_Feature = Oceanus;
+      when Rilles =>
+        return The_Feature = Rima;
+      when Seas =>
+        return The_Feature = Mare;
+      when Swamps =>
+        return The_Feature = Palus;
+      when Swirls =>
+        return The_Feature = Swirl;
+      when Valleys =>
+        return The_Feature = Vallis;
       end case;
     end Is_Selected;
 
@@ -203,11 +316,34 @@ package body Targets is
 
       procedure Add_Visible (Item : in out Name.Id) is
 
+        function Is_To_Add (Direction : Space.Direction) return Boolean is
+        begin
+          if not Space.Direction_Is_Known (Direction) then
+            return False;
+          elsif not Sun_Is_Visible or else Sun.Is_In_Safe_Distance (To_Target => Direction) then
+            return Is_Visible (Direction);
+          end if;
+          return False;
+        end Is_To_Add;
+
         function Is_To_Add return Boolean is
         begin
           case Name.Kind_Of (Item) is
           when Name.Moon =>
-            return Is_To_Add (Solar_System, Moon_Direction_Of (Item, Ut));
+            case The_Feature_Selection is
+            when All_Features =>
+              return Is_To_Add (Moon.Direction_Of (Item));
+            when others =>
+              declare
+                Feature  : Moon.Feature;
+                The_Type : Moon.Feature_Type;
+              begin
+                if Moon.Has_Feature (Item, Feature, The_Type) and then Is_Selected (The_Type) then
+                  return Is_To_Add (Moon.Direction_Of (Item));
+                end if;
+                return False;
+              end;
+            end case;
           when Name.Planet =>
             return Is_To_Add (Solar_System, Solar_System_Direction_Of (Item, Ut));
           when Name.Sun =>
@@ -239,7 +375,7 @@ package body Targets is
                 return Is_To_Add (Multiple_Stars, Sky.Data.Direction_Of (Object, Ut));
               when Sky.Star =>
                 return Is_To_Add (Stars, Sky.Data.Direction_Of (Object, Ut));
-              when Sky.Satellite =>
+              when Sky.Moon | Sky.Satellite =>
                 raise Program_Error;
               when Sky.Unknown =>
                 return False;
@@ -259,6 +395,7 @@ package body Targets is
         Name.Sort (The_Targets);
         New_List := True;
       end if;
+      Moon.Define (Time.Universal);
       Name.For_All (In_List => The_Targets, Handle => Add_Visible'access);
       if New_List or (The_Changes > 100) then
         New_List := False;
@@ -267,7 +404,7 @@ package body Targets is
         Define (The_Targets'unchecked_access);
         Targets_Defined := True;
       elsif Targets_Defined then
-        Update.all;
+       Update.all;
       end if;
     end Define_Targets;
 
@@ -297,9 +434,12 @@ package body Targets is
           The_Actual_Selection := The_Selection;
         end Set;
       or
+        accept Set (The_Selection : Moon_Feature_Selection) do
+          The_Feature_Selection := The_Selection;
+        end Set;
+      or
         accept Set (Sorted : Switch) do
           Is_Az_Sorted := Sorted = On;
-
         end Set;
       or
         accept Update_List;
@@ -408,11 +548,7 @@ package body Targets is
 
 
   function Moon_Direction_Of (Id : Name.Id := Name.No_Id;
-                              UT : Time.Ut) return Space.Direction is
-    pragma Unreferenced (Id);
-  begin
-    return Moon.Direction_Of (UT);
-  end Moon_Direction_Of;
+                              UT : Time.Ut) return Space.Direction is (Moon.Direction_Of (Id, UT));
 
 
   function Solar_System_Direction_Of (Item : Name.Id;
@@ -427,8 +563,31 @@ package body Targets is
     end;
   exception
   when others =>
-    Log.Write ("Unknown Planet: " & Planet_Name);
+    Log.Warning ("Unknown Planet: " & Planet_Name);
     return Space.Unknown_Direction;
   end Solar_System_Direction_Of;
+
+
+  function Description_Of (Id : Name.Id) return String is
+    use type Name.Id;
+  begin
+    if Id /= Name.No_Id then
+      case Name.Kind_Of (Id) is
+      when Name.Sky_Object =>
+        return Sky.Data.Descriptor_Of (Name.Object_Of (Id));
+      when Name.Moon =>
+        return Moon.Feature_Kind_Of (Id);
+      when Name.Planet =>
+        if Name.Image_Of (Id) = "Pluto" then
+          return "Dwarf Planet"; -- Zwergplanet
+        else
+          return "Planet";
+        end if;
+      when others =>
+        null;
+      end case;
+    end if;
+    return "";
+  end Description_Of;
 
 end Targets;

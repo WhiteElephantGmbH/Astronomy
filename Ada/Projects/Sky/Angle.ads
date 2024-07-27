@@ -123,8 +123,9 @@ package Angle is
 
   function Unsigned_Degrees_Image_Of (Item : Value) return String;
 
-  function Degrees_Of (The_Image : String;
-                       Limit     : Degrees) return Degrees;
+  function Degrees_Of (The_Image   : String;
+                       Upper_Limit : Degrees;
+                       Lower_Limit : Degrees := 0.0) return Degrees;
 
   function "+" (Left  : String;
                 Right : Unsigned) return String;

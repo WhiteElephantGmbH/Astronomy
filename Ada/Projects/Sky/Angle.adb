@@ -582,22 +582,25 @@ package body Angle is
   end Unsigned_Degrees_Image_Of;
 
 
-  function Degrees_Of (The_Image : String;
-                       Limit     : Degrees) return Degrees is
+  function Degrees_Of (The_Image   : String;
+                       Upper_Limit : Degrees;
+                       Lower_Limit : Degrees := 0.0) return Degrees is
 
     Image : constant String := Text.Ansi_Of_Utf8 (Text.Trimmed(The_Image));
     Unit  : constant Character := (if Image'length > 0 then Image(Image'last) else Ascii.Nul);
     Last  : constant Natural := (if Unit in '°' | ''' | '"' then Image'last - 1 else Image'last);
 
-    type Image_Type is delta 10.0**(-2) range 0.0 .. 360.0;
+    type Image_Type is delta 10.0**(-2) range -360.0 .. 360.0;
 
     The_Value : Degrees;
 
     use type Degrees;
 
-    function Limit_Image return String is
+    function Limit_Image (Limit : Degrees) return String is
     begin
-      if Limit >= 1.0 then
+      if Limit = 0.0 then
+        return " 0" & Degree;
+      elsif abs Limit >= 1.0 then
         return Image_Type(Limit)'image & Degree;
       else
         return Image_Type(Limit * 60.0)'image & ''';
@@ -614,8 +617,10 @@ package body Angle is
     when others =>
       null;
     end case;
-    if The_Value > Limit then
-      Error.Raise_With ("value >" & Limit_Image);
+    if The_Value > Upper_Limit then
+      Error.Raise_With ("value >" & Limit_Image (Upper_Limit));
+    elsif The_Value < Lower_Limit then
+      Error.Raise_With ("value <" & Limit_Image (Lower_Limit));
     end if;
     return The_Value;
   end Degrees_Of;

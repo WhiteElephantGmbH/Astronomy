@@ -1,0 +1,58 @@
+AL Albedo Feature AL Geographic area distinguished by amount of reflected light
+AR Arcus, arcūs AR Arc-shaped feature
+LF Astronaut-named features LF Lunar features at or near Apollo landing sites
+AS Astrum, astra AS	Radial-patterned features on Venus
+CA Catena, catenae CA	Chain of craters
+CB Cavus, cavi CB	Hollows, irregular steep-sided depressions usually in arrays or clusters
+CH Chaos, chaoses CH	Distinctive area of broken terrain
+CM Chasma, chasmata CM	A deep, elongated, steep-sided depression
+CO Collis, colles CO	Small hills or knobs
+CR Corona, coronae CR	Ovoid-shaped feature
+CA Crater, craters AA	A circular depression
+DO Dorsum, dorsa DO	Ridge
+ER Eruptive center ER	Active volcanic centers on Io
+FA Facula, faculae FA	Bright spot
+FR Farrum, farra FR	Pancake-like structure, or a row of such structures
+FE Flexus, flexūs FE	A very low curvilinear ridge with a scalloped pattern
+FL Fluctus, fluctūs FL	Flow terrain
+FM Flumen, flumina FM	Channel on Titan that might carry liquid
+FO Fossa, fossae FO	Long, narrow depression
+FT Fretum, freta FT	Strait, a narrow passage of liquid connecting two larger areas of liquid
+IN Insula, insulae IN	Island (islands), an isolated land area (or group of such areas) surrounded by, or nearly surrounded by, a liquid area (sea or lake)
+LA Labes, labēs LA	Landslide
+LB Labyrinthus, labyrinthi LB	Complex of intersecting valleys or ridges.
+LU Lacuna, lacunae LU	Irregularly shaped depression on Titan having the appearance of a dry lake bed
+LC Lacus, lacūs LC	"Lake" or small plain; on Titan, a "lake" or small, dark plain with discrete, sharp boundaries
+LG Large ringed feature LG	Cryptic ringed features
+LI Linea, lineae LI	A dark or bright elongate marking, may be curved or straight
+LN Lingula, lingulae LN	Extension of plateau having rounded lobate or tongue-like boundaries
+LO Lobus LO	One of two lobes of Arrokoth
+MA Macula, maculae MA	Dark spot, may be irregular
+ME Mare, maria ME	“Sea”; on the Moon, low albedo, relatively smooth plain, generally of large extent; on Mars, dark albedo areas of no known geological significance; on Titan, large expanses of dark materials thought to be liquid hydrocarbons
+MN Mensa, mensae MN	A flat-topped prominence with cliff-like edges
+MO Mons, montes MO	Mountain
+OC Oceanus, oceani OC	A very large dark area on the moon
+PA Palus, paludes PA	"Swamp"; small plain
+PE Patera, paterae PE	An irregular crater, or a complex one with scalloped edges
+PL Planitia, planitiae PL	Low plain
+PM Planum, plana PM	Plateau or high plain
+PU Plume, plumes PU	Cryo-volcanic features on Triton
+PR Promontorium, promontoria PR	"Cape"; headland promontoria
+RE Regio, regiones RE	A large area marked by reflectivity or color distinctions from adjacent areas, or a broad geographic region
+RT Reticulum, reticula RT	reticular (netlike) pattern on Venus
+RI Rima, rimae RI	Fissure
+RU Rupes, rupēs RU	Scarp
+SF Satellite Feature SF	A feature that shares the name of an associated feature. For example, on the Moon the craters referred to as "Lettered Craters" are classified in the gazetteer as "Satellite Features."
+SA Saxum, saxa SA	Boulder or rock
+SC Scopulus, scopuli SC	Lobate or irregular scarp
+SE Serpens, serpentes SE	Sinuous feature with segments of positive and negative relief along its length
+SI Sinus, sinūs SI	"Bay"; small plain; on Titan, bays within seas or lakes of liquid hydrocarbons
+ST Statio ST	Spacecraft landing site
+SU Sulcus, sulci SU	Subparallel furrows and ridges
+TA Terra, terrae TA	Extensive land mass
+TE Tessera, tesserae TE	Tile-like, polygonal terrain
+TH Tholus, tholi TH	Small domical mountain or hill
+UN Unda, undae UN	Dunes
+VA Vallis, valles VA	Valley
+VA Vastitas, vastitates VS	Extensive plain
+VI Virga, virgae VI	A streak or stripe of color

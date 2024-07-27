@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2012 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2012 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -20,15 +20,21 @@ package Astro is
 -- ********************************************************************
 -- *   developed by:                                                  *
 -- *      Oliver Montenbruck and Thomas Pfleger                       *
+-- *      and Jean Meeus for the evaluation of moon features          *
 -- *   original source from:                                          *
 -- *      Astronomie mit dem Personal Computer (Zweite Ausgabe 1994)  *
+-- *      Astronomische Algorithmen 1998                              *
 -- *   translated to Ada by:                                          *
 -- *      Urs Maurer, White Elephant GmbH                             *
 -- ********************************************************************
 
   type REAL is new Long_Float;
 
+  Moon_Radius : constant REAL := 1737.4; -- kilometers
+
   Earth_Equatorial_Radius : constant REAL := 6378.135; -- kilometers (WGS '72)
+
+  Astronomical_Unit : constant REAL := 149_597_870.7; -- kilometers
 
   -- Vektoren und Matrizen
 
@@ -563,9 +569,30 @@ package Astro is
                                   -- Laengen von Mond und Sonne
                                   -- dD/dT = 1236.85 Umlaeufe/Jahrhundert
     D0 : constant := 0.827361;    -- Diff. der mittl. Laengen von Mond und
-                                  -- Sonne fuer J2000 (in Umlaeufen)                              
+                                  -- Sonne fuer J2000 (in Umlaeufen)
     procedure IMPROVE (T : in out REAL;
                        B :    out REAL);
+
+    ------------------------------------------------------
+    --          Berechnung der Mond Parameter           --
+    -- nach Jean Meeus - Astronomische Algorithmen 1998 --
+    ------------------------------------------------------
+    procedure MOONPAR (T    :     REAL;  -- T  : Zeit in Jahrhunderten seit dem Jahr 2000
+                       RA   :     REAL;  -- α  : topocentrische rektazension des Mondes
+                       LAM  :     REAL;  -- λ  : scheinbare topocentrische Länge des Mondes
+                       BET  :     REAL;  -- β  : scheinbare topocentrische Breite des Mondes
+                       DEL  :     REAL;  -- Δ  : Distanz zum Mond in km
+                       L    : out REAL;  -- l  : Liberation in Länge
+                       B    : out REAL;  -- b  : Liberation in Breite
+                       B0   : out REAL;  -- b0 : subsolare Breite
+                       C0   : out REAL;  -- c0 : Colongitude
+                       P    : out REAL); -- P  : Positionswinkel der Achse
+
+    procedure MOONSUNH (ETA  :     REAL;  -- η  : selenographische Länge
+                        TET  :     REAL;  -- θ  : selenographische Breite
+                        B0   :     REAL;  -- b0 : subsolare Breite
+                        C0   :     REAL;  -- c0 : Colongitude
+                        H    : out REAL); -- H  : Höhe der Sonne
 
   end MOOLIB;
 

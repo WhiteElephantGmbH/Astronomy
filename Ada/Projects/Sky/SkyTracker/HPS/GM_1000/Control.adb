@@ -26,7 +26,6 @@ with Neo;
 with Os.Application;
 with Os.Process;
 with Parameter;
-with Sky.Data;
 with Sky_Line;
 with Space;
 with Sssb;
@@ -354,18 +353,15 @@ package body Control is
             case Name.Kind_Of (The_Item) is
             when Name.Sky_Object =>
               Telescope.Define_Space_Access (Name.Direction_Of'access, The_Item);
-              User.Show_Description (Sky.Data.Descriptor_Of (Name.Object_Of (The_Item)));
+              User.Show_Description (Targets.Description_Of (The_Item));
             when Name.Moon =>
               Telescope.Define_Space_Access (Targets.Moon_Direction_Of'access, The_Item);
+              User.Show_Description (Targets.Description_Of (The_Item));
             when Name.Sun =>
               Telescope.Define_Space_Access (Targets.Solar_System_Direction_Of'access, The_Item);
             when Name.Planet =>
               Telescope.Define_Space_Access (Targets.Solar_System_Direction_Of'access, The_Item);
-              if Name.Image_Of (The_Item) = "Pluto" then
-                User.Show_Description ("Dwarf Planet");
-              else
-                User.Show_Description ("Planet");
-              end if;
+              User.Show_Description (Targets.Description_Of (The_Item));
             when Name.Small_Solar_System_Body =>
               Telescope.Define_Space_Access (Sssb.Direction_Of'access, The_Item);
             when Name.Axis_Position =>

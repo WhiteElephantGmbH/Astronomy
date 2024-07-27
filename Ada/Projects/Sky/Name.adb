@@ -128,6 +128,8 @@ package body Name is
     case Item.Data_Id is
     when Sky.Favorites =>
       return Item.Element.Kind;
+    when Sky.Moon =>
+      return Moon;
     when Sky.Neo =>
       return Near_Earth_Object;
     when others =>
@@ -140,6 +142,9 @@ package body Name is
   begin
     case Item.Data_Id is
     when Sky.Favorites =>
+      if Item.Element = null then
+        return Sky.Undefined;
+      end if;
       return Item.Element.Object;
     when others =>
       return Sky.Data.Object_Of (Item.Element_Number, Item.Data_Id);
@@ -386,7 +391,7 @@ package body Name is
     case The_List.Kind is
     when Sky.Favorites | Sky.Catalogs=>
       Tool.Sort (The_List.Ids);
-    when Sky.Neo =>
+    when Sky.Moon | Sky.Neo =>
       null;
     end case;
   end Sort;
@@ -546,6 +551,18 @@ package body Name is
                     return;
                   when Lexicon.Moon =>
                     The_Element.Kind := Moon;
+                    if Parts.Count > 1 then
+                      declare
+                        Feature        : constant String := The_Element.Name.To_String;
+                        Feature_Number : Positive;
+                      begin
+                        Feature_Number := Sky.Data.Moon_Feature_Number_Of (Feature);
+                        The_Element.Object := Sky.Data.Object_Of (Feature_Number, Sky.Moon);
+                      exception
+                      when others =>
+                        Error.Raise_With ("Unknown Moon Feature - " & Feature);
+                      end;
+                    end if;
                     return;
                   when Lexicon.Mars =>
                     The_Element.Kind := Planet;
@@ -628,6 +645,63 @@ package body Name is
 
         function Image_Of (Word : Lexicon.Word) return String renames Lexicon.Image_Of;
 
+        procedure Put_Moon is
+
+          Moon_Image : constant String := Image_Of (Lexicon.Moon);
+
+          Feature_List : Text.List;
+
+          procedure Add_Feature (Item : Sky.Moon_Feature) is
+          begin
+            Feature_List.Append (Sky.Data.Moon_Feature_Name_Of (Item));
+          end Add_Feature;
+
+          use all type Sky.Moon_Feature;
+
+        begin -- Put_Moon
+          Put (Moon_Image);
+          Add_Feature (Albategnius);
+          Add_Feature (Anaxagoras);
+          Add_Feature (Aristoteles);
+          Add_Feature (Blanchinus);
+          Add_Feature (Clavius);
+          Add_Feature (Copernicus);
+          Add_Feature (Eratosthenes);
+          Add_Feature (Eudoxus);
+          Add_Feature (Julius_Caesar);
+          Add_Feature (Hercules);
+          Add_Feature (Kepler);
+          Add_Feature (Longomontanus);
+          Add_Feature (Mare_Crisium);
+          Add_Feature (Mont_Blanc);
+          Add_Feature (Montes_Alpes);
+          Add_Feature (Montes_Apenninus);
+          Add_Feature (Montes_Carpatus);
+          Add_Feature (Montes_Caucasus);
+          Add_Feature (Montes_Jura);
+          Add_Feature (Montes_Pyrenaeus);
+          Add_Feature (Montes_Teneriffe);
+          Add_Feature (Newton);
+          Add_Feature (Oceanus_Procellarum);
+          Add_Feature (Philolaus);
+          Add_Feature (Plato);
+          Add_Feature (Ptolemaeus);
+          Add_Feature (Pythagoras);
+          Add_Feature (Reiner_Gamma);
+          Add_Feature (Sinus_Iridum);
+          Add_Feature (Snellius);
+          Add_Feature (Stevinus);
+          Add_Feature (Theophilus);
+          Add_Feature (Tycho);
+          Add_Feature (Ukert);
+          Add_Feature (Vallis_Alpes);
+          Add_Feature (Wilhelm);
+          Feature_List.Sort;
+          for Feature of Feature_List loop
+            Put (Moon_Image & " | " & Feature);
+          end loop;
+        end Put_Moon;
+
       begin -- Create_Default_Favorites
         Ada.Text_IO.Create (The_File, Name => Filename);
         Ada.Text_IO.Put (The_File, Text.Bom_8);
@@ -637,13 +711,13 @@ package body Name is
         end if;
         Put (Image_Of (Lexicon.Mercury));
         Put (Image_Of (Lexicon.Venus));
-        Put (Image_Of (Lexicon.Moon));
         Put (Image_Of (Lexicon.Mars));
         Put (Image_Of (Lexicon.Jupiter));
         Put (Image_Of (Lexicon.Saturn));
         Put (Image_Of (Lexicon.Uranus));
         Put (Image_Of (Lexicon.Neptune));
         Put (Image_Of (Lexicon.Pluto));
+        Put_Moon;
         Put ("");
         if Support_Land_Marks then
           -- example for observatorium Schaffhausen
@@ -781,7 +855,7 @@ package body Name is
         end case;
       end Next;
 
-      function Item  return Id is
+      function Item return Id is
       begin
         case Data_Id is
         when Sky.Favorites =>
@@ -799,7 +873,7 @@ package body Name is
       function Compare_Names (Left, Right : Id) return Boolean is
         use type Sky.Catalog_Id;
       begin
-        if Left.Data_Id = Sky.Name then
+        if Left.Data_Id in Sky.Moon | Sky.Name then
           return Image_Of (Left) < Image_Of (Right);
         else
           raise Program_Error;
@@ -815,7 +889,7 @@ package body Name is
         The_Id_List.Ids.Append (Item);
       end loop;
       case Data_Id is
-      when Sky.Name =>
+      when Sky.Moon | Sky.Name =>
         Name_Tool.Sort (The_Id_List.Ids);
       when others =>
         null;

@@ -16,6 +16,7 @@
 pragma Style_White_Elephant;
 
 with Angle;
+with Lexicon;
 with Error;
 with Sky.Catalog;
 with Text;
@@ -34,9 +35,15 @@ package body Sky.Data is
 
   Max_Star_Magnitude : constant Magnitude := 7.0; -- limits the size of the selection tables in the GUI;
 
+  First_Moon_Feature : constant Object := Catalog.Number'last + 1;
+
+  Last_Moon_Feature : constant Object := First_Moon_Feature + Moon_Feature'pos(Moon_Feature'last);
+
+  subtype Moon_Object is Object range First_Moon_Feature .. Last_Moon_Feature;
+
   Number_Of_Extension_Objects : constant := 1000;
 
-  First_Extension : constant Object := Catalog.Number'last + 1;
+  First_Extension : constant Object := Last_Moon_Feature + 1;
 
   subtype Extension_Object is Object range First_Extension .. First_Extension + Number_Of_Extension_Objects - 1;
 
@@ -152,10 +159,24 @@ package body Sky.Data is
   end Direction_Of;
 
 
+  function Moon_Feature_Name_Of (Item : Moon_Feature) return String is
+  begin
+    return Lexicon.Image_Of (Lexicon.Word'value(Item'image));
+  end Moon_Feature_Name_Of;
+
+
+  function Moon_Feature_Name_Of (Id : Index) return String is
+  begin
+    return Moon_Feature_Name_Of (Moon_Feature_Of (Id));
+  end Moon_Feature_Name_Of;
+
+
   function Name_Of (Id : Index) return String is
   begin
     if Id in Catalog.Index then
       return Catalog.Name_Of (Catalog.Index(Id));
+    elsif Id in Moon_Object then
+      return Moon_Feature_Name_Of (Id);
     else
       return +The_Extension_Table(Id).Name;
     end if;
@@ -171,6 +192,8 @@ package body Sky.Data is
     case The_Kind is
     when Neo =>
       return +The_Extension_Table(Number).Name;
+    when Moon =>
+      return Moon_Feature_Name_Of (Number);
     when Catalogs =>
       return Catalog.Name_Of (Item, The_Kind);
     end case;
@@ -191,6 +214,8 @@ package body Sky.Data is
   begin
     if Id in Catalog.Index then
       return Catalog.Kind_Of (Id);
+    elsif Id in Moon_Object then
+      return Moon;
     else
       return The_Extension_Table(Id).Object_Kind;
     end if;
@@ -247,20 +272,41 @@ package body Sky.Data is
   end Magnitude_Of;
 
 
+  function Moon_Feature_Of (Id : Object) return Moon_Feature is
+  begin
+    if Id in Moon_Object then
+      return Moon_Feature'val(Id - First_Moon_Feature);
+    else
+      raise Program_Error;
+    end if;
+  end Moon_Feature_Of;
+
+
+  function Moon_Feature_Number_Of (Item : String) return Positive is
+  begin
+    return Moon_Feature'pos(Moon_Feature'value(Lexicon.Word_Of (Item)'image)) + 1;
+  end Moon_Feature_Number_Of;
+
+
   function Object_Of (Item     : Positive;
                       The_Kind : Extended_Catalogs) return Object is
     The_Object : Object;
   begin
     case The_Kind is
     when Catalogs =>
-      return Catalog.Object_Of (Item, The_Kind);
+      The_Object := Catalog.Object_Of (Item, The_Kind);
+    when Moon =>
+      The_Object := First_Moon_Feature + Object(Item) - 1;
+      if The_Object > Last_Moon_Feature then
+        The_Object := Undefined;
+      end if;
     when Neo =>
       The_Object := The_First_Neo + Object(Item) - 1;
       if The_Object > The_Last_Neo then
-        return Undefined;
+        The_Object := Undefined;
       end if;
-      return The_Object;
     end case;
+    return The_Object;
   end Object_Of;
 
 
@@ -273,7 +319,7 @@ package body Sky.Data is
       loop
         The_Item := @ + 1;
         The_Object := Object_Of (The_Item, The_Kind);
-        if The_Kind = Neo then
+        if The_Kind in Neo | Moon then
           if The_Object = Undefined then
             return No_More;
           end if;

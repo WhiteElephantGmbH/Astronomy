@@ -55,6 +55,12 @@ package Sky.Data is
 
   function Magnitude_Of (Id : Index) return Sky.Magnitude;
 
+  function Moon_Feature_Of (Id : Object) return Moon_Feature;
+
+  function Moon_Feature_Number_Of (Item : String) return Positive;
+
+  function Moon_Feature_Name_Of (Item : Moon_Feature) return String;
+
   function New_Object_For (Item        : String;
                            Description : String;
                            Object_Kind : Object_Type := Unknown;

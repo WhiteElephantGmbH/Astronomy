@@ -17,49 +17,302 @@ pragma Style_White_Elephant;
 
 with Ada.Calendar;
 with Astro;
+with Database.Moon;
+with Lexicon;
 with Site;
+with Sky.Data;
 with Traces;
 
 package body Moon is
 
-  package Log is new Traces ("Moon");
+  package Log is new Traces (Id);
 
   use Astro;
   use MATLIB;
 
-  function Direction_Of (UT : Time.Ut) return Space.Direction is
+  package Data is
 
-    DEC, RA, R, RSPHI, RCPHI, LMST : REAL;
-    G: VECTOR; -- geozentric moon vector
-    L: VECTOR; -- Location vector
-    T: VECTOR; -- Topocentric Vector
-    use all type Angle.Value;
+    Undefined : constant REAL := REAL'first;
+
+    procedure Evaluate (UT : Time.Ut);
+
+    function Topocentric_Dec return REAL;
+
+    function Topocentric_RA return REAL;
+
+    function Liberation_Longitude return REAL;
+
+    function Liberation_Latitude return REAL;
+
+    function Topocentric_Moon_Distance return REAL; -- in km
+
+    function Position_Angle return REAL;
+
+    function Subsolar_Longitude return REAL;
+
+    function Colongitude return REAL;
+
+  end Data;
+
+
+  package body Data is
+
+    use SPHLIB;
+
+    ER : constant REAL := Earth_Equatorial_Radius;
+
+    RA, Dec, R, L, B, P, B0, C0: REAL := Undefined;
+
+    procedure Evaluate (UT : Time.Ut) is
+
+      T, Bet, Lam, Rc_Phi, Rs_Phi, LMST: REAL;
+
+      Geo: VECTOR; -- geozentric moon vector
+      Loc: VECTOR; -- Location vector
+      Top: VECTOR; -- Topocentric Vector
+      Tec: VECTOR; -- Topocentric ecliptical Vector
+
+      use all type Angle.Value;
+
+    begin -- Get_Moon_Parameters
+      T := Time.Tet_Of (UT);
+
+      MOOLIB.MOONEQU (T, RA, Dec, R);
+
+      Geo := CART (R, Dec, RA);
+
+      SPHLIB.SITE (PHI   => +Site.Latitude,
+                   RCPHI => Rc_Phi,
+                   RSPHI => Rs_Phi);
+
+      LMST := +Time.Lmst_Of (UT);
+
+      Loc := [X => Rc_Phi * CS (LMST),
+              Y => Rc_Phi * SN (LMST),
+              Z => Rs_Phi];
+
+      Top := Geo - Loc;
+
+      Tec := Top;
+      EQUECL (T, Tec(X), Tec(Y), Tec(Z));
+
+      POLAR (Top, R, Dec, RA);
+      POLAR (Tec, R, Bet, Lam);
+      R := R * ER;
+
+      MOOLIB.MOONPAR (T    => T,
+                      RA   => RA,
+                      LAM  => Lam,
+                      BET  => Bet,
+                      DEL  => R,
+                      L    => L,
+                      B    => B,
+                      P    => P,
+                      B0   => B0,
+                      C0   => C0);
+    end Evaluate;
+
+    function Topocentric_Dec return REAL is (Dec);
+
+    function Topocentric_RA return REAL is (RA);
+
+    function Topocentric_Moon_Distance return REAL is (R);
+
+    function Liberation_Longitude return REAL is (L);
+
+    function Liberation_Latitude return REAL is (B);
+
+    function Position_Angle return REAL is (P);
+
+    function Subsolar_Longitude return REAL is (B0);
+
+    function Colongitude return REAL is (C0);
+
+  end Data;
+
+
+  MR : constant REAL := Moon_Radius;
+
+  Minimum_Sun_Altitude : Angle.Degrees;
+  Maximum_Sun_Altitude : Angle.Degrees;
+
+
+  procedure Define (Min_Sun_Altitude : Angle.Degrees;
+                    Max_Sun_Altitude : Angle.Degrees) is
+    use type Angle.Value;
+  begin
+    Minimum_Sun_Altitude := Min_Sun_Altitude;
+    Maximum_Sun_Altitude := Max_Sun_Altitude;
+    Log.Write ("Sun Altitude - Minimum : " & Angle.Signed_Degrees_Image_Of (+Min_Sun_Altitude) &
+                           " - Maximum : " & Angle.Signed_Degrees_Image_Of (+Max_Sun_Altitude));
+  end Define;
+
+
+  procedure Define (UT: Time.Ut) renames Data.Evaluate;
+
+
+  function Direction_Of (Id               : Name.Id;
+                         Check_Visibility : Boolean := True) return Space.Direction is
+
+    function RA return REAL renames Data.Topocentric_RA;
+
+    function Dec return REAL renames Data.Topocentric_Dec;
+
+    function R return REAL renames Data.Topocentric_Moon_Distance;
+
+    function L return REAL renames Data.Liberation_Longitude;
+
+    function B return REAL renames Data.Liberation_Latitude;
+
+    function B0 return REAL renames Data.Subsolar_Longitude;
+
+    function C0 return REAL renames Data.Colongitude;
+
+    function P return REAL renames Data.Position_Angle;
+
+    procedure Rotate_Around_Y_Axis (Alpha, Beta : in out REAL;
+                                    By          :        REAL) is
+      CA : constant REAL := CS (Alpha);
+      SA : constant REAL := SN (Alpha);
+      CB : constant REAL := CS (Beta);
+      SB : constant REAL := SN (Beta);
+      CR : constant REAL := CS (By);
+      SR : constant REAL := SN (By);
+    begin
+      Alpha := ATN2 (CB * SA, CA * CB * CR - SB * SR);
+      Beta  := ASN (CR * SB + CA * CB * SR);
+    end Rotate_Around_Y_Axis;
+
+    Object : constant Sky.Object := Name.Object_Of (Id);
+    use type Sky.Object;
+
+    The_RA  : Angle.Degrees := RA;
+    The_Dec : Angle.Degrees := Dec;
+
+    Feature_Invisible : exception;
+
+
+    procedure Evaluate_Feature_Location is
+
+      Item      : constant Feature := Sky.Data.Moon_Feature_Of (Object);
+      Info      : Database.Moon.Feature renames Database.Moon.List(Item);
+      Longitude : constant REAL := REAL(Info.Longitude);
+      Latitude  : constant REAL := REAL(Info.Latitude);
+      Kind      : constant Feature_Type := Info.Kind;
+      CL        : REAL := Longitude - L; -- corrected longitude
+      CB        : REAL := Latitude;
+      Delta_Ra  : REAL;
+      Delta_Dec : REAL;
+
+      procedure Check_Feature_Visibility is
+        DM, MRS, SH : REAL;
+        use all type Feature_Type;
+      begin
+        MOOLIB.MOONSUNH (ETA => Longitude,
+                         TET => Latitude,
+                         B0  => B0,
+                         C0  => C0,
+                         H   => SH);
+        if SH < Minimum_Sun_Altitude or (if Kind in Mare | Oceanus then False else SH > Maximum_Sun_Altitude) then
+          raise Feature_Invisible;
+        end if;
+        MRS := ASN (MR / R);
+        DM := 90.0 - MRS;
+        if abs CL > DM then
+          raise Feature_Invisible;
+        end if;
+        if abs CB > DM then
+          raise Feature_Invisible;
+        end if;
+      end Check_Feature_Visibility;
+
+      procedure Evaluate_Deltas is
+        X, Xo, Yo, Zo, Wo, M, T, Ome : REAL;
+      begin
+        CART (R     => MR,
+              THETA => CB,
+              PHI   => CL,
+              X     => Xo,
+              Y     => Yo,
+              Z     => Zo);
+        X := (R - Xo);
+        T := Yo * Yo + Zo * Zo;
+        M := SQRT (X * X + T);
+        Wo := SQRT (T);
+        Ome := ATN2 (Zo, Yo) + P;
+        Delta_Dec := ASN (Wo * SN (Ome) / M);
+        Delta_Ra := -ATN2 (Wo * CS (Ome), X); -- west positive
+      end Evaluate_Deltas;
+
+    begin -- Evaluate_Feature_Location
+      Rotate_Around_Y_Axis (CL, CB, -B); -- rotate by liberation in latitude
+      if Check_Visibility then
+        Check_Feature_Visibility;
+      end if;
+      Evaluate_Deltas;
+      The_RA := @ + Delta_Ra;
+      The_Dec := @ + Delta_Dec;
+    end Evaluate_Feature_Location;
 
   begin -- Direction_Of
-    MOOLIB.MOONEQU (T   => Time.Tet_Of (UT),
-                    RA  => RA,
-                    DEC => DEC,
-                    R   => R);
-
-    G := CART (R, DEC, RA);
-
-    SPHLIB.SITE (PHI   => +Site.Latitude,
-                 RCPHI => RCPHI,
-                 RSPHI => RSPHI);
-
-    LMST := +Time.Lmst_Of (UT);
-
-    L := [X => RCPHI * CS (LMST),
-          Y => RCPHI * SN (LMST),
-          Z => RSPHI];
-
-    T := G - L;
-
-    POLAR (T, R, DEC, RA);
-
-    return Space.Direction_Of (Dec => DEC,
-                               Ra  => RA);
+    if RA = Data.Undefined then
+      raise Program_Error;
+    end if;
+    if Object /= Sky.Undefined then
+      Evaluate_Feature_Location;
+    end if;
+    return Space.Direction_Of (Dec => The_Dec,
+                               Ra  => The_RA);
+  exception
+  when Feature_Invisible =>
+    return Space.Unknown_Direction;
   end Direction_Of;
+
+
+  function Direction_Of (UT : Time.Ut) return Space.Direction is
+  begin
+    return Direction_Of (Name.No_Id, UT);
+  end Direction_Of;
+
+
+  function Direction_Of (Id : Name.Id;
+                         UT : Time.Ut) return Space.Direction is
+  begin
+    Define (UT);
+    return Direction_Of (Id, Check_Visibility => False);
+  end Direction_Of;
+
+
+  function Image_Of (Item : Feature_Type) return String is
+  begin
+     return Lexicon.Image_Of (Lexicon.Word'value(Item'image));
+  end Image_Of;
+
+
+  function Has_Feature (Id   :     Name.Id;
+                        Item : out Feature;
+                        Kind : out Feature_Type) return Boolean is
+    Object : constant Sky.Object := Name.Object_Of (Id);
+    use type Sky.Object;
+  begin
+    if Object = Sky.Undefined then
+      return False;
+    end if;
+    Item := Sky.Data.Moon_Feature_Of (Object);
+    Kind := Database.Moon.List(Item).Kind;
+    return True;
+  end Has_Feature;
+
+
+  function Feature_Kind_Of (Id : Name.Id) return String is
+    Item : Feature;
+    Kind : Feature_Type;
+  begin
+    if Has_Feature (Id, Item, Kind) then
+      return Image_Of (Kind);
+    end if;
+    return "";
+  end Feature_Kind_Of;
 
 
   procedure Get_New_Phase (Around    :     Time.Ut;
@@ -111,5 +364,6 @@ package body Moon is
                         " - after " & Time.Image_Of (After) &
                         " - libration " & Angle.Image_Of (+Libration, Show_Signed => True));
   end Get_New_Phase;
+
 
 end Moon;

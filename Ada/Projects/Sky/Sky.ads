@@ -15,17 +15,21 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Database;
+with Database.Moon;
 
 package Sky is
 
-  type Catalog_Id is (Favorites, Caldwell, Name, Star, Hd, Hip, Hr, Messier, Ngc, Ic, Ocl, Quasars, Neo);
+  type Catalog_Id is (Favorites, Moon, Caldwell, Name, Star, Hd, Hip, Hr, Messier, Ngc, Ic, Ocl, Quasars, Neo);
 
   subtype Catalogs is Catalog_Id range Caldwell .. Quasars;
 
   subtype Constellation is Database.Constellation;
 
-  subtype Extended_Catalogs is Catalog_Id range Caldwell .. Neo;
+  subtype Extended_Catalogs is Catalog_Id range Moon .. Neo;
+
+  subtype Moon_Feature is Database.Moon.Feature_Name;
+
+  subtype Moon_Feature_Type is Database.Moon_Feature_Type;
 
   subtype Greek_Letter is Database.Greek_Letter;
 
@@ -37,7 +41,7 @@ package Sky is
 
   type Object is new Natural;
 
-  type Object_Type is (Star, Double, Stars, Cluster, Galaxy, Nebula, Quasar, Satellite, Unknown);
+  type Object_Type is (Moon, Star, Double, Stars, Cluster, Galaxy, Nebula, Quasar, Satellite, Unknown);
 
   Undefined    : constant := 0;
   First_Object : constant := 1;

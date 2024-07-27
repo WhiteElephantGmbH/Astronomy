@@ -18,7 +18,11 @@ pragma Style_White_Elephant;
 package Targets.Filter is
 
   type Update_Signal is access procedure;
-  
+
   procedure Create_Menu (Signal_Update : Update_Signal);
+
+  type Selection_Group is (Default, Moon, Neo);
+
+  procedure Set (Group : Selection_Group);
 
 end Targets.Filter;

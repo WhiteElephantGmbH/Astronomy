@@ -207,6 +207,8 @@ package body Sky.Catalog is
     case Id is
     when Favorites =>
       return Lexicon.Image_Of (Lexicon.Favorites);
+    when Moon =>
+      return Lexicon.Image_Of (Lexicon.Moon);
     when Caldwell =>
       null;
     when Name =>

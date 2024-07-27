@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2024 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                               (c) 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,46 +15,28 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Gui.Enumeration_Menu_Of;
-with Lexicon;
-with Sky.Catalog;
-with Targets.Filter;
-with Traces;
+with Section;
 
-package body Name.Catalog is
+package body Moon.Parameter is
 
-  package Log is new Traces ("Name.Catalog");
-
-  User_Signal_Define : Define_Signal;
+  Minimum_Sun_Altitude_Key : constant String := "Minimum Sun Altitude";
+  Maximum_Sun_Altitude_Key : constant String := "Maximum Sun Altitude";
 
 
-  package Menu is new Gui.Enumeration_Menu_Of (Sky.Catalog_Id, Gui.Radio, Sky.Catalog.Image_Of);
-
-  procedure Handler (The_Catalog : Sky.Catalog_Id) is
+  procedure Define (Handle : Configuration.File_Handle) is
+    use type Angle.Degrees;
   begin
-    Log.Write ("Id: " & The_Catalog'img);
-    Define (The_Catalog);
-    case The_Catalog is
-    when Sky.Moon =>
-      Targets.Filter.Set (Targets.Filter.Moon);
-    when Sky.Neo =>
-      Targets.Filter.Set (Targets.Filter.Neo);
-    when others =>
-      Targets.Filter.Set (Targets.Filter.Default);
-    end case;
-    User_Signal_Define.all;
-  exception
-  when Item: others =>
-    Log.Error ("Handler");
-    Log.Termination (Item);
-  end Handler;
+    Section.Set (Configuration.Handle_For (Handle, Id));
+    Define (Min_Sun_Altitude => Section.Degrees_Of (Minimum_Sun_Altitude_Key, Minimum => -90.0, Maximum => 0.0),
+            Max_Sun_Altitude => Section.Degrees_Of (Maximum_Sun_Altitude_Key, Maximum => 90.0));
+  end Define;
 
 
-  procedure Create_Menu (Signal_Define : Define_Signal) is
+  procedure Defaults (Put : access procedure (Item : String)) is
   begin
-    User_Signal_Define := Signal_Define;
-    Menu.Create (Lexicon.Image_Of (Lexicon.Catalog), Handler'access);
-    Handler (Sky.Favorites);
-  end Create_Menu;
+    Put ("[" & Id & "]");
+    Put (Minimum_Sun_Altitude_Key & " = -2.0" & Angle.Degree);
+    Put (Maximum_Sun_Altitude_Key & " = 15.0" & Angle.Degree);
+  end Defaults;
 
-end Name.Catalog;
+end Moon.Parameter;

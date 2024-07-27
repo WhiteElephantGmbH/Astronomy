@@ -15,46 +15,27 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Gui.Enumeration_Menu_Of;
-with Lexicon;
-with Sky.Catalog;
-with Targets.Filter;
-with Traces;
+with Exceptions;
+with Generator.Data;
 
-package body Name.Catalog is
+package body Generator is
 
-  package Log is new Traces ("Name.Catalog");
-
-  User_Signal_Define : Define_Signal;
-
-
-  package Menu is new Gui.Enumeration_Menu_Of (Sky.Catalog_Id, Gui.Radio, Sky.Catalog.Image_Of);
-
-  procedure Handler (The_Catalog : Sky.Catalog_Id) is
+  procedure Execute is
   begin
-    Log.Write ("Id: " & The_Catalog'img);
-    Define (The_Catalog);
-    case The_Catalog is
-    when Sky.Moon =>
-      Targets.Filter.Set (Targets.Filter.Moon);
-    when Sky.Neo =>
-      Targets.Filter.Set (Targets.Filter.Neo);
-    when others =>
-      Targets.Filter.Set (Targets.Filter.Default);
-    end case;
-    User_Signal_Define.all;
+    Data.Read;
+    Data.Generate;
   exception
+  when Error_Occured =>
+    null;
   when Item: others =>
-    Log.Error ("Handler");
-    Log.Termination (Item);
-  end Handler;
+    Error (Exceptions.Information_Of (Item));
+  end Execute;
 
 
-  procedure Create_Menu (Signal_Define : Define_Signal) is
+  procedure Error (Text : String) is
   begin
-    User_Signal_Define := Signal_Define;
-    Menu.Create (Lexicon.Image_Of (Lexicon.Catalog), Handler'access);
-    Handler (Sky.Favorites);
-  end Create_Menu;
+    IO.Put_Line ("*** " & Text & (if The_Line_Number = 0 then "" else " at line" & The_Line_Number'image));
+    raise Error_Occured;
+  end Error;
 
-end Name.Catalog;
+end Generator;

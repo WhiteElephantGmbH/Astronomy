@@ -37,7 +37,8 @@ package Section is
                       Unit    : String := "") return Angles.List;
 
   function Degrees_Of (Key     : String;
-                       Maximum : Angle.Degrees) return Angle.Degrees;
+                       Maximum : Angle.Degrees;
+                       Minimum : Angle.Degrees := 0.0) return Angle.Degrees;
 
   function Direction_Of (Key : String) return Earth.Direction;
 

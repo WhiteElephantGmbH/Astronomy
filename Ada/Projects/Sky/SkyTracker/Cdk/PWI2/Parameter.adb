@@ -24,6 +24,7 @@ with Doubly_Linked_Lists_Extension;
 with Error;
 with File;
 with Language.Parameter;
+with Moon.Parameter;
 with Network.Tcp;
 with Os.System;
 with Os.User;
@@ -136,6 +137,8 @@ package body Parameter is
       Cdk_700.Parameter.Defaults (Put'access);
       Put ("");
       Sun.Parameter.Defaults (Put'access);
+      Put ("");
+      Moon.Parameter.Defaults (Put'access);
       Put ("");
       Put ("[" & Lx200_Id & "]");
       Put (Port_Key & " = 4030");
@@ -320,6 +323,7 @@ package body Parameter is
       end if;
 
       Sun.Parameter.Define (Handle);
+      Moon.Parameter.Define (Handle);
 
       Section.Set (Lx200_Handle);
       The_Lx200_Port := Section.Port_For (Lx200_Id);

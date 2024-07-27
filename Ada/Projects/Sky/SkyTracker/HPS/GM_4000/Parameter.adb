@@ -23,6 +23,7 @@ with Error;
 with File;
 with Http_Server.Parameter;
 with Language.Parameter;
+with Moon.Parameter;
 with Picture.Parameter;
 with Remote.Parameter;
 with Stellarium.Parameter;
@@ -63,6 +64,8 @@ package body Parameter is
       Put ("");
       Sun.Parameter.Defaults (Put'access);
       Put ("");
+      Moon.Parameter.Defaults (Put'access);
+      Put ("");
       Picture.Parameter.Defaults (Put'access);
       Put ("");
       Camera.Parameter.Defaults (Put'access);
@@ -88,6 +91,7 @@ package body Parameter is
       Ten_Micron.Parameter.Define (Handle);
       Http_Server.Parameter.Define (Handle);
       Sun.Parameter.Define (Handle);
+      Moon.Parameter.Define (Handle);
       Remote.Parameter.Define (Handle);
       Picture.Parameter.Define (Handle);
       Camera.Parameter.Define (Handle);

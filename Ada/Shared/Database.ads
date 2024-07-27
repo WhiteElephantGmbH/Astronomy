@@ -217,21 +217,21 @@ package Database is
   type Otype_Id is range 0 .. Object_Type'pos(Object_Type'last);
 
 
-  Delta_Degrees   : constant := 0.0000000000001;
+  Delta_Degrees   : constant := 0.000_000_000_000_1;
   Delta_Motion    : constant := 0.001;
-  Delta_Parallax  : constant := 0.0001;
+  Delta_Parallax  : constant := 0.000_1;
   Delta_Magnitude : constant := 0.001;
 
   type Degrees_Ra  is delta Delta_Degrees range    0.0 .. 360.0 - Delta_Degrees with Small => Delta_Degrees;
   type Degrees_Dec is delta Delta_Degrees range -180.0 .. 180.0 - Delta_Degrees with Small => Delta_Degrees;
 
-  type Motion    is delta Delta_Motion    range -10000.0 .. 11000.0; -- Bernhard's star: 10362.394
-  type Parallax  is delta Delta_Parallax  range      0.0 .. 1000.0 - Delta_Parallax  with Small => Delta_Parallax;
-  type Magnitude is delta Delta_Magnitude range    -10.0 .. 100.0  - Delta_Magnitude with Small => Delta_Magnitude;
+  type Motion    is delta Delta_Motion    range -10_000.0 .. 11_000.0; -- Bernhard's star: 10362.394
+  type Parallax  is delta Delta_Parallax  range       0.0 .. 1000.0 - Delta_Parallax  with Small => Delta_Parallax;
+  type Magnitude is delta Delta_Magnitude range     -10.0 .. 100.0  - Delta_Magnitude with Small => Delta_Magnitude;
 
   type Light_Years is range 0 .. 2**32-1;
 
-  One_Parsec_In_Light_Years : constant Float := 3.26156;
+  One_Parsec_In_Light_Years : constant Float := 3.261_56;
 
   No_Plx : constant := Parallax'first;
   No_Mag : constant := Magnitude'last;
@@ -253,5 +253,30 @@ package Database is
   end record;
 
   No_Spec_Type : constant Star_Spec_Type := (Star_Class'first, Star_Subclass'first, NO);
+
+  Delta_Angle : constant := 0.000_0001;
+  Delta_Size  : constant := 0.001;
+
+  type Feature_Latitude  is delta Delta_Angle range -90.0 .. 90.0 - Delta_Angle with Small => Delta_Angle; -- in degrees
+
+  type Feature_Longitude is delta Delta_Angle range 0.0 .. 360.0 - Delta_Angle with Small => Delta_Angle; -- in degrees
+
+  type Feature_Size is delta Delta_Size range 0.0 .. 3000.0 - Delta_Size with Small => Delta_Size; -- in kilometers
+
+  type Moon_Feature_Type is (Catena,       -- Mondkraterkette
+                             Crater,       -- Mondkrater
+                             Lacus,        -- Mondsee
+                             Mare,         -- Mondmeer
+                             Mons,         -- Mondberg
+                             Oceanus,      -- Mondozean
+                             Palus,        -- Mondsumpf
+                             Promontorium, -- Mondvorgebirge
+                             Rima,         -- Mondrille
+                             Rupes,        -- Mondklippen
+                             Sinus,        -- Mondbucht
+                             Swirl,        -- Mondwirbel
+                             Vallis);      -- Mondtal
+
+  Minimum_Feature_Size : constant Feature_Size := 10.0;
 
 end Database;

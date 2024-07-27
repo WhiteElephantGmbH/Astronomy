@@ -78,10 +78,11 @@ package body Section is
 
 
   function Degrees_Of (Key     : String;
-                       Maximum : Angle.Degrees) return Angle.Degrees is
+                       Maximum : Angle.Degrees;
+                       Minimum : Angle.Degrees := 0.0) return Angle.Degrees is
     Item : constant String := String_Of (Key);
   begin
-    return Angle.Degrees_Of (Item, Maximum);
+    return Angle.Degrees_Of (Item, Lower_Limit => Minimum, Upper_Limit => Maximum);
   exception
   when others =>
     Error.Raise_With ("Incorrect value of " & Key & ": <" & Item & ">");

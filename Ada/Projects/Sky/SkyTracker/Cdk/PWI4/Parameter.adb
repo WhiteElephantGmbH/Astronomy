@@ -26,6 +26,7 @@ with Error;
 with File;
 with Http_Server.Parameter;
 with Language.Parameter;
+with Moon.Parameter;
 with Network.Tcp;
 with Os.System;
 with Picture.Parameter;
@@ -125,6 +126,8 @@ package body Parameter is
       Http_Server.Parameter.Defaults (Put'access, "Handbox");
       Put ("");
       Sun.Parameter.Defaults (Put'access);
+      Put ("");
+      Moon.Parameter.Defaults (Put'access);
       Put ("");
       Remote.Parameter.Defaults (Put'access, "cdk_Ost");
       Put ("");
@@ -259,6 +262,7 @@ package body Parameter is
 
       Http_Server.Parameter.Define (Handle);
       Sun.Parameter.Define (Handle);
+      Moon.Parameter.Define (Handle);
       Remote.Parameter.Define (Handle);
       Picture.Parameter.Define (Handle);
       Stellarium.Parameter.Define (Handle);
