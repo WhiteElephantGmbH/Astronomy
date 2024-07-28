@@ -26,6 +26,8 @@ package Name is
   type Object_Kind is (Axis_Position, Landmark,
                        Moon, Sun, Planet, Near_Earth_Object, Small_Solar_System_Body, Sky_Object);
 
+  subtype Solar_Object is Object_Kind range Moon .. Planet;
+
   type Id (Data_Id : Sky.Catalog_Id := Sky.Favorites) is private;
 
   No_Id : constant Id;

@@ -36,6 +36,8 @@ package Astro is
 
   Astronomical_Unit : constant REAL := 149_597_870.7; -- kilometers
 
+  Sideral_Rate : constant := 15.041_068_640_262; -- arcseconds / second;
+
   -- Vektoren und Matrizen
 
   type AXIS   is (X,Y,Z);

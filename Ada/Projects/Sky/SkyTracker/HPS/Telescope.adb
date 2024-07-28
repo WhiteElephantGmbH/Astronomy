@@ -16,6 +16,7 @@
 pragma Style_White_Elephant;
 
 with Ada.Real_Time;
+with Astro;
 with Camera;
 with Clock;
 with Http_Server;
@@ -191,10 +192,8 @@ package body Telescope is
         return Ten_Micron.Axis_Position;
       when Name.Near_Earth_Object =>
         return Ten_Micron.Near_Earth_Object;
-      when Name.Moon =>
-        return Ten_Micron.Moon;
-      when Name.Sun =>
-        return Ten_Micron.Sun;
+      when Name.Solar_Object =>
+        return Ten_Micron.Solar_Object;
       when others =>
         return Ten_Micron.Other_Targets;
       end case;
@@ -226,6 +225,32 @@ package body Telescope is
       return Next_Get_Direction (Next_Id, Time.Universal);
     end if;
   end Actual_Target_Direction;
+
+
+  function Tracking_Rate_Factors return Ten_Micron.Tracking_Rate_Factors is
+    Time_Delta     : constant Time.Ut := 100.0;
+    Time_Now       : constant Time.Ut := Time.Universal;
+    The_Increments : Space.Direction;
+    The_Dec_Delta  : Angle.Degrees;
+    The_Ra_Delta   : Angle.Degrees;
+    use type Angle.Signed;
+    use type Space.Direction;
+    use type Time.Ut;
+    use type Angle.Degrees;
+    The_Factors : Ten_Micron.Tracking_Rate_Factors;
+  begin
+    The_Increments := Next_Get_Direction (Next_Id, Time_Now + Time_Delta);
+    The_Increments := @ - Next_Get_Direction (Next_Id, Time_Now);
+    if Space.Direction_Is_Known (The_Increments) then
+      The_Dec_Delta := +Angle.Signed'(+Space.Dec_Of (The_Increments));
+      The_Dec_Delta := @ / Angle.Degrees(Time_Delta) * 3600.0;
+      The_Ra_Delta := +Angle.Signed'(+Space.Ra_Of (The_Increments));
+      The_Ra_Delta := @ / Angle.Degrees(Time_Delta) * 3600.0;
+      The_Factors.Dec := Ten_Micron.Tracking_Rate_Factor(The_Dec_Delta / Astro.Sideral_Rate);
+      The_Factors.Ra := Ten_Micron.Tracking_Rate_Factor(The_Ra_Delta / Astro.Sideral_Rate);
+    end if;
+    return The_Factors;
+  end Tracking_Rate_Factors;
 
 
   function Information return Data is
@@ -462,9 +487,27 @@ package body Telescope is
     end Update_Handling;
 
 
+    procedure Set_Sideral_Rates is
+    begin
+      Ten_Micron.Set_Tracking_Rates;
+    end Set_Sideral_Rates;
+
+
+    procedure Set_Tracking_Rates is
+    begin
+      case Target_Kind is
+      when Ten_Micron.Solar_Object =>
+        Ten_Micron.Set_Tracking_Rates (Tracking_Rate_Factors);
+      when others =>
+        Set_Sideral_Rates;
+      end case;
+    end Set_Tracking_Rates;
+
+
     procedure Synch_On_Picture is
     begin
       Aligning_Enabled := False;
+      Set_Sideral_Rates;
       Ten_Micron.Synch_To (The_Picture_Direction);
       The_Picture_Direction := Space.Unknown_Direction;
     end Synch_On_Picture;
@@ -474,6 +517,7 @@ package body Telescope is
     begin
       Alignment.Clear;
       The_Next_Star := Space.Unknown_Direction;
+      Set_Sideral_Rates;
       Ten_Micron.Slew_To (The_Direction, Ten_Micron.Axis_Position);
       Remote.Define (Target => "");
     end Position_To;
@@ -497,6 +541,7 @@ package body Telescope is
           accept Go_To do
             Evaluate_Pole_Setup := null;
             Alignment.Clear;
+            Set_Tracking_Rates;
             Ten_Micron.Slew_To (Actual_Target_Direction, Target_Kind);
             if Name.Is_Known (Next_Id) then
               case Name.Kind_Of (Next_Id) is
@@ -532,6 +577,7 @@ package body Telescope is
             Evaluate_Pole_Setup := null;
             The_Picture_Direction := Space.Unknown_Direction;
             The_Next_Star := Alignment.Next_Star;
+            Set_Sideral_Rates;
             if Space.Direction_Is_Known (The_Next_Star) then
               Ten_Micron.Slew_To (The_Next_Star);
               Is_Preparing_For_Capture := True;
@@ -546,6 +592,7 @@ package body Telescope is
         or
           accept Park do
             Remote.Define (Target => "");
+            Set_Sideral_Rates;
             Ten_Micron.Park;
           end Park;
         or
@@ -559,6 +606,7 @@ package body Telescope is
             when others =>
               null;
             end case;
+            Set_Sideral_Rates;
             Ten_Micron.Stop;
            end Stop;
         or

@@ -5,7 +5,6 @@
 pragma Style_White_Elephant;
 
 with Error;
-with Lx200;
 with Network.Tcp;
 with Satellite;
 with Text;
@@ -30,6 +29,8 @@ package body Ten_Micron is
 
   Has_New_Alignment : Boolean := False;
   Is_Legacy         : Boolean := False;
+
+  Actual_Rates : Tracking_Rate_Factors;
 
 
   function Is_Expert_Mode return Boolean is
@@ -255,6 +256,8 @@ package body Ten_Micron is
          | Set_Declination
          | Set_Air_Pressure
          | Set_Temperature
+         | Set_Tracking_Rate_Dec_Factor
+         | Set_Tracking_Rate_RA_Factor
       =>
         return Received_Character;
       when Get_Alignment_Information
@@ -575,8 +578,19 @@ package body Ten_Micron is
   end Get;
 
 
-  procedure Slew_To (Location : Space.Direction;
-                     Target   : Target_Kind := Other_Targets) is
+  procedure Set_Tracking_Rates (Factors : Tracking_Rate_Factors := Sideral_Rate_Factors) is
+    use all type Lx200.Command;
+  begin
+    if Actual_Rates /= Factors then
+      Execute (Set_Tracking_Rate_Dec_Factor, Lx200.Factor_Of (Factors.Dec), Expected => "1");
+      Execute (Set_Tracking_Rate_RA_Factor, Lx200.Factor_Of (Factors.Ra), Expected => "1");
+      Actual_Rates := Factors;
+    end if;
+  end Set_Tracking_Rates;
+
+
+  procedure Slew_To (Location  : Space.Direction;
+                     Target    : Target_Kind := Other_Targets) is
 
     use all type Lx200.Command;
 
@@ -628,17 +642,9 @@ package body Ten_Micron is
       if Neo_Prepared then
         Neo_Slew;
       end if;
-    when Tracking_Target_Kind =>
+    when others =>
       Execute (Set_Right_Ascension, Lx200.Hours_Of (Space.Ra_Of (Location)), Expected => "1");
       Execute (Set_Declination, Lx200.Signed_Degrees_Of (Space.Dec_Of (Location)), Expected => "1");
-      case Tracking_Target_Kind(Target) is
-      when Moon =>
-        Execute (Set_Lunar_Tracking_Rate);
-      when Sun =>
-        Execute (Set_Solar_Tracking_Rate);
-      when Other_Targets =>
-        Execute (Set_Sideral_Tracking_Rate);
-      end case;
       Execute (Slew, Expected => Lx200.Slew_Ok);
     end case;
   exception

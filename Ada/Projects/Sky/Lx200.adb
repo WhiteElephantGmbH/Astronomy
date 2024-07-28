@@ -90,12 +90,6 @@ package body Lx200 is
       return Command_For ("Qw");
     when Quit_Move =>
       return Command_For ("Q");
-    when Set_Lunar_Tracking_Rate =>
-      return Command_For ("RT0");
-    when Set_Solar_Tracking_Rate =>
-      return Command_For ("RT1");
-    when Set_Sideral_Tracking_Rate =>
-      return Command_For ("RT2");
     when Set_Centering_Rate =>
       return Command_For ("RC" & Parameter);
     when Set_Guiding_Rate =>
@@ -147,6 +141,16 @@ package body Lx200 is
       return Command_For ("SRTMP" & Parameter);
     when Set_Julian_Date =>
       return Command_For ("SJD" & Parameter);
+    when Set_Lunar_Tracking_Rate =>
+      return Command_For ("RT0");
+    when Set_Solar_Tracking_Rate =>
+      return Command_For ("RT1");
+    when Set_Sideral_Tracking_Rate =>
+      return Command_For ("RT2");
+    when Set_Tracking_Rate_Dec_Factor =>
+      return Command_For ("RD" & Parameter);
+    when Set_Tracking_Rate_RA_Factor =>
+      return Command_For ("RR" & Parameter);
     when Set_Centering_Rate_Factor =>
       return Command_For ("Rc" & Parameter);
     when Set_Slewing_Rate_Factor =>
@@ -325,6 +329,25 @@ package body Lx200 is
     Log.Error ("Rate_Of failed with " & Item);
     raise Protocol_Error;
   end Rate_Of;
+
+
+  function Factor_Of (Item : Rate_Factor) return String is
+    -- 876543210
+    -- sXXX.XXXX
+    Image : constant String := "00" & Text.Trimmed (Rate_Factor'(abs Item)'image);
+  begin
+    return (if Item < 0.0 then "-" else "+") & Image(Image'last - 7 .. Image'last);
+  end Factor_Of;
+
+
+  function Factor_Of (Item : String) return Rate_Factor is
+  begin
+    return Rate_Factor'value(Item);
+  exception
+  when others =>
+    Log.Error ("Factor_Of failed with " & Item);
+    raise Protocol_Error;
+  end Factor_Of;
 
 
   function Air_Pressure_Of (Item : Refraction.Hectopascal) return String is

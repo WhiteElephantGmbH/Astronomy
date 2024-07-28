@@ -16,7 +16,6 @@
 pragma Style_White_Elephant;
 
 with Ada.Unchecked_Deallocation;
-with Log;
 
 package body Gui.Radio_Menu_Of is
 
@@ -84,7 +83,6 @@ package body Gui.Radio_Menu_Of is
     The_Images := Name_Lists;
     Handle_For := The_Handler;
     for The_Group in Group loop
-      Log.Write ("Create Group:" & The_Group'image);
       The_Lists(The_Group) := new Item_List(0 .. Element(The_Images(The_Group).Length) - 1);
     end loop;
     Initialize_Group;

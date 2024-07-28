@@ -4,6 +4,7 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with Astro;
 with Ada.Command_Line;
 with Ada.Real_Time;
 with Ada.Text_IO;
@@ -83,11 +84,11 @@ package body Simulator is
     The_State  : State := Parked;
     Send_Delay : Integer;
 
-    Ra_Park_Image  : constant String := "00:00:00.00#";
-    Dec_Park_Image : constant String := "+90:00:00.0#";
+    Ra_Park_Position  : constant Angle.Degrees := 0.0;
+    Dec_Park_Position : constant Angle.Degrees := 90.0;
 
-    Ra_Image  : String := Ra_Park_Image;
-    Dec_Image : String := Dec_Park_Image;
+    The_Ra  : Angle.Degrees := Ra_Park_Position;
+    The_Dec : Angle.Degrees := Dec_Park_Position;
 
     RA_Park_Axis_Image  : constant String := "+090.0000#";
     Dec_Park_Axis_Image : constant String := "+000.0000#";
@@ -123,37 +124,101 @@ package body Simulator is
     Lunar_Tracking_Increment : constant Arc_Seconds := 0.356; -- per second
     Solar_Tracking_Increment : constant Arc_Seconds := 0.041; -- per second
 
-    The_Ra_Increment : Arc_Seconds := 0.0;
+    The_Dec_Increment : Arc_Seconds := 0.0;
+    The_Ra_Increment  : Arc_Seconds := 0.0;
 
     Undefined_Time : constant Duration := Duration'first;
 
-    The_Start_Time : Real.Time;
-    The_Time_Delta : Duration := Undefined_Time;
+    The_Dec_Start_Time : Real.Time;
+    The_Dec_Time_Delta : Duration := Undefined_Time;
+    The_Ra_Start_Time  : Real.Time;
+    The_Ra_Time_Delta  : Duration := Undefined_Time;
 
 
-    procedure Increment_Ra_Image is
-      The_Ra        : Angle.Value;
+    function Dec_Value_Of (Image : String) return Angle.Degrees is
+      use type Angle.Value;
+    begin
+      return +Lx200.Signed_Degrees_Of (Image(Image'first .. Image'last - 1));
+    end Dec_Value_Of;
+
+
+    function Ra_Value_Of (Image : String) return Angle.Degrees is
+      use type Angle.Value;
+    begin
+      return +Lx200.Hours_Of (Image(Image'first .. Image'last - 1));
+    end Ra_Value_Of;
+
+
+    function Ra_Image return String is
+      use type Angle.Value;
+    begin
+      return Lx200.Hours_Of (Angle.Value'(+The_Ra)) & "#";
+    end Ra_Image;
+
+
+    function Dec_Image return String is
+      use type Angle.Value;
+    begin
+      return Lx200.Signed_Degrees_Of (Angle.Value'(+The_Dec)) & "#";
+    end Dec_Image;
+
+
+    procedure Increment_Dec is
       The_End_Time  : Real.Time;
       The_Increment : Arc_Seconds;
-      use type Angle.Value;
+      use type Angle.Degrees;
       use type Real.Time;
     begin
-      if The_Time_Delta = Undefined_Time then
-        The_Start_Time := Real.Clock;
-        The_Time_Delta := 0.0;
+      if The_Dec_Time_Delta = Undefined_Time then
+        The_Dec_Start_Time := Real.Clock;
+        The_Dec_Time_Delta := 0.0;
       else
-        The_Ra := Lx200.Hours_Of (Ra_Image(Ra_Image'first .. Ra_Image'last - 1));
         The_End_Time := Real.Clock;
-        The_Time_Delta := Real.To_Duration (The_End_Time - The_Start_Time);
-        The_Start_Time := The_End_Time;
-        The_Increment := Arc_Seconds(The_Time_Delta) * The_Ra_Increment;
-        The_Ra := @ + Angle.Degrees(The_Increment / 3600);
-        Ra_Image := Lx200.Hours_Of (The_Ra) & "#";
+        The_Dec_Time_Delta := Real.To_Duration (The_End_Time - The_Dec_Start_Time);
+        The_Dec_Start_Time := The_End_Time;
+        The_Increment := Arc_Seconds(The_Dec_Time_Delta * The_Dec_Increment);
+        The_Dec := @ + Angle.Degrees(The_Increment / 3600);
       end if;
     exception
     when Event : others =>
       Ada.Text_IO.Put_Line ("EXCEPTION: " & Exceptions.Information_Of (Event));
-    end Increment_Ra_Image;
+    end Increment_Dec;
+
+
+    procedure Increment_Ra is
+      The_End_Time  : Real.Time;
+      The_Increment : Arc_Seconds;
+      use type Angle.Degrees;
+      use type Real.Time;
+    begin
+      if The_Ra_Time_Delta = Undefined_Time then
+        The_Ra_Start_Time := Real.Clock;
+        The_Ra_Time_Delta := 0.0;
+      else
+        The_End_Time := Real.Clock;
+        The_Ra_Time_Delta := Real.To_Duration (The_End_Time - The_Ra_Start_Time);
+        The_Ra_Start_Time := The_End_Time;
+        The_Increment := Arc_Seconds(The_Ra_Time_Delta * The_Ra_Increment);
+        The_Ra := @ + Angle.Degrees(The_Increment / 3600);
+      end if;
+    exception
+    when Event : others =>
+      Ada.Text_IO.Put_Line ("EXCEPTION: " & Exceptions.Information_Of (Event));
+    end Increment_Ra;
+
+
+    function Increment_Of (Factor_Image : String) return Arc_Seconds is
+      The_Factor    : Lx200.Rate_Factor;
+      The_Increment : Arc_Seconds;
+    begin
+      The_Factor := Lx200.Factor_Of (Factor_Image(Factor_Image'first .. Factor_Image'last - 1));
+      The_Increment := Arc_Seconds(The_Factor) * Astro.Sideral_Rate;
+      return The_Increment;
+    exception
+    when Event : others =>
+      Ada.Text_IO.Put_Line ("EXCEPTION: " & Exceptions.Information_Of (Event));
+      return 0.0;
+    end Increment_Of;
 
 
     function Julian_Date_Image return String is
@@ -534,18 +599,18 @@ package body Simulator is
             Put_Line ("Get Telescope DEC");
             case The_State is
             when Parked =>
-              Dec_Image := Dec_Park_Image;
+              The_Dec := Dec_Park_Position;
             when others =>
-              null;
+              Increment_Dec;
             end case;
             Send (Dec_Image);
           elsif Command = ":GR" then
             Put_Line ("Get Telescope RA");
             case The_State is
             when Parked =>
-              Ra_Image := Ra_Park_Image;
+              The_Ra := Ra_Park_Position;
             when others =>
-              Increment_Ra_Image;
+              Increment_Ra;
             end case;
             Send (Ra_Image);
           elsif Command = ":GZ" then
@@ -553,19 +618,19 @@ package body Simulator is
             Send ("179:59:59.00#");
           elsif Command = ":pS" then
             declare
-              Ra   : constant Natural := Natural'value (Ra_Image(Ra_Image'first .. Ra_Image'first + 1));
-              Side : constant String := (if Ra > 12 then "West#" else "East#");
+              use type Angle.Degrees;
+              Side : constant String := (if The_Ra > 180.0 then "West#" else "East#");
             begin
               Put_Line ("Get_Pointing_State");
               Send (Side);
             end;
           elsif Command = ":Sr" then
-            Ra_Image := Image;
-            Put_Line ("Set Object RA " & Ra_Image);
+            Put_Line ("Set Object RA " & Image);
+            The_Ra := Ra_Value_Of (Image);
             Send ("1");
           elsif Command = ":Sd" then
-            Dec_Image := Image;
             Put_Line ("Set Object DEC " & Image);
+            The_Dec := Dec_Value_Of (Image);
             Send ("1");
           elsif Command = ":Sa" then -- :Sa+20*23'42#
             Put_Line ("Set Object Altitude");
@@ -628,6 +693,14 @@ package body Simulator is
             when others =>
               Put_Line ("Not supported tracking rate " & Data);
             end case;
+          elsif Command = ":RR" then
+            The_Ra_Increment := Increment_Of (Image);
+            Put_Line ("Set Tracking Rate RA Factor " & Image);
+            Send ("1");
+          elsif Command = ":RD" then
+            The_Dec_Increment := Increment_Of (Image);
+            Put_Line ("Set Tracking Rate Dec Factor " & Image);
+            Send ("1");
           else
             Put_Line ("Unknown Command " & Data);
           end if;

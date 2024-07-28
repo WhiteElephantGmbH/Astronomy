@@ -6,6 +6,7 @@ pragma Style_White_Elephant;
 
 with Angle;
 with Earth;
+with Lx200;
 with Network;
 with Refraction;
 with Space;
@@ -41,9 +42,16 @@ package Ten_Micron is
 
   subtype Transit_State is State range Preparing .. Ended;
 
-  type Target_Kind is (Axis_Position, Near_Earth_Object, Moon, Sun, Other_Targets);
+  type Target_Kind is (Axis_Position, Near_Earth_Object, Solar_Object, Other_Targets);
 
-  subtype Tracking_Target_Kind is Target_Kind range Moon .. Other_Targets;
+  subtype Tracking_Rate_Factor is Lx200.Rate_Factor;
+
+  type Tracking_Rate_Factors is record
+    Dec : Tracking_Rate_Factor := Tracking_Rate_Factor'first; -- Undefined
+    Ra  : Tracking_Rate_Factor := Tracking_Rate_Factor'first; -- Undefined
+  end record;
+
+  Sideral_Rate_Factors : constant Tracking_Rate_Factors := (Dec => 0.0, Ra => 0.0);
 
   type Time_Offset is delta 0.0001 range -9.9999 .. 9.9999 with Small => 0.0001;
 
@@ -105,8 +113,10 @@ package Ten_Micron is
 
   procedure Set_Time_Offset (Item : Duration);
 
-  procedure Slew_To (Location : Space.Direction;
-                     Target   : Target_Kind := Other_Targets);
+  procedure Set_Tracking_Rates (Factors : Tracking_Rate_Factors := Sideral_Rate_Factors);
+
+  procedure Slew_To (Location  : Space.Direction;
+                     Target    : Target_Kind := Other_Targets);
 
   procedure Synch_To (Location : Space.Direction);
 

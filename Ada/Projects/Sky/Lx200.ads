@@ -55,9 +55,6 @@ package Lx200 is
     Quit_Move_South,
     Quit_Move_West,
     Quit_Move,
-    Set_Lunar_Tracking_Rate,
-    Set_Solar_Tracking_Rate,
-    Set_Sideral_Tracking_Rate,
     Set_Centering_Rate,
     Set_Guiding_Rate,
     Set_Finding_Rate,
@@ -83,6 +80,11 @@ package Lx200 is
     Set_Air_Pressure,
     Set_Temperature,
     Set_Julian_Date,
+    Set_Lunar_Tracking_Rate,
+    Set_Solar_Tracking_Rate,
+    Set_Sideral_Tracking_Rate,
+    Set_Tracking_Rate_Dec_Factor,
+    Set_Tracking_Rate_RA_Factor,
     Set_Centering_Rate_Factor,
     Set_Slewing_Rate_Factor,
     Slew_To_Axis_Position,
@@ -118,6 +120,12 @@ package Lx200 is
   function Position_Of (Item : String) return Angle.Value;
 
   function Rate_Of (Item : String) return Angle.Value;
+  
+  type Rate_Factor is delta 0.0001 range -999.9999 .. 999.9999 with Small => 0.0001;
+
+  function Factor_Of (Item : Rate_Factor) return String;
+
+  function Factor_Of (Item : String) return Rate_Factor;
 
   function Air_Pressure_Of (Item : Refraction.Hectopascal) return String;
 
