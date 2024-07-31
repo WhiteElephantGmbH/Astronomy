@@ -16,7 +16,7 @@
 pragma Style_White_Elephant;
 
 pragma Build (Description => "SkyTracker control program for CDK700 (PWI4)",
-              Version     => (4, 0, 6, 1),
+              Version     => (4, 0, 7, 0),
               Kind        => Windows,
               Libraries   => ("AWS64", "COLL64"),
               Compiler    => "GNATPRO\23.0");

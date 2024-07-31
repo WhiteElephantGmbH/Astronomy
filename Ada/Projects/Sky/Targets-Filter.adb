@@ -130,6 +130,7 @@ package body Targets.Filter is
     Selection_Menu.Set (Group);
     case Group is
     when Default =>
+      Set (The_Feature => All_Features);
       Set (The_Selection => All_Objects);
     when Moon =>
       Set (The_Feature => All_Features);

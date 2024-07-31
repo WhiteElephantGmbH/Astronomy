@@ -16,7 +16,7 @@
 pragma Style_White_Elephant;
 
 pragma Build (Description => "SkyTracker control program for GM 4000 HPS",
-              Version     => (2, 4, 3, 1),
+              Version     => (2, 4, 4, 0),
               Kind        => Windows,
               Libraries   => ("AWSS64", "COLL64"),
               Compiler    => "GNATPRO\23.0");

@@ -386,6 +386,7 @@ package body Targets is
 
       begin -- Add_Visible
         if Name.Visibility_Changed_For (Item, Is_To_Add) then
+          Log.Write ("XXX Visibility_Changed_For " & Name.Image_Of (Item));
           The_Changes := The_Changes + 1;
         end if;
       end Add_Visible;

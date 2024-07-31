@@ -22,7 +22,7 @@ package body Test is
 
   procedure Put_Line (Item : String) is
   begin
-    IO.Put_Line (Item);
+    IO.Put_Line (Text.Ansi_Of_Utf8 (Item));
     Log.Write (Item);
   end Put_Line;
 
@@ -293,8 +293,8 @@ package body Test is
 
 
 
-  procedure Get_Moon_Parameters (UT                          : Time.Ut;
-                                 RA, Dec, R, L, B, P, B0, C0 : out REAL) is
+  procedure Get_Moon_Parameters (UT                                   : Time.Ut;
+                                 RA, Dec, R, L, B, P, B0, C0, MRS, DM : out REAL) is
 
     T, Bet, Lam, Rc_Phi, Rs_Phi, LMST: REAL;
 
@@ -341,12 +341,24 @@ package body Test is
              P    => P,
              B0   => B0,
              C0   => C0);
+    Put_Line ("");
+    Put_Line ("Moon RA      : " & Angle.Image_Of (+RA, Unit => Angle.In_Hours, Decimals => 2));
+    Put_Line ("     Dec     : " & Angle.Image_Of (+Dec));
+    Put_Line ("     Dist.   : " & Natural(R)'image & "km");
+    Put_Line ("     Diam.   : " & Natural(MR * 2.0)'image & "km");
+    Put_Line ("     Lib Lon : " & Angle.Image_Of (+L, Show_Signed => True));
+    Put_Line ("     Lib Lat : " & Angle.Image_Of (+B, Show_Signed => True));
+    Put_Line ("     Phase   : " & Angle.Image_Of (+P, Show_Signed => True));
+    MRS := ASN (MR / R);
+    Put_Line ("     S. Diam : " & Angle.Image_Of (+MRS*2.0));
+    DM := 90.0 - MRS;
+    Put_Line ("     Max Ang : " & Angle.Image_Of (+DM, Show_Signed => True));
   end Get_Moon_Parameters;
 
 
-  Maximum_Sun_Altitude : constant Angle.Degrees := 60.0;
+  Maximum_Sun_Altitude : constant Angle.Degrees := 15.0;
 
-  RA, Dec, R, L, B, P, B0, C0: REAL;
+  RA, Dec, R, L, B, P, B0, C0, MRS, DM: REAL;
 
 
   procedure Define (UT: Time.Ut) is
@@ -359,7 +371,9 @@ package body Test is
                          B   => B,
                          P   => P,
                          B0  => B0,
-                         C0  => C0);
+                         C0  => C0,
+                         MRS => MRS,
+                         DM  => DM);
   end Define;
 
 
@@ -463,28 +477,24 @@ package body Test is
 
   begin -- Direction_Of
     declare
-      Item         : Database.Moon.Feature renames Database.Moon.List(Feature);
-      Longitude    : constant REAL := REAL(Item.Longitude);
-      Latitude     : constant REAL := REAL(Item.Latitude);
-      CL, CB       : REAL;
-      Delta_RA     : REAL;
-      Delta_Dec    : REAL;
-      X, MRS, DM, SX, SY, SR, SA : REAL;
+      Item      : Database.Moon.Feature renames Database.Moon.List(Feature);
+      Longitude : constant REAL := REAL(Item.Longitude);
+      Latitude  : constant REAL := REAL(Item.Latitude);
+      CL, CB    : REAL;
+      Delta_RA  : REAL;
+      Delta_Dec : REAL;
     begin
       MOONSUNH (ETA => Longitude,
                 TET => Latitude,
                 B0  => B0,
                 C0  => C0,
                 H   => Sun_Altitude);
-      Log.Write ("Sun_Altitude :" & Angle.Signed_Degrees_Image_Of (+Sun_Altitude));
       if Sun_Altitude < -2.0 or else Sun_Altitude > Maximum_Sun_Altitude then
         return Space.Unknown_Direction;
       end if;
       CL := Longitude - Liberation_L;
       CB := Latitude;
       Rotate (CL, CB, - Liberation_B);
-      MRS := ASN (MR / R);
-      DM := 90.0 - MRS;
       if CL /= Normalized (CL) then
         raise Program_Error;
       end if;
@@ -497,13 +507,12 @@ package body Test is
       if abs CB > DM then
         return Space.Unknown_Direction;
       end if;
-      CART (MRS, CB, CL, X, SX, SY);
-      SR := SQRT (SX * SX + SY * SY);
-      SA := ATN2 (SY, SX) + P;
-      Delta_RA := -SR * CS (SA); -- RA west positive
-      Delta_Dec := SR * SN (SA);
-      Log.Write ("Old Delta_RA  :" & Angle.Signed_Degrees_Image_Of (+Delta_RA));
-      Log.Write ("Old Delta_Dec :" & Angle.Signed_Degrees_Image_Of (+Delta_Dec));
+      Put_Line (Feature'image);
+      Put_Line ("  Sel Lon : " & Angle.Image_Of (+Longitude, Show_Signed => True));
+      Put_Line ("  Sel Lat : " & Angle.Image_Of (+Latitude, Show_Signed => True));
+      Put_Line ("  Sun Alt : " & Angle.Signed_Degrees_Image_Of (+Sun_Altitude));
+      Put_Line ("  Cor Lon : " & Angle.Image_Of (+CL, Show_Signed => True));
+      Put_Line ("  Cor Lat : " & Angle.Image_Of (+CB, Show_Signed => True));
       Evaluate_Deltas (D        => R,
                        B        => CB,
                        L        => CL,
@@ -511,8 +520,8 @@ package body Test is
                        P        => P,
                        Delta_Ra => Delta_RA,
                        Delta_Dec => Delta_Dec);
-      Log.Write ("New Delta_RA  :" & Angle.Signed_Degrees_Image_Of (+Delta_RA));
-      Log.Write ("New Delta_Dec :" & Angle.Signed_Degrees_Image_Of (+Delta_Dec));
+      Put_Line ("  Del RA  : " & Angle.Image_Of (+Delta_RA, Show_Signed => True));
+      Put_Line ("  Del Dec : " & Angle.Image_Of (+Delta_Dec, Show_Signed => True));
       Feature_RA := RA + Delta_RA;
       Feature_Dec := Dec + Delta_Dec;
     end;
@@ -550,9 +559,9 @@ package body Test is
     Put_Line ("");
     Put_Line ("D E F I N E   M O O N   P A R A M E T E R S");
     Put_Line ("===========================================");
-  --Define (Time.Universal);
+    Define (Time.Universal);
   --Define (Time.Universal_Of (Time.Calendar_Value_Of ("12.4.1992 00:00:00")));
-    Define (Time.Universal_Of (Time.Calendar_Value_Of ("18.7.2024 22:18:00")));
+  --Define (Time.Universal_Of (Time.Calendar_Value_Of ("2.8.2024 10:48:30")));
     Put_Line ("");
     Put_Line ("V I S I B L E   F E A T U R E S");
     Put_Line ("===============================");
@@ -561,8 +570,7 @@ package body Test is
         Direction : constant Space.Direction := Direction_Of (The_Feature);
       begin
         if Space.Direction_Is_Known (Direction) then
-          Put_Line (The_Feature'image & Text.Ansi_Of_Utf8 (Space.Image_Of (Direction))
-                                      & " - SH:" & Angle.Signed_Degrees_Image_Of (+Sun_Altitude));
+          Put_Line ("  Direction " & Space.Image_Of (Direction));
         end if;
       end;
     end loop;
