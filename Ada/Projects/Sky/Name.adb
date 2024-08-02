@@ -307,13 +307,11 @@ package body Name is
           if Item.Is_Visible then
             List_Index := List_Index + 1;
           else
-            Log.Write ("XXX Remove " & Image_Of (Item));
-            Remove (List_Index + 1);
+             Remove (List_Index + 1);
             Item.Was_Visible := False;
           end if;
         elsif Item.Is_Visible then
           List_Index := List_Index + 1;
-          Log.Write ("XXX Insert " & Image_Of (Item));
           Insert (Item_Pointer, List_Index);
           Item.Was_Visible := True;
         end if;

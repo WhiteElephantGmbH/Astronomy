@@ -142,6 +142,7 @@ package body Gui is
   The_Termination_Handler : Termination_Handler_Ptr;
   Private_Window          : Win32.Windef.HWND := System.Null_Address;
   Is_Active               : Boolean := False;
+  Is_Destroying           : Boolean := False;
 
   The_Private_Window_Rectangle : aliased Win32.Windef.RECT;
 
@@ -234,6 +235,30 @@ package body Gui is
     Previous        : Menu_Item_Access;
     Next            : Menu_Item_Access;
   end record;
+
+
+  protected Mutex is
+    entry Wait;
+    procedure Signal;
+  private
+    Count : Natural := 1;
+  end Mutex;
+
+
+  protected body Mutex is
+
+    entry Wait when Count > 0 is
+    begin
+      Count := @ - 1;
+    end Wait;
+
+    procedure Signal is
+    begin
+      Count := @ + 1;
+    end Signal;
+
+  end Mutex;
+
 
   Last_Menu_Item         : Menu_Item_Access := null;
   First_Menu_Item_Id     : constant Positive := 1000;
@@ -1442,6 +1467,7 @@ package body Gui is
     The_Longword := Wparam;
     The_Window_Id := Natural (The_Message.Window_Id);
     if The_Window_Id >= First_Menu_Item_Id then -- look for menu item
+      Mutex.Wait;
       The_Menu_Item := Last_Menu_Item;
       loop
         exit when The_Menu_Item = null;
@@ -1464,6 +1490,7 @@ package body Gui is
           The_Menu_Item := The_Menu_Item.Next;
         end if;
       end loop;
+      Mutex.Signal;
     elsif Current_Page /= null then  -- look for child
       The_Child := Current_Page.First_Child;
       loop
@@ -1543,6 +1570,7 @@ package body Gui is
           Unused := Win32.Winuser.UnhookWindowsHookEx (The_Mouse_Hook);
           The_Mouse_Hook := System.Null_Address;
         end if;
+        Is_Destroying := True;
         Win32.Winuser.PostQuitMessage (0);
       when Wm_User_Callback =>
         Execute (The_Callback_Routine);
@@ -1564,7 +1592,7 @@ package body Gui is
     return 0;
   exception
   when Event: others =>
-    Log.Write ("Mainwindowproc", Event);
+    Log.Write ("Gui.Mainwindowproc", Event);
     return 0;
   end Mainwindowproc;
 
@@ -1666,6 +1694,7 @@ package body Gui is
     while Win32.Winuser.GetMessage (The_Message'unchecked_access, System.Null_Address, 0, 0) = Win32.TRUE loop
       Unused_Bool := Win32.Winuser.TranslateMessage (The_Message'unchecked_access);
       Unused_Long := Win32.Winuser.DispatchMessage (The_Message'unchecked_access);
+      exit when Is_Destroying;
     end loop;
   end Dispatch;
 
@@ -1732,7 +1761,7 @@ package body Gui is
     end if;
   exception
   when Event: others =>
-    Log.Write ("Display", Event);
+    Log.Write ("Gui.Display", Event);
     accept Ready;
     Unregister_Class (The_Application_Class_Name.all);
     Private_Window := System.Null_Address;
@@ -2034,24 +2063,29 @@ package body Gui is
                                 The_Menu_Handler : access procedure (Item : Information);
                                 The_Information  : Information := No_Information) return Menu_Item_Access is
 
-    The_Item_Access : constant Menu_Item_Access := new Menu_Item_Information'(The_Information => The_Information,
-                                                                              The_Id          => New_Menu_Item_Id,
-                                                                              The_Parent_Menu => To_Menu,
-                                                                              Previous        => null,
-                                                                              Next            => Last_Menu_Item);
-    Unused   : Win32.BOOL;
-    Text     : aliased constant Wide_String := To_Wide (The_Text) & Wide_Nul;
   begin
-    if Last_Menu_Item /= null then
-      Last_Menu_Item.Previous := The_Item_Access;
-    end if;
-    To_Menu.The_Callback := Convert(The_Menu_Handler);
-    Last_Menu_Item := The_Item_Access;
-    Unused := Win32.Winuser.AppendMenuW (To_Menu.The_Handle,
-                                         Win32.Winuser.MF_STRING,
-                                         Win32.UINT_PTR(The_Item_Access.The_Id),
-                                         Win32.Addr(Text));
-    return The_Item_Access;
+    Mutex.Wait;
+    declare
+      The_Item_Access : constant Menu_Item_Access := new Menu_Item_Information'(The_Information => The_Information,
+                                                                                The_Id          => New_Menu_Item_Id,
+                                                                                The_Parent_Menu => To_Menu,
+                                                                                Previous        => null,
+                                                                                Next            => Last_Menu_Item);
+      Unused   : Win32.BOOL;
+      Text     : aliased constant Wide_String := To_Wide (The_Text) & Wide_Nul;
+    begin
+      if Last_Menu_Item /= null then
+        Last_Menu_Item.Previous := The_Item_Access;
+      end if;
+      To_Menu.The_Callback := Convert(The_Menu_Handler);
+      Last_Menu_Item := The_Item_Access;
+      Unused := Win32.Winuser.AppendMenuW (To_Menu.The_Handle,
+                                           Win32.Winuser.MF_STRING,
+                                           Win32.UINT_PTR(The_Item_Access.The_Id),
+                                           Win32.Addr(Text));
+      Mutex.Signal;
+      return The_Item_Access;
+    end;
   end Menu_Item_Access_Of;
 
 
@@ -3885,7 +3919,7 @@ package body Gui is
     Action.Do_Terminate;
   exception
   when Event: others =>
-    Log.Write ("Termination_Handler", Event);
+    Log.Write ("Gui.Termination_Handler", Event);
     Send_Message (Private_Window, Wm_User_Close, 0, 0);
     Action.Do_Terminate;
   end Termination_Handler;
@@ -3912,7 +3946,7 @@ package body Gui is
     The_Termination_Handler.Finalize;
   exception
   when Event: others =>
-    Log.Write ("Action_Handler", Event);
+    Log.Write ("Gui.Action_Handler", Event);
   end Action_Handler;
 
 

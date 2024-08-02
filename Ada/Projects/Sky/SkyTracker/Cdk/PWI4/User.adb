@@ -380,8 +380,7 @@ package body User is
       raise Program_Error;
     end if;
   exception
-  when Item: others =>
-    Log.Termination (Item);
+  when others =>
     Log.Error ("Display_Text_Handler failed");
     return "";
   end Display_Text_Handler;

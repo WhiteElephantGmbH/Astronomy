@@ -220,6 +220,7 @@ package body Targets is
     New_List        : Boolean := False;
 
     The_Actual_Az_Range   : Az_Range;
+    Is_Moon_Catalog       : Boolean := False;
     The_Actual_Selection  : Selection;
     The_Feature_Selection : Moon_Feature_Selection := All_Features;
     Is_Az_Sorted          : Boolean := False;
@@ -330,20 +331,24 @@ package body Targets is
         begin
           case Name.Kind_Of (Item) is
           when Name.Moon =>
-            case The_Feature_Selection is
-            when All_Features =>
-              return Is_To_Add (Moon.Direction_Of (Item));
-            when others =>
-              declare
-                Feature  : Moon.Feature;
-                The_Type : Moon.Feature_Type;
-              begin
-                if Moon.Has_Feature (Item, Feature, The_Type) and then Is_Selected (The_Type) then
-                  return Is_To_Add (Moon.Direction_Of (Item));
-                end if;
-                return False;
-              end;
-            end case;
+            if Is_Moon_Catalog then
+              case The_Feature_Selection is
+              when All_Features =>
+                return Is_To_Add (Moon.Direction_Of (Item));
+              when others =>
+                declare
+                  Feature  : Moon.Feature;
+                  The_Type : Moon.Feature_Type;
+                begin
+                  if Moon.Has_Feature (Item, Feature, The_Type) and then Is_Selected (The_Type) then
+                    return Is_To_Add (Moon.Direction_Of (Item));
+                  end if;
+                  return False;
+                end;
+              end case;
+            else
+              return Is_To_Add (Solar_System, Moon.Direction_Of (Item));
+            end if;
           when Name.Planet =>
             return Is_To_Add (Solar_System, Solar_System_Direction_Of (Item, Ut));
           when Name.Sun =>
@@ -386,7 +391,6 @@ package body Targets is
 
       begin -- Add_Visible
         if Name.Visibility_Changed_For (Item, Is_To_Add) then
-          Log.Write ("XXX Visibility_Changed_For " & Name.Image_Of (Item));
           The_Changes := The_Changes + 1;
         end if;
       end Add_Visible;
@@ -432,10 +436,12 @@ package body Targets is
         end Set;
       or
         accept Set (The_Selection : Selection) do
+          Is_Moon_Catalog := False;
           The_Actual_Selection := The_Selection;
         end Set;
       or
         accept Set (The_Selection : Moon_Feature_Selection) do
+          Is_Moon_Catalog := True;
           The_Feature_Selection := The_Selection;
         end Set;
       or
