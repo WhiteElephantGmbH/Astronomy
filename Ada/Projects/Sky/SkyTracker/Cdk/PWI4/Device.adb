@@ -416,13 +416,20 @@ package body Device is
 
   The_Simulated_Focuser_Position : Microns;
 
-  Simulated_Rotator_Moving            : Boolean := False;
-  Simulated_Rotator_Slewing           : Boolean := False;
+  type Rotator_Simulation_State is (Stopped, Following, Offsetting, Moving, Positioning);
+
+  The_Simulated_Rotator_State         : Rotator_Simulation_State := Stopped;
   The_Simulated_Rotator_Mech_Position : Degrees := 180.0;
   The_Simulated_Rotator_Field_Angle   : Degrees := 150.0;
 
-
   task body Control is
+
+    use type Mount.State;
+    use type Focuser.State;
+    use type M3.Position;
+    use type PWI4.M3_Port;
+    use type Microns;
+    use type Degrees;
 
     procedure Follow_Tle (Tle_Name : String) is
       Tle : constant Satellite.Tle := Satellite.Tle_Of (Tle_Name);
@@ -459,16 +466,32 @@ package body Device is
     The_Simulated_Focuser_Goto_Position : Microns;
 
     The_Simulated_Rotator_Goto_Position : Degrees := The_Simulated_Rotator_Mech_Position;
-    The_Simulated_Rotator_Goto_Angle    : Degrees := The_Simulated_Rotator_Field_Angle;
+
+    function Simulate_Rotator_Positioning return Boolean is
+    begin
+      if abs(The_Simulated_Rotator_Mech_Position - The_Simulated_Rotator_Goto_Position) > 3.0 then
+        The_Simulated_Rotator_Mech_Position := @ + (The_Simulated_Rotator_Goto_Position - @) / 2;
+        return True;
+      else
+        The_Simulated_Rotator_Mech_Position := The_Simulated_Rotator_Goto_Position;
+        return False;
+      end if;
+    end Simulate_Rotator_Positioning;
+
+    The_Simulated_Rotator_Goto_Angle : Degrees := The_Simulated_Rotator_Field_Angle;
+
+    function Simulate_Rotator_Moving return Boolean is
+    begin
+      if abs(The_Simulated_Rotator_Field_Angle - The_Simulated_Rotator_Goto_Angle) > 3.0 then
+        The_Simulated_Rotator_Field_Angle := @ + (The_Simulated_Rotator_Goto_Angle - @) / 2;
+        return True;
+      else
+        The_Simulated_Rotator_Field_Angle := The_Simulated_Rotator_Goto_Angle;
+        return False;
+      end if;
+    end Simulate_Rotator_Moving;
 
     Simulated_M3_Position : M3.Position := M3.Ocular;
-
-    use type Mount.State;
-    use type Focuser.State;
-    use type M3.Position;
-    use type PWI4.M3_Port;
-    use type Microns;
-    use type Degrees;
 
     Default_Focuser_Position : constant Microns := Microns(6500);
 
@@ -618,8 +641,7 @@ package body Device is
           when Disconnect =>
             Simulated_Focuser_Moving := False;
             Simulated_Focuser_Connected := False;
-            Simulated_Rotator_Moving := False;
-            Simulated_Rotator_Slewing := False;
+            The_Simulated_Rotator_State := Stopped;
             Log.Write ("Simulated focuser disconnect");
           when Find_Home =>
             Log.Write ("Simulated focuser find_home");
@@ -660,20 +682,20 @@ package body Device is
             The_Simulated_Rotator_Goto_Position := 0.0;
           when Goto_Mech =>
             The_Simulated_Rotator_Goto_Position := The_Parameter.Rotator_Value;
-            Simulated_Rotator_Slewing := True;
+            The_Simulated_Rotator_State := Positioning;
             Log.Write ("Simulated Rotator goto_mech :" & The_Simulated_Rotator_Goto_Position'image);
           when Goto_Field =>
             The_Simulated_Rotator_Goto_Angle := The_Parameter.Rotator_Value;
-            Simulated_Rotator_Moving:= True;
+            The_Simulated_Rotator_State := Moving;
             Log.Write ("Simulated Rotator goto_field :" & The_Simulated_Rotator_Goto_Angle'image);
           when Goto_Offset =>
             The_Simulated_Rotator_Goto_Angle := @ + The_Parameter.Rotator_Value;
-            Simulated_Rotator_Moving := True;
+            The_Simulated_Rotator_Goto_Position := @ + The_Parameter.Rotator_Value;
+            The_Simulated_Rotator_State := Offsetting;
             Log.Write ("Simulated rotator goto_offset");
           when Stop =>
             Log.Write ("Simulated rotator stop");
-            Simulated_Rotator_Moving := False;
-            Simulated_Rotator_Slewing := False;
+            The_Simulated_Rotator_State := Stopped;
           end case;
         else
           case The_Rotator_Action is
@@ -713,22 +735,30 @@ package body Device is
                 Simulated_Focuser_Moving := False;
               end if;
             end if;
-            if Simulated_Rotator_Moving then
-              if abs(The_Simulated_Rotator_Field_Angle - The_Simulated_Rotator_Goto_Angle) > 3.0 then
-                The_Simulated_Rotator_Field_Angle := @ + (The_Simulated_Rotator_Goto_Angle - @) / 2;
-              else
-                The_Simulated_Rotator_Field_Angle := The_Simulated_Rotator_Goto_Angle;
-                Simulated_Rotator_Moving := False;
+            case The_Simulated_Rotator_State is
+            when Positioning =>
+              if not Simulate_Rotator_Positioning then
+                The_Simulated_Rotator_State := Stopped;
               end if;
-            end if;
-            if Simulated_Rotator_Slewing then
-              if abs(The_Simulated_Rotator_Mech_Position - The_Simulated_Rotator_Goto_Position) > 3.0 then
-                The_Simulated_Rotator_Mech_Position := @ + (The_Simulated_Rotator_Goto_Position - @) / 2;
-              else
-                The_Simulated_Rotator_Mech_Position := The_Simulated_Rotator_Goto_Position;
-                Simulated_Rotator_Slewing := False;
+            when Moving =>
+              if not Simulate_Rotator_Moving then
+                The_Simulated_Rotator_State := Following;
               end if;
-            end if;
+            when Offsetting =>
+              if not (Simulate_Rotator_Positioning or Simulate_Rotator_Moving) then
+                The_Simulated_Rotator_State := Following;
+              end if;
+            when Following =>
+              case The_Mount_State is
+              when Mount.Tracking =>
+                The_Simulated_Rotator_Mech_Position := @ + 0.01;
+                The_Simulated_Rotator_Field_Angle := @ + 0.01;
+              when others =>
+                null;
+              end case;
+            when Stopped =>
+              null;
+            end case;
           end if;
         end if;
       end select;
@@ -1203,7 +1233,7 @@ package body Device is
     function Moving return Boolean is
     begin
       if Is_Simulation then
-        return Simulated_Rotator_Moving;
+        return The_Simulated_Rotator_State not in Stopped;
       else
         return PWI4.Rotator.Moving;
       end if;
@@ -1213,7 +1243,7 @@ package body Device is
     function Slewing return Boolean is
     begin
       if Is_Simulation then
-        return Simulated_Rotator_Slewing;
+        return The_Simulated_Rotator_State in Moving | Positioning | Offsetting;
       else
         return PWI4.Rotator.Slewing;
       end if;
