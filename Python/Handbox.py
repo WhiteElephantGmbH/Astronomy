@@ -45,6 +45,8 @@ def main():
     next_speed             = client.next_speed
     previous_speed         = client.previous_speed
     rotate                 = client.rotate
+    goto_mech              = client.goto_mech
+    goto_offset            = client.goto_offset
 
     color0 = sg.theme_button_color()[0]
     color1 = sg.theme_button_color()[1]
@@ -52,6 +54,8 @@ def main():
 
     focuser_position      = focuser_min
     last_focuser_position = focuser_position
+    rotator_position      = 0
+    last_rotator_position = rotator_position
 
     lower_limit = focuser_min
     upper_limit = focuser_max
@@ -79,10 +83,16 @@ def main():
                           size=(18,18), orientation='horizontal', font='Ani 12',
                           enable_events=True)]]
 
+    rotator = [[sg.Slider(key='angle', range=(-60,60), default_value=0,
+                          size=(20,18), orientation='horizontal', font='Ani 12',
+                          enable_events=True)]]
+
     layout = [[sg.Frame('', layout=handbox, element_justification='c')],
               [sg.Frame('M3', font='Ani 8', key='-FM3-', layout=m3, element_justification='c',
                         visible=False)],
               [sg.Frame('Focuser', font='Ani 8', key='-FFO-', layout=focuser, element_justification='c',
+                        visible=False)],
+              [sg.Frame('Rotator', font='Ani 8', key='-FRO-', layout=rotator, element_justification='c',
                         visible=False)]]
 
     window = sg.Window('CDK700 Control',
@@ -91,7 +101,7 @@ def main():
                        finalize=True,
                        element_justification='c',
                        location=(0,0),
-                       size=(253,313))
+                       size=(253,380))
     count = 0
     pressed = False
     zoomed = False
@@ -102,6 +112,8 @@ def main():
             event, values = window.read(timeout=100)
             if event == 'focus':
                 focuser_position = values['focus']
+            elif event == 'angle':
+                rotator_position = values['angle']
             elif event != sg.TIMEOUT_EVENT:
                 # if not a timeout event, then it's a button that's being held down
                 if not pressed:
@@ -153,6 +165,7 @@ def main():
                         mount = info.mount()
                         m3 = info.m3()
                         focuser = info.focuser()
+                        rotator = info.rotator()
                         if mount.exists():
                             window['-SPEED-'].update(mount.speed())
                             if m3.exists():
@@ -161,6 +174,7 @@ def main():
                                 if focuser.exists() and m3.at_camera():
                                     window[rotate].update(sg.SYMBOL_LEFT)
                                     window['-FFO-'].update(visible=True)
+                                    window['-FRO-'].update(visible=True)
                                     if startup:
                                         focuser_max = focuser.max_position()
                                         zoom_size = focuser.zoom_size()
@@ -169,6 +183,8 @@ def main():
                                         focuser_position = focuser.position()
                                         last_focuser_position = focuser_position
                                         window['focus'].update(value=focuser_position)
+                                        rotator_position = 0
+                                        last_rotator_position = rotator_position
                                         startup = False
                                     else:
                                         if focuser_position != last_focuser_position:
@@ -181,15 +197,24 @@ def main():
                                             else:
                                                 window['focus'].update(value=focuser.position())
                                                 window['zoom'].update(button_color=(color0, color1))
+                                        if rotator_position != last_rotator_position:
+                                            last_rotator_position = rotator_position;
+                                            response = client.rotator_goto_mech_position(180 + rotator_position)
+                                        elif not rotator.moving():
+                                            response = client.rotator_goto_offset(0)
                                 else:
+                                    response = client.rotator_goto_mech_position(180)
+                                    window['angle'].update(value=0)
                                     window[rotate].update(sg.SYMBOL_RIGHT)
                                     window['-FFO-'].update(visible=False)
+                                    window['-FRO-'].update(visible=False)
                             else:
                                 window['-FM3-'].update(visible=False)
                         else:
                             window['-SPEED-'].update("")
                             window['-FM3-'].update(visible=False)
                             window['-FFO-'].update(visible=False)
+                            window['-FRO-'].update(visible=False)
         except:
             break
     window.close()
