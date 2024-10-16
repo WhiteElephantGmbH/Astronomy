@@ -16,6 +16,8 @@
 *      You should have received a copy of the GNU General Public License along with this program; if not, write to     *
 *      the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                 *
 ************************************************************************************************************************
+*                                                     Version 1.0                                                      *
+************************************************************************************************************************
 """
 import cdk_pwi4_client as cc
 import PySimpleGUI     as sg
@@ -106,6 +108,7 @@ def main():
     pressed = False
     zoomed = False
     minimized = False
+    rotation_homed = False
     startup = True
     while True:
         try:
@@ -172,6 +175,7 @@ def main():
                                 window['-FM3-'].update(visible=True)
                                 window['-M3-'].update(m3.position())
                                 if focuser.exists() and m3.at_camera():
+                                    rotation_homed = False
                                     window[rotate].update(sg.SYMBOL_LEFT)
                                     window['-FFO-'].update(visible=True)
                                     window['-FRO-'].update(visible=True)
@@ -203,7 +207,9 @@ def main():
                                         elif not rotator.moving():
                                             response = client.rotator_goto_offset(0)
                                 else:
-                                    response = client.rotator_goto_mech_position(180)
+                                    if not rotation_homed:
+                                        response = client.rotator_goto_mech_position(180)
+                                        rotation_homed = True
                                     window['angle'].update(value=0)
                                     window[rotate].update(sg.SYMBOL_RIGHT)
                                     window['-FFO-'].update(visible=False)
@@ -215,6 +221,7 @@ def main():
                             window['-FM3-'].update(visible=False)
                             window['-FFO-'].update(visible=False)
                             window['-FRO-'].update(visible=False)
+                            startup = True
         except:
             break
     window.close()
