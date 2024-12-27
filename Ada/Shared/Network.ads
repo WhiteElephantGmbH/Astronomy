@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2016 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2016 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -45,6 +45,10 @@ package Network is
   Loopback_Address  : constant Ip_Address := Net.Loopback_Inet_Addr;
 
   Ephemeral_Port : constant Port_Number := Net.Any_Port;
+
+  Void_Address : constant Address := (Family => Net.Family_Inet,
+                                      Addr   => Any_Address,
+                                      Port   => Ephemeral_Port);
 
   type Ip_Addresses is array (Positive range <>) of Ip_Address;
 

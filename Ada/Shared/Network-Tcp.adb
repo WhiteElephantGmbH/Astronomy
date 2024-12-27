@@ -1,10 +1,21 @@
 -- *********************************************************************************************************************
 -- *                       (c) 2016 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
+-- *                                                                                                                   *
+-- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
+-- *    Public License as published by the Free Software Foundation; either version 2 of the License, or               *
+-- *    (at your option) any later version.                                                                            *
+-- *                                                                                                                   *
+-- *    This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the     *
+-- *    implied warranty of MERCHANTABILITY or FITNESS for A PARTICULAR PURPOSE. See the GNU General Public License    *
+-- *    for more details.                                                                                              *
+-- *                                                                                                                   *
+-- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
+-- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Ada.Calendar;
+with Ada.Real_Time;
 with Ada.Unchecked_Conversion;
 with Log;
 with System;
@@ -18,8 +29,9 @@ package body Network.Tcp is
                        The_Port        : Port_Number;
                        The_Protocol    : Protocol;
                        Receive_Timeout : Positive_Duration := Forever) return Socket is
-    The_Socket : Net.Socket_Type;
-    The_Status : Net.Selector_Status;
+    The_Socket  : Net.Socket_Type;
+    The_Status  : Net.Selector_Status;
+    The_Timeout : constant Duration := 4.0; -- Must be greater than 3 seconds as per RFC 6298 5.7
     use type Net.Selector_Status;
   begin
     Net.Create_Socket (Socket => The_Socket,
@@ -33,7 +45,7 @@ package body Network.Tcp is
                         Server  => (Family => Net.Family_Inet,
                                     Addr   => The_Address,
                                     Port   => The_Port),
-                        Timeout => 1.0,
+                        Timeout => The_Timeout,
                         Status  => The_Status);
     if The_Status = Net.Completed then
       Net.Set_Socket_Option (The_Socket, Net.Socket_Level, (Net.Receive_Timeout, Net.Forever));
@@ -42,6 +54,11 @@ package body Network.Tcp is
       Net.Close_Socket (The_Socket);
       raise Not_Found;
     end if;
+  exception
+  when Net.Socket_Error =>
+    Log.Write ("Network.Tcp.Socket_For: Socket_Error");
+    delay The_Timeout; -- Same behaviour as when network if active
+    raise Not_Found;
   end Socket_For;
 
 
@@ -54,10 +71,75 @@ package body Network.Tcp is
   end Socket_For;
 
 
-  procedure Set_No_Delay (Used_Socket : in out Socket) is
+  function Socket_For (The_Address     : Address;
+                       The_Protocol    : Protocol;
+                       Receive_Timeout : Positive_Duration := Forever) return Socket is
   begin
-    Net.Set_Socket_Option (Used_Socket.The_Socket, Net.Socket_Level, (Net.No_Delay, True));
+    return Socket_For (The_Address.Addr, The_Address.Port, The_Protocol, Receive_Timeout);
+  end Socket_For;
+
+
+  function Port_Of (The_Socket     : Socket;
+                    The_Connection : Connection := Remote) return Port_Number is
+    The_Address : Address;
+  begin
+    if The_Connection = Remote then
+      The_Address := Net.Get_Peer_Name (The_Socket.The_Socket);
+    else
+      The_Address := Net.Get_Socket_Name (The_Socket.The_Socket);
+    end if;
+    return The_Address.Port;
+  end Port_Of;
+
+
+  function Ip_Address_Of (The_Socket     : Socket;
+                          The_Connection : Connection := Remote) return Ip_Address is
+    The_Address : Address;
+  begin
+    if The_Connection = Remote then
+      The_Address := Net.Get_Peer_Name (The_Socket.The_Socket);
+    else
+      The_Address := Net.Get_Socket_Name (The_Socket.The_Socket);
+    end if;
+    return The_Address.Addr;
+  end Ip_Address_Of;
+
+
+  function Image_Of (The_Socket     : Socket;
+                     The_Connection : Connection := Remote) return String is
+    The_Address : Address;
+  begin
+    if The_Connection = Remote then
+      The_Address := Net.Get_Peer_Name (The_Socket.The_Socket);
+    else
+      The_Address := Net.Get_Socket_Name (The_Socket.The_Socket);
+    end if;
+    declare
+      The_Port : String := The_Address.Port'img;
+    begin
+      The_Port (The_Port'first) := ':';
+      return Net.Image (The_Address.Addr) & The_Port;
+    end;
+  end Image_Of;
+
+
+  procedure Set_No_Delay (The_Socket : Socket) is
+  begin
+    Net.Set_Socket_Option (The_Socket.The_Socket, Net.Socket_Level, (Net.No_Delay, True));
   end Set_No_Delay;
+
+
+  procedure Set_Keep_Alive (The_Socket : Socket) is
+  begin
+    Net.Set_Socket_Option (The_Socket.The_Socket, Net.Socket_Level, (Net.Keep_Alive, True));
+  end Set_Keep_Alive;
+
+
+  procedure Set_Size_Of_Transmit_Buffer (The_Socket : Socket;
+                                         The_Size   : Natural) is
+  begin
+    Net.Set_Socket_Option (The_Socket.The_Socket, Net.Socket_Level, (Net.Send_Buffer, The_Size));
+  end Set_Size_Of_Transmit_Buffer;
 
 
   procedure Change_Protocol (Used_Socket  : in out Socket;
@@ -78,6 +160,9 @@ package body Network.Tcp is
     Error : constant Net.Error_Type := Net.Resolve_Exception (Occurrence);
   begin
     case Error is
+    when Net.Software_Caused_Connection_Abort
+      |  Net.Socket_Operation_On_Non_Socket =>
+      raise Transmission_Error;
     when Net.Connection_Reset_By_Peer =>
       raise No_Client;
     when others =>
@@ -109,6 +194,15 @@ package body Network.Tcp is
     case Used_Socket.The_Protocol is
     when Raw =>
       null;
+    when Counted =>
+      declare
+        use type Unsigned.Byte;
+        Header : aliased constant Unsigned.Byte := Unsigned.Byte(The_Value);
+        subtype Byte_Data is Data (1 .. Index(Unsigned.Byte'size / System.Storage_Unit));
+        function Convert is new Ada.Unchecked_Conversion (Unsigned.Byte, Byte_Data);
+      begin
+        Send (Convert (Header), Used_Socket.The_Socket);
+      end;
     when LE16_Included =>
       declare
         use type Unsigned.Word;
@@ -164,19 +258,20 @@ package body Network.Tcp is
   end Send_Elements;
 
 
-
   procedure Handle_Receive_Error (Occurrence : Ada.Exceptions.Exception_Occurrence) with No_Return is
     Error : constant Net.Error_Type := Net.Resolve_Exception (Occurrence);
   begin
     case Error is
     when Net.Connection_Timed_Out =>
       raise Timeout;
-    when Net.Connection_Reset_By_Peer =>
+    when Net.Connection_Reset_By_Peer
+      |  Net.Socket_Operation_On_Non_Socket =>
       raise No_Client;
     when Net.Software_Caused_Connection_Abort =>
       raise Aborted;
     when others =>
       Log.Write ("Network.Tcp.Handle_Receive_Error: " & Error'img);
+      Log.Write ("Network.Tcp.Handle_Receive_Error: ", Occurrence);
     end case;
     raise Receive_Error;
   end Handle_Receive_Error;
@@ -210,10 +305,10 @@ package body Network.Tcp is
   function Get_Data_From  (The_Socket  : Net.Socket_Type;
                            The_Amount  : Index;
                            The_Timeout : Duration) return Data is
-    use type Ada.Calendar.Time;
+    use type Ada.Real_Time.Time;
     use type Index;
-    The_Deadline : constant Ada.Calendar.Time := Ada.Calendar.Clock + The_Timeout;
-    The_Buffer   : Data (1.. The_Amount);
+    The_Deadline : constant Ada.Real_Time.Time := Ada.Real_Time.Clock + Ada.Real_Time.To_Time_Span (The_Timeout);
+    The_Buffer   : Data (1 .. The_Amount);
     The_Index    : Offset := The_Buffer'first;
     The_Last     : Index;
     Next_Timeout : Duration := The_Timeout;
@@ -225,10 +320,10 @@ package body Network.Tcp is
     loop
       Wait_For (The_Socket, Next_Timeout);
       Net.Receive_Socket (The_Socket, The_Buffer (The_Index .. The_Buffer'last), The_Last);
-      exit when The_Last = The_Buffer'last;  -- All sent
-      if (The_Last = 0) and (Ada.Calendar.Clock < The_Deadline) then
-        -- Last=0 could mean either no data was sent or that connection has been broken.
-        -- If Receive_Socket returns before the timeout has expired with Last=0 we assume
+      exit when The_Last = The_Buffer'last;  -- Everything received
+      if (The_Last < The_Index) and (Ada.Real_Time.Clock < The_Deadline) then
+        -- Last < The_Index could mean either no data was received or that connection has been broken.
+        -- If Receive_Socket returns before the timeout has expired with Last < The_Index we assume
         -- that this because the connection has been broken.
         -- However sometimes breaking the connection raises an exception with reason
         -- Connection_Reset_By_Peer so this needs to be handled as well.
@@ -236,10 +331,14 @@ package body Network.Tcp is
       end if;
       The_Index := The_Last + 1;
       if The_Timeout /= Net.Forever then
-        Next_Timeout := The_Deadline - Ada.Calendar.Clock;
-        if Next_Timeout <= 0.0 then
-          raise Timeout;
-        end if;
+        declare
+          Now : constant Ada.Real_Time.Time := Ada.Real_Time.Clock;
+        begin
+          if Now > The_Deadline then
+            raise Timeout;
+          end if;
+          Next_Timeout := Ada.Real_Time.To_Duration (The_Deadline - Now);
+        end;
       end if;
     end loop;
     return The_Buffer;
@@ -250,9 +349,14 @@ package body Network.Tcp is
     if (The_Amount > 1) and (The_Index > The_Buffer'first) then
       -- A counted protocol that has already received part of the counted data.
       -- A timeout here effectively breaks the protocol so we need to close the session.
-      Net.Close_Socket (The_Socket);
+      begin
+        Net.Close_Socket (The_Socket);
+      exception
+      when others =>
+        null; -- Ignore exceptions when closing the socket
+      end;
     end if;
-    raise;
+    raise Timeout;
   when Occurrence: Net.Socket_Error =>
     Handle_Receive_Error (Occurrence);
   when Occurrence: others => -- Unexpected exception
@@ -267,6 +371,16 @@ package body Network.Tcp is
     case Used_Socket.The_Protocol is
     when Raw =>
       raise Program_Error;
+    when Counted =>
+      declare
+        The_Size : Unsigned.Byte;
+        function Convert is new Ada.Unchecked_Conversion (Data, Unsigned.Byte);
+      begin
+        The_Size := Convert(Get_Data_From (Used_Socket.The_Socket,
+                                           Index (The_Size'size / System.Storage_Unit),
+                                           With_Timeout));
+        return Index(The_Size);
+      end;
     when LE16_Included =>
       declare
         The_Size : Unsigned.Word;
@@ -297,12 +411,12 @@ package body Network.Tcp is
 
   function Message_From (Used_Socket     : Socket;
                          Receive_Timeout : Duration := Use_Socket_Timeout) return Message is
-    use type Ada.Calendar.Time;
+    use type Ada.Real_Time.Time;
     use type Index;
     Max_Message_Size : constant Index  := (Message'size / System.Storage_Unit);
     The_Message_Size : Index;
     The_Timeout      : Duration;
-    The_Deadline     : Ada.Calendar.Time;
+    The_Deadline     : Ada.Real_Time.Time;
   begin
     if Receive_Timeout = Use_Socket_Timeout then
       The_Timeout := Used_Socket.The_Timeout;
@@ -311,6 +425,8 @@ package body Network.Tcp is
     end if;
     if The_Timeout > Net.Forever then
       The_Timeout := Net.Forever;
+    elsif The_Timeout <= Net.Immediate then
+      raise Timeout;
     end if;
     if Used_Socket.The_Protocol = Raw then
       The_Message_Size := Max_Message_Size;
@@ -319,17 +435,22 @@ package body Network.Tcp is
     elsif The_Timeout <= Net.Immediate then
       raise Timeout;
     else
-      The_Deadline     := Ada.Calendar.Clock + The_Timeout;
+      The_Deadline     := Ada.Real_Time.Clock + Ada.Real_Time.To_Time_Span (The_Timeout);
       The_Message_Size := Receive_Header_From (Used_Socket, The_Timeout);
     end if;
     if (The_Message_Size = 0) or (The_Message_Size > Max_Message_Size) then
       raise Bad_Protocol;
     end if;
     if (Used_Socket.The_Protocol /= Raw) and (The_Timeout /= Net.Forever) then
-      The_Timeout := The_Deadline - Ada.Calendar.Clock;
-    end if;
-    if The_Timeout <= Net.Immediate then
-      raise Timeout;
+      declare
+        Now : constant Ada.Real_Time.Time := Ada.Real_Time.Clock;
+      begin
+        if Now > The_Deadline then
+          raise Timeout;
+        else
+          The_Timeout := Ada.Real_Time.To_Duration (The_Deadline - Now);
+        end if;
+      end;
     end if;
     begin
       declare
@@ -342,9 +463,14 @@ package body Network.Tcp is
     when Timeout =>
       if Used_Socket.The_Protocol /= Raw then -- We have read the header of a counted protocol
         -- If we timeout on the contents we will break the protocol. Therefore need to close the session
-        Net.Close_Socket (Used_Socket.The_Socket);
+        begin
+          Net.Close_Socket (Used_Socket.The_Socket);
+        exception
+        when others =>
+          null; -- Ignore exceptions when closing the socket
+        end;
       end if;
-      raise;
+      raise Timeout;
     end;
   end Message_From;
 
@@ -352,10 +478,10 @@ package body Network.Tcp is
   function Elements_From (Used_Socket     : Socket;
                           Receive_Timeout : Duration := Use_Socket_Timeout) return Elements is
     use type Index;
-    use type Ada.Calendar.Time;
+    use type Ada.Real_Time.Time;
     The_Size     : Index;
     The_Timeout  : Duration;
-    The_Deadline : Ada.Calendar.Time;
+    The_Deadline : Ada.Real_Time.Time;
   begin
     if Receive_Timeout = Use_Socket_Timeout then
       The_Timeout := Used_Socket.The_Timeout;
@@ -365,7 +491,7 @@ package body Network.Tcp is
     if The_Timeout >= Net.Forever then
       The_Timeout := Net.Forever;
     else
-      The_Deadline := Ada.Calendar.Clock + The_Timeout;
+      The_Deadline := Ada.Real_Time.Clock + Ada.Real_Time.To_Time_Span (The_Timeout);
     end if;
     if Used_Socket.The_Protocol = Raw then
       raise Usage_Error;
@@ -377,7 +503,7 @@ package body Network.Tcp is
     end if;
     if The_Size = 0 then
       declare
-        No_Elements : constant Elements(1..0) := [];
+        No_Elements : constant Elements(1..0) := [others => <>];
       begin
         return No_Elements;
       end;
@@ -389,10 +515,15 @@ package body Network.Tcp is
       function Convert is new Ada.Unchecked_Conversion (Data, Return_Elements);
     begin
       if The_Timeout /= Net.Forever then
-        The_Timeout := The_Deadline - Ada.Calendar.Clock;
-      end if;
-      if The_Timeout <= Net.Immediate then
-        raise Timeout;
+        declare
+          Now : constant Ada.Real_Time.Time := Ada.Real_Time.Clock;
+        begin
+          if Now > The_Deadline then
+            raise Timeout;
+          else
+            The_Timeout := Ada.Real_Time.To_Duration (The_Deadline - Now);
+          end if;
+        end;
       end if;
       The_Data := Get_Data_From (Used_Socket.The_Socket, Data_Size, The_Timeout);
       return Convert(The_Data);
@@ -400,8 +531,13 @@ package body Network.Tcp is
     when Timeout =>
       -- We have read the header of a counted protocol so if we timeout on the contents we will break the protocol
       -- and therefore need to close the session
-      Net.Close_Socket (Used_Socket.The_Socket);
-      raise;
+      begin
+        Net.Close_Socket (Used_Socket.The_Socket);
+      exception
+      when others =>
+        null; -- Ignore exceptions when closing the socket
+      end;
+      raise Timeout;
     end;
   end Elements_From;
 
@@ -427,9 +563,9 @@ package body Network.Tcp is
 
   function Raw_Character_From (Used_Socket     : Socket;
                                Receive_Timeout : Duration := Use_Socket_Timeout) return Character is
-    use type Ada.Calendar.Time;
+    use type Ada.Real_Time.Time;
     The_Timeout  : Duration;
-    The_Deadline : Ada.Calendar.Time;
+    The_Deadline : Ada.Real_Time.Time;
     The_Data     : Data (1..1);
     function Convert is new Ada.Unchecked_Conversion (Data_Item, Character);
   begin
@@ -443,15 +579,22 @@ package body Network.Tcp is
     end if;
     if The_Timeout >= Net.Forever then
       The_Timeout := Net.Forever;
+    elsif The_Timeout <= Net.Immediate then
+      raise Timeout;
     else
-      The_Deadline := Ada.Calendar.Clock + The_Timeout;
+      The_Deadline := Ada.Real_Time.Clock + Ada.Real_Time.To_Time_Span (The_Timeout);
     end if;
     The_Data := Get_Data_From (Used_Socket.The_Socket, 1, The_Timeout);
     if The_Timeout /= Net.Forever then
-      The_Timeout := The_Deadline - Ada.Calendar.Clock;
-    end if;
-    if The_Timeout <= Net.Immediate then
-      raise Timeout;
+      declare
+        Now : constant Ada.Real_Time.Time := Ada.Real_Time.Clock;
+      begin
+        if Now > The_Deadline then
+          raise Timeout;
+        else
+          The_Timeout := Ada.Real_Time.To_Duration (The_Deadline - Now);
+        end if;
+      end;
     end if;
     return Convert(The_Data(The_Data'first));
   end Raw_Character_From;
@@ -460,10 +603,9 @@ package body Network.Tcp is
   function Raw_String_From (Used_Socket     : Socket;
                             Terminator      : Character;
                             Receive_Timeout : Duration := Use_Socket_Timeout) return String is
-    use type Ada.Calendar.Time;
-    use type Text.String;
+    use type Ada.Real_Time.Time;
     The_Timeout  : Duration;
-    The_Deadline : Ada.Calendar.Time;
+    The_Deadline : Ada.Real_Time.Time;
   begin
     if Used_Socket.The_Protocol /= Raw then
       raise Usage_Error;
@@ -475,22 +617,30 @@ package body Network.Tcp is
     end if;
     if The_Timeout >= Net.Forever then
       The_Timeout := Net.Forever;
+    elsif The_Timeout <= Net.Immediate then
+      raise Timeout;
     else
-      The_Deadline := Ada.Calendar.Clock + The_Timeout;
+      The_Deadline := Ada.Real_Time.Clock + Ada.Real_Time.To_Time_Span (The_Timeout);
     end if;
     declare
       The_Data      : Data (1..1);
       The_Character : Character;
       The_String    : Text.String;
+      use type Text.String;
       function Convert is new Ada.Unchecked_Conversion (Data_Item, Character);
     begin
       loop
         The_Data := Get_Data_From (Used_Socket.The_Socket, 1, The_Timeout);
         if The_Timeout /= Net.Forever then
-          The_Timeout := The_Deadline - Ada.Calendar.Clock;
-        end if;
-        if The_Timeout <= Net.Immediate then
-          raise Timeout;
+          declare
+            Now : constant Ada.Real_Time.Time := Ada.Real_Time.Clock;
+          begin
+            if Now > The_Deadline then
+              raise Timeout;
+            else
+              The_Timeout := Ada.Real_Time.To_Duration (The_Deadline - Now);
+            end if;
+          end;
         end if;
         The_Character := Convert(The_Data(The_Data'first));
         The_String.Append (The_Character);
@@ -590,7 +740,13 @@ package body Network.Tcp is
     when Net.Aborted =>
       raise Aborted;
     end case;
-    Net.Accept_Socket (The_Listener.The_Socket, The_Client_Socket.The_Socket, The_Client_Address);
+    begin
+      Net.Accept_Socket (The_Listener.The_Socket, The_Client_Socket.The_Socket, The_Client_Address);
+    exception
+    when others =>
+      raise Aborted;
+    end;
+    Net.Set_Socket_Option (The_Client_Socket.The_Socket, Net.Socket_Level, (Net.Receive_Timeout, Net.Forever));
     Client_Address := The_Client_Address.Addr;
     The_Client := The_Client_Socket;
   end Accept_Client_From;
@@ -604,5 +760,6 @@ package body Network.Tcp is
   when others =>
     null;
   end Close;
+
 
 end Network.Tcp;
