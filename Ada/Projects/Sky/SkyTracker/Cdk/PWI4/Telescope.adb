@@ -1298,7 +1298,12 @@ package body Telescope is
 
     The_Next_Time : Ada.Real_Time.Time;
 
+    Undefined_Offset : constant Device.Degrees := Device.Degrees'first;
+
+    Last_Rotator_Offset : Device.Degrees := Undefined_Offset;
+
     use type Ada.Real_Time.Time;
+    use type Device.Degrees;
 
   begin -- Control_Task
     Reset_Adjustments;
@@ -1358,15 +1363,20 @@ package body Telescope is
           end Focuser_Goto;
         or
           accept Rotator_Goto_Field (The_Angle : Device.Degrees) do
+            Last_Rotator_Offset := Undefined_Offset;
             Rotator.Goto_Field (The_Angle);
           end Rotator_Goto_Field;
         or
           accept Rotator_Goto_Mech (The_Position : Device.Degrees) do
+            Last_Rotator_Offset := Undefined_Offset;
             Rotator.Goto_Mech (The_Position);
           end Rotator_Goto_Mech;
         or
           accept Rotator_Goto (The_Offset : Device.Degrees) do
-            Rotator.Go_To (The_Offset);
+            if The_Offset /= 0.0 or The_Offset /= Last_Rotator_Offset then
+              Last_Rotator_Offset := The_Offset;
+              Rotator.Go_To (The_Offset);
+            end if;
           end Rotator_Goto;
         or
           accept Execute (The_Command : Command) do
@@ -1399,6 +1409,7 @@ package body Telescope is
             when Mount.Stopped =>
               The_Event := Mount_Stopped;
             when Mount.Approaching =>
+              Last_Rotator_Offset := Undefined_Offset;
               Mount.Confirm_Goto;
               The_Event := Mount_Approach;
               Mount_Is_Stopped := False;
