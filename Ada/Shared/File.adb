@@ -63,6 +63,13 @@ package body File is
   end Composure;
 
 
+  function Composure (Directory               : Folder;
+                      Filename_With_Extension : String) return String is
+  begin
+    return String(Directory) & The_Folder_Separator & Filename_With_Extension;
+  end Composure;
+
+
   function Exists (Name : String) return Boolean is
     use type FS.File_Kind;
   begin

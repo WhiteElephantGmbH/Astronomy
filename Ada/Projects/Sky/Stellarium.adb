@@ -19,6 +19,7 @@ with Ada.Environment_Variables;
 with Ada.Text_IO;
 with Applications;
 with Configuration;
+with Directory;
 with File;
 with Network.Tcp.Servers;
 with Os.Process;
@@ -73,7 +74,7 @@ package body Stellarium is
       declare
         Data_Directory : constant String := Ada.Environment_Variables.Value (Path_Variable);
       begin
-        if not File.Directory_Exists (Data_Directory) then
+        if not Directory.Exists (Data_Directory) then
           Log.Error ("Data Directory " & Data_Directory & " not found");
           return "";
         end if;

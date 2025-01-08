@@ -41,6 +41,9 @@ package File is
   function Composure (Directory : String;
                       Filename  : String;
                       Extension : String) return String;
+
+  function Composure (Directory               : Folder;
+                      Filename_With_Extension : String) return String;
   -- no exception
 
   function Base_Name_Of (Name : String) return String renames Ada.Directories.Base_Name;
