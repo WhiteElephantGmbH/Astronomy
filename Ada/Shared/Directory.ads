@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2015 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                           (c) 2025 by White Elephant GmbH, Schaffhausen, Switzerland                              *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,74 +15,41 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Ada.Calendar;
 with Ada.Directories;
 with Ada.Iterator_Interfaces;
+with Text;
 
-package File is
-
-  subtype Size is Ada.Directories.File_Size;
-
-  type Folder is new String;
-
-  function Folder_Separator return Character;
-
-  function "+" (Directory : String) return Folder;
-
-  function "+" (Left, Right : String) return Folder;
-
-  function "+" (Left  : Folder;
-                Right : String) return Folder;
-
-  function Composure (Directory : Folder;
-                      Filename  : String;
-                      Extension : String) return String;
-
-  function Composure (Directory : String;
-                      Filename  : String;
-                      Extension : String) return String;
-  -- no exception
-
-  function Base_Name_Of (Name : String) return String renames Ada.Directories.Base_Name;
-
-  function Extension_Of (Name : String) return String renames Ada.Directories.Extension;
-
-  function Containing_Directory_Of (Name : String) return String renames Ada.Directories.Containing_Directory;
+package Directory is
 
   function Exists (Name : String) return Boolean;
-  -- no exception
 
-  function Size_Of (Name : String) return Size renames Ada.Directories.Size;
+  procedure Create (Path : String); -- creates the whole directory path
 
-  function Modification_Time_Of (Name : String) return Ada.Calendar.Time renames Ada.Directories.Modification_Time;
-
-  function Is_Newer (The_Name  : String;
-                     Than_Name : String) return Boolean;
-
-  procedure Delete (Name : String);
+  procedure Delete (Name : String); -- including contents
   -- no exception if no existance
 
-  procedure X_Copy (Source      : String;
-                    Destination : String;
-                    Pattern     : String := "*"); -- Copy a whole directory including all sub directories and files.
+  function Is_Leaf (Name       : String;
+                    Exceptions : Text.Strings := Text.None) return Boolean;
 
-  procedure Rename (Old_Name : String;
-                    New_Name : String) renames Ada.Directories.Rename;
+  procedure Iterate_Over_Leafs (From_Directory : String;
+                                Iterator       : access procedure (Leaf_Directory : String);
+                                Exceptions     : Text.Strings := Text.None);
 
-  procedure Copy (Source_Name   : String;
-                  Target_Name   : String;
-                  Form          : String := "") renames Ada.Directories.Copy_File;
+  function Found (Name         : String;
+                  In_Directory : String) return String;
+
+  Not_Found : exception;
 
   Name_Error : exception renames Ada.Directories.Name_Error;
   Use_Error  : exception renames Ada.Directories.Use_Error;
 
 
-  ------------------------
-  -- File Iterator Loop --
-  ------------------------
+  -----------------------------
+  -- Directory Iterator Loop --
+  -----------------------------
   -- Example:
-  --          for The_Filename of File.Iterator_For ("C:\Program_Files") loop
-  --            Log.Write (The_Filename);
+  --          for The_Directory of Directory.Iterator_For ("C:\Program_Files") loop
+  --            Log.Write (The_Directory);
   --          end loop;
 
   type Item (Name_Length : Natural) is tagged limited private
@@ -118,4 +85,4 @@ private
     Data   : aliased Cursor_Data;
   end record;
 
-end File;
+end Directory;
