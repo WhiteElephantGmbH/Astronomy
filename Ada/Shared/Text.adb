@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2002 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2002 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -1032,7 +1032,7 @@ package body Text is
       end;
     end loop;
     if not Purge or else The_First <= Item'last then
-      The_Strings.Append (Item(The_First .. Item'last));
+      The_Strings.Append (Conditional_Trimmed (Item(The_First .. Item'last)));
     end if;
     return The_Strings;
   end Strings_Of;
