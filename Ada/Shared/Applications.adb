@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2015 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2015 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -63,17 +63,18 @@ package body Applications is
   end Version;
 
 
-  function Created_Application_Data_Directory return String is
+  function Main_Directory return String is
+    App_Directory : constant String := To_Utf8 (Ada.Environment_Variables.Value ("AppData"));
+  begin
+    if Company = "" then
+      return App_Directory;
+    else
+      return FS.Compose (App_Directory, Company);
+    end if;
+  end Main_Directory;
 
-    function Main_Directory return String is
-      App_Directory : constant String := To_Utf8 (Ada.Environment_Variables.Value ("AppData"));
-    begin
-      if Company = "" then
-        return App_Directory;
-      else
-        return FS.Compose (App_Directory, Company);
-      end if;
-    end Main_Directory;
+
+  function Created_Application_Data_Directory return String is
 
     function Family return String is
     begin

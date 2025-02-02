@@ -5,6 +5,8 @@
 pragma Style_White_Elephant;
 
 with Ada.Command_Line;
+with Application;
+with Configuration;
 with Directory;
 with File;
 with Gui;
@@ -13,7 +15,48 @@ with Text;
 
 package body Picture is
 
-  package Cmd  renames Ada.Command_Line;
+  subtype Check_Duration is Duration range 0.01 .. 2.0;
+
+  Default_Check_Delay : constant Check_Duration := 0.02; -- default 200 ms
+
+  Default_Dirctory : constant String := "D:\SharpCap\";
+
+  function Picture_Filename return String is
+
+    function Tracker_Ini_Filename return String is
+
+      Tracker   : constant String := "SkyTracker";
+      Extension : constant String := "ini";
+
+      Tracker_Folder : constant String := Application.Main_Directory & File.Folder_Separator & Tracker;
+
+      Tracker_Config : constant String := File.Composure (Tracker_Folder, Tracker, Extension);
+
+    begin
+      if File.Exists (Tracker_Config) then
+        return Tracker_Config;
+      end if;
+      for Folder of Directory.Iterator_For (Tracker_Folder) loop
+        declare
+          Filename : constant String := File.Composure (Folder, Tracker, Extension);
+        begin
+          if File.Exists (Filename) then
+            return Filename;
+          end if;
+        end;
+      end loop;
+      return "";
+    end Tracker_Ini_Filename;
+
+    Data_Config     : constant Configuration.File_Handle := Configuration.Handle_For (Tracker_Ini_Filename);
+    Picture_Section : constant Configuration.Section_Handle := Configuration.Handle_For (Data_Config, "Picture");
+
+  begin -- Picture_Filename
+    return Configuration.Value_Of (Picture_Section, "Filename");
+  end Picture_Filename;
+
+  Destination_Filename : constant String := Picture_Filename;
+
 
   Error_Detected  : exception;
 
@@ -23,7 +66,6 @@ package body Picture is
     raise Error_Detected;
   end Error;
 
-  subtype Check_Duration is Duration range 0.01 .. 2.0;
 
   procedure Copy_Completed (The_Filename     : String;
                             Destination      : String;
@@ -76,28 +118,25 @@ package body Picture is
   end Copy_Completed;
 
 
+  package Cmd  renames Ada.Command_Line;
+
   procedure Get is
     Argument_Count   : constant Natural := Cmd.Argument_Count;
-    Size_Check_Delay : Check_Duration := 0.2; -- default 200 ms
+    Size_Check_Delay : Check_Duration := Default_Check_Delay;
   begin
-    if Argument_Count = 0 then
-      Error ("Parameters missing: [<source directory name> <destination filename> [<size check delay>]");
-    elsif Argument_Count = 1 then
-      Error ("Destination filename missing");
-    elsif Argument_Count = 3 then
+    if Argument_Count > 2 then
+      Error ("Parameters syntax: [<source directory name> [<size check delay>]");
+    elsif Argument_Count = 2 then
       begin
-        Size_Check_Delay := Check_Duration'value(Cmd.Argument(3));
+        Size_Check_Delay := Check_Duration'value(Cmd.Argument(2));
       exception
       when others =>
         Error ("Size check delay not in range 0.01 .. 2.0");
       end;
-    elsif Argument_Count > 3 then
-      Error ("Too many parameters");
     end if;
     declare
-      Picture_Directory    : constant String := Cmd.Argument(1);
-      Destination_Filename : constant String := Cmd.Argument(2);
-      The_Filename         : Text.String;
+      Picture_Directory : constant String := (if Argument_Count = 0 then Default_Dirctory else Cmd.Argument(1));
+      The_Filename      : Text.String;
       use type Text.String;
     begin
       if not Directory.Exists (Picture_Directory) then
@@ -107,12 +146,15 @@ package body Picture is
         Error ("Destionation filename " & Destination_Filename & " already exists");
       end if;
       for Filename of File.Iterator_For (Picture_Directory) loop
-        if The_Filename.Is_Empty or else File.Is_Newer (Filename, +The_Filename) then
-          The_Filename := [Filename];
+        Gui.Message_Box (Filename);
+        if Text.Lowercase_Of (File.Extension_Of (Filename)) in "cr2" | "fits" | "jpeg" | "jpg" then
+          if The_Filename.Is_Empty or else File.Is_Newer (Filename, +The_Filename) then
+            The_Filename := [Filename];
+          end if;
         end if;
       end loop;
       if The_Filename.Is_Empty then
-        Error ("No file in source directory");
+        Error ("No picture file in source directory");
       end if;
       Copy_Completed (+The_Filename, Destination_Filename, Size_Check_Delay);
     end;
