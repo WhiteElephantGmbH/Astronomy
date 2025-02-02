@@ -5,7 +5,7 @@
 pragma Style_White_Elephant;
 
 pragma Build (Description => "Get newest picture from a directory",
-              Version     => (1, 1, 0, 0),
+              Version     => (1, 2, 0, 0),
               Kind        => Windows,
               Compiler    => "GNATPRO\23.0");
 with Picture;

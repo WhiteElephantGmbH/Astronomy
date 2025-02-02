@@ -146,7 +146,6 @@ package body Picture is
         Error ("Destionation filename " & Destination_Filename & " already exists");
       end if;
       for Filename of File.Iterator_For (Picture_Directory) loop
-        Gui.Message_Box (Filename);
         if Text.Lowercase_Of (File.Extension_Of (Filename)) in "cr2" | "fits" | "jpeg" | "jpg" then
           if The_Filename.Is_Empty or else File.Is_Newer (Filename, +The_Filename) then
             The_Filename := [Filename];
