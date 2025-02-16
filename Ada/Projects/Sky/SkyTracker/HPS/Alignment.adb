@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2023 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2023 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -21,11 +21,8 @@ with Earth;
 with Objects;
 with Sky.Data;
 with Sky_Line;
-with Traces;
 
 package body Alignment is
-
-  package Log is new Traces ("Alignment");
 
   Pear_Side_Undefined : constant Character := ' ';
 
@@ -83,6 +80,12 @@ package body Alignment is
     Ideal_Ra := Angle.Zero;
     Ideal_Dec := Angle.Zero;
   end Clear;
+
+
+  function Align_More return Boolean is
+  begin
+    return The_Star_Count < The_Alignment_Stars;
+  end Align_More;
 
 
   function Meridian_North return Angle.Value is

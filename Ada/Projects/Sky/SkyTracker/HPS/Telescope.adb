@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2022 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2022 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -458,7 +458,11 @@ package body Telescope is
                 Alignment.Define (Direction => The_Picture_Direction,
                                   Lmst      => The_Picture_Lmst,
                                   Pier_Side => The_Information.Pier_Side);
-                User.Perform_Goto_Next;
+                if Alignment.Align_More then
+                  User.Perform_Goto_Next;
+                else
+                  User.Perform_Stop;
+                end if;
               end if;
             else
               User.Enable_Align_On_Picture;

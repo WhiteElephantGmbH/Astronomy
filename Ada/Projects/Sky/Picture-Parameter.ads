@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                               (c) 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                           (c) 2024 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                      *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -19,11 +19,15 @@ with Configuration;
 
 package Picture.Parameter is
 
+  Default_Picture : constant String := "D:\SkyTracker\Picture\Image.Fits";
+  Default_Height  : constant String := "0.44";
+  Default_Width   : constant String := "0.66";
+
   procedure Define (Handle : Configuration.File_Handle);
 
   procedure Defaults (Put       : access procedure (Item : String);
-                      Extension : String := "D:\Picture\Image.Fits";
-                      Height    : String := "0.44";
-                      Width     : String := "0.66");
+                      Extension : String := Default_Picture;
+                      Height    : String := Default_Height;
+                      Width     : String := Default_Width);
 
 end Picture.Parameter;

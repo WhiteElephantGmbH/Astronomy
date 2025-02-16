@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2022 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                               (c) 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,15 +15,12 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-pragma Build (Description => "SkyTracker control program for GM 1000 HPS",
-              Version     => (2, 4, 6, 0),
-              Kind        => Windows,
-              Libraries   => ("AWSS64", "COLL64"),
-              Compiler    => "GNATPRO\23.0");
+with Configuration;
 
-with Control;
+package Alignment.Parameter is
 
-procedure SkyTracker is
-begin
-  Control.Start;
-end SkyTracker;
+  procedure Define (Handle : Configuration.File_Handle);
+
+  procedure Defaults (Put : access procedure (Item : String));
+
+end Alignment.Parameter;

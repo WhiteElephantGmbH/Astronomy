@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2022 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2022 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -16,6 +16,7 @@
 pragma Style_White_Elephant;
 
 with Ada.Text_IO;
+with Alignment.Parameter;
 with Application;
 with Camera.Parameter;
 with Clock.Parameter;
@@ -67,9 +68,11 @@ package body Parameter is
       Put ("");
       Clock.Parameter.Defaults (Put'access);
       Put ("");
-      Picture.Parameter.Defaults (Put'access, "D:\Picture\Image.CR2", Height => "0.51", Width => "0.74");
+      Picture.Parameter.Defaults (Put'access, Height => "0.51", Width => "0.74");
       Put ("");
       Camera.Parameter.Defaults (Put'access);
+      Put ("");
+      Alignment.Parameter.Defaults (Put'access);
       Put ("");
       Stellarium.Parameter.Defaults (Put'access, "10micron");
       Put ("");
@@ -95,6 +98,7 @@ package body Parameter is
       Clock.Parameter.Define (Handle);
       Picture.Parameter.Define (Handle);
       Camera.Parameter.Define (Handle);
+      Alignment.Parameter.Define (Handle);
       Stellarium.Parameter.Define (Handle);
     end Read_Values;
 

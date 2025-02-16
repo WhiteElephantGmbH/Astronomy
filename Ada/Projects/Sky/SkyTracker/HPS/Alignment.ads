@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2023 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2023 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -18,10 +18,13 @@ pragma Style_White_Elephant;
 with Ten_Micron;
 with Space;
 with Time;
+with Traces;
 
 package Alignment is
 
   procedure Clear;
+
+  function Align_More return Boolean;
 
   function Next_Star return Space.Direction;
 
@@ -40,5 +43,13 @@ package Alignment is
   procedure Update_Info;
 
   function Info return Information;
+
+private
+
+  Id : constant String := "Alignment";
+
+  package Log is new Traces (Id);
+
+  The_Alignment_Stars : Natural;
 
 end Alignment;

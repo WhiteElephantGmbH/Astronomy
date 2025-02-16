@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2022 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                               (c) 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,15 +15,33 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-pragma Build (Description => "SkyTracker control program for GM 1000 HPS",
-              Version     => (2, 4, 6, 0),
-              Kind        => Windows,
-              Libraries   => ("AWSS64", "COLL64"),
-              Compiler    => "GNATPRO\23.0");
+with Error;
+with Section;
 
-with Control;
+package body Alignment.Parameter is
 
-procedure SkyTracker is
-begin
-  Control.Start;
-end SkyTracker;
+  Star_Count_Key : constant String := "Star Count";
+
+
+  procedure Define (Handle : Configuration.File_Handle) is
+  begin
+    Section.Set (Configuration.Handle_For (Handle, Id));
+    declare
+      Count_Image : constant String := Section.String_Of (Star_Count_Key);
+    begin
+      The_Alignment_Stars := Positive'value (Count_Image);
+    exception
+    when others =>
+      Error.Raise_With ("Illegal Alignment Star Count: " & Count_Image);
+    end;
+    Log.Write ("Illegal Alignment Star Count:" & The_Alignment_Stars'image);
+  end Define;
+
+
+  procedure Defaults (Put : access procedure (Item : String)) is
+  begin
+    Put ("[" & Id & "]");
+    Put (Star_Count_Key & " = 10");
+  end Defaults;
+
+end Alignment.Parameter;

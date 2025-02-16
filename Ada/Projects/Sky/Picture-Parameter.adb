@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                               (c) 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                           (c) 2024 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                      *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -47,9 +47,9 @@ package body Picture.Parameter is
 
 
   procedure Defaults (Put       : access procedure (Item : String);
-                      Extension : String := "D:\Picture\Image.Fits";
-                      Height    : String := "0.44";
-                      Width     : String := "0.66") is
+                      Extension : String := Default_Picture;
+                      Height    : String := Default_Height;
+                      Width     : String := Default_Width) is
   begin
     Put ("[" & Id & "]");
     Put (Astap_Key & "    = " & Default_Astap_Executable);

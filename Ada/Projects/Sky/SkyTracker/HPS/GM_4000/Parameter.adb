@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2022 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2022 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -16,6 +16,7 @@
 pragma Style_White_Elephant;
 
 with Ada.Text_IO;
+with Alignment.Parameter;
 with Application;
 with Camera.Parameter;
 with Configuration;
@@ -72,6 +73,8 @@ package body Parameter is
       Put ("");
       Remote.Parameter.Defaults (Put'access, "apo");
       Put ("");
+      Alignment.Parameter.Defaults (Put'access);
+      Put ("");
       Stellarium.Parameter.Defaults (Put'access, "APO");
       Ada.Text_IO.Close (The_File);
     exception
@@ -95,6 +98,7 @@ package body Parameter is
       Remote.Parameter.Define (Handle);
       Picture.Parameter.Define (Handle);
       Camera.Parameter.Define (Handle);
+      Alignment.Parameter.Define (Handle);
       Stellarium.Parameter.Define (Handle);
     end Read_Values;
 
