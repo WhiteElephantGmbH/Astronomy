@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2023 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2023 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -239,6 +239,7 @@ package body PWI4.Protocol is
                         I_Geometry,
                         I_Gradual_Offset_Progress,
                         I_Height_Meters,
+                        I_Index,
                         I_Is_Enabled,
                         I_Is_Connected,
                         I_Is_Moving,
@@ -672,6 +673,8 @@ package body PWI4.Protocol is
       when I_Mech_Position_Degs =>
         Log_Write ("rotator.mech_position_degs=" & Next_Value);
         The_Response.Rotator.Mech_Position := Degrees_Of (Value);
+      when I_Index =>
+        Log_Write ("rotator.index=" & Next_Value);
       when I_Is_Moving =>
         Log_Write ("rotator.is_moving=" & Next_Value);
         The_Response.Rotator.Is_Moving := Boolean_Of (Value);
