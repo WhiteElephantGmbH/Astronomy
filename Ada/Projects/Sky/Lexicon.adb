@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2017 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2017 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -552,6 +552,7 @@ package body Lexicon is
     Scheat                    => E (Scheat,                    "Scheat",                   "Scheat",                       "Scheat",                       "Scheat",                         "Scheat",                           "Scheat"),
     Schedar                   => E (Schedar,                   "Schedar",                  "Schedar",                      "Schedar",                      "Schedar",                        "Schedar",                          "Schedar"),
     Schmidt_S_Nova_Cygni      => E (Schmidt_S_Nova_Cygni,      "Schmidt's Nova Cygni",     "Nova Cygni de Schmidt",        "Schmidts Nova Cygni",          "Νέα του Schmidt στον Κύγνο",     "Nova Cygni di Schmidt",            "Nova Cygni de Schmidt"),
+    Seagull_Nebula            => E (Seagull_Nebula,            "Seagull Nebula",           "Nébuleuse de la mouette",      "Möwennebel",                   "Seagull Nebula",                 "Nebulosa Gabbiano",                "Nebulosa de la Gaviota"),
     Secunda_Hyadum            => E (Secunda_Hyadum,            "Secunda Hyadum",           "Secunda Hyadum",               "Secunda Hyadum",               "Secunda Hyadum",                 "Secunda Hyadum",                   "Secunda Hyadum"),
     Segin                     => E (Segin,                     "Segin",                    "Segin",                        "Segin",                        "Segin",                          "Segin",                            "Segin"),
     Seginus                   => E (Seginus,                   "Seginus",                  "Seginus",                      "Seginus",                      "Seginus",                        "Seginus",                          "Seginus"),

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2024  by White Elephant GmbH, Schaffhausen, Switzerland                             *
+-- *                        (c) 2024 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                         *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -1314,7 +1314,7 @@ package body Generator.Data is
 
     begin -- Put_Header
       Output ("-- *********************************************************************************************************************");
-      Output ("-- *                           (c) 2024 by White Elephant GmbH, Schaffhausen, Switzerland                              *");
+      Output ("-- *                       (c) 2024 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *");
       Output ("-- *                                               www.white-elephant.ch                                               *");
       Output ("-- *********************************************************************************************************************");
       Output ("-- Generated object information from the Astronomical Database - Université de Strasbourg");
