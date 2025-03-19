@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2024 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2024 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -409,7 +409,7 @@ package body Sky.Catalog is
     when Ngc =>
       return Ngc_Id (Item);
     when Ic =>
-      return Ngc_Id (Item);
+      return Ic_Id (Item);
     when Ocl =>
       return Ocl_Id (Item);
     when Quasars =>
@@ -446,6 +446,12 @@ package body Sky.Catalog is
   begin
     return Object(SC.Number_Of (SC.HR_Index(Item)));
   end Hr_Id;
+
+
+  function Ic_Id (Item : Positive) return Object is
+  begin
+    return Object(SC.Number_Of (SC.IC_Index(Item)));
+  end Ic_Id;
 
 
   function Messier_Id (Item : Positive) return Object is

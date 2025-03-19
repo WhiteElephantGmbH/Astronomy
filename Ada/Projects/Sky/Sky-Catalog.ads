@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2024 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2024 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -62,6 +62,8 @@ package Sky.Catalog is
   function Hip_Id (Item : Positive) return Object with Inline;
 
   function Hr_Id (Item : Positive) return Object with Inline;
+
+  function Ic_Id (Item : Positive) return Object with Inline;
 
   function Messier_Id (Item : Positive) return Object with Inline;
 
