@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2023 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2023 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -67,6 +67,8 @@ package PWI4 is
     Max_Position : Degrees;
     Position     : Degrees;
   end record;
+
+  type Mount_Axis is array (Natural range 0 .. 1) of Axis_Data;
 
   type Points is new Natural range 0 .. 255;
 

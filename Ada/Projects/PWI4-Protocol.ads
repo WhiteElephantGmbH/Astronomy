@@ -68,13 +68,14 @@ private package PWI4.Protocol is
 
   function Image_Of (Item : Error_Code) return String;
 
+  type Axis_Enabled is array (Natural range 0 .. 1) of Boolean;
+
   type Mount_Flag is record
-    Has_Error        : Boolean := False;
-    Is_Connected     : Boolean;
-    Is_Slewing       : Boolean;
-    Is_Tracking      : Boolean;
-    Axis0_Is_Enabled : Boolean;
-    Axis1_Is_Enabled : Boolean;
+    Has_Error       : Boolean := False;
+    Is_Connected    : Boolean;
+    Is_Slewing      : Boolean;
+    Is_Tracking     : Boolean;
+    Axis_Is_Enabled : Axis_Enabled;
   end record with Pack;
 
   type Spiral_Data is record
@@ -93,8 +94,7 @@ private package PWI4.Protocol is
     Dec_J2000                  : Degrees;
     Azimuth                    : Degrees;
     Altitude                   : Degrees;
-    Axis0                      : Axis_Data;
-    Axis1                      : Axis_Data;
+    Axis                       : Mount_Axis;
     Wrap_Range_Min             : Degrees;
     Spiral_Offsets             : Spiral_Data;
     Model                      : Model_Data;

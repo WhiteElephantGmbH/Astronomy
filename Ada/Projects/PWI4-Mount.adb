@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2023 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2023 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -91,13 +91,13 @@ package body PWI4.Mount is
           return Error;
         end if;
         return Disconnected;
-      elsif not (Flags.Axis0_Is_Enabled and Flags.Axis1_Is_Enabled) then
+      elsif not (Flags.Axis_Is_Enabled(0) and Flags.Axis_Is_Enabled(1)) then
         Initialize_Homing;
         return Connected;
       elsif not Is_Homed then
         if Is_Homing then
-          Delta_Axis0 := Data.Axis0.Position - Last_Axis0_Position;
-          Delta_Axis1 := Data.Axis1.Position - Last_Axis1_Position;
+          Delta_Axis0 := Data.Axis(0).Position - Last_Axis0_Position;
+          Delta_Axis1 := Data.Axis(1).Position - Last_Axis1_Position;
           if abs(Delta_Axis0) < 0.0002 and abs(Delta_Axis1) < 0.0002 then
             Homing_Counter := @ - 1;
             if Homing_Counter = 0 then
@@ -110,8 +110,8 @@ package body PWI4.Mount is
             Homing_Counter := Homing_Check_Count;
           end if;
         end if;
-        Last_Axis0_Position := Data.Axis0.Position;
-        Last_Axis1_Position := Data.Axis1.Position;
+        Last_Axis0_Position := Data.Axis(0).Position;
+        Last_Axis1_Position := Data.Axis(1).Position;
         if The_Enable_Delay_Count > 0 then
           -- restart handling
           if The_Enable_Delay_Count = 1 then
@@ -149,8 +149,8 @@ package body PWI4.Mount is
             Dec_J2000 => Data.Dec_J2000,
             Az        => Data.Azimuth,
             Alt       => Data.Altitude,
-            Az_Axis   => Data.Axis0,
-            Alt_Axis  => Data.Axis1,
+            Az_Axis   => Data.Axis(0),
+            Alt_Axis  => Data.Axis(1),
             Wrap_Min  => Data.Wrap_Range_Min,
             Model     => Data.Model);
   end Info;

@@ -101,6 +101,12 @@ package body PWI4.Protocol is
   end Image_Of;
 
 
+  function Image_Of (Item : Natural) return String is
+  begin
+    return Text.Trimmed (Item'image);
+  end Image_Of;
+
+
   function Jd_Of (Image : String) return Julian_Day is
   begin
     return Julian_Day'value(Image);
@@ -238,11 +244,16 @@ package body PWI4.Protocol is
                         I_Focuser,
                         I_Geometry,
                         I_Gradual_Offset_Progress,
+                        I_Heater,
+                        I_Heater1,
+                        I_Heater2,
+                        I_Heater3,
                         I_Height_Meters,
                         I_Index,
                         I_Is_Enabled,
                         I_Is_Connected,
                         I_Is_Moving,
+                        I_Is_On,
                         I_Is_Running,
                         I_Is_Slewing,
                         I_Is_Tracking,
@@ -259,6 +270,7 @@ package body PWI4.Protocol is
                         I_Model,
                         I_Mount,
                         I_M3,
+                        I_Num_Heaters,
                         I_Num_Points_Enabled,
                         I_Num_Points_Total,
                         I_Offsets,
@@ -270,6 +282,7 @@ package body PWI4.Protocol is
                         I_Position_Degs,
                         I_Position_Rotate,
                         I_Position_Timestamp,
+                        I_Power_Pct,
                         I_Pwi4,
                         I_Ra_Apparent_Hours,
                         I_Ra_Arcsec,
@@ -277,6 +290,7 @@ package body PWI4.Protocol is
                         I_Rate,
                         I_Response,
                         I_Rms_Error_Arcsec,
+                        I_Role,
                         I_Rotator,
                         I_Servo_Error_Arcsec,
                         I_Setpoint_Velocity_Degs_Per_Sec,
@@ -385,7 +399,49 @@ package body PWI4.Protocol is
 
 
     procedure Parse_Mount is
-    begin
+
+      procedure Parse_Axis (N : Natural) is
+        Axis : constant String := "mount.axis" & Image_Of (N);
+      begin
+        case Next_Identifier is
+        when I_Is_Enabled =>
+          Log_Write (Axis & ".is_enabled=" & Next_Value);
+          The_Response.Mount.Flags.Axis_Is_Enabled(N) := Boolean_Of (Value);
+        when I_Rms_Error_Arcsec =>
+          Log_Write (Axis & ".rms_error_arcsec=" & Next_Value);
+        when I_Dist_To_Target_Arcsec =>
+          Log_Write (Axis & ".dist_to_target_arcsec=" & Next_Value);
+        when I_Servo_Error_Arcsec =>
+          Log_Write (Axis & ".servo_error_arcsec=" & Next_Value);
+        when I_Min_Mech_Position_Degs =>
+          Log_Write (Axis & ".min_mech_position_degs=" & Next_Value);
+          The_Response.Mount.Axis(N).Min_Position := Degrees_Of (Value);
+        when I_Max_Mech_Position_Degs =>
+          Log_Write (Axis & ".max_mech_position_degs=" & Next_Value);
+          The_Response.Mount.Axis(N).Max_Position := Degrees_Of (Value);
+        when I_Target_Mech_Position_Degs =>
+          Log_Write (Axis & ".target_mech_position_degs=" & Next_Value);
+        when I_Position_Degs =>
+          Log_Write (Axis & ".position_degs=" & Next_Value);
+          The_Response.Mount.Axis(N).Position := Degrees_Of (Value);
+        when I_Position_Timestamp =>
+          Log_Write (Axis & ".position_timestamp=" & Next_Value);
+        when I_Max_Velocity_Degs_Per_Sec =>
+          Log_Write (Axis & ".max_velocity_degs_per_sec=" & Next_Value);
+        when I_Setpoint_Velocity_Degs_Per_Sec =>
+          Log_Write (Axis & ".setpoint_velocity_degs_per_sec=" & Next_Value);
+        when I_Measured_Velocity_Degs_Per_Sec =>
+          Log_Write (Axis & ".measured_velocity_degs_per_sec=" & Next_Value);
+        when I_Acceleration_Degs_Per_Sec_Sqr =>
+          Log_Write (Axis & ".acceleration_degs_per_sec_sqr=" & Next_Value);
+        when I_Measured_Current_Amps =>
+          Log_Write (Axis & ".measured_current_amp=" & Next_Value);
+        when others =>
+          raise Parsing_Error;
+        end case;
+      end Parse_Axis;
+
+    begin -- Parse_Mount
       case Next_Identifier is
       when I_Is_Connected =>
         Log_Write ("mount.is_connected=" & Next_Value);
@@ -537,79 +593,9 @@ package body PWI4.Protocol is
           raise Parsing_Error;
         end case;
       when I_Axis0 =>
-        case Next_Identifier is
-        when I_Is_Enabled =>
-          Log_Write ("mount.axis0.is_enabled=" & Next_Value);
-          The_Response.Mount.Flags.Axis0_Is_Enabled := Boolean_Of (Value);
-        when I_Rms_Error_Arcsec =>
-          Log_Write ("mount.axis0.rms_error_arcsec=" & Next_Value);
-        when I_Dist_To_Target_Arcsec =>
-          Log_Write ("mount.axis0.dist_to_target_arcsec=" & Next_Value);
-        when I_Servo_Error_Arcsec =>
-          Log_Write ("mount.axis0.servo_error_arcsec=" & Next_Value);
-        when I_Min_Mech_Position_Degs =>
-          Log_Write ("mount.axis0.min_mech_position_degs=" & Next_Value);
-          The_Response.Mount.Axis0.Min_Position := Degrees_Of (Value);
-        when I_Max_Mech_Position_Degs =>
-          Log_Write ("mount.axis0.max_mech_position_degs=" & Next_Value);
-          The_Response.Mount.Axis0.Max_Position := Degrees_Of (Value);
-        when I_Target_Mech_Position_Degs =>
-          Log_Write ("mount.axis0.target_mech_position_degs=" & Next_Value);
-        when I_Position_Degs =>
-          Log_Write ("mount.axis0.position_degs=" & Next_Value);
-          The_Response.Mount.Axis0.Position := Degrees_Of (Value);
-        when I_Position_Timestamp =>
-          Log_Write ("mount.axis0.position_timestamp=" & Next_Value);
-        when I_Max_Velocity_Degs_Per_Sec =>
-          Log_Write ("mount.axis0.max_velocity_degs_per_sec=" & Next_Value);
-        when I_Setpoint_Velocity_Degs_Per_Sec =>
-          Log_Write ("mount.axis0.setpoint_velocity_degs_per_sec=" & Next_Value);
-        when I_Measured_Velocity_Degs_Per_Sec =>
-          Log_Write ("mount.axis0.measured_velocity_degs_per_sec=" & Next_Value);
-        when I_Acceleration_Degs_Per_Sec_Sqr =>
-          Log_Write ("mount.axis0.acceleration_degs_per_sec_sqr=" & Next_Value);
-        when I_Measured_Current_Amps =>
-          Log_Write ("mount.axis0.measured_current_amp=" & Next_Value);
-        when others =>
-          raise Parsing_Error;
-        end case;
-      when I_Axis1 =>
-        case Next_Identifier is
-        when I_Is_Enabled =>
-          Log_Write ("mount.axis1.is_enabled=" & Next_Value);
-          The_Response.Mount.Flags.Axis1_Is_Enabled := Boolean_Of (Value);
-        when I_Rms_Error_Arcsec =>
-          Log_Write ("mount.axis1.rms_error_arcsec=" & Next_Value);
-        when I_Dist_To_Target_Arcsec =>
-          Log_Write ("mount.axis1.dist_to_target_arcsec=" & Next_Value);
-        when I_Servo_Error_Arcsec =>
-          Log_Write ("mount.axis1.servo_error_arcsec=" & Next_Value);
-        when I_Min_Mech_Position_Degs =>
-          Log_Write ("mount.axis1.min_mech_position_degs=" & Next_Value);
-          The_Response.Mount.Axis1.Min_Position := Degrees_Of (Value);
-        when I_Max_Mech_Position_Degs =>
-          Log_Write ("mount.axis1.max_mech_position_degs=" & Next_Value);
-          The_Response.Mount.Axis1.Max_Position := Degrees_Of (Value);
-        when I_Target_Mech_Position_Degs =>
-          Log_Write ("mount.axis1.target_mech_position_degs=" & Next_Value);
-        when I_Position_Degs =>
-          Log_Write ("mount.axis1.position_degs=" & Next_Value);
-          The_Response.Mount.Axis1.Position := Degrees_Of (Value);
-        when I_Position_Timestamp =>
-          Log_Write ("mount.axis1.position_timestamp=" & Next_Value);
-        when I_Max_Velocity_Degs_Per_Sec =>
-          Log_Write ("mount.axis1.max_velocity_degs_per_sec=" & Next_Value);
-        when I_Setpoint_Velocity_Degs_Per_Sec =>
-          Log_Write ("mount.axis1.setpoint_velocity_degs_per_sec=" & Next_Value);
-        when I_Measured_Velocity_Degs_Per_Sec =>
-          Log_Write ("mount.axis1.measured_velocity_degs_per_sec=" & Next_Value);
-        when I_Acceleration_Degs_Per_Sec_Sqr =>
-          Log_Write ("mount.axis1.acceleration_degs_per_sec_sqr=" & Next_Value);
-        when I_Measured_Current_Amps =>
-          Log_Write ("mount.axis1.measured_current_amp=" & Next_Value);
-        when others =>
-          raise Parsing_Error;
-        end case;
+        Parse_Axis (0);
+     when I_Axis1 =>
+        Parse_Axis (1);
       when I_Model =>
         case Next_Identifier is
         when I_Filename =>
@@ -718,6 +704,40 @@ package body PWI4.Protocol is
       end case;
     end Parse_Autofocus;
 
+    procedure Parse_Heater is
+
+      procedure Parse_Heater (N : Positive) is
+        Heater : constant String := "heater.heater" & Image_Of (N);
+      begin
+        case Next_Identifier is
+        when I_Role =>
+          Log_Write (Heater & ".role=" & Next_Value);
+        when I_Is_On =>
+          Log_Write (Heater & ".is_on=" & Next_Value);
+        when I_Power_Pct =>
+          Log_Write (Heater & ".power_pct=" & Next_Value);
+        when others =>
+          raise Parsing_Error;
+        end case;
+      end Parse_Heater;
+
+    begin -- Parse_Heater
+      case Next_Identifier is
+      when I_Is_Connected =>
+        Log_Write ("heater.is_connected=" & Next_Value);
+      when I_Num_Heaters =>
+        Log_Write ("heater.num_heaters=" & Next_Value);
+      when I_Heater1 =>
+        Parse_Heater (1);
+      when I_Heater2 =>
+        Parse_Heater (2);
+      when I_Heater3 =>
+        Parse_Heater (3);
+      when others =>
+        raise Parsing_Error;
+      end case;
+    end Parse_Heater;
+
   begin -- Parse
     if Data'length = 0 or else Data(Data'last) /= Ascii.Lf then
       raise Parsing_Error;
@@ -740,6 +760,8 @@ package body PWI4.Protocol is
         Parse_M3;
       when I_Autofocus =>
         Parse_Autofocus;
+      when I_Heater =>
+        Parse_Heater;
       when others =>
         raise Parsing_Error;
       end case;
@@ -841,10 +863,10 @@ package body PWI4.Protocol is
         Log.Write ("  Dec_J2000        : " & Image_Of (Data.Mount.Dec_J2000));
         Log.Write ("  Azmimuth         : " & Image_Of (Data.Mount.Azimuth));
         Log.Write ("  Altitude         : " & Image_Of (Data.Mount.Altitude));
-        Log.Write ("  Axis_0_Enabled   : " & Image_Of (Data.Mount.Flags.Axis0_Is_Enabled));
-        Log.Write ("  Axis_0_Position  : " & Image_Of (Data.Mount.Axis0.Position));
-        Log.Write ("  Axis_1_Enabled   : " & Image_Of (Data.Mount.Flags.Axis1_Is_Enabled));
-        Log.Write ("  Axis_1_Position  : " & Image_Of (Data.Mount.Axis1.Position));
+        Log.Write ("  Axis_0_Enabled   : " & Image_Of (Data.Mount.Flags.Axis_Is_Enabled(0)));
+        Log.Write ("  Axis_0_Position  : " & Image_Of (Data.Mount.Axis(0).Position));
+        Log.Write ("  Axis_1_Enabled   : " & Image_Of (Data.Mount.Flags.Axis_Is_Enabled(1)));
+        Log.Write ("  Axis_1_Position  : " & Image_Of (Data.Mount.Axis(1).Position));
         Log.Write ("  Field_Angle      : " & Image_Of (Data.Mount.Field_Angle_At_Target));
         Log.Write ("  Field_Angle_Rate : " & Image_Of (Data.Mount.Field_Angle_Rate_At_Target));
         Log.Write ("Focuser");
