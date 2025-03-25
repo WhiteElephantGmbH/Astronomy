@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2023 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2023 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -70,6 +70,8 @@ package Device is
     function Actual_Info return Information;
 
     function Az_Axis_Minimum return Degrees;
+
+    function Is_Inactive return Boolean;
 
     procedure Connect;
 
@@ -158,7 +160,13 @@ package Device is
 
   package Rotator is
 
+    procedure Connect;
+
+    procedure Disconnect;
+
     procedure Find_Home;
+    
+    function Is_Homed return Boolean;
 
     function Moving return Boolean;
 

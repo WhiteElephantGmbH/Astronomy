@@ -52,6 +52,7 @@ private package PWI4.Protocol is
 
   type Rotator_Info is record
     Exists        : Boolean;
+    Index         : Device_Index;
     Is_Connected  : Boolean;
     Is_Enabled    : Boolean;
     Is_Moving     : Boolean;
@@ -85,6 +86,7 @@ private package PWI4.Protocol is
 
   type Mount_Info is record
     Flags                      : Mount_Flag;
+    Count                      : Update_Count;
     Julian_Date                : Julian_Day;
     Ra                         : Hours;
     Dec                        : Degrees;

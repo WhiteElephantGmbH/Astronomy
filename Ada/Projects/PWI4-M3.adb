@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2023 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2023 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -26,7 +26,7 @@ package body PWI4.M3 is
 
 
   procedure Execute (Command_Name : String;
-                     Parameters   : String := "") is
+                     Parameters   : Parameter := "") is
   begin
     Execute (Device     => "m3",
              Command    => Command_Name,
@@ -37,7 +37,7 @@ package body PWI4.M3 is
   procedure Turn (To : Port) is
   begin
     Execute (Command_Name => "goto",
-             Parameters   => "port=" & (case To is when Port_1 => "1", when Port_2 => "2"));
+             Parameters   => "port" / (case To is when Port_1 => "1", when Port_2 => "2"));
   end Turn;
 
 

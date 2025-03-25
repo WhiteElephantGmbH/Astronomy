@@ -37,14 +37,9 @@ package PWI4 is
 
   function Image_Of (Item : Degrees) return String;
 
-  Meters_Delta : constant := 0.1;
+  type Device_Index is new Natural range 0 .. 1;
 
-  Meters_Lower_Limit : constant := -728.0; -- Dead See when dryed up
-  Meters_Upper_Limit : constant := 8848.0; -- Himalaya
-
-  type Meters is delta Meters_Delta range Meters_Lower_Limit .. Meters_Upper_Limit with Small => Meters_Delta;
-
-  Undefined_Meters : constant Meters := Meters_Lower_Limit;
+  function Image_Of (Item : Device_Index) return String;
 
   Hours_Delta : constant := 0.000_000_000_01;
   Hours_Limit : constant := 24.0;
@@ -54,6 +49,19 @@ package PWI4 is
   Undefined_Hours : constant := Hours'first;
 
   function Image_Of (Item : Hours) return String;
+
+  Meters_Delta : constant := 0.1;
+
+  Meters_Lower_Limit : constant := -728.0; -- Dead See when dryed up
+  Meters_Upper_Limit : constant := 8848.0; -- Himalaya
+
+  type Meters is delta Meters_Delta range Meters_Lower_Limit .. Meters_Upper_Limit with Small => Meters_Delta;
+
+  Undefined_Meters : constant Meters := Meters_Lower_Limit;
+
+  type Update_Count is mod 2**64;
+
+  function Image_Of (Item : Update_Count) return String;
 
   type Site_Info is record
     Latitude  : Degrees;
@@ -107,9 +115,17 @@ private
 
   subtype Status_Code is AWS.Messages.Status_Code;
 
+  type Parameter is new String;
+
   procedure Execute (Device     : String;
                      Command    : String;
-                     Parameters : String := "");
+                     Parameters : Parameter := "");
+
+  function "/" (Left  : String;
+                Right : String) return Parameter;
+
+  function "+" (Left  : Parameter;
+                Right : Parameter) return Parameter;
 
   function Image_Of (The_Port : Port) return Character;
 

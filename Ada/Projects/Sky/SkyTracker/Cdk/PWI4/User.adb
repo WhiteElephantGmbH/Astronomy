@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2023 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2023 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -282,7 +282,7 @@ package body User is
       The_Status := Information.Status;
       Last_Target_Selection := The_Target_Selection;
       case The_Status is
-      when Telescope.Unknown | Telescope.Restarting | Telescope.Mount_Error =>
+      when Telescope.Unknown | Telescope.Mount_Error =>
         Disable_Startup_Button;
         Disable_Stop_Button;
       when Telescope.Disconnected =>

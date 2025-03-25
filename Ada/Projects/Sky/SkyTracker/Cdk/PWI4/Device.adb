@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2023 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2023 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -73,6 +73,8 @@ package body Device is
                           Stop);
 
   type Rotator_Action is (No_Action,
+                          Connect,
+                          Disconnect,
                           Find_Home,
                           Goto_Field,
                           Goto_Mech,
@@ -660,15 +662,15 @@ package body Device is
           when No_Action =>
             null;
           when Connect =>
-            PWI4.Focuser.Connect;
+            PWI4.Focuser.Connect (PWI4.Rotator.Index);
           when Disconnect =>
-            PWI4.Focuser.Disconnect;
+            PWI4.Focuser.Disconnect (PWI4.Rotator.Index);
           when Find_Home =>
-            PWI4.Focuser.Find_Home;
+            PWI4.Focuser.Find_Home (PWI4.Rotator.Index);
           when Go_To =>
-            PWI4.Focuser.Go_To (The_Parameter.Focuser_Position);
+            PWI4.Focuser.Go_To (The_Parameter.Focuser_Position, PWI4.Rotator.Index);
           when Stop =>
-            PWI4.Focuser.Stop;
+            PWI4.Focuser.Stop (PWI4.Rotator.Index);
           end case;
         end if;
 
@@ -676,6 +678,11 @@ package body Device is
           case The_Rotator_Action is
           when No_Action =>
             null;
+          when Connect =>
+            Log.Write ("Simulated rotator connect");
+          when Disconnect =>
+            The_Simulated_Rotator_State := Stopped;
+            Log.Write ("Simulated rotator disconnect");
           when Find_Home =>
             Log.Write ("Simulated rotator find_home");
             The_Simulated_Rotator_Mech_Position := 0.0;
@@ -701,16 +708,20 @@ package body Device is
           case The_Rotator_Action is
           when No_Action =>
             null;
+          when Connect =>
+            PWI4.Rotator.Connect (PWI4.Rotator.Index);
+          when Disconnect =>
+            PWI4.Rotator.Disconnect (PWI4.Rotator.Index);
           when Find_Home =>
-            PWI4.Rotator.Find_Home;
+            PWI4.Rotator.Find_Home (PWI4.Rotator.Index);
           when Goto_Mech =>
-            PWI4.Rotator.Goto_Mech (The_Parameter.Rotator_Value);
+            PWI4.Rotator.Goto_Mech (The_Parameter.Rotator_Value, PWI4.Rotator.Index);
           when Goto_Field =>
-            PWI4.Rotator.Goto_Field (The_Parameter.Rotator_Value);
+            PWI4.Rotator.Goto_Field (The_Parameter.Rotator_Value, PWI4.Rotator.Index);
           when Goto_Offset =>
-            PWI4.Rotator.Goto_Offset (The_Parameter.Rotator_Value);
+            PWI4.Rotator.Goto_Offset (The_Parameter.Rotator_Value, PWI4.Rotator.Index);
           when Stop =>
-            PWI4.Rotator.Stop;
+            PWI4.Rotator.Stop (PWI4.Rotator.Index);
           end case;
         end if;
       or
@@ -780,7 +791,9 @@ package body Device is
               The_Mount_State := Mount.Enabled;
             end if;
           else
-            The_Mount_State := Mount.Enabled;
+            if Rotator.Is_Homed then
+              The_Mount_State := Mount.Enabled;
+            end if;
           end if;
         when PWI4.Mount.Stopped =>
           The_Mount_State := Mount.Stopped;
@@ -956,6 +969,12 @@ package body Device is
       end if;
       return The_Az_Axis_Minimum;
     end Az_Axis_Minimum;
+
+
+    function Is_Inactive return Boolean is
+    begin
+      return not PWI4.Mount.Is_Updating;
+    end Is_Inactive;
 
 
     procedure Connect is
@@ -1230,6 +1249,12 @@ package body Device is
 
   package body Rotator is
 
+    function Is_Homed return Boolean is
+    begin
+      return PWI4.Rotator.Is_Homed;
+    end Is_Homed;
+
+
     function Moving return Boolean is
     begin
       if Is_Simulation then
@@ -1270,6 +1295,20 @@ package body Device is
     end Mech_Position;
 
 
+    procedure Connect is
+    begin
+      Log.Write ("Rotator.Connect");
+      Action.Put (Rotator_Action'(Connect));
+    end Connect;
+
+
+    procedure Disconnect is
+    begin
+      Log.Write ("Rotator.Disconnect");
+      Action.Put (Rotator_Action'(Disconnect));
+    end Disconnect;
+
+
     procedure Find_Home is
     begin
       Log.Write ("Rotator.Find_Home");
@@ -1303,7 +1342,6 @@ package body Device is
       Log.Write ("Rotator.Stop");
       Action.Put (Rotator_Action'(Stop));
     end Stop;
-
 
   end Rotator;
 

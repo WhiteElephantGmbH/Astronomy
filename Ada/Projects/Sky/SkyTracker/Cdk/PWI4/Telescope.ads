@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2023 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2023 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -24,8 +24,7 @@ with Time;
 
 package Telescope is
 
-  type State is (Unknown,    -- PWI server not available
-                 Restarting, -- restarting CDK 700 PC
+  type State is (Unknown, -- PWI server not available
                  Disconnected,
                  Disconnecting,
                  Mount_Error,

@@ -40,6 +40,24 @@ package body PWI4.Protocol is
   end Log_Error;
 
 
+  function Update_Count_Of (Item : String) return Update_Count is
+  begin
+    return Update_Count'value(Item);
+  exception
+  when others =>
+    return 0;
+  end Update_Count_Of;
+
+
+  function Index_Of (Item : String) return Device_Index is
+  begin
+    return Device_Index'value(Item);
+  exception
+  when others =>
+    return 0;
+  end Index_Of;
+
+
   function Boolean_Of (Image : String) return Boolean is
   begin
     return Boolean'value(Text.Uppercase_Of (Image));
@@ -457,6 +475,7 @@ package body PWI4.Protocol is
         Log_Write ("mount.update_duration_msec=" & Next_Value);
       when I_Update_Count =>
         Log_Write ("mount.update_count=" & Next_Value);
+        The_Response.Mount.Count := Update_Count_Of (Value);
       when I_Slew_Time_Constant =>
         Log_Write ("mount.slew_time_constant=" & Next_Value);
       when I_Ra_Apparent_Hours =>
@@ -661,6 +680,7 @@ package body PWI4.Protocol is
         The_Response.Rotator.Mech_Position := Degrees_Of (Value);
       when I_Index =>
         Log_Write ("rotator.index=" & Next_Value);
+        The_Response.Rotator.Index := Index_Of (Value);
       when I_Is_Moving =>
         Log_Write ("rotator.is_moving=" & Next_Value);
         The_Response.Rotator.Is_Moving := Boolean_Of (Value);
@@ -852,6 +872,7 @@ package body PWI4.Protocol is
         Log.Write ("  Height    : " & Image_Of (Data.Site.Height));
         Log.Write ("  Lmst      : " & Image_Of (Data.Site.Lmst));
         Log.Write ("Mount");
+        Log.Write ("  Update_Count     : " & Image_Of (Data.Mount.Count));
         Log.Write ("  Is_Connected     : " & Image_Of (Data.Mount.Flags.Is_Connected));
         Log.Write ("  Is_Slewing       : " & Image_Of (Data.Mount.Flags.Is_Slewing));
         Log.Write ("  Is_Tracking      : " & Image_Of (Data.Mount.Flags.Is_Tracking));
