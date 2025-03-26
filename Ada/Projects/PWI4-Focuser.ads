@@ -25,15 +25,15 @@ package PWI4.Focuser is
 
   function Actual_Position return Microns;
 
-  procedure Connect (Device : Device_Index);
+  procedure Connect (Device : Device_Index := Default_Device);
 
-  procedure Disconnect (Device : Device_Index);
+  procedure Disconnect (Device : Device_Index := Default_Device);
 
-  procedure Find_Home (Device : Device_Index);
+  procedure Find_Home (Device : Device_Index := Default_Device);
 
   procedure Go_To (Position : Microns;
-                   Device   : Device_Index);
+                   Device   : Device_Index := Default_Device);
 
-  procedure Stop (Device : Device_Index);
+  procedure Stop (Device : Device_Index := Default_Device);
 
 end PWI4.Focuser;

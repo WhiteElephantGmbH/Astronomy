@@ -54,8 +54,10 @@ package body Test is
     Put ("  DisconnectRotator1");
     Put ("  HomeRotator0");
     Put ("  HomeRotator1");
-    Put ("  Rotator0Goto0");
-    Put ("  Rotator1Goto0");
+    Put ("  Rotator0Offset0");
+    Put ("  Rotator1Offset0");
+    Put ("  Rotator0Goto180");
+    Put ("  Rotator1Goto180");
     Put ("  TurnTo1");
     Put ("  TurnTo2");
     Put ("  Startup");
@@ -390,6 +392,18 @@ package body Test is
     end Rotator_1_Offset_0;
 
 
+    procedure Rotator_0_Goto_180 is
+    begin
+      PWI4.Rotator.Goto_Mech (180.0, 0);
+    end Rotator_0_Goto_180;
+
+
+    procedure Rotator_1_Goto_180 is
+    begin
+      PWI4.Rotator.Goto_Mech (180.0, 1);
+    end Rotator_1_Goto_180;
+
+
     procedure Turn_M3 (To : PWI4.Port) is
     begin
       PWI4.M3.Turn (To);
@@ -517,6 +531,10 @@ package body Test is
       Rotator_0_Offset_0;
     elsif Id = "rotator1offset0" then
       Rotator_1_Offset_0;
+    elsif Id = "rotator0goto180" then
+      Rotator_0_Goto_180;
+    elsif Id = "rotator1goto180" then
+      Rotator_1_Goto_180;
     elsif Id = "enable" then
       Enable_Mount;
     elsif Id = "home" then

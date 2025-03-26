@@ -50,23 +50,24 @@ package body PWI4.Rotator is
 
 
   procedure Execute (Command_Name  : String;
-                     Device_Number : Device_Index;
-                     Parameters    : Parameter := "") is
+                     Parameters    : Parameter := "";
+                     Device_Number : Device_Index := Default_Device) is
   begin
     Execute (Device     => "rotator",
              Command    => Command_Name,
-             Parameters => Parameters + (if Device_Number = 0 then "" else "index" / Image_Of (Device_Number)));
+             Parameters => Parameters +
+                           (if Device_Number = Default_Device then "" else "index" / Image_Of (Device_Number)));
   end Execute;
 
 
-  procedure Connect (Device : Device_Index) is
+  procedure Connect (Device : Device_Index := Default_Device) is
   begin
     Execute (Command_Name  => "connect",
              Device_Number => Device);
   end Connect;
 
 
-  procedure Disconnect (Device : Device_Index) is
+  procedure Disconnect (Device : Device_Index := Default_Device) is
   begin
     Execute (Command_Name  => "disconnect",
              Device_Number => Device);
@@ -96,33 +97,33 @@ package body PWI4.Rotator is
 
 
   procedure Goto_Mech (Position : Degrees;
-                       Device   : Device_Index) is
+                       Device   : Device_Index := Default_Device) is
   begin
     Execute (Command_Name  => "goto_mech",
-             Device_Number => Device,
-             Parameters    => "degs" / Image_Of (Position));
+             Parameters    => "degs" / Image_Of (Position),
+             Device_Number => Device);
   end Goto_Mech;
 
 
   procedure Goto_Field (Position : Degrees;
-                        Device   : Device_Index) is
+                        Device   : Device_Index := Default_Device) is
   begin
     Execute (Command_Name  => "goto_field",
-             Device_Number => Device,
-             Parameters    => "degs" / Image_Of (Position));
+             Parameters    => "degs" / Image_Of (Position),
+             Device_Number => Device);
   end Goto_Field;
 
 
   procedure Goto_Offset (Distance : Degrees;
-                         Device   : Device_Index) is
+                         Device   : Device_Index := Default_Device) is
   begin
     Execute (Command_Name  => "offset",
-             Device_Number => Device,
-             Parameters    => "degs" / Image_Of (Distance));
+             Parameters    => "degs" / Image_Of (Distance),
+             Device_Number => Device);
   end Goto_Offset;
 
 
-  procedure Stop (Device : Device_Index) is
+  procedure Stop (Device : Device_Index := Default_Device) is
   begin
     Execute (Command_Name  =>"stop",
              Device_Number => Device);

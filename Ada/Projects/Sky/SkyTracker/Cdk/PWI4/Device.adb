@@ -662,15 +662,15 @@ package body Device is
           when No_Action =>
             null;
           when Connect =>
-            PWI4.Focuser.Connect (PWI4.Rotator.Index);
+            PWI4.Focuser.Connect;
           when Disconnect =>
-            PWI4.Focuser.Disconnect (PWI4.Rotator.Index);
+            PWI4.Focuser.Disconnect;
           when Find_Home =>
-            PWI4.Focuser.Find_Home (PWI4.Rotator.Index);
+            PWI4.Focuser.Find_Home;
           when Go_To =>
-            PWI4.Focuser.Go_To (The_Parameter.Focuser_Position, PWI4.Rotator.Index);
+            PWI4.Focuser.Go_To (The_Parameter.Focuser_Position);
           when Stop =>
-            PWI4.Focuser.Stop (PWI4.Rotator.Index);
+            PWI4.Focuser.Stop;
           end case;
         end if;
 
@@ -709,19 +709,19 @@ package body Device is
           when No_Action =>
             null;
           when Connect =>
-            PWI4.Rotator.Connect (PWI4.Rotator.Index);
+            PWI4.Rotator.Connect;
           when Disconnect =>
-            PWI4.Rotator.Disconnect (PWI4.Rotator.Index);
+            PWI4.Rotator.Disconnect;
           when Find_Home =>
             PWI4.Rotator.Find_Home (PWI4.Rotator.Index);
           when Goto_Mech =>
-            PWI4.Rotator.Goto_Mech (The_Parameter.Rotator_Value, PWI4.Rotator.Index);
+            PWI4.Rotator.Goto_Mech (The_Parameter.Rotator_Value);
           when Goto_Field =>
-            PWI4.Rotator.Goto_Field (The_Parameter.Rotator_Value, PWI4.Rotator.Index);
+            PWI4.Rotator.Goto_Field (The_Parameter.Rotator_Value);
           when Goto_Offset =>
-            PWI4.Rotator.Goto_Offset (The_Parameter.Rotator_Value, PWI4.Rotator.Index);
+            PWI4.Rotator.Goto_Offset (The_Parameter.Rotator_Value);
           when Stop =>
-            PWI4.Rotator.Stop (PWI4.Rotator.Index);
+            PWI4.Rotator.Stop;
           end case;
         end if;
       or
@@ -796,7 +796,9 @@ package body Device is
             end if;
           end if;
         when PWI4.Mount.Stopped =>
-          The_Mount_State := Mount.Stopped;
+          if not Rotator.Moving then
+            The_Mount_State := Mount.Stopped;
+          end if;
         when PWI4.Mount.Approaching =>
           The_Mount_State := Mount.Approaching;
         when PWI4.Mount.Tracking =>

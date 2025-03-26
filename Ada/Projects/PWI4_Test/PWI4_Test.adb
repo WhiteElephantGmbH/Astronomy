@@ -5,7 +5,7 @@
 pragma Style_White_Elephant;
 
 pragma Build (Description => "PWI4 test program",
-              Version     => (4, 0, 0, 2),
+              Version     => (4, 0, 0, 3),
               Kind        => Console,
               Icon        => False,
               Libraries   => ("AWS64"),

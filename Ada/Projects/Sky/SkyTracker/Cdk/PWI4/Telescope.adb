@@ -851,8 +851,7 @@ package body Telescope is
       when Startup =>
         if Site.Verified (Device.Site_Info) then
           Mount.Connect;
-          Focuser.Connect;
-          Rotator.Connect;
+          Focuser.Connect; -- and Rotator if IRF90
           The_State := Connecting;
         else
           Error.Set ("Incorrect Location");

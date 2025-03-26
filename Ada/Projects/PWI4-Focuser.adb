@@ -44,30 +44,31 @@ package body PWI4.Focuser is
 
 
   procedure Execute (Command_Name  : String;
-                     Device_Number : Device_Index;
-                     Parameters    : Parameter := "") is
+                     Parameters    : Parameter := "";
+                     Device_Number : Device_Index := Default_Device) is
   begin
     Execute (Device     => "focuser",
              Command    => Command_Name,
-             Parameters => Parameters + (if Device_Number = 0 then "" else "index" / Image_Of (Device_Number)));
+             Parameters => Parameters +
+                           (if Device_Number = Default_Device then "" else "index" / Image_Of (Device_Number)));
   end Execute;
 
 
-  procedure Connect (Device : Device_Index) is
+  procedure Connect (Device : Device_Index := Default_Device) is
   begin
     Execute (Command_Name  => "connect",
              Device_Number => Device);
   end Connect;
 
 
-  procedure Disconnect (Device : Device_Index) is
+  procedure Disconnect (Device : Device_Index := Default_Device) is
   begin
     Execute (Command_Name  => "disconnect",
              Device_Number => Device);
   end Disconnect;
 
 
-  procedure Find_Home (Device : Device_Index) is
+  procedure Find_Home (Device : Device_Index := Default_Device) is
   begin
     Execute (Command_Name  => "find_home",
              Device_Number => Device);
@@ -75,15 +76,15 @@ package body PWI4.Focuser is
 
 
   procedure Go_To (Position : Microns;
-                   Device   : Device_Index) is
+                   Device   : Device_Index := Default_Device) is
   begin
     Execute (Command_Name  => "goto",
-             Device_Number => Device,
-             Parameters    => "target" / Image_Of (Position));
+             Parameters    => "target" / Image_Of (Position),
+             Device_Number => Device);
   end Go_To;
 
 
-  procedure Stop (Device : Device_Index) is
+  procedure Stop (Device : Device_Index := Default_Device) is
   begin
     Execute (Command_Name  => "stop",
              Device_Number => Device);

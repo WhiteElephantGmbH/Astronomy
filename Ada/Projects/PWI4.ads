@@ -39,6 +39,8 @@ package PWI4 is
 
   type Device_Index is new Natural range 0 .. 1;
 
+  Default_Device : constant Device_Index := 0;
+
   function Image_Of (Item : Device_Index) return String;
 
   Hours_Delta : constant := 0.000_000_000_01;

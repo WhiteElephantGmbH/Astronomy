@@ -27,23 +27,23 @@ package PWI4.Rotator is
 
   function Mech_Position return Degrees;
 
-  procedure Connect (Device : Device_Index);
+  procedure Connect (Device : Device_Index := Default_Device);
 
-  procedure Disconnect (Device : Device_Index);
+  procedure Disconnect (Device : Device_Index := Default_Device);
 
   procedure Find_Home (Device : Device_Index);
 
   function Is_Homed return Boolean;
 
   procedure Goto_Mech (Position : Degrees;
-                       Device   : Device_Index);
+                       Device   : Device_Index := Default_Device);
 
   procedure Goto_Field (Position : Degrees;
-                        Device   : Device_Index);
+                        Device   : Device_Index := Default_Device);
 
   procedure Goto_Offset (Distance : Degrees;
-                         Device   : Device_Index);
+                         Device   : Device_Index := Default_Device);
 
-  procedure Stop (Device : Device_Index);
+  procedure Stop (Device : Device_Index := Default_Device);
 
 end PWI4.Rotator;
