@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2023 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2023 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -73,6 +73,8 @@ package body Device is
                           Stop);
 
   type Rotator_Action is (No_Action,
+                          Connect,
+                          Disconnect,
                           Find_Home,
                           Goto_Field,
                           Goto_Mech,
@@ -416,9 +418,11 @@ package body Device is
 
   The_Simulated_Focuser_Position : Microns;
 
-  type Rotator_Simulation_State is (Stopped, Following, Offsetting, Moving, Positioning);
+  type Rotator_Simulation_State is (Powerup, Homing, Stopped, Following, Offsetting, Moving, Positioning);
 
-  The_Simulated_Rotator_State         : Rotator_Simulation_State := Stopped;
+  Simulator_Rotator_Homing_Delta : constant Degrees := 18.0 / Degrees(PWI4.Request_Rate);
+
+  The_Simulated_Rotator_State         : Rotator_Simulation_State;
   The_Simulated_Rotator_Mech_Position : Degrees := 180.0;
   The_Simulated_Rotator_Field_Angle   : Degrees := 150.0;
 
@@ -512,6 +516,12 @@ package body Device is
     if Is_Simulation then
       The_Simulated_Focuser_Position := Focuser.Stored_Position;
       The_Simulated_Focuser_Goto_Position := The_Simulated_Focuser_Position;
+      if Cdk_700.Had_Powerup then
+        Log.Write ("Simulated powerup");
+        The_Simulated_Rotator_State := Powerup;
+      else
+        The_Simulated_Rotator_State := Stopped;
+      end if;
     end if;
     loop
       select
@@ -676,10 +686,16 @@ package body Device is
           case The_Rotator_Action is
           when No_Action =>
             null;
+          when Connect =>
+            Log.Write ("Simulated rotator connect");
+          when Disconnect =>
+            The_Simulated_Rotator_State := Stopped;
+            Log.Write ("Simulated rotator disconnect");
           when Find_Home =>
             Log.Write ("Simulated rotator find_home");
-            The_Simulated_Rotator_Mech_Position := 0.0;
+            The_Simulated_Rotator_Mech_Position := 180.0;
             The_Simulated_Rotator_Goto_Position := 0.0;
+            The_Simulated_Rotator_State := Homing;
           when Goto_Mech =>
             The_Simulated_Rotator_Goto_Position := The_Parameter.Rotator_Value;
             The_Simulated_Rotator_State := Positioning;
@@ -701,8 +717,12 @@ package body Device is
           case The_Rotator_Action is
           when No_Action =>
             null;
+          when Connect =>
+            PWI4.Rotator.Connect;
+          when Disconnect =>
+            PWI4.Rotator.Disconnect;
           when Find_Home =>
-            PWI4.Rotator.Find_Home;
+            PWI4.Rotator.Find_Home (PWI4.Rotator.Index);
           when Goto_Mech =>
             PWI4.Rotator.Goto_Mech (The_Parameter.Rotator_Value);
           when Goto_Field =>
@@ -736,6 +756,14 @@ package body Device is
               end if;
             end if;
             case The_Simulated_Rotator_State is
+            when Powerup =>
+              The_Simulated_Rotator_Mech_Position := 180.0;
+            when Homing =>
+              The_Simulated_Rotator_Mech_Position := @ - Simulator_Rotator_Homing_Delta;
+              if The_Simulated_Rotator_Mech_Position < Simulator_Rotator_Homing_Delta then
+                The_Simulated_Rotator_Mech_Position := 0.0;
+                The_Simulated_Rotator_State := Stopped;
+              end if;
             when Positioning =>
               if not Simulate_Rotator_Positioning then
                 The_Simulated_Rotator_State := Stopped;
@@ -777,13 +805,19 @@ package body Device is
               The_Mount_State := Mount.Connected;
               Simulated_Mount_Connected := False;
             else
-              The_Mount_State := Mount.Enabled;
+              if Rotator.Is_Homed then
+                The_Mount_State := Mount.Enabled;
+              end if;
             end if;
           else
-            The_Mount_State := Mount.Enabled;
+            if Rotator.Is_Homed then
+              The_Mount_State := Mount.Enabled;
+            end if;
           end if;
         when PWI4.Mount.Stopped =>
-          The_Mount_State := Mount.Stopped;
+          if not Rotator.Moving then
+            The_Mount_State := Mount.Stopped;
+          end if;
         when PWI4.Mount.Approaching =>
           The_Mount_State := Mount.Approaching;
         when PWI4.Mount.Tracking =>
@@ -866,6 +900,9 @@ package body Device is
                    Focuser_State_Handler : Focuser.State_Handler_Access;
                    M3_Position_Handler   : M3.Position_Handler_Access) is
   begin
+    if Cdk_700.Had_Powerup then
+      PWI4.Mount.Set_Powerup (Enable_Delay => (if Cdk_700.Is_Simulated then 5.0 else 60.0)); -- seconds
+    end if;
     The_Control := new Control;
     The_Control.Start (Mount_State_Handler   => Mount_State_Handler,
                        Focuser_State_Handler => Focuser_State_Handler,
@@ -958,6 +995,12 @@ package body Device is
     end Az_Axis_Minimum;
 
 
+    function Is_Inactive return Boolean is
+    begin
+      return not PWI4.Mount.Is_Updating;
+    end Is_Inactive;
+
+
     procedure Connect is
     begin
       Log.Write ("Mount.Connect");
@@ -993,12 +1036,6 @@ package body Device is
       Action.Put (Mount_Action'(Find_Home));
       Completion_Time := Time.Universal + Homing_Duration;
     end Find_Home;
-
-
-    function At_Home return Boolean is
-    begin
-      return True;
-    end At_Home;
 
 
     procedure Goto_Target (Direction       :     Space.Direction;
@@ -1230,6 +1267,16 @@ package body Device is
 
   package body Rotator is
 
+    function Is_Homed return Boolean is
+    begin
+      if Is_Simulation then
+        return The_Simulated_Rotator_State in Stopped;
+      else
+        return PWI4.Rotator.Is_Homed;
+      end if;
+    end Is_Homed;
+
+
     function Moving return Boolean is
     begin
       if Is_Simulation then
@@ -1270,6 +1317,20 @@ package body Device is
     end Mech_Position;
 
 
+    procedure Connect is
+    begin
+      Log.Write ("Rotator.Connect");
+      Action.Put (Rotator_Action'(Connect));
+    end Connect;
+
+
+    procedure Disconnect is
+    begin
+      Log.Write ("Rotator.Disconnect");
+      Action.Put (Rotator_Action'(Disconnect));
+    end Disconnect;
+
+
     procedure Find_Home is
     begin
       Log.Write ("Rotator.Find_Home");
@@ -1303,7 +1364,6 @@ package body Device is
       Log.Write ("Rotator.Stop");
       Action.Put (Rotator_Action'(Stop));
     end Stop;
-
 
   end Rotator;
 

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2023 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2023 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -12,6 +12,8 @@
 -- *                                                                                                                   *
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
+-- *********************************************************************************************************************
+-- *    Supports Planewave Interface version PWI_4.1.6
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
@@ -50,6 +52,7 @@ private package PWI4.Protocol is
 
   type Rotator_Info is record
     Exists        : Boolean;
+    Index         : Device_Index;
     Is_Connected  : Boolean;
     Is_Enabled    : Boolean;
     Is_Moving     : Boolean;
@@ -66,13 +69,14 @@ private package PWI4.Protocol is
 
   function Image_Of (Item : Error_Code) return String;
 
+  type Axis_Enabled is array (Natural range 0 .. 1) of Boolean;
+
   type Mount_Flag is record
-    Has_Error        : Boolean := False;
-    Is_Connected     : Boolean;
-    Is_Slewing       : Boolean;
-    Is_Tracking      : Boolean;
-    Axis0_Is_Enabled : Boolean;
-    Axis1_Is_Enabled : Boolean;
+    Has_Error       : Boolean := False;
+    Is_Connected    : Boolean;
+    Is_Slewing      : Boolean;
+    Is_Tracking     : Boolean;
+    Axis_Is_Enabled : Axis_Enabled;
   end record with Pack;
 
   type Spiral_Data is record
@@ -82,6 +86,7 @@ private package PWI4.Protocol is
 
   type Mount_Info is record
     Flags                      : Mount_Flag;
+    Count                      : Update_Count;
     Julian_Date                : Julian_Day;
     Ra                         : Hours;
     Dec                        : Degrees;
@@ -91,8 +96,7 @@ private package PWI4.Protocol is
     Dec_J2000                  : Degrees;
     Azimuth                    : Degrees;
     Altitude                   : Degrees;
-    Axis0                      : Axis_Data;
-    Axis1                      : Axis_Data;
+    Axis                       : Mount_Axis;
     Wrap_Range_Min             : Degrees;
     Spiral_Offsets             : Spiral_Data;
     Model                      : Model_Data;

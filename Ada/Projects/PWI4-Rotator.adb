@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2023 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2023 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -18,6 +18,12 @@ pragma Style_White_Elephant;
 with PWI4.Protocol;
 
 package body PWI4.Rotator is
+
+  function Index return Device_Index is
+  begin
+    return Protocol.Rotator.Info.Index;
+  end Index;
+
 
   function Moving return Boolean is
   begin
@@ -43,45 +49,84 @@ package body PWI4.Rotator is
   end Mech_Position;
 
 
-  procedure Execute (Command_Name : String;
-                     Parameters   : String := "") is
+  procedure Execute (Command_Name  : String;
+                     Parameters    : Parameter := "";
+                     Device_Number : Device_Index := Default_Device) is
   begin
     Execute (Device     => "rotator",
              Command    => Command_Name,
-             Parameters => Parameters);
+             Parameters => Parameters +
+                           (if Device_Number = Default_Device then "" else "index" / Image_Of (Device_Number)));
   end Execute;
 
 
-  procedure Find_Home is
+  procedure Connect (Device : Device_Index := Default_Device) is
   begin
-    Execute ("find_home");
+    Execute (Command_Name  => "connect",
+             Device_Number => Device);
+  end Connect;
+
+
+  procedure Disconnect (Device : Device_Index := Default_Device) is
+  begin
+    Execute (Command_Name  => "disconnect",
+             Device_Number => Device);
+  end Disconnect;
+
+
+  Last_Mech_Position : Degrees := Degrees'last;
+
+  procedure Find_Home (Device : Device_Index) is
+  begin
+    Last_Mech_Position := Degrees'last;
+    Execute (Command_Name  => "find_home",
+             Device_Number => Device);
   end Find_Home;
 
 
-  procedure Goto_Mech (Position : Degrees) is
+  function Is_Homed return Boolean is
+    New_Position : constant Degrees := Mech_Position;
   begin
-    Execute (Command_Name => "goto_mech",
-             Parameters   => "degs=" & Image_Of (Position));
+    if abs (Last_Mech_Position - New_Position) < 0.001 then
+      Last_Mech_Position := Degrees'last;
+      return True;
+    end if;
+    Last_Mech_Position := New_Position;
+    return False;
+  end Is_Homed;
+
+
+  procedure Goto_Mech (Position : Degrees;
+                       Device   : Device_Index := Default_Device) is
+  begin
+    Execute (Command_Name  => "goto_mech",
+             Parameters    => "degs" / Image_Of (Position),
+             Device_Number => Device);
   end Goto_Mech;
 
 
-  procedure Goto_Field (Position : Degrees) is
+  procedure Goto_Field (Position : Degrees;
+                        Device   : Device_Index := Default_Device) is
   begin
-    Execute (Command_Name => "goto_field",
-             Parameters   => "degs=" & Image_Of (Position));
+    Execute (Command_Name  => "goto_field",
+             Parameters    => "degs" / Image_Of (Position),
+             Device_Number => Device);
   end Goto_Field;
 
 
-  procedure Goto_Offset (Distance : Degrees) is
+  procedure Goto_Offset (Distance : Degrees;
+                         Device   : Device_Index := Default_Device) is
   begin
-    Execute (Command_Name => "offset",
-             Parameters   => "degs=" & Image_Of (Distance));
+    Execute (Command_Name  => "offset",
+             Parameters    => "degs" / Image_Of (Distance),
+             Device_Number => Device);
   end Goto_Offset;
 
 
-  procedure Stop is
+  procedure Stop (Device : Device_Index := Default_Device) is
   begin
-    Execute ("stop");
+    Execute (Command_Name  =>"stop",
+             Device_Number => Device);
   end Stop;
 
 end PWI4.Rotator;

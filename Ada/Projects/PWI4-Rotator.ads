@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2023 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2023 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -17,6 +17,8 @@ pragma Style_White_Elephant;
 
 package PWI4.Rotator is
 
+  function Index return Device_Index;
+
   function Moving return Boolean;
 
   function Slewing return Boolean;
@@ -25,14 +27,23 @@ package PWI4.Rotator is
 
   function Mech_Position return Degrees;
 
-  procedure Find_Home;
+  procedure Connect (Device : Device_Index := Default_Device);
 
-  procedure Goto_Mech (Position : Degrees);
+  procedure Disconnect (Device : Device_Index := Default_Device);
 
-  procedure Goto_Field (Position : Degrees);
+  procedure Find_Home (Device : Device_Index);
 
-  procedure Goto_Offset (Distance : Degrees);
+  function Is_Homed return Boolean;
 
-  procedure Stop;
+  procedure Goto_Mech (Position : Degrees;
+                       Device   : Device_Index := Default_Device);
+
+  procedure Goto_Field (Position : Degrees;
+                        Device   : Device_Index := Default_Device);
+
+  procedure Goto_Offset (Distance : Degrees;
+                         Device   : Device_Index := Default_Device);
+
+  procedure Stop (Device : Device_Index := Default_Device);
 
 end PWI4.Rotator;

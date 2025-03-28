@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2023 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2023 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -723,7 +723,7 @@ package body Telescope is
 
 
     procedure Enabling is
-      Enabling_Duration : constant Duration := 120.0;
+      Enabling_Duration : constant Duration := (if Cdk_700.Is_Simulated then 10.0 else 120.0);
       use type Time.Ut;
     begin
       Mount.Enable;
@@ -842,15 +842,6 @@ package body Telescope is
       end case;
     end Unknown_State;
 
-    ----------------
-    -- Restarting --
-    ----------------
-
-    procedure Restarting_State is
-    begin
-      null;
-    end Restarting_State;
-
     ------------------
     -- Disconnected --
     ------------------
@@ -860,7 +851,7 @@ package body Telescope is
       when Startup =>
         if Site.Verified (Device.Site_Info) then
           Mount.Connect;
-          Focuser.Connect;
+          Focuser.Connect; -- and Rotator if IRF90
           The_State := Connecting;
         else
           Error.Set ("Incorrect Location");
@@ -1313,11 +1304,7 @@ package body Telescope is
                     M3_Position_Handler'access);
     end Start;
     Log.Write ("Started");
-    if Cdk_700.Had_Powerup then
-      The_State := Restarting;
-    else
-      The_State := Disconnected;
-    end if;
+    The_State := Disconnected;
     The_Next_Time := Ada.Real_Time.Clock;
     loop
       begin
@@ -1445,12 +1432,6 @@ package body Telescope is
           end New_M3_Position;
         or
           accept Get (The_Data : out Data) do
-            if The_State = Restarting then
-              if Cdk_700.Is_Started then
-                The_State := Disconnected;
-                Log.Write ("State => " & The_State'img);
-              end if;
-            end if;
             The_Data.Status := The_State;
             The_Data.M3.Position := The_M3_Position;
             The_Data.Focuser.Exists := Focuser.Exists;
@@ -1493,6 +1474,11 @@ package body Telescope is
           delay until The_Next_Time;
           The_Next_Time := The_Next_Time + Ada.Real_Time.To_Time_Span(1.0);
           case The_State is
+          when Connecting =>
+            if Mount.Is_Inactive then
+              Log.Write ("Reconnect");
+              Mount.Connect;
+            end if;
           when Tracking =>
             Update_Target_Direction;
             if Picture.Exists and then Solve_Picture then
@@ -1513,7 +1499,6 @@ package body Telescope is
           Log.Write ("State => " & The_State'img & " - Event => " & The_Event'img);
           case The_State is
           when Unknown       => Unknown_State;
-          when Restarting    => Restarting_State;
           when Disconnected  => Disconnected_State;
           when Disconnecting => Disconnecting_State;
           when Mount_Error   => Error_State;

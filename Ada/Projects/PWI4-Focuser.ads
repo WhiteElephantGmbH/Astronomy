@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2023 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2023 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -25,14 +25,15 @@ package PWI4.Focuser is
 
   function Actual_Position return Microns;
 
-  procedure Connect;
+  procedure Connect (Device : Device_Index := Default_Device);
 
-  procedure Disconnect;
+  procedure Disconnect (Device : Device_Index := Default_Device);
 
-  procedure Find_Home;
+  procedure Find_Home (Device : Device_Index := Default_Device);
 
-  procedure Go_To (Position : Microns);
+  procedure Go_To (Position : Microns;
+                   Device   : Device_Index := Default_Device);
 
-  procedure Stop;
+  procedure Stop (Device : Device_Index := Default_Device);
 
 end PWI4.Focuser;

@@ -30,7 +30,6 @@ with Moon.Parameter;
 with Network.Tcp;
 with Os.System;
 with Picture.Parameter;
-with PWI4.Mount;
 with Remote.Parameter;
 with Section;
 with Stellarium.Parameter;
@@ -242,9 +241,6 @@ package body Parameter is
 
       Cdk_700.Parameter.Define (Handle);
       Cdk_700.Startup;
-      if Cdk_700.Had_Powerup then
-        PWI4.Mount.Set_Powerup;
-      end if;
 
       Section.Set (PWI_Handle);
       Is_In_Shutdown_Mode := Text.Matches (Section.String_Value_Of (Shutdown_Key), "True");

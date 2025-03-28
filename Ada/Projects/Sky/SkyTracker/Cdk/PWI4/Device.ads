@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2023 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2023 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -71,6 +71,8 @@ package Device is
 
     function Az_Axis_Minimum return Degrees;
 
+    function Is_Inactive return Boolean;
+
     procedure Connect;
 
     procedure Disconnect;
@@ -80,8 +82,6 @@ package Device is
     procedure Disable;
 
     procedure Find_Home (Completion_Time : out Time.Ut);
-
-    function At_Home return Boolean;
 
     procedure Goto_Target (Direction       :     Space.Direction;
                            Completion_Time : out Time.Ut);
@@ -158,7 +158,13 @@ package Device is
 
   package Rotator is
 
+    procedure Connect;
+
+    procedure Disconnect;
+
     procedure Find_Home;
+
+    function Is_Homed return Boolean;
 
     function Moving return Boolean;
 

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2023 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2023 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -45,6 +45,12 @@ package body PWI4 is
   end Image_Of;
 
 
+  function Image_Of (Item : Device_Index) return String is
+  begin
+    return Text.Trimmed (Item'image);
+  end Image_Of;
+
+
   function Image_Of (Item : Hours) return String is
   begin
     return Text.Trimmed (Item'image);
@@ -58,6 +64,12 @@ package body PWI4 is
 
 
   function Image_Of (Item : Points) return String is
+  begin
+    return Text.Trimmed (Item'image);
+  end Image_Of;
+
+
+  function Image_Of (Item : Update_Count) return String is
   begin
     return Text.Trimmed (Item'image);
   end Image_Of;
@@ -149,10 +161,30 @@ package body PWI4 is
 
   procedure Execute (Device     : String;
                      Command    : String;
-                     Parameters : String := "") is
+                     Parameters : Parameter := "") is
   begin
-    Execute (Device & "/" & Command & (if Parameters /= "" then "?" & Parameters else ""));
+    Execute (Device & "/" & Command & (if Parameters = "" then "" else "?" & String(Parameters)));
   end Execute;
+
+
+  function "/" (Left  : String;
+                Right : String) return Parameter is
+  begin
+    return Parameter (String'(Left & '=' & Right));
+  end "/";
+
+
+  function "+" (Left  : Parameter;
+                Right : Parameter) return Parameter is
+  begin
+    if Left = "" then
+      return Right;
+    elsif Right = "" then
+      return Left;
+    else
+      return Left & '&' & Right;
+    end if;
+  end "+";
 
 
   function Image_Of (The_Port : Port) return Character is

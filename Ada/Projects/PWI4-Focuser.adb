@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2023 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2023 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -43,43 +43,51 @@ package body PWI4.Focuser is
   end Actual_Position;
 
 
-  procedure Execute (Command_Name : String;
-                     Parameters   : String := "") is
+  procedure Execute (Command_Name  : String;
+                     Parameters    : Parameter := "";
+                     Device_Number : Device_Index := Default_Device) is
   begin
     Execute (Device     => "focuser",
              Command    => Command_Name,
-             Parameters => Parameters);
+             Parameters => Parameters +
+                           (if Device_Number = Default_Device then "" else "index" / Image_Of (Device_Number)));
   end Execute;
 
 
-  procedure Connect is
+  procedure Connect (Device : Device_Index := Default_Device) is
   begin
-    Execute ("connect");
+    Execute (Command_Name  => "connect",
+             Device_Number => Device);
   end Connect;
 
 
-  procedure Disconnect is
+  procedure Disconnect (Device : Device_Index := Default_Device) is
   begin
-    Execute ("disconnect");
+    Execute (Command_Name  => "disconnect",
+             Device_Number => Device);
   end Disconnect;
 
 
-  procedure Find_Home is
+  procedure Find_Home (Device : Device_Index := Default_Device) is
   begin
-    Execute ("find_home");
+    Execute (Command_Name  => "find_home",
+             Device_Number => Device);
   end Find_Home;
 
 
-  procedure Go_To (Position : Microns) is
+  procedure Go_To (Position : Microns;
+                   Device   : Device_Index := Default_Device) is
   begin
-    Execute (Command_Name => "goto",
-             Parameters   => "target=" & Image_Of (Position));
+    Execute (Command_Name  => "goto",
+             Parameters    => "target" / Image_Of (Position),
+             Device_Number => Device);
   end Go_To;
 
 
-  procedure Stop is
+  procedure Stop (Device : Device_Index := Default_Device) is
   begin
-    Execute ("stop");
+    Execute (Command_Name  => "stop",
+             Device_Number => Device);
   end Stop;
 
 end PWI4.Focuser;

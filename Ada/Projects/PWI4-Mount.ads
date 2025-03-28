@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2023 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2023 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -17,7 +17,7 @@ pragma Style_White_Elephant;
 
 package PWI4.Mount is
 
-  procedure Set_Powerup;
+  procedure Set_Powerup (Enable_Delay : Duration);
 
   subtype Axis_Rate is Degrees; -- per second
 
@@ -49,6 +49,8 @@ package PWI4.Mount is
   end record;
 
   function Info return Information;
+
+  function Is_Updating return Boolean;
 
   procedure Connect;
 
