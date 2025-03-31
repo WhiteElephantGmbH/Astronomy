@@ -368,6 +368,8 @@ package body Telescope is
     Target_Lost    : exception;
     Target_Is_Lost : Boolean := False;
 
+    Leaving_Altitude : Angle.Degrees;
+    Last_Altitude    : Angle.Degrees;
 
     function Target_Direction (At_Time : Time.Ut := Time.Universal) return Space.Direction is
       Direction     : constant Space.Direction := Get_Direction (Id, At_Time);
@@ -549,6 +551,7 @@ package body Telescope is
     end Change_Moving_Speed;
 
     procedure Follow_New_Target is
+      use type Angle.Value;
       use type Time.Period;
       use type Time.Ut;
     begin
@@ -564,8 +567,12 @@ package body Telescope is
         The_Leaving_Time := The_Next_Tracking_Period.Leaving_Time;
         The_Leaving_Position := Objects.Direction_Of (Get_Direction (Id, The_Leaving_Time),
                                                       Time.Lmst_Of (The_Leaving_Time));
-        Log.Write ("arrival az: " & Earth.Az_Image_Of (The_Arrival_Position));
-        Log.Write ("leaving az: " & Earth.Az_Image_Of (The_Leaving_Position));
+        Log.Write ("arrival az : " & Earth.Az_Image_Of (The_Arrival_Position));
+        Log.Write ("leaving az : " & Earth.Az_Image_Of (The_Leaving_Position));
+        Log.Write ("leaving alt: " & Earth.Alt_Image_Of (The_Leaving_Position));
+        Leaving_Altitude := +Earth.Alt_Of (The_Leaving_Position);
+        Last_Altitude := 0.0;
+
         Set_Satellite_Wrap_Position (Wrap    => Neo.Wrap_Location_Of (Id),
                                      Leaving => The_Leaving_Position);
         if Time.Universal < The_Arrival_Time then
@@ -690,6 +697,23 @@ package body Telescope is
         Add_Target_J2000_Direction_To_Model;
       end case;
     end Offset_Handling;
+
+
+    procedure Check_Above_Horizon is
+      use type Angle.Degrees;
+      use type Angle.Value;
+      Space_Direction  : constant Space.Direction := Mount.Actual_Info.Actual_Direction;
+      Actual_Direction : constant Earth.Direction := Objects.Direction_Of (Space_Direction, Time.Lmst);
+      Altitude         : constant Angle.Degrees := +Earth.Alt_Of (Actual_Direction);
+    begin
+      if Altitude < Last_Altitude then
+        if Altitude < Leaving_Altitude then
+          Stop_Target;
+          Target_Is_Lost := True;
+        end if;
+      end if;
+      Last_Altitude := Altitude;
+    end Check_Above_Horizon;
 
 
     procedure Update_Target_Direction is
@@ -1393,10 +1417,14 @@ package body Telescope is
               The_Event := Mount_Connected;
             when Mount.Enabled =>
               The_Event := Mount_Enabled;
+            when Mount.Homing =>
+              null;
             when Mount.Stopped =>
               The_Event := Mount_Stopped;
             when Mount.Approaching =>
-              Last_Rotator_Offset := Undefined_Offset;
+             if not (The_State in Positioning | Parking) then
+                Last_Rotator_Offset := Undefined_Offset;
+              end if;
               Mount.Confirm_Goto;
               The_Event := Mount_Approach;
               Mount_Is_Stopped := False;
@@ -1484,6 +1512,8 @@ package body Telescope is
             if Picture.Exists and then Solve_Picture then
               The_State := Solving;
             end if;
+          when Following =>
+            Check_Above_Horizon;
           when Solving =>
             Picture_Solving;
           when Waiting =>

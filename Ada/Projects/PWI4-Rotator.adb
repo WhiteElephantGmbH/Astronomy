@@ -76,7 +76,7 @@ package body PWI4.Rotator is
 
   Last_Mech_Position : Degrees := Degrees'last;
 
-  procedure Find_Home (Device : Device_Index) is
+  procedure Find_Home (Device : Device_Index := Default_Device) is
   begin
     Last_Mech_Position := Degrees'last;
     Execute (Command_Name  => "find_home",

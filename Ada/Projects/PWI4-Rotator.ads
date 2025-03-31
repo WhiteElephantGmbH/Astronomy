@@ -31,7 +31,7 @@ package PWI4.Rotator is
 
   procedure Disconnect (Device : Device_Index := Default_Device);
 
-  procedure Find_Home (Device : Device_Index);
+  procedure Find_Home (Device : Device_Index := Default_Device);
 
   function Is_Homed return Boolean;
 

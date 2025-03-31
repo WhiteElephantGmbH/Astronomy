@@ -20,23 +20,18 @@ with Text;
 
 package body PWI4.Protocol is
 
-  package Log is new Traces ("PWI.Protocol");
-
-
-  The_Actual_Message : Text.String;
-  use type Text.String;
+  package Log_Response is new Traces ("PWI.Response");
 
   procedure Log_Write (Message : String) is
   begin
-    The_Actual_Message := [Message];
-    Log.Write (Message);
+    Log_Response.Write (Message);
   end Log_Write;
 
 
   procedure Log_Error (Message : String) is
   begin
-    Log.Error (The_Actual_Message & Message);
-    Log.Force_Enable;
+    Log_Response.Error (Message);
+    Log_Response.Force_Enable;
   end Log_Error;
 
 
@@ -787,11 +782,10 @@ package body PWI4.Protocol is
       end case;
     end loop;
     System.Set (The_Response);
-    Log.Normal;
-    The_Actual_Message := [];
+    Log_Response.Normal;
   exception
   when others =>
-    Log.Write (Data);
+    Log_Error (Data);
     raise;
   end Parse;
 
@@ -852,6 +846,8 @@ package body PWI4.Protocol is
   end Site;
 
 
+  package Log is new Traces ("PWI.Data");
+
   protected body System is
 
     procedure Set (Status : Status_Code) is
@@ -898,6 +894,7 @@ package body PWI4.Protocol is
         Log.Write ("  Position     : " & Image_Of (Data.Focuser.Position));
         Log.Write ("Rotator");
         Log.Write ("  Exists        : " & Image_Of (Data.Focuser.Exists));
+        Log.Write ("  Index         : " & Image_Of (Data.Rotator.Index));
         Log.Write ("  Is_Connected  : " & Image_Of (Data.Rotator.Is_Connected));
         Log.Write ("  Is_Enabled    : " & Image_Of (Data.Rotator.Is_Enabled));
         Log.Write ("  Is_Moving     : " & Image_Of (Data.Rotator.Is_Moving));

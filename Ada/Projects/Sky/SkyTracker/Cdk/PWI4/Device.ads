@@ -51,6 +51,7 @@ package Device is
                    Disconnected,
                    Connected,
                    Enabled,
+                   Homing,
                    Stopped,
                    Approaching,
                    Tracking,

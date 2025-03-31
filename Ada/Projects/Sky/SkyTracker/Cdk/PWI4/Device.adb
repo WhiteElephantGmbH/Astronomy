@@ -564,6 +564,7 @@ package body Device is
         when No_Action =>
           null;
         when Stop =>
+          The_Simulated_Rotator_State := Stopped;
           PWI4.Mount.Stop;
         when Connect =>
           Simulated_Mount_Connected := True;
@@ -577,6 +578,7 @@ package body Device is
           PWI4.Mount.Disable;
         when Find_Home =>
           PWI4.Mount.Find_Home;
+          The_Mount_State := Mount.Homing;
         when Follow_Tle =>
           Follow_Tle (Name.Image_Of (The_Parameter.Name_Id));
         when Goto_Target =>
@@ -722,7 +724,7 @@ package body Device is
           when Disconnect =>
             PWI4.Rotator.Disconnect;
           when Find_Home =>
-            PWI4.Rotator.Find_Home (PWI4.Rotator.Index);
+            PWI4.Rotator.Find_Home;
           when Goto_Mech =>
             PWI4.Rotator.Goto_Mech (The_Parameter.Rotator_Value);
           when Goto_Field =>
@@ -815,7 +817,7 @@ package body Device is
             end if;
           end if;
         when PWI4.Mount.Stopped =>
-          if not Rotator.Moving then
+          if The_Mount_State /= Mount.Homing  or else not Rotator.Moving then
             The_Mount_State := Mount.Stopped;
           end if;
         when PWI4.Mount.Approaching =>
