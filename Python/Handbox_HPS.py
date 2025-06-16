@@ -45,9 +45,9 @@ def main():
 
     color0 = sg.theme_button_color()[0]
     color1 = sg.theme_button_color()[1]
-
+    
     speed = [[sg.RealtimeButton(sg.SYMBOL_LEFT, key=previous_speed),
-              sg.Text(size=(8,1), key='-SPEED-', pad=(0,0), font='Ani 13',
+              sg.Text(size=(8,1), key='-SPEED-', pad=(0,0), font='Ani 12',
                       justification='c', background_color=color0, text_color=color1),
               sg.RealtimeButton(sg.SYMBOL_RIGHT, key=next_speed)]]
 
@@ -60,17 +60,20 @@ def main():
     handbox = [[sg.Frame('Speed', font='Ani 8', layout=speed, element_justification='c')],
                [sg.Frame('', layout=move, element_justification='c')]]
 
+    max_rate     = 4
+    startup_rate = max_rate - 1
+
     rate = [[sg.RealtimeButton(sg.SYMBOL_LEFT, key='previous_rate'),
-             sg.Text(size=(8,1), key='-RATE-', pad=(0,0), font='Ani 13',
+             sg.Text(size=(1,1), key='-RATE-', pad=(0,0), font='Ani 12',
                      justification='c', background_color=color0, text_color=color1),
              sg.RealtimeButton(sg.SYMBOL_RIGHT, key='next_rate')]]
     position = [[sg.RealtimeButton(sg.SYMBOL_LEFT, key=move_in),
-                 sg.Text(size=(8,1), key='-POSITION-', pad=(0,0), font='Ani 13',
+                 sg.Text(size=(5,1), key='-POSITION-', pad=(0,0), font='Ani 12',
                          justification='c', background_color=color0, text_color=color1),
                  sg.RealtimeButton(sg.SYMBOL_RIGHT, key=move_out)]]
 
-    focuser = [[sg.Frame('Speed', font='Ani 8', layout=rate, element_justification='c')],
-               [sg.Frame('Position', font='Ani 8', layout=position, element_justification='c')]]
+    focuser = [[sg.Frame('Speed', font='Ani 8', layout=rate, element_justification='c'),
+               sg.Frame('Position', font='Ani 8', layout=position, element_justification='c')]]
 
     layout = [[sg.Frame('', layout=handbox, element_justification='c')],
               [sg.Frame('Focuser', font='Ani 8', key='-FFO-', layout=focuser, element_justification='c',
@@ -82,11 +85,11 @@ def main():
                        finalize=True,
                        element_justification='c',
                        location=(0,0),
-                       size=(245,280))
+                       size=(255,265))
     count = 0
     pressed = False
     minimized = False
-    focuser_speed = 3
+    focuser_speed = startup_rate
     while True:
         try:
             event, values = window.read(timeout=100)
@@ -101,7 +104,7 @@ def main():
                             focuser_speed = focuser_speed - 1
                             window['-RATE-'].update(value=focuser_speed)
                     elif event == 'next_rate':
-                        if focuser_speed < 4:
+                        if focuser_speed < max_rate:
                             focuser_speed = focuser_speed + 1
                             window['-RATE-'].update(value=focuser_speed)
                     elif event == move_in:
@@ -141,7 +144,7 @@ def main():
                         window['-POSITION-'].update(value=focuser.position())
                     else:
                         window['-FFO-'].update(visible=False)
-                        focuser_speed = 2
+                        focuser_speed = startup_rate
                 else:
                     window['-SPEED-'].update("")
         except:
