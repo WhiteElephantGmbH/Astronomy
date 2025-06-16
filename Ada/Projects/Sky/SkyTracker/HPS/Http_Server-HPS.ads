@@ -15,28 +15,32 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-package Focuser is
+with Angle;
+with Celestron.Focuser;
+
+package Http_Server.HPS is
+
+  type Mount_Data is record
+    Exists : Boolean := False;
+  end record;
+
+  subtype Focuser_Speed is Celestron.Focuser.Speed;
+
+  type Focuser_Data is record
+    Exists   : Boolean := False;
+    Moving   : Boolean := False;
+    Position : Natural := 0;
+    Move_In  : access procedure (Item : Focuser_Speed);
+    Move_Out : access procedure (Item : Focuser_Speed);
+    Stop     : access procedure;
+  end record;
 
   procedure Start;
 
-  type Distance is range 0 .. 2**24-1;
-  
-  type Speed is range 1 .. 3;
+  procedure Set_Moving (Speed : Angle.Value); -- per second
 
-  type Status is (Disconnected, Stopped, Moving);
+  procedure Set (Data : Mount_Data);
 
-  function State return Status;
+  procedure Set (Data : Focuser_Data);
 
-  function Position return Distance;
-
-  procedure Move (To : Distance);
-
-  procedure Move_In (Item : Speed);
-
-  procedure Move_Out (Item : Speed);
-
-  procedure Stop;
-
-  procedure Close;
-
-end Focuser;
+end Http_Server.HPS;

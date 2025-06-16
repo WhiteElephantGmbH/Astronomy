@@ -59,9 +59,9 @@ package body Parameter is
       end;
       Language.Parameter.Defaults (Put'access);
       Put ("");
-      Ten_Micron.Parameter.Defaults (Put'access, Ip_Address => "192.168.26.180", Port => "3490");
+      Ten_Micron.Parameter.Defaults (Put'access, Ip_Address => "192.168.26.180", Port => 3490);
       Put ("");
-      Http_Server.Parameter.Defaults (Put'access, "Handbox_HPS");
+      Http_Server.Parameter.Defaults (Put'access, "Handbox_HPS", Port => 9001);
       Put ("");
       Sun.Parameter.Defaults (Put'access);
       Put ("");

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2023 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2023 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -122,7 +122,7 @@ package body Parameter is
       Put (Focuser_Maximum_Key & "   = 10000");
       Put (Focuser_Zoom_Size_Key & " = 300");
       Put ("");
-      Http_Server.Parameter.Defaults (Put'access, "Handbox");
+      Http_Server.Parameter.Defaults (Put'access, "Handbox", Port => 9000);
       Put ("");
       Sun.Parameter.Defaults (Put'access);
       Put ("");

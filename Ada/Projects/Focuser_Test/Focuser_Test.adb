@@ -16,18 +16,22 @@
 pragma Style_White_Elephant;
 
 pragma Build (Description => "Focuser test",
-              Version     => (1, 0, 0, 0),
+              Version     => (1, 0, 0, 1),
               Kind        => Console,
               Icon        => False,
               Compiler    => "GNATPRO\23.0");
 
 with Ada.Exceptions;
 with Ada.Text_IO;
-with Focuser;
+with Celestron.Focuser;
 
 procedure Focuser_Test is
+
+  package Focuser renames Celestron.Focuser;
+
   Has_Moved        : Boolean := False;
   Was_Disconnected : Boolean := False;
+
 begin
   Ada.Text_IO.Put_Line ("Focuser Test");
   Ada.Text_IO.Put_Line ("============");
@@ -61,27 +65,28 @@ begin
     end;
   end loop;
   loop
-    case Focuser.State is
-    when Focuser.Disconnected =>
+    if Focuser.Exists then
+      if Focuser.Moving then
+        Ada.Text_IO.Put_Line ("Focuser Moving");
+        Has_Moved := True;
+      else
+        Ada.Text_IO.Put_Line ("Focuser Stopped at " & Focuser.Position'image);
+        if Has_Moved then
+          exit when Was_Disconnected;
+        else
+          if Was_Disconnected then
+            Focuser.Move_To (10000);
+          else
+            Focuser.Move_To (9000);
+          end if;
+        end if;
+      end if;
+    else
       Has_Moved := False;
       Was_Disconnected := True;
       Ada.Text_IO.Put_Line ("Focuser Disconnected");
-    when Focuser.Moving =>
-      Ada.Text_IO.Put_Line ("Focuser Moving");
-      Has_Moved := True;
-    when Focuser.Stopped =>
-      Ada.Text_IO.Put_Line ("Focuser Stopped at " & Focuser.Position'image);
-      if Has_Moved then
-        exit when Was_Disconnected;
-      else
-        if Was_Disconnected then
-          Focuser.Move (To => 10000);
-        else
-          Focuser.Move (To => 9000);
-        end if;
-      end if;
-    end case;
-    delay 2.0;
+    end if;
+    delay 1.0;
   end loop;
   Focuser.Close;
   Ada.Text_IO.Put_Line ("Complete");

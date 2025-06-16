@@ -20,7 +20,7 @@ with Cdk_700;
 with Cwe;
 with Error;
 with Gui;
-with Http_Server;
+with Http_Server.PWI4;
 with Input;
 with Neo;
 with Objects;
@@ -37,6 +37,8 @@ with User;
 package body Telescope is
 
   package Log is new Traces ("Telescope");
+
+  package Server renames Http_Server.PWI4;
 
   package Mount renames Device.Mount;
 
@@ -100,25 +102,25 @@ package body Telescope is
   Control : Control_Access;
 
 
-  procedure Focuser_Goto (Position : Http_Server.Microns) is
+  procedure Focuser_Goto (Position : Server.Distance) is
   begin
     Control.Focuser_Goto (Device.Microns(Position));
   end Focuser_Goto;
 
 
-  procedure Rotator_Goto_Field_Angle (Item : Http_Server.Degrees) is
+  procedure Rotator_Goto_Field_Angle (Item : Server.Degrees) is
   begin
     Control.Rotator_Goto_Field (The_Angle => Device.Degrees(Item));
   end Rotator_Goto_Field_Angle;
 
 
-  procedure Rotator_Goto_Mech_Position (Item : Http_Server.Degrees) is
+  procedure Rotator_Goto_Mech_Position (Item : Server.Degrees) is
   begin
     Control.Rotator_Goto_Mech (The_Position => Device.Degrees(Item));
   end Rotator_Goto_Mech_Position;
 
 
-  procedure Rotator_Goto_Offset (Item : Http_Server.Degrees) is
+  procedure Rotator_Goto_Offset (Item : Server.Degrees) is
   begin
     Control.Rotator_Goto (The_Offset => Device.Degrees(Item));
   end Rotator_Goto_Offset;
@@ -129,41 +131,41 @@ package body Telescope is
     function Control_Data return Http_Server.Control_Data is
       ((Window_Minimized => User.Window_Minimized));
 
-    function Mount_Data return Http_Server.Mount_Data is
+    function Mount_Data return Server.Mount_Data is
       (if The_Data.Status > Homing then
         (Exists       => True,
-         Axis0        => Http_Server.Degrees(The_Data.Mount.Axis0),
-         Axis1        => Http_Server.Degrees(The_Data.Mount.Axis1),
+         Axis0        => Server.Degrees(The_Data.Mount.Axis0),
+         Axis1        => Server.Degrees(The_Data.Mount.Axis1),
          Model_Points => Natural(The_Data.Mount.Model_Points))
        else
          (others => <>));
 
-    function Focuser_Data return Http_Server.Focuser_Data is
+    function Focuser_Data return Server.Focuser_Data is
       ((Exists       => The_Data.Focuser.Exists,
         Moving       => The_Data.Focuser.Moving,
-        Max_Position => Http_Server.Microns(The_Data.Focuser.Max_Position),
-        Zoom_Size    => Http_Server.Microns(The_Data.Focuser.Zoom_Size),
-        Position     => Http_Server.Microns(The_Data.Focuser.Position),
+        Max_Position => Natural(The_Data.Focuser.Max_Position),
+        Zoom_Size    => Natural(The_Data.Focuser.Zoom_Size),
+        Position     => Natural(The_Data.Focuser.Position),
         Set_Position => Focuser_Goto'access));
 
-    function Rotator_Data return Http_Server.Rotator_Data is
+    function Rotator_Data return Server.Rotator_Data is
      ((Exists             => The_Data.Focuser.Exists,
        Moving             => The_Data.Rotator.Moving,
        Slewing            => The_Data.Rotator.Slewing,
-       Mech_Position      => Http_Server.Degrees(The_Data.Rotator.Mech_Position),
-       Field_Angle        => Http_Server.Degrees(The_Data.Rotator.Field_Angle),
+       Mech_Position      => Server.Degrees(The_Data.Rotator.Mech_Position),
+       Field_Angle        => Server.Degrees(The_Data.Rotator.Field_Angle),
        Goto_Field_Angle   => Rotator_Goto_Field_Angle'access,
        Goto_Mech_Position => Rotator_Goto_Mech_Position'access,
        Goto_Offset        => Rotator_Goto_Offset'access));
 
   begin -- Set_Server_Information
     Http_Server.Set (Control_Data);
-    Http_Server.Set_State (Text.Legible_Of (The_Data.Status'image));
-    Http_Server.Set_Moving (Speed => The_Data.Moving_Speed);
-    Http_Server.Set (Position => Http_Server.Mirror_Position'val(Device.M3.Position'pos(The_Data.M3.Position)));
-    Http_Server.Set (Mount_Data);
-    Http_Server.Set (Focuser_Data);
-    Http_Server.Set (Rotator_Data);
+    Server.Set_State (Text.Legible_Of (The_Data.Status'image));
+    Server.Set_Moving (Speed => The_Data.Moving_Speed);
+    Server.Set (Position => Server.Mirror_Position'val(Device.M3.Position'pos(The_Data.M3.Position)));
+    Server.Set (Mount_Data);
+    Server.Set (Focuser_Data);
+    Server.Set (Rotator_Data);
   end Set_Server_Information;
 
 

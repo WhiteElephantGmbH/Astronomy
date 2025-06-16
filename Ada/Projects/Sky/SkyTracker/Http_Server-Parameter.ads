@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                            (c) 2024 by White Elephant GmbH, Schaffhausen, Switzerland                             *
+-- *                        (c) 2024 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                         *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -22,6 +22,7 @@ package Http_Server.Parameter is
   procedure Define (Handle : Configuration.File_Handle);
 
   procedure Defaults (Put    : access procedure (Item : String);
-                      Client : String);
+                      Client : String;
+                      Port   : Natural);
 
 end Http_Server.Parameter;

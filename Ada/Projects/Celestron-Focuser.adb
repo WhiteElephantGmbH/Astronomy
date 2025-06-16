@@ -20,11 +20,10 @@ with Serial_Io.Usb;
 with Traces;
 with Unsigned;
 
-package body Focuser is
+package body Celestron.Focuser is
 
   package Log is new Traces ("Focuser");
 
-  Vendor_Id  : constant Serial_Io.Usb.Vendor_Id := 5538;
   Product_Id : constant Serial_Io.Usb.Product_Id := 42255;
 
   Start_Packet : constant Unsigned.Byte := 16#3B#;
@@ -40,14 +39,18 @@ package body Focuser is
 
   type Command is (Move_Out, Move_In);
 
-  Speed_Offset : constant Unsigned.Byte := 6; --> speeds 7 .. 9
+  Speed_Offset : constant Unsigned.Byte := 5; --> speeds 6 .. 9
 
   use type Unsigned.Byte;
 
   task type Control is
     entry Start;
-    entry Get (Item : out Distance);
-    entry Get (Item : out Status);
+    entry Request_Exists;
+    entry Get_Exists (Item : out Boolean);
+    entry Request_Moving_State;
+    entry Get_Moving (Item : out Boolean);
+    entry Request_Position;
+    entry Get_Position (Item : out Distance);
     entry Set (Item : Distance);
     entry Execute (Item : Command;
                    Rate : Unsigned.Byte);
@@ -64,26 +67,37 @@ package body Focuser is
   end Start;
 
 
-  function State return Status is
-    The_Status : Status;
+  function Exists return Boolean is
+    The_Flag : Boolean;
   begin
-    The_Control.Get (The_Status);
-    return The_Status;
-  end State;
+    The_Control.Request_Exists;
+    The_Control.Get_Exists (The_Flag);
+    return The_Flag;
+  end Exists;
+
+
+  function Moving return Boolean is
+    The_Flag : Boolean;
+  begin
+    The_Control.Request_Moving_State;
+    The_Control.Get_Moving (The_Flag);
+    return The_Flag;
+  end Moving;
 
 
   function Position return Distance is
     The_Position : Distance;
   begin
-    The_Control.Get (The_Position);
+    The_Control.Request_Position;
+    The_Control.Get_Position (The_Position);
     return The_Position;
   end Position;
 
 
-  procedure Move (To : Distance) is
+  procedure Move_To (Item : Distance) is
   begin
-    The_Control.Set (To);
-  end Move;
+    The_Control.Set (Item);
+  end Move_To;
 
 
   procedure Move_In (Item : Speed) is
@@ -104,7 +118,7 @@ package body Focuser is
   end Stop;
 
 
-   procedure Close is
+  procedure Close is
   begin
     The_Control.Stop;
   end Close;
@@ -118,7 +132,7 @@ package body Focuser is
     The_Channel      : Channel_Access;
     Is_Available     : Boolean := False;
     Is_Moving        : Boolean := False;
-    The_Position     : Distance;
+    The_Position     : Distance := Distance'last;
     New_Position     : Distance;
     The_Command      : Command;
     The_Speed        : Unsigned.Byte;
@@ -205,23 +219,43 @@ package body Focuser is
         begin
           Log.Write ("version: " & Unsigned.Hex_Image_Of (Version));
         end;
+        Is_Available := True;
       end if;
-      Is_Available := True;
     exception
     when Item: others =>
-      Log.Error ("Connect: " & Exceptions.Name_Of (Item));
+      Log.Error ("Connect: " & Exceptions.Information_Of (Item));
       Is_Available := False;
       Serial_Io.Free (The_Focuser_Port);
     end Connect;
 
 
-    procedure Get_Values is
-     use type Unsigned.Byte_String;
+    procedure Get_Available_State is
+    begin
+      if not Is_Available then
+        Connect;
+      end if;
+    end Get_Available_State;
+
+
+    procedure Get_Position is
     begin
       if Is_Available then
         Send ([Get_Position_Id]);
         The_Position := Distance(Unsigned.Longword_Of_Big_Endian (Received_For (Get_Position_Id)));
         Log.Write ("position: " & The_Position'image);
+      end if;
+    exception
+    when Item: others =>
+      Log.Error ("Get_Position: " & Exceptions.Name_Of (Item));
+      Is_Available := False;
+      Serial_Io.Free (The_Focuser_Port);
+    end Get_Position;
+
+
+    procedure Get_Moving_State is
+     use type Unsigned.Byte_String;
+    begin
+      if Is_Available then
         Send ([Slew_Done_Id]);
         Is_Moving := Received_For (Slew_Done_Id) /= [16#FF#];
         Log.Write ("moving: " & Is_Moving'image);
@@ -231,7 +265,7 @@ package body Focuser is
       Log.Error ("Get_Position: " & Exceptions.Name_Of (Item));
       Is_Available := False;
       Serial_Io.Free (The_Focuser_Port);
-    end Get_Values;
+    end Get_Moving_State;
 
 
     procedure Start_Moving is
@@ -240,8 +274,9 @@ package body Focuser is
     begin
       if Is_Available then
         Send ([Set_Position_Id, P(P'first + 2), P(P'first + 1), P(P'first)]);
-        Is_Moving := Received_For (Set_Position_Id) = [];
-        Log.Write ("moving started: " & Is_Moving'image);
+        if Received_For (Set_Position_Id) = [] then
+          Log.Write ("moving to " & New_Position'image);
+        end if;
       end if;
     exception
     when Item: others =>
@@ -278,29 +313,33 @@ package body Focuser is
   begin -- Control
     accept Start;
     Connect;
-    Get_Values;
     Log.Write ("started");
     loop
       select
-        accept Get (Item : out Status) do
-          if Is_Available then
-            if Is_Moving then
-              Item := Moving;
-            else
-              Item := Stopped;
-            end if;
-          else
-            Item := Disconnected;
-          end if;
-        end Get;
+        accept Request_Exists;
+        Get_Available_State;
       or
-        accept Get (Item : out Distance) do
+        accept Get_Exists (Item : out Boolean) do
+          Item := Is_Available;
+        end Get_Exists;
+      or
+        accept Request_Moving_State;
+        Get_Moving_State;
+      or
+        accept Get_Moving (Item : out Boolean) do
           if Is_Available then
-            Item := The_Position;
+            Item := Is_Moving;
           else
-            Item := Distance'last;
+            Item := False;
           end if;
-        end Get;
+        end Get_Moving;
+      or
+        accept Request_Position;
+        Get_Position;
+      or
+        accept Get_Position (Item : out Distance) do
+          Item := The_Position;
+        end Get_Position;
       or
         accept Set (Item : Distance) do
           New_Position := Item;
@@ -318,20 +357,17 @@ package body Focuser is
         accept Stop;
         exit;
       or
-        delay 1.0;
-        if not Is_Available then
-          Connect;
-        end if;
-        Get_Values;
+        delay 2.0;
+        Get_Available_State;
       end select;
     end loop;
     if Is_Available then
       Serial_Io.Free (The_Focuser_Port);
-      Log.Write ("end");
     end if;
+    Log.Write ("end");
   exception
   when Item: others =>
     Log.Termination (Item);
   end Control;
 
-end Focuser;
+end Celestron.Focuser;

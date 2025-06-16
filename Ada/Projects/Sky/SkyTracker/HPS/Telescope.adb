@@ -19,12 +19,13 @@ with Ada.Real_Time;
 with Astro;
 with Camera;
 with Clock;
-with Http_Server;
+with Celestron.Focuser;
+with Http_Server.HPS;
 with Input;
 with Picture;
 with Pole_Axis;
 with Remote;
-with Text;
+--with Text;
 with Traces;
 with User;
 with Weather;
@@ -33,7 +34,11 @@ package body Telescope is
 
   package Log is new Traces ("Telescope");
 
+  package Focuser renames Celestron.Focuser;
+
   package RT renames Ada.Real_Time;
+
+  package Server renames Http_Server.HPS;
 
   subtype Command is Input.Mount_Command;
 
@@ -76,25 +81,31 @@ package body Telescope is
 
   Signal_Information_Update : Information_Update_Handler;
 
+
   procedure Set_Server_Information (The_Data : Data) is
 
     function Control_Data return Http_Server.Control_Data is
       ((Window_Minimized => User.Window_Minimized));
 
-    function Mount_Data return Http_Server.Mount_Data is
+    function Mount_Data return Server.Mount_Data is
       (if not (The_Data.Status in Disconnected | Unknown) then
-        (Exists       => True,
-         Axis0        => 0.0, -- not implemented
-         Axis1        => 0.0, -- not implemented
-         Model_Points => 0)   -- not implemented
+         (Exists => True)
        else
          (others => <>));
 
+    function Focuser_Data return Server.Focuser_Data is
+      ((Exists   => Focuser.Exists,
+        Moving   => Focuser.Moving,
+        Position => Focuser.Position,
+        Move_In  => Focuser.Move_In'access,
+        Move_Out => Focuser.Move_Out'access,
+        Stop     => Focuser.Stop'access));
+
   begin -- Set_Server_Information
     Http_Server.Set (Control_Data);
-    Http_Server.Set_State (Text.Legible_Of (The_Data.Status'image));
-    Http_Server.Set_Moving (Speed => The_Data.Moving_Speed);
-    Http_Server.Set (Mount_Data);
+    Server.Set_Moving (Speed => The_Data.Moving_Speed);
+    Server.Set (Mount_Data);
+    Server.Set (Focuser_Data);
   end Set_Server_Information;
 
 
@@ -113,6 +124,7 @@ package body Telescope is
 
   procedure Start (Update_Handler : Information_Update_Handler) is
   begin
+    Focuser.Start;
     Input.Open (Execute'access);
     Signal_Information_Update := Update_Handler;
     Control := new Control_Task;
@@ -677,6 +689,7 @@ package body Telescope is
       end;
     end loop;
     Input.Close;
+    Focuser.Close;
     Log.Write ("end");
   exception
   when Item: others =>

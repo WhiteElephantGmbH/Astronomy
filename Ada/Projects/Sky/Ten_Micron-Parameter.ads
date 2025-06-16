@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                               (c) 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                           (c) 2024 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                      *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -23,6 +23,6 @@ package Ten_Micron.Parameter is
 
   procedure Defaults (Put        : access procedure (Item : String);
                       Ip_Address : String;
-                      Port       : String);
+                      Port       : Natural);
 
 end Ten_Micron.Parameter;

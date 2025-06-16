@@ -19,7 +19,7 @@ with Application;
 with Error;
 with Gui;
 with Horizon;
-with Http_Server;
+with Http_Server.HPS;
 with Name;
 with Neo;
 with Os.Application;
@@ -333,7 +333,7 @@ package body Control is
 
   begin -- Manager
     Log.Write ("manager start");
-    Http_Server.Start;
+    Http_Server.HPS.Start;
     if Remote.Configured then
       Remote.Start;
     end if;

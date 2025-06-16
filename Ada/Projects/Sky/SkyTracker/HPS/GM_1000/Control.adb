@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2022 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                      *
+-- *                           (c) 2022 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                      *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -20,7 +20,7 @@ with Clock;
 with Error;
 with Gui;
 with Horizon;
-with Http_Server;
+with Http_Server.HPS;
 with Name;
 with Neo;
 with Os.Application;
@@ -333,7 +333,7 @@ package body Control is
 
   begin -- Manager
     Log.Write ("manager start");
-    Http_Server.Start;
+    Http_Server.HPS.Start;
     loop
       Action_Handler.Get (The_Command);
       case The_Command is

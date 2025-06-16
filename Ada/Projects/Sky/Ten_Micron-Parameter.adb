@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                               (c) 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                           (c) 2024 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                      *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -36,12 +36,12 @@ package body Ten_Micron.Parameter is
 
   procedure Defaults (Put        : access procedure (Item : String);
                       Ip_Address : String;
-                      Port       : String) is
+                      Port       : Natural) is
   begin
     Put ("[" & Id & "]");
     Put (Expert_Mode_Key & " = False");
     Put (Ip_Address_Key & "  = " & Ip_Address);
-    Put (Port_Key & "        = " & Port);
+    Put (Port_Key & "        =" & Port'image);
   end Defaults;
 
 end Ten_Micron.Parameter;

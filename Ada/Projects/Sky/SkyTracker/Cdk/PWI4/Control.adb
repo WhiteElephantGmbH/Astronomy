@@ -21,7 +21,7 @@ with Error;
 with Gui;
 with Handbox;
 with Horizon;
-with Http_Server;
+with Http_Server.PWI4;
 with Name;
 with Neo;
 with Os.Application;
@@ -337,7 +337,7 @@ package body Control is
 
   begin -- Manager
     Log.Write ("manager start");
-    Http_Server.Start;
+    Http_Server.PWI4.Start;
     Handbox.Start;
     if Remote.Configured then
       Remote.Start;
