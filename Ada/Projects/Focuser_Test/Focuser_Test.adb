@@ -16,7 +16,7 @@
 pragma Style_White_Elephant;
 
 pragma Build (Description => "Focuser test",
-              Version     => (1, 0, 0, 1),
+              Version     => (1, 0, 0, 2),
               Kind        => Console,
               Icon        => False,
               Compiler    => "GNATPRO\23.0");
@@ -40,16 +40,19 @@ begin
     Ada.Text_IO.Put(">");
     begin
       declare
-        Command : constant String := Ada.Text_IO.Get_Line & "2";
-        Speed   : constant Focuser.Speed := Focuser.Speed'value(Command(Command'first + 1 .. Command'first + 1));
+        Command : constant String := Ada.Text_IO.Get_Line;
       begin
         case Command(Command'first) is
+        when '+' =>
+          Focuser.Execute (Focuser.Increase_Rate);
+        when '-' =>
+          Focuser.Execute (Focuser.Decrease_Rate);
         when 'i' =>
-          Focuser.Move_In (Speed);
+          Focuser.Execute (Focuser.Move_In);
         when 'o' =>
-          Focuser.Move_Out (Speed);
+          Focuser.Execute (Focuser.Move_Out);
         when 's' =>
-          Focuser.Stop;
+          Focuser.Execute (Focuser.Stop);
         when 'e' =>
           Focuser.Close;
           return;
@@ -59,9 +62,10 @@ begin
           raise Constraint_Error;
         end case;
       end;
+      Ada.Text_IO.Put_Line ("Rate:" & Focuser.Speed'image & " - Position:" & Focuser.Position'image);
     exception
     when others =>
-      Ada.Text_IO.Put("expected: i{1..3}, o{1..3}, c or e");
+      Ada.Text_IO.Put("expected: +, -, i, o, c or e");
     end;
   end loop;
   loop

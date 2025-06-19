@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2025 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                           (c) 2019 by White Elephant GmbH, Schaffhausen, Switzerland                              *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,29 +15,10 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Angle;
-with Celestron.Focuser;
-
-package Http_Server.HPS is
-
-  type Mount_Data is record
-    Exists : Boolean := False;
-  end record;
-
-  type Focuser_Data is record
-    Exists   : Boolean := False;
-    Moving   : Boolean := False;
-    Position : Natural := 0;
-    Rate     : Natural := 0;
-    Execute  : access procedure (Item : Celestron.Focuser.Command);
-  end record;
+package Handbox is
 
   procedure Start;
 
-  procedure Set_Moving (Speed : Angle.Value); -- per second
+  procedure Close;
 
-  procedure Set (Data : Mount_Data);
-
-  procedure Set (Data : Focuser_Data);
-
-end Http_Server.HPS;
+end Handbox;

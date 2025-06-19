@@ -17,11 +17,13 @@ pragma Style_White_Elephant;
 
 package Celestron.Focuser is
 
+  type Command is (Decrease_Rate, Increase_Rate, Move_In, Move_Out, Stop);
+
   procedure Start;
 
   subtype Distance is Natural range 0 .. 2**24 - 1;
 
-  subtype Speed is Natural range 1 .. 4;
+  subtype Rate is Natural range 1 .. 4;
 
   function Exists return Boolean;
 
@@ -29,13 +31,11 @@ package Celestron.Focuser is
 
   function Position return Distance;
 
+  function Speed return Rate;
+
+  procedure Execute (Item : Command);
+
   procedure Move_To (Item : Distance);
-
-  procedure Move_In (Item : Speed);
-
-  procedure Move_Out (Item : Speed);
-
-  procedure Stop;
 
   procedure Close;
 

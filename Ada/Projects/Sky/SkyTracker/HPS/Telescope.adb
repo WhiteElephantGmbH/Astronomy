@@ -20,12 +20,12 @@ with Astro;
 with Camera;
 with Clock;
 with Celestron.Focuser;
+with Handbox;
 with Http_Server.HPS;
 with Input;
 with Picture;
 with Pole_Axis;
 with Remote;
---with Text;
 with Traces;
 with User;
 with Weather;
@@ -97,9 +97,8 @@ package body Telescope is
       ((Exists   => Focuser.Exists,
         Moving   => Focuser.Moving,
         Position => Focuser.Position,
-        Move_In  => Focuser.Move_In'access,
-        Move_Out => Focuser.Move_Out'access,
-        Stop     => Focuser.Stop'access));
+        Rate     => Focuser.Speed,
+        Execute  => Focuser.Execute'access));
 
   begin -- Set_Server_Information
     Http_Server.Set (Control_Data);
@@ -125,6 +124,7 @@ package body Telescope is
   procedure Start (Update_Handler : Information_Update_Handler) is
   begin
     Focuser.Start;
+    Handbox.Start;
     Input.Open (Execute'access);
     Signal_Information_Update := Update_Handler;
     Control := new Control_Task;
@@ -689,6 +689,7 @@ package body Telescope is
       end;
     end loop;
     Input.Close;
+    Handbox.Close;
     Focuser.Close;
     Log.Write ("end");
   exception

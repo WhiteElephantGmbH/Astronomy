@@ -61,6 +61,9 @@ class Focuser:
     def position(self):
         return self.focuser["position"]
 
+    def rate(self):
+        return self.focuser["rate"]
+
 
 """ Information from SkyTracker
     ***************************
@@ -110,17 +113,14 @@ class Client:
     """ Focuser Commands
         ----------------
     """
-    move_in  = 'move_in'
-    move_out = 'move_out'
+    increase_rate = 'increase_rate'
+    decrease_rate = 'decrease_rate'
+    move_in       = 'move_in'
+    move_out      = 'move_out'
+    stop          = 'stop'
 
-    def focuser_move_in(self, value):
-        return self.request_with_status("/focuser/move_in/?speed=" + str(value))
-
-    def focuser_move_out(self, value):
-        return self.request_with_status("/focuser/move_out/?speed=" + str(value))
-
-    def focuser_stop(self):
-        return self.request_with_status("/focuser/stop")
+    def focuser_command(self, command):
+        return self.request_with_status("/focuser/" + command)
 
 
     """ Information
@@ -141,6 +141,7 @@ class Client:
                 return response.text
             else:
                 print('request failed')
+                raise
 
         except:
             print('no connection')

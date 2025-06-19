@@ -37,10 +37,6 @@ package body Celestron.Focuser is
   Move_Out_Id      : constant Unsigned.Byte := 16#24#;
   Move_In_Id       : constant Unsigned.Byte := 16#25#;
 
-  type Command is (Move_Out, Move_In);
-
-  Speed_Offset : constant Unsigned.Byte := 5; --> speeds 6 .. 9
-
   use type Unsigned.Byte;
 
   task type Control is
@@ -51,9 +47,9 @@ package body Celestron.Focuser is
     entry Get_Moving (Item : out Boolean);
     entry Request_Position;
     entry Get_Position (Item : out Distance);
+    entry Get_Speed (Item : out Rate);
     entry Set (Item : Distance);
-    entry Execute (Item : Command;
-                   Rate : Unsigned.Byte);
+    entry Execute (Item : Command);
     entry Stop;
   end Control;
 
@@ -94,28 +90,25 @@ package body Celestron.Focuser is
   end Position;
 
 
+  function Speed return Rate is
+    The_Rate : Rate;
+  begin
+    The_Control.Request_Position;
+    The_Control.Get_Speed (The_Rate);
+    return The_Rate;
+  end Speed;
+
+
+  procedure Execute (Item : Command) is
+  begin
+    The_Control.Execute (Item);
+  end Execute;
+
+
   procedure Move_To (Item : Distance) is
   begin
     The_Control.Set (Item);
   end Move_To;
-
-
-  procedure Move_In (Item : Speed) is
-  begin
-    The_Control.Execute (Move_In, Unsigned.Byte(Item) + Speed_Offset);
-  end Move_In;
-
-
-  procedure Move_Out (Item : Speed) is
-  begin
-    The_Control.Execute (Move_Out, Unsigned.Byte(Item) + Speed_Offset);
-  end Move_Out;
-
-
-  procedure Stop is
-  begin
-    The_Control.Execute (Move_In, 0);
-  end Stop;
 
 
   procedure Close is
@@ -126,6 +119,10 @@ package body Celestron.Focuser is
 
   task body Control is
 
+    Startup_Rate : constant Rate := Rate'last - 1;
+
+    Rate_Offset : constant Unsigned.Byte := 9 - Unsigned.Byte(Rate'last);
+
     type Channel_Access is access Serial_Io.Channel;
 
     The_Focuser_Port : Serial_Io.Port;
@@ -135,7 +132,7 @@ package body Celestron.Focuser is
     The_Position     : Distance := Distance'last;
     New_Position     : Distance;
     The_Command      : Command;
-    The_Speed        : Unsigned.Byte;
+    The_Rate         : Rate := Startup_Rate;
 
     Protocol_Error : exception;
 
@@ -175,7 +172,8 @@ package body Celestron.Focuser is
       begin
         Serial_Io.Receive (The_Byte, From => The_Channel.all);
         if The_Byte /= Item then
-          Log.Error (Error_Message & "(expected: " & Unsigned.Image_Of (Item) & ")");
+          Log.Error (Error_Message & "(received: " & Unsigned.Image_Of (The_Byte) &
+                                   " - expected: " & Unsigned.Image_Of (Item) & ")");
           raise Protocol_Error;
         end if;
         The_Sum := The_Sum + Natural(Item);
@@ -222,8 +220,7 @@ package body Celestron.Focuser is
         Is_Available := True;
       end if;
     exception
-    when Item: others =>
-      Log.Error ("Connect: " & Exceptions.Information_Of (Item));
+    when others =>
       Is_Available := False;
       Serial_Io.Free (The_Focuser_Port);
     end Connect;
@@ -244,11 +241,6 @@ package body Celestron.Focuser is
         The_Position := Distance(Unsigned.Longword_Of_Big_Endian (Received_For (Get_Position_Id)));
         Log.Write ("position: " & The_Position'image);
       end if;
-    exception
-    when Item: others =>
-      Log.Error ("Get_Position: " & Exceptions.Name_Of (Item));
-      Is_Available := False;
-      Serial_Io.Free (The_Focuser_Port);
     end Get_Position;
 
 
@@ -260,11 +252,6 @@ package body Celestron.Focuser is
         Is_Moving := Received_For (Slew_Done_Id) /= [16#FF#];
         Log.Write ("moving: " & Is_Moving'image);
       end if;
-    exception
-    when Item: others =>
-      Log.Error ("Get_Position: " & Exceptions.Name_Of (Item));
-      Is_Available := False;
-      Serial_Io.Free (The_Focuser_Port);
     end Get_Moving_State;
 
 
@@ -278,88 +265,99 @@ package body Celestron.Focuser is
           Log.Write ("moving to " & New_Position'image);
         end if;
       end if;
-    exception
-    when Item: others =>
-      Log.Error ("Start_Moving: " & Exceptions.Name_Of (Item));
-      Is_Available := False;
-      Serial_Io.Free (The_Focuser_Port);
     end Start_Moving;
 
 
     procedure Execute_Command is
       use type Unsigned.Byte_String;
       The_Command_Id : Unsigned.Byte;
+      The_Parameter  : Unsigned.Byte := Unsigned.Byte(The_Rate) + Rate_Offset;
     begin
       if Is_Available then
-        Log.Write ("Execute: " & The_Command'image);
         case The_Command is
+        when Decrease_Rate =>
+          if The_Rate > Rate'first then
+            The_Rate := The_Rate - 1;
+          end if;
+          return;
+        when Increase_Rate =>
+          if The_Rate < Rate'last then
+            The_Rate := The_Rate + 1;
+          end if;
+          return;
         when Move_In =>
           The_Command_Id := Move_In_Id;
         when Move_Out =>
           The_Command_Id := Move_Out_Id;
+        when Stop =>
+          The_Parameter := 0;
+          The_Command_Id := Move_In_Id;
         end case;
-        Send ([The_Command_Id, The_Speed]);
+        Send ([The_Command_Id, The_Parameter]);
         if Received_For (The_Command_Id) = [] then
-          Log.Write ("execute " & The_Command'image & " with speed" & The_Speed'image);
+          Log.Write ("execute " & The_Command'image & " with rate" & The_Rate'image);
         end if;
       end if;
-    exception
-    when Item: others =>
-      Log.Error ("Execute_Command: " & Exceptions.Name_Of (Item));
-      Is_Available := False;
-      Serial_Io.Free (The_Focuser_Port);
     end Execute_Command;
 
   begin -- Control
     accept Start;
-    Connect;
     Log.Write ("started");
+    Connect;
     loop
-      select
-        accept Request_Exists;
-        Get_Available_State;
-      or
-        accept Get_Exists (Item : out Boolean) do
-          Item := Is_Available;
-        end Get_Exists;
-      or
-        accept Request_Moving_State;
-        Get_Moving_State;
-      or
-        accept Get_Moving (Item : out Boolean) do
-          if Is_Available then
-            Item := Is_Moving;
-          else
-            Item := False;
-          end if;
-        end Get_Moving;
-      or
-        accept Request_Position;
-        Get_Position;
-      or
-        accept Get_Position (Item : out Distance) do
-          Item := The_Position;
-        end Get_Position;
-      or
-        accept Set (Item : Distance) do
-          New_Position := Item;
-        end Set;
-        Start_Moving;
-      or
-        accept Execute (Item : Command;
-                        Rate : Unsigned.Byte)
-        do
-          The_Command := Item;
-          The_Speed := Rate;
-        end Execute;
-        Execute_Command;
-      or
-        accept Stop;
-        exit;
-      or
-        delay 2.0;
-        Get_Available_State;
-      end select;
+      begin
+        select
+          accept Request_Exists;
+          Get_Available_State;
+        or
+          accept Get_Exists (Item : out Boolean) do
+            Item := Is_Available;
+          end Get_Exists;
+        or
+          accept Request_Moving_State;
+          Get_Moving_State;
+        or
+          accept Get_Moving (Item : out Boolean) do
+            if Is_Available then
+              Item := Is_Moving;
+            else
+              Item := False;
+            end if;
+          end Get_Moving;
+        or
+          accept Request_Position;
+          Get_Position;
+        or
+          accept Get_Position (Item : out Distance) do
+            Item := The_Position;
+          end Get_Position;
+        or
+          accept Get_Speed (Item : out Rate) do
+            Item := The_Rate;
+          end Get_Speed;
+        or
+          accept Set (Item : Distance) do
+            New_Position := Item;
+          end Set;
+          Start_Moving;
+        or
+          accept Execute (Item : Command) do
+            The_Command := Item;
+          end Execute;
+          Execute_Command;
+        or
+          accept Stop;
+          exit;
+        or
+          delay 1.0;
+          Get_Available_State;
+        end select;
+      exception
+      when Item: others =>
+        Log.Error (Exceptions.Name_Of (Item));
+        Is_Available := False;
+        Serial_Io.Free (The_Focuser_Port);
+      end;
     end loop;
     if Is_Available then
       Serial_Io.Free (The_Focuser_Port);

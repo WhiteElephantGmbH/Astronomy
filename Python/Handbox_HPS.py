@@ -40,8 +40,11 @@ def main():
     end_command    = client.end_command
     next_speed     = client.next_speed
     previous_speed = client.previous_speed
+    decrease_rate  = client.decrease_rate
+    increase_rate  = client.increase_rate
     move_in        = client.move_in
     move_out       = client.move_out
+    stop           = client.stop
 
     color0 = sg.theme_button_color()[0]
     color1 = sg.theme_button_color()[1]
@@ -60,13 +63,10 @@ def main():
     handbox = [[sg.Frame('Speed', font='Ani 8', layout=speed, element_justification='c')],
                [sg.Frame('', layout=move, element_justification='c')]]
 
-    max_rate     = 4
-    startup_rate = max_rate - 1
-
-    rate = [[sg.RealtimeButton(sg.SYMBOL_LEFT, key='previous_rate'),
+    rate = [[sg.RealtimeButton(sg.SYMBOL_LEFT, key=decrease_rate),
              sg.Text(size=(1,1), key='-RATE-', pad=(0,0), font='Ani 12',
                      justification='c', background_color=color0, text_color=color1),
-             sg.RealtimeButton(sg.SYMBOL_RIGHT, key='next_rate')]]
+             sg.RealtimeButton(sg.SYMBOL_RIGHT, key=increase_rate)]]
     position = [[sg.RealtimeButton(sg.SYMBOL_LEFT, key=move_in),
                  sg.Text(size=(5,1), key='-POSITION-', pad=(0,0), font='Ani 12',
                          justification='c', background_color=color0, text_color=color1),
@@ -89,7 +89,6 @@ def main():
     count = 0
     pressed = False
     minimized = False
-    focuser_speed = startup_rate
     while True:
         try:
             event, values = window.read(timeout=100)
@@ -97,20 +96,10 @@ def main():
                 # if not a timeout event, then it's a button that's being held down
                 if not pressed:
                     pressed = True
-                    mount_release_action = event in (move_up,  move_down, move_left, move_right)
+                    mount_release_action = event in (move_up, move_down, move_left, move_right)
                     focuser_release_action = event in (move_in,  move_out)
-                    if event == 'previous_rate':
-                        if focuser_speed > 1:
-                            focuser_speed = focuser_speed - 1
-                            window['-RATE-'].update(value=focuser_speed)
-                    elif event == 'next_rate':
-                        if focuser_speed < max_rate:
-                            focuser_speed = focuser_speed + 1
-                            window['-RATE-'].update(value=focuser_speed)
-                    elif event == move_in:
-                        response = client.focuser_move_in (focuser_speed)
-                    elif event == move_out:
-                        response = client.focuser_move_out (focuser_speed)
+                    if event in (decrease_rate, increase_rate, move_in, move_out):
+                        response = client.focuser_command (command = event)
                     else:
                         response = client.mount_command (command = event)
             else:
@@ -120,7 +109,7 @@ def main():
                     if mount_release_action:
                         response = client.mount_command (command = end_command)
                     if focuser_release_action:
-                        response = client.focuser_stop()
+                        response = client.focuser_command (command = stop)
             count += 1
             if count == 5: # every half second
                 count = 0;
@@ -140,11 +129,10 @@ def main():
                     window['-SPEED-'].update(mount.speed())
                     if focuser.exists():
                         window['-FFO-'].update(visible=True)
-                        window['-RATE-'].update(value=focuser_speed)
                         window['-POSITION-'].update(value=focuser.position())
+                        window['-RATE-'].update(value=focuser.rate())
                     else:
                         window['-FFO-'].update(visible=False)
-                        focuser_speed = startup_rate
                 else:
                     window['-SPEED-'].update("")
         except:

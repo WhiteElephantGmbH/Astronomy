@@ -80,10 +80,12 @@ package body Http_Server.HPS is
       JS.Set_Field (Focuser, "exists", JS.Create (Data.Exists));
       JS.Set_Field (Focuser, "moving", JS.Create (Data.Moving));
       JS.Set_Field (Focuser, "position", JS.Create (Data.Position));
+      JS.Set_Field (Focuser, "rate", JS.Create (Data.Rate));
       JS.Set_Field (Info, "focuser", Focuser);
       Log.Write ("Focuser Exists   : " & Data.Exists'image);
       Log.Write ("Focuser Moving   : " & Data.Moving'image);
       Log.Write ("Focuser Position :"  & Data.Position'image);
+      Log.Write ("Focuser Rate     :"  & Data.Rate'image);
     end Set_Focuser_Values;
 
   begin -- Information
@@ -114,7 +116,7 @@ package body Http_Server.HPS is
           end;
         exception
         when others =>
-          Log.Error ("unknown mount command: " & Command_Image);
+          Log.Error ("Unknown mount command: " & Command_Image);
           Input.Put (Input.End_Command, From => Input.Server);
           return AWS.Response.Acknowledge (AWS.Messages.S400, "unknown mount command");
         end;
@@ -122,33 +124,16 @@ package body Http_Server.HPS is
         declare
           Command_Image : constant String := Parts(2);
         begin
-          if Command_Image in "move_in" | "move_out" then
-            declare
-              Value_Image : constant String := AWS.Status.Parameter (Data, "speed");
-            begin
-              if Value_Image = "" then
-                return AWS.Response.Acknowledge (AWS.Messages.S400, "no speed parameter");
-              end if;
-              if Command_Image = "move_in" then
-                Log.Write ("Focuser.Move_In: " & Value_Image);
-                Protected_Focuser.Data.Move_In (Focuser_Speed'value(Value_Image));
-              else
-                Log.Write ("Focuser.Move_Out: " & Value_Image);
-                Protected_Focuser.Data.Move_Out (Focuser_Speed'value(Value_Image));
-              end if;
-              return AWS.Response.Acknowledge (AWS.Messages.S200, "ok");
-            end;
-          elsif Command_Image = "stop" then
-            Log.Write ("Focuser.Stop");
-            Protected_Focuser.Data.Stop.all;
+          declare
+            Command : constant Celestron.Focuser.Command := Celestron.Focuser.Command'value(Command_Image);
+          begin
+            Celestron.Focuser.Execute (Command);
             return AWS.Response.Acknowledge (AWS.Messages.S200, "ok");
-          else
-            raise Program_Error;
-          end if;
+          end;
         exception
         when others =>
-          Log.Error ("unknown focuser command: " & Command_Image);
-          Protected_Focuser.Data.Stop.all;
+          Log.Error ("Unknown focuser command: " & Command_Image);
+          Celestron.Focuser.Execute (Celestron.Focuser.Stop);
           return AWS.Response.Acknowledge (AWS.Messages.S400, "unknown focuser command");
         end;
       elsif Subsystem = "information" then
