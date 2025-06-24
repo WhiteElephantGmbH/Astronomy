@@ -25,35 +25,53 @@ with Ada.Text_IO;
 with Celestron;
 with Exceptions;
 with Serial_Io.Usb;
+with Text;
 with Unsigned;
 
 procedure Usb_Test is
 
-  ARM_Vendor_Id        : constant Serial_Io.Usb.Vendor_Id := 3368;
-  Micro_Bit_Product_Id : constant Serial_Io.Usb.Product_Id := 516;
+  Port_Unknown : exception;
 
-  Celestron_Vendor_Id : constant Serial_Io.Usb.Vendor_Id := Celestron.Vendor_Id;
-  Focuser_Product_Id : constant Serial_Io.Usb.Product_Id := 42255;
-
-  The_Port : Serial_Io.Port;
-
-  procedure Get_Port is
-    Ports : constant Serial_Io.Usb.Ports := Serial_Io.Usb.Ports_For (Vid => ARM_Vendor_Id, Pid => Micro_Bit_Product_Id);
+  function Port_For (Vid : Serial_Io.Usb.Vendor_Id;
+                      Pid : Serial_Io.Usb.Product_Id) return Serial_Io.Port is
+    Ports : constant Serial_Io.Usb.Ports := Serial_Io.Usb.Ports_For (Vid, Pid);
   begin
     Ada.Text_IO.Put_Line ("Number of ports:" & Ports'length'image);
     if Ports'length = 1 then
-      The_Port := Ports(Ports'first);
-      Ada.Text_IO.Put_Line ("Port: " & The_Port'image);
+      return Ports(Ports'first);
+    else
+      raise Port_Unknown;
     end if;
-  end Get_Port;
+  end Port_For;
+
+  The_Handbox_Port : Serial_Io.Port;
+
+  procedure Get_Handbox_Port is
+    ARM_Vendor_Id        : constant Serial_Io.Usb.Vendor_Id := 3368;
+    Micro_Bit_Product_Id : constant Serial_Io.Usb.Product_Id := 516;
+  begin
+    The_Handbox_Port := Port_For (ARM_Vendor_Id, Micro_Bit_Product_Id);
+    Ada.Text_IO.Put_Line ("Handbox Port: " & The_Handbox_Port'image);
+  end Get_Handbox_Port;
+
+
+  The_Focuser_Port : Serial_Io.Port;
+
+  procedure Get_Focuser_Port is
+    Celestron_Vendor_Id : constant Serial_Io.Usb.Vendor_Id := Celestron.Vendor_Id;
+    Focuser_Product_Id : constant Serial_Io.Usb.Product_Id := 42255;
+  begin
+    The_Focuser_Port := Port_For (Celestron_Vendor_Id, Focuser_Product_Id);
+    Ada.Text_IO.Put_Line ("Focuser Port: " & The_Focuser_Port'image);
+  end Get_Focuser_Port;
 
 
   procedure Get_Version is
-    Channel     : Serial_Io.Channel(The_Port);
+    Channel     : Serial_Io.Channel(The_Handbox_Port);
     The_Version : String := "x.xx";
   begin
-    Serial_Io.Set (The_Baudrate => 19200,
-                   On           => Channel);
+    --Serial_Io.Set (The_Baudrate => 19200,
+    --               On           => Channel);
     Serial_Io.Set_For_Read (The_Timeout => 1.0,
                             On          => Channel);
     Serial_Io.Send (The_Item => 'v',
@@ -71,111 +89,105 @@ procedure Usb_Test is
     Transmit_Id  : constant Unsigned.Byte := 16#22#;
     Connect_Id   : constant Unsigned.Byte := 16#FE#;
 
-    The_Focuser_Port : Serial_Io.Port;
+    Channel : Serial_Io.Channel(The_Focuser_Port);
 
-    Ports : constant Serial_Io.Usb.Ports := Serial_Io.Usb.Ports_For (Vid => Celestron_Vendor_Id,
-                                                                     Pid => Focuser_Product_Id);
-  begin
-    if Ports'length = 1 then
-      The_Focuser_Port := Ports(Ports'first);
-      Ada.Text_IO.Put_Line ("Connect to port " & The_Focuser_Port'image);
-      declare
-
-        Channel : Serial_Io.Channel(The_Focuser_Port);
-
-        function Checksum_Of (Sum : Natural) return Unsigned.Byte is
-        begin
-          return Unsigned.Byte(256 - (Sum mod 256));
-        end Checksum_Of;
+    function Checksum_Of (Sum : Natural) return Unsigned.Byte is
+    begin
+      return Unsigned.Byte(256 - (Sum mod 256));
+    end Checksum_Of;
 
 
-        procedure Send (Item : Unsigned.Byte_String) is
+    procedure Send (Item : Unsigned.Byte_String) is
 
-          Header : constant Unsigned.Byte_String
-                 := [Start_Packet, Unsigned.Byte(Item'length + 2), Transmit_Id, Receive_Id];
+      Header : constant Unsigned.Byte_String
+             := [Start_Packet, Unsigned.Byte(Item'length + 2), Transmit_Id, Receive_Id];
 
-          The_Data : Unsigned.Byte_String(1 .. Header'length + Item'length + 1);
-          The_Sum  : Natural := 0;
+      The_Data : Unsigned.Byte_String(1 .. Header'length + Item'length + 1);
+      The_Sum  : Natural := 0;
 
-        begin
-          The_Data(1 .. Header'length) := Header;
-          The_Data(Header'length + 1 .. The_Data'last - 1) := Item;
-          for Index in The_Data'first + 1 .. The_Data'last - 1 loop
-            The_Sum := The_Sum + Natural(The_Data(Index));
-          end loop;
-          The_Data(The_Data'last) := Checksum_Of (The_Sum);
-          Serial_Io.Send (The_Data, Channel);
-          Ada.Text_IO.Put_Line ("sent: " & Unsigned.Hex_Image_Of (The_Data));
-        end Send;
+    begin
+      The_Data(1 .. Header'length) := Header;
+      The_Data(Header'length + 1 .. The_Data'last - 1) := Item;
+      for Index in The_Data'first + 1 .. The_Data'last - 1 loop
+        The_Sum := The_Sum + Natural(The_Data(Index));
+      end loop;
+      The_Data(The_Data'last) := Checksum_Of (The_Sum);
+      Serial_Io.Send (The_Data, Channel);
+      Ada.Text_IO.Put_Line ("sent: " & Unsigned.Hex_Image_Of (The_Data));
+    end Send;
 
 
-        function Received_For (Command_Id : Unsigned.Byte) return Unsigned.Byte_String is
+    function Received_For (Command_Id : Unsigned.Byte) return Unsigned.Byte_String is
 
-          The_Sum   : Natural;
-          The_Count : Natural;
+      The_Sum   : Natural;
+      The_Count : Natural;
 
-          use type Unsigned.Byte;
+      use type Unsigned.Byte;
 
-          function Received_Byte return Unsigned.Byte is
-            The_Byte : Unsigned.Byte;
-          begin
-            Serial_Io.Receive (The_Byte, From => Channel);
-            return The_Byte;
-          exception
-          when Item: others =>
-            Ada.Text_IO.Put_Line ("received byte exception: " & Exceptions.Information_Of (Item));
-            return 0;
-          end Received_Byte;
-
-          procedure Check (Item          : Unsigned.Byte;
-                           Error_Message : String) is
-            The_Byte : Unsigned.Byte;
-          begin
-            The_Byte := Received_Byte;
-            if The_Byte /= Item then
-              Ada.Text_IO.Put_Line ("### " & Error_Message & "(received: " & Unsigned.Image_Of (The_Byte) &
-                                                             " - expected: " & Unsigned.Image_Of (Item) & ")");
-              raise Program_Error;
-            end if;
-            The_Sum := The_Sum + Natural(Item);
-          end Check;
-
-        begin -- Received_For
-          while Received_Byte /= Start_Packet loop
-            null;
-          end loop;
-          The_Count := Natural(Received_Byte);
-          The_Sum := The_Count;
-          Check (Receive_Id, "incorrect receive Id");
-          Check (Transmit_Id, "incorrect transmit Id");
-          Check (Command_Id, "incorrect command Id");
-          declare
-            The_Data : Unsigned.Byte_String(1 .. The_Count - 3);
-          begin
-            if The_Data'length /= 0 then
-              Serial_Io.Receive (The_Data, From => Channel);
-              for Item of The_Data loop
-                The_Sum := The_Sum + Natural(Item);
-              end loop;
-            end if;
-            Check (Checksum_Of (The_Sum), "incorrect checksum");
-            return The_Data;
-          end;
-        end Received_For;
-
+      function Received_Byte return Unsigned.Byte is
+        The_Byte : Unsigned.Byte;
       begin
-        Serial_Io.Set (The_Baudrate => 19200, On => Channel);
-        Serial_Io.Set_For_Read (The_Timeout => 1.0, On => Channel);
-        Send ([Connect_Id]);
-        declare
-          Version : constant Unsigned.Byte_String := Received_For (Connect_Id);
-        begin
-          Ada.Text_IO.Put_Line ("version: " & Unsigned.Hex_Image_Of (Version));
-        end;
+        Serial_Io.Receive (The_Byte, From => Channel);
+        return The_Byte;
+      exception
+      when Item: others =>
+        Ada.Text_IO.Put_Line ("received byte exception: " & Exceptions.Information_Of (Item));
+        return 0;
+      end Received_Byte;
+
+      procedure Check (Item          : Unsigned.Byte;
+                       Error_Message : String) is
+        The_Byte : Unsigned.Byte;
+      begin
+        The_Byte := Received_Byte;
+        if The_Byte /= Item then
+          Ada.Text_IO.Put_Line ("### " & Error_Message & "(received: " & Unsigned.Image_Of (The_Byte) &
+                                                         " - expected: " & Unsigned.Image_Of (Item) & ")");
+          raise Program_Error;
+        end if;
+        The_Sum := The_Sum + Natural(Item);
+      end Check;
+
+    begin -- Received_For
+      while Received_Byte /= Start_Packet loop
+        null;
+      end loop;
+      The_Count := Natural(Received_Byte);
+      The_Sum := The_Count;
+      Check (Receive_Id, "incorrect receive Id");
+      Check (Transmit_Id, "incorrect transmit Id");
+      Check (Command_Id, "incorrect command Id");
+      declare
+        The_Data : Unsigned.Byte_String(1 .. The_Count - 3);
+      begin
+        if The_Data'length /= 0 then
+          Serial_Io.Receive (The_Data, From => Channel);
+          for Item of The_Data loop
+            The_Sum := The_Sum + Natural(Item);
+          end loop;
+        end if;
+        Check (Checksum_Of (The_Sum), "incorrect checksum");
+        return The_Data;
       end;
-    else
-      Ada.Text_IO.Put_Line ("### no focuser port available");
-    end if;
+    end Received_For;
+
+    function "+" (Left  : String;
+                  Right : Unsigned.Byte_String) return String is
+    begin
+      return Text.Trimmed (Left & Text.Trimmed(Unsigned.Word_Of_Big_Endian(Right)'image));
+    end "+";
+
+  begin
+    --Serial_Io.Set (The_Baudrate => 19200, On => Channel);
+    Serial_Io.Set_For_Read (The_Timeout => 1.0, On => Channel);
+    Send ([Connect_Id]);
+    declare
+      Version : constant Unsigned.Byte_String := Received_For (Connect_Id);
+    begin
+      Ada.Text_IO.Put_Line ("version: " + [Version(Version'first)] & '.'
+                                        + [Version(Version'first + 1)] & '.'
+                                        + Version(Version'first + 2 .. Version'first + 3));
+    end;
   exception
   when Item: others =>
     Ada.Text_IO.Put_Line (Exceptions.Information_Of (Item));
@@ -195,9 +207,11 @@ begin -- Usb_Test
         if Command'length > 0 then
           case Command(Command'first) is
           when 'h' => -- handbox
-            Get_Port;
+            Get_Handbox_Port;
           when 'v' => -- version of handbox
             Get_Version;
+          when 'f' => -- focuser
+            Get_Focuser_Port;
           when 'c' => -- connect focuser
             Connect;
           when 'e' => -- exit
@@ -209,6 +223,8 @@ begin -- Usb_Test
           exit;
         end if;
       exception
+      when Port_Unknown =>
+        Ada.Text_IO.Put_Line ("### port unknown");
       when Item: others =>
         Ada.Text_IO.Put_Line (Exceptions.Name_Of (Item));
       end;
