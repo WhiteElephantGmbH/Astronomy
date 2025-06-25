@@ -23,11 +23,15 @@ package Celestron.Focuser is
 
   subtype Distance is Natural range 0 .. 2**24 - 1;
 
+  type Lash is new Distance range 0 .. 2**8 - 1;
+
   subtype Rate is Natural range 1 .. 4;
 
   function Exists return Boolean;
 
   function Moving return Boolean;
+
+  function Backlash return Lash;
 
   function Position return Distance;
 
@@ -36,6 +40,8 @@ package Celestron.Focuser is
   procedure Execute (Item : Command);
 
   procedure Move_To (Item : Distance);
+
+  procedure Set (Item : Lash);
 
   procedure Close;
 

@@ -30,12 +30,15 @@ package body Celestron.Focuser is
   Receive_Id   : constant Unsigned.Byte := 16#12#;
   Transmit_Id  : constant Unsigned.Byte := 16#22#;
 
-  Connect_Id       : constant Unsigned.Byte := 16#FE#;
-  Get_Position_Id  : constant Unsigned.Byte := 16#01#;
-  Set_Position_Id  : constant Unsigned.Byte := 16#02#;
-  Slew_Done_Id     : constant Unsigned.Byte := 16#13#;
-  Move_Out_Id      : constant Unsigned.Byte := 16#24#;
-  Move_In_Id       : constant Unsigned.Byte := 16#25#;
+  Connect_Id      : constant Unsigned.Byte := 16#FE#;
+  Get_Backlash_Id : constant Unsigned.Byte := 16#40#;
+  Set_In_Lash_Id  : constant Unsigned.Byte := 16#10#;
+  Set_Out_Lash_Id : constant Unsigned.Byte := 16#11#;
+  Get_Position_Id : constant Unsigned.Byte := 16#01#;
+  Set_Position_Id : constant Unsigned.Byte := 16#02#;
+  Slew_Done_Id    : constant Unsigned.Byte := 16#13#;
+  Move_Out_Id     : constant Unsigned.Byte := 16#24#;
+  Move_In_Id      : constant Unsigned.Byte := 16#25#;
 
   use type Unsigned.Byte;
 
@@ -45,9 +48,12 @@ package body Celestron.Focuser is
     entry Get_Exists (Item : out Boolean);
     entry Request_Moving_State;
     entry Get_Moving (Item : out Boolean);
+    entry Request_Backlash;
+    entry Get_Backlash (Item : out Lash);
     entry Request_Position;
     entry Get_Position (Item : out Distance);
     entry Get_Speed (Item : out Rate);
+    entry Set (Item : Lash);
     entry Set (Item : Distance);
     entry Execute (Item : Command);
     entry Stop;
@@ -81,6 +87,15 @@ package body Celestron.Focuser is
   end Moving;
 
 
+  function Backlash return Lash is
+    The_Backlash : Lash;
+  begin
+    The_Control.Request_Backlash;
+    The_Control.Get_Backlash (The_Backlash);
+    return The_Backlash;
+  end Backlash;
+
+
   function Position return Distance is
     The_Position : Distance;
   begin
@@ -111,6 +126,12 @@ package body Celestron.Focuser is
   end Move_To;
 
 
+  procedure Set (Item : Lash) is
+  begin
+     The_Control.Set (Item);
+  end Set;
+
+
   procedure Close is
   begin
     The_Control.Stop;
@@ -129,6 +150,8 @@ package body Celestron.Focuser is
     The_Channel      : Channel_Access;
     Is_Available     : Boolean := False;
     Is_Moving        : Boolean := False;
+    The_Backlash     : Lash := Lash'last;
+    New_Backlash     : Lash := 0;
     The_Position     : Distance := Distance'last;
     New_Position     : Distance;
     The_Command      : Command;
@@ -234,12 +257,22 @@ package body Celestron.Focuser is
     end Get_Available_State;
 
 
+    procedure Get_Backlash is
+    begin
+      if Is_Available then
+        Send ([Get_Backlash_Id]);
+        The_Backlash := Lash(Unsigned.Word_Of (Received_For (Get_Backlash_Id)));
+        Log.Write ("backlash:" & The_Backlash'image);
+      end if;
+    end Get_Backlash;
+
+
     procedure Get_Position is
     begin
       if Is_Available then
         Send ([Get_Position_Id]);
         The_Position := Distance(Unsigned.Longword_Of_Big_Endian (Received_For (Get_Position_Id)));
-        Log.Write ("position: " & The_Position'image);
+        Log.Write ("position:" & The_Position'image);
       end if;
     end Get_Position;
 
@@ -253,6 +286,27 @@ package body Celestron.Focuser is
         Log.Write ("moving: " & Is_Moving'image);
       end if;
     end Get_Moving_State;
+
+
+    procedure Set_Backlash (Id : Unsigned.Byte) is
+      use type Unsigned.Byte_String;
+    begin
+      if Is_Available then
+        Send ([Id, Unsigned.Byte(New_Backlash)]);
+        if Received_For (Id) = [] then
+          Log.Write ("set backlash for " & Id'image & " to" & New_Backlash'image);
+        end if;
+      end if;
+    end Set_Backlash;
+
+
+    procedure Set_Backlash is
+    begin
+      if Is_Available then
+        Set_Backlash (Set_In_Lash_Id);
+        Set_Backlash (Set_Out_Lash_Id);
+      end if;
+    end Set_Backlash;
 
 
     procedure Start_Moving is
@@ -325,6 +379,13 @@ package body Celestron.Focuser is
             end if;
           end Get_Moving;
         or
+          accept Request_Backlash;
+          Get_Backlash;
+        or
+          accept Get_Backlash (Item : out Lash) do
+            Item := The_Backlash;
+          end Get_Backlash;
+        or
           accept Request_Position;
           Get_Position;
         or
@@ -335,6 +396,11 @@ package body Celestron.Focuser is
           accept Get_Speed (Item : out Rate) do
             Item := The_Rate;
           end Get_Speed;
+        or
+          accept Set (Item : Lash) do
+            New_Backlash := Item;
+          end Set;
+          Set_Backlash;
         or
           accept Set (Item : Distance) do
             New_Position := Item;

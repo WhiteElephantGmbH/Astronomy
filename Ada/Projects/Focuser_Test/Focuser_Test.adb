@@ -42,11 +42,18 @@ begin
       declare
         Command : constant String := Ada.Text_IO.Get_Line;
       begin
+        exit when Command'length = 0;
         case Command(Command'first) is
         when '+' =>
           Focuser.Execute (Focuser.Increase_Rate);
         when '-' =>
           Focuser.Execute (Focuser.Decrease_Rate);
+        when 'b' =>
+          if Command'length > 1 then
+            Focuser.Set (Focuser.Lash'value(Command(Command'first + 1 .. Command'last)));
+          else
+            Ada.Text_IO.Put_Line ("### backlash value missing");
+          end if;
         when 'i' =>
           Focuser.Execute (Focuser.Move_In);
         when 'o' =>
@@ -62,10 +69,12 @@ begin
           raise Constraint_Error;
         end case;
       end;
-      Ada.Text_IO.Put_Line ("Rate:" & Focuser.Speed'image & " - Position:" & Focuser.Position'image);
+      Ada.Text_IO.Put_Line ("Rate:" & Focuser.Speed'image &
+                            " - Backlash:" & Focuser.Backlash'image &
+                            " - Position:" & Focuser.Position'image);
     exception
     when others =>
-      Ada.Text_IO.Put("expected: +, -, i, o, c or e");
+      Ada.Text_IO.Put("expected: +, -, b, i, o, c or e");
     end;
   end loop;
   loop
