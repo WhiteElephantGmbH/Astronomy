@@ -25,8 +25,11 @@ with Ada.Text_IO;
 with Celestron;
 with Exceptions;
 with Serial_Io.Usb;
+with System;
 with Text;
 with Unsigned;
+with Win32.Winbase;
+with Win32.Winnt;
 
 procedure Usb_Test is
 
@@ -80,6 +83,37 @@ procedure Usb_Test is
                        From     => Channel);
     Ada.Text_IO.Put_Line ("Version:" & The_Version);
   end Get_Version;
+
+
+  procedure Open is
+
+    Port_Name : aliased constant String := "\\.\COM" & Text.Trimmed(The_Focuser_Port'img) & Ascii.Nul;
+
+    use type Unsigned.Longword;
+
+    GENERIC_READ       : constant Unsigned.Longword := Win32.Winnt.GENERIC_READ;
+    GENERIC_WRITE      : constant Unsigned.Longword := Win32.Winnt.GENERIC_WRITE;
+    GENERIC_READ_WRITE : constant := GENERIC_READ or GENERIC_WRITE;
+
+    --FILE_FLAG_OVERLAPPED : constant := Win32.Winbase.FILE_FLAG_OVERLAPPED;
+
+    The_Device : Win32.Winnt.HANDLE;
+
+    use type System.Address;
+
+  begin
+    The_Device := Win32.Winbase.CreateFile (Win32.Addr(Port_Name),
+                                            GENERIC_READ_WRITE,
+                                            0, null,
+                                            Win32.Winbase.OPEN_EXISTING,
+                                            0, --FILE_FLAG_OVERLAPPED,
+                                            System.Null_Address);
+    if The_Device = Win32.Winbase.INVALID_HANDLE_VALUE then
+      Ada.Text_IO.Put_Line ("### failed to open focuser COM port - error:" & Win32.Winbase.GetLastError'image);
+    else
+      Ada.Text_IO.Put_Line ("focuser COM opened.");
+    end if;
+  end Open;
 
 
   procedure Connect is
@@ -212,6 +246,8 @@ begin -- Usb_Test
             Get_Version;
           when 'f' => -- focuser
             Get_Focuser_Port;
+          when 'o' => -- open focuser port
+            Open;
           when 'c' => -- connect focuser
             Connect;
           when 'e' => -- exit
