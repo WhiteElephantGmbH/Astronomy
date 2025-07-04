@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2025 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2019 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,7 +15,6 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Celestron.Focuser;
 with Serial_Io.Usb;
 with Traces;
 
@@ -23,29 +22,27 @@ package body Handbox is
 
   Vendor_Id  : constant Serial_Io.Usb.Vendor_Id := 3368;
   Product_Id : constant Serial_Io.Usb.Product_Id := 516;
-  Version    : constant String := "1.00";
+
+  Version : constant String := "2.00";
 
   package Log is new Traces ("Handbox");
 
-  package Focuser renames Celestron.Focuser;
-
-  task type Reader is
+  task type Reader (Handle : access procedure (Item : Command)) is
     entry Start;
     entry Close;
   end Reader;
 
   The_Reader : access Reader;
 
-  procedure Start is
+  procedure Start (With_Handler : access procedure (Item : Command)) is
   begin
-    The_Reader := new Reader;
+    The_Reader := new Reader (With_Handler);
     The_Reader.Start;
   end Start;
 
 
   The_Port     : Serial_Io.Port;
   Is_Available : Boolean := False;
-
 
   procedure Close is
   begin
@@ -73,6 +70,7 @@ package body Handbox is
                          On           => Channel);
           Serial_Io.Set_For_Read (The_Timeout => 1.0,
                                   On          => Channel);
+          Serial_Io.Flush (Channel);
           Serial_Io.Send (The_Item => 'v',
                           To       => Channel);
           Serial_Io.Receive (The_Item => The_Version,
@@ -90,8 +88,6 @@ package body Handbox is
       Log.Error ("port " & The_Port'img & " is not available");
     end Check_Handbox_Version;
 
-    Is_Moving : Boolean := False;
-
   begin -- Reader
     accept Start;
     Log.Write ("started");
@@ -101,54 +97,54 @@ package body Handbox is
         declare
           Channel       : Serial_Io.Channel(The_Port);
           The_Character : Character;
+          The_Command   : Command;
+          Unknown_Input : exception;
         begin
           Serial_Io.Set (The_Baudrate => 19200,
                          On           => Channel);
           loop
             begin
               Serial_Io.Receive (The_Character, Channel);
-              if The_Character in 'c' | 'C' | 'd' |'D' | 'l' |'L' | 'r' |'R' | 'u' | 'U' then
-                Log.Write ("input: " & The_Character);
-                if Is_Moving then
-                  case The_Character is
-                  when 'L' | 'R' =>
-                    Focuser.Execute (Focuser.Stop);
-                    Is_Moving := False;
-                  when others =>
-                    null;
-                  end case;
-                else
-                  case The_Character is
-                  when 'u' =>
-                    Focuser.Execute (Focuser.Increase_Rate);
-                  when 'd' =>
-                    Focuser.Execute (Focuser.Decrease_Rate);
-                  when 'l' =>
-                    Focuser.Execute (Focuser.Move_In);
-                    Is_Moving := True;
-                  when 'r' =>
-                    Focuser.Execute (Focuser.Move_Out);
-                    Is_Moving := True;
-                  when others =>
-                    null;
-                  end case;
-                end if;
-              else
-                Log.Error ("Unknown Input: " & The_Character);
-              end if;
+              case The_Character is
+              when 'c' =>
+                The_Command := Center_Pressed;
+              when 'C' =>
+                The_Command := Center_Released;
+              when 'd' =>
+                The_Command := Down_Pressed;
+              when 'D' =>
+                The_Command := Down_Released;
+              when 'l' =>
+                The_Command := Left_Pressed;
+              when 'L' =>
+                The_Command := Left_Released;
+              when 'r' =>
+                The_Command := Right_Pressed;
+              when 'R' =>
+                The_Command := Right_Released;
+              when 'u' =>
+                The_Command := Up_Pressed;
+              when 'U' =>
+                The_Command := Up_Released;
+              when others =>
+                raise Unknown_Input;
+              end case;
+              Log.Write ("Command: " & The_Command'image);
+              Handle (The_Command);
             exception
             when Serial_Io.Aborted =>
               accept Close;
               exit Main;
-            when Serial_Io.No_Access =>
+            when Unknown_Input =>
+              Log.Error ("Unknown Input: " & The_Character);
               exit;
-            when Serial_Io.Operation_Failed =>
-              Log.Error ("Read Error");
+            when Serial_Io.No_Access | Serial_Io.Operation_Failed=>
+              Log.Warning ("Disconnected");
               exit;
             end;
           end loop;
         end;
-        Focuser.Execute (Focuser.Stop);
+        Handle (Stop);
         Serial_Io.Free (The_Port);
       end if;
       select

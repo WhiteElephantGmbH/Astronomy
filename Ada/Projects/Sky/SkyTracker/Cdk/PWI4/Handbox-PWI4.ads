@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2019 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                           (c) 2025 by White Elephant GmbH, Schaffhausen, Switzerland                              *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,10 +15,8 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-package Handbox is
+package Handbox.PWI4 is
 
-  procedure Start;
+  procedure Handle (The_Command : Command);
 
-  procedure Close;
-
-end Handbox;
+end Handbox.PWI4;

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2019 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2019 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -17,7 +17,14 @@ pragma Style_White_Elephant;
 
 package Handbox is
 
-  procedure Start;
+  type Command is (Center_Pressed, Center_Released,
+                   Down_Pressed, Down_Released,
+                   Left_Pressed, Left_Released,
+                   Right_Pressed, Right_Released,
+                   Up_Pressed, Up_Released,
+                   Stop);
+
+  procedure Start (With_Handler : access procedure (Item : Command));
 
   procedure Close;
 

@@ -19,7 +19,7 @@ with Ada.Real_Time;
 with Application;
 with Error;
 with Gui;
-with Handbox;
+with Handbox.PWI4;
 with Horizon;
 with Http_Server.PWI4;
 with Name;
@@ -338,7 +338,7 @@ package body Control is
   begin -- Manager
     Log.Write ("manager start");
     Http_Server.PWI4.Start;
-    Handbox.Start;
+    Handbox.Start (Handbox.PWI4.Handle'access);
     if Remote.Configured then
       Remote.Start;
     end if;

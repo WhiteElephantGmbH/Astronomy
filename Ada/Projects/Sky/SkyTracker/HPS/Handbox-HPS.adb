@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2019 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                      *
+-- *                           (c) 2025 by White Elephant GmbH, Schaffhausen, Switzerland                              *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,15 +15,40 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-pragma Build (Description => "SkyTracker control program for CDK700 (PWI2)",
-              Version     => (2, 3, 8, 1),
-              Kind        => Windows,
-              Libraries   => ("AWS64", "COLL64"),
-              Compiler    => "GNATPRO\23.0");
+with Celestron.Focuser;
 
-with Control;
+package body Handbox.HPS is
 
-procedure SkyTracker is
-begin
-  Control.Start;
-end SkyTracker;
+  package Focuser renames Celestron.Focuser;
+
+  Is_Moving : Boolean;
+
+  procedure Handle (The_Command : Command) is
+  begin
+    if Is_Moving then
+      case The_Command is
+      when Left_Released | Right_Released | Stop =>
+        Focuser.Execute (Focuser.Stop);
+        Is_Moving := False;
+      when others =>
+        null;
+      end case;
+    else
+      case The_Command is
+      when Up_Pressed =>
+        Focuser.Execute (Focuser.Increase_Rate);
+      when Down_Pressed =>
+        Focuser.Execute (Focuser.Decrease_Rate);
+      when Left_Pressed =>
+        Focuser.Execute (Focuser.Move_In);
+        Is_Moving := True;
+      when Right_Pressed =>
+        Focuser.Execute (Focuser.Move_Out);
+        Is_Moving := True;
+      when others =>
+        null;
+      end case;
+    end if;
+  end Handle;
+
+end Handbox.HPS;

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2019 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2019 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -20,7 +20,7 @@ with Application;
 with Cdk_700;
 with Error;
 with Gui;
-with Handbox;
+with Handbox.PWI2;
 with Horizon;
 with Lx200_Server;
 with Name;
@@ -351,7 +351,7 @@ package body Control is
   begin -- Manager
     Log.Write ("manager start");
     Telescope.Set (User.Image_Orientation);
-    Handbox.Start;
+    Handbox.Start (Handbox.PWI2.Handle'access);
     if Remote.Configured then
       Remote.Start;
     end if;

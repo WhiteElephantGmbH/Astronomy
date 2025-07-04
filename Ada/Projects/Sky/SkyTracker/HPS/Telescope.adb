@@ -20,7 +20,7 @@ with Astro;
 with Camera;
 with Clock;
 with Celestron.Focuser;
-with Handbox;
+with Handbox.HPS;
 with Http_Server.HPS;
 with Input;
 with Picture;
@@ -124,7 +124,7 @@ package body Telescope is
   procedure Start (Update_Handler : Information_Update_Handler) is
   begin
     Focuser.Start;
-    Handbox.Start;
+    Handbox.Start (Handbox.HPS.Handle'access);
     Input.Open (Execute'access);
     Signal_Information_Update := Update_Handler;
     Control := new Control_Task;
