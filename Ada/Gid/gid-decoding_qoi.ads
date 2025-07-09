@@ -1,4 +1,10 @@
-private package GID.Decoding_BMP is
+--  QOI - The "Quite OK Image" format for fast, lossless image compression
+--
+--  https://github.com/phoboslab/qoi
+--
+--  Dominic Szablewski - https://phoboslab.org
+
+private package GID.Decoding_QOI is
 
   --------------------
   -- Image decoding --
@@ -14,4 +20,4 @@ private package GID.Decoding_BMP is
   --
   procedure Load (image : in out Image_Descriptor);
 
-end GID.Decoding_BMP;
+end GID.Decoding_QOI;

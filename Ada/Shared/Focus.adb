@@ -31,15 +31,15 @@ package body Focus is
 
   function Half_Flux_Diameter (Filename : String) return Diameter is
 
-    GID_Image : GID.Image_descriptor;
+    GID_Image : GID.Image_Descriptor;
 
     The_Diameter : Diameter;
 
     procedure Evaluate_Diameter is
 
-      Width  : constant Positive := GID.Pixel_width (GID_Image);
-      Height : constant Positive := GID.Pixel_height (GID_Image);
-      Bits   : constant Positive := GID.Bits_per_pixel (GID_Image);
+      Width  : constant Positive := GID.Pixel_Width (GID_Image);
+      Height : constant Positive := GID.Pixel_Height (GID_Image);
+      Bits   : constant Positive := GID.Bits_per_Pixel (GID_Image);
 
       type Value is new Unsigned.Byte;
 
@@ -96,7 +96,7 @@ package body Focus is
           null;
         end Feedback;
 
-        procedure Load_Image is new GID.Load_image_contents (Primary_color_range => Color_Range,
+        procedure Load_Image is new GID.Load_Image_Contents (Primary_Color_Range => Color_Range,
                                                              Set_X_Y             => Set_X_Y,
                                                              Put_Pixel           => Put_Pixel,
                                                              Feedback            => Feedback,
@@ -126,8 +126,8 @@ package body Focus is
           end loop;
         end loop;
         The_Average := Value(The_Total / Long_Long_Integer(Center_Area * 2) ** 2);
-        Log.Write ("Average:" & The_Average'image);
-        Log.Write ("Maximum:" & Max_Value'image);
+        Log.Write ("  Average:" & The_Average'image);
+        Log.Write ("  Maximum:" & Max_Value'image);
       end Find_Average_And_Maximum;
 
 
@@ -139,7 +139,7 @@ package body Focus is
         The_Count : Natural := 0;
         Limit     : constant Value := Max_Value - (Max_Value - The_Average) / 2;
       begin
-        Log.Write ("Limit:" & Limit'image);
+        Log.Write ("  Limit:" & Limit'image);
         for The_Column in Column loop
           for The_Row in Row loop
             if The_Image(The_Column, The_Row) > Limit then
@@ -158,9 +158,9 @@ package body Focus is
           raise No_Object_Found;
         end if;
         Center_Row := Row(Natural(Center_Row) - Max_Count / 2);
-        Log.Write ("Column:" & Center_Column'image);
-        Log.Write ("Row:" & Natural'(Height - Natural(Center_Row))'image);
-        Log.Write ("Size:" & Max_Count'image);
+        Log.Write ("  Column:" & Center_Column'image);
+        Log.Write ("  Row:" & Natural'(Height - Natural(Center_Row))'image); -- Photo Shop compatibe row
+        Log.Write ("  Size:" & Max_Count'image);
       end Find_Largest_Object;
 
 
@@ -177,25 +177,21 @@ package body Focus is
           The_First_Column := The_First_Column - 1;
           exit when The_Image(The_First_Column, Center_Row) < The_Average;
         end loop;
-        Log.Write ("First Column:" & The_First_Column'image);
         loop
           exit when The_Last_Column = Column'last;
           The_Last_Column := The_Last_Column + 1;
           exit when The_Image(The_Last_Column, Center_Row) < The_Average;
         end loop;
-        Log.Write ("Last Column:" & The_Last_Column'image);
         loop
           exit when The_First_Row = Row'first;
           The_First_Row := The_First_Row - 1;
           exit when The_Image(Center_Column, The_First_Row) < The_Average;
         end loop;
-        Log.Write ("First Row:" & The_First_Row'image);
         loop
           exit when The_Last_Row = Row'last;
           The_Last_Row := The_Last_Row + 1;
           exit when The_Image(Center_Column, The_Last_Row) < The_Average;
         end loop;
-        Log.Write ("Last Row:" & The_Last_Row'image);
         for The_Column in The_First_Column .. The_Last_Column loop
           for The_Row in The_First_Row .. The_Last_Row loop
             if The_Image(The_Column, The_Row) > The_Average then
@@ -203,7 +199,7 @@ package body Focus is
             end if;
           end loop;
         end loop;
-        Log.Write ("Pixel Count:" & The_Pixel_Count'image);
+        Log.Write ("  Pixel Count:" & The_Pixel_Count'image);
       end Count_Object_Pixels;
 
     begin -- Evaluated_Diameter
@@ -216,11 +212,13 @@ package body Focus is
       Find_Largest_Object;
       Count_Object_Pixels;
       The_Diameter := Diameter(Numeric.Sqrt (Float(The_Pixel_Count)));
+      Log.Write ("> HFD =" & The_Diameter'image);
     end Evaluate_Diameter;
 
     The_File  : Ada.Streams.Stream_IO.File_Type;
 
   begin
+    Log.Write ("Half_Flux_Diameter of " & Filename);
     begin
       Ada.Streams.Stream_IO.Open (File => The_File,
                                   Mode => Ada.Streams.Stream_IO.In_File,
@@ -231,7 +229,7 @@ package body Focus is
     end;
     declare
     begin
-      GID.Load_image_header (image => GID_Image,
+      GID.Load_Image_Header (image => GID_Image,
                              from  => Ada.Streams.Stream_IO.Stream(The_File).all);
       Evaluate_Diameter;
       Ada.Streams.Stream_IO.Close (The_File);

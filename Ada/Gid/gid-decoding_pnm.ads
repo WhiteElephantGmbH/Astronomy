@@ -9,34 +9,33 @@ private package GID.Decoding_PNM is
   --------------------
 
   generic
-    type Primary_color_range is mod <>;
-    with procedure Set_X_Y (x, y: Natural);
-    with procedure Put_Pixel (
-      red, green, blue : Primary_color_range;
-      alpha            : Primary_color_range
-    );
-    with procedure Feedback (percents: Natural);
+    type Primary_Color_Range is mod <>;
+    with procedure Set_X_Y (x, y : Natural);
+    with procedure Put_Pixel
+      (red, green, blue : Primary_Color_Range;
+       alpha            : Primary_Color_Range);
+    with procedure Feedback (percents : Natural);
   --
-  procedure Load (image: in out Image_descriptor);
+  procedure Load (image : in out Image_Descriptor);
 
-  function Get_Token(
+  function Get_Token (
     stream      : Stream_Access;
-    needs_EOL   : Boolean:= False;
-    single_char : Boolean:= False
+    needs_EOL   : Boolean := False;
+    single_char : Boolean := False
   )
   return String;
 
-  function Get_Integer(
+  function Get_Integer (
     stream      : Stream_Access;
-    needs_EOL   : Boolean:= False;
-    single_char : Boolean:= False
+    needs_EOL   : Boolean := False;
+    single_char : Boolean := False
   )
   return Integer;
 
-  function Get_Positive_32(
+  function Get_Positive_32 (
     stream      : Stream_Access;
-    needs_EOL   : Boolean:= False;
-    single_char : Boolean:= False
+    needs_EOL   : Boolean := False;
+    single_char : Boolean := False
   )
   return Positive_32;
 
