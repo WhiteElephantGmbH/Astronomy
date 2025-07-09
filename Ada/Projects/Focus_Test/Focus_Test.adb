@@ -40,7 +40,7 @@ begin
     Ada.Text_IO.Put_Line ("HFD Albireo:" & Diameter'img);
   end;
   declare
-    Diameter : constant Focus.Diameter := Focus.Half_Flux_Diameter ("D:\Picture\Andromeda.jpg");
+    Diameter : constant Focus.Diameter := Focus.Half_Flux_Diameter ("D:\Picture\Andromeda.png");
   begin
     Ada.Text_IO.Put_Line ("HFD Andromeda:" & Diameter'img);
   end;
