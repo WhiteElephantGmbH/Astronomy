@@ -41,20 +41,22 @@ package Termios_Interface is
   -- Baud rates
   B19200 : constant Speed_T := 14;
 
-  No_Flag : constant Tcflag_T := 0;
+  VMIN  : constant := 6; -- index for minimum number of read bytes
+  VTIME : constant := 5; -- index for interbyte timeout in 1/10s
+
+  No_Flags : constant Tcflag_T := 0;
 
   type Termios is record
-    C_Iflag  : Tcflag_T := No_Flag;
-    C_Oflag  : Tcflag_T := No_Flag;
-    C_Cflag  : Tcflag_T := No_Flag;
-    C_Lflag  : Tcflag_T := No_Flag;
+    C_Iflag  : Tcflag_T;
+    C_Oflag  : Tcflag_T;
+    C_Cflag  : Tcflag_T;
+    C_Lflag  : Tcflag_T;
     C_Line   : Cc_T;
     C_Cc     : Cc_Array;
     C_Ispeed : Speed_T;
     C_Ospeed : Speed_T;
   end record
-  with
-    Convention => C;
+    with Convention => C;
 
 
   ----------------------------
@@ -62,10 +64,10 @@ package Termios_Interface is
   ----------------------------
   function Tcgetattr (Fd        : I.File_Descriptor;
                       Termios_P : access Termios) return I.Return_Code
-  with
-    Import        => True,
-    Convention    => C,
-    External_Name => "tcgetattr";
+    with
+      Import        => True,
+      Convention    => C,
+      External_Name => "tcgetattr";
 
 
   ----------------------------
@@ -74,10 +76,10 @@ package Termios_Interface is
   function Tcsetattr (Fd               : I.File_Descriptor;
                       Optional_Actions : C.int;
                       Termios_P        : access Termios) return I.Return_Code
-  with
-    Import        => True,
-    Convention    => C,
-    External_Name => "tcsetattr";
+    with
+      Import        => True,
+      Convention    => C,
+      External_Name => "tcsetattr";
 
 
   ------------------------------
@@ -85,10 +87,10 @@ package Termios_Interface is
   ------------------------------
   function Cfsetispeed (Termios_P : access Termios;
                         Speed     : Speed_T) return I.Return_Code
-  with
-    Import        => True,
-    Convention    => C,
-    External_Name => "cfsetispeed";
+    with
+      Import        => True,
+      Convention    => C,
+      External_Name => "cfsetispeed";
 
 
   ------------------------------
@@ -96,10 +98,10 @@ package Termios_Interface is
   ------------------------------
   function Cfsetospeed (Termios_P : access Termios;
                         Speed     : Speed_T) return I.Return_Code
-  with
-    Import        => True,
-    Convention    => C,
-    External_Name => "cfsetospeed";
+    with
+      Import        => True,
+      Convention    => C,
+      External_Name => "cfsetospeed";
 
 
   -----------------------------
@@ -107,9 +109,9 @@ package Termios_Interface is
   -----------------------------
   function Cfsetspeed (Termios_P : access Termios;
                        Speed     : Speed_T) return I.Return_Code
-  with
-    Import        => True,
-    Convention    => C,
-    External_Name => "cfsetspeed";
+    with
+      Import        => True,
+      Convention    => C,
+      External_Name => "cfsetspeed";
 
 end Termios_Interface;

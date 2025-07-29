@@ -119,8 +119,10 @@ package body Linux_Focuser is
         begin
           if S'Length = 0 then
             return "";
+          elsif S(S'First) /= ' ' then
+            return S;
           end if;
-          return S(S'First + 1.. S'Last);
+          return S(S'First + 1 .. S'Last);
         end Trimmed;
       begin
         return Trimmed (Left & Trimmed(Unsigned.Word_Of_Big_Endian(Right)'image));

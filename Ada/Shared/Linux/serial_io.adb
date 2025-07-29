@@ -15,7 +15,6 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Ada.Text_IO;
 with Ada.Unchecked_Deallocation;
 with Interfaces.C.Strings;
 with Standard_C_Interface;
@@ -28,9 +27,6 @@ package body Serial_Io is
   package I renames Standard_C_Interface;
   package T renames Termios_Interface;
 
-  package IO renames Ada.Text_IO;
-
-  ------------------------------------------------------------------------------------------------------------------------
 
   type Data is record
     Fd      : I.File_Descriptor;
@@ -45,11 +41,9 @@ package body Serial_Io is
     Fd : I.File_Descriptor;
     use type I.File_Descriptor;
   begin
-    IO.Put_Line ("Opening /dev/ttyACM0...");
     Fd := I.Open (C.Strings.New_String("/dev/ttyACM0"), I.Read_Write, 0);
     if Fd = I.Not_Opened then
-      IO.Put_Line ("Failed to open serial port.");
-      raise No_Access;
+      raise No_Access with "Failed to open serial port.";
     end if;
     return Fd;
   end New_Device;
@@ -63,22 +57,26 @@ package body Serial_Io is
     D.Fd := New_Device (The_Channel.The_Port);
 
     if T.Tcgetattr (D.Fd, D.Tio'access) /= I.Success then
-      IO.Put_Line ("tcgetattr failed");
-      raise No_Access;
+      raise No_Access with "Tcgetattr failed.";
     end if;
-    D.Tio.C_Cflag := T.CS8 + T.CREAD + T.CLOCAL;
+
+    -- Set raw mode
+    D.Tio.C_IFlag := T.No_Flags;
+    D.Tio.C_OFlag := T.No_Flags;
+    D.Tio.C_LFlag := T.No_Flags;
+    D.Tio.C_CFlag := T.CS8 + T.CREAD + T.CLOCAL;
+
+    D.Tio.C_CC (T.VMIN) := T.CC_T'Val(0);
+    D.Tio.C_CC (T.VTIME) := T.CC_T'Val(0);
 
     if T.Cfsetspeed (D.Tio'access, T.B19200) /= I.Success then
-      IO.Put_Line ("Setting baud rate failed");
-      raise No_Access;
+      raise No_Access with "Setting baud rate failed.";
     end if;
 
     if T.Tcsetattr (D.Fd, T.TCSANOW, D.Tio'access) /= I.Success then
-      IO.Put_Line ("tcsetattr failed");
-      raise No_Access;
+      raise No_Access with "Tcsetattr failed.";
     end if;
 
-    IO.Put_Line ("Serial port configured.");
   end Create;
 
 
@@ -86,9 +84,7 @@ package body Serial_Io is
     use type I.Return_Code;
   begin
     if I.Close(The_Data.Fd) /= I.Success then
-      IO.Put_Line("Failed to close serial port.");
-    else
-      IO.Put_Line("Serial port closed.");
+      raise Operation_Failed with "Close Failed.";
     end if;
   end Close;
 
@@ -101,6 +97,7 @@ package body Serial_Io is
     The_Data : Data_Pointers := [others => null];
   end Port_Allocator;
 
+  
   protected body Port_Allocator is
 
     procedure Request (The_Channel : in out Channel) is
@@ -112,7 +109,7 @@ package body Serial_Io is
     procedure Check_Aborted (The_Port : Port) is
     begin
       if The_Data (The_Port) = null then
-        raise Aborted;
+        raise Aborted with "Check_Aborted";
       end if;
     end Check_Aborted;
 
@@ -168,7 +165,7 @@ package body Serial_Io is
     when T.B19200 =>
       return 19200;
     when others =>
-      raise Operation_Failed;
+      raise Operation_Failed with "not implemented baudrate.";
     end case;
   end Baudrate_Of;
 
@@ -270,9 +267,14 @@ package body Serial_Io is
   procedure Set (The_Byte_Size : Byte_Size;
                  On            : Channel) is
   begin
-    raise Operation_Failed;
+    case The_Byte_Size is
+    when Eight_Bit_Bytes =>
+      null;
+    when others =>
+      raise Operation_Failed with "Not_Supported: The_Byte_Size " & The_Byte_Size'image;
+    end case;
   end Set;
-
+ 
 
   function Byte_Size_Of (The_Channel : Channel) return Byte_Size is
   begin
@@ -286,7 +288,7 @@ package body Serial_Io is
     use type I.Return_Count;
   begin
     if I.Write (To.The_Data.Fd, From_Address, C.size_t(The_Amount)) /= I.Return_Count(The_Amount) then
-      raise No_Access;
+      raise No_Access with "Send failed.";
     end if;
   end Send;
 
@@ -345,15 +347,20 @@ package body Serial_Io is
                              Read_Fds => Fd_Set'access,
                              Timeout  => Tio'access);
     if Result = I.Failed then
-      IO.Put_Line ("select() failed.");
       Port_Allocator.Check_Aborted (From.The_Port);
       Reset_Device;
-      raise No_Access;
+      raise No_Access with "Wait_Select failed.";
     elsif Result = 0 then
       Port_Allocator.Check_Aborted (From.The_Port);
       raise Timeout;
-    elsif I.Read (D.Fd, To_Address'address, C.size_t(The_Amount)) = I.Return_Count(The_Amount) then
-      IO.Put_Line ("Received - Count =" & The_Amount'image);
+    else
+      declare
+        Result : constant I.Return_Count := I.Read (D.Fd, To_Address, C.size_t(The_Amount));
+      begin
+        if Natural(Result) /= The_Amount then
+          raise Operation_Failed with "Receive - Result:" & Result'Image;
+        end if;
+      end;
     end if;
   end Receive;
 
@@ -367,7 +374,7 @@ package body Serial_Io is
 
   procedure Receive (The_Item : out Character;
                      From     : Channel) is
-    The_String : String(1..1);
+    The_String : aliased String(1..1);
   begin
     Receive (The_String, From);
     The_Item := The_String(1);

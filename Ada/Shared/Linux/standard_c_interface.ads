@@ -110,7 +110,7 @@ package Standard_C_Interface is
     with
       Import        => True,
       Convention    => C,
-      External_Name => "read";
+      External_Name => "write";
 
 
   -----------------------------
