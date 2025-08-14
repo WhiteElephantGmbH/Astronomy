@@ -25,6 +25,7 @@ with Ada.Text_IO;
 with Celestron;
 with Exceptions;
 with Serial_Io.Usb;
+with Serial_Io.Windows;
 with System;
 with Text;
 with Unsigned;
@@ -35,8 +36,8 @@ procedure Usb_Test is
 
   Port_Unknown : exception;
 
-  function Port_For (Vid : Serial_Io.Usb.Vendor_Id;
-                      Pid : Serial_Io.Usb.Product_Id) return Serial_Io.Port is
+  function Port_For (Vid : Serial_Io.Vendor_Id;
+                     Pid : Serial_Io.Product_Id) return Serial_Io.Windows.Port is
     Ports : constant Serial_Io.Usb.Ports := Serial_Io.Usb.Ports_For (Vid, Pid);
   begin
     Ada.Text_IO.Put_Line ("Number of ports:" & Ports'length'image);
@@ -47,22 +48,22 @@ procedure Usb_Test is
     end if;
   end Port_For;
 
-  The_Handbox_Port : Serial_Io.Port;
+  The_Handbox_Port : Serial_Io.Windows.Port;
 
   procedure Get_Handbox_Port is
-    ARM_Vendor_Id        : constant Serial_Io.Usb.Vendor_Id := 3368;
-    Micro_Bit_Product_Id : constant Serial_Io.Usb.Product_Id := 516;
+    ARM_Vendor_Id        : constant Serial_Io.Vendor_Id := 3368;
+    Micro_Bit_Product_Id : constant Serial_Io.Product_Id := 516;
   begin
     The_Handbox_Port := Port_For (ARM_Vendor_Id, Micro_Bit_Product_Id);
     Ada.Text_IO.Put_Line ("Handbox Port: " & The_Handbox_Port'image);
   end Get_Handbox_Port;
 
 
-  The_Focuser_Port : Serial_Io.Port;
+  The_Focuser_Port : Serial_Io.Windows.Port;
 
   procedure Get_Focuser_Port is
-    Celestron_Vendor_Id : constant Serial_Io.Usb.Vendor_Id := Celestron.Vendor_Id;
-    Focuser_Product_Id : constant Serial_Io.Usb.Product_Id := 42255;
+    Celestron_Vendor_Id : constant Serial_Io.Vendor_Id := Celestron.Vendor_Id;
+    Focuser_Product_Id : constant Serial_Io.Product_Id := 42255;
   begin
     The_Focuser_Port := Port_For (Celestron_Vendor_Id, Focuser_Product_Id);
     Ada.Text_IO.Put_Line ("Focuser Port: " & The_Focuser_Port'image);
@@ -70,17 +71,17 @@ procedure Usb_Test is
 
 
   procedure Get_Version is
-    Channel     : Serial_Io.Channel(The_Handbox_Port);
+    Channel     : Serial_Io.Windows.Channel(The_Handbox_Port);
     The_Version : String := "x.xx";
   begin
     --Serial_Io.Set (The_Baudrate => 19200,
     --               On           => Channel);
-    Serial_Io.Set_For_Read (The_Timeout => 1.0,
-                            On          => Channel);
-    Serial_Io.Send (The_Item => 'v',
-                    To       => Channel);
-    Serial_Io.Receive (The_Item => The_Version,
-                       From     => Channel);
+    Serial_Io.Windows.Set_For_Read (The_Timeout => 1.0,
+                                    On          => Channel);
+    Serial_Io.Windows.Send (The_Item => 'v',
+                            To       => Channel);
+    Serial_Io.Windows.Receive (The_Item => The_Version,
+                               From     => Channel);
     Ada.Text_IO.Put_Line ("Version:" & The_Version);
   end Get_Version;
 
@@ -123,7 +124,7 @@ procedure Usb_Test is
     Transmit_Id  : constant Unsigned.Byte := 16#22#;
     Connect_Id   : constant Unsigned.Byte := 16#FE#;
 
-    Channel : Serial_Io.Channel(The_Focuser_Port);
+    Channel : Serial_Io.Windows.Channel(The_Focuser_Port);
 
     function Checksum_Of (Sum : Natural) return Unsigned.Byte is
     begin
@@ -146,7 +147,7 @@ procedure Usb_Test is
         The_Sum := The_Sum + Natural(The_Data(Index));
       end loop;
       The_Data(The_Data'last) := Checksum_Of (The_Sum);
-      Serial_Io.Send (The_Data, Channel);
+      Serial_Io.Windows.Send (The_Data, Channel);
       Ada.Text_IO.Put_Line ("sent: " & Unsigned.Hex_Image_Of (The_Data));
     end Send;
 
@@ -161,7 +162,7 @@ procedure Usb_Test is
       function Received_Byte return Unsigned.Byte is
         The_Byte : Unsigned.Byte;
       begin
-        Serial_Io.Receive (The_Byte, From => Channel);
+        Serial_Io.Windows.Receive (The_Byte, From => Channel);
         return The_Byte;
       exception
       when Item: others =>
@@ -195,7 +196,7 @@ procedure Usb_Test is
         The_Data : Unsigned.Byte_String(1 .. The_Count - 3);
       begin
         if The_Data'length /= 0 then
-          Serial_Io.Receive (The_Data, From => Channel);
+          Serial_Io.Windows.Receive (The_Data, From => Channel);
           for Item of The_Data loop
             The_Sum := The_Sum + Natural(Item);
           end loop;
@@ -213,7 +214,7 @@ procedure Usb_Test is
 
   begin
     --Serial_Io.Set (The_Baudrate => 19200, On => Channel);
-    Serial_Io.Set_For_Read (The_Timeout => 1.0, On => Channel);
+    Serial_Io.Windows.Set_For_Read (The_Timeout => 1.0, On => Channel);
     Send ([Connect_Id]);
     declare
       Version : constant Unsigned.Byte_String := Received_For (Connect_Id);
@@ -225,7 +226,7 @@ procedure Usb_Test is
   exception
   when Item: others =>
     Ada.Text_IO.Put_Line (Exceptions.Information_Of (Item));
-    Serial_Io.Free (The_Focuser_Port);
+    Serial_Io.Windows.Free (The_Focuser_Port);
   end Connect;
 
 

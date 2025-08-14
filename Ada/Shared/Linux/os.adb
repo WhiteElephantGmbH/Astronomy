@@ -15,8 +15,47 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-package Linux_Focuser is
+package body Os is
 
-  procedure Execute;
+  function Computer_Name return String is
+  begin
+    return "Raspberry";
+  end Computer_Name;
 
-end Linux_Focuser;
+
+  function Thread_Id return String is
+  begin
+    return "";
+  end Thread_Id;
+
+
+  function Is_Shutting_Down return Boolean is
+  begin
+    return False;
+  end Is_Shutting_Down;
+
+
+  function Family return Family_Name is
+  begin
+    return Linux;
+  end Family;
+
+
+  function Is_Linux return Boolean is
+  begin
+    return True;
+  end Is_Linux;
+
+
+  function Is_Osx return Boolean is
+  begin
+    return False;
+  end Is_Osx;
+
+
+  function Is_Windows return Boolean is
+  begin
+    return False;
+  end Is_Windows;
+
+end Os;

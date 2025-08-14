@@ -16,7 +16,7 @@
 pragma Style_White_Elephant;
 
 with Exceptions;
-with Serial_Io.Usb;
+with Serial_Io;
 with Traces;
 with Unsigned;
 
@@ -24,7 +24,7 @@ package body Celestron.Focuser is
 
   package Log is new Traces ("Focuser");
 
-  Product_Id : constant Serial_Io.Usb.Product_Id := 42255;
+  Product_Id : constant Serial_Io.Product_Id := 42255;
 
   Start_Packet : constant Unsigned.Byte := 16#3B#;
   Receive_Id   : constant Unsigned.Byte := 16#12#;
@@ -144,18 +144,15 @@ package body Celestron.Focuser is
 
     Rate_Offset : constant Unsigned.Byte := 9 - Unsigned.Byte(Rate'last);
 
-    type Channel_Access is access Serial_Io.Channel;
-
-    The_Focuser_Port : Serial_Io.Port;
-    The_Channel      : Channel_Access;
-    Is_Available     : Boolean := False;
-    Is_Moving        : Boolean := False;
-    The_Backlash     : Lash := Lash'last;
-    New_Backlash     : Lash := 0;
-    The_Position     : Distance := Distance'last;
-    New_Position     : Distance;
-    The_Command      : Command;
-    The_Rate         : Rate := Startup_Rate;
+    The_Device   : Serial_Io.Device;
+    Is_Available : Boolean := False;
+    Is_Moving    : Boolean := False;
+    The_Backlash : Lash := Lash'last;
+    New_Backlash : Lash := 0;
+    The_Position : Distance := Distance'last;
+    New_Position : Distance;
+    The_Command  : Command;
+    The_Rate     : Rate := Startup_Rate;
 
     Protocol_Error : exception;
 
@@ -180,7 +177,7 @@ package body Celestron.Focuser is
         The_Sum := The_Sum + Natural(The_Data(Index));
       end loop;
       The_Data(The_Data'last) := Checksum_Of (The_Sum);
-      Serial_Io.Send (The_Data, The_Channel.all);
+      The_Device.Send (The_Data);
     end Send;
 
 
@@ -193,7 +190,7 @@ package body Celestron.Focuser is
                        Error_Message : String) is
         The_Byte : Unsigned.Byte;
       begin
-        Serial_Io.Receive (The_Byte, From => The_Channel.all);
+        The_Device.Receive (The_Byte);
         if The_Byte /= Item then
           Log.Error (Error_Message & "(received: " & Unsigned.Image_Of (The_Byte) &
                                    " - expected: " & Unsigned.Image_Of (Item) & ")");
@@ -203,10 +200,10 @@ package body Celestron.Focuser is
       end Check;
 
     begin -- Received
-      while Serial_Io.Byte_Of (The_Channel.all) /= Start_Packet loop
+      while The_Device.Next_Byte /= Start_Packet loop
         null;
       end loop;
-      The_Count := Natural(Serial_Io.Byte_Of (The_Channel.all));
+      The_Count := Natural(The_Device.Next_Byte);
       The_Sum := The_Count;
       Check (Receive_Id, "incorrect receive Id");
       Check (Transmit_Id, "incorrect transmit Id");
@@ -215,7 +212,7 @@ package body Celestron.Focuser is
         The_Data : Unsigned.Byte_String(1 .. The_Count - 3);
       begin
         if The_Data'length /= 0 then
-          Serial_Io.Receive (The_Data, From => The_Channel.all);
+          The_Device.Receive (The_Data);
           for Item of The_Data loop
             The_Sum := The_Sum + Natural(Item);
           end loop;
@@ -227,25 +224,20 @@ package body Celestron.Focuser is
 
 
     procedure Connect is
-      Ports : constant Serial_Io.Usb.Ports := Serial_Io.Usb.Ports_For (Vid => Vendor_Id, Pid => Product_Id);
     begin
-      if Ports'length = 1 then
-        The_Focuser_Port := Ports(Ports'first);
-        The_Channel := new Serial_Io.Channel(The_Focuser_Port);
-        Serial_Io.Set (The_Baudrate => 19200, On => The_Channel.all);
-        Serial_Io.Set_For_Read (The_Timeout => 1.0, On => The_Channel.all);
-        Send ([Connect_Id]);
-        declare
-          Version : constant Unsigned.Byte_String := Received_For (Connect_Id);
-        begin
-          Log.Write ("version: " & Unsigned.Hex_Image_Of (Version));
-        end;
-        Is_Available := True;
-      end if;
+      The_Device.Allocate (Vendor => Vendor_Id, Product => Product_Id);
+      The_Device.Set (Serial_Io.B19200);
+      The_Device.Set_For_Read (The_Timeout => 1.0);
+      Send ([Connect_Id]);
+      declare
+        Version : constant Unsigned.Byte_String := Received_For (Connect_Id);
+      begin
+        Log.Write ("version: " & Unsigned.Hex_Image_Of (Version));
+      end;
+      Is_Available := True;
     exception
     when others =>
       Is_Available := False;
-      Serial_Io.Free (The_Focuser_Port);
     end Connect;
 
 
@@ -422,12 +414,8 @@ package body Celestron.Focuser is
       when Item: others =>
         Log.Error (Exceptions.Name_Of (Item));
         Is_Available := False;
-        Serial_Io.Free (The_Focuser_Port);
       end;
     end loop;
-    if Is_Available then
-      Serial_Io.Free (The_Focuser_Port);
-    end if;
     Log.Write ("end");
   exception
   when Item: others =>

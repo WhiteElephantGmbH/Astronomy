@@ -15,8 +15,12 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-package Serial_Input_Test is
+package Serial_Io.Usb is
 
-  procedure Execute;
+  function Device_Name_For (Vid : Vendor_Id;
+                            Pid : Product_Id) return String;
 
-end Serial_Input_Test;
+  -- raises Device_Not_Found or Multiple_Devices;
+
+end Serial_Io.Usb;
+

@@ -13,6 +13,7 @@ with PWI4.Rotator;
 with PWI4.Mount;
 with PWI4.M3;
 with Serial_Io.Usb;
+with Serial_Io.Windows;
 with Text;
 
 package body Test is
@@ -75,9 +76,9 @@ package body Test is
     Incorrect_Port : exception;
     Port_Not_Found : exception;
 
-    function Detected_Port return Serial_Io.Port is
-      Vendor_Id  : constant Serial_Io.Usb.Vendor_Id := 3368;
-      Product_Id : constant Serial_Io.Usb.Product_Id := 516;
+    function Detected_Port return Serial_Io.Windows.Port is
+      Vendor_Id  : constant Serial_Io.Vendor_Id := 3368;
+      Product_Id : constant Serial_Io.Product_Id := 516;
     begin
       if Port_Image = "" then
         declare
@@ -94,7 +95,7 @@ package body Test is
         end;
       else
         begin
-          return Serial_Io.Port'value(Port_Image);
+          return Serial_Io.Windows.Port'value(Port_Image);
         exception
         when others =>
           raise Incorrect_Port;
@@ -107,32 +108,32 @@ package body Test is
     end Reader;
 
     The_Reader : access Reader;
-    The_Port   : Serial_Io.Port;
+    The_Port   : Serial_Io.Windows.Port;
 
     task body Reader is
-      Channel       : Serial_Io.Channel(The_Port);
+      Channel       : Serial_Io.Windows.Channel(The_Port);
       The_Character : Character;
       The_Version   : String := "x.xx";
     begin
       accept Start;
       begin
-        Serial_Io.Set (The_Baudrate => 19200,
-                       On           => Channel);
-        Serial_Io.Set_For_Read (The_Timeout => 1.0,
-                                On          => Channel);
-        Serial_Io.Send (The_Item => 'v',
-                        To       => Channel);
-        Serial_Io.Receive (The_Item => The_Version,
-                           From     => Channel);
+        Serial_Io.Windows.Set (The_Baudrate => Serial_Io.B19200,
+                               On           => Channel);
+        Serial_Io.Windows.Set_For_Read (The_Timeout => 1.0,
+                                        On          => Channel);
+        Serial_Io.Windows.Send (The_Item => 'v',
+                                To       => Channel);
+        Serial_Io.Windows.Receive (The_Item => The_Version,
+                                   From     => Channel);
         Put ("Reader started for handbox version " & The_Version & " (Esc to abort)");
       exception
       when Serial_Io.Timeout =>
         Put ("Reader started for handbox with no version (Esc to abort)");
       end;
-      Serial_Io.Set_For_Read (The_Timeout => Serial_Io.Infinite,
-                              On          => Channel);
+      Serial_Io.Windows.Set_For_Read (The_Timeout => Serial_Io.Infinite,
+                                      On          => Channel);
       loop
-        The_Character := Serial_Io.Character_Of (Channel);
+        The_Character := Serial_Io.Windows.Character_Of (Channel);
         Put ("- from Serial: " & The_Character);
       end loop;
     exception
@@ -145,7 +146,7 @@ package body Test is
   begin -- Serial_Input
     Put ("Serial Input");
     The_Port := Detected_Port;
-    if Serial_Io.Is_Available (The_Port) then
+    if Serial_Io.Windows.Is_Available (The_Port) then
       Put ("Handbox detected on Port " & The_Port'img);
       The_Reader := new Reader;
       The_Reader.Start;
@@ -153,7 +154,7 @@ package body Test is
         Ada.Text_IO.Get_Immediate (The_Character);
         exit when The_Character = Ascii.Esc;
       end loop;
-      Serial_Io.Free (The_Port);
+      Serial_Io.Windows.Free (The_Port);
     else
       Put ("Port " & The_Port'img & " not available");
     end if;

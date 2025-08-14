@@ -15,13 +15,13 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Serial_Io.Usb;
+with Serial_Io;
 with Traces;
 
 package body Handbox is
 
-  Vendor_Id  : constant Serial_Io.Usb.Vendor_Id := 3368;
-  Product_Id : constant Serial_Io.Usb.Product_Id := 516;
+  Vendor_Id  : constant Serial_Io.Vendor_Id := 3368;
+  Product_Id : constant Serial_Io.Product_Id := 516;
 
   Version : constant String := "2.00";
 
@@ -41,14 +41,13 @@ package body Handbox is
   end Start;
 
 
-  The_Port     : Serial_Io.Port;
+  The_Device : Serial_Io.Device;
+
   Is_Available : Boolean := False;
 
   procedure Close is
   begin
-    if Is_Available then
-      Serial_Io.Free (The_Port);
-    end if;
+    The_Device.Close;
     The_Reader.Close;
     Log.Write ("end");
   end Close;
@@ -57,35 +56,25 @@ package body Handbox is
   task body Reader is
 
     procedure Check_Handbox_Version is
-      Ports : constant Serial_Io.Usb.Ports := Serial_Io.Usb.Ports_For (Vid => Vendor_Id, Pid => Product_Id);
+      The_Version : String := "x.xx";
     begin
       Is_Available := False;
-      if Ports'length = 1 then
-        The_Port := Ports(Ports'first);
-        declare
-          The_Version : String := "x.xx";
-          Channel     : Serial_Io.Channel(The_Port);
-        begin
-          Serial_Io.Set (The_Baudrate => 19200,
-                         On           => Channel);
-          Serial_Io.Set_For_Read (The_Timeout => 1.0,
-                                  On          => Channel);
-          Serial_Io.Flush (Channel);
-          Serial_Io.Send (The_Item => 'v',
-                          To       => Channel);
-          Serial_Io.Receive (The_Item => The_Version,
-                             From     => Channel);
-          if The_Version /= Version then
-            Log.Error ("Incorrect version (" & The_Version & ") for port " & The_Port'img);
-            return;
-          end if;
-        end;
-        Log.Write ("port: " & The_Port'img);
-        Is_Available := True;
+      The_Device.Allocate (Vendor  => Vendor_Id,
+                           Product => Product_Id);
+      The_Device.Set (The_Baudrate => Serial_Io.B19200);
+      The_Device.Set_For_Read (The_Timeout => 1.0);
+      The_Device.Flush;
+      The_Device.Send ('v');
+      The_Device.Receive (The_Version);
+      if The_Version /= Version then
+        Log.Error ("Incorrect version (" & The_Version & ")");
+        return;
       end if;
+      The_Device.Set_For_Read (The_Timeout => Serial_Io.Infinite);
+      Is_Available := True;
     exception
     when others =>
-      Log.Error ("port " & The_Port'img & " is not available");
+      Log.Error ("not available");
     end Check_Handbox_Version;
 
   begin -- Reader
@@ -95,16 +84,14 @@ package body Handbox is
       Check_Handbox_Version;
       if Is_Available then
         declare
-          Channel       : Serial_Io.Channel(The_Port);
           The_Character : Character;
           The_Command   : Command;
           Unknown_Input : exception;
         begin
-          Serial_Io.Set (The_Baudrate => 19200,
-                         On           => Channel);
+          The_Device.Set (Serial_Io.B19200);
           loop
             begin
-              Serial_Io.Receive (The_Character, Channel);
+              The_Device.Receive (The_Character);
               case The_Character is
               when 'c' =>
                 The_Command := Center_Pressed;
@@ -145,7 +132,6 @@ package body Handbox is
           end loop;
         end;
         Handle (Stop);
-        Serial_Io.Free (The_Port);
       end if;
       select
         accept Close;

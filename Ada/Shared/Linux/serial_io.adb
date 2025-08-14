@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2002 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                           (c) 2025 by White Elephant GmbH, Schaffhausen, Switzerland                              *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -17,168 +17,148 @@ pragma Style_White_Elephant;
 
 with Ada.Unchecked_Deallocation;
 with Interfaces.C.Strings;
+with Serial_Io.Usb;
 with Standard_C_Interface;
 with System;
 with Termios_Interface;
 
 package body Serial_Io is
 
-  package C renames Interfaces.C;
-  package I renames Standard_C_Interface;
-  package T renames Termios_Interface;
+  package C  renames Interfaces.C;
+  package CI renames Standard_C_Interface;
+  package TI renames Termios_Interface;
 
-
-  type Data is record
-    Fd      : I.File_Descriptor;
-    Tio     : aliased T.Termios;
+  type Device_Data is record
+    Fd      : CI.File_Descriptor;
+    Tio     : aliased TI.Termios;
     Timeout : Duration := Infinite;
   end record;
 
-  type Data_Pointers is array (Port) of Data_Pointer;
 
-
-  function New_Device (Unused : Port) return I.File_Descriptor is
-    Fd : I.File_Descriptor;
-    use type I.File_Descriptor;
+  procedure Initialize (The_Device : in out Device) is
   begin
-    Fd := I.Open (C.Strings.New_String("/dev/ttyACM0"), I.Read_Write, 0);
-    if Fd = I.Not_Opened then
-      raise No_Access with "Failed to open serial port.";
+    The_Device.Data := new Device_Data;
+  end Initialize;
+
+
+  procedure Free (The_Data : access Device_Data) is
+    use type CI.File_Descriptor;
+    use type CI.Return_Code;
+  begin
+    if The_Data.Fd /= CI.Not_Opened then
+      if CI.Close (The_Data.Fd) /= CI.Success then
+        The_Data.Fd := CI.Not_Opened;
+        raise Operation_Failed with "Close Failed.";
+      end if;
+    end if;
+    The_Data.Fd := CI.Not_Opened;
+  end Free;
+
+
+  procedure Finalize (The_Device : in out Device) is
+    procedure Dispose is new Ada.Unchecked_Deallocation (Device_Data, Data_Pointer);
+  begin
+    Free (The_Device.Data);
+    Dispose (The_Device.Data);
+  end Finalize;
+
+
+  function New_Device (Item : String) return CI.File_Descriptor is
+    Fd : CI.File_Descriptor;
+    use type CI.File_Descriptor;
+  begin
+    Fd := CI.Open (C.Strings.New_String(Item), CI.Read_Write, 0);
+    if Fd = CI.Not_Opened then
+      raise No_Access with "Failed to open serial port with Device = " & Item;
     end if;
     return Fd;
   end New_Device;
 
 
-  procedure Create (The_Channel : Channel) is
-    D : Data renames The_Channel.The_Data.all;
-    use type I.Return_Code;
-    use type T.Tcflag_T;
+  procedure Allocate (The_Device : Device;
+                      Vendor     : Vendor_Id;
+                      Product    : Product_Id) is
   begin
-    D.Fd := New_Device (The_Channel.The_Port);
-
-    if T.Tcgetattr (D.Fd, D.Tio'access) /= I.Success then
-      raise No_Access with "Tcgetattr failed.";
-    end if;
-
-    -- Set raw mode
-    D.Tio.C_IFlag := T.No_Flags;
-    D.Tio.C_OFlag := T.No_Flags;
-    D.Tio.C_LFlag := T.No_Flags;
-    D.Tio.C_CFlag := T.CS8 + T.CREAD + T.CLOCAL;
-
-    D.Tio.C_CC (T.VMIN) := T.CC_T'Val(0);
-    D.Tio.C_CC (T.VTIME) := T.CC_T'Val(0);
-
-    if T.Cfsetspeed (D.Tio'access, T.B19200) /= I.Success then
-      raise No_Access with "Setting baud rate failed.";
-    end if;
-
-    if T.Tcsetattr (D.Fd, T.TCSANOW, D.Tio'access) /= I.Success then
-      raise No_Access with "Tcsetattr failed.";
-    end if;
-
-  end Create;
-
-
-  procedure Close (The_Data : Data_Pointer) is
-    use type I.Return_Code;
-  begin
-    if I.Close(The_Data.Fd) /= I.Success then
-      raise Operation_Failed with "Close Failed.";
-    end if;
-  end Close;
-
-
-  protected Port_Allocator is
-    procedure Request (The_Channel : in out Channel);
-    procedure Check_Aborted (The_Port : Port);
-    procedure Release (The_Port : Port);
-  private
-    The_Data : Data_Pointers := [others => null];
-  end Port_Allocator;
-
-  
-  protected body Port_Allocator is
-
-    procedure Request (The_Channel : in out Channel) is
-    begin
-      The_Channel.The_Data := new Data;
-      The_Data (The_Channel.The_Port) := The_Channel.The_Data;
-    end Request;
-
-    procedure Check_Aborted (The_Port : Port) is
-    begin
-      if The_Data (The_Port) = null then
-        raise Aborted with "Check_Aborted";
-      end if;
-    end Check_Aborted;
-
-    procedure Release (The_Port : Port) is
-      procedure Dispose is new Ada.Unchecked_Deallocation (Data, Data_Pointer);
-    begin
-      if The_Data (The_Port) /= null then
-        Close (The_Data (The_Port));
-        Dispose (The_Data (The_Port));
-      end if;
-    end Release;
-
-  end Port_Allocator;
-
-
-  function Is_Available (The_Port : Port) return Boolean is
-  begin
+    Free (The_Device.Data);
     declare
-      Unused_Channel : Channel(The_Port);  -- UD: raises exception if port not available
+      Device_Name : constant String := Usb.Device_Name_For (Vid => Vendor, Pid => Product);
+      DD : Device_Data renames The_Device.Data.all;
+      use type CI.Return_Code;
+      use type TI.Tcflag_T;
     begin
-      return True;
+      DD.Fd := New_Device (Device_Name);
+
+      if TI.Tcgetattr (DD.Fd, DD.Tio'access) /= CI.Success then
+        raise No_Access with "Tcgetattr failed.";
+      end if;
+
+      -- Set raw mode
+      DD.Tio.C_Iflag := TI.No_Flags;
+      DD.Tio.C_Oflag := TI.No_Flags;
+      DD.Tio.C_Lflag := TI.No_Flags;
+      DD.Tio.C_Cflag := TI.CS8 + TI.CREAD + TI.CLOCAL;
+
+      DD.Tio.C_Cc (TI.VMIN) := TI.Cc_T'val(0);
+      DD.Tio.C_Cc (TI.VTIME) := TI.Cc_T'val(0);
+
+      if TI.Cfsetspeed (DD.Tio'access, TI.B19200) /= CI.Success then
+        raise No_Access with "Setting baud rate failed.";
+      end if;
+
+      if TI.Tcsetattr (DD.Fd, TI.TCSANOW, DD.Tio'access) /= CI.Success then
+        raise No_Access with "Tcsetattr failed.";
+      end if;
+
     end;
-  exception
-    when others =>
-      return False;
-  end Is_Available;
+  end Allocate;
 
 
-  procedure Free (The_Port : Port) is
+  procedure Check (The_Device : Device) is
+    use type CI.File_Descriptor;
   begin
-    Port_Allocator.Release (The_Port);
-  end Free;
+    if The_Device.Data.Fd = CI.Not_Opened then
+      raise No_Access;
+    end if;
+  end Check;
 
 
-  procedure Set (The_Baudrate : Baudrate;
-                 On           : Channel) is
-    Speed : T.Speed_T;
+  procedure Set (The_Device   : Device;
+                 The_Baudrate : Baudrate) is
+    Speed : TI.Speed_T;
   begin
     case The_Baudrate is
-    when 19200 =>
-      Speed := T.B19200;
+    when B19200 =>
+      Speed := TI.B19200;
     when others =>
       raise Illegal_Baudrate;
-    end case;      
-    On.The_Data.Tio.C_Ispeed := Speed;
-    On.The_Data.Tio.C_Ospeed := Speed;
+    end case;
+    The_Device.Data.Tio.C_Ispeed := Speed;
+    The_Device.Data.Tio.C_Ospeed := Speed;
   end Set;
 
 
-  function Baudrate_Of (The_Channel : Channel) return Baudrate is
+  function Actual_Baudrate (The_Device : Device) return Baudrate is
   begin
-    case The_Channel.The_Data.Tio.C_Ispeed is
-    when T.B19200 =>
-      return 19200;
+    case The_Device.Data.Tio.C_Ispeed is
+    when TI.B19200 =>
+      return B19200;
     when others =>
       raise Operation_Failed with "not implemented baudrate.";
     end case;
-  end Baudrate_Of;
+  end Actual_Baudrate;
 
 
-  function Max_Baudrate_Of (The_Channel : Channel) return Baudrate is
+  function Max_Baudrate (The_Device : Device) return Baudrate is
   begin
+    Check (The_Device);
     return Baudrate'last;
-  end Max_Baudrate_Of;
+  end Max_Baudrate;
 
 
-  procedure Set (The_Parity : Parity;
-                 On         : Channel) is
+  procedure Set (The_Device : Device;
+                 The_Parity : Parity) is
   begin
+    Check (The_Device);
     case The_Parity is
     when None =>
       null;
@@ -188,15 +168,17 @@ package body Serial_Io is
   end Set;
 
 
-  function Parity_Of (The_Channel : Channel) return Parity is
+  function Actual_Parity (The_Device : Device) return Parity is
   begin
+    Check (The_Device);
     return None;
-  end Parity_Of;
+  end Actual_Parity;
 
 
-  procedure Set (The_Stop_Bits : Stop_Bits;
-                 On            : Channel) is
+  procedure Set (The_Device    : Device;
+                 The_Stop_Bits : Stop_Bits) is
   begin
+    Check (The_Device);
     case The_Stop_Bits is
     when One =>
       null;
@@ -206,15 +188,17 @@ package body Serial_Io is
   end Set;
 
 
-  function Stop_Bits_Of (The_Channel : Channel) return Stop_Bits is
+  function Actual_Stop_Bits (The_Device : Device) return Stop_Bits is
   begin
+    Check (The_Device);
     return One;
-  end Stop_Bits_Of;
+  end Actual_Stop_Bits;
 
 
-  procedure Set (The_Flow_Control : Flow_Control;
-                 On               : Channel) is
+  procedure Set (The_Device       : Device;
+                 The_Flow_Control : Flow_Control) is
   begin
+    Check (The_Device);
     case The_Flow_Control is
     when None =>
       null;
@@ -224,49 +208,55 @@ package body Serial_Io is
   end Set;
 
 
-  function Flow_Control_Of (The_Channel : Channel) return Flow_Control is
+  function Actual_Flow_Control (The_Device : Device) return Flow_Control is
   begin
+    Check (The_Device);
     return None;
-  end Flow_Control_Of;
+  end Actual_Flow_Control;
 
 
-  procedure Set_For_Read (The_Timeout : Duration;
-                          On          : Channel) is
+  procedure Set (The_Device  : Device;
+                 The_Timeout : Duration) is
   begin
-    On.The_Data.Timeout := The_Timeout;
-  end Set_For_Read;
-
-
-  procedure Set_For_Write (The_Timeout : Duration;
-                           On          : Channel) is
-  begin
-    raise Operation_Failed with "Not Supported: Write_Timeout";
-  end Set_For_Write;
-
-
-  procedure Set (The_Timeout : Duration;
-                 On          : Channel) is
-  begin
-    Set_For_Read (The_Timeout, On);
+    The_Device.Set_For_Read (The_Timeout);
   end Set;
 
 
-  function Read_Timeout_Of (The_Channel : Channel) return Duration is
+  procedure Set_For_Read (The_Device  : Device;
+                          The_Timeout : Duration) is
   begin
-    return The_Channel.The_Data.Timeout;
-  end Read_Timeout_Of;
+    Check (The_Device);
+    The_Device.Data.Timeout := The_Timeout;
+  end Set_For_Read;
 
 
-  function Write_Timeout_Of (The_Channel : Channel) return Duration is
+  procedure Set_For_Write (The_Device  : Device;
+                           The_Timeout : Duration) is
   begin
+    Check (The_Device);
+    raise Operation_Failed with "Not Supported: Write_Timeout =>" & The_Timeout'image;
+  end Set_For_Write;
+
+
+  function Read_Timeout (The_Device : Device) return Duration is
+  begin
+    Check (The_Device);
+    return The_Device.Data.Timeout;
+  end Read_Timeout;
+
+
+  function Write_Timeout (The_Device : Device) return Duration is
+  begin
+    Check (The_Device);
     raise Operation_Failed with "Not Supported: Write_Timeout_Of";
     return 0.0;
-  end Write_Timeout_Of;
+  end Write_Timeout;
 
 
-  procedure Set (The_Byte_Size : Byte_Size;
-                 On            : Channel) is
+  procedure Set (The_Device    : Device;
+                 The_Byte_Size : Byte_Size) is
   begin
+    Check (The_Device);
     case The_Byte_Size is
     when Eight_Bit_Bytes =>
       null;
@@ -274,180 +264,166 @@ package body Serial_Io is
       raise Operation_Failed with "Not_Supported: The_Byte_Size " & The_Byte_Size'image;
     end case;
   end Set;
- 
 
-  function Byte_Size_Of (The_Channel : Channel) return Byte_Size is
+
+  function Actual_Byte_Size (The_Device : Device) return Byte_Size is
   begin
+    Check (The_Device);
     return Eight_Bit_Bytes;
-  end Byte_Size_Of;
+  end Actual_Byte_Size;
 
 
   procedure Send (From_Address : System.Address;
                   The_Amount   : Natural;
-                  To           : Channel) is
-    use type I.Return_Count;
+                  To           : Device) is
+    use type CI.Return_Count;
   begin
-    if I.Write (To.The_Data.Fd, From_Address, C.size_t(The_Amount)) /= I.Return_Count(The_Amount) then
+    if CI.Write (To.Data.Fd, From_Address, C.size_t(The_Amount)) /= CI.Return_Count(The_Amount) then
       raise No_Access with "Send failed.";
     end if;
   end Send;
 
 
-  procedure Send (The_Item : String;
-                  To       : Channel) is
+  procedure Send (The_Device : Device;
+                  The_Item   : String) is
   begin
-    Send (The_Item(The_Item'first)'address, The_Item'length, To);
+    Check (The_Device);
+    Send (The_Item(The_Item'first)'address, The_Item'length, The_Device);
   end Send;
 
 
-  procedure Send (The_Item : Character;
-                  To       : Channel) is
+  procedure Send (The_Device : Device;
+                  The_Item   : Character) is
   begin
-    Send (String'(1 => The_Item), To);
+    Check (The_Device);
+    The_Device.Send (String'(1 => The_Item));
   end Send;
 
 
-  procedure Send (The_Item : Unsigned.Byte_String;
-                  To       : Channel) is
+  procedure Send (The_Device : Device;
+                  The_Item   : Unsigned.Byte_String) is
   begin
-    Send (The_Item(The_Item'first)'address, The_Item'length, To);
+    Check (The_Device);
+    Send (The_Item(The_Item'first)'address, The_Item'length, The_Device);
   end Send;
 
 
-  procedure Send (The_Item : Unsigned.Byte;
-                  To       : Channel) is
+  procedure Send (The_Device : Device;
+                  The_Item   : Unsigned.Byte) is
     use type Unsigned.Byte_String;
   begin
-    Send (Unsigned.Byte_Null_String & The_Item, To);
+    Check (The_Device);
+    The_Device.Send (Unsigned.Byte_Null_String & The_Item);
   end Send;
 
 
   procedure Receive (To_Address : System.Address;
                      The_Amount : Natural;
-                     From       : Channel) is
+                     From       : Device) is
 
-    D : Data_Pointer renames From.The_Data;                 
+    DD : Data_Pointer renames From.Data;
 
-    procedure Reset_Device is
-    begin
-      Close (D);
-      D.Fd := New_Device (From.The_Port);
-    end Reset_Device;
+    Result : CI.Return_Count;
+    Tio    : aliased CI.Timeval := (Sec => C.long(DD.Timeout), Usec => 0);
+    Fd_Set : aliased CI.Fd_Set := [others => False];
 
-    Result : I.Return_Count;
-    Tio    : aliased I.Timeval := (Sec => C.long(D.Timeout), Usec => 0);
-    Fd_Set : aliased I.Fd_Set := [others => False];
-    
-    use type I.File_Descriptor;
-    use type I.Return_Code;
+    use type CI.File_Descriptor;
+    use type CI.Return_Code;
 
   begin -- Receive
-    Fd_Set(D.Fd) := True;
-    Result := I.Wait_Select (D.Fd + I.Fd_Number(1),
-                             Read_Fds => Fd_Set'access,
-                             Timeout  => Tio'access);
-    if Result = I.Failed then
-      Port_Allocator.Check_Aborted (From.The_Port);
-      Reset_Device;
+    Fd_Set(DD.Fd) := True;
+    Result := CI.Wait_Select (DD.Fd + CI.Fd_Number(1),
+                              Read_Fds => Fd_Set'access,
+                              Timeout  => Tio'access);
+    if Result = CI.Failed then
       raise No_Access with "Wait_Select failed.";
     elsif Result = 0 then
-      Port_Allocator.Check_Aborted (From.The_Port);
       raise Timeout;
     else
       declare
-        Result : constant I.Return_Count := I.Read (D.Fd, To_Address, C.size_t(The_Amount));
+        Count : constant CI.Return_Count := CI.Read (DD.Fd, To_Address, C.size_t(The_Amount));
       begin
-        if Natural(Result) /= The_Amount then
-          raise Operation_Failed with "Receive - Result:" & Result'Image;
+        if Natural(Count) /= The_Amount then
+          raise Operation_Failed with "Receive - Result:" & Result'image;
         end if;
       end;
     end if;
   end Receive;
 
 
-  procedure Receive (The_Item : out String;
-                     From     : Channel) is
+  procedure Receive (The_Device :     Device;
+                     The_Item   : out String) is
   begin
-    Receive (The_Item(The_Item'first)'address, The_Item'length, From);
+    Check (The_Device);
+    Receive (The_Item(The_Item'first)'address, The_Item'length, The_Device);
   end Receive;
 
 
-  procedure Receive (The_Item : out Character;
-                     From     : Channel) is
+  procedure Receive (The_Device :     Device;
+                     The_Item   : out Character) is
     The_String : aliased String(1..1);
   begin
-    Receive (The_String, From);
+    Check (The_Device);
+    The_Device.Receive (The_String);
     The_Item := The_String(1);
   end Receive;
 
 
-  procedure Receive (The_Item : out Unsigned.Byte_String;
-                     From     : Channel) is
+  procedure Receive (The_Device :     Device;
+                     The_Item   : out Unsigned.Byte_String) is
   begin
-    Receive (The_Item(The_Item'first)'address, The_Item'length, From);
+    Check (The_Device);
+    Receive (The_Item(The_Item'first)'address, The_Item'length, The_Device);
   end Receive;
 
 
-  procedure Receive (The_Item : out Unsigned.Byte;
-                     From     : Channel) is
+  procedure Receive (The_Device :     Device;
+                     The_Item   : out Unsigned.Byte) is
     The_String : Unsigned.Byte_String(1..1);
   begin
-    Receive (The_String, From);
+    Check (The_Device);
+    The_Device.Receive (The_String);
     The_Item := The_String(1);
   end Receive;
 
 
-  procedure Flush (The_Channel : Channel;
-                   The_Timeout : Duration := Default_Flush_Timeout) is
-
-    Saved_Timeout : constant Duration := Read_Timeout_Of (The_Channel);
+  function Next_Character (The_Device : Device) return Character is
     The_Character : Character;
-
   begin
-    Set_For_Read (The_Timeout, On => The_Channel);
+    Check (The_Device);
+    The_Device.Receive (The_Character);
+    return The_Character;
+  end Next_Character;
+
+
+  function Next_Byte (The_Device : Device) return Unsigned.Byte is
+    The_Byte : Unsigned.Byte;
+  begin
+    Check (The_Device);
+    The_Device.Receive (The_Byte);
+    return The_Byte;
+  end Next_Byte;
+
+
+  procedure Flush (The_Device  : Device;
+                   The_Timeout : Duration := Default_Flush_Timeout) is
+    Saved_Timeout : constant Duration := The_Device.Read_Timeout;
+    The_Character : Character;
+  begin
+    Check (The_Device);
+    The_Device.Set_For_Read (The_Timeout);
     loop
-      Receive (The_Character, From => The_Channel);
+      The_Device.Receive (The_Character);
     end loop;
   exception
-    when Timeout =>
-      Set_For_Read (Saved_Timeout, On => The_Channel);
-      return;
+  when Timeout =>
+    The_Device.Set_For_Read (Saved_Timeout);
   end Flush;
 
 
-  function Character_Of (The_Channel : Channel) return Character is
-    The_Character : Character;
+  procedure Close (The_Device : Device) is
   begin
-    Receive (The_Character, The_Channel);
-    return The_Character;
-  end Character_Of;
-
-
-  function Byte_Of (The_Channel : Channel) return Unsigned.Byte is
-    The_Byte : Unsigned.Byte;
-  begin
-    Receive (The_Byte, The_Channel);
-    return The_Byte;
-  end Byte_Of;
-
-
-  procedure Initialize (The_Channel : in out Channel) is
-  begin
-    Port_Allocator.Release (The_Channel.The_Port); -- if finalize has not been called
-    Port_Allocator.Request (The_Channel);
-    Create (The_Channel);
-    Set (Default_Baudrate, On => The_Channel);
-    Set (Default_Parity, On => The_Channel);
-    Set (Default_Stop_Bits, On => The_Channel);
-    Set (Default_Flow_Control, On => The_Channel);
-    Set (Default_Byte_Size, On => The_Channel);
-  end Initialize;
-
-
-  procedure Finalize (The_Channel : in out Channel) is
-  begin
-    Port_Allocator.Release (The_Channel.The_Port);
-    The_Channel.The_Data := null; -- disposed in Release
-  end Finalize;
+    Free (The_Device.Data);
+  end Close;
 
 end Serial_Io;

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2019 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                           (c) 2025 by White Elephant GmbH, Schaffhausen, Switzerland                              *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,19 +15,42 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Serial_Io.Windows;
+package body Os.Application is
 
-package Serial_Io.Usb is
 
-  subtype Port is Windows.Port;
+  function Is_First_Instance return Boolean is
+  begin
+    return True;
+  end Is_First_Instance;
 
-  type Port_Count is range 0 .. Port'pos(Port'last) - Port'pos(Port'first) + 1;
 
-  subtype Port_Index is Port_Count range 1 .. Port_Count'last;
+  function Origin_Folder return String is
+  begin
+    return "";
+  end Origin_Folder;
 
-  type Ports is array (Port_Index range <>) of Port;
 
-  function Ports_For (Vid : Vendor_Id;
-                      Pid : Product_Id) return Ports;
+  function Name return String is
+  begin
+    return "";
+  end Name;
 
-end Serial_Io.Usb;
+
+  function Main_Version return String is
+  begin
+    return "";
+  end Main_Version;
+
+
+  function Version return String is
+  begin
+    return "";
+  end Version;
+
+
+  function Version return Unsigned.Quadword is
+  begin
+    return 0;
+  end Version;
+
+end Os.Application;

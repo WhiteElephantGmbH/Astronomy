@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2002 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2002 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -20,20 +20,11 @@ with Unsigned;
 
 package Serial_Io is
 
-  type Port is (Com1,  Com2,  Com3,  Com4,  Com5,  Com6,  Com7,  Com8,  Com9,  Com10,
-                Com11, Com12, Com13, Com14, Com15, Com16, Com17, Com18, Com19, Com20,
-                Com21, Com22, Com23, Com24, Com25, Com26, Com27, Com28, Com29, Com30,
-                Com31, Com32, Com33, Com34, Com35, Com36, Com37, Com38, Com39, Com40,
-                Com41, Com42, Com43, Com44, Com45, Com46, Com47, Com48, Com49, Com50,
-                Com51, Com52, Com53, Com54, Com55, Com56, Com57, Com58, Com59, Com60,
-                Com61, Com62, Com63, Com64, Com65, Com66, Com67, Com68, Com69, Com70,
-                Com71, Com72, Com73, Com74, Com75, Com76, Com77, Com78, Com79, Com80,
-                Com81, Com82, Com83, Com84, Com85, Com86, Com87, Com88, Com89, Com90,
-                Com91, Com92, Com93, Com94, Com95, Com96, Com97, Com98, Com99);
+  type Vendor_Id is new Unsigned.Word;
 
-  type Channel (The_Port : Port) is tagged limited private;
+  type Product_Id is new Unsigned.Word;
 
-  type Baudrate is new Natural range 110 .. 256000;
+  type Baudrate is (B110, B300, B600, B1200, B2400, B4800, B9600, B14400, B19200, B38400, B57600, B115200);
 
   type Parity is (None, Odd, Even, Mark, Space);
 
@@ -43,7 +34,7 @@ package Serial_Io is
 
   type Byte_Size is (Eight_Bit_Bytes, Seven_Bit_Bytes, Six_Bit_Bytes, Five_Bit_Bytes);
 
-  Default_Baudrate      : constant := 19200;
+  Default_Baudrate      : constant Baudrate := B19200;
   Default_Byte_Size     : constant Byte_Size := Eight_Bit_Bytes;
   Default_Parity        : constant Parity := None;
   Default_Stop_Bits     : constant Stop_Bits := One;
@@ -52,92 +43,98 @@ package Serial_Io is
 
   Infinite : constant Duration := 0.0;
 
+  type Device is tagged limited private;
 
-  function Is_Available (The_Port : Port) return Boolean;
+  procedure Allocate (The_Device : Device;
+                      Vendor     : Vendor_Id;
+                      Product    : Product_Id);
 
-  procedure Free (The_Port : Port);
-
-
-  procedure Set (The_Baudrate : Baudrate;
-                 On           : Channel);
-
-  function Baudrate_Of (The_Channel : Channel) return Baudrate;
-
-  function Max_Baudrate_Of (The_Channel : Channel) return Baudrate;
+  Device_Not_Found  : exception;
+  Multiple_Devices  : exception;
 
 
-  procedure Set (The_Parity  : Parity;
-                 On          : Channel);
+  procedure Set (The_Device   : Device;
+                 The_Baudrate : Baudrate);
 
-  function Parity_Of (The_Channel : Channel) return Parity;
+  function Actual_Baudrate (The_Device : Device) return Baudrate;
 
-
-  procedure Set (The_Stop_Bits : Stop_Bits;
-                 On            : Channel);
-
-  function Stop_Bits_Of (The_Channel : Channel) return Stop_Bits;
+  function Max_Baudrate (The_Device : Device) return Baudrate;
 
 
-  procedure Set (The_Flow_Control : Flow_Control;
-                 On               : Channel);
+  procedure Set (The_Device : Device;
+                 The_Parity : Parity);
 
-  function Flow_Control_Of (The_Channel : Channel) return Flow_Control;
-
-
-  procedure Set (The_Timeout : Duration;
-                 On          : Channel);
-
-  procedure Set_For_Read (The_Timeout : Duration;
-                          On          : Channel);
-
-  procedure Set_For_Write (The_Timeout : Duration;
-                           On          : Channel);
-
-  function Read_Timeout_Of (The_Channel : Channel) return Duration;
-
-  function Write_Timeout_Of (The_Channel : Channel) return Duration;
+  function Actual_Parity (The_Device : Device) return Parity;
 
 
-  procedure Set (The_Byte_Size : Byte_Size;
-                 On            : Channel);
+  procedure Set (The_Device    : Device;
+                 The_Stop_Bits : Stop_Bits);
 
-  function Byte_Size_Of (The_Channel : Channel) return Byte_Size;
-
-
-  procedure Send (The_Item : String;
-                  To       : Channel);
-
-  procedure Send (The_Item : Character;
-                  To       : Channel);
-
-  procedure Send (The_Item : Unsigned.Byte_String;
-                  To       : Channel);
-
-  procedure Send (The_Item : Unsigned.Byte;
-                  To       : Channel);
+  function Actual_Stop_Bits (The_Device : Device) return Stop_Bits;
 
 
-  procedure Receive (The_Item : out String;
-                     From     : Channel);
+  procedure Set (The_Device       : Device;
+                 The_Flow_Control : Flow_Control);
 
-  procedure Receive (The_Item : out Character;
-                     From     : Channel);
-
-  procedure Receive (The_Item : out Unsigned.Byte_String;
-                     From     : Channel);
-
-  procedure Receive (The_Item : out Unsigned.Byte;
-                     From     : Channel);
+  function Actual_Flow_Control (The_Device : Device) return Flow_Control;
 
 
-  function Character_Of (The_Channel : Channel) return Character;
+  procedure Set (The_Device  : Device;
+                 The_Timeout : Duration);
 
-  function Byte_Of (The_Channel : Channel) return Unsigned.Byte;
+  procedure Set_For_Read (The_Device  : Device;
+                          The_Timeout : Duration);
+
+  procedure Set_For_Write (The_Device  : Device;
+                           The_Timeout : Duration);
+
+  function Read_Timeout (The_Device : Device) return Duration;
+
+  function Write_Timeout (The_Device : Device) return Duration;
 
 
-  procedure Flush (The_Channel : Channel;
+  procedure Set (The_Device    : Device;
+                 The_Byte_Size : Byte_Size);
+
+  function Actual_Byte_Size (The_Device : Device) return Byte_Size;
+
+
+  procedure Send (The_Device : Device;
+                  The_Item   : String);
+
+  procedure Send (The_Device : Device;
+                  The_Item   : Character);
+
+  procedure Send (The_Device : Device;
+                  The_Item   : Unsigned.Byte_String);
+
+  procedure Send (The_Device : Device;
+                  The_Item   : Unsigned.Byte);
+
+
+  procedure Receive (The_Device :     Device;
+                     The_Item   : out String);
+
+  procedure Receive (The_Device :     Device;
+                     The_Item   : out Character);
+
+  procedure Receive (The_Device :     Device;
+                     The_Item   : out Unsigned.Byte_String);
+
+  procedure Receive (The_Device :     Device;
+                     The_Item   : out Unsigned.Byte);
+
+
+  function Next_Character (The_Device : Device) return Character;
+
+  function Next_Byte (The_Device : Device) return Unsigned.Byte;
+
+
+  procedure Flush (The_Device  : Device;
                    The_Timeout : Duration := Default_Flush_Timeout);
 
+
+  procedure Close (The_Device  : Device);
 
   Aborted           : exception;
   No_Access         : exception;
@@ -148,17 +145,18 @@ package Serial_Io is
 
 private
 
-  type Data;
+  type Device_Data;
 
-  type Data_Pointer is access Data;
+  type Data_Pointer is access Device_Data;
 
-  type Channel (The_Port : Port) is new Ada.Finalization.Limited_Controlled with record
-    The_Data : Data_Pointer;
+  type Device is new Ada.Finalization.Limited_Controlled with record
+    Data : Data_Pointer;
   end record;
 
-  procedure Initialize (The_Channel : in out Channel);
+  overriding
+  procedure Initialize (The_Device : in out Device);
 
-  procedure Finalize (The_Channel : in out Channel);
+  overriding
+  procedure Finalize (The_Device : in out Device);
 
 end Serial_Io;
-

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2002 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2002 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -16,9 +16,8 @@
 pragma Style_White_Elephant;
 
 with Ada.Finalization;
-with Unsigned;
 
-package Serial_Io is
+package Serial_Io.Windows is
 
   type Port is (Com1,  Com2,  Com3,  Com4,  Com5,  Com6,  Com7,  Com8,  Com9,  Com10,
                 Com11, Com12, Com13, Com14, Com15, Com16, Com17, Com18, Com19, Com20,
@@ -32,26 +31,6 @@ package Serial_Io is
                 Com91, Com92, Com93, Com94, Com95, Com96, Com97, Com98, Com99);
 
   type Channel (The_Port : Port) is tagged limited private;
-
-  type Baudrate is new Natural range 110 .. 256000;
-
-  type Parity is (None, Odd, Even, Mark, Space);
-
-  type Stop_Bits is (One, One_And_A_Half, Two);
-
-  type Flow_Control is (None, Cts, Dsr, Cts_And_Dsr);
-
-  type Byte_Size is (Eight_Bit_Bytes, Seven_Bit_Bytes, Six_Bit_Bytes, Five_Bit_Bytes);
-
-  Default_Baudrate      : constant := 19200;
-  Default_Byte_Size     : constant Byte_Size := Eight_Bit_Bytes;
-  Default_Parity        : constant Parity := None;
-  Default_Stop_Bits     : constant Stop_Bits := One;
-  Default_Flow_Control  : constant Flow_Control := None;
-  Default_Flush_Timeout : constant Duration := 0.1;
-
-  Infinite : constant Duration := 0.0;
-
 
   function Is_Available (The_Port : Port) return Boolean;
 
@@ -138,27 +117,19 @@ package Serial_Io is
   procedure Flush (The_Channel : Channel;
                    The_Timeout : Duration := Default_Flush_Timeout);
 
-
-  Aborted           : exception;
-  No_Access         : exception;
-  Operation_Failed  : exception;
-  Timeout           : exception;
-  Illegal_Baudrate  : exception;
-  Illegal_Byte_Size : exception;
-
 private
 
-  type Data;
+  type Channel_Data;
 
-  type Data_Pointer is access Data;
+  type Channel_Data_Pointer is access Channel_Data;
 
   type Channel (The_Port : Port) is new Ada.Finalization.Limited_Controlled with record
-    The_Data : Data_Pointer;
+    The_Data : Channel_Data_Pointer;
   end record;
 
   procedure Initialize (The_Channel : in out Channel);
 
   procedure Finalize (The_Channel : in out Channel);
 
-end Serial_Io;
+end Serial_Io.Windows;
 
