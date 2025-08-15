@@ -37,19 +37,10 @@ package body Serial_Io is
   end Initialize;
 
 
-  procedure Free (The_Data : access Device_Data) is
-  begin
-    if The_Data.Channel /= null then
-      Windows.Free (The_Data.Port);
-      The_Data.Channel := null; -- disposed by free;
-    end if;
-  end Free;
-
-
   procedure Finalize (The_Device : in out Device) is
     procedure Dispose is new Ada.Unchecked_Deallocation (Device_Data, Data_Pointer);
   begin
-    Free (The_Device.Data);
+    Free (The_Device);
     Dispose (The_Device.Data);
   end Finalize;
 
@@ -59,7 +50,7 @@ package body Serial_Io is
                       Product    : Product_Id) is
     Ports : constant Serial_Io.Usb.Ports := Serial_Io.Usb.Ports_For (Vid => Vendor, Pid => Product);
   begin
-    Free (The_Device.Data);
+    Free (The_Device);
     if Ports'length = 0 then
       raise Device_Not_Found;
     elsif Ports'length > 1 then
@@ -249,9 +240,18 @@ package body Serial_Io is
   end Flush;
 
 
+  procedure Free (The_Device : Device) is
+  begin
+    if The_Device.Data.Channel /= null then
+      Windows.Free (The_Device.Data.Port);
+      The_Device.Data.Channel := null; -- disposed by free;
+    end if;
+  end Free;
+
+
   procedure Close (The_Device  : Device) is
   begin
-    Free (The_Device.Data);
+    Free (The_Device);
   end Close;
 
 end Serial_Io;

@@ -348,7 +348,7 @@ package body Celestron.Focuser is
 
   begin -- Control
     accept Start;
-    Log.Write ("started");
+    Log.Write ("Control: started");
     Connect;
     loop
       begin
@@ -411,15 +411,19 @@ package body Celestron.Focuser is
           Get_Available_State;
         end select;
       exception
+      when Serial_Io.No_Access =>
+        Is_Available := False;
       when Item: others =>
-        Log.Error (Exceptions.Name_Of (Item));
+        Log.Error ("Control " & Exceptions.Name_Of (Item));
         Is_Available := False;
       end;
     end loop;
-    Log.Write ("end");
+    The_Device.Close;
+    Log.Write ("Control: end");
   exception
   when Item: others =>
     Log.Termination (Item);
+    The_Device.Close;
   end Control;
 
 end Celestron.Focuser;

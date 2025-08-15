@@ -19,19 +19,25 @@ with Ada.Unchecked_Deallocation;
 with Interfaces.C.Strings;
 with Serial_Io.Usb;
 with Standard_C_Interface;
-with System;
+with System.Storage_Elements;
 with Termios_Interface;
+with Terminator;
+with Traces;
 
 package body Serial_Io is
+
+  package Log is new Traces ("Serial_Io");
 
   package C  renames Interfaces.C;
   package CI renames Standard_C_Interface;
   package TI renames Termios_Interface;
 
   type Device_Data is record
-    Fd      : CI.File_Descriptor;
+    Fd      : CI.File_Descriptor := CI.Not_Opened;
     Tio     : aliased TI.Termios;
+    Timeval : CI.Timeval;
     Timeout : Duration := Infinite;
+    Aborter : Terminator.Trigger;
   end record;
 
 
@@ -41,24 +47,33 @@ package body Serial_Io is
   end Initialize;
 
 
-  procedure Free (The_Data : access Device_Data) is
-    use type CI.File_Descriptor;
+  procedure Close (The_Device : Device) is
     use type CI.Return_Code;
+    use type CI.File_Descriptor;
   begin
-    if The_Data.Fd /= CI.Not_Opened then
-      if CI.Close (The_Data.Fd) /= CI.Success then
-        The_Data.Fd := CI.Not_Opened;
-        raise Operation_Failed with "Close Failed.";
+    if The_Device.Data.Fd /= CI.Not_Opened then
+      if CI.Close (The_Device.Data.Fd) /= CI.Success then
+        Log.Warning ("Close Failed");
       end if;
+      The_Device.Data.Fd := CI.Not_Opened;
     end if;
-    The_Data.Fd := CI.Not_Opened;
+  end Close;
+
+
+  procedure Free (The_Device : Device) is
+    use type CI.File_Descriptor;
+  begin
+    if The_Device.Data.Fd /= CI.Not_Opened then
+      The_Device.Data.Aborter.Signal;
+    end if;
   end Free;
 
 
   procedure Finalize (The_Device : in out Device) is
     procedure Dispose is new Ada.Unchecked_Deallocation (Device_Data, Data_Pointer);
   begin
-    Free (The_Device.Data);
+    Free (The_Device);
+    Close (The_Device);
     Dispose (The_Device.Data);
   end Finalize;
 
@@ -66,8 +81,10 @@ package body Serial_Io is
   function New_Device (Item : String) return CI.File_Descriptor is
     Fd : CI.File_Descriptor;
     use type CI.File_Descriptor;
+    use type CI.Open_Flags;
   begin
-    Fd := CI.Open (C.Strings.New_String(Item), CI.Read_Write, 0);
+    Fd := CI.Open (C.Strings.New_String(Item), CI.Read_Write + CI.No_CTTY + CI.Cloexec, 0);
+    Log.Write ("CI.Open " & Item & " - Fd:" & Fd'image);
     if Fd = CI.Not_Opened then
       raise No_Access with "Failed to open serial port with Device = " & Item;
     end if;
@@ -79,7 +96,7 @@ package body Serial_Io is
                       Vendor     : Vendor_Id;
                       Product    : Product_Id) is
   begin
-    Free (The_Device.Data);
+    Close (The_Device);
     declare
       Device_Name : constant String := Usb.Device_Name_For (Vid => Vendor, Pid => Product);
       DD : Device_Data renames The_Device.Data.all;
@@ -110,6 +127,9 @@ package body Serial_Io is
       end if;
 
     end;
+  exception
+  when Serial_Io.Device_Not_Found =>
+     raise No_Access;
   end Allocate;
 
 
@@ -224,9 +244,15 @@ package body Serial_Io is
 
   procedure Set_For_Read (The_Device  : Device;
                           The_Timeout : Duration) is
+
+    Receive_Timeout : constant Float := Float(The_Timeout);
+    Seconds         : constant Float := Float'floor(Receive_Timeout);
+    Micro_Seconds   : constant Float := (Receive_Timeout - Seconds) * 1_000_000.0;
+
   begin
     Check (The_Device);
     The_Device.Data.Timeout := The_Timeout;
+    The_Device.Data.Timeval := (Sec => C.long(Seconds), Usec => C.long(Micro_Seconds));
   end Set_For_Read;
 
 
@@ -323,31 +349,53 @@ package body Serial_Io is
 
     DD : Data_Pointer renames From.Data;
 
-    Result : CI.Return_Count;
-    Tio    : aliased CI.Timeval := (Sec => C.long(DD.Timeout), Usec => 0);
-    Fd_Set : aliased CI.Fd_Set := [others => False];
-
     use type CI.File_Descriptor;
+
+    Aborter_Fd : constant CI.File_Descriptor := DD.Aborter.Read_Fd;
+    N_Fds      : constant CI.Fd_Number := CI.Fd_Number'max(DD.Fd, Aborter_Fd) + 1;
+
+    Result         : CI.Return_Count;
+    Fd_Set         : aliased CI.Fd_Set;
+    Timeval        : aliased CI.Timeval;
+    Buffer_Address : System.Address := To_Address;
+    Receive_Count  : Natural := The_Amount;
+
     use type CI.Return_Code;
 
   begin -- Receive
-    Fd_Set(DD.Fd) := True;
-    Result := CI.Wait_Select (DD.Fd + CI.Fd_Number(1),
-                              Read_Fds => Fd_Set'access,
-                              Timeout  => Tio'access);
-    if Result = CI.Failed then
-      raise No_Access with "Wait_Select failed.";
-    elsif Result = 0 then
-      raise Timeout;
-    else
-      declare
-        Count : constant CI.Return_Count := CI.Read (DD.Fd, To_Address, C.size_t(The_Amount));
-      begin
-        if Natural(Count) /= The_Amount then
-          raise Operation_Failed with "Receive - Result:" & Result'image;
-        end if;
-      end;
-    end if;
+    loop
+      Fd_Set := [others => False];
+      Fd_Set(DD.Fd) := True;
+      Fd_Set(DD.Aborter.Read_Fd) := True;
+      Timeval := DD.Timeval;
+      Result := CI.Wait_Select (Nfds     => N_Fds,
+                                Read_Fds => Fd_Set'access,
+                                Timeout  => (if DD.Timeout = Infinite then null else Timeval'access));
+      if Result = CI.Failed then
+        raise No_Access with "Wait_Select failed.";
+      elsif Result = 0 then
+        raise Timeout;
+      elsif Fd_Set (DD.Aborter.Read_Fd) then
+        DD.Aborter.Clear;
+        raise Aborted;
+      else
+        declare
+          Count : constant CI.Return_Count := CI.Read (DD.Fd, Buffer_Address, C.size_t(Receive_Count));
+          use type System.Storage_Elements.Storage_Offset;
+        begin
+          if Count < 0 then
+            raise No_Access with "Read Error";
+          elsif Count = 0 then
+            raise No_Access with "Nothing received";
+          elsif Natural(Count) > Receive_Count then
+            raise No_Access with "Count:" & Count'image;
+          end if;
+          Receive_Count := @ - Natural(Count);
+          exit when Receive_Count = 0;
+          Buffer_Address := @ + System.Storage_Elements.Storage_Offset(Count);
+        end;
+      end if;
+    end loop;
   end Receive;
 
 
@@ -407,7 +455,7 @@ package body Serial_Io is
 
   procedure Flush (The_Device  : Device;
                    The_Timeout : Duration := Default_Flush_Timeout) is
-    Saved_Timeout : constant Duration := The_Device.Read_Timeout;
+    Saved_Timeout : constant Duration := The_Device.Data.Timeout;
     The_Character : Character;
   begin
     Check (The_Device);
@@ -419,11 +467,5 @@ package body Serial_Io is
   when Timeout =>
     The_Device.Set_For_Read (Saved_Timeout);
   end Flush;
-
-
-  procedure Close (The_Device : Device) is
-  begin
-    Free (The_Device.Data);
-  end Close;
 
 end Serial_Io;

@@ -15,11 +15,8 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Exceptions;
 with Interfaces.C.Strings;
-with Text;
 with Udev_Interface;
-with Unsigned;
 
 package body Serial_Io.Usb is
 
@@ -37,7 +34,7 @@ package body Serial_Io.Usb is
     end if;
     return Unsigned.Word'(Unsigned.Hex_Value_Of (ICS.Value (Left))) = Unsigned.Word(Right);
   exception
-  when Item: others =>
+  when others =>
     return False;
   end "=";
 
@@ -54,7 +51,8 @@ package body Serial_Io.Usb is
     Product_Ptr : ICS.chars_ptr;
     Dev_Node    : ICS.chars_ptr;
     Dev_Count   : Natural := 0;
-    Device_Name : Text.String;
+    Device_Name : String(1..128);
+    Name_Length : Natural;
 
   begin
     if Context = null then
@@ -82,9 +80,9 @@ package body Serial_Io.Usb is
           if Vendor_Ptr = Natural(Vid) and then Product_Ptr = Natural(Pid) then
             declare
               Name : constant String := ICS.Value (Dev_Node);
-              use type Text.String;
             begin
-              Device_Name := Text.String_Of (Name);
+              Name_Length := Name'length;
+              Device_Name(1..Name_Length) := Name;
             end;
             Dev_Count := @ + 1;
           end if;
@@ -103,7 +101,7 @@ package body Serial_Io.Usb is
     elsif Dev_Count > 1 then
       raise Multiple_Devices;
     else
-      return Device_Name.To_String;
+      return Device_Name(1..Name_Length);
     end if;
   end Device_Name_For;
 

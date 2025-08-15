@@ -15,6 +15,7 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with Exceptions;
 with Serial_Io;
 with Traces;
 
@@ -47,9 +48,8 @@ package body Handbox is
 
   procedure Close is
   begin
-    The_Device.Close;
+    The_Device.Free;
     The_Reader.Close;
-    Log.Write ("end");
   end Close;
 
 
@@ -73,13 +73,17 @@ package body Handbox is
       The_Device.Set_For_Read (The_Timeout => Serial_Io.Infinite);
       Is_Available := True;
     exception
-    when others =>
-      Log.Error ("not available");
+    when Serial_Io.No_Access | Serial_Io.Device_Not_Found=>
+      null;
+    when Serial_Io.Multiple_Devices=>
+      Log.Warning ("More than one Handbox connected.");
+    when Item: others =>
+      Log.Error ("Check_Handbox_Version " & Exceptions.Name_Of (Item));
     end Check_Handbox_Version;
 
   begin -- Reader
     accept Start;
-    Log.Write ("started");
+    Log.Write ("Reader: started");
     Main: loop
       Check_Handbox_Version;
       if Is_Available then
@@ -140,10 +144,13 @@ package body Handbox is
         delay 1.0;
       end select;
     end loop Main;
+    The_Device.Close;
+    Log.Write ("Reader: end");
   exception
   when Item: others =>
     Log.Termination (Item);
     accept Close;
+    The_Device.Close;
   end Reader;
 
 end Handbox;

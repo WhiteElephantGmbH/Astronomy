@@ -134,7 +134,9 @@ package Serial_Io is
                    The_Timeout : Duration := Default_Flush_Timeout);
 
 
-  procedure Close (The_Device  : Device);
+  procedure Free (The_Device : Device);
+
+  procedure Close (The_Device : Device);
 
   Aborted           : exception;
   No_Access         : exception;

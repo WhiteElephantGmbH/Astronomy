@@ -21,69 +21,64 @@ pragma Build (Description => "Focuser test",
               Icon        => False,
               Compiler    => "GNATPRO\23.0");
 
-with Ada.Exceptions;
 with Ada.Text_IO;
 with Celestron.Focuser;
+with Exceptions;
+with Handbox;
 
 procedure Focuser_Test is
 
   package Focuser renames Celestron.Focuser;
 
+  Is_Executing : Boolean := True;
+
+  procedure Execute (The_Command: Handbox.Command) is
+  begin
+    case The_Command is
+    when Handbox.Up_Pressed =>
+      Focuser.Execute (Focuser.Increase_Rate);
+    when Handbox.Down_Pressed =>
+      Focuser.Execute (Focuser.Decrease_Rate);
+    when Handbox.Left_Pressed =>
+      Focuser.Execute (Focuser.Move_In);
+    when Handbox.Right_Pressed =>
+      Focuser.Execute (Focuser.Move_Out);
+    when Handbox.Up_Released =>
+      null;
+    when Handbox.Down_Released =>
+      null;
+    when Handbox.Left_Released | Handbox.Right_Released =>
+      Focuser.Execute (Focuser.Stop);
+    when Handbox.Center_Pressed | Handbox.Stop =>
+      Focuser.Execute (Focuser.Stop);
+    when Handbox.Center_Released =>
+      Is_Executing := False;
+    end case;
+  end Execute;
+
+  package TIO renames Ada.Text_IO;
+
   Has_Moved        : Boolean := False;
   Was_Disconnected : Boolean := False;
 
 begin
-  Ada.Text_IO.Put_Line ("Focuser Test");
-  Ada.Text_IO.Put_Line ("============");
+  TIO.Put_Line ("Focuser Test");
+  TIO.Put_Line ("============");
   Focuser.Start;
-  loop
-    Ada.Text_IO.Put(">");
-    begin
-      declare
-        Command : constant String := Ada.Text_IO.Get_Line;
-      begin
-        exit when Command'length = 0;
-        case Command(Command'first) is
-        when '+' =>
-          Focuser.Execute (Focuser.Increase_Rate);
-        when '-' =>
-          Focuser.Execute (Focuser.Decrease_Rate);
-        when 'b' =>
-          if Command'length > 1 then
-            Focuser.Set (Focuser.Lash'value(Command(Command'first + 1 .. Command'last)));
-          else
-            Ada.Text_IO.Put_Line ("### backlash value missing");
-          end if;
-        when 'i' =>
-          Focuser.Execute (Focuser.Move_In);
-        when 'o' =>
-          Focuser.Execute (Focuser.Move_Out);
-        when 's' =>
-          Focuser.Execute (Focuser.Stop);
-        when 'e' =>
-          Focuser.Close;
-          return;
-        when 'c' =>
-          exit;
-        when others =>
-          raise Constraint_Error;
-        end case;
-      end;
-      Ada.Text_IO.Put_Line ("Rate:" & Focuser.Speed'image &
-                            " - Backlash:" & Focuser.Backlash'image &
-                            " - Position:" & Focuser.Position'image);
-    exception
-    when others =>
-      Ada.Text_IO.Put("expected: +, -, b, i, o, c or e");
-    end;
+  Handbox.Start (Execute'access);
+  while Is_Executing loop
+    delay 1.0;
+    TIO.Put_Line ("Rate:" & Focuser.Speed'image &
+                  " - Backlash:" & Focuser.Backlash'image &
+                  " - Position:" & Focuser.Position'image);
   end loop;
   loop
     if Focuser.Exists then
       if Focuser.Moving then
-        Ada.Text_IO.Put_Line ("Focuser Moving");
+        TIO.Put_Line ("Focuser Moving");
         Has_Moved := True;
       else
-        Ada.Text_IO.Put_Line ("Focuser Stopped at " & Focuser.Position'image);
+        TIO.Put_Line ("Focuser Stopped at " & Focuser.Position'image);
         if Has_Moved then
           exit when Was_Disconnected;
         else
@@ -97,13 +92,18 @@ begin
     else
       Has_Moved := False;
       Was_Disconnected := True;
-      Ada.Text_IO.Put_Line ("Focuser Disconnected");
+      TIO.Put_Line ("Focuser Disconnected");
     end if;
     delay 1.0;
   end loop;
+  TIO.Put_Line ("Close Handbox");
+  Handbox.Close;
+  TIO.Put_Line ("Close Focuser");
   Focuser.Close;
-  Ada.Text_IO.Put_Line ("Complete");
+  TIO.Put_Line ("Complete");
 exception
 when Item: others =>
-  Ada.Text_IO.Put_Line (Ada.Exceptions.Exception_Message (Item));
+  TIO.Put_Line ("Exception: " & Exceptions.Name_Of (Item));
+  Handbox.Close;
+  Focuser.Close;
 end Focuser_Test;

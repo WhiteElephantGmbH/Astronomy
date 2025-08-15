@@ -33,10 +33,10 @@ package Standard_C_Interface is
   subtype Fd_Id     is File_Descriptor range 0 .. Fd_Set_Size - 1;
 
   type Fd_Set is array (Fd_Id) of Boolean
-    with
-      Pack,
-      Size       => Fd_Set_Size,
-      Convention => C;
+  with
+    Pack,
+    Size       => Fd_Set_Size,
+    Convention => C;
 
   Standard_Input  : constant File_Descriptor := 0;
   Standard_Output : constant File_Descriptor := 1;
@@ -49,6 +49,10 @@ package Standard_C_Interface is
   Read_Only  : constant Open_Flags := 0;
   Write_Only : constant Open_Flags := 1;
   Read_Write : constant Open_Flags := 2;
+  No_CTTY    : constant Open_Flags := 16#100#;
+  Non_Block  : constant Open_Flags := 16#800#;
+  Cloexec    : constant Open_Flags := 16#80000#;
+
 
 
   type Return_Code is new C.int;
@@ -63,8 +67,16 @@ package Standard_C_Interface is
     Sec  : C.long;
     Usec : C.long;
   end record
-    with
-      Convention => C;
+  with
+    Convention => C;
+
+
+  type Pipe_Fds is record
+    Read_Fd  : File_Descriptor;
+    Write_Fd : File_Descriptor;
+  end record
+  with
+    Convention => C;
 
 
   ---------------------------
@@ -73,20 +85,20 @@ package Standard_C_Interface is
   function Open  (Path  : C.Strings.chars_ptr;
                   Flags : Open_Flags;
                   Mode  : C.int) return File_Descriptor
-    with
-      Import        => True,
-      Convention    => C,
-      External_Name => "open";
+  with
+    Import        => True,
+    Convention    => C,
+    External_Name => "open";
 
 
   ----------------------------
   -- syscalls(2) > close(2) --
   ----------------------------
   function Close (Fd : File_Descriptor) return Return_Code
-    with
-      Import        => True,
-      Convention    => C,
-      External_Name => "close";
+  with
+    Import        => True,
+    Convention    => C,
+    External_Name => "close";
 
 
   ---------------------------
@@ -95,10 +107,10 @@ package Standard_C_Interface is
   function Read (Fd    : File_Descriptor;
                  Buf   : System.Address;
                  Count : C.size_t) return Return_Count
-    with
-      Import        => True,
-      Convention    => C,
-      External_Name => "read";
+  with
+    Import        => True,
+    Convention    => C,
+    External_Name => "read";
 
 
   ----------------------------
@@ -107,10 +119,10 @@ package Standard_C_Interface is
   function Write (Fd    : File_Descriptor;
                   Buf   : System.Address;
                   Count : C.size_t) return Return_Count
-    with
-      Import        => True,
-      Convention    => C,
-      External_Name => "write";
+  with
+    Import        => True,
+    Convention    => C,
+    External_Name => "write";
 
 
   -----------------------------
@@ -122,9 +134,20 @@ package Standard_C_Interface is
                         Write_Fds  : access Fd_Set := null;
                         Except_Fds : access Fd_Set := null;
                         Timeout    : access Timeval) return Return_Count
-    with
-      Import        => True,
-      Convention    => C,
-      External_Name => "select";
+  with
+    Import        => True,
+    Convention    => C,
+    External_Name => "select";
+
+
+  -----------------------
+  -- pipe(2) > pipe(2) --
+  -----------------------
+
+  function Pipe (Fds : access Pipe_Fds) return Return_Code
+  with
+    Import        => True,
+    Convention    => C,
+    External_Name => "pipe";
 
 end Standard_C_Interface;
