@@ -163,7 +163,7 @@ package Text is
     Aggregate => (Empty       => Empty_String,
                   Add_Unnamed => Append);
 
-  Empty_String : constant String;
+  function Empty_String return String with Inline;
 
   function Count (Item : String) return Natural is (Natural(Character_Array.Length(Character_Array.Vector(Item))));
 
@@ -293,7 +293,7 @@ package Text is
     Aggregate => (Empty       => Empty_List,
                   Add_Unnamed => Append);
 
-  Empty_List : constant List;
+  function Empty_List return List with Inline;
 
   function "+" (Left  : List;
                 Right : Standard.String) return List;
@@ -342,7 +342,7 @@ package Text is
     Aggregate => (Empty       => Empty_Vector,
                   Add_Unnamed => Append);
 
-  Empty_Vector : constant Vector;
+  function Empty_Vector return Vector with Inline;
 
   function Count (Item : Vector) return Natural is (Natural(Length (Item))) with Inline;
 
@@ -385,7 +385,7 @@ package Text is
     Iterator_Element  => Standard.String,
     Relaxed_Initialization;
 
-  None : constant Strings;
+  function None return Strings with Inline;
 
   procedure Append (Item : in out Strings;
                     Data :        Standard.String)
@@ -527,7 +527,7 @@ private
   procedure Put_String_Image (S : in out Ada.Strings.Text_Buffers.Root_Buffer_Type'class;
                               V :        String);
 
-  Empty_String : constant String := Empty;
+  function Empty_String return String is (Empty);
 
   Null_String : constant String := (Character_Array.Empty_Vector with null record);
 
@@ -539,7 +539,7 @@ private
   procedure Put_List_Image (S : in out Ada.Strings.Text_Buffers.Root_Buffer_Type'class;
                             V :        List);
 
-  Empty_List : constant List := (Linked_Strings.Empty_List with null record);
+  function Empty_List return List is ((Linked_Strings.Empty_List with null record));
 
 ------------------------------------------------------------------------------------------------------------------------
 
@@ -549,7 +549,7 @@ private
   procedure Put_Vector_Image (S : in out Ada.Strings.Text_Buffers.Root_Buffer_Type'class;
                               V :        Vector);
 
-  Empty_Vector : constant Vector := (String_Array.Empty_Vector with null record);
+  function Empty_Vector return Vector is ((String_Array.Empty_Vector with null record));
 
 ------------------------------------------------------------------------------------------------------------------------
 
@@ -570,7 +570,7 @@ private
   procedure Put_Strings_Image (S : in out Ada.Strings.Text_Buffers.Root_Buffer_Type'class;
                                V :        Strings);
 
-  None : constant Strings := (Count => 0, Length => 0, others => <>);
+  function None return Strings is ((Count => 0, Length => 0, others => <>));
 
   function Count (Item : Strings) return Natural is (Item.Count);
 
