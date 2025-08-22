@@ -15,51 +15,8 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-package Celestron.Focuser is
-
-  type Command is (Decrease_Rate, Increase_Rate, Move_In, Move_Out, Stop);
+package Control is
 
   procedure Start;
 
-  subtype Distance is Natural range 0 .. 2**24 - 1;
-
-  type Lash is new Distance range 0 .. 2**8 - 1;
-
-  subtype Rate is Natural range 1 .. 4;
-
-  Port_Number : constant := 12000;
-
-  Get_Data_Parameter : constant String := "get_data";
-  Execute_Parameter  : constant String := "execute";
-  Move_To_Parameter  : constant String := "move_to";
-  Set_Lash_Parameter : constant String := "set_lash";
-
-  type Data is record
-    Exists   : Boolean := False;
-    Moving   : Boolean := False;
-    Position : Distance := Distance'last;
-    Backlash : Lash := Lash'last;
-    Speed    : Rate := Rate'first;
-  end record;
-
-  No_Data : constant Data := (others => <>);
-
-  function Exists return Boolean;
-
-  function Moving return Boolean;
-
-  function Backlash return Lash;
-
-  function Position return Distance;
-
-  function Speed return Rate;
-
-  procedure Execute (Item : Command);
-
-  procedure Move_To (Item : Distance);
-
-  procedure Set (Item : Lash);
-
-  procedure Close;
-
-end Celestron.Focuser;
+end Control;

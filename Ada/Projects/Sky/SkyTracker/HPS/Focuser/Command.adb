@@ -15,51 +15,32 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-package Celestron.Focuser is
+with Traces;
 
-  type Command is (Decrease_Rate, Increase_Rate, Move_In, Move_Out, Stop);
+package body Command is
 
-  procedure Start;
+  package Log is new Traces ("Command");
 
-  subtype Distance is Natural range 0 .. 2**24 - 1;
+  procedure Execute (Item : Focuser.Command) is
+  begin
+    Log.Write ("Execute:" & Item'image);
+    Focuser.Execute (Item);
+  end Execute;
 
-  type Lash is new Distance range 0 .. 2**8 - 1;
 
-  subtype Rate is Natural range 1 .. 4;
+  procedure Move_To (Position : Focuser.Distance) is
+  begin
+    Log.Write ("Move to" & Position'image);
+    Focuser.Move_To (Position);
+  end Move_To;
 
-  Port_Number : constant := 12000;
 
-  Get_Data_Parameter : constant String := "get_data";
-  Execute_Parameter  : constant String := "execute";
-  Move_To_Parameter  : constant String := "move_to";
-  Set_Lash_Parameter : constant String := "set_lash";
+  procedure Set (Backlash : Focuser.Lash) is
+  begin
+    Log.Write ("Set backlash" & Backlash'image);
+    Focuser.Set (Backlash);
+  end Set;
 
-  type Data is record
-    Exists   : Boolean := False;
-    Moving   : Boolean := False;
-    Position : Distance := Distance'last;
-    Backlash : Lash := Lash'last;
-    Speed    : Rate := Rate'first;
-  end record;
-
-  No_Data : constant Data := (others => <>);
-
-  function Exists return Boolean;
-
-  function Moving return Boolean;
-
-  function Backlash return Lash;
-
-  function Position return Distance;
-
-  function Speed return Rate;
-
-  procedure Execute (Item : Command);
-
-  procedure Move_To (Item : Distance);
-
-  procedure Set (Item : Lash);
-
-  procedure Close;
-
-end Celestron.Focuser;
+begin
+  Focuser.Start;
+end Command;
