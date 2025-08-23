@@ -42,6 +42,7 @@ package body Control is
     The_Data : Focuser.Data;
   begin
     accept Start;
+    Log.Write ("Manager started");
     loop
       The_Data.Exists := Focuser.Exists;
       if The_Data.Exists then
@@ -53,7 +54,7 @@ package body Control is
         The_Data := Focuser.No_Data;
       end if;
       Server.Update (The_Data);
-      delay 0.5;
+      delay 0.2;
     end loop;
   exception
   when Item: others =>

@@ -15,15 +15,26 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-pragma Build (Description => "SkyTracker control program for GM 1000 HPS",
-              Version     => (1, 0, 0, 0),
-              Kind        => Console,
-              Libraries   => ("AWS64", "COLL64"),
-              Compiler    => "GNATPRO\23.0");
+with Celestron.Focuser;
+private with Network;
 
-with Control;
+package Focuser_Client is
 
-procedure Focuser is
-begin
-  Control.Start;
-end Focuser;
+  package Focuser renames Celestron.Focuser;
+
+  function Actual_Data return Focuser.Data;
+
+  function Execute (Command : Focuser.Command) return Focuser.Data;
+
+  function Move_To (Position : Focuser.Distance) return Focuser.Data;
+
+  function Set (Backlash : Focuser.Lash) return Focuser.Data;
+
+private
+
+  Id : constant String := "Focuser_Client";
+
+  The_Client_Address : Network.Ip_Address := Network.Ip_Address_Of_Host ("localhost");
+  The_Client_Port    : Network.Port_Number := Focuser.Default_Port_Number;
+
+end Focuser_Client;

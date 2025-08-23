@@ -19,7 +19,6 @@ with AWS.Messages;
 with AWS.Response;
 with AWS.Server;
 with AWS.Status;
-with Command;
 with GNATCOLL.JSON;
 with Protected_Storage;
 with Text;
@@ -93,7 +92,7 @@ package body Server is
       declare
         Command_Number : constant Natural := Parameter;
       begin
-        Command.Execute (Focuser.Command'val(Command_Number));
+        Focuser.Execute (Focuser.Command'val(Command_Number));
         return AWS.Response.Acknowledge (AWS.Messages.S200, Response);
       exception
       when others =>
@@ -103,7 +102,7 @@ package body Server is
       declare
         Position : constant Natural := Parameter;
       begin
-        Command.Move_To (Position => Focuser.Distance(Position));
+        Focuser.Move_To (Position);
         return AWS.Response.Acknowledge (AWS.Messages.S200, Response);
       exception
       when others =>
@@ -113,7 +112,7 @@ package body Server is
       declare
         Backlash : constant Natural := Parameter;
       begin
-        Command.Set (Backlash => Focuser.Lash(Backlash));
+        Focuser.Set (Focuser.Lash(Backlash));
         return AWS.Response.Acknowledge (AWS.Messages.S200, Response);
       exception
       when others =>
@@ -124,10 +123,10 @@ package body Server is
     end if;
   exception
   when Error =>
-    Command.Execute (Focuser.Stop);
+    Focuser.Execute (Focuser.Stop);
     return AWS.Response.Acknowledge (AWS.Messages.S400, Error_Message.To_String);
   when Item: others =>
-    Command.Execute (Focuser.Stop);
+    Focuser.Execute (Focuser.Stop);
     Log.Termination (Item);
     return AWS.Response.Acknowledge (AWS.Messages.S400, "exception in response handling");
   end Callback;
@@ -141,7 +140,7 @@ package body Server is
     AWS.Server.Start (Web_Server => The_Server,
                       Name       => "Skytracker",
                       Callback   => Callback'access,
-                      Port       => Celestron.Focuser.Port_Number);
+                      Port       => Celestron.Focuser.Default_Port_Number);
   end Start;
 
 
