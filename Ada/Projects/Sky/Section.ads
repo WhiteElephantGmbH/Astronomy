@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2024 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2024 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -31,6 +31,8 @@ package Section is
   Port_Key        : constant String := "Port";
 
   procedure Set (Handle : Configuration.Section_Handle);
+
+  function Exists return Boolean;
 
   function Angles_Of (Key     : String;
                       Maximum : Natural; -- in degrees

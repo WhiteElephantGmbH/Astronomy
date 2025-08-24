@@ -19,7 +19,7 @@ with Ada.Real_Time;
 with Astro;
 with Camera;
 with Clock;
-with Celestron.Focuser;
+with Focuser_Client;
 with Handbox.HPS;
 with Http_Server.HPS;
 with Input;
@@ -33,8 +33,6 @@ with Weather;
 package body Telescope is
 
   package Log is new Traces ("Telescope");
-
-  package Focuser renames Celestron.Focuser;
 
   package RT renames Ada.Real_Time;
 
@@ -93,18 +91,16 @@ package body Telescope is
        else
          (others => <>));
 
-    function Focuser_Data return Server.Focuser_Data is
-      ((Exists   => Focuser.Exists,
-        Moving   => Focuser.Moving,
-        Position => Focuser.Position,
-        Rate     => Focuser.Speed,
-        Execute  => Focuser.Execute'access));
-
   begin -- Set_Server_Information
     Http_Server.Set (Control_Data);
     Server.Set_Moving (Speed => The_Data.Moving_Speed);
     Server.Set (Mount_Data);
-    Server.Set (Focuser_Data);
+    if Focuser_Client.Server_Exists then
+      Server.Set (Focuser_Client.Actual_Data);
+    end if;
+  exception
+  when Focuser_Client.Server_Not_Available =>
+    Log.Warning ("Focuser server not available");
   end Set_Server_Information;
 
 
@@ -123,7 +119,6 @@ package body Telescope is
 
   procedure Start (Update_Handler : Information_Update_Handler) is
   begin
-    Focuser.Start;
     Handbox.Start (Handbox.HPS.Handle'access);
     Input.Open (Execute'access);
     Signal_Information_Update := Update_Handler;
@@ -690,7 +685,6 @@ package body Telescope is
     end loop;
     Input.Close;
     Handbox.Close;
-    Focuser.Close;
     Log.Write ("end");
   exception
   when Item: others =>

@@ -20,16 +20,10 @@ with Celestron.Focuser;
 
 package Http_Server.HPS is
 
+  package Focuser renames Celestron.Focuser;
+
   type Mount_Data is record
     Exists : Boolean := False;
-  end record;
-
-  type Focuser_Data is record
-    Exists   : Boolean := False;
-    Moving   : Boolean := False;
-    Position : Natural := 0;
-    Rate     : Natural := 0;
-    Execute  : access procedure (Item : Celestron.Focuser.Command);
   end record;
 
   procedure Start;
@@ -38,6 +32,8 @@ package Http_Server.HPS is
 
   procedure Set (Data : Mount_Data);
 
-  procedure Set (Data : Focuser_Data);
+  procedure Set (Data : Focuser.Data);
+
+  procedure Execute (The_Command : Focuser.Command);
 
 end Http_Server.HPS;

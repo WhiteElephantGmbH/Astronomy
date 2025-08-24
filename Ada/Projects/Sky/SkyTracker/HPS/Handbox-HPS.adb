@@ -16,6 +16,7 @@
 pragma Style_White_Elephant;
 
 with Celestron.Focuser;
+with Http_Server.HPS;
 
 package body Handbox.HPS is
 
@@ -23,12 +24,16 @@ package body Handbox.HPS is
 
   Is_Moving : Boolean;
 
+
+  procedure Execute (The_Command : Focuser.Command) renames Http_Server.HPS.Execute;
+
+
   procedure Handle (The_Command : Command) is
   begin
     if Is_Moving then
       case The_Command is
       when Left_Released | Right_Released | Stop =>
-        Focuser.Execute (Focuser.Stop);
+        Execute (Focuser.Stop);
         Is_Moving := False;
       when others =>
         null;
@@ -36,14 +41,14 @@ package body Handbox.HPS is
     else
       case The_Command is
       when Up_Pressed =>
-        Focuser.Execute (Focuser.Increase_Rate);
+        Execute (Focuser.Increase_Rate);
       when Down_Pressed =>
-        Focuser.Execute (Focuser.Decrease_Rate);
+        Execute (Focuser.Decrease_Rate);
       when Left_Pressed =>
-        Focuser.Execute (Focuser.Move_In);
+        Execute (Focuser.Move_In);
         Is_Moving := True;
       when Right_Pressed =>
-        Focuser.Execute (Focuser.Move_Out);
+        Execute (Focuser.Move_Out);
         Is_Moving := True;
       when others =>
         null;

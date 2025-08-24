@@ -24,11 +24,12 @@ with Traces;
 
 package body Focuser_Client is
 
-  package Log is new Traces ("Focuser_Client");
+  package Log is new Traces (Id);
 
   package JS renames GNATCOLL.JSON;
 
-  Not_Available : exception;
+
+  function Server_Exists return Boolean is (The_Server_Exists);
 
 
   function Get (Command   : String;
@@ -47,7 +48,7 @@ package body Focuser_Client is
   begin
     if Status /= AWS.Messages.S200 then
       Log.Error ("Get Status: " & Status'image);
-      raise Not_Available;
+      raise Server_Not_Available;
     end if;
     declare
       Result : constant String := AWS.Response.Message_Body (Response);

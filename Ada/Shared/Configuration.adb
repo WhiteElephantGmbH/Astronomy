@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2002 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2002 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -142,6 +142,9 @@ package body Configuration is
   when others =>
     return null;
   end Handle_For;
+
+
+  function Exists (Handle : Section_Handle) return Boolean is (Handle /= null);
 
 
   function Value_Of (The_Section : Section_Handle;

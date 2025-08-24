@@ -22,6 +22,7 @@ with Camera.Parameter;
 with Configuration;
 with Error;
 with File;
+with Focuser_Client.Parameter;
 with Http_Server.Parameter;
 with Language.Parameter;
 with Moon.Parameter;
@@ -61,6 +62,8 @@ package body Parameter is
       Put ("");
       Ten_Micron.Parameter.Defaults (Put'access, Ip_Address => "192.168.26.180", Port => 3490);
       Put ("");
+      Focuser_Client.Parameter.Defaults (Put'access);
+      Put ("");
       Http_Server.Parameter.Defaults (Put'access, "Handbox_HPS", Port => 9001);
       Put ("");
       Sun.Parameter.Defaults (Put'access);
@@ -92,6 +95,7 @@ package body Parameter is
     begin
       Language.Parameter.Define (Handle);
       Ten_Micron.Parameter.Define (Handle);
+      Focuser_Client.Parameter.Define (Handle);
       Http_Server.Parameter.Define (Handle);
       Sun.Parameter.Define (Handle);
       Moon.Parameter.Define (Handle);

@@ -22,6 +22,8 @@ package Focuser_Client is
 
   package Focuser renames Celestron.Focuser;
 
+  function Server_Exists return Boolean;
+
   function Actual_Data return Focuser.Data;
 
   function Execute (Command : Focuser.Command) return Focuser.Data;
@@ -30,10 +32,13 @@ package Focuser_Client is
 
   function Set (Backlash : Focuser.Lash) return Focuser.Data;
 
+  Server_Not_Available : exception;
+
 private
 
   Id : constant String := "Focuser_Client";
 
+  The_Server_Exists  : Boolean := False;
   The_Client_Address : Network.Ip_Address := Network.Ip_Address_Of_Host ("localhost");
   The_Client_Port    : Network.Port_Number := Focuser.Default_Port_Number;
 

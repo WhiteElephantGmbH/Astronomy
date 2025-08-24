@@ -23,6 +23,7 @@ with Clock.Parameter;
 with Configuration;
 with Error;
 with File;
+with Focuser_Client.Parameter;
 with Http_Server.Parameter;
 with Language.Parameter;
 with Moon.Parameter;
@@ -60,7 +61,9 @@ package body Parameter is
       Put ("");
       Ten_Micron.Parameter.Defaults (Put'access, Ip_Address => "169.254.42.42", Port => 3490);
       Put ("");
-      Http_Server.Parameter.Defaults (Put'access, "Handbox_HPS", Port => 9001);
+      Focuser_Client.Parameter.Defaults (Put'access);
+      Put ("");
+       Http_Server.Parameter.Defaults (Put'access, "Handbox_HPS", Port => 9001);
       Put ("");
       Sun.Parameter.Defaults (Put'access);
       Put ("");
@@ -92,6 +95,7 @@ package body Parameter is
     begin
       Language.Parameter.Define (Handle); -- must be first
       Ten_Micron.Parameter.Define (Handle);
+      Focuser_Client.Parameter.Define (Handle);
       Http_Server.Parameter.Define (Handle);
       Sun.Parameter.Define (Handle);
       Moon.Parameter.Define (Handle);

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2022 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                           (c) 2025 by White Elephant GmbH, Schaffhausen, Switzerland                              *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,15 +15,29 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-pragma Build (Description => "SkyTracker control program for GM 1000 HPS",
-              Version     => (2, 4, 7, 2),
-              Kind        => Windows,
-              Libraries   => ("AWSS64", "COLL64"),
-              Compiler    => "GNATPRO\23.0");
+with Section;
 
-with Control;
+package body Focuser_Client.Parameter is
 
-procedure SkyTracker is
-begin
-  Control.Start;
-end SkyTracker;
+  Ip_Address_Key : constant String := Section.Ip_Address_Key;
+  Port_Key       : constant String := Section.Port_Key;
+
+  procedure Define (Handle : Configuration.File_Handle) is
+  begin
+    Section.Set (Configuration.Handle_For (Handle, Id));
+    if Section.Exists then
+      The_Server_Exists := True;
+      The_Client_Address := Section.Ip_Address_For (Id);
+      The_Client_Port := Section.Port_For (Id);
+    end if;
+  end Define;
+
+
+  procedure Defaults (Put : access procedure (Item : String)) is
+  begin
+    Put ("[" & Id & "]");
+    Put (Ip_Address_Key & " = 169.254.42.44");
+    Put (Port_Key & "       =" & Celestron.Focuser.Default_Port_Number'image);
+  end Defaults;
+
+end Focuser_Client.Parameter;

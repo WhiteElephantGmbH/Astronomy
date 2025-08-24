@@ -18,6 +18,7 @@ pragma Style_White_Elephant;
 with AWS.Messages;
 with AWS.Response;
 with AWS.Status;
+with Focuser_Client;
 with Input;
 with Protected_Storage;
 
@@ -27,7 +28,18 @@ package body Http_Server.HPS is
 
   package Protected_Moving_Speed is new Protected_Storage (Angle.Value);
 
-  package Protected_Focuser is new Protected_Storage (Focuser_Data);
+  package Protected_Focuser is new Protected_Storage (Focuser.Data);
+
+
+  procedure Execute (The_Command : Focuser.Command) is
+  begin
+    if Focuser_Client.Server_Exists then
+      Set (Focuser_Client.Execute (The_Command));
+    end if;
+  exception
+  when Focuser_Client.Server_Not_Available =>
+    Log.Warning ("Focuser server not available");
+  end Execute;
 
 
   function Moving_Speed return String is
@@ -74,18 +86,18 @@ package body Http_Server.HPS is
 
 
     procedure Set_Focuser_Values is
-      Focuser : constant JS.JSON_Value := JS.Create_Object;
-      Data    : constant Focuser_Data  := Protected_Focuser.Data;
+      Value : constant JS.JSON_Value := JS.Create_Object;
+      Data  : constant Focuser.Data  := Protected_Focuser.Data;
     begin
-      JS.Set_Field (Focuser, "exists", JS.Create (Data.Exists));
-      JS.Set_Field (Focuser, "moving", JS.Create (Data.Moving));
-      JS.Set_Field (Focuser, "position", JS.Create (Data.Position));
-      JS.Set_Field (Focuser, "rate", JS.Create (Data.Rate));
-      JS.Set_Field (Info, "focuser", Focuser);
+      JS.Set_Field (Value, "exists", JS.Create (Data.Exists));
+      JS.Set_Field (Value, "moving", JS.Create (Data.Moving));
+      JS.Set_Field (Value, "position", JS.Create (Data.Position));
+      JS.Set_Field (Value, "rate", JS.Create (Data.Speed));
+      JS.Set_Field (Info, "focuser", Value);
       Log.Write ("Focuser Exists   : " & Data.Exists'image);
       Log.Write ("Focuser Moving   : " & Data.Moving'image);
       Log.Write ("Focuser Position :"  & Data.Position'image);
-      Log.Write ("Focuser Rate     :"  & Data.Rate'image);
+      Log.Write ("Focuser Speed    :"  & Data.Speed'image);
     end Set_Focuser_Values;
 
   begin -- Information
@@ -125,15 +137,15 @@ package body Http_Server.HPS is
           Command_Image : constant String := Parts(2);
         begin
           declare
-            Command : constant Celestron.Focuser.Command := Celestron.Focuser.Command'value(Command_Image);
+            Command : constant Focuser.Command := Focuser.Command'value(Command_Image);
           begin
-            Celestron.Focuser.Execute (Command);
+            Execute (Command);
             return AWS.Response.Acknowledge (AWS.Messages.S200, "ok");
           end;
         exception
         when others =>
           Log.Error ("Unknown focuser command: " & Command_Image);
-          Celestron.Focuser.Execute (Celestron.Focuser.Stop);
+          Execute (Focuser.Stop);
           return AWS.Response.Acknowledge (AWS.Messages.S400, "unknown focuser command");
         end;
       elsif Subsystem = "information" then
@@ -159,6 +171,6 @@ package body Http_Server.HPS is
 
   procedure Set (Data : Mount_Data) renames Protected_Mount.Set;
 
-  procedure Set (Data : Focuser_Data) renames Protected_Focuser.Set;
+  procedure Set (Data : Focuser.Data) renames Protected_Focuser.Set;
 
 end Http_Server.HPS;

@@ -16,7 +16,7 @@
 pragma Style_White_Elephant;
 
 pragma Build (Description => "Focuser test",
-              Version     => (1, 0, 0, 2),
+              Version     => (1, 0, 0, 0),
               Kind        => Console,
               Icon        => False,
               Libraries   => ("AWS64", "COLL64"),
@@ -106,6 +106,9 @@ begin
   Handbox.Close;
   IO.Put_Line ("Complete");
 exception
+when Focuser_Client.Server_Not_Available =>
+  IO.Put_Line ("Focuser Server not avalable");
+  Handbox.Close;
 when Item: others =>
   IO.Put_Line ("Exception: " & Exceptions.Information_Of (Item));
   Handbox.Close;
