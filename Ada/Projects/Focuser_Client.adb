@@ -33,14 +33,21 @@ package body Focuser_Client is
 
 
   function Get (Command   : String;
-                Parameter : String := "") return Focuser.Data is
+                Parameter : String := "") return AWS.Response.Data is
 
     Host    : constant String := Network.Image_Of (The_Client_Address);
     Port    : constant String := Text.Trimmed (The_Client_Port'image);
     Address : constant String := "http://" & Host & ":" & Port & "/" & Command;
     Url     : constant String := (if Parameter = "" then Address else Address & "=" & Parameter);
+  begin
+    return AWS.Client.Get (Url);
+  end Get;
 
-    Response : constant AWS.Response.Data        := AWS.Client.Get (Url);
+
+  function Get (Command   : String;
+                Parameter : String := "") return Focuser.Data is
+
+    Response : constant AWS.Response.Data := Get (Command, Parameter);
     Status   : constant AWS.Messages.Status_Code := AWS.Response.Status_Code (Response);
 
     use type AWS.Messages.Status_Code;
@@ -78,14 +85,14 @@ package body Focuser_Client is
 
   function Actual_Data return Focuser.Data is
   begin
-    return Get (Command => Focuser.Get_Data_Parameter);
+    return Get (Command => Focuser.Get_Data_Command);
   end Actual_Data;
 
 
   function Execute (Command : Focuser.Command) return Focuser.Data is
   begin
     Log.Write ("Execute: " & Command'image);
-    return Get (Command   => Focuser.Execute_Parameter,
+    return Get (Command   => Focuser.Execute_Command,
                 Parameter => Text.Trimmed (Focuser.Command'pos(Command)'image));
   end Execute;
 
@@ -93,7 +100,7 @@ package body Focuser_Client is
   function Move_To (Position : Focuser.Distance) return Focuser.Data is
   begin
     Log.Write ("Move_To:" & Position'image);
-    return Get (Command   => Focuser.Move_To_Parameter,
+    return Get (Command   => Focuser.Move_To_Command,
                 Parameter => Text.Trimmed (Position'image));
   end Move_To;
 
@@ -101,8 +108,20 @@ package body Focuser_Client is
   function Set (Backlash : Focuser.Lash) return Focuser.Data is
   begin
     Log.Write ("Set Backlash:" & Backlash'image);
-    return Get (Command   => Focuser.Set_Lash_Parameter,
+    return Get (Command   => Focuser.Set_Lash_Command,
                 Parameter => Text.Trimmed (Backlash'image));
   end Set;
+
+
+  procedure Shutdown is
+    Response : constant AWS.Response.Data := Get (Focuser.Shutdown_Command);
+    Status   : constant AWS.Messages.Status_Code := AWS.Response.Status_Code (Response);
+    use type AWS.Messages.Status_Code;
+  begin
+    Log.Write ("Shutdown");
+    if Status /= AWS.Messages.S200 then
+      Log.Error ("Shutdown: " & Status'image);
+    end if;
+  end Shutdown;
 
 end Focuser_Client;

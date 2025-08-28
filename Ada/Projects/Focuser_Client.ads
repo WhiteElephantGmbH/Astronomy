@@ -32,6 +32,8 @@ package Focuser_Client is
 
   function Set (Backlash : Focuser.Lash) return Focuser.Data;
 
+  procedure Shutdown;
+
   Server_Not_Available : exception;
 
 private

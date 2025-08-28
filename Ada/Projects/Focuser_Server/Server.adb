@@ -19,6 +19,7 @@ with AWS.Messages;
 with AWS.Response;
 with AWS.Server;
 with AWS.Status;
+with Control;
 with GNATCOLL.JSON;
 with Protected_Storage;
 with Text;
@@ -86,9 +87,9 @@ package body Server is
 
   begin -- Callback
     Log.Write ("Callback - URI: " & Uri);
-    if Action = Focuser.Get_Data_Parameter then
+    if Action = Focuser.Get_Data_Command then
       return AWS.Response.Acknowledge (AWS.Messages.S200, Response);
-    elsif Action = Focuser.Execute_Parameter then
+    elsif Action = Focuser.Execute_Command then
       declare
         Command_Number : constant Natural := Parameter;
       begin
@@ -98,7 +99,7 @@ package body Server is
       when others =>
         Raise_Error ("unknown focuser command:" & Command_Number'image);
       end;
-    elsif Action = Focuser.Move_To_Parameter then
+    elsif Action = Focuser.Move_To_Command then
       declare
         Position : constant Natural := Parameter;
       begin
@@ -108,7 +109,7 @@ package body Server is
       when others =>
         Raise_Error ("unknown focuser position:" & Position'image);
       end;
-    elsif Action = Focuser.Set_Lash_Parameter then
+    elsif Action = Focuser.Set_Lash_Command then
       declare
         Backlash : constant Natural := Parameter;
       begin
@@ -118,8 +119,11 @@ package body Server is
       when others =>
         Raise_Error ("focuser backlash:" & Backlash'image);
       end;
+    elsif Action = Focuser.Shutdown_Command then
+      Control.Shutdown;
+      return AWS.Response.Acknowledge (AWS.Messages.S200, "Ok");
     else
-      Raise_Error ("unknown action");
+      Raise_Error ("unknown action: " & Action);
     end if;
   exception
   when Error =>

@@ -156,10 +156,16 @@ package body Celestron.Focuser is
 
     Protocol_Error : exception;
 
+    type Byte is mod 2**8;
 
-    function Checksum_Of (Sum : Natural) return Unsigned.Byte is
+    function Checksum_Of (Bytes : Unsigned.Byte_String;
+                          Sum   : Byte := 0) return Unsigned.Byte is
+      The_Sum  : Byte := Sum;
     begin
-      return Unsigned.Byte(256 - (Sum mod 256));
+      for Item of Bytes loop
+        The_Sum := The_Sum + Byte(Item);
+      end loop;
+      return Unsigned.Byte(not The_Sum + 1);
     end Checksum_Of;
 
 
@@ -168,22 +174,18 @@ package body Celestron.Focuser is
       Header : constant Unsigned.Byte_String := [Start_Packet, Unsigned.Byte(Item'length + 2), Transmit_Id, Receive_Id];
 
       The_Data : Unsigned.Byte_String(1 .. Header'length + Item'length + 1);
-      The_Sum  : Natural := 0;
 
     begin
       The_Data(1 .. Header'length) := Header;
       The_Data(Header'length + 1 .. The_Data'last - 1) := Item;
-      for Index in The_Data'first + 1 .. The_Data'last - 1 loop
-        The_Sum := The_Sum + Natural(The_Data(Index));
-      end loop;
-      The_Data(The_Data'last) := Checksum_Of (The_Sum);
+      The_Data(The_Data'last) := Checksum_Of (The_Data(The_Data'first + 1 .. The_Data'last - 1));
       The_Device.Send (The_Data);
     end Send;
 
 
     function Received_For (Command_Id : Unsigned.Byte) return Unsigned.Byte_String is
 
-      The_Sum   : Natural;
+      The_Sum   : Byte;
       The_Count : Natural;
 
       procedure Check (Item          : Unsigned.Byte;
@@ -196,7 +198,7 @@ package body Celestron.Focuser is
                                    " - expected: " & Unsigned.Image_Of (Item) & ")");
           raise Protocol_Error;
         end if;
-        The_Sum := The_Sum + Natural(Item);
+        The_Sum := The_Sum + Byte(Item);
       end Check;
 
     begin -- Received
@@ -204,7 +206,7 @@ package body Celestron.Focuser is
         null;
       end loop;
       The_Count := Natural(The_Device.Next_Byte);
-      The_Sum := The_Count;
+      The_Sum := Byte(The_Count);
       Check (Receive_Id, "incorrect receive Id");
       Check (Transmit_Id, "incorrect transmit Id");
       Check (Command_Id, "incorrect command Id");
@@ -213,11 +215,8 @@ package body Celestron.Focuser is
       begin
         if The_Data'length /= 0 then
           The_Device.Receive (The_Data);
-          for Item of The_Data loop
-            The_Sum := The_Sum + Natural(Item);
-          end loop;
         end if;
-        Check (Checksum_Of (The_Sum), "incorrect checksum");
+        Check (Checksum_Of (The_Data, The_Sum), "incorrect checksum");
         return The_Data;
       end;
     end Received_For;
@@ -314,7 +313,7 @@ package body Celestron.Focuser is
     end Start_Moving;
 
 
-    procedure Execute_Command is
+    procedure Execute is
       use type Unsigned.Byte_String;
       The_Command_Id : Unsigned.Byte;
       The_Parameter  : Unsigned.Byte := Unsigned.Byte(The_Rate) + Rate_Offset;
@@ -344,7 +343,7 @@ package body Celestron.Focuser is
           Log.Write ("execute " & The_Command'image & " with rate" & The_Rate'image);
         end if;
       end if;
-    end Execute_Command;
+    end Execute;
 
   begin -- Control
     accept Start;
@@ -402,7 +401,7 @@ package body Celestron.Focuser is
           accept Execute (Item : Command) do
             The_Command := Item;
           end Execute;
-          Execute_Command;
+          Execute;
         or
           accept Stop;
           exit;

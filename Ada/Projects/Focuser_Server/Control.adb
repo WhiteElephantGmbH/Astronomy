@@ -27,6 +27,7 @@ package body Control is
 
   task Manager is
     entry Start;
+    entry Shutdown;
   end Manager;
 
 
@@ -36,6 +37,12 @@ package body Control is
     Server.Start;
     Manager.Start;
   end Start;
+
+
+  procedure Shutdown is
+  begin
+    Manager.Shutdown;
+  end Shutdown;
 
 
   task body Manager is
@@ -54,8 +61,17 @@ package body Control is
         The_Data := Focuser.No_Data;
       end if;
       Server.Update (The_Data);
-      delay 0.2;
+      select
+        accept Shutdown;
+        exit;
+      or
+        delay 0.2;
+      end select;
     end loop;
+    Log.Write ("Manager terminating");
+    Server.Shutdown;
+    Focuser.Close;
+    Log.Write ("Manager end");
   exception
   when Item: others =>
     Log.Termination (Item);

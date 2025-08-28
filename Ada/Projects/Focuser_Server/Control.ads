@@ -19,4 +19,6 @@ package Control is
 
   procedure Start;
 
+  procedure Shutdown;
+
 end Control;

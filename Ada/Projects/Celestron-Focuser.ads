@@ -29,10 +29,11 @@ package Celestron.Focuser is
 
   Default_Port_Number : constant := 12000;
 
-  Get_Data_Parameter : constant String := "get_data";
-  Execute_Parameter  : constant String := "execute";
-  Move_To_Parameter  : constant String := "move_to";
-  Set_Lash_Parameter : constant String := "set_lash";
+  Get_Data_Command : constant String := "get_data";
+  Execute_Command  : constant String := "execute";
+  Move_To_Command  : constant String := "move_to";
+  Set_Lash_Command : constant String := "set_lash";
+  Shutdown_Command : constant String := "shutdown";
 
   type Data is record
     Exists   : Boolean := False;
