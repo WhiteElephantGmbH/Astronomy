@@ -37,7 +37,7 @@ package body Focuser_Client is
 
     Host    : constant String := Network.Image_Of (The_Client_Address);
     Port    : constant String := Text.Trimmed (The_Client_Port'image);
-    Address : constant String := "http://" & Host & ":" & Port & "/" & Command;
+    Address : constant String := "http://" & Host & ":" & Port & "?" & Command;
     Url     : constant String := (if Parameter = "" then Address else Address & "=" & Parameter);
   begin
     return AWS.Client.Get (Url);

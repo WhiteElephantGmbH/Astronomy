@@ -16,6 +16,7 @@
 pragma Style_White_Elephant;
 
 with AWS.Messages;
+with AWS.Parameters;
 with AWS.Response;
 with AWS.Server;
 with AWS.Status;
@@ -72,59 +73,38 @@ package body Server is
       raise Error;
     end Raise_Error;
 
-    Uri    : constant String := AWS.Status.URI (Data);
-    Parts  : constant Text.Strings := Text.Strings_Of (Uri, Separator => '/', Symbols => "=");
-
-    Action : constant String := Parts(1);
-
-    function Parameter return Natural is
-    begin
-      if Parts(2) /= "=" then
-        Raise_Error ("expected separator '=' in parameter");
-      end if;
-      return Natural'value(Parts(3));
-    end Parameter;
+    The_Parameters : AWS.Parameters.List;
 
   begin -- Callback
-    Log.Write ("Callback - URI: " & Uri);
-    if Action = Focuser.Get_Data_Command then
-      return AWS.Response.Acknowledge (AWS.Messages.S200, Response);
-    elsif Action = Focuser.Execute_Command then
+    The_Parameters := AWS.Status.Parameters (Data);
+    declare
+      Action : constant String := The_Parameters.Get_Name;
+    begin
+      Log.Write ("Callback - Action: " & Action);
+      if Action = Focuser.Shutdown_Command then
+        Control.Shutdown;
+        return AWS.Response.Acknowledge (AWS.Messages.S200, "Ok");
+      end if;
       declare
-        Command_Number : constant Natural := Parameter;
+        Value : constant String := The_Parameters.Get_Value;
       begin
-        Focuser.Execute (Focuser.Command'val(Command_Number));
+        if Action = Focuser.Get_Data_Command then
+          null;
+        elsif Action = Focuser.Execute_Command then
+          Focuser.Execute (Focuser.Command'val(Natural'value(Value)));
+        elsif Action = Focuser.Move_To_Command then
+          Focuser.Move_To (Focuser.Distance'value(Value));
+        elsif Action = Focuser.Set_Lash_Command then
+          Focuser.Set (Focuser.Lash'value(Value));
+        else
+          Raise_Error ("unknown action: " & Action);
+        end if;
         return AWS.Response.Acknowledge (AWS.Messages.S200, Response);
       exception
       when others =>
-        Raise_Error ("unknown focuser command:" & Command_Number'image);
+        Raise_Error ("illegal parameter:" & Value);
       end;
-    elsif Action = Focuser.Move_To_Command then
-      declare
-        Position : constant Natural := Parameter;
-      begin
-        Focuser.Move_To (Position);
-        return AWS.Response.Acknowledge (AWS.Messages.S200, Response);
-      exception
-      when others =>
-        Raise_Error ("unknown focuser position:" & Position'image);
-      end;
-    elsif Action = Focuser.Set_Lash_Command then
-      declare
-        Backlash : constant Natural := Parameter;
-      begin
-        Focuser.Set (Focuser.Lash(Backlash));
-        return AWS.Response.Acknowledge (AWS.Messages.S200, Response);
-      exception
-      when others =>
-        Raise_Error ("focuser backlash:" & Backlash'image);
-      end;
-    elsif Action = Focuser.Shutdown_Command then
-      Control.Shutdown;
-      return AWS.Response.Acknowledge (AWS.Messages.S200, "Ok");
-    else
-      Raise_Error ("unknown action: " & Action);
-    end if;
+    end;
   exception
   when Error =>
     Focuser.Execute (Focuser.Stop);
@@ -132,7 +112,7 @@ package body Server is
   when Item: others =>
     Focuser.Execute (Focuser.Stop);
     Log.Termination (Item);
-    return AWS.Response.Acknowledge (AWS.Messages.S400, "exception in response handling");
+    return AWS.Response.Acknowledge (AWS.Messages.S400, "exception in callback");
   end Callback;
 
 

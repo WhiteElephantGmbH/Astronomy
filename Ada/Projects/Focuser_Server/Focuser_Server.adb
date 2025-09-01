@@ -16,7 +16,7 @@
 pragma Style_White_Elephant;
 
 pragma Build (Description => "Celestron Focuser Server",
-              Version     => (1, 1, 0, 0),
+              Version     => (1, 1, 0, 1),
               Kind        => Console,
               Libraries   => ("AWS64", "COLL64"),
               Compiler    => "GNATPRO\23.0");
