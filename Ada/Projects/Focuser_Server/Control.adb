@@ -16,6 +16,7 @@
 pragma Style_White_Elephant;
 
 with Celestron.Focuser;
+with Handbox.Client;
 with Server;
 with Traces;
 
@@ -34,6 +35,7 @@ package body Control is
   procedure Start is
   begin
     Focuser.Start;
+    Handbox.Start (Handbox.Client.Handle'access);
     Server.Start;
     Manager.Start;
   end Start;
@@ -55,6 +57,7 @@ package body Control is
       if The_Data.Exists then
         The_Data.Position := Focuser.Position;
         The_Data.Moving := Focuser.Moving;
+        The_Data.Home := Focuser.Home_Position;
         The_Data.Backlash := Focuser.Backlash;
         The_Data.Speed := Focuser.Speed;
       else
@@ -70,6 +73,7 @@ package body Control is
     end loop;
     Log.Write ("Manager terminating");
     Server.Shutdown;
+    Handbox.Close;
     Focuser.Close;
     Log.Write ("Manager end");
   exception

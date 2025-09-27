@@ -53,8 +53,10 @@ package body Celestron.Focuser is
     entry Request_Position;
     entry Get_Position (Item : out Distance);
     entry Get_Speed (Item : out Rate);
-    entry Set (Item : Lash);
+    entry Get_Home (Item : out Distance);
     entry Set (Item : Distance);
+    entry Set (Item : Lash);
+    entry Set_Home (Item : Distance);
     entry Execute (Item : Command);
     entry Stop;
   end Control;
@@ -85,6 +87,14 @@ package body Celestron.Focuser is
     The_Control.Get_Moving (The_Flag);
     return The_Flag;
   end Moving;
+
+
+  function Home_Position return Distance is
+    The_Position : Distance;
+  begin
+    The_Control.Get_Home (The_Position);
+    return The_Position;
+  end Home_Position;
 
 
   function Backlash return Lash is
@@ -126,6 +136,12 @@ package body Celestron.Focuser is
   end Move_To;
 
 
+  procedure Set_Home (Item : Distance) is
+  begin
+    The_Control.Set_Home (Item);
+  end Set_Home;
+
+
   procedure Set (Item : Lash) is
   begin
      The_Control.Set (Item);
@@ -140,19 +156,21 @@ package body Celestron.Focuser is
 
   task body Control is
 
-    Startup_Rate : constant Rate := Rate'last - 1;
+    Startup_Rate          : constant Rate := Rate'last - 1;
+    Startup_Home_Position : constant Distance := 10000;
 
     Rate_Offset : constant Unsigned.Byte := 9 - Unsigned.Byte(Rate'last);
 
-    The_Device   : Serial_Io.Device;
-    Is_Available : Boolean := False;
-    Is_Moving    : Boolean := False;
-    The_Backlash : Lash := Lash'last;
-    New_Backlash : Lash := 0;
-    The_Position : Distance := Distance'last;
-    New_Position : Distance;
-    The_Command  : Command;
-    The_Rate     : Rate := Startup_Rate;
+    The_Device    : Serial_Io.Device;
+    Is_Available  : Boolean := False;
+    Is_Moving     : Boolean := False;
+    The_Backlash  : Lash := Lash'last;
+    New_Backlash  : Lash := 0;
+    The_Position  : Distance := Distance'last;
+    New_Position  : Distance;
+    At_Home       : Distance := Startup_Home_Position;
+    The_Command   : Command;
+    The_Rate      : Rate := Startup_Rate;
 
     Protocol_Error : exception;
 
@@ -313,6 +331,19 @@ package body Celestron.Focuser is
     end Start_Moving;
 
 
+    procedure Goto_Home_Position is
+      use type Unsigned.Byte_String;
+      P : constant Unsigned.Byte_String := Unsigned.String_Of (Unsigned.Longword(At_Home));
+    begin
+      if Is_Available then
+        Send ([Set_Position_Id, P(P'first + 2), P(P'first + 1), P(P'first)]);
+        if Received_For (Set_Position_Id) = [] then
+          Log.Write ("moving to " & At_Home'image);
+        end if;
+      end if;
+    end Goto_Home_Position;
+
+
     procedure Execute is
       use type Unsigned.Byte_String;
       The_Command_Id : Unsigned.Byte;
@@ -329,6 +360,9 @@ package body Celestron.Focuser is
           if The_Rate < Rate'last then
             The_Rate := The_Rate + 1;
           end if;
+          return;
+        when Home =>
+          Goto_Home_Position;
           return;
         when Move_In =>
           The_Command_Id := Move_In_Id;
@@ -387,6 +421,14 @@ package body Celestron.Focuser is
           accept Get_Speed (Item : out Rate) do
             Item := The_Rate;
           end Get_Speed;
+        or
+          accept Get_Home (Item : out Distance) do
+            Item := At_Home;
+          end Get_Home;
+        or
+          accept Set_Home (Item : Distance) do
+            At_Home := Item;
+          end Set_Home;
         or
           accept Set (Item : Lash) do
             New_Backlash := Item;

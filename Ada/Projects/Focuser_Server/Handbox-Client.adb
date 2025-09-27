@@ -16,34 +16,45 @@
 pragma Style_White_Elephant;
 
 with Celestron.Focuser;
-private with Network;
 
-package Focuser_Client is
+package body Handbox.Client is
 
   package Focuser renames Celestron.Focuser;
 
-  function Server_Exists return Boolean;
+  Is_Moving : Boolean;
 
-  function Actual_Data return Focuser.Data;
 
-  function Execute (Command : Focuser.Command) return Focuser.Data;
+  procedure Execute (The_Command : Focuser.Command) renames Focuser.Execute;
 
-  function Move_To (Position : Focuser.Distance) return Focuser.Data;
 
-  function Set_Home (Position : Focuser.Distance) return Focuser.Data;
+  procedure Handle (The_Command : Command) is
+  begin
+    if Is_Moving then
+      case The_Command is
+      when Left_Released | Right_Released | Stop =>
+        Execute (Focuser.Stop);
+        Is_Moving := False;
+      when others =>
+        null;
+      end case;
+    else
+      case The_Command is
+      when Up_Pressed =>
+        Execute (Focuser.Increase_Rate);
+      when Down_Pressed =>
+        Execute (Focuser.Decrease_Rate);
+      when Left_Pressed =>
+        Execute (Focuser.Move_In);
+        Is_Moving := True;
+      when Right_Pressed =>
+        Execute (Focuser.Move_Out);
+        Is_Moving := True;
+      when Center_Pressed =>
+        Execute (Focuser.Home);
+      when others =>
+        null;
+      end case;
+    end if;
+  end Handle;
 
-  function Set (Backlash : Focuser.Lash) return Focuser.Data;
-
-  procedure Shutdown;
-
-  Server_Not_Available : exception;
-
-private
-
-  Id : constant String := "Focuser_Client";
-
-  The_Server_Exists  : Boolean := False;
-  The_Client_Address : Network.Ip_Address := Network.Ip_Address_Of_Host ("localhost");
-  The_Client_Port    : Network.Port_Number := Focuser.Default_Port_Number;
-
-end Focuser_Client;
+end Handbox.Client;

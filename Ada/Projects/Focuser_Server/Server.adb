@@ -45,11 +45,13 @@ package body Server is
       JS.Set_Field (Information, "exists", JS.Create (Data.Exists));
       JS.Set_Field (Information, "moving", JS.Create (Data.Moving));
       JS.Set_Field (Information, "position", JS.Create (Data.Position));
+      JS.Set_Field (Information, "home", JS.Create (Data.Home));
       JS.Set_Field (Information, "backlash", JS.Create (Natural(Data.Backlash)));
       JS.Set_Field (Information, "speed", JS.Create (Data.Speed));
       Log.Write ("Focuser Exists   : " & Data.Exists'image);
       Log.Write ("Focuser Moving   : " & Data.Moving'image);
       Log.Write ("Focuser Position :"  & Data.Position'image);
+      Log.Write ("Focuser Home     :"  & Data.Home'image);
       Log.Write ("Focuser Backlash :"  & Data.Backlash'image);
       Log.Write ("Focuser Speed    :"  & Data.Speed'image);
     end Set_Information;
@@ -94,6 +96,8 @@ package body Server is
           Focuser.Execute (Focuser.Command'val(Natural'value(Value)));
         elsif Action = Focuser.Move_To_Command then
           Focuser.Move_To (Focuser.Distance'value(Value));
+        elsif Action = Focuser.Set_Home_Command then
+          Focuser.Set_Home (Focuser.Distance'value(Value));
         elsif Action = Focuser.Set_Lash_Command then
           Focuser.Set (Focuser.Lash'value(Value));
         else

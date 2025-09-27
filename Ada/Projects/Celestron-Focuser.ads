@@ -17,7 +17,7 @@ pragma Style_White_Elephant;
 
 package Celestron.Focuser is
 
-  type Command is (Decrease_Rate, Increase_Rate, Move_In, Move_Out, Stop);
+  type Command is (Decrease_Rate, Increase_Rate, Move_In, Move_Out, Home, Stop);
 
   procedure Start;
 
@@ -32,6 +32,7 @@ package Celestron.Focuser is
   Get_Data_Command : constant String := "get_data";
   Execute_Command  : constant String := "execute";
   Move_To_Command  : constant String := "move_to";
+  Set_Home_Command : constant String := "set_home";
   Set_Lash_Command : constant String := "set_lash";
   Shutdown_Command : constant String := "shutdown";
 
@@ -39,6 +40,7 @@ package Celestron.Focuser is
     Exists   : Boolean := False;
     Moving   : Boolean := False;
     Position : Distance := Distance'last;
+    Home     : Distance := Distance'last;
     Backlash : Lash := Lash'last;
     Speed    : Rate := Rate'first;
   end record;
@@ -49,6 +51,8 @@ package Celestron.Focuser is
 
   function Moving return Boolean;
 
+  function Home_Position return Distance;
+
   function Backlash return Lash;
 
   function Position return Distance;
@@ -58,6 +62,8 @@ package Celestron.Focuser is
   procedure Execute (Item : Command);
 
   procedure Move_To (Item : Distance);
+
+  procedure Set_Home (Item : Distance);
 
   procedure Set (Item : Lash);
 

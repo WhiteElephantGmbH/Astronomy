@@ -67,6 +67,7 @@ package body Focuser_Client is
           Exists   : constant JS.JSON_Value := Value.Get ("exists");
           Moving   : constant JS.JSON_Value := Value.Get ("moving");
           Position : constant JS.JSON_Value := Value.Get ("position");
+          Home     : constant JS.JSON_Value := Value.Get ("home");
           Backlash : constant JS.JSON_Value := Value.Get ("backlash");
           Speed    : constant JS.JSON_Value := Value.Get ("speed");
           The_Data : Focuser.Data;
@@ -74,6 +75,7 @@ package body Focuser_Client is
           The_Data.Exists := Exists.Get;
           The_Data.Moving := Moving.Get;
           The_Data.Position := Position.Get;
+          The_Data.Home := Home.Get;
           The_Data.Backlash := Focuser.Lash(Natural'(Backlash.Get));
           The_Data.Speed := Speed.Get;
           return The_Data;
@@ -103,6 +105,14 @@ package body Focuser_Client is
     return Get (Command   => Focuser.Move_To_Command,
                 Parameter => Text.Trimmed (Position'image));
   end Move_To;
+
+
+  function Set_Home (Position : Focuser.Distance) return Focuser.Data is
+  begin
+    Log.Write ("Set_Home:" & Position'image);
+    return Get (Command   => Focuser.Set_Home_Command,
+                Parameter => Text.Trimmed (Position'image));
+  end Set_Home;
 
 
   function Set (Backlash : Focuser.Lash) return Focuser.Data is
