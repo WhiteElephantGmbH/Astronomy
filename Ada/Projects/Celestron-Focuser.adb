@@ -156,8 +156,7 @@ package body Celestron.Focuser is
 
   task body Control is
 
-    Startup_Rate          : constant Rate := Rate'last - 1;
-    Startup_Home_Position : constant Distance := 10000;
+    Startup_Rate : constant Rate := Rate'last - 1;
 
     Rate_Offset : constant Unsigned.Byte := 9 - Unsigned.Byte(Rate'last);
 
@@ -166,9 +165,10 @@ package body Celestron.Focuser is
     Is_Moving     : Boolean := False;
     The_Backlash  : Lash := Lash'last;
     New_Backlash  : Lash := 0;
+    Moving_Out    : Boolean := True;
     The_Position  : Distance := Distance'last;
     New_Position  : Distance;
-    At_Home       : Distance := Startup_Home_Position;
+    At_Home       : Distance := Default_Home_Position;
     The_Command   : Command;
     The_Rate      : Rate := Startup_Rate;
 
@@ -318,27 +318,41 @@ package body Celestron.Focuser is
     end Set_Backlash;
 
 
-    procedure Start_Moving is
+    procedure Start_Moving_To (Pos : Distance) is
       use type Unsigned.Byte_String;
-      P : constant Unsigned.Byte_String := Unsigned.String_Of (Unsigned.Longword(New_Position));
+      P : constant Unsigned.Byte_String := Unsigned.String_Of (Unsigned.Longword(Pos));
     begin
       if Is_Available then
         Send ([Set_Position_Id, P(P'first + 2), P(P'first + 1), P(P'first)]);
         if Received_For (Set_Position_Id) = [] then
-          Log.Write ("moving to " & New_Position'image);
+          Log.Write ("moving to " & Pos'image);
         end if;
       end if;
+    end Start_Moving_To;
+
+
+    procedure Start_Moving is
+    begin
+      Start_Moving_To (New_Position);
     end Start_Moving;
 
 
     procedure Goto_Home_Position is
-      use type Unsigned.Byte_String;
-      P : constant Unsigned.Byte_String := Unsigned.String_Of (Unsigned.Longword(At_Home));
+      Backward_Home : constant Distance := At_Home - Distance(The_Backlash);
     begin
-      if Is_Available then
-        Send ([Set_Position_Id, P(P'first + 2), P(P'first + 1), P(P'first)]);
-        if Received_For (Set_Position_Id) = [] then
-          Log.Write ("moving to " & At_Home'image);
+      if Moving_Out then
+        if The_Position < At_Home then
+          Start_Moving_To (At_Home);
+        else
+          Start_Moving_To (Backward_Home);
+          Moving_Out := False;
+        end if;
+      else
+        if The_Position > Backward_Home then
+          Start_Moving_To (Backward_Home);
+        else
+          Start_Moving_To (At_Home);
+          Moving_Out := True;
         end if;
       end if;
     end Goto_Home_Position;
@@ -366,8 +380,10 @@ package body Celestron.Focuser is
           return;
         when Move_In =>
           The_Command_Id := Move_In_Id;
+          Moving_Out := False;
         when Move_Out =>
           The_Command_Id := Move_Out_Id;
+          Moving_Out := True;
         when Stop =>
           The_Parameter := 0;
           The_Command_Id := Move_In_Id;
@@ -415,7 +431,11 @@ package body Celestron.Focuser is
           Get_Position;
         or
           accept Get_Position (Item : out Distance) do
-            Item := The_Position;
+            if Moving_Out then
+              Item := The_Position;
+            else
+              Item := The_Position + Distance(The_Backlash);
+            end if;
           end Get_Position;
         or
           accept Get_Speed (Item : out Rate) do

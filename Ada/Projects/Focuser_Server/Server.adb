@@ -22,6 +22,7 @@ with AWS.Server;
 with AWS.Status;
 with Control;
 with GNATCOLL.JSON;
+with Persistent;
 with Protected_Storage;
 with Text;
 with Traces;
@@ -33,6 +34,18 @@ package body Server is
   package Protected_Focuser is new Protected_Storage (Focuser.Data);
 
   package JS renames GNATCOLL.JSON;
+
+  type Focuser_Data is record
+    Home_Position : Focuser.Distance;
+    Backlash      : Focuser.Lash;
+  end record;
+
+  package Persistent_Focuser is new Persistent (Focuser_Data, "Focuser");
+
+  The_Persistent_Focuser_Data : Persistent_Focuser.Data;
+
+  The_Home_Position : Focuser.Distance renames The_Persistent_Focuser_Data.Storage.Home_Position;
+  The_Backlash      : Focuser.Lash     renames The_Persistent_Focuser_Data.Storage.Backlash;
 
 
   function Response return String is
@@ -64,6 +77,8 @@ package body Server is
 
   function Callback (Data : AWS.Status.Data) return AWS.Response.Data is
 
+    Response_Ok : constant String := "Ok";
+
     Error : exception;
 
     Error_Message : Text.String;
@@ -85,7 +100,7 @@ package body Server is
       Log.Write ("Callback - Action: " & Action);
       if Action = Focuser.Shutdown_Command then
         Control.Shutdown;
-        return AWS.Response.Acknowledge (AWS.Messages.S200, "Ok");
+        return AWS.Response.Acknowledge (AWS.Messages.S200, Response_Ok);
       end if;
       declare
         Value : constant String := The_Parameters.Get_Value;
@@ -97,9 +112,15 @@ package body Server is
         elsif Action = Focuser.Move_To_Command then
           Focuser.Move_To (Focuser.Distance'value(Value));
         elsif Action = Focuser.Set_Home_Command then
-          Focuser.Set_Home (Focuser.Distance'value(Value));
+          The_Home_Position := Focuser.Distance'value(Value);
+          Focuser.Set_Home (The_Home_Position);
+          The_Persistent_Focuser_Data.Save;
+          return AWS.Response.Acknowledge (AWS.Messages.S200, Response_Ok);
         elsif Action = Focuser.Set_Lash_Command then
-          Focuser.Set (Focuser.Lash'value(Value));
+          The_Backlash := Focuser.Lash'value(Value);
+          Focuser.Set (The_Backlash);
+          The_Persistent_Focuser_Data.Save;
+          return AWS.Response.Acknowledge (AWS.Messages.S200, Response_Ok);
         else
           Raise_Error ("unknown action: " & Action);
         end if;
@@ -130,6 +151,24 @@ package body Server is
                       Callback   => Callback'access,
                       Port       => Celestron.Focuser.Default_Port_Number);
   end Start;
+
+
+  function Home_Position return Focuser.Distance is
+  begin
+    if Persistent_Focuser.Storage_Is_Empty then
+      The_Home_Position := Focuser.Default_Home_Position;
+    end if;
+    return The_Home_Position;
+  end Home_Position;
+
+
+  function Backlash return Focuser.Lash is
+  begin
+    if Persistent_Focuser.Storage_Is_Empty then
+      The_Backlash := Focuser.Default_Backlash;
+    end if;
+    return The_Backlash;
+  end Backlash;
 
 
   procedure Update (Data : Focuser.Data) is

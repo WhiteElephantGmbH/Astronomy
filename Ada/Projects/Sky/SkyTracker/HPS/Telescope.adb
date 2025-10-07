@@ -534,6 +534,9 @@ package body Telescope is
     end Position_To;
 
   begin -- Control_Task
+    if Focuser_Client.Server_Exists then
+      Focuser_Client.Initialize;
+    end if;
     loop
       begin
         select

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2015 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2015 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -38,6 +38,28 @@ package body Persistent is
   end Storage_Is_Empty;
 
 
+  procedure Save (The_Data : in out Data) is
+    The_File   : IO.File_Type;
+    The_Stream : IO.Stream_Access;
+  begin
+    begin
+      IO.Open (File => The_File,
+               Name => Filename,
+               Mode => IO.Out_File);
+    exception
+    when others =>
+      Ada.Directories.Create_Path (Data_Directory);
+      IO.Create (File => The_File,
+                 Name => Filename,
+                 Mode => IO.Out_File);
+    end;
+    IO.Reset (The_File);
+    The_Stream := IO.Stream (The_File);
+    Kind'output(The_Stream, The_Data.Storage);
+    IO.Close (The_File);
+  end Save;
+
+
   procedure Initialize (The_Data : in out Data) is
     The_File   : IO.File_Type;
     The_Stream : IO.Stream_Access;
@@ -68,24 +90,8 @@ package body Persistent is
 
 
   procedure Finalize (The_Data : in out Data) is
-    The_File   : IO.File_Type;
-    The_Stream : IO.Stream_Access;
   begin
-    begin
-      IO.Open (File => The_File,
-               Name => Filename,
-               Mode => IO.Out_File);
-    exception
-    when others =>
-      Ada.Directories.Create_Path (Data_Directory);
-      IO.Create (File => The_File,
-                 Name => Filename,
-                 Mode => IO.Out_File);
-    end;
-    IO.Reset (The_File);
-    The_Stream := IO.Stream (The_File);
-    Kind'output(The_Stream, The_Data.Storage);
-    IO.Close (The_File);
+    Save (The_Data);
     Log.Write (Name & " data finalized");
   exception
   when Item: others =>

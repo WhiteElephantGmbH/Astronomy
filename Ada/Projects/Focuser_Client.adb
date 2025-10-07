@@ -107,31 +107,47 @@ package body Focuser_Client is
   end Move_To;
 
 
-  function Set_Home (Position : Focuser.Distance) return Focuser.Data is
-  begin
-    Log.Write ("Set_Home:" & Position'image);
-    return Get (Command   => Focuser.Set_Home_Command,
-                Parameter => Text.Trimmed (Position'image));
-  end Set_Home;
-
-
-  function Set (Backlash : Focuser.Lash) return Focuser.Data is
-  begin
-    Log.Write ("Set Backlash:" & Backlash'image);
-    return Get (Command   => Focuser.Set_Lash_Command,
-                Parameter => Text.Trimmed (Backlash'image));
-  end Set;
-
-
-  procedure Shutdown is
-    Response : constant AWS.Response.Data := Get (Focuser.Shutdown_Command);
+  procedure Execute (Command   : String;
+                     Parameter : String := "") is
+    Response : constant AWS.Response.Data := Get (Command, Parameter);
     Status   : constant AWS.Messages.Status_Code := AWS.Response.Status_Code (Response);
     use type AWS.Messages.Status_Code;
   begin
-    Log.Write ("Shutdown");
     if Status /= AWS.Messages.S200 then
-      Log.Error ("Shutdown: " & Status'image);
+      Log.Error (Command & ": " & Status'image);
     end if;
+  end Execute;
+
+
+  procedure Initialize is
+
+    procedure Set_Home_Position is
+      Home_Position : constant String := Text.Trimmed (The_Home_Position'image);
+    begin
+      Log.Write ("Set Home: " & Home_Position);
+      Execute (Command   => Focuser.Set_Home_Command,
+               Parameter => Home_Position);
+    end Set_Home_Position;
+
+
+    procedure Set_Backlash is
+      Backlash : constant String := Text.Trimmed (The_Backlash'image);
+    begin
+      Log.Write ("Set Backlash: " & Backlash);
+      Execute (Command   => Focuser.Set_Lash_Command,
+               Parameter => Backlash);
+    end Set_Backlash;
+
+  begin -- Initialize
+    Set_Home_Position;
+    Set_Backlash;
+  end Initialize;
+
+
+  procedure Shutdown is
+  begin
+    Log.Write ("Shutdown");
+    Execute (Focuser.Shutdown_Command);
   end Shutdown;
 
 end Focuser_Client;

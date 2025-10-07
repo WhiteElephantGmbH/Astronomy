@@ -27,7 +27,9 @@ package Celestron.Focuser is
 
   subtype Rate is Natural range 1 .. 4;
 
-  Default_Port_Number : constant := 12000;
+  Default_Port_Number   : constant := 12000;
+  Default_Home_Position : constant := 20376;
+  Default_Backlash      : constant := 25;
 
   Get_Data_Command : constant String := "get_data";
   Execute_Command  : constant String := "execute";

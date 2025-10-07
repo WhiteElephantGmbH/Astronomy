@@ -29,7 +29,6 @@ package body Handbox is
   package Log is new Traces ("Handbox");
 
   task type Reader (Handle : access procedure (Item : Command)) is
-    entry Start;
     entry Close;
   end Reader;
 
@@ -38,7 +37,6 @@ package body Handbox is
   procedure Start (With_Handler : access procedure (Item : Command)) is
   begin
     The_Reader := new Reader (With_Handler);
-    The_Reader.Start;
   end Start;
 
 
@@ -82,7 +80,6 @@ package body Handbox is
     end Check_Handbox_Version;
 
   begin -- Reader
-    accept Start;
     Log.Write ("Reader: started");
     Main: loop
       Check_Handbox_Version;

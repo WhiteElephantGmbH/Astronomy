@@ -24,15 +24,13 @@ package Focuser_Client is
 
   function Server_Exists return Boolean;
 
+  procedure Initialize;
+
   function Actual_Data return Focuser.Data;
 
   function Execute (Command : Focuser.Command) return Focuser.Data;
 
   function Move_To (Position : Focuser.Distance) return Focuser.Data;
-
-  function Set_Home (Position : Focuser.Distance) return Focuser.Data;
-
-  function Set (Backlash : Focuser.Lash) return Focuser.Data;
 
   procedure Shutdown;
 
@@ -45,5 +43,7 @@ private
   The_Server_Exists  : Boolean := False;
   The_Client_Address : Network.Ip_Address := Network.Ip_Address_Of_Host ("localhost");
   The_Client_Port    : Network.Port_Number := Focuser.Default_Port_Number;
+  The_Home_Position  : Focuser.Distance := Focuser.Default_Home_Position;
+  The_Backlash       : Focuser.Lash := Focuser.Default_Backlash;
 
 end Focuser_Client;

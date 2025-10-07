@@ -23,6 +23,10 @@ package Server is
 
   procedure Start;
 
+  function Home_Position return Focuser.Distance;
+
+  function Backlash return Focuser.Lash;
+
   procedure Update (Data : Focuser.Data);
 
   procedure Shutdown;

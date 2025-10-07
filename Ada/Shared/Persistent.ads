@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2015 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2015 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -27,6 +27,9 @@ package Persistent is
   type Data is new Ada.Finalization.Limited_Controlled with record
     Storage : Kind;
   end record;
+
+  procedure Save (The_Data : in out Data);
+  -- store data (used servers when stopped by power of)
 
 private
 

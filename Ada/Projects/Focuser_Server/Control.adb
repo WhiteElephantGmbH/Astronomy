@@ -52,6 +52,10 @@ package body Control is
   begin
     accept Start;
     Log.Write ("Manager started");
+    if Focuser.Exists then
+      Focuser.Set (Server.Backlash);
+      Focuser.Set_Home (Server.Home_Position);
+    end if;
     loop
       The_Data.Exists := Focuser.Exists;
       if The_Data.Exists then
