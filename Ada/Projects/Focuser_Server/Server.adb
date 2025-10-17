@@ -147,7 +147,7 @@ package body Server is
   begin
     Log.Write ("Start");
     AWS.Server.Start (Web_Server => The_Server,
-                      Name       => "Skytracker",
+                      Name       => "Focuser_Server",
                       Callback   => Callback'access,
                       Port       => Celestron.Focuser.Default_Port_Number);
   end Start;

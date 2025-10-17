@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2016 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2016 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -188,12 +188,16 @@ package body Network.Tcp is
   end Send;
 
 
-  procedure Send_Header_To (Used_Socket  : Socket;
-                            The_Value    : Natural) is
+  function Header_For (The_Protocol : Protocol;
+                       The_Value    : Natural) return Data is
   begin
-    case Used_Socket.The_Protocol is
+    case The_Protocol is
     when Raw =>
-      null;
+      declare
+        No_Header : constant Data (1..0) := [others => <>];
+      begin
+        return No_Header;
+      end;
     when Counted =>
       declare
         use type Unsigned.Byte;
@@ -201,7 +205,7 @@ package body Network.Tcp is
         subtype Byte_Data is Data (1 .. Index(Unsigned.Byte'size / System.Storage_Unit));
         function Convert is new Ada.Unchecked_Conversion (Unsigned.Byte, Byte_Data);
       begin
-        Send (Convert (Header), Used_Socket.The_Socket);
+        return Convert (Header);
       end;
     when LE16_Included =>
       declare
@@ -210,7 +214,7 @@ package body Network.Tcp is
         subtype Word_Data is Data (1 .. Index(Unsigned.Word'size / System.Storage_Unit));
         function Convert is new Ada.Unchecked_Conversion (Unsigned.Word, Word_Data);
       begin
-        Send (Convert (Header), Used_Socket.The_Socket);
+        return Convert (Header);
       end;
     when LE32_Excluded =>
       declare
@@ -218,10 +222,10 @@ package body Network.Tcp is
         subtype Longword_Data is Data (1 .. Index(Unsigned.Longword'size / System.Storage_Unit));
         function Convert is new Ada.Unchecked_Conversion (Unsigned.Longword, Longword_Data);
       begin
-        Send (Convert (Header), Used_Socket.The_Socket);
+        return Convert (Header);
       end;
     end case;
-  end Send_Header_To;
+  end Header_For;
 
 
   procedure Send_Message (The_Message : Message;
@@ -231,11 +235,9 @@ package body Network.Tcp is
     subtype Message_Data is Data (1 .. Data_Size);
     function Convert is new Ada.Unchecked_Conversion (Message, Message_Data);
     The_Data : constant Message_Data := Convert (The_Message);
+    use type Data;
   begin
-    if Used_Socket.The_Protocol /= Raw then
-      Send_Header_To (Used_Socket, The_Data'length);
-    end if;
-    Send (The_Data, Used_Socket.The_Socket);
+    Send (Header_For (Used_Socket.The_Protocol, The_Data'length) & The_Data, Used_Socket.The_Socket);
   end Send_Message;
 
 
@@ -243,17 +245,17 @@ package body Network.Tcp is
                            Used_Socket  : Socket) is
     Elements_Size : constant Natural := The_Elements'size / System.Storage_Unit;
   begin
-    if Used_Socket.The_Protocol /= Raw then
-      Send_Header_To (Used_Socket, Elements_Size);
-    end if;
     if The_Elements'length > 0 then
       declare
         The_Data : aliased constant Elements := The_Elements;
         subtype Elements_Data is Data (1 .. Offset(Elements_Size));
         function Convert is new Ada.Unchecked_Conversion (Elements, Elements_Data);
+        use type Data;
       begin
-        Send (Convert (The_Data), Used_Socket.The_Socket);
+        Send (Header_For (Used_Socket.The_Protocol, The_Elements'length) & Convert (The_Data), Used_Socket.The_Socket);
       end;
+    elsif Used_Socket.The_Protocol /= Raw then
+      Send (Header_For (Used_Socket.The_Protocol, 0), Used_Socket.The_Socket);
     end if;
   end Send_Elements;
 
@@ -263,6 +265,7 @@ package body Network.Tcp is
   begin
     case Error is
     when Net.Connection_Timed_Out =>
+      Log.Write ("Network.Tcp.Handle_Receive_Error: " & Error'img);
       raise Timeout;
     when Net.Connection_Reset_By_Peer
       |  Net.Socket_Operation_On_Non_Socket =>
@@ -272,8 +275,8 @@ package body Network.Tcp is
     when others =>
       Log.Write ("Network.Tcp.Handle_Receive_Error: " & Error'img);
       Log.Write ("Network.Tcp.Handle_Receive_Error: ", Occurrence);
+      raise Receive_Error;
     end case;
-    raise Receive_Error;
   end Handle_Receive_Error;
 
 
@@ -283,22 +286,20 @@ package body Network.Tcp is
     R_Socket_Set : Net.Socket_Set_Type;
     W_Socket_Set : Net.Socket_Set_Type;
   begin
-    if The_Duration < Net.Forever then
-      Net.Set (R_Socket_Set, The_Socket);
-      Net.Check_Selector (Selector     => Net.Null_Selector,
-                          R_Socket_Set => R_Socket_Set,
-                          W_Socket_Set => W_Socket_Set,
-                          Status       => The_Status,
-                          Timeout      => The_Duration);
-      case The_Status is
-      when Net.Completed =>
-        null; -- Socket is ready for reading
-      when Net.Expired =>
-        raise Timeout;
-      when Net.Aborted =>
-        raise Receive_Error;
-      end case;
-    end if;
+    Net.Set (R_Socket_Set, The_Socket);
+    Net.Check_Selector (Selector     => Net.Null_Selector,
+                        R_Socket_Set => R_Socket_Set,
+                        W_Socket_Set => W_Socket_Set,
+                        Status       => The_Status,
+                        Timeout      => The_Duration);
+    case The_Status is
+    when Net.Completed =>
+      null; -- Socket is ready for reading
+    when Net.Expired =>
+      raise Timeout;
+    when Net.Aborted =>
+      raise Receive_Error;
+    end case;
   end Wait_For;
 
 
@@ -311,57 +312,57 @@ package body Network.Tcp is
     The_Buffer   : Data (1 .. The_Amount);
     The_Index    : Offset := The_Buffer'first;
     The_Last     : Index;
-    Next_Timeout : Duration := The_Timeout;
   begin
     -- Note: Net.Wait_For_A_Full_Reception is not supported under Windows
     --       therefore we must loop to collect the expected amount
-    -- Note: If nothing is recived by Receive_Socket within the timeout period it returns
+    -- Note: If nothing is received by Receive_Socket within the timeout period it returns
     --       Connection_Timed_Out.
     loop
-      Wait_For (The_Socket, Next_Timeout);
-      Net.Receive_Socket (The_Socket, The_Buffer (The_Index .. The_Buffer'last), The_Last);
-      exit when The_Last = The_Buffer'last;  -- Everything received
-      if (The_Last < The_Index) and (Ada.Real_Time.Clock < The_Deadline) then
-        -- Last < The_Index could mean either no data was received or that connection has been broken.
-        -- If Receive_Socket returns before the timeout has expired with Last < The_Index we assume
-        -- that this because the connection has been broken.
-        -- However sometimes breaking the connection raises an exception with reason
-        -- Connection_Reset_By_Peer so this needs to be handled as well.
-        raise No_Client;
-      end if;
-      The_Index := The_Last + 1;
-      if The_Timeout /= Net.Forever then
-        declare
-          Now : constant Ada.Real_Time.Time := Ada.Real_Time.Clock;
-        begin
-          if Now > The_Deadline then
-            raise Timeout;
-          end if;
-          Next_Timeout := Ada.Real_Time.To_Duration (The_Deadline - Now);
-        end;
-      end if;
+      begin
+        if The_Timeout /= Net.Forever then
+          declare
+            Now : constant Ada.Real_Time.Time := Ada.Real_Time.Clock;
+          begin
+            if Now > The_Deadline then
+              raise Timeout;
+            end if;
+            Wait_For (The_Socket, Ada.Real_Time.To_Duration (The_Deadline - Now));
+          end;
+        end if;
+        Net.Receive_Socket (The_Socket, The_Buffer (The_Index .. The_Buffer'last), The_Last);
+        exit when The_Last = The_Buffer'last;  -- Everything received
+        if (The_Last < The_Index) and (Ada.Real_Time.Clock < The_Deadline) then
+          -- Last < The_Index could mean either no data was received or that connection has been broken.
+          -- If Receive_Socket returns before the timeout has expired with Last < The_Index we assume
+          -- that this because the connection has been broken.
+          -- However sometimes breaking the connection raises an exception with reason
+          -- Connection_Reset_By_Peer so this needs to be handled as well.
+          raise No_Client;
+        end if;
+        The_Index := The_Last + 1;
+      exception
+      when No_Client =>
+        raise;
+      when Timeout =>
+        if (The_Amount > 1) and (The_Index > The_Buffer'first) then
+          -- A counted protocol that has already received part of the counted data.
+          -- A timeout here effectively breaks the protocol so we need to close the session.
+          begin
+            Net.Close_Socket (The_Socket);
+          exception
+          when others =>
+            null; -- Ignore exceptions when closing the socket
+          end;
+        end if;
+        raise Timeout;
+      when Occurrence: Net.Socket_Error =>
+        Handle_Receive_Error (Occurrence);
+      when Occurrence: others => -- Unexpected exception
+        Log.Write ("Network.Tcp.Get_Data_From", Occurrence);
+        raise;
+      end;
     end loop;
     return The_Buffer;
-  exception
-  when No_Client =>
-    raise;
-  when Timeout =>
-    if (The_Amount > 1) and (The_Index > The_Buffer'first) then
-      -- A counted protocol that has already received part of the counted data.
-      -- A timeout here effectively breaks the protocol so we need to close the session.
-      begin
-        Net.Close_Socket (The_Socket);
-      exception
-      when others =>
-        null; -- Ignore exceptions when closing the socket
-      end;
-    end if;
-    raise Timeout;
-  when Occurrence: Net.Socket_Error =>
-    Handle_Receive_Error (Occurrence);
-  when Occurrence: others => -- Unexpected exception
-    Log.Write ("Network.Tcp.Get_Data_From", Occurrence);
-    raise;
   end Get_Data_From;
 
 
