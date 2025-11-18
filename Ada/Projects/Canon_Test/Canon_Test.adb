@@ -21,16 +21,18 @@ pragma Build (Description => "GID test",
               Icon        => False,
               Compiler    => "GNATPRO\23.0");
 
-with Canon;
-with Ada.Exceptions;
 with Ada.Text_IO;
+with Canon;
+with Exceptions;
 
 procedure Canon_Test is
 begin
   Ada.Text_IO.Put_Line ("Canon Test");
   Ada.Text_IO.Put_Line ("==========");
-  Canon.Test;
+  Canon.Capture (Filename => "First_Picture.CR2",
+                 Exposure => 2,
+                 Iso      => 3200);
 exception
 when Item: others =>
-  Ada.Text_IO.Put_Line (Ada.Exceptions.Exception_Information (Item));
+  Ada.Text_IO.Put_Line (Exceptions.Information_Of (Item));
 end Canon_Test;

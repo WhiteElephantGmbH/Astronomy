@@ -27,37 +27,40 @@ package Canon_Interface is
   Byte_Size  : constant := System.Storage_Unit;
   Int32_Size : constant := 32;
 
-
   EDS_MAX_NAME : constant := 256;
 
-  --  Basic EDSDK integer types (check against EDSDKTypes.h and tweak if needed)
+  --  Basic EDSDK integer types
   subtype Eds_Error   is C.int;
   subtype Eds_Int32   is C.int;
   subtype Eds_Uint32  is C.unsigned_long;
   subtype Eds_Uint64  is C.unsigned_long_long;
+  subtype Eds_Int64   is C.long_long;
 
-  ---------------------------------
-  -- Opaque handle types (void*) --
-  ---------------------------------
+  --  Access / create disposition (from EDSDKTypes.h)
+  Access_Read       : constant Eds_Int32 := 0;
+  Access_Write      : constant Eds_Int32 := 1;
+  Access_Read_Write : constant Eds_Int32 := 2;
 
-  --  In EDSDK headers:
-  --    typedef void *EdsBaseRef;
-  --    typedef EdsBaseRef EdsCameraListRef;
-  --    typedef EdsBaseRef EdsCameraRef;
-  --    typedef EdsBaseRef EdsDirectoryItemRef;
-  --    typedef EdsBaseRef EdsStreamRef;
-  --
-  --  We wrap these as private types over System.Address.
-  --  You pass them by value to C; for out-parameters, use 'Access.
+  File_Create_New        : constant Eds_Int32 := 0;
+  File_Create_Always     : constant Eds_Int32 := 1;
+  File_Open_Existing     : constant Eds_Int32 := 2;
+  File_Open_Always       : constant Eds_Int32 := 3;
+  File_Truncate_Existing : constant Eds_Int32 := 4;
+
+ ---------------------------------
+  -- Opaque Handle Types (void*) --
+  ---------------------------------
 
   type Camera_List    is private;
   type Camera         is private;
   type Directory_Item is private;
   type Stream         is private;
 
-  ---------------------------
-  -- SDK initialisation    --
-  ---------------------------
+  No_Directory : constant Directory_Item;
+
+  ------------------------
+  -- SDK Initialisation --
+  ------------------------
 
   function Initialize_SDK return Eds_Error
     with Import        => True,
@@ -69,9 +72,9 @@ package Canon_Interface is
          Convention    => C,
          External_Name => "EdsTerminateSDK";
 
-  ---------------------------
-  -- Camera enumeration    --
-  ---------------------------
+  ------------------------
+  -- Camera Enumeration --
+  ------------------------
 
   function Get_Camera_List (Out_List : access Camera_List) return Eds_Error
     with Import        => True,
@@ -102,12 +105,14 @@ package Canon_Interface is
     Reserved              : Eds_Uint32;
   end record
     with Convention => C;
+
   for Device_Info use record
     Sz_Port_Name          at 0                                         range 0 .. EDS_MAX_NAME * Byte_Size - 1;
     Sz_Device_Description at EDS_MAX_NAME                              range 0 .. EDS_MAX_NAME * Byte_Size - 1;
     Device_Sub_Type       at EDS_MAX_NAME * 2                          range 0 .. Int32_Size - 1;
-    Reserved              at EDS_MAX_NAME * 2 + 32 / Byte_Size range 0 .. Int32_Size - 1;
+    Reserved              at EDS_MAX_NAME * 2 + 32 / Byte_Size         range 0 .. Int32_Size - 1;
   end record;
+
   for Device_Info'size use 2 * (EDS_MAX_NAME * Byte_Size + Int32_Size);
 
   function Get_Device_Info (The_Camera : Camera;
@@ -116,10 +121,9 @@ package Canon_Interface is
          Convention    => C,
          External_Name => "EdsGetDeviceInfo";
 
-
-  ---------------------------
-  -- Session control       --
-  ---------------------------
+  ---------------------
+  -- Session Control --
+  ---------------------
 
   function Open_Session (Cam : Camera) return Eds_Error
     with Import        => True,
@@ -131,9 +135,9 @@ package Canon_Interface is
          Convention    => C,
          External_Name => "EdsCloseSession";
 
-  ---------------------------
-  -- Reference management  --
-  ---------------------------
+  --------------------------
+  -- Reference Management --
+  --------------------------
 
   function Release (Ref : Camera_List) return Eds_Error
     with Import        => True,
@@ -155,13 +159,11 @@ package Canon_Interface is
          Convention    => C,
          External_Name => "EdsRelease";
 
-  ---------------------------
-  -- Camera commands       --
-  ---------------------------
+  ---------------------
+  -- Camera Commands --
+  ---------------------
 
-  --  Only the one you need right now:
   Camera_Command_Take_Picture : constant Eds_Uint32 := 16#00000000#;
-  --  (kEdsCameraCommand_TakePicture in EDSDK.h)
 
   function Send_Command (Cam     : Camera;
                          Command : Eds_Uint32;
@@ -170,144 +172,167 @@ package Canon_Interface is
          Convention    => C,
          External_Name => "EdsSendCommand";
 
-  ---------------------------
-  -- Image rectangles      --
-  ---------------------------
+  -------------------
+  -- Object Events --
+  -------------------
 
-  --  EDSDK compatible structs:
-  --
-  --  typedef struct {
-  --      EdsInt32 x;
-  --      EdsInt32 y;
-  --      EdsInt32 width;
-  --      EdsInt32 height;
-  --  } EdsRect;
-  --
-  --  typedef struct {
-  --      EdsInt32 width;
-  --      EdsInt32 height;
-  --  } EdsSize;
+  subtype Eds_Object_Event is Eds_Uint32;
 
-  type Rect is record
-     X      : Eds_Int32;
-     Y      : Eds_Int32;
-     Width  : Eds_Int32;
-     Height : Eds_Int32;
+  Object_Event_All                       : constant Eds_Object_Event := 16#00000200#;
+  Object_Event_Dir_Item_Created          : constant Eds_Object_Event := 16#00000204#;
+  Object_Event_Dir_Item_Request_Transfer : constant Eds_Object_Event := 16#00000208#;
+
+  type Object_Event_Handler is access function
+    (Event   : Eds_Object_Event;
+     Object  : Directory_Item;
+     Context : System.Address) return Eds_Error
+    with Convention => StdCall;
+
+  function Set_Object_Event_Handler (The_Camera : Camera;
+                                     Event      : Eds_Object_Event;
+                                     Handler    : Object_Event_Handler;
+                                     Context    : System.Address) return Eds_Error
+    with Import        => True,
+         Convention    => C,
+         External_Name => "EdsSetObjectEventHandler";
+
+  -------------------
+  -- Event Pumping --
+  -------------------
+
+  function Get_Event return Eds_Error
+    with Import        => True,
+         Convention    => C,
+         External_Name => "EdsGetEvent";
+
+  -------------------------
+  -- Directory item info --
+  -------------------------
+
+  type Directory_Item_Info is record
+    Size         : Eds_Uint64;
+    Is_Folder    : Eds_Int32;  -- EdsBool is 'int' in C
+    Group_Id     : Eds_Uint32;
+    Option       : Eds_Uint32;
+    Sz_File_Name : aliased String (1 .. EDS_MAX_NAME);
+    Format       : Eds_Uint32;
+    Date_Time    : Eds_Uint32;
   end record
     with Convention => C;
 
-  type Size is record
-     Width  : Eds_Int32;
-     Height : Eds_Int32;
-  end record
-    with Convention => C;
+  for Directory_Item_Info use record
+    Size         at 0                     range 0 .. Eds_Uint64'size - 1;
+    Is_Folder    at 8                     range 0 .. Int32_Size - 1;
+    Group_Id     at 12                    range 0 .. Int32_Size - 1;
+    Option       at 16                    range 0 .. Int32_Size - 1;
+    Sz_File_Name at 20                    range 0 .. EDS_MAX_NAME * Byte_Size - 1;
+    Format       at 20 + EDS_MAX_NAME     range 0 .. Int32_Size - 1;
+    Date_Time    at 20 + EDS_MAX_NAME + 4 range 0 .. Int32_Size - 1;
+  end record;
 
-  ---------------------------
-  -- Image source / types  --
-  ---------------------------
+  for Directory_Item_Info'size use
+    (8 + 4 + 4 + 4 + EDS_MAX_NAME + 4 + 4) * Byte_Size;
 
-  --  Minimal subset for your use case; extend as needed.
-  --
-  --  enum EdsImageSource {
-  --      kEdsImageSrc_FullView = 0,
-  --      kEdsImageSrc_Thumbnail,
-  --      kEdsImageSrc_Preview,
-  --      kEdsImageSrc_RAWThumbnail,
-  --      kEdsImageSrc_RAWFullView
-  --  };
-
-  type Image_Source is new Eds_Uint32;
-  Image_Src_Full_View   : constant Image_Source := 0;
-  Image_Src_Thumbnail   : constant Image_Source := 1;
-  Image_Src_Preview     : constant Image_Source := 2;
-  Image_Src_Raw_Thumb   : constant Image_Source := 3;
-  Image_Src_Raw_Full    : constant Image_Source := 4;
-
-  --  TargetImageType for EdsGetImage:
-  --
-  --  Typically:
-  --    kEdsTargetImageType_RGB  = 2
-  --    kEdsTargetImageType_RGB16 = 3
-  --
-  --  Check EDSDKTypes.h for exact values and adjust if required.
-
-  type Target_Image_Type is new Eds_Uint32;
-  Target_RGB    : constant Target_Image_Type := 2;
-  Target_RGB16  : constant Target_Image_Type := 3;
-
-  ---------------------------
-  -- Streams (memory)      --
-  ---------------------------
-
-  --  We use a memory stream so the central crop goes straight into RAM.
-  --
-  --  EdsError EdsCreateMemoryStream(EdsUInt64 inBufferSize,
-  --                                 EdsStreamRef *outStream);
-  --
-  --  EdsError EdsGetLength (EdsStreamRef inStream,
-  --                          EdsUInt64  *outLength);
-  --
-  --  EdsError EdsGetPointer(EdsStreamRef inStream,
-  --                          EdsVoid    **outPointer);
-
-  function Create_Memory_Stream (Buffer_Size : Eds_Uint64;
-                                 Out_Stream  : access Stream)
-                                 return Eds_Error
+  function Get_Directory_Item_Info (Item : Directory_Item;
+                                    Info : access Directory_Item_Info) return Eds_Error
     with Import        => True,
          Convention    => C,
-         External_Name => "EdsCreateMemoryStream";
-
-  function Get_Length (S         : Stream;
-                       Out_Len   : access Eds_Uint64)
-                       return Eds_Error
-    with Import        => True,
-         Convention    => C,
-         External_Name => "EdsGetLength";
-
-  function Get_Pointer (S        : Stream;
-                        Out_Ptr  : access System.Address)
-                        return Eds_Error
-    with Import        => True,
-         Convention    => C,
-         External_Name => "EdsGetPointer";
+         External_Name => "EdsGetDirectoryItemInfo";
 
   ---------------------------
-  -- Cropped image access  --
+  -- Delete Directory Item --
   ---------------------------
 
-  --  Core function for your autofocus loop:
-  --
-  --  EdsError EdsGetImage(
-  --      EdsDirectoryItemRef inDirItemRef,
-  --      EdsImageSource      inImageSource,
-  --      EdsTargetImageType  inTargetImageType,
-  --      EdsRect            *inSrcRect,
-  --      EdsSize            *inDstSize,
-  --      EdsStreamRef        inStream);
-
-  function Get_Image (Item      : Directory_Item;
-                      Source    : Image_Source;
-                      Target    : Target_Image_Type;
-                      Src_Rect  : access Rect;
-                      Dst_Size  : access Size;
-                      Dest      : Stream) return Eds_Error
+  function Delete_Directory_Item (Item : Directory_Item) return Eds_Error
     with Import        => True,
          Convention    => C,
-         External_Name => "EdsGetImage";
+         External_Name => "EdsDeleteDirectoryItem";
 
-  --  Note: You will obtain Directory_Item values from EDSDK object
-  --  events (kEdsObjectEvent_DirItemCreated / RequestTransfer). The
-  --  binding for event handlers can be added later once SDK access is
-  --  confirmed.
+  ----------------------
+  -- File I/O on host --
+  ----------------------
+
+  function Create_File_Stream
+    (File_Name   : System.Address;
+     Disposition : Eds_Int32;  -- EdsFileCreateDisposition
+     Eds_Access  : Eds_Int32;  -- EdsAccess
+     Out_Stream  : access Stream) return Eds_Error
+    with Import        => True,
+         Convention    => C,
+         External_Name => "EdsCreateFileStream";
+
+  function Download
+    (Item      : Directory_Item;
+     Read_Size : Eds_Uint64;
+     Dest      : Stream) return Eds_Error
+    with Import        => True,
+         Convention    => C,
+         External_Name => "EdsDownload";
+
+  function Download_Complete
+    (Item : Directory_Item) return Eds_Error
+    with Import        => True,
+         Convention    => C,
+         External_Name => "EdsDownloadComplete";
+
+  ----------------
+  -- Properties --
+  ----------------
+
+  subtype Eds_Property_Id   is Eds_Uint32;
+  subtype Eds_Image_Quality is Eds_Uint32;
+
+  --  property ids
+  Prop_Id_Tv            : constant Eds_Property_Id := 16#0000_0406#;
+  Prop_Id_ISO           : constant Eds_Property_Id := 16#0000_0402#;
+  Prop_Id_Image_Quality : constant Eds_Property_Id := 16#0000_0100#;
+
+  -- ISO codes (EdsISOSpeed_*)
+  K_ISO_100   : constant Eds_Uint32 := 16#48#;
+  K_ISO_200   : constant Eds_Uint32 := 16#50#;
+  K_ISO_400   : constant Eds_Uint32 := 16#58#;
+  K_ISO_800   : constant Eds_Uint32 := 16#60#;
+  K_ISO_1600  : constant Eds_Uint32 := 16#68#;
+  K_ISO_3200  : constant Eds_Uint32 := 16#70#;
+  K_ISO_6400  : constant Eds_Uint32 := 16#78#;
+  K_ISO_12800 : constant Eds_Uint32 := 16#80#;
+  K_ISO_25600 : constant Eds_Uint32 := 16#88#;
+
+  -- Tv codes (EdsTv_*) for the values allowed by Exposure_Time
+  K_Tv_30   : constant Eds_Uint32 := 16#10#;
+  K_Tv_25   : constant Eds_Uint32 := 16#13#;
+  K_Tv_20   : constant Eds_Uint32 := 16#14#;
+  K_Tv_15   : constant Eds_Uint32 := 16#15#;
+  K_Tv_13   : constant Eds_Uint32 := 16#18#;
+  K_Tv_10   : constant Eds_Uint32 := 16#1B#;
+  K_Tv_8    : constant Eds_Uint32 := 16#1C#;
+  K_Tv_6    : constant Eds_Uint32 := 16#1D#;
+  K_Tv_5    : constant Eds_Uint32 := 16#20#;
+  K_Tv_4    : constant Eds_Uint32 := 16#23#;
+  K_Tv_3_2  : constant Eds_Uint32 := 16#24#;
+  K_Tv_2    : constant Eds_Uint32 := 16#28#;
+  K_Tv_1    : constant Eds_Uint32 := 16#2D#;
+
+  -- RAW only (no JPEG) – from EdsImageQuality_LR
+  Image_Quality_LR : constant Eds_Image_Quality := 16#0064FF0F#;
+
+  function Set_Property_Data
+    (Ref           : Camera;
+     Property_Id   : Eds_Property_Id;
+     Param         : Eds_Int32;
+     Property_Size : Eds_Uint32;
+     Property_Data : System.Address) return Eds_Error
+    with Import        => True,
+         Convention    => C,
+         External_Name => "EdsSetPropertyData";
 
 private
-
-  --  Internally, each handle is just the underlying pointer value.
-  --  This keeps them opaque at the Ada level but matches the C API.
 
   type Camera_List    is new System.Address;
   type Camera         is new System.Address;
   type Directory_Item is new System.Address;
   type Stream         is new System.Address;
+
+  No_Directory : constant Directory_Item := Directory_Item (System.Null_Address);
 
 end Canon_Interface;
