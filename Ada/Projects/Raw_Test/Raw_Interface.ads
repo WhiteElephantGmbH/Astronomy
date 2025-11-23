@@ -21,7 +21,6 @@ with System;
 package Raw_Interface is
 
   pragma Linker_Options ("-lraw");
-  --  Or "-lraw" depending on which LibRaw .lib/.dll you link against.
 
   package C renames Interfaces.C;
 
@@ -31,19 +30,17 @@ package Raw_Interface is
 
   Null_Context : constant Context;
 
-  ----------------------------------
-  -- Basic LibRaw lifecycle
-  ----------------------------------
+  ----------------------------
+  -- Basic LibRaw lifecycle --
+  ----------------------------
 
-  --  In C:
-  --    libraw_data_t *libraw_init(unsigned int flags);
+  --  libraw_data_t *libraw_init(unsigned int flags);
   function Init (Flags : C.unsigned := 0) return Context
     with Import        => True,
          Convention    => C,
          External_Name => "libraw_init";
 
-  --  In C:
-  --    int libraw_open_file(libraw_data_t *, const char *);
+  --  int libraw_open_file(libraw_data_t *, const char *);
   function Open_File
     (Ctx  : Context;
      Name : System.Address) return C.int
@@ -51,71 +48,83 @@ package Raw_Interface is
          Convention    => C,
          External_Name => "libraw_open_file";
 
-  --  In C:
-  --    int libraw_unpack(libraw_data_t *);
+  --  int libraw_unpack(libraw_data_t *);
   function Unpack (Ctx : Context) return C.int
     with Import        => True,
          Convention    => C,
          External_Name => "libraw_unpack";
 
-  --  In C:
-  --    int libraw_raw2image(libraw_data_t *);
+  --  int libraw_raw2image(libraw_data_t *);
   function Raw2_Image (Ctx : Context) return C.int
     with Import        => True,
          Convention    => C,
          External_Name => "libraw_raw2image";
 
-  --  In C:
-  --    void libraw_free_image(libraw_data_t *);
+  --  void libraw_free_image(libraw_data_t *);
   procedure Free_Image (Ctx : Context)
     with Import        => True,
          Convention    => C,
          External_Name => "libraw_free_image";
 
-  --  In C:
-  --    void libraw_recycle(libraw_data_t *);
+  --  void libraw_recycle(libraw_data_t *);
   procedure Recycle (Ctx : Context)
     with Import        => True,
          Convention    => C,
          External_Name => "libraw_recycle";
 
-  --  In C:
-  --    void libraw_close(libraw_data_t *);
+  --  void libraw_close(libraw_data_t *);
   procedure Close (Ctx : Context)
     with Import        => True,
          Convention    => C,
          External_Name => "libraw_close";
 
   ----------------------------------
-  -- Image dimensions
+  -- Image dimensions (processed) --
   ----------------------------------
 
-  --  In C:
-  --    int libraw_get_iwidth(libraw_data_t *lr);
+  --  int libraw_get_iwidth(libraw_data_t *lr);
   function Get_Iwidth (Ctx : Context) return C.int
     with Import        => True,
          Convention    => C,
          External_Name => "libraw_get_iwidth";
 
-  --  In C:
-  --    int libraw_get_iheight(libraw_data_t *lr);
+  --  int libraw_get_iheight(libraw_data_t *lr);
   function Get_Iheight (Ctx : Context) return C.int
     with Import        => True,
          Convention    => C,
          External_Name => "libraw_get_iheight";
 
-  ----------------------------------
-  -- Error strings
-  ----------------------------------
+  -------------------
+  -- Error strings --
+  -------------------
 
-  --  In C:
-  --    const char *libraw_strerror(int errorcode);
-  --
-  --  We return System.Address here; higher layer converts it to String.
+  --  const char *libraw_strerror(int errorcode);
   function Str_Error (Code : C.int) return System.Address
     with Import        => True,
          Convention    => C,
          External_Name => "libraw_strerror";
+
+  ----------------------------------------------
+  -- RAW mosaic access (dimensions + pointer) --
+  ----------------------------------------------
+
+  -- int libraw_get_raw_width(libraw_data_t *lr);
+  function Get_Raw_Width (Ctx : Context) return C.int
+    with Import        => True,
+         Convention    => C,
+         External_Name => "libraw_get_raw_width";
+
+  -- int libraw_get_raw_height(libraw_data_t *lr);
+  function Get_Raw_Height (Ctx : Context) return C.int
+    with Import        => True,
+         Convention    => C,
+         External_Name => "libraw_get_raw_height";
+
+  -- libraw_imgother_t *libraw_get_imgother(libraw_data_t *lr);
+  function Get_Imgother (Ctx : Context) return System.Address
+    with Import        => True,
+         Convention    => C,
+         External_Name => "libraw_get_imgother";
 
 private
 

@@ -15,50 +15,36 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Interfaces.C;
-private with Raw_Interface;
-
 package Raw is
 
-  package C renames Interfaces.C;
+  Pixel_Size : constant := 14;
 
-  type Context is private;
+  type Pixel is new Natural range 0 .. 2 ** Pixel_Size - 1 with Size => Pixel_Size;
+
+  subtype Square_Size is Positive;
+
+  --  Green grid: Square_Size rows, each with Square_Size / 2 green pixels.
+  type Green_Grid is array (Positive range <>, Positive range <>) of Pixel;
+
+  --  Compute the central square crop of the RAW Bayer mosaic and return only
+  --  the green samples in a 2D grid.
+
+  function Grid_Of (File_Name : String;
+                    Size      : Square_Size) return Green_Grid
+  with Pre => Size mod 2 = 0;
+
+  --  Semantics:
+  --    * Opens File_Name as a LibRaw context.
+  --    * Calls libraw_unpack() to read the RAW mosaic.
+  --    * Gets raw_width/raw_height and takes the central Square_Size x Square_Size region (Square_Size must be even).
+  --    * Assumes an RGGB Bayer pattern (as on Canon EOS 6D).
+  --    * For each of the Square_Size rows, collects all green samples into a row of length Square_Size / 2.
 
   Raw_Error : exception;
-
-  --  Open a RAW file, unpack it, and run raw2image.
-  --
-  --  Steps:
-  --    - libraw_init
-  --    - libraw_open_file
-  --    - libraw_unpack
-  --    - libraw_raw2image
-  --
-  --  On any LibRaw error, Raw_Error is raised and all LibRaw resources
-  --  allocated in this operation are cleaned up.
-  procedure Open_File
-    (Ctx       : out Context;
-     File_Name : String);
-
-  --  Get image width (iwidth in LibRaw).
-  --  Returns 0 if Ctx is not open/valid.
-  function Image_Width (Ctx : Context) return Natural;
-
-  --  Get image height (iheight in LibRaw).
-  --  Returns 0 if Ctx is not open/valid.
-  function Image_Height (Ctx : Context) return Natural;
-
-  --  Close LibRaw context and free any associated resources.
-  --  Safe to call multiple times; after this, Ctx is reset.
-  procedure Close (Ctx : in out Context);
-
-private
-
-  package RI renames Raw_Interface;
-
-  type Context is record
-    Handle : RI.Context := RI.Null_Context;
-    Opened : Boolean := False;
-  end record;
+  -- when:
+  --   * LibRaw errors (open/unpack),
+  --   * Square_Size odd,
+  --   * Square_Size larger than RAW dimensions,
+  --   * NULL raw pointer.
 
 end Raw;

@@ -26,14 +26,14 @@ with Raw;
 with Exceptions;
 
 procedure Raw_Test is
-  The_Context : Raw.Context;
 begin
   Ada.Text_IO.Put_Line ("Canon Test");
   Ada.Text_IO.Put_Line ("==========");
-  Raw.Open_File (The_Context, "First_Picture.CR2");
-  Ada.Text_IO.Put_Line ("Height =" & Raw.Image_Height (The_Context)'image);
-  Ada.Text_IO.Put_Line ("Width  =" & Raw.Image_Width (The_Context)'image);
-  Raw.Close (The_Context);
+  declare
+    Green_Grid : constant Raw.Green_Grid := Raw.Grid_Of ("First_Picture.CR2", 512);
+  begin
+    Ada.Text_IO.Put_Line ("Green Grid =" & Green_Grid'image);
+  end;
 exception
 when Item: others =>
   Ada.Text_IO.Put_Line (Exceptions.Information_Of (Item));
