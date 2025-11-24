@@ -164,6 +164,8 @@ package Canon_Interface is
   ---------------------
 
   Camera_Command_Take_Picture : constant Eds_Uint32 := 16#00000000#;
+  Camera_Command_Bulb_Start   : constant Eds_Uint32 := 16#00000002#;
+  Camera_Command_Bulp_End     : constant Eds_Uint32 := 16#00000003#;
 
   function Send_Command (Cam     : Camera;
                          Command : Eds_Uint32;
@@ -299,19 +301,59 @@ package Canon_Interface is
   K_ISO_25600 : constant Eds_Uint32 := 16#88#;
 
   -- Tv codes (EdsTv_*) for the values allowed by Exposure_Time
-  K_Tv_30   : constant Eds_Uint32 := 16#10#;
-  K_Tv_25   : constant Eds_Uint32 := 16#13#;
-  K_Tv_20   : constant Eds_Uint32 := 16#14#;
-  K_Tv_15   : constant Eds_Uint32 := 16#15#;
-  K_Tv_13   : constant Eds_Uint32 := 16#18#;
-  K_Tv_10   : constant Eds_Uint32 := 16#1B#;
-  K_Tv_8    : constant Eds_Uint32 := 16#1C#;
-  K_Tv_6    : constant Eds_Uint32 := 16#1D#;
-  K_Tv_5    : constant Eds_Uint32 := 16#20#;
-  K_Tv_4    : constant Eds_Uint32 := 16#23#;
-  K_Tv_3_2  : constant Eds_Uint32 := 16#24#;
-  K_Tv_2    : constant Eds_Uint32 := 16#28#;
-  K_Tv_1    : constant Eds_Uint32 := 16#2D#;
+  K_Tv_Bulb   : constant Eds_Uint32 := 16#0C#;
+  K_Tv_30     : constant Eds_Uint32 := 16#10#;
+  K_TV_25     : constant Eds_Uint32 := 16#13#;
+  K_TV_20     : constant Eds_Uint32 := 16#14#;
+  K_TV_15     : constant Eds_Uint32 := 16#18#;
+  K_TV_13     : constant Eds_Uint32 := 16#1B#;
+  K_TV_10     : constant Eds_Uint32 := 16#1C#;
+  K_TV_8      : constant Eds_Uint32 := 16#20#;
+  K_TV_6      : constant Eds_Uint32 := 16#24#;
+  K_TV_5      : constant Eds_Uint32 := 16#25#;
+  K_TV_4      : constant Eds_Uint32 := 16#28#;
+  K_TV_3_2    : constant Eds_Uint32 := 16#2B#;
+  K_TV_2_5    : constant Eds_Uint32 := 16#2D#;
+  K_TV_2      : constant Eds_Uint32 := 16#30#;
+  K_TV_1_6    : constant Eds_Uint32 := 16#33#;
+  K_TV_1_3    : constant Eds_Uint32 := 16#35#;
+  K_TV_1      : constant Eds_Uint32 := 16#38#;
+  K_TV_0_8    : constant Eds_Uint32 := 16#3B#;
+  K_TV_0_6    : constant Eds_Uint32 := 16#3D#;
+  K_TV_0_5    : constant Eds_Uint32 := 16#40#;
+  K_TV_0_4    : constant Eds_Uint32 := 16#43#;
+  K_TV_0_3    : constant Eds_Uint32 := 16#44#;
+  K_TV_D_4    : constant Eds_Uint32 := 16#48#;
+  K_TV_D_5    : constant Eds_Uint32 := 16#4B#;
+  K_TV_D_6    : constant Eds_Uint32 := 16#4C#;
+  K_TV_D_8    : constant Eds_Uint32 := 16#50#;
+  K_TV_D_10   : constant Eds_Uint32 := 16#54#;
+  K_TV_D_13   : constant Eds_Uint32 := 16#55#;
+  K_TV_D_15   : constant Eds_Uint32 := 16#58#;
+  K_TV_D_20   : constant Eds_Uint32 := 16#5C#;
+  K_TV_D_25   : constant Eds_Uint32 := 16#5D#;
+  K_TV_D_30   : constant Eds_Uint32 := 16#60#;
+  K_TV_D_40   : constant Eds_Uint32 := 16#63#;
+  K_TV_D_50   : constant Eds_Uint32 := 16#65#;
+  K_TV_D_60   : constant Eds_Uint32 := 16#68#;
+  K_TV_D_80   : constant Eds_Uint32 := 16#6B#;
+  K_TV_D_100  : constant Eds_Uint32 := 16#6D#;
+  K_TV_D_125  : constant Eds_Uint32 := 16#70#;
+  K_TV_D_160  : constant Eds_Uint32 := 16#73#;
+  K_TV_D_200  : constant Eds_Uint32 := 16#75#;
+  K_TV_D_250  : constant Eds_Uint32 := 16#78#;
+  K_TV_D_320  : constant Eds_Uint32 := 16#7B#;
+  K_TV_D_400  : constant Eds_Uint32 := 16#7D#;
+  K_TV_D_500  : constant Eds_Uint32 := 16#80#;
+  K_TV_D_640  : constant Eds_Uint32 := 16#83#;
+  K_TV_D_800  : constant Eds_Uint32 := 16#85#;
+  K_TV_D_1000 : constant Eds_Uint32 := 16#88#;
+  K_TV_D_1250 : constant Eds_Uint32 := 16#8B#;
+  K_TV_D_1600 : constant Eds_Uint32 := 16#8D#;
+  K_TV_D_2000 : constant Eds_Uint32 := 16#90#;
+  K_TV_D_2500 : constant Eds_Uint32 := 16#93#;
+  K_TV_D_3200 : constant Eds_Uint32 := 16#95#;
+  K_TV_D_4000 : constant Eds_Uint32 := 16#98#;
 
   -- RAW only (no JPEG) – from EdsImageQuality_LR
   Image_Quality_LR : constant Eds_Image_Quality := 16#0064FF0F#;

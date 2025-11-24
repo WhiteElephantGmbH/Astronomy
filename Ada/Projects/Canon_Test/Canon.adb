@@ -117,6 +117,15 @@ package body Canon is
 
   Handler : constant CI.Object_Event_Handler := On_Object_Event'access;
 
+  -----------
+  -- Error --
+  -----------
+  procedure Raise_Error (Msg : String) with No_Return is
+  begin
+    IO.Put_Line ("### " & Msg);
+    raise Canon_Error;
+  end Raise_Error;
+
   ------------------------------
   -- check EDSDK return codes --
   ------------------------------
@@ -125,8 +134,7 @@ package body Canon is
     use type CI.Eds_Error;
   begin
     if E /= 0 then
-      IO.Put_Line (Where & " failed, error = " & CI.Eds_Error'image (E));
-      raise Canon_Error;
+      Raise_Error (Where & " failed, error = " & CI.Eds_Error'image (E));
     end if;
   end Check;
 
@@ -175,21 +183,63 @@ package body Canon is
 
 
   function To_Eds_Tv (T : Exposure_Time) return CI.Eds_Uint32 is
+    Tus : constant Natural := Natural(T * 1_000_000.0); -- in Microseconds
   begin
-    case T is
-      when 30 => return CI.K_Tv_30;
-      when 25 => return CI.K_Tv_25;
-      when 20 => return CI.K_Tv_20;
-      when 15 => return CI.K_Tv_15;
-      when 13 => return CI.K_Tv_13;
-      when 10 => return CI.K_Tv_10;
-      when  8 => return CI.K_Tv_8;
-      when  6 => return CI.K_Tv_6;
-      when  5 => return CI.K_Tv_5;
-      when  4 => return CI.K_Tv_4;
-      when  3 => return CI.K_Tv_3_2;
-      when  2 => return CI.K_Tv_2;
-      when  1 => return CI.K_Tv_1;
+    case Tus is
+    when 30_000_000 => return CI.K_Tv_30;
+    when 25_000_000 => return CI.K_TV_25;
+    when 20_000_000 => return CI.K_TV_20;
+    when 15_000_000 => return CI.K_TV_15;
+    when 13_000_000 => return CI.K_TV_13;
+    when 10_000_000 => return CI.K_TV_10;
+    when  8_000_000 => return CI.K_TV_8;
+    when  6_000_000 => return CI.K_TV_6;
+    when  5_000_000 => return CI.K_TV_5;
+    when  4_000_000 => return CI.K_TV_4;
+    when  3_200_000 => return CI.K_TV_3_2;
+    when  2_500_000 => return CI.K_TV_2_5;
+    when  2_000_000 => return CI.K_TV_2;
+    when  1_600_000 => return CI.K_TV_1_6;
+    when  1_300_000 => return CI.K_TV_1_3;
+    when  1_000_000 => return CI.K_TV_1;
+    when  0_800_000 => return CI.K_TV_0_8;
+    when  0_600_000 => return CI.K_TV_0_6;
+    when  0_500_000 => return CI.K_TV_0_5;
+    when  0_400_000 => return CI.K_TV_0_4;
+    when  0_300_000 => return CI.K_TV_0_3;
+    when  0_250_000 => return CI.K_TV_D_4;
+    when  0_200_000 => return CI.K_TV_D_5;
+    when  0_166_666 => return CI.K_TV_D_6;
+    when  0_125_000 => return CI.K_TV_D_8;
+    when  0_100_000 => return CI.K_TV_D_10;
+    when  0_076_923 => return CI.K_TV_D_13;
+    when  0_066_666 => return CI.K_TV_D_15;
+    when  0_050_000 => return CI.K_TV_D_20;
+    when  0_040_000 => return CI.K_TV_D_25;
+    when  0_033_333 => return CI.K_TV_D_30;
+    when  0_025_000 => return CI.K_TV_D_40;
+    when  0_020_000 => return CI.K_TV_D_50;
+    when  0_016_666 => return CI.K_TV_D_60;
+    when  0_012_500 => return CI.K_TV_D_80;
+    when  0_010_000 => return CI.K_TV_D_100;
+    when  0_008_000 => return CI.K_TV_D_125;
+    when  0_006_250 => return CI.K_TV_D_160;
+    when  0_005_000 => return CI.K_TV_D_200;
+    when  0_004_000 => return CI.K_TV_D_250;
+    when  0_003_125 => return CI.K_TV_D_320;
+    when  0_002_500 => return CI.K_TV_D_400;
+    when  0_002_000 => return CI.K_TV_D_500;
+    when  0_001_562 => return CI.K_TV_D_640;
+    when  0_001_250 => return CI.K_TV_D_800;
+    when  0_001_000 => return CI.K_TV_D_1000;
+    when  0_000_800 => return CI.K_TV_D_1250;
+    when  0_000_625 => return CI.K_TV_D_1600;
+    when  0_000_500 => return CI.K_TV_D_2000;
+    when  0_000_400 => return CI.K_TV_D_2500;
+    when  0_000_312 => return CI.K_TV_D_3200;
+    when  0_000_250 => return CI.K_TV_D_4000;
+    when others =>
+      Raise_Error ("Not supported exposure time:" & T'image & " seconds");
     end case;
   end To_Eds_Tv;
 
@@ -200,7 +250,7 @@ package body Canon is
                      Exposure : Exposure_Time;
                      Iso      : Iso_Value)
   is
-    Timeout : constant Duration := Duration(Exposure + 15);
+    Timeout : constant Duration := Duration(Exposure + 15.0);
 
     Error       : CI.Eds_Error;
     Camera_List : aliased CI.Camera_List;
