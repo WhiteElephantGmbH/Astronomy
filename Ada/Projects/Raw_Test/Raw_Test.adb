@@ -27,12 +27,12 @@ with Exceptions;
 
 procedure Raw_Test is
 begin
-  Ada.Text_IO.Put_Line ("Canon Test");
-  Ada.Text_IO.Put_Line ("==========");
+  Ada.Text_IO.Put_Line ("Raw Test");
+  Ada.Text_IO.Put_Line ("========");
   declare
-    Green_Grid : constant Raw.Green_Grid := Raw.Grid_Of ("First_Picture.CR2", 512);
+    Green_Grid : constant Raw.Green_Grid := Raw.Grid_Of ("First_Picture.CR2", 20);
   begin
-    Ada.Text_IO.Put_Line ("Green Grid =" & Green_Grid'image);
+    Ada.Text_IO.Put_Line ("Green Grid(1, 1) =" & Green_Grid'image);
   end;
 exception
 when Item: others =>

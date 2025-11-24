@@ -55,6 +55,7 @@ package Raw_Interface is
          External_Name => "libraw_unpack";
 
   --  int libraw_raw2image(libraw_data_t *);
+  --  (Not used in the new implementation, but kept for completeness.)
   function Raw2_Image (Ctx : Context) return C.int
     with Import        => True,
          Convention    => C,
@@ -105,26 +106,73 @@ package Raw_Interface is
          External_Name => "libraw_strerror";
 
   ----------------------------------------------
-  -- RAW mosaic access (dimensions + pointer) --
+  -- RAW mosaic access (dimensions, if needed) --
   ----------------------------------------------
 
-  -- int libraw_get_raw_width(libraw_data_t *lr);
+  --  int libraw_get_raw_width(libraw_data_t *lr);
   function Get_Raw_Width (Ctx : Context) return C.int
     with Import        => True,
          Convention    => C,
          External_Name => "libraw_get_raw_width";
 
-  -- int libraw_get_raw_height(libraw_data_t *lr);
+  --  int libraw_get_raw_height(libraw_data_t *lr);
   function Get_Raw_Height (Ctx : Context) return C.int
     with Import        => True,
          Convention    => C,
          External_Name => "libraw_get_raw_height";
 
-  -- libraw_imgother_t *libraw_get_imgother(libraw_data_t *lr);
-  function Get_Imgother (Ctx : Context) return System.Address
+  -----------------------------------------
+  -- Processed image via dcraw emulation --
+  -----------------------------------------
+
+  --  int libraw_dcraw_process(libraw_data_t *lr);
+  function Dcraw_Process (Ctx : Context) return C.int
     with Import        => True,
          Convention    => C,
-         External_Name => "libraw_get_imgother";
+         External_Name => "libraw_dcraw_process";
+
+  --  C struct (from libraw_types.h):
+  --
+  --  typedef struct {
+  --    enum LibRaw_image_formats type;  // int
+  --    ushort height;
+  --    ushort width;
+  --    ushort colors;
+  --    ushort bits;
+  --    size_t data_size;
+  --    unsigned char *data;
+  --  } libraw_processed_image_t;
+  --
+  --  We only need width/height/colors/bits/data.
+
+  type Processed_Image is record
+    Img_Type  : C.int;
+    Height    : C.unsigned_short;
+    Width     : C.unsigned_short;
+    Colors    : C.unsigned_short;
+    Bits      : C.unsigned_short;
+    Data_Size : C.unsigned_long;
+    Data      : aliased C.char;
+  end record
+    with Convention => C;
+
+  type Processed_Image_Ptr is access all Processed_Image
+    with Convention => C;
+
+  --  libraw_processed_image_t *
+  --    libraw_dcraw_make_mem_image(libraw_data_t *lr, int *errc);
+  function Dcraw_Make_Mem_Image
+    (Ctx        : Context;
+     Error_Code : access C.int) return Processed_Image_Ptr
+    with Import        => True,
+         Convention    => C,
+         External_Name => "libraw_dcraw_make_mem_image";
+
+  --  void libraw_dcraw_clear_mem(libraw_processed_image_t *);
+  procedure Dcraw_Clear_Mem (Img : Processed_Image_Ptr)
+    with Import        => True,
+         Convention    => C,
+         External_Name => "libraw_dcraw_clear_mem";
 
 private
 

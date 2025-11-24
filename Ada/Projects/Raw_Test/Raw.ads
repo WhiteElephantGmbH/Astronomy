@@ -17,34 +17,46 @@ pragma Style_White_Elephant;
 
 package Raw is
 
-  Pixel_Size : constant := 14;
+  Pixel_Size : constant := 8;
 
-  type Pixel is new Natural range 0 .. 2 ** Pixel_Size - 1 with Size => Pixel_Size;
+  type Pixel is new Natural range 0 .. 2 ** Pixel_Size - 1
+    with Size => Pixel_Size;
 
   subtype Square_Size is Positive;
 
-  --  Green grid: Square_Size rows, each with Square_Size / 2 green pixels.
+  --  Green grid: Square_Size rows, each with Square_Size pixels.
+  --
+  --  Semantics (using dcraw-style processed image via LibRaw C API):
+  --    * We call libraw_open_file + libraw_unpack + libraw_dcraw_process.
+  --    * Then libraw_dcraw_make_mem_image() to get an RGB (or similar)
+  --      8-bit image buffer in memory.
+  --    * We take the central square crop of size Size x Size
+  --      (Size must be even and <= min(width, height)).
+  --    * For each pixel in that crop we extract the green channel value.
+  --    * The result is a Size x Size grid of green intensities.
+  --
+  --  Result indices:
+  --    Result (R, C) with
+  --      R in 1 .. Size
+  --      C in 1 .. Size
   type Green_Grid is array (Positive range <>, Positive range <>) of Pixel;
 
-  --  Compute the central square crop of the RAW Bayer mosaic and return only
-  --  the green samples in a 2D grid.
-
+  --  Compute the central square crop of the processed image and return
+  --  the green channel samples in a 2D grid: Size rows, Size columns.
+  --
+  --  Pre:
+  --    * Size is even.
+  --
+  --  Raises Raw_Error when:
+  --    * libraw_init returns NULL,
+  --    * LibRaw open/unpack/process/make_mem_image calls fail,
+  --    * Size exceeds processed image dimensions,
+  --    * processed image has unsupported format (bits != 16, colors < 1),
+  --    * NULL data pointer.
   function Grid_Of (File_Name : String;
                     Size      : Square_Size) return Green_Grid
-  with Pre => Size mod 2 = 0;
-
-  --  Semantics:
-  --    * Opens File_Name as a LibRaw context.
-  --    * Calls libraw_unpack() to read the RAW mosaic.
-  --    * Gets raw_width/raw_height and takes the central Square_Size x Square_Size region (Square_Size must be even).
-  --    * Assumes an RGGB Bayer pattern (as on Canon EOS 6D).
-  --    * For each of the Square_Size rows, collects all green samples into a row of length Square_Size / 2.
+    with Pre => Size mod 2 = 0;
 
   Raw_Error : exception;
-  -- when:
-  --   * LibRaw errors (open/unpack),
-  --   * Square_Size odd,
-  --   * Square_Size larger than RAW dimensions,
-  --   * NULL raw pointer.
 
 end Raw;
