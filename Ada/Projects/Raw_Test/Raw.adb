@@ -15,10 +15,10 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Ada.Characters.Latin_1;
 with Ada.Text_IO;
 with Ada.Unchecked_Conversion;
 with Interfaces.C;
+with Log;
 with Raw_Interface;
 with System.Address_Image;
 with System.Storage_Elements;
@@ -35,33 +35,43 @@ package body Raw is
   -------------------
 
   procedure Error (Msg : String) is
+    Image : constant String := "### Grid_Of: " & Msg;
   begin
-    IO.Put_Line ("### " & Msg);
+    IO.Put_Line (Image);
+    Log.Write (Image);
     raise Raw_Error with Msg;
   end Error;
+
+  Title_Number : Natural;
+
+  procedure Title (Item : String) is
+    Number : constant String := Title_Number'image;
+    Image  : constant String := Number(Number'last-1 .. Number'last) & ". " & Item;
+  begin
+    IO.Put_Line (Image);
+    Log.Write (Image);
+    Title_Number := @ + 1;
+  end Title;
 
   procedure Check (Code  : C.int;
                    Where : String) is
     use type C.int;
   begin
     if Code /= 0 then
-      Error (Where & " failed (LibRaw error code" &
-             Integer'image (Integer (Code)) & ")");
+      Error (Where & " failed (LibRaw error code" & Integer'image (Integer (Code)) & ")");
     end if;
   end Check;
 
   function To_C_String (S : String) return String is
   begin
-    return S & Ada.Characters.Latin_1.NUL;
+    return S & Ascii.Nul;
   end To_C_String;
 
-  --  Convert an arbitrary address to a pointer to one 8-bit sample.
   type Sample_Ptr is access all Pixel
     with Convention => C;
 
-  function To_Sample_Ptr is new Ada.Unchecked_Conversion
-    (Source => System.Address,
-     Target => Sample_Ptr);
+  function To_Sample_Ptr is new Ada.Unchecked_Conversion (Source => System.Address,
+                                                          Target => Sample_Ptr);
 
   -------------
   -- Grid_Of --
@@ -76,13 +86,21 @@ package body Raw is
     Proc_Err  : aliased C.int := 0;
     Img       : RI.Processed_Image_Ptr := null;
 
-    W, H     : Integer;
-    Channels : Integer;
-    Bits     : Integer;
+    Bytes_Per_Sample : constant Integer := Pixel'size / System.Storage_Unit;
+
+    Height : Natural;
+    Width  : Natural;
+
+    type Channel   is range 1 .. 3;
+    type Bit_Count is range 1 .. 32;
+
+    Colors    : Channel;
+    Bits      : Bit_Count;
+    Data_Size : Natural;
 
     --  Result index ranges.
-    subtype Row_Index    is Positive range 1 .. Size;
-    subtype Column_Index is Positive range 1 .. Size;
+    subtype Row_Index    is Rows    range 1 .. Rows(Size);
+    subtype Column_Index is Columns range 1 .. Columns(Size);
 
     Result : Green_Grid (Row_Index, Column_Index);
 
@@ -92,28 +110,36 @@ package body Raw is
     use type System.Address;
 
   begin -- Grid_Of
+    Title_Number := 1;
     if Ctx = RI.Null_Context then
       Error ("Grid_Of: libraw_init returned NULL context");
     end if;
 
     begin
-      IO.Put_Line ("1. Open file via LibRaw");
-      ----------------------------------------
-      Err := RI.Open_File (Ctx, File_C'address);
-      Check (Err, "libraw_open_file");
+      Title ("Open file via LibRaw");
+      -------------------------------
+      Check (RI.Open_File (Ctx, File_C'address), "libraw_open_file");
 
-      IO.Put_Line ("2. Unpack RAW");
-      ------------------------------
-      Err := RI.Unpack (Ctx);
-      Check (Err, "libraw_unpack");
+      Title ("Unpack RAW");
+      ---------------------
+      Check (RI.Unpack (Ctx), "libraw_unpack");
 
-      IO.Put_Line ("3. Run dcraw-style processing");
-      ----------------------------------------------
+      Title ("Configure sample size, linear, no auto-bright");
+      -----------------------------------------------------
+      RI.Set_Output_Bps (Ctx, Pixel'size);
+      --  Disable auto-brightening
+      RI.Set_No_Auto_Bright (Ctx, 1);
+      --  Linear gamma: gamma[0] = 1.0, gamma[1] = 1.0
+      RI.Set_Gamma (Ctx, 0, 1.0);
+      RI.Set_Gamma (Ctx, 1, 1.0);
+
+      Title ("Run dcraw-style processing");
+      -------------------------------------
       Err := RI.Dcraw_Process (Ctx);
       Check (Err, "libraw_dcraw_process");
 
-      IO.Put_Line ("4. Get processed image in memory");
-      -------------------------------------------------
+      Title ("Get processed image in memory");
+      ----------------------------------------
       Img := RI.Dcraw_Make_Mem_Image (Ctx, Proc_Err'access);
       Check (Proc_Err, "libraw_dcraw_make_mem_image");
 
@@ -121,161 +147,121 @@ package body Raw is
         Error ("Grid_Of: libraw_dcraw_make_mem_image returned NULL pointer");
       end if;
 
-      IO.Put_Line ("5. Extract dimensions and format info");
-      ------------------------------------------------------
-      W        := Integer (Img.Width);
-      H        := Integer (Img.Height);
-      Channels := Integer (Img.Colors);
-      Bits     := Integer (Img.Bits);
+      Title ("Extract dimensions and format info");
+      ---------------------------------------------
+      begin
+        Width  := Natural(Img.Width);
+        Height := Natural(Img.Height);
+        Colors := Channel(Img.Colors);
+        Bits := Bit_Count(Img.Bits);
+        Data_Size := Natural(Img.Data_Size);
+      exception
+      when others =>
+        Error ("Invalid processed image data");
+      end;
 
       IO.Put_Line ("   - Type  :" & Img.Img_Type'image);
-      IO.Put_Line ("   - Width :" & Img.Width'image);
-      IO.Put_Line ("   - Height:" & Img.Height'image);
-      IO.Put_Line ("   - Colors:" & Img.Colors'image);
-      IO.Put_Line ("   - Bits  :" & Img.Bits'image);
-      IO.Put_Line ("   - Size  :" & Img.Data_Size'image);
+      IO.Put_Line ("   - Width :" & Width'image);
+      IO.Put_Line ("   - Height:" & Height'image);
+      IO.Put_Line ("   - Colors:" & Colors'image);
+      IO.Put_Line ("   - Bits  :" & Bits'image);
+      IO.Put_Line ("   - Size  :" & Data_Size'image);
 
-      if W <= 0 or else H <= 0 then
-        Error ("Grid_Of: invalid processed image dimensions");
+      if Bits /= Pixel'size then
+        Error ("Grid_Of: expected" & Pixel'size'image & "bits processed image, got" &
+               Bits'image & " bits (check libraw_set_output_bps support)");
       end if;
 
-      if Integer (Size) > W or else Integer (Size) > H then
-        Error ("Grid_Of: Square_Size exceeds processed image dimensions (" &
-               Integer'image (W) & " x" & Integer'image (H) & ")");
+      if Data_Size /= Width * Height * Natural(Colors) * Bytes_Per_Sample then
+        Error ("Grid_Of: invalid image data size");
       end if;
 
-      if Channels < 1 then
-        Error ("Grid_Of: processed image has no channels");
-      end if;
-
-      --  Accept 8 or 16 bits; reject anything else.
-      if Bits /= 8 and then Bits /= 16 then
-        Error ("Grid_Of: only 8- or 16-bit processed images are supported - actual" &
-               Bits'image & " bits");
-      end if;
-
-      IO.Put_Line ("6. Choose which channel to treat as 'green'.");
-      -------------------------------------------------------------
-      --     For typical RGB output: 0=R, 1=G, 2=B.
-      --     If only one channel, use that as 'green' surrogate.
+      Title ("Choose which channel to treat as 'green'.");
+      ----------------------------------------------------
       declare
-        Green_Index : constant Integer := (if Channels >= 2 then 1 else 0);
+        Green_Index : constant Natural := (if Colors >= 2 then 1 else 0);
         Base_Adr    : constant System.Address := Img.Data'address;
-        SS          : constant Integer := Integer (Size);
-        Row_Offset  : constant Integer := (H - SS) / 2;
-        Col_Offset  : constant Integer := (W - SS) / 2;
+        SS          : constant Natural := Natural(Size);
+        Row_Offset  : constant Natural := (Height - SS) / 2;
+        Col_Offset  : constant Natural := (Width - SS) / 2;
       begin
         IO.Put_Line ("   - Green_Index:" & Green_Index'image);
         IO.Put_Line ("   - Base_Adr   : 0x" & System.Address_Image (Base_Adr));
-        if Row_Offset < 0 or else Col_Offset < 0 then
-          Error ("Grid_Of: negative crop offset, check Square_Size");
-        end if;
         IO.Put_Line ("   - Row_Offset :" & Row_Offset'image);
         IO.Put_Line ("   - Col_Offset :" & Col_Offset'image);
 
-        IO.Put_Line ("7. Extract green samples from the central crop.");
-        ----------------------------------------------------------------
+        Title ("Extract green samples from the central crop.");
+        -------------------------------------------------------
         --
         --  Memory layout from libraw_dcraw_make_mem_image:
         --    Row-major, pixels in [0 .. H-1] × [0 .. W-1].
-        --    For each pixel: Channels samples.
-        --    If Bits = 16: each sample is unsigned short (2 bytes).
-        --    If Bits =  8: each sample is unsigned char (1 byte).
+        --    For each pixel: Channels samples, each 2 bytes (unsigned short).
         --
         --    sample_index =
         --      (global_row * W + global_col) * Channels + Green_Index;
         --
         --    byte_offset =
-        --      sample_index * bytes_per_sample;
+        --      sample_index * Bytes_Per_Sample;
+
         for Row in Row_Index loop
           declare
-            R0         : constant Integer := Row - 1;
-            Global_Row : constant Integer := Row_Offset + R0;
+            R0         : constant Natural := Natural(Row) - 1;
+            Global_Row : constant Natural := Row_Offset + R0;
           begin
-            if Global_Row < 0 or else Global_Row >= H then
-              Error ("Grid_Of: computed row outside image height");
-            end if;
-
             for Col in Column_Index loop
               declare
-                C0         : constant Integer := Col - 1;
-                Global_Col : constant Integer := Col_Offset + C0;
-                Pixel_Idx  : Integer;
-                Sample_Idx : Integer;
-                Byte_Off   : SE.Storage_Offset;
-                Sample_Adr : System.Address;
+                C0         : constant Natural := Natural(Col) - 1;
+                Global_Col : constant Natural := Col_Offset + C0;
+                Pixel_Idx  : constant Natural := Global_Row * Width + Global_Col;
+                Sample_Idx : constant Natural := Pixel_Idx * Natural(Colors) + Green_Index;
+                Byte_Off   : constant SE.Storage_Offset := SE.Storage_Offset (Sample_Idx * Bytes_Per_Sample);
+                Sample     : constant Sample_Ptr := To_Sample_Ptr (Base_Adr + Byte_Off);
               begin
-                if Global_Col < 0 or else Global_Col >= W then
-                  Error ("Grid_Of: computed column outside image width");
-                end if;
-
-                Pixel_Idx := Global_Row * W + Global_Col;
-
-                if Pixel_Idx < 0 then
-                  Error ("Grid_Of: negative pixel index");
-                end if;
-
-                Sample_Idx := Pixel_Idx * Channels + Green_Index;
-
-                if Sample_Idx < 0 then
-                  Error ("Grid_Of: negative sample index");
-                end if;
-
-                declare
-                  Sample : Sample_Ptr;
-                begin
-                  Byte_Off := SE.Storage_Offset (Sample_Idx);
-                  Sample_Adr := Base_Adr + Byte_Off;
-                  Sample := To_Sample_Ptr (Sample_Adr);
-
-                  if Sample = null then
-                    Error ("Grid_Of: null 8-bit sample pointer");
-                  end if;
-
-                  Result (Row, Col) := Sample.all;
-                end;
-
+                Result (Row, Col) := Sample.all;
               end;
             end loop;
           end;
         end loop;
       end;
 
-      IO.Put_Line ("8. Clean up LibRaw objects");
-      -------------------------------------------
+      Title ("Clean up LibRaw objects");
+      ----------------------------------
       RI.Dcraw_Clear_Mem (Img);
-      RI.Free_Image      (Ctx);  -- no-op here but safe
-      RI.Recycle         (Ctx);
-      RI.Close           (Ctx);
+      RI.Free_Image (Ctx); -- safe (no-op here)
+      RI.Recycle (Ctx);
+      RI.Close (Ctx);
 
     exception
+    when others =>
+      -- Best-effort cleanup, then re-raise
+      begin
+        if Img /= null then
+          RI.Dcraw_Clear_Mem (Img);
+        end if;
+      exception
       when others =>
-        --  Best-effort cleanup, then re-raise
-        begin
-          if Img /= null then
-            RI.Dcraw_Clear_Mem (Img);
-          end if;
-        exception
-          when others => null;
-        end;
-        begin
-          RI.Free_Image (Ctx);
-        exception
-          when others => null;
-        end;
-        begin
-          RI.Recycle (Ctx);
-        exception
-          when others => null;
-        end;
-        begin
-          RI.Close (Ctx);
-        exception
-          when others => null;
-        end;
-        raise;
+        null;
+      end;
+      begin
+        RI.Free_Image (Ctx);
+      exception
+      when others =>
+        null;
+      end;
+      begin
+        RI.Recycle (Ctx);
+      exception
+      when others =>
+        null;
+      end;
+      begin
+        RI.Close (Ctx);
+      exception
+      when others =>
+        null;
+      end;
+      raise;
     end;
-
     return Result;
   end Grid_Of;
 

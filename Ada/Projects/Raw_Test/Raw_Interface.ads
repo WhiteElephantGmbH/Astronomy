@@ -24,8 +24,7 @@ package Raw_Interface is
 
   package C renames Interfaces.C;
 
-  --  Opaque pointer to libraw_data_t (C type).
-  --  In C: libraw_data_t *.
+  -- Opaque pointer to libraw_data_t (C type).
   type Context is private;
 
   Null_Context : constant Context;
@@ -34,13 +33,13 @@ package Raw_Interface is
   -- Basic LibRaw lifecycle --
   ----------------------------
 
-  --  libraw_data_t *libraw_init(unsigned int flags);
+  -- libraw_data_t *libraw_init(unsigned int flags);
   function Init (Flags : C.unsigned := 0) return Context
     with Import        => True,
          Convention    => C,
          External_Name => "libraw_init";
 
-  --  int libraw_open_file(libraw_data_t *, const char *);
+  -- int libraw_open_file(libraw_data_t *, const char *);
   function Open_File
     (Ctx  : Context;
      Name : System.Address) return C.int
@@ -48,14 +47,13 @@ package Raw_Interface is
          Convention    => C,
          External_Name => "libraw_open_file";
 
-  --  int libraw_unpack(libraw_data_t *);
+  -- int libraw_unpack(libraw_data_t *);
   function Unpack (Ctx : Context) return C.int
     with Import        => True,
          Convention    => C,
          External_Name => "libraw_unpack";
 
-  --  int libraw_raw2image(libraw_data_t *);
-  --  (Not used in the new implementation, but kept for completeness.)
+  -- int libraw_raw2image(libraw_data_t *); (not used, but kept for completeness.)
   function Raw2_Image (Ctx : Context) return C.int
     with Import        => True,
          Convention    => C,
@@ -125,25 +123,24 @@ package Raw_Interface is
   -- Processed image via dcraw emulation --
   -----------------------------------------
 
-  --  int libraw_dcraw_process(libraw_data_t *lr);
+  -- int libraw_dcraw_process(libraw_data_t *lr);
   function Dcraw_Process (Ctx : Context) return C.int
     with Import        => True,
          Convention    => C,
          External_Name => "libraw_dcraw_process";
 
-  --  C struct (from libraw_types.h):
+  -- C struct (from libraw_types.h):
   --
-  --  typedef struct {
-  --    enum LibRaw_image_formats type;  // int
-  --    ushort height;
-  --    ushort width;
-  --    ushort colors;
-  --    ushort bits;
-  --    size_t data_size;
-  --    unsigned char *data;
-  --  } libraw_processed_image_t;
+  --typedef struct
+  --{
+  --  enum LibRaw_image_formats type;
+  --  ushort height, width, colors, bits;
+  --  unsigned int data_size;
+  --  unsigned char data[1];
+  --} libraw_processed_image_t;
   --
-  --  We only need width/height/colors/bits/data.
+  -- We model 'data' as a single char; we use its 'Address as the
+  -- start of a larger buffer allocated by LibRaw.
 
   type Processed_Image is record
     Img_Type  : C.int;
@@ -151,7 +148,7 @@ package Raw_Interface is
     Width     : C.unsigned_short;
     Colors    : C.unsigned_short;
     Bits      : C.unsigned_short;
-    Data_Size : C.unsigned_long;
+    Data_Size : C.unsigned;
     Data      : aliased C.char;
   end record
     with Convention => C;
@@ -159,8 +156,7 @@ package Raw_Interface is
   type Processed_Image_Ptr is access all Processed_Image
     with Convention => C;
 
-  --  libraw_processed_image_t *
-  --    libraw_dcraw_make_mem_image(libraw_data_t *lr, int *errc);
+  -- libraw_processed_image_t * libraw_dcraw_make_mem_image(libraw_data_t *lr, int *errc);
   function Dcraw_Make_Mem_Image
     (Ctx        : Context;
      Error_Code : access C.int) return Processed_Image_Ptr
@@ -168,15 +164,41 @@ package Raw_Interface is
          Convention    => C,
          External_Name => "libraw_dcraw_make_mem_image";
 
-  --  void libraw_dcraw_clear_mem(libraw_processed_image_t *);
+  -- void libraw_dcraw_clear_mem(libraw_processed_image_t *);
   procedure Dcraw_Clear_Mem (Img : Processed_Image_Ptr)
     with Import        => True,
          Convention    => C,
          External_Name => "libraw_dcraw_clear_mem";
 
+  --------------------------------
+  -- Output / development knobs --
+  --------------------------------
+
+  -- void libraw_set_output_bps(libraw_data_t *lr, int value);
+  procedure Set_Output_Bps (Ctx   : Context;
+                            Value : C.int)
+    with Import        => True,
+         Convention    => C,
+         External_Name => "libraw_set_output_bps";
+
+  -- void libraw_set_no_auto_bright(libraw_data_t *lr, int value);
+  procedure Set_No_Auto_Bright (Ctx   : Context;
+                                Value : C.int)
+    with Import        => True,
+         Convention    => C,
+         External_Name => "libraw_set_no_auto_bright";
+
+  -- void libraw_set_gamma(libraw_data_t *lr, int index, float value);
+  procedure Set_Gamma (Ctx   : Context;
+                       Index : C.int;
+                       Value : C.C_float)
+    with Import        => True,
+         Convention    => C,
+         External_Name => "libraw_set_gamma";
+
 private
 
-  --  Represent Context as a raw C pointer (void* / libraw_data_t*).
+  -- Represent Context as a raw C pointer (void* / libraw_data_t*).
   type Context is new System.Address
     with Convention => C;
 
