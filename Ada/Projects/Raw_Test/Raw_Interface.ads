@@ -40,9 +40,8 @@ package Raw_Interface is
          External_Name => "libraw_init";
 
   -- int libraw_open_file(libraw_data_t *, const char *);
-  function Open_File
-    (Ctx  : Context;
-     Name : System.Address) return C.int
+  function Open_File (Ctx  : Context;
+                      Name : System.Address) return C.int
     with Import        => True,
          Convention    => C,
          External_Name => "libraw_open_file";
@@ -59,19 +58,19 @@ package Raw_Interface is
          Convention    => C,
          External_Name => "libraw_raw2image";
 
-  --  void libraw_free_image(libraw_data_t *);
+  -- void libraw_free_image(libraw_data_t *);
   procedure Free_Image (Ctx : Context)
     with Import        => True,
          Convention    => C,
          External_Name => "libraw_free_image";
 
-  --  void libraw_recycle(libraw_data_t *);
+  -- void libraw_recycle(libraw_data_t *);
   procedure Recycle (Ctx : Context)
     with Import        => True,
          Convention    => C,
          External_Name => "libraw_recycle";
 
-  --  void libraw_close(libraw_data_t *);
+  -- void libraw_close(libraw_data_t *);
   procedure Close (Ctx : Context)
     with Import        => True,
          Convention    => C,
@@ -81,13 +80,13 @@ package Raw_Interface is
   -- Image dimensions (processed) --
   ----------------------------------
 
-  --  int libraw_get_iwidth(libraw_data_t *lr);
+  -- int libraw_get_iwidth(libraw_data_t *lr);
   function Get_Iwidth (Ctx : Context) return C.int
     with Import        => True,
          Convention    => C,
          External_Name => "libraw_get_iwidth";
 
-  --  int libraw_get_iheight(libraw_data_t *lr);
+  -- int libraw_get_iheight(libraw_data_t *lr);
   function Get_Iheight (Ctx : Context) return C.int
     with Import        => True,
          Convention    => C,
@@ -97,7 +96,7 @@ package Raw_Interface is
   -- Error strings --
   -------------------
 
-  --  const char *libraw_strerror(int errorcode);
+  -- const char *libraw_strerror(int errorcode);
   function Str_Error (Code : C.int) return System.Address
     with Import        => True,
          Convention    => C,
@@ -107,13 +106,13 @@ package Raw_Interface is
   -- RAW mosaic access (dimensions, if needed) --
   ----------------------------------------------
 
-  --  int libraw_get_raw_width(libraw_data_t *lr);
+  -- int libraw_get_raw_width(libraw_data_t *lr);
   function Get_Raw_Width (Ctx : Context) return C.int
     with Import        => True,
          Convention    => C,
          External_Name => "libraw_get_raw_width";
 
-  --  int libraw_get_raw_height(libraw_data_t *lr);
+  -- int libraw_get_raw_height(libraw_data_t *lr);
   function Get_Raw_Height (Ctx : Context) return C.int
     with Import        => True,
          Convention    => C,
@@ -131,16 +130,15 @@ package Raw_Interface is
 
   -- C struct (from libraw_types.h):
   --
-  --typedef struct
-  --{
-  --  enum LibRaw_image_formats type;
-  --  ushort height, width, colors, bits;
-  --  unsigned int data_size;
-  --  unsigned char data[1];
-  --} libraw_processed_image_t;
+  -- typedef struct
+  -- {
+  --   enum LibRaw_image_formats type;
+  --   ushort height, width, colors, bits;
+  --   unsigned int data_size;
+  --   unsigned char data[1];
+  -- } libraw_processed_image_t;
   --
-  -- We model 'data' as a single char; we use its 'Address as the
-  -- start of a larger buffer allocated by LibRaw.
+  -- We model 'data' as a single byte; we use its 'Address as the start of the larger buffer allocated by LibRaw.
 
   type Processed_Image is record
     Img_Type  : C.int;
@@ -148,8 +146,8 @@ package Raw_Interface is
     Width     : C.unsigned_short;
     Colors    : C.unsigned_short;
     Bits      : C.unsigned_short;
-    Data_Size : C.unsigned;
-    Data      : aliased C.char;
+    Data_Size : C.unsigned; -- unsigned int in C
+    Data      : aliased C.unsigned_char;
   end record
     with Convention => C;
 
@@ -157,9 +155,8 @@ package Raw_Interface is
     with Convention => C;
 
   -- libraw_processed_image_t * libraw_dcraw_make_mem_image(libraw_data_t *lr, int *errc);
-  function Dcraw_Make_Mem_Image
-    (Ctx        : Context;
-     Error_Code : access C.int) return Processed_Image_Ptr
+  function Dcraw_Make_Mem_Image (Ctx        : Context;
+                                 Error_Code : access C.int) return Processed_Image_Ptr
     with Import        => True,
          Convention    => C,
          External_Name => "libraw_dcraw_make_mem_image";

@@ -24,10 +24,14 @@ pragma Build (Description => "Raw Test",
 with Ada.Text_IO;
 with Raw;
 with Exceptions;
+with Ada.Numerics.Generic_Elementary_Functions;
 
 procedure Raw_Test is
 
   package IO renames Ada.Text_IO;
+  package NF is new Ada.Numerics.Generic_Elementary_Functions (Float);
+
+  Pi : constant Float := Ada.Numerics.Pi;
 
   use type Raw.Pixel;
 
@@ -35,7 +39,11 @@ begin
   IO.Put_Line ("Raw Test");
   IO.Put_Line ("========");
   declare
-    Green_Grid : constant Raw.Green_Grid := Raw.Grid_Of ("First_Picture.CR2", 1024);
+    subtype Huge_Natural is Long_Long_Integer range 0 .. Long_Long_Integer'last;
+
+    Last_Index : constant := 1024;
+
+    Green_Grid : constant Raw.Green_Grid := Raw.Grid_Of ("First_Picture.CR2", Last_Index);
 
     procedure Show_Green_Grid is
     begin
@@ -58,152 +66,142 @@ begin
 
 
     function Evaluated_Half_Flux return Raw.Pixel is
-      Black_Level : constant := 100;
-      The_Sum     : Long_Long_Integer := 0;
+      Black_Level : constant := 0;
+      The_Sum     : Huge_Natural := 0;
       The_Count   : Natural := 0;
     begin
       for Value of Green_Grid loop
         if Value > Black_Level then
           The_Count := @ + 1;
-          The_Sum := @ + Long_Long_Integer(Value);
+          The_Sum := @ + Huge_Natural(Value);
         end if;
       end loop;
       if The_Count = 0 then
         return 0;
       end if;
-      return Raw.Pixel (The_Sum / Long_Long_Integer(The_Count));
+      return Raw.Pixel (The_Sum / Huge_Natural(The_Count));
     end Evaluated_Half_Flux;
 
     Half_Flux : constant Raw.Pixel := Evaluated_Half_Flux;
 
-    Max_Missings : constant := 10;
-
-    type Column_Sequence is record
-      At_Row : Raw.Rows    := Raw.Rows'first;
-      First  : Raw.Columns := Raw.Columns'first;
-      Count  : Natural     := 0;
+    type Right_Angle is record
+      Edge : Raw.Position;
+      Ends : Raw.Position;
+      Size : Natural := 0;
     end record;
 
-    type Column_Sequences is array (Positive range <>) of Column_Sequence;
-
-    function Evaluated_Column_Sequences return Column_Sequences is
-      The_Sequence  : Column_Sequence;
-      The_Sequences : Column_Sequences(1..2);
+    function Right_Angle_At (Row    : Raw.Rows;
+                             Column : Raw.Columns) return Right_Angle is
+      The_Right_Angle : Right_Angle;
     begin
-      for Row in Green_Grid'range(1) loop
-        declare
-          The_Actual : Column_Sequence;
-          The_Count  : Natural := Max_Missings;
-        begin
-          The_Actual.At_Row := Row;
-          for Column in Green_Grid'range(2) loop
-            declare
-              Value : constant Raw.Pixel := Green_Grid(Row, Column);
-            begin
-              if Value > Half_Flux then
-                if The_Actual.Count = 0 then
-                  The_Actual.First := Column;
-                end if;
-                The_Actual.Count := @ + 1;
-              elsif The_Count = 0 then
-                The_Count := Max_Missings;
-                if The_Actual.Count > 0 then
-                  if The_Actual.Count > The_Sequence.Count then
-                    The_Sequence := The_Actual;
-                  end if;
-                end if;
-                The_Actual.Count := 0;
-              else
-                The_Count := @ - 1;
-                The_Actual.Count := @ + 1;
-              end if;
-            end;
-          end loop;
-        end;
-        if The_Sequences(2).Count < The_Sequence.Count then
-          if The_Sequences(2).Count > The_Sequences(1).Count then
-            The_Sequences(1) := The_Sequences(2);
-          end if;
-          The_Sequences(2) := The_Sequence;
-        elsif The_Sequences(1).Count < The_Sequence.Count then
-          The_Sequences(1) := The_Sequences(2);
-          The_Sequences(2) := The_Sequence;
+      The_Right_Angle.Edge := (Row    => Row,
+                               Column => Column);
+      for The_Column in Column .. Green_Grid'last(2) loop
+        if Green_Grid(Row, The_Column) > Half_Flux then
+          The_Right_Angle.Ends.Column := The_Column;
+          The_Right_Angle.Size := @ + 1;
+        else
+          exit;
         end if;
-        The_Sequence.Count := 0;
       end loop;
-      return The_Sequences;
-    end Evaluated_Column_Sequences;
+      for The_Row in Row .. Green_Grid'last(1) loop
+        if Green_Grid(The_Row, Column) > Half_Flux then
+          The_Right_Angle.Ends.Row := The_Row;
+          The_Right_Angle.Size := @ + 1;
+        else
+          exit;
+        end if;
+      end loop;
+      return The_Right_Angle;
+    end Right_Angle_At;
 
-    Max_Column_Sequences : constant Column_Sequences := Evaluated_Column_Sequences;
-
-    type Row_Sequence is record
-      At_Column : Raw.Columns := Raw.Columns'first;
-      First     : Raw.Rows    := Raw.Rows'first;
-      Count     : Natural     := 0;
-    end record;
-
-    type Row_Sequences is array (Positive range <>) of Row_Sequence;
-
-    function Evaluated_Row_Sequences return Row_Sequences is
-      The_Sequence  : Row_Sequence;
-      The_Sequences : Row_Sequences(1..2);
+    function Evaluated_Max_Rigth_Angle return Right_Angle is
+      The_Right_Angle : Right_Angle;
+      Max_Right_Angle : Right_Angle;
     begin
       for Column in Green_Grid'range(2) loop
-        declare
-          The_Actual : Row_Sequence;
-          The_Count  : Natural := Max_Missings;
-        begin
-          The_Actual.At_Column := Column;
-          for Row in Green_Grid'range(1) loop
-            declare
-              Value : constant Raw.Pixel := Green_Grid(Row, Column);
-            begin
-              if Value > Half_Flux then
-                if The_Actual.Count = 0 then
-                  The_Actual.First := Row;
-                end if;
-                The_Actual.Count := @ + 1;
-              elsif The_Count = 0 then
-                The_Count := Max_Missings;
-                if The_Actual.Count > 0 then
-                  if The_Actual.Count > The_Sequence.Count then
-                    The_Sequence := The_Actual;
-                  end if;
-                end if;
-                The_Actual.Count := 0;
-              else
-                The_Count := @ - 1;
-                The_Actual.Count := @ + 1;
-              end if;
-            end;
-          end loop;
-        end;
-        if The_Sequences(2).Count < The_Sequence.Count then
-          if The_Sequences(2).Count > The_Sequences(1).Count then
-            The_Sequences(1) := The_Sequences(2);
+        for Row in Green_Grid'range(1) loop
+          The_Right_Angle := Right_Angle_At (Row, Column);
+          if The_Right_Angle.Size > Max_Right_Angle.Size then
+            Max_Right_Angle := The_Right_Angle;
           end if;
-          The_Sequences(2) := The_Sequence;
-        elsif The_Sequences(1).Count < The_Sequence.Count then
-          The_Sequences(1) := The_Sequences(2);
-          The_Sequences(2) := The_Sequence;
-        end if;
-        The_Sequence.Count := 0;
+        end loop;
       end loop;
-      return The_Sequences;
-    end Evaluated_Row_Sequences;
+      return Max_Right_Angle;
+    end Evaluated_Max_Rigth_Angle;
 
-    Max_Row_Sequences : constant Row_Sequences := Evaluated_Row_Sequences;
+    use type Raw.Rows;
+    use type Raw.Columns;
+
+    RA            : constant Right_Angle := Evaluated_Max_Rigth_Angle;
+    Row_Offset    : constant Raw.Rows := (RA.Ends.Row - RA.Edge.Row) / 2;
+    Column_Offset : constant Raw.Columns := (RA.Ends.Column - RA.Edge.Column) / 2;
+
+    function Is_In_RA (Row    : Raw.Rows;
+                       Column : Raw.Columns) return Boolean is
+    begin
+      return Row    > RA.Edge.Row    and Row    < RA.Ends.Row and
+             Column > RA.Edge.Column and Column < RA.Ends.Column;
+     end Is_In_RA;
+
+    function Evaluated_Half_Flux_Diameter (Center : out Raw.Position) return Natural is
+      First_Column : Raw.Columns := RA.Edge.Column;
+      Last_Column  : Raw.Columns := RA.Ends.Column;
+      First_Row    : Raw.Rows := RA.Edge.Row;
+      Last_Row     : Raw.Rows := RA.Ends.Row;
+      Column_Sum   : Huge_Natural := 0;
+      Row_Sum      : Huge_Natural := 0;
+      The_Count    : Huge_Natural := 0;
+    begin
+      if First_Column > Column_Offset then
+        First_Column := @ - Column_Offset;
+      else
+        First_Column := Raw.Columns'first;
+      end if;
+      if Last_Column < Green_Grid'last(2) - Column_Offset then
+        Last_Column := @ + Column_Offset;
+      else
+        Last_Column := Green_Grid'last(2);
+      end if;
+      if First_Row > Row_Offset then
+        First_Row := @ - Row_Offset;
+      else
+        First_Row := Raw.Rows'first;
+      end if;
+      if Last_Row < Green_Grid'last(1) - Row_Offset then
+        Last_Row := @ + Row_Offset;
+      else
+        Last_Row := Green_Grid'last(1);
+      end if;
+      for The_Row in First_Row .. Last_Row loop
+        for The_Column in First_Column .. Last_Column loop
+          if Green_Grid(The_Row, The_Column) > Half_Flux or else Is_In_RA (The_Row, The_Column) then
+            Column_Sum := @ + Huge_Natural(The_Column);
+            Row_Sum := @ + Huge_Natural(The_Row);
+            The_Count := @ + 1;
+          end if;
+        end loop;
+      end loop;
+      Center := (Column => Raw.Columns (Column_Sum / The_Count),
+                 Row    => Raw.Rows (Row_Sum / The_Count));
+      return Natural (2.0 * NF.Sqrt (Float(The_Count) / Pi));
+    end Evaluated_Half_Flux_Diameter;
+
+    The_Center : Raw.Position;
+
+    Half_Flux_Diameter : constant Natural := Evaluated_Half_Flux_Diameter (The_Center);
 
   begin
     IO.New_Line;
-    IO.Put_Line ("Green Grid:");
     if Natural(Green_Grid'last(1)) <= 20 then
+      IO.Put_Line ("Green Grid:");
       Show_Green_Grid;
     end if;
-    IO.Put_Line ("Half_Flux:" & Half_Flux'image);
-    IO.Put_Line ("Column Sequence:" & Max_Column_Sequences'image);
-    IO.Put_Line ("Row Sequence:" & Max_Row_Sequences'image);
+    IO.Put_Line ("Half Flux:" & Half_Flux'image);
+    IO.Put_Line ("Center Position:" & The_Center'image);
+    IO.Put_Line ("Half Flux Diameter:" & Half_Flux_Diameter'image);
   end;
+
 exception
 when Item: others =>
   Ada.Text_IO.Put_Line (Exceptions.Information_Of (Item));

@@ -38,6 +38,16 @@ package Raw is
   type Columns is range 1 .. Max_With_Or_Height;
   type Rows    is range 1 .. Max_With_Or_Height;
 
+  type Position is record
+    Column : Columns;
+    Row    : Rows;
+  end record;
+
+  type Row_Range is record
+    First : Rows;
+    Last  : Rows;
+  end record;
+
   type Green_Grid is array (Rows range <>, Columns range <>) of Pixel;
 
   --  Compute the central square crop of the processed image and return
