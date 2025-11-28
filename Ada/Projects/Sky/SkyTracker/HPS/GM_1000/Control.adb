@@ -16,6 +16,7 @@
 pragma Style_White_Elephant;
 
 with Application;
+with Camera;
 with Clock;
 with Error;
 with Gui;
@@ -403,6 +404,7 @@ package body Control is
         Http_Server.Shutdown;
         Targets.Stop;
         Telescope.Close;
+        Camera.Close;
         exit;
       end case;
     end loop;
@@ -415,6 +417,7 @@ package body Control is
     Targets.Stop;
     Gui.Close;
     Telescope.Close;
+    Camera.Close;
     Action_Handler.Enable_Termination;
   end Manager;
 
@@ -481,6 +484,7 @@ package body Control is
     Read_Data;
     begin
       Clock.Start;
+      Camera.Start;
       Telescope.Start (Information_Update_Handler'access);
       Targets.Start (Clear    => User.Clear_Targets'access,
                      Define   => User.Define'access,
@@ -491,9 +495,11 @@ package body Control is
                     Termination'access);
       Stellarium.Close;
       Stellarium.Shutdown;
+      Camera.Finish;
       Clock.Finish;
     exception
     when others =>
+      Camera.Finish;
       Clock.Finish;
       raise;
     end;

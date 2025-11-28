@@ -53,7 +53,9 @@ package body Canon is
   protected Event_State is
 
     procedure Reset;
+
     procedure Set_Item (Item : CI.Directory_Item);
+
     entry Wait_For_Item (Item : out CI.Directory_Item);
 
   private
@@ -87,32 +89,26 @@ package body Canon is
   ---------------------------
   -- object event callback --
   ---------------------------
-  function On_Object_Event
-    (Event   : CI.Eds_Object_Event;
-     Object  : CI.Directory_Item;
-     Context : System.Address) return CI.Eds_Error
+  function On_Object_Event (Event   : CI.Eds_Object_Event;
+                            Object  : CI.Directory_Item;
+                            Context : System.Address) return CI.Eds_Error
     with Convention => StdCall;
 
-  function On_Object_Event
-    (Event   : CI.Eds_Object_Event;
-     Object  : CI.Directory_Item;
-     Context : System.Address) return CI.Eds_Error
+  function On_Object_Event (Event   : CI.Eds_Object_Event;
+                            Object  : CI.Directory_Item;
+                            Context : System.Address) return CI.Eds_Error
   is
     pragma Unreferenced (Context);
     use type CI.Eds_Object_Event;
   begin
-    IO.Put_Line ("[Canon] object event received: " & CI.Eds_Uint32'image (Event));
-
-    if Event = CI.Object_Event_Dir_Item_Created
-      or else Event = CI.Object_Event_Dir_Item_Request_Transfer
-    then
-      IO.Put_Line ("[Canon] -> treating this as DirItem event");
+  --IO.Put_Line ("[Canon] object event received: " & CI.Eds_Uint32'image (Event));
+    if Event = CI.Object_Event_Dir_Item_Created or else Event = CI.Object_Event_Dir_Item_Request_Transfer then
+    --IO.Put_Line ("[Canon] -> treating this as DirItem event");
       Event_State.Set_Item (Object);
-    else
-      IO.Put_Line ("[Canon] -> ignoring (volume/folder/etc.)");
+  --else
+  --  IO.Put_Line ("[Canon] -> ignoring (volume/folder/etc.)");
     end if;
-
-    return 0;  -- EDS_ERR_OK
+    return CI.EDS_OK;
   end On_Object_Event;
 
   Handler : constant CI.Object_Event_Handler := On_Object_Event'access;
@@ -126,46 +122,25 @@ package body Canon is
     raise Canon_Error;
   end Raise_Error;
 
-  ------------------------------
-  -- check EDSDK return codes --
-  ------------------------------
-  procedure Check (E     : CI.Eds_Error;
-                   Where : String) is
+  ------------------------
+  -- Check return codes --
+  ------------------------
+  procedure Check (Where   : String;
+                   Result  : CI.Eds_Error;
+                   Logging : Boolean := True) is
     use type CI.Eds_Error;
   begin
-    if E /= 0 then
-      Raise_Error (Where & " failed, error = " & CI.Eds_Error'image (E));
+    if Logging then
+      IO.Put_Line (Where);
+    end if;
+    if Result /= CI.EDS_OK then
+      Raise_Error (Where & " failed, error =" & CI.Eds_Error'image (Result));
     end if;
   end Check;
 
-  --------------------------------
-  -- set an Eds_Uint32 property --
-  --------------------------------
-  procedure Set_Uint32_Property
-    (Cam         : CI.Camera;
-     Prop        : CI.Eds_Property_Id;
-     Param       : CI.Eds_Int32;
-     Value       : CI.Eds_Uint32;
-     Where_Label : String)
-  is
-    Val   : aliased CI.Eds_Uint32 := Value;
-    Error : CI.Eds_Error;
-    use type CI.Eds_Uint32;
-  begin
-    Error := CI.Set_Property_Data (Cam,
-                                   Prop,
-                                   Param,
-                                   CI.Eds_Uint32'size / 8,
-                                   Val'address);
-
-      Check (Error, Where_Label);  -- raise on any other error
-  end Set_Uint32_Property;
-
-
-  -------------------------------------------------------------
-  -- local mapping for ISO and Tv to Canon EDSDK enum values --
-  -------------------------------------------------------------
-
+  -------------------------------------------------
+  -- Local mapping for ISO to  Canon enum values --
+  -------------------------------------------------
   function To_Eds_Iso (Iso : Iso_Value) return CI.Eds_Uint32 is
   begin
     case Iso is
@@ -181,7 +156,9 @@ package body Canon is
     end case;
   end To_Eds_Iso;
 
-
+  -----------------------------------------------
+  -- Local mapping for Tv to Canon enum values --
+  -----------------------------------------------
   function To_Eds_Tv (T : Exposure_Time) return CI.Eds_Uint32 is
     Tus : constant Natural := Natural(T * 1_000_000.0); -- in Microseconds
   begin
@@ -252,7 +229,6 @@ package body Canon is
   is
     Timeout : constant Duration := Duration(Exposure + 15.0);
 
-    Error       : CI.Eds_Error;
     Camera_List : aliased CI.Camera_List;
     Camera      : aliased CI.Camera;
     Count       : aliased CI.Eds_Uint32;
@@ -261,11 +237,24 @@ package body Canon is
     Start_Time  : constant Ada.Calendar.Time := Ada.Calendar.Clock;
     Timed_Out   : Boolean := False;
 
+    procedure Set_Uint32_Property (Prop        : CI.Eds_Property_Id;
+                                   Value       : CI.Eds_Uint32;
+                                   Where_Label : String)
+    is
+      Val : aliased CI.Eds_Uint32 := Value;
+      use type CI.Eds_Uint32;
+    begin
+      Check (Where_Label,
+             CI.Set_Property_Data (Ref           => Camera,
+                                   Property_Id   => Prop,
+                                   Param         => 0,
+                                   Property_Size => CI.Eds_Uint32'size / 8,
+                                   Property_Data => Val'address));
+    end Set_Uint32_Property;
+
   begin -- Capture
-    IO.Put_Line ("[Canon] Initializing EDSDK...");
-    Error := CI.Initialize_SDK;
-    Check (Error, "Initialize_SDK");
-    IO.Put_Line ("[Canon] SDK initialized.");
+    Check ("Initialize SDK",
+           CI.Initialize_SDK);
 
     declare
       use type CI.Eds_Int32;
@@ -273,98 +262,66 @@ package body Canon is
       use type CI.Directory_Item;
       use type Ada.Calendar.Time;
     begin
-      IO.Put_Line ("[Canon] Getting camera list...");
-      Error := CI.Get_Camera_List (Camera_List'access);
-      Check (Error, "Get_Camera_List");
-
-      Error := CI.Get_Child_Count (Camera_List, Count'access);
-      Check (Error, "Get_Child_Count");
-
-      IO.Put_Line ("[Canon] Number of detected cameras: "
-                   & CI.Eds_Uint32'image (Count));
+      Check ("Get camera list",
+             CI.Get_Camera_List (Camera_List'access));
+      Check ("Get child count",
+             CI.Get_Child_Count (Camera_List, Count'access));
+      IO.Put_Line ("Number of detected cameras:" & CI.Eds_Uint32'image (Count));
 
       if Count = 0 then
-        IO.Put_Line
-          ("[Canon] No Canon cameras found. " &
-           "Check USB connection and that EOS Utility is not running.");
+        IO.Put_Line ("No Canon cameras found. Check USB connection and that EOS Utility is not running.");
       else
-        IO.Put_Line ("[Canon] Getting camera at index 0...");
-        Error := CI.Get_Camera_At_Index (Camera_List, 0, Camera'access);
-        Check (Error, "Get_Camera_At_Index");
+        Check ("Get camera at index 0",
+               CI.Get_Camera_At_Index (Camera_List, 0, Camera'access));
 
-        IO.Put_Line ("[Canon] Reading device information...");
-        Error := CI.Get_Device_Info (Camera, Device_Info'access);
-        Check (Error, "Get_Device_Info");
-        IO.Put_Line ("[Canon] Camera description: "
-                     & String_Of (Device_Info.Sz_Device_Description));
-        IO.Put_Line ("[Canon] Device Subtype    :"
-                     & Device_Info.Device_Sub_Type'image);
+        Check ("Get device information",
+               CI.Get_Device_Info (Camera, Device_Info'access));
+        IO.Put_Line ("Camera description: " & String_Of (Device_Info.Sz_Device_Description));
+        IO.Put_Line ("Device subtype:" & Device_Info.Device_Sub_Type'image);
 
-        IO.Put_Line ("[Canon] Opening session to camera ...");
-        Error := CI.Open_Session (Camera);
-        Check (Error, "Open_Session");
-        IO.Put_Line ("[Canon] Session successfully opened.");
+        Check ("Open session",
+               CI.Open_Session (Camera));
 
-        IO.Put_Line ("[Canon] setting image quality to RAW (no JPEG)...");
-        Set_Uint32_Property
-          (Cam         => Camera,
-           Prop        => CI.Prop_Id_Image_Quality,
-           Param       => 0,
-           Value       => CI.Image_Quality_LR,
-           Where_Label => "SetProp(ImageQuality RAW)");
+        Set_Uint32_Property (Prop        => CI.Prop_Id_Image_Quality,
+                             Value       => CI.Image_Quality_LR,
+                             Where_Label => "Set image quality to RAW");
 
-        --  Set ISO
-        IO.Put_Line ("[Canon] setting ISO...");
-        Set_Uint32_Property
-          (Cam         => Camera,
-           Prop        => CI.Prop_Id_ISO,
-           Param       => 0,
-           Value       => To_Eds_Iso (Iso),
-           Where_Label => "SetProp(ISO)");
+        Set_Uint32_Property (Prop        => CI.Prop_Id_ISO,
+                             Value       => To_Eds_Iso (Iso),
+                             Where_Label => "Set ISO" & Iso'image);
 
-        --  Set exposure time (Tv)
-        IO.Put_Line ("[Canon] setting exposure (Tv)...");
-        Set_Uint32_Property
-          (Cam         => Camera,
-           Prop        => CI.Prop_Id_Tv,
-           Param       => 0,
-           Value       => To_Eds_Tv (Exposure),
-           Where_Label => "SetProp(Tv)");
+        Set_Uint32_Property (Prop        => CI.Prop_Id_Tv,
+                             Value       => To_Eds_Tv (Exposure),
+                             Where_Label => "Set exposure (Tv)" & Exposure'image);
 
         Event_State.Reset;
 
-        IO.Put_Line ("[Canon] registering object event handler...");
-        Error := CI.Set_Object_Event_Handler (Camera,
-                                              CI.Object_Event_All,
-                                              Handler,
-                                              System.Null_Address);
-        Check (Error, "Set_Object_Event_Handler");
+        Check ("Register object event handler",
+               CI.Set_Object_Event_Handler (Camera,
+                                            CI.Object_Event_All,
+                                            Handler,
+                                            System.Null_Address));
 
-        IO.Put_Line ("[Canon] triggering single RAW shot...");
-        Error := CI.Send_Command (Camera,
-                                  CI.Camera_Command_Take_Picture,
-                                  0);
-        Check (Error, "Send_Command(Take_Picture)");
+        Check ("Trigger single shot",
+               CI.Send_Command (Camera,
+                                CI.Camera_Command_Take_Picture,
+                                0));
 
         -- wait (with timeout) for a *file* directory item event
         loop
-          Error := CI.Get_Event;
-          if Error /= 0 then
-            IO.Put_Line ("[Canon] Get_Event returned "
-                         & CI.Eds_Error'image (Error));
-          end if;
+          Check ("Get event",
+                 CI.Get_Event, Logging => False);
 
           select
             Event_State.Wait_For_Item (Item);
             declare
               Info : aliased CI.Directory_Item_Info;
             begin
-              Error := CI.Get_Directory_Item_Info (Item, Info'access);
-              Check (Error, "Get_Directory_Item_Info");
+              Check ("Get directory item info",
+                     CI.Get_Directory_Item_Info (Item, Info'access), Logging => False);
 
               if Info.Is_Folder /= 0 then
-                IO.Put_Line ("[Canon] received folder item, ignoring: "
-                             & String_Of (Info.Sz_File_Name));
+              --IO.Put_Line ("received folder item, ignoring: " & String_Of (Info.Sz_File_Name));
                 declare
                   Dummy : CI.Eds_Error := CI.Release (Item);
                 begin
@@ -372,16 +329,20 @@ package body Canon is
                 end;
                 Item := CI.No_Directory;
               else
-                IO.Put_Line ("[Canon] received file item: "
-                             & String_Of (Info.Sz_File_Name));
-                exit;  -- keep this Item for download
+                IO.New_Line;
+                IO.Put_Line ("Received file " & String_Of (Info.Sz_File_Name));
+                exit;
               end if;
             end;
           or
             delay 0.1;
           end select;
+          IO.Put (".");
 
-          exit when Item /= CI.No_Directory;
+          if Item /= CI.No_Directory then
+            IO.Put ("???");
+            exit;
+          end if;
 
           if Ada.Calendar.Clock - Start_Time > Timeout then
             Timed_Out := True;
@@ -390,42 +351,33 @@ package body Canon is
         end loop;
 
         if Timed_Out then
-          IO.Put_Line ("[Canon] timeout: no directory item event received.");
-          -- caller-visible error (still cleaned up below)
-          raise Canon_Error;
+          Raise_Error ("Timeout: no directory item event received");
         else
-          IO.Put_Line ("[Canon] got a directory item from the camera (success).");
-
           declare
             Info              : aliased CI.Directory_Item_Info;
             File_Stream_Write : aliased CI.Stream;
             File_Name         : aliased constant String := Filename & Ascii.Nul;
           begin
-            Error := CI.Get_Directory_Item_Info (Item, Info'access);
-            Check (Error, "Get_Directory_Item_Info (for download)");
+            Check ("Get directory item info",
+                   CI.Get_Directory_Item_Info (Item, Info'access));
 
-            IO.Put_Line ("[Canon] RAW size from camera (bytes): "
-                         & CI.Eds_Uint64'image (Info.Size));
-            IO.Put_Line ("[Canon] downloading file: "
-                         & String_Of (Info.Sz_File_Name));
-            IO.Put_Line ("[Canon] to host file: " & Filename);
+            IO.Put_Line ("RAW size from camera (bytes): " & CI.Eds_Uint64'image (Info.Size));
+            IO.Put_Line ("Download " & String_Of (Info.Sz_File_Name) & " to " & Filename);
 
-            Error := CI.Create_File_Stream
-              (File_Name'address,
-               CI.File_Create_Always,
-               CI.Access_Read_Write,
-               File_Stream_Write'access);
-            Check (Error, "Create_File_Stream(write)");
+            Check ("Create file stream (write)",
+                   CI.Create_File_Stream (File_Name'address,
+                                          CI.File_Create_Always,
+                                          CI.Access_Read_Write,
+                                          File_Stream_Write'access));
 
-            Error := CI.Download (Item, Info.Size, File_Stream_Write);
-            Check (Error, "Download");
+            Check ("Download",
+                   CI.Download (Item, Info.Size, File_Stream_Write));
 
-            Error := CI.Download_Complete (Item);
-            Check (Error, "Download_Complete");
+            Check ("Download complete",
+                   CI.Download_Complete (Item));
 
-            IO.Put_Line ("[Canon] deleting file from camera...");
-            Error := CI.Delete_Directory_Item (Item);
-            Check (Error, "Delete_Directory_Item");
+            Check ("Delete file from camera",
+                    CI.Delete_Directory_Item (Item));
             declare
               Dummy : CI.Eds_Error := CI.Release (File_Stream_Write);
             begin
@@ -435,18 +387,15 @@ package body Canon is
           end;
         end if;
 
-        IO.Put_Line ("[Canon] Closing session...");
-        Error := CI.Close_Session (Camera);
-        Check (Error, "Close_Session");
+        Check ("Close session",
+               CI.Close_Session (Camera));
 
-        IO.Put_Line ("[Canon] Releasing camera handle...");
-        Error := CI.Release (Camera);
-        Check (Error, "Release(Camera)");
+        Check ("Release camera handle",
+               CI.Release (Camera));
       end if;
 
-      IO.Put_Line ("[Canon] Releasing camera list...");
-      Error := CI.Release (Camera_List);
-      Check (Error, "Release(Camera_List)");
+      Check ("Release camera list",
+             CI.Release (Camera_List));
 
     exception
       when Occurrence : others =>
@@ -479,11 +428,10 @@ package body Canon is
         -- add:  raise;
     end;
 
-    IO.Put_Line ("[Canon] Terminating EDSDK...");
-    Error := CI.Terminate_SDK;
-    Check (Error, "Terminate_SDK");
+    Check ("Terminating SDK",
+           CI.Terminate_SDK);
 
-    IO.Put_Line ("[Canon] Finished.");
+    IO.Put_Line ("Finished.");
 
   end Capture;
 

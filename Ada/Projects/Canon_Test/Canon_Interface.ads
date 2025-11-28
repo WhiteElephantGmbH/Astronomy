@@ -36,6 +36,8 @@ package Canon_Interface is
   subtype Eds_Uint64  is C.unsigned_long_long;
   subtype Eds_Int64   is C.long_long;
 
+  EDS_OK : constant Eds_Error := 0;
+
   --  Access / create disposition (from EDSDKTypes.h)
   Access_Read       : constant Eds_Int32 := 0;
   Access_Write      : constant Eds_Int32 := 1;
@@ -304,12 +306,12 @@ package Canon_Interface is
   K_Tv_Bulb   : constant Eds_Uint32 := 16#0C#;
   K_Tv_30     : constant Eds_Uint32 := 16#10#;
   K_TV_25     : constant Eds_Uint32 := 16#13#;
-  K_TV_20     : constant Eds_Uint32 := 16#14#;
+  K_TV_20     : constant Eds_Uint32 := 16#15#; -- (1/3)
   K_TV_15     : constant Eds_Uint32 := 16#18#;
   K_TV_13     : constant Eds_Uint32 := 16#1B#;
-  K_TV_10     : constant Eds_Uint32 := 16#1C#;
+  K_TV_10     : constant Eds_Uint32 := 16#1D#; -- (1/3)
   K_TV_8      : constant Eds_Uint32 := 16#20#;
-  K_TV_6      : constant Eds_Uint32 := 16#24#;
+  K_TV_6      : constant Eds_Uint32 := 16#23#; -- (1/3)
   K_TV_5      : constant Eds_Uint32 := 16#25#;
   K_TV_4      : constant Eds_Uint32 := 16#28#;
   K_TV_3_2    : constant Eds_Uint32 := 16#2B#;
@@ -322,10 +324,10 @@ package Canon_Interface is
   K_TV_0_6    : constant Eds_Uint32 := 16#3D#;
   K_TV_0_5    : constant Eds_Uint32 := 16#40#;
   K_TV_0_4    : constant Eds_Uint32 := 16#43#;
-  K_TV_0_3    : constant Eds_Uint32 := 16#44#;
+  K_TV_0_3    : constant Eds_Uint32 := 16#45#; -- (1/3)
   K_TV_D_4    : constant Eds_Uint32 := 16#48#;
   K_TV_D_5    : constant Eds_Uint32 := 16#4B#;
-  K_TV_D_6    : constant Eds_Uint32 := 16#4C#;
+  K_TV_D_6    : constant Eds_Uint32 := 16#4D#; -- (1/3)
   K_TV_D_8    : constant Eds_Uint32 := 16#50#;
   K_TV_D_10   : constant Eds_Uint32 := 16#54#;
   K_TV_D_13   : constant Eds_Uint32 := 16#55#;

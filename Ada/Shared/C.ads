@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                               (c) 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                           (c) 2025 by White Elephant GmbH, Schaffhausen, Switzerland                              *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,48 +15,15 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Error;
-with Picture;
-with Section;
+with Interfaces.C;
 
-package body Camera.Parameter is
+package C is
 
-  Iso_Key      : constant String := "Iso";
-  Exposure_Key : constant String := "Exposure";
+  subtype Int                is Interfaces.C.int;
+  subtype Long_Long          is Interfaces.C.long_long;
+  subtype Unsigned_Long      is Interfaces.C.unsigned_long;
+  subtype Unsigned_Long_Long is Interfaces.C.unsigned_long_long;
 
+  type Name is new String with Pack, Convention => C;
 
-  procedure Define (Handle : Configuration.File_Handle) is
-  begin
-    Define_Picture (Filename => Picture.Filename);
-    Section.Set (Configuration.Handle_For (Handle, Id));
-    declare
-      Exposure_Image : constant String := Section.String_Value_Of (Exposure_Key);
-    begin
-      if Exposure_Image /= "" then
-        Define_Exposure (Exposure => Exposure_Time'value(Exposure_Image));
-      end if;
-    exception
-    when others =>
-      Error.Raise_With ("Unknown exposure time: " & Exposure_Image);
-    end;
-    declare
-      Iso_Image : constant String := Section.String_Value_Of (Iso_Key);
-    begin
-      if Iso_Image /= "" then
-        Define_Iso (Iso => Iso_Value'value(Section.String_Of (Iso_Key, Id)));
-      end if;
-    exception
-    when others =>
-      Error.Raise_With ("Unknown ISO value: " & Iso_Image);
-    end;
-  end Define;
-
-
-  procedure Defaults (Put : access procedure (Item : String)) is
-  begin
-    Put ("[" & Id & "]");
-    Put (Exposure_Key & " = " & "10.0");
-    Put (Iso_Key & "      = " & "6400");
-  end Defaults;
-
-end Camera.Parameter;
+end C;

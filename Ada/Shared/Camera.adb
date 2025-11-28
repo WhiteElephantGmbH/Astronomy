@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                               (c) 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2023 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,48 +15,53 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Error;
-with Picture;
-with Section;
+with Camera.Canon;
+with Traces;
 
-package body Camera.Parameter is
+package body Camera is
 
-  Iso_Key      : constant String := "Iso";
-  Exposure_Key : constant String := "Exposure";
+  package Log is new Traces (Id);
 
-
-  procedure Define (Handle : Configuration.File_Handle) is
+  procedure Start is
   begin
-    Define_Picture (Filename => Picture.Filename);
-    Section.Set (Configuration.Handle_For (Handle, Id));
-    declare
-      Exposure_Image : constant String := Section.String_Value_Of (Exposure_Key);
-    begin
-      if Exposure_Image /= "" then
-        Define_Exposure (Exposure => Exposure_Time'value(Exposure_Image));
-      end if;
-    exception
-    when others =>
-      Error.Raise_With ("Unknown exposure time: " & Exposure_Image);
-    end;
-    declare
-      Iso_Image : constant String := Section.String_Value_Of (Iso_Key);
-    begin
-      if Iso_Image /= "" then
-        Define_Iso (Iso => Iso_Value'value(Section.String_Of (Iso_Key, Id)));
-      end if;
-    exception
-    when others =>
-      Error.Raise_With ("Unknown ISO value: " & Iso_Image);
-    end;
-  end Define;
+    Canon.Startup;
+  end Start;
 
-
-  procedure Defaults (Put : access procedure (Item : String)) is
+  procedure Define_Picture (Filename : String) is
   begin
-    Put ("[" & Id & "]");
-    Put (Exposure_Key & " = " & "10.0");
-    Put (Iso_Key & "      = " & "6400");
-  end Defaults;
+    Canon.Define (Filename);
+  end Define_Picture;
 
-end Camera.Parameter;
+
+  procedure Define_Exposure (Exposure : Exposure_Time) is
+  begin
+    Canon.Define (Exposure);
+  end Define_Exposure;
+
+
+  procedure Define_Iso (Iso : Iso_Value) is
+  begin
+    Canon.Define (Iso);
+  end Define_Iso;
+
+
+  procedure Capture is
+  begin
+    Log.Write ("capture started");
+    Canon.Capture_Picture;
+  end Capture;
+
+
+  procedure Stop is
+  begin
+    --Canon.Stop_Capture; !!!
+    Log.Write ("Capture stopped");
+  end Stop;
+
+
+  procedure Finish is
+  begin
+    Canon.Shutdown;
+  end Finish;
+
+end Camera;
