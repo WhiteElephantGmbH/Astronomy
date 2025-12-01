@@ -15,28 +15,39 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-pragma Build (Description => "GID test",
-              Version     => (1, 0, 0, 0),
-              Kind        => Console,
-              Icon        => False,
-              Compiler    => "GNATPRO\23.0");
+with Text;
 
-with Ada.Text_IO;
-with Camera;
-with Exceptions;
-with Exposure;
-with Sensitivity;
+package body Sensitivity is
 
-procedure Camera_Test is
-begin
-  Ada.Text_IO.Put_Line ("Camera Test");
-  Ada.Text_IO.Put_Line ("===========");
+  function From_Camera return Item is ((Is_From_Camera => True,
+                                        others         => <>));
 
-  Camera.Start;
-  Camera.Capture (Exposure.Value(3.2), Sensitivity.Value(3200));
-  Camera.Finish;
+  function Value (Iso_Value : Iso) return Item is
+  begin
+    return (Is_From_Camera => False,
+            Value          => Iso_Value);
+  end Value;
 
-exception
-when Item: others =>
-  Ada.Text_IO.Put_Line (Exceptions.Information_Of (Item));
-end Camera_Test;
+
+  function Value (Image : String) return Item is
+  begin
+    return Value (Iso'value(Image));
+  end Value;
+
+
+  function Is_From_Camera (The_Item : Item) return Boolean is (The_Item.Is_From_Camera);
+
+  function Value (The_Item : Item) return Iso is (The_Item.Value);
+
+
+  procedure Put_Image (S : in out Ada.Strings.Text_Buffers.Root_Buffer_Type'class;
+                       V :        Item) is
+  begin
+    if V.Is_From_Camera then
+      S.Put ("[]");
+    else
+      S.Put (Text.Trimmed (V.Value'image));
+    end if;
+  end Put_Image;
+
+end Sensitivity;

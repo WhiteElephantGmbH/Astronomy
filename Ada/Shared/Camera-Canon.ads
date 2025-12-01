@@ -21,11 +21,8 @@ private package Camera.Canon is
 
   procedure Define (Filename : String);
 
-  procedure Define (Iso : Iso_Value);
-
-  procedure Define (Exposure : Exposure_Time);
-
-  procedure Capture_Picture;
+  procedure Capture_Picture (Time : Exposure.Item;
+                             Iso  : Sensitivity.Item);
 
   procedure Shutdown;
 

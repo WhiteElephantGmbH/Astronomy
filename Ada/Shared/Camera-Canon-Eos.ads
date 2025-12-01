@@ -307,7 +307,7 @@ package Camera.Canon.Eos is
 
   -- Tv codes (EdsTv_*) for the values allowed by Exposure_Time
   K_Tv_Bulb   : constant Uint32 := 16#0C#;
-  K_Tv_30     : constant Uint32 := 16#10#;
+  K_TV_30     : constant Uint32 := 16#10#;
   K_TV_25     : constant Uint32 := 16#13#;
   K_TV_20     : constant Uint32 := 16#15#; -- (1/3)
   K_TV_15     : constant Uint32 := 16#18#;

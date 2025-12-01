@@ -15,28 +15,35 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-pragma Build (Description => "GID test",
-              Version     => (1, 0, 0, 0),
-              Kind        => Console,
-              Icon        => False,
-              Compiler    => "GNATPRO\23.0");
+private with Ada.Strings.Text_Buffers;
 
-with Ada.Text_IO;
-with Camera;
-with Exceptions;
-with Exposure;
-with Sensitivity;
+package Sensitivity is
 
-procedure Camera_Test is
-begin
-  Ada.Text_IO.Put_Line ("Camera Test");
-  Ada.Text_IO.Put_Line ("===========");
+  type Iso is new Natural range 100 .. 25600 with
+    Static_Predicate => Iso in 100 | 200 | 400 | 800 | 1600 | 3200 | 6400 | 12800 | 25600;
 
-  Camera.Start;
-  Camera.Capture (Exposure.Value(3.2), Sensitivity.Value(3200));
-  Camera.Finish;
+  type Item is tagged private;
 
-exception
-when Item: others =>
-  Ada.Text_IO.Put_Line (Exceptions.Information_Of (Item));
-end Camera_Test;
+  function Value (Image : String) return Item;
+
+  function Value (Iso_Value : Iso) return Item;
+
+  function From_Camera return Item;
+
+  function Is_From_Camera (The_Item : Item) return Boolean;
+
+  function Value (The_Item : Item) return Iso;
+
+private
+
+  type Item is tagged record
+    Value          : Iso;
+    Is_From_Camera : Boolean := True;
+  end record
+  with
+    Put_Image => Put_Image;
+
+  procedure Put_Image (S : in out Ada.Strings.Text_Buffers.Root_Buffer_Type'class;
+                       V :        Item);
+
+end Sensitivity;

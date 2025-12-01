@@ -31,12 +31,8 @@ package body Camera.Canon is
 
     entry Define (Filename : String);
 
-    entry Define (Exposure : Exposure_Time);
-
-    entry Define (Iso : Iso_Value);
-
-    entry Capture_Picture;
-
+    entry Capture_Picture (Time : Exposure.Item;
+                           Iso  : Sensitivity.Item);
     entry Shutdown;
 
   end Control;
@@ -56,21 +52,10 @@ package body Camera.Canon is
   end Define;
 
 
-  procedure Define (Exposure : Exposure_Time) is
+  procedure Capture_Picture (Time : Exposure.Item;
+                             Iso  : Sensitivity.Item) is
   begin
-    The_Control.Define (Exposure);
-  end Define;
-
-
-  procedure Define (Iso : Iso_Value) is
-  begin
-    The_Control.Define (Iso);
-  end Define;
-
-
-  procedure Capture_Picture is
-  begin
-    The_Control.Capture_Picture;
+    The_Control.Capture_Picture (Time, Iso);
   end Capture_Picture;
 
 
@@ -151,9 +136,7 @@ package body Camera.Canon is
 
   task body Control is
 
-    Default_Filename      : constant String := "Raw_Picture.CR2";
-    Default_Iso_Value     : constant Iso_Value := 6400;
-    Default_Exposure_Time : constant Exposure_Time := 4.0;
+    Default_Filename : constant String := "Raw_Picture.CR2";
 
     -----------
     -- Error --
@@ -185,7 +168,7 @@ package body Camera.Canon is
     -------------------------------------------------
     -- Local mapping for ISO to  Canon enum values --
     -------------------------------------------------
-    function To_Iso (Iso : Iso_Value) return Eos.Uint32 is
+    function To_K_Iso (Iso : Sensitivity.Iso) return Eos.Uint32 is
     begin
       case Iso is
         when 100   => return Eos.K_ISO_100;
@@ -198,76 +181,73 @@ package body Camera.Canon is
         when 12800 => return Eos.K_ISO_12800;
         when 25600 => return Eos.K_ISO_25600;
       end case;
-    end To_Iso;
+    end To_K_Iso;
 
     -----------------------------------------------
     -- Local mapping for Tv to Canon enum values --
     -----------------------------------------------
-    function To_Tv (T : Exposure_Time) return Eos.Uint32 is
-      Tus : constant Natural := Natural(T * 1_000_000.0); -- in Microseconds
+    function To_K_Tv (Tv : Exposure.Tv) return Eos.Uint32 is
     begin
-      case Tus is
-      when 30_000_000 => return Eos.K_Tv_30;
-      when 25_000_000 => return Eos.K_TV_25;
-      when 20_000_000 => return Eos.K_TV_20;
-      when 15_000_000 => return Eos.K_TV_15;
-      when 13_000_000 => return Eos.K_TV_13;
-      when 10_000_000 => return Eos.K_TV_10;
-      when  8_000_000 => return Eos.K_TV_8;
-      when  6_000_000 => return Eos.K_TV_6;
-      when  5_000_000 => return Eos.K_TV_5;
-      when  4_000_000 => return Eos.K_TV_4;
-      when  3_200_000 => return Eos.K_TV_3_2;
-      when  2_500_000 => return Eos.K_TV_2_5;
-      when  2_000_000 => return Eos.K_TV_2;
-      when  1_600_000 => return Eos.K_TV_1_6;
-      when  1_300_000 => return Eos.K_TV_1_3;
-      when  1_000_000 => return Eos.K_TV_1;
-      when  0_800_000 => return Eos.K_TV_0_8;
-      when  0_600_000 => return Eos.K_TV_0_6;
-      when  0_500_000 => return Eos.K_TV_0_5;
-      when  0_400_000 => return Eos.K_TV_0_4;
-      when  0_300_000 => return Eos.K_TV_0_3;
-      when  0_250_000 => return Eos.K_TV_D_4;
-      when  0_200_000 => return Eos.K_TV_D_5;
-      when  0_166_666 => return Eos.K_TV_D_6;
-      when  0_125_000 => return Eos.K_TV_D_8;
-      when  0_100_000 => return Eos.K_TV_D_10;
-      when  0_076_923 => return Eos.K_TV_D_13;
-      when  0_066_666 => return Eos.K_TV_D_15;
-      when  0_050_000 => return Eos.K_TV_D_20;
-      when  0_040_000 => return Eos.K_TV_D_25;
-      when  0_033_333 => return Eos.K_TV_D_30;
-      when  0_025_000 => return Eos.K_TV_D_40;
-      when  0_020_000 => return Eos.K_TV_D_50;
-      when  0_016_666 => return Eos.K_TV_D_60;
-      when  0_012_500 => return Eos.K_TV_D_80;
-      when  0_010_000 => return Eos.K_TV_D_100;
-      when  0_008_000 => return Eos.K_TV_D_125;
-      when  0_006_250 => return Eos.K_TV_D_160;
-      when  0_005_000 => return Eos.K_TV_D_200;
-      when  0_004_000 => return Eos.K_TV_D_250;
-      when  0_003_125 => return Eos.K_TV_D_320;
-      when  0_002_500 => return Eos.K_TV_D_400;
-      when  0_002_000 => return Eos.K_TV_D_500;
-      when  0_001_562 => return Eos.K_TV_D_640;
-      when  0_001_250 => return Eos.K_TV_D_800;
-      when  0_001_000 => return Eos.K_TV_D_1000;
-      when  0_000_800 => return Eos.K_TV_D_1250;
-      when  0_000_625 => return Eos.K_TV_D_1600;
-      when  0_000_500 => return Eos.K_TV_D_2000;
-      when  0_000_400 => return Eos.K_TV_D_2500;
-      when  0_000_312 => return Eos.K_TV_D_3200;
-      when  0_000_250 => return Eos.K_TV_D_4000;
-      when others =>
-        Raise_Error ("Not supported exposure time:" & T'image & " seconds");
+      case Tv is
+        when Exposure.Tv_30_S     => return Eos.K_TV_30;
+        when Exposure.Tv_25_S     => return Eos.K_TV_25;
+        when Exposure.Tv_20_S     => return Eos.K_TV_20;
+        when Exposure.Tv_15_S     => return Eos.K_TV_15;
+        when Exposure.Tv_13_S     => return Eos.K_TV_13;
+        when Exposure.Tv_10_S     => return Eos.K_TV_10;
+        when Exposure.Tv_8_S      => return Eos.K_TV_8;
+        when Exposure.Tv_6_S      => return Eos.K_TV_6;
+        when Exposure.Tv_5_S      => return Eos.K_TV_5;
+        when Exposure.Tv_4_S      => return Eos.K_TV_4;
+        when Exposure.Tv_3_2_S    => return Eos.K_TV_3_2;
+        when Exposure.Tv_2_5_S    => return Eos.K_TV_2_5;
+        when Exposure.Tv_2_S      => return Eos.K_TV_2;
+        when Exposure.Tv_1_6_S    => return Eos.K_TV_1_6;
+        when Exposure.Tv_1_3_S    => return Eos.K_TV_1_3;
+        when Exposure.Tv_1_S      => return Eos.K_TV_1;
+        when Exposure.Tv_0_8_S    => return Eos.K_TV_0_8;
+        when Exposure.Tv_0_6_S    => return Eos.K_TV_0_6;
+        when Exposure.Tv_0_5_S    => return Eos.K_TV_0_5;
+        when Exposure.Tv_0_4_S    => return Eos.K_TV_0_4;
+        when Exposure.Tv_0_3_S    => return Eos.K_TV_0_3;
+        when Exposure.Tv_D_4_S    => return Eos.K_TV_D_4;
+        when Exposure.Tv_D_5_S    => return Eos.K_TV_D_5;
+        when Exposure.Tv_D_6_S    => return Eos.K_TV_D_6;
+        when Exposure.Tv_D_8_S    => return Eos.K_TV_D_8;
+        when Exposure.Tv_D_10_S   => return Eos.K_TV_D_10;
+        when Exposure.Tv_D_13_S   => return Eos.K_TV_D_13;
+        when Exposure.Tv_D_15_S   => return Eos.K_TV_D_15;
+        when Exposure.Tv_D_20_S   => return Eos.K_TV_D_20;
+        when Exposure.Tv_D_25_S   => return Eos.K_TV_D_25;
+        when Exposure.Tv_D_30_S   => return Eos.K_TV_D_30;
+        when Exposure.Tv_D_40_S   => return Eos.K_TV_D_40;
+        when Exposure.Tv_D_50_S   => return Eos.K_TV_D_50;
+        when Exposure.Tv_D_60_S   => return Eos.K_TV_D_60;
+        when Exposure.Tv_D_80_S   => return Eos.K_TV_D_80;
+        when Exposure.Tv_D_100_S  => return Eos.K_TV_D_100;
+        when Exposure.Tv_D_125_S  => return Eos.K_TV_D_125;
+        when Exposure.Tv_D_160_S  => return Eos.K_TV_D_160;
+        when Exposure.Tv_D_200_S  => return Eos.K_TV_D_200;
+        when Exposure.Tv_D_250_S  => return Eos.K_TV_D_250;
+        when Exposure.Tv_D_320_S  => return Eos.K_TV_D_320;
+        when Exposure.Tv_D_400_S  => return Eos.K_TV_D_400;
+        when Exposure.Tv_D_500_S  => return Eos.K_TV_D_500;
+        when Exposure.Tv_D_640_S  => return Eos.K_TV_D_640;
+        when Exposure.Tv_D_800_S  => return Eos.K_TV_D_800;
+        when Exposure.Tv_D_1000_S => return Eos.K_TV_D_1000;
+        when Exposure.Tv_D_1250_S => return Eos.K_TV_D_1250;
+        when Exposure.Tv_D_1600_S => return Eos.K_TV_D_1600;
+        when Exposure.Tv_D_2000_S => return Eos.K_TV_D_2000;
+        when Exposure.Tv_D_2500_S => return Eos.K_TV_D_2500;
+        when Exposure.Tv_D_3200_S => return Eos.K_TV_D_3200;
+        when Exposure.Tv_D_4000_S => return Eos.K_TV_D_4000;
       end case;
-    end To_Tv;
+    end To_K_Tv;
 
 
-    The_Filename      : Text.String   := [Default_Filename];
-    The_Exposure_Time : Exposure_Time := Default_Exposure_Time;
-    The_Iso_Value     : Iso_Value     := Default_Iso_Value;
+    The_Filename : Text.String   := [Default_Filename];
+    The_Exposure : Exposure.Item;
+    The_Iso      : Sensitivity.Item;
 
     type Session is record
       Device_List : aliased Eos.Device_List;
@@ -379,19 +359,28 @@ package body Camera.Canon is
     procedure Start_Capture is
 
       Start_Time : constant Ada.Calendar.Time := Ada.Calendar.Clock;
-      Timeout    : constant Duration := Duration(The_Exposure_Time + 15.0);
+      Timeout    : constant Duration := Duration(The_Exposure.Time) + 15.0;
       The_Item   : Eos.Directory_Item := Eos.No_Directory;
 
       use type Eos.Int32;
       use type Ada.Calendar.Time;
 
     begin -- Capture
-      Set (Property    => Eos.Prop_Id_Tv,
-           Value       => To_Tv (The_Exposure_Time),
-           Where_Label => "Set exposure (Tv)" & The_Exposure_Time'image);
-      Set (Property    => Eos.Prop_Id_ISO,
-           Value       => To_Iso (The_Iso_Value),
-           Where_Label => "Set ISO" & The_Iso_Value'image);
+      case The_Exposure.Mode is
+      when Exposure.Tv_Mode =>
+        Set (Property    => Eos.Prop_Id_Tv,
+             Value       => To_K_Tv (The_Exposure.Time_Value),
+             Where_Label => "Set exposure (Tv) " & The_Exposure'image);
+      when Exposure.Timer_Mode =>
+        raise Program_Error; -- Bulp not implemented
+      when Exposure.From_Camera =>
+        null;
+      end case;
+      if not The_Iso.Is_From_Camera then
+        Set (Property    => Eos.Prop_Id_ISO,
+             Value       => To_K_Iso (The_Iso.Value),
+             Where_Label => "Set ISO " & The_Iso'image);
+      end if;
       Event_State.Reset;
 
       Check ("Register object event handler",
@@ -501,15 +490,11 @@ package body Camera.Canon is
           The_Filename := [Filename];
         end;
       or
-        accept Define (Exposure : Exposure_Time) do
-          The_Exposure_Time := Exposure;
+        accept Capture_Picture (Time : Exposure.Item;
+                                Iso  : Sensitivity.Item) do
+          The_Exposure := Time;
+          The_Iso := Iso;
         end;
-      or
-        accept Define (Iso : Iso_Value) do
-          The_Iso_Value := Iso;
-        end;
-      or
-        accept Capture_Picture;
         Open;
         Start_Capture;
         Close;

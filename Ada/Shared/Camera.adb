@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2023 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2023 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -33,22 +33,11 @@ package body Camera is
   end Define_Picture;
 
 
-  procedure Define_Exposure (Exposure : Exposure_Time) is
-  begin
-    Canon.Define (Exposure);
-  end Define_Exposure;
-
-
-  procedure Define_Iso (Iso : Iso_Value) is
-  begin
-    Canon.Define (Iso);
-  end Define_Iso;
-
-
-  procedure Capture is
+  procedure Capture (Time : Exposure.Item    := Exposure.From_Camera;
+                     Iso  : Sensitivity.Item := Sensitivity.From_Camera) is
   begin
     Log.Write ("capture started");
-    Canon.Capture_Picture;
+    Canon.Capture_Picture (Time, Iso);
   end Capture;
 
 
@@ -57,7 +46,6 @@ package body Camera is
     --Canon.Stop_Capture; !!!
     Log.Write ("Capture stopped");
   end Stop;
-
 
   procedure Finish is
   begin
