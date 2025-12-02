@@ -20,19 +20,16 @@ with Sensitivity;
 
 package Camera is
 
+  type Model is (Canon_Eos_6D, Canon_Eos_60D);
+
   procedure Start;
 
-  procedure Capture (Time : Exposure.Item := Exposure.From_Camera;
-                     Iso  : Sensitivity.Item := Sensitivity.From_Camera);
+  procedure Capture (Filename : String;
+                     Time     : Exposure.Item := Exposure.From_Camera;
+                     Iso      : Sensitivity.Item := Sensitivity.From_Camera);
 
   procedure Stop;
 
   procedure Finish;
-
-private
-
-  Id : constant String := "Camera";
-
-  procedure Define_Picture (Filename : String);
 
 end Camera;

@@ -20,24 +20,20 @@ with Traces;
 
 package body Camera is
 
-  package Log is new Traces (Id);
+  package Log is new Traces ("Camera");
 
   procedure Start is
   begin
-    Canon.Startup;
+    Canon.Start_Control;
   end Start;
 
-  procedure Define_Picture (Filename : String) is
-  begin
-    Canon.Define (Filename);
-  end Define_Picture;
 
-
-  procedure Capture (Time : Exposure.Item    := Exposure.From_Camera;
-                     Iso  : Sensitivity.Item := Sensitivity.From_Camera) is
+  procedure Capture (Filename : String;
+                     Time     : Exposure.Item    := Exposure.From_Camera;
+                     Iso      : Sensitivity.Item := Sensitivity.From_Camera) is
   begin
     Log.Write ("capture started");
-    Canon.Capture_Picture (Time, Iso);
+    Canon.Capture_Picture (Filename, Time, Iso);
   end Capture;
 
 
@@ -49,7 +45,7 @@ package body Camera is
 
   procedure Finish is
   begin
-    Canon.Shutdown;
+    Canon.End_Control;
   end Finish;
 
 end Camera;

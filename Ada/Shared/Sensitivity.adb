@@ -48,6 +48,9 @@ package body Sensitivity is
     else
       S.Put (Text.Trimmed (V.Value'image));
     end if;
+  exception
+  when others =>
+    null;
   end Put_Image;
 
 end Sensitivity;

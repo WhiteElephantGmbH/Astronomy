@@ -77,7 +77,16 @@ package Exposure is
     Tv_D_2000_S,
     Tv_D_2500_S,
     Tv_D_3200_S,
-    Tv_D_4000_S);
+    Tv_D_4000_S,
+    Tv_D_5000_S,
+    Tv_D_6400_S,
+    Tv_D_8000_S,
+    TV_D_10000_S,
+    TV_D_12800_S,
+    TV_D_16000_S,
+    TV_D_20000_S,
+    TV_D_25600_S,
+    TV_D_32000_S);
 
   type Item is tagged private;
 

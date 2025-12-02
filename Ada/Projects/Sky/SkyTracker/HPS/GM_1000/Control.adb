@@ -404,7 +404,6 @@ package body Control is
         Http_Server.Shutdown;
         Targets.Stop;
         Telescope.Close;
-        Camera.Close;
         exit;
       end case;
     end loop;
@@ -417,7 +416,6 @@ package body Control is
     Targets.Stop;
     Gui.Close;
     Telescope.Close;
-    Camera.Close;
     Action_Handler.Enable_Termination;
   end Manager;
 
@@ -483,8 +481,8 @@ package body Control is
     Start_Stellarium_Server;
     Read_Data;
     begin
-      Clock.Start;
       Camera.Start;
+      Clock.Start;
       Telescope.Start (Information_Update_Handler'access);
       Targets.Start (Clear    => User.Clear_Targets'access,
                      Define   => User.Define'access,

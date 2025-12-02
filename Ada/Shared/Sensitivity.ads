@@ -19,8 +19,12 @@ private with Ada.Strings.Text_Buffers;
 
 package Sensitivity is
 
-  type Iso is new Natural range 100 .. 25600 with
-    Static_Predicate => Iso in 100 | 200 | 400 | 800 | 1600 | 3200 | 6400 | 12800 | 25600;
+  type Iso is new Natural range 6 .. 819200 with
+    Static_Predicate => Iso in  6 |    12 |                     25 |                     50 |
+                              100 |   125 |   160 |    200 |   250 |   320 |    400 |   500 |   640 |    800 |
+                             1000 |  1250 |  1600 |   2000 |  2500 |  3200 |   4000 |  5000 |  6400 |   8000 |
+                            10000 | 12800 | 16000 |  20000 | 25600 | 32000 |  40000 | 51200 | 64000 |  80000 |
+                           102400 |                 204800 |                 409600 |                 819200;
 
   type Item is tagged private;
 

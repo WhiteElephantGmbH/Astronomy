@@ -18,7 +18,6 @@ pragma Style_White_Elephant;
 with Ada.Text_IO;
 with Alignment.Parameter;
 with Application;
-with Camera.Parameter;
 with Clock.Parameter;
 with Configuration;
 with Error;
@@ -73,8 +72,6 @@ package body Parameter is
       Put ("");
       Picture.Parameter.Defaults (Put'access, Height => "0.51", Width => "0.74");
       Put ("");
-      Camera.Parameter.Defaults (Put'access);
-      Put ("");
       Alignment.Parameter.Defaults (Put'access);
       Put ("");
       Stellarium.Parameter.Defaults (Put'access, "10micron");
@@ -101,7 +98,6 @@ package body Parameter is
       Moon.Parameter.Define (Handle);
       Clock.Parameter.Define (Handle);
       Picture.Parameter.Define (Handle);
-      Camera.Parameter.Define (Handle);
       Alignment.Parameter.Define (Handle);
       Stellarium.Parameter.Define (Handle);
     end Read_Values;

@@ -17,13 +17,12 @@ pragma Style_White_Elephant;
 
 private package Camera.Canon is
 
-  procedure Startup;
+  procedure Start_Control;
 
-  procedure Define (Filename : String);
+  procedure Capture_Picture (Filename : String;
+                             Time     : Exposure.Item;
+                             Iso      : Sensitivity.Item);
 
-  procedure Capture_Picture (Time : Exposure.Item;
-                             Iso  : Sensitivity.Item);
-
-  procedure Shutdown;
+  procedure End_Control;
 
 end Camera.Canon;

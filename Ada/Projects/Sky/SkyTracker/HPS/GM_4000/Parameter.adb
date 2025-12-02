@@ -18,7 +18,6 @@ pragma Style_White_Elephant;
 with Ada.Text_IO;
 with Alignment.Parameter;
 with Application;
-with Camera.Parameter;
 with Configuration;
 with Error;
 with File;
@@ -72,8 +71,6 @@ package body Parameter is
       Put ("");
       Picture.Parameter.Defaults (Put'access);
       Put ("");
-      Camera.Parameter.Defaults (Put'access);
-      Put ("");
       Remote.Parameter.Defaults (Put'access, "apo");
       Put ("");
       Alignment.Parameter.Defaults (Put'access);
@@ -101,7 +98,6 @@ package body Parameter is
       Moon.Parameter.Define (Handle);
       Remote.Parameter.Define (Handle);
       Picture.Parameter.Define (Handle);
-      Camera.Parameter.Define (Handle);
       Alignment.Parameter.Define (Handle);
       Stellarium.Parameter.Define (Handle);
     end Read_Values;

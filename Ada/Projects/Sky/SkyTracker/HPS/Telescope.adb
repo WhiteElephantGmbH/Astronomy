@@ -428,7 +428,7 @@ package body Telescope is
       begin
         if Is_Preparing_For_Capture then
           Ten_Micron.Start_Capturing;
-          Camera.Capture;
+          Camera.Capture (Picture.Filename);
           Is_Preparing_For_Capture := False;
         end if;
       end Capture_Handling;

@@ -29,10 +29,9 @@ package body Camera.Canon is
 
   task type Control is
 
-    entry Define (Filename : String);
-
-    entry Capture_Picture (Time : Exposure.Item;
-                           Iso  : Sensitivity.Item);
+    entry Capture_Picture (Filename : String;
+                           Time     : Exposure.Item;
+                           Iso      : Sensitivity.Item);
     entry Shutdown;
 
   end Control;
@@ -40,29 +39,24 @@ package body Camera.Canon is
   The_Control : access Control;
 
 
-  procedure Startup is
+  procedure Start_Control is
   begin
     The_Control := new Control;
-  end Startup;
+  end Start_Control;
 
 
-  procedure Define (Filename : String) is
+  procedure Capture_Picture (Filename : String;
+                             Time     : Exposure.Item;
+                             Iso      : Sensitivity.Item) is
   begin
-    The_Control.Define (Filename);
-  end Define;
-
-
-  procedure Capture_Picture (Time : Exposure.Item;
-                             Iso  : Sensitivity.Item) is
-  begin
-    The_Control.Capture_Picture (Time, Iso);
+    The_Control.Capture_Picture (Filename, Time, Iso);
   end Capture_Picture;
 
 
-  procedure Shutdown is
+  procedure End_Control is
   begin
     The_Control.Shutdown;
-  end Shutdown;
+  end End_Control;
 
 
   ----------------------------------------------------------
@@ -138,6 +132,8 @@ package body Camera.Canon is
 
     Default_Filename : constant String := "Raw_Picture.CR2";
 
+    The_Model : Model;
+
     -----------
     -- Error --
     -----------
@@ -168,25 +164,51 @@ package body Camera.Canon is
     -------------------------------------------------
     -- Local mapping for ISO to  Canon enum values --
     -------------------------------------------------
-    function To_K_Iso (Iso : Sensitivity.Iso) return Eos.Uint32 is
+    function To_K_Iso (Item : Sensitivity.Item) return Eos.Uint32 is
+      Iso : constant Sensitivity.Iso := Item.Value;
     begin
       case Iso is
-        when 100   => return Eos.K_ISO_100;
-        when 200   => return Eos.K_ISO_200;
-        when 400   => return Eos.K_ISO_400;
-        when 800   => return Eos.K_ISO_800;
-        when 1600  => return Eos.K_ISO_1600;
-        when 3200  => return Eos.K_ISO_3200;
-        when 6400  => return Eos.K_ISO_6400;
-        when 12800 => return Eos.K_ISO_12800;
-        when 25600 => return Eos.K_ISO_25600;
+        when 100    => return Eos.K_ISO_100;
+        when 200    => return Eos.K_ISO_200;
+        when 400    => return Eos.K_ISO_400;
+        when 800    => return Eos.K_ISO_800;
+        when 1600   => return Eos.K_ISO_1600;
+        when 3200   => return Eos.K_ISO_3200;
+        when 6400   => return Eos.K_ISO_6400;
+        when others => null;
+        end case;
+      case The_Model is
+      when Canon_Eos_6D =>
+        case Iso is
+          when 12800  => return Eos.K_ISO_12800;
+          when 25600  => return Eos.K_ISO_25600;
+          when others => null;
+        end case;
+      when Canon_Eos_60D =>
+        case Iso is
+          when 125    => return Eos.K_ISO_125;
+          when 160    => return Eos.K_ISO_160;
+          when 250    => return Eos.K_ISO_250;
+          when 320    => return Eos.K_ISO_320;
+          when 500    => return Eos.K_ISO_500;
+          when 640    => return Eos.K_ISO_640;
+          when 1000   => return Eos.K_ISO_1000;
+          when 1250   => return Eos.K_ISO_1250;
+          when 2000   => return Eos.K_ISO_2000;
+          when 2500   => return Eos.K_ISO_2500;
+          when 4000   => return Eos.K_ISO_4000;
+          when 5000   => return Eos.K_ISO_5000;
+          when others => null;
+        end case;
       end case;
+      Raise_Error ("Iso value " & Iso'image & " not valid for " & The_Model'image);
     end To_K_Iso;
 
     -----------------------------------------------
     -- Local mapping for Tv to Canon enum values --
     -----------------------------------------------
-    function To_K_Tv (Tv : Exposure.Tv) return Eos.Uint32 is
+    function To_K_Tv (Item : Exposure.Item) return Eos.Uint32 is
+      Tv : constant Exposure.Tv := Item.Time_Value;
     begin
       case Tv is
         when Exposure.Tv_30_S     => return Eos.K_TV_30;
@@ -241,7 +263,20 @@ package body Camera.Canon is
         when Exposure.Tv_D_2500_S => return Eos.K_TV_D_2500;
         when Exposure.Tv_D_3200_S => return Eos.K_TV_D_3200;
         when Exposure.Tv_D_4000_S => return Eos.K_TV_D_4000;
+        when others               => null;
       end case;
+      case The_Model is
+      when Canon_Eos_6D => null;
+      when Canon_Eos_60D =>
+        case Tv is
+          when Exposure.Tv_D_5000_S => return Eos.K_TV_D_5000;
+          when Exposure.Tv_D_6400_S => return Eos.K_TV_D_6400;
+          when Exposure.Tv_D_8000_S => return Eos.K_TV_D_8000;
+          when others => null;
+        end case;
+      end case;
+      Raise_Error ("Tv value " & Item'image & " not valid for " & The_Model'image);
+      return 0; -- !!! WE !!! GNAT BUG
     end To_K_Tv;
 
 
@@ -333,7 +368,21 @@ package body Camera.Canon is
         Check ("Get device information",
                Eos.Get_Device_Info (From     => The_Session.Device,
                                     The_Info => The_Session.Device_Info'access));
-        Log.Write ("Camera description: " & C.Helper.String_Of (The_Session.Device_Info.Sz_Device_Description));
+        declare
+          Device_Description : String := C.Helper.String_Of (The_Session.Device_Info.Sz_Device_Description);
+        begin
+          Log.Write ("Camera description: " & Device_Description);
+          for The_Character of Device_Description loop
+            if The_Character = ' ' then
+              The_Character := '_';
+            end if;
+          end loop;
+          The_Model := Model'value (Device_Description);
+        exception
+        when others =>
+          Raise_Error ("Unknown Camera");
+        end;
+
         Log.Write ("Device subtype:" & The_Session.Device_Info.Device_Sub_Type'image);
 
         Check ("Open session", Eos.Open_Session (The_Session.Device));
@@ -369,7 +418,7 @@ package body Camera.Canon is
       case The_Exposure.Mode is
       when Exposure.Tv_Mode =>
         Set (Property    => Eos.Prop_Id_Tv,
-             Value       => To_K_Tv (The_Exposure.Time_Value),
+             Value       => To_K_Tv (The_Exposure),
              Where_Label => "Set exposure (Tv) " & The_Exposure'image);
       when Exposure.Timer_Mode =>
         raise Program_Error; -- Bulp not implemented
@@ -378,7 +427,7 @@ package body Camera.Canon is
       end case;
       if not The_Iso.Is_From_Camera then
         Set (Property    => Eos.Prop_Id_ISO,
-             Value       => To_K_Iso (The_Iso.Value),
+             Value       => To_K_Iso (The_Iso),
              Where_Label => "Set ISO " & The_Iso'image);
       end if;
       Event_State.Reset;
@@ -486,18 +535,22 @@ package body Camera.Canon is
   begin -- Control
     loop
       select
-        accept Define (Filename : String) do
+        accept Capture_Picture (Filename : String;
+                                Time     : Exposure.Item;
+                                Iso      : Sensitivity.Item)
+        do
           The_Filename := [Filename];
-        end;
-      or
-        accept Capture_Picture (Time : Exposure.Item;
-                                Iso  : Sensitivity.Item) do
           The_Exposure := Time;
           The_Iso := Iso;
         end;
-        Open;
-        Start_Capture;
-        Close;
+        begin
+          Open;
+          Start_Capture;
+          Close;
+        exception
+        when Item: others =>
+          Log.Termination (Item);
+        end;
       or
         accept Shutdown;
         Cleanup;

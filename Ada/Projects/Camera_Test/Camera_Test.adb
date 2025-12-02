@@ -33,7 +33,7 @@ begin
   Ada.Text_IO.Put_Line ("===========");
 
   Camera.Start;
-  Camera.Capture (Exposure.Value(3.2), Sensitivity.Value(3200));
+  Camera.Capture ("D:\Temp\Picture.CR2", Exposure.Value("1"), Sensitivity.Value(12800));
   Camera.Finish;
 
 exception

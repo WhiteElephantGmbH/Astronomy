@@ -143,6 +143,24 @@ package body Exposure is
       The_Tv := Tv_D_3200_S;
     when  0_000_250 =>
       The_Tv := Tv_D_4000_S;
+    when  0_000_200 =>
+      The_Tv := Tv_D_5000_S;
+    when  0_000_156 =>
+      The_Tv := Tv_D_6400_S;
+    when  0_000_125 =>
+      The_Tv := Tv_D_8000_S;
+    when  0_000_100 =>
+      The_Tv := TV_D_10000_S;
+    when  0_000_078 =>
+      The_Tv := TV_D_12800_S;
+    when  0_000_062 =>
+      The_Tv := TV_D_16000_S;
+    when  0_000_050 =>
+      The_Tv := TV_D_20000_S;
+    when  0_000_039 =>
+      The_Tv := TV_D_25600_S;
+    when  0_000_031 =>
+      The_Tv := TV_D_32000_S;
     when others =>
       The_Item.Time_Value := The_Time;
       The_Item.Mode := Timer_Mode;
@@ -194,7 +212,7 @@ package body Exposure is
           S.Put (Image(Image'first + 3 .. Image'last - 2));
         when Tv_3_2_S | Tv_2_5_S | Tv_1_6_S | Tv_1_3_S | Tv_0_8_S .. Tv_0_3_S =>
           S.Put ([Image(Image'first + 3), '.', Image(Image'last - 2)]);
-        when Tv_D_4_S .. Tv_D_4000_S =>
+        when Tv_D_4_S .. TV_D_32000_S =>
           S.Put ("1/" & Image(Image'first + 5 .. Image'last - 2));
         end case;
       end;
@@ -205,6 +223,9 @@ package body Exposure is
         S.Put (Image(Image'first + 1 .. Image'last));
       end;
     end case;
+  exception
+  when others =>
+    null;
   end Put_Image;
 
 end Exposure;

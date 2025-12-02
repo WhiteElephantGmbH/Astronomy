@@ -43,7 +43,7 @@ begin
 
     Last_Index : constant := 1024;
 
-    Green_Grid : constant Raw.Green_Grid := Raw.Grid_Of ("First_Picture.CR2", Last_Index);
+    Green_Grid : constant Raw.Green_Grid := Raw.Grid_Of ("D:\Temp\Picture.CR2", Last_Index);
 
     procedure Show_Green_Grid is
     begin
