@@ -215,6 +215,9 @@ package body Exposure is
         when Tv_D_4_S .. TV_D_32000_S =>
           S.Put ("1/" & Image(Image'first + 5 .. Image'last - 2));
         end case;
+      exception
+      when others =>
+        S.Put (Image);
       end;
     when Timer_Mode =>
       declare
@@ -225,7 +228,7 @@ package body Exposure is
     end case;
   exception
   when others =>
-    null;
+    S.Put ("???");
   end Put_Image;
 
 end Exposure;

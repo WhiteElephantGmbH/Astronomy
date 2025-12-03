@@ -29,9 +29,13 @@ package body Camera.Canon is
 
   task type Control is
 
+    entry Get (The_Info : out Information);
+
     entry Capture_Picture (Filename : String;
                            Time     : Exposure.Item;
                            Iso      : Sensitivity.Item);
+    entry Stop;
+
     entry Shutdown;
 
   end Control;
@@ -45,12 +49,26 @@ package body Camera.Canon is
   end Start_Control;
 
 
+  function Actual_Info return Information is
+    The_Info : Information;
+  begin
+    The_Control.Get (The_Info);
+    return The_Info;
+  end Actual_Info;
+
+
   procedure Capture_Picture (Filename : String;
                              Time     : Exposure.Item;
                              Iso      : Sensitivity.Item) is
   begin
     The_Control.Capture_Picture (Filename, Time, Iso);
   end Capture_Picture;
+
+
+  procedure Stop_Capture is
+  begin
+    The_Control.Stop;
+  end Stop_Capture;
 
 
   procedure End_Control is
@@ -132,7 +150,7 @@ package body Camera.Canon is
 
     Default_Filename : constant String := "Raw_Picture.CR2";
 
-    The_Model : Model;
+    The_Data : Information;
 
     -----------
     -- Error --
@@ -177,7 +195,7 @@ package body Camera.Canon is
         when 6400   => return Eos.K_ISO_6400;
         when others => null;
         end case;
-      case The_Model is
+      case The_Data.Camera is
       when Canon_Eos_6D =>
         case Iso is
           when 12800  => return Eos.K_ISO_12800;
@@ -201,7 +219,7 @@ package body Camera.Canon is
           when others => null;
         end case;
       end case;
-      Raise_Error ("Iso value " & Iso'image & " not valid for " & The_Model'image);
+      Raise_Error ("Iso value " & Iso'image & " not valid for " & The_Data.Camera'image);
     end To_K_Iso;
 
     -----------------------------------------------
@@ -265,7 +283,7 @@ package body Camera.Canon is
         when Exposure.Tv_D_4000_S => return Eos.K_TV_D_4000;
         when others               => null;
       end case;
-      case The_Model is
+      case The_Data.Camera is
       when Canon_Eos_6D => null;
       when Canon_Eos_60D =>
         case Tv is
@@ -275,8 +293,8 @@ package body Camera.Canon is
           when others => null;
         end case;
       end case;
-      Raise_Error ("Tv value " & Item'image & " not valid for " & The_Model'image);
-      return 0; -- !!! WE !!! GNAT BUG
+      Raise_Error ("Tv value " & Item'image & " not valid for " & The_Data.Camera'image);
+      return 0; --!!!WE!!! GNAT Bug
     end To_K_Tv;
 
 
@@ -290,7 +308,7 @@ package body Camera.Canon is
       Device_Info : aliased Eos.Device_Info;
     end record;
 
-    The_Session  : Session;
+    The_Session : Session;
 
 
     procedure Set (Property    : Eos.Property_Id;
@@ -309,37 +327,35 @@ package body Camera.Canon is
     end Set;
 
 
-    procedure Cleanup is
+    procedure Disconnect is
+      Dummy : Eos.Error;
     begin
-      declare
-        Dummy : Eos.Error := Eos.Close_Session (The_Session.Device);
+      The_Data.State := Disconnected;
       begin
-        null;
+        Dummy := Eos.Close_Session (The_Session.Device);
       exception
-        when others => null;
+      when others =>
+        null;
       end;
-      declare
-        Dummy : Eos.Error := Eos.Release (The_Session.Device);
       begin
-        null;
+        Dummy := Eos.Release (The_Session.Device);
       exception
-        when others => null;
+      when others =>
+        null;
       end;
-      declare
-        Dummy : Eos.Error := Eos.Release (The_Session.Device_List);
       begin
-        null;
+        Dummy := Eos.Release (The_Session.Device_List);
       exception
-        when others => null;
+      when others =>
+        null;
       end;
-      declare
-        Dummy : Eos.Error := Eos.Terminate_SDK;
       begin
-        null;
+        Dummy := Eos.Terminate_SDK;
       exception
-        when others => null;
+      when others =>
+        null;
       end;
-    end Cleanup;
+    end Disconnect;
 
     --------------------------------------------
     --  Open                                  --
@@ -348,19 +364,20 @@ package body Camera.Canon is
     --    Opens a session                     --
     --    Sets image quality to RAW only      --
     --------------------------------------------
-    procedure Open is
+    procedure Check_Open is
       Count : aliased Eos.Uint32;
       use type Eos.Uint32;
     begin
-      Check ("Initialize SDK", Eos.Initialize_SDK);
-      Check ("Get camera list", Eos.Get_Camera_List (The_Session.Device_List'access));
-      Check ("Get child count", Eos.Get_Child_Count (The_Session.Device_List, Count'access));
-      Log.Write ("Number of detected cameras:" & Eos.Uint32'image (Count));
-      if Count = 0 then
-        Raise_Error ("No Canon cameras found");
-      elsif Count > 1 then
-        Raise_Error ("Multiple Canon cameras found");
-      else
+      if The_Data.State = Disconnected then
+        Check ("Initialize SDK", Eos.Initialize_SDK);
+        Check ("Get camera list", Eos.Get_Camera_List (The_Session.Device_List'access));
+        Check ("Get child count", Eos.Get_Child_Count (The_Session.Device_List, Count'access));
+        Log.Write ("Number of detected cameras:" & Eos.Uint32'image (Count));
+        if Count = 0 then
+          Raise_Error ("No Canon cameras found");
+        elsif Count > 1 then
+          Raise_Error ("Multiple Canon cameras found");
+        end if;
         Check ("Get camera at index 0",
                Eos.Get_Camera_At_Index (List       => The_Session.Device_List,
                                         Index      => 0,
@@ -377,7 +394,7 @@ package body Camera.Canon is
               The_Character := '_';
             end if;
           end loop;
-          The_Model := Model'value (Device_Description);
+          The_Data.Camera := Model'value (Device_Description);
         exception
         when others =>
           Raise_Error ("Unknown Camera");
@@ -386,16 +403,15 @@ package body Camera.Canon is
         Log.Write ("Device subtype:" & The_Session.Device_Info.Device_Sub_Type'image);
 
         Check ("Open session", Eos.Open_Session (The_Session.Device));
-
-        Set (Property    => Eos.Prop_Id_Image_Quality,
-             Value       => Eos.Image_Quality_LR,
-             Where_Label => "Set image quality to RAW");
       end if;
+      Set (Property    => Eos.Prop_Id_Image_Quality,
+           Value       => Eos.Image_Quality_LR,
+           Where_Label => "Set image quality to RAW");
+      The_Data.State := Connected; -- if property can be set
     exception
     when others =>
-      Cleanup;
-      raise;
-    end Open;
+      Disconnect;
+    end Check_Open;
 
 
     -------------------------------------------------------------
@@ -405,23 +421,19 @@ package body Camera.Canon is
     --   Downloads the RAW file from the camera to Filename    --
     --   Deletes the RAW file in the camera                    --
     -------------------------------------------------------------
+    The_Start_Time : Ada.Calendar.Time;
+    The_Timeout    : Duration;
+    The_Item       : Eos.Directory_Item;
+
     procedure Start_Capture is
-
-      Start_Time : constant Ada.Calendar.Time := Ada.Calendar.Clock;
-      Timeout    : constant Duration := Duration(The_Exposure.Time) + 15.0;
-      The_Item   : Eos.Directory_Item := Eos.No_Directory;
-
-      use type Eos.Int32;
-      use type Ada.Calendar.Time;
-
-    begin -- Capture
+    begin
       case The_Exposure.Mode is
       when Exposure.Tv_Mode =>
         Set (Property    => Eos.Prop_Id_Tv,
              Value       => To_K_Tv (The_Exposure),
              Where_Label => "Set exposure (Tv) " & The_Exposure'image);
       when Exposure.Timer_Mode =>
-        raise Program_Error; -- Bulp not implemented
+        Raise_Error ("Timer_Mode not implemented: " & The_Exposure'image);
       when Exposure.From_Camera =>
         null;
       end case;
@@ -443,98 +455,103 @@ package body Camera.Canon is
                                Eos.Camera_Command_Take_Picture,
                                0));
 
-      -- wait (with timeout) for a *file* directory item event
-      loop
-        Check ("Get event",
-               Eos.Get_Event, Logging => False);
+      The_Start_Time := Ada.Calendar.Clock;
+      The_Timeout := Duration(The_Exposure.Time) + 15.0;
+      The_Item := Eos.No_Directory;
 
-        select
-          Event_State.Wait_For_Item (The_Item);
-          declare
-            The_Info : aliased Eos.Directory_Item_Info;
-          begin
-            Check ("Get directory item info",
-                   Eos.Get_Directory_Item_Info (Item     => The_Item,
-                                                The_Info => The_Info'access),
-                   Logging => False);
-
-            if The_Info.Is_Folder /= 0 then
-            --IO.Put_Line ("received folder item, ignoring: " & String_Of (Info.Sz_File_Name));
-              declare
-                Dummy : Eos.Error := Eos.Release (The_Item);
-              begin
-                null;
-              end;
-              The_Item := Eos.No_Directory;
-            else
-              Log.Write ("Received file " & C.Helper.String_Of (The_Info.Sz_File_Name));
-              exit;
-            end if;
-          end;
-        or
-          delay 0.1;
-        end select;
-
-        if Ada.Calendar.Clock - Start_Time > Timeout then
-          Raise_Error ("Timeout: no directory item event received");
-        end if;
-      end loop;
-
-      declare
-        File_Name         : aliased constant String := The_Filename.To_String & Ascii.Nul;
-        The_Info          : aliased Eos.Directory_Item_Info;
-        File_Stream_Write : aliased Eos.Stream;
-      begin
-        Check ("Get directory item info",
-               Eos.Get_Directory_Item_Info (Item     => The_Item,
-                                            The_Info => The_Info'access));
-
-        Log.Write ("RAW size from camera (bytes): " & Eos.Uint64'image (The_Info.Size));
-        Log.Write ("Download " & C.Helper.String_Of (The_Info.Sz_File_Name) & " to " & The_Filename.To_String);
-
-        Check ("Create file stream (write)",
-               Eos.Create_File_Stream (File_Name   => File_Name'address,
-                                       Disposition => Eos.File_Create_Always,
-                                       Eds_Access  => Eos.Access_Read_Write,
-                                       Out_Stream  => File_Stream_Write'access));
-
-        Check ("Download",
-               Eos.Download (The_Item, The_Info.Size, File_Stream_Write));
-
-        Check ("Download complete",
-               Eos.Download_Complete (The_Item));
-
-        Check ("Delete file from camera",
-                Eos.Delete_Directory_Item (The_Item));
-        declare
-          Dummy : Eos.Error := Eos.Release (File_Stream_Write);
-        begin
-          null;
-        end;
-      end;
+      The_Data.State := Capturing;
     exception
     when others =>
-      Cleanup;
-      raise;
+      Disconnect;
     end Start_Capture;
 
 
-    procedure Close is
+    procedure Continue_Capture is
+      use type Eos.Int32;
+      use type Ada.Calendar.Time;
     begin
-      Check ("Close session", Eos.Close_Session (The_Session.Device));
-      Check ("Release camera handle", Eos.Release (The_Session.Device));
-      Check ("Release camera list", Eos.Release (The_Session.Device_List));
-      Check ("Terminating SDK", Eos.Terminate_SDK);
-      Log.Write ("Finished");
+      Check ("Get event",
+             Eos.Get_Event, Logging => False);
+      select
+        Event_State.Wait_For_Item (The_Item);
+        declare
+          The_Info : aliased Eos.Directory_Item_Info;
+        begin
+          Check ("Get directory item info",
+                 Eos.Get_Directory_Item_Info (Item     => The_Item,
+                                              The_Info => The_Info'access),
+                 Logging => False);
+
+          if The_Info.Is_Folder /= 0 then
+          --IO.Put_Line ("received folder item, ignoring: " & String_Of (Info.Sz_File_Name));
+            declare
+              Dummy : Eos.Error := Eos.Release (The_Item);
+            begin
+              null;
+            end;
+            The_Item := Eos.No_Directory;
+          else
+            Log.Write ("Received file " & C.Helper.String_Of (The_Info.Sz_File_Name));
+            if Ada.Calendar.Clock - The_Start_Time > The_Timeout then
+              Raise_Error ("Timeout: no directory item event received");
+            end if;
+            The_Data.State := Captured;
+          end if;
+        end;
+      or
+        delay 0.1;
+      end select;
     exception
-    when Occurrence : others =>
-      Log.Termination (Occurrence);
-      Cleanup;
-    end Close;
+    when others =>
+      Disconnect;
+    end Continue_Capture;
+
+
+    procedure Download is
+      File_Name         : aliased constant String := The_Filename.To_String & Ascii.Nul;
+      The_Info          : aliased Eos.Directory_Item_Info;
+      File_Stream_Write : aliased Eos.Stream;
+    begin
+      Check ("Get directory item info",
+             Eos.Get_Directory_Item_Info (Item     => The_Item,
+                                          The_Info => The_Info'access));
+
+      Log.Write ("RAW size from camera (bytes): " & Eos.Uint64'image (The_Info.Size));
+      Log.Write ("Download " & C.Helper.String_Of (The_Info.Sz_File_Name) & " to " & The_Filename.To_String);
+
+      Check ("Create file stream (write)",
+             Eos.Create_File_Stream (File_Name   => File_Name'address,
+                                     Disposition => Eos.File_Create_Always,
+                                     Eds_Access  => Eos.Access_Read_Write,
+                                     Out_Stream  => File_Stream_Write'access));
+
+      Check ("Download",
+             Eos.Download (The_Item, The_Info.Size, File_Stream_Write));
+
+      Check ("Download complete",
+             Eos.Download_Complete (The_Item));
+
+      Check ("Delete file from camera",
+              Eos.Delete_Directory_Item (The_Item));
+      declare
+        Dummy : Eos.Error := Eos.Release (File_Stream_Write);
+      begin
+        null;
+      end;
+      The_Data.State := Connected;
+    exception
+    when others =>
+      Disconnect;
+    end Download;
 
   begin -- Control
+    The_Data.State := Disconnected;
     loop
       select
+        accept Get (The_Info : out Information) do
+          The_Info := The_Data;
+        end Get;
+      or
         accept Capture_Picture (Filename : String;
                                 Time     : Exposure.Item;
                                 Iso      : Sensitivity.Item)
@@ -542,27 +559,33 @@ package body Camera.Canon is
           The_Filename := [Filename];
           The_Exposure := Time;
           The_Iso := Iso;
-        end;
-        begin
-          Open;
           Start_Capture;
-          Close;
-        exception
-        when Item: others =>
-          Log.Termination (Item);
         end;
       or
-        accept Shutdown;
-        Cleanup;
+        accept Stop do
+          Disconnect;
+        end Stop;
+      or
+        accept Shutdown do
+          Disconnect;
+        end Shutdown;
         exit;
       or
-        delay 1.0;
+        delay 0.3;
+        case The_Data.State is
+        when Disconnected | Connected =>
+          Check_Open;
+        when Capturing =>
+          Continue_Capture;
+        when Captured =>
+          Download;
+        end case;
       end select;
     end loop;
   exception
   when Occurrance: others =>
     Log.Termination (Occurrance);
-    Cleanup;
+    Disconnect;
   end Control;
 
 end Camera.Canon;

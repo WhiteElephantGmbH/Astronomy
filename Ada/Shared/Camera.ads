@@ -22,7 +22,16 @@ package Camera is
 
   type Model is (Canon_Eos_6D, Canon_Eos_60D);
 
+  type Status is (Disconnected, Connected, Capturing, Captured);
+
+  type Information is record
+    State  : Status;
+    Camera : Model;
+  end record;
+
   procedure Start;
+
+  function Actual_Information return Information;
 
   procedure Capture (Filename : String;
                      Time     : Exposure.Item := Exposure.From_Camera;

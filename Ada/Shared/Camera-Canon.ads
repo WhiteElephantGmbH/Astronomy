@@ -19,9 +19,13 @@ private package Camera.Canon is
 
   procedure Start_Control;
 
+  function Actual_Info return Information;
+
   procedure Capture_Picture (Filename : String;
                              Time     : Exposure.Item;
                              Iso      : Sensitivity.Item);
+
+  procedure Stop_Capture;
 
   procedure End_Control;
 

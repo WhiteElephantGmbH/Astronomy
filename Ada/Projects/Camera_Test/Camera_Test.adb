@@ -28,15 +28,53 @@ with Exposure;
 with Sensitivity;
 
 procedure Camera_Test is
+  package IO renames Ada.Text_IO;
 begin
-  Ada.Text_IO.Put_Line ("Camera Test");
-  Ada.Text_IO.Put_Line ("===========");
-
+  IO.Put_Line ("Camera Test");
+  IO.Put_Line ("===========");
   Camera.Start;
-  Camera.Capture ("D:\Temp\Picture.CR2", Exposure.Value("1"), Sensitivity.Value(12800));
+  IO.Put_Line ("Started");
+  loop
+    declare
+      Info : constant Camera.Information := Camera.Actual_Information;
+    begin
+      case Info.State is
+      when Camera.Connected =>
+        IO.Put ("Connected " & Info.Camera'image & " - enter exposure> ");
+        declare
+          Command : constant String := IO.Get_Line;
+        begin
+          if Command = "" then
+            exit;
+          end if;
+          begin
+            declare
+              Tv : constant Exposure.Item := Exposure.Value(Command);
+            begin
+              Camera.Capture ("D:\Temp\Picture.CR2", Tv, Sensitivity.Value(12800));
+              IO.Put ("Capturing.");
+            end;
+          exception
+          when others =>
+            IO.Put_Line ("Exposure """ & Command & """ not supported !!!");
+          end;
+        end;
+      when Camera.Capturing =>
+        IO.Put (".");
+      when Camera.Captured =>
+        IO.New_Line;
+        IO.Put_Line ("Captured");
+      when Camera.Disconnected =>
+        IO.Put_Line ("Disconnected");
+        delay 1.0;
+      end case;
+    end;
+    delay 0.3;
+  end loop;
   Camera.Finish;
+  IO.Put_Line ("Stopped");
 
 exception
 when Item: others =>
-  Ada.Text_IO.Put_Line (Exceptions.Information_Of (Item));
+  IO.Put_Line (Exceptions.Information_Of (Item));
 end Camera_Test;

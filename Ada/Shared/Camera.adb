@@ -24,28 +24,37 @@ package body Camera is
 
   procedure Start is
   begin
+    Log.Write ("Start");
     Canon.Start_Control;
   end Start;
+
+
+  function Actual_Information return Information is
+  begin
+    return Canon.Actual_Info;
+  end Actual_Information;
 
 
   procedure Capture (Filename : String;
                      Time     : Exposure.Item    := Exposure.From_Camera;
                      Iso      : Sensitivity.Item := Sensitivity.From_Camera) is
   begin
-    Log.Write ("capture started");
+    Log.Write ("Capture started");
     Canon.Capture_Picture (Filename, Time, Iso);
   end Capture;
 
 
   procedure Stop is
   begin
-    --Canon.Stop_Capture; !!!
+    Canon.Stop_Capture;
     Log.Write ("Capture stopped");
   end Stop;
+
 
   procedure Finish is
   begin
     Canon.End_Control;
+    Log.Write ("Finished");
   end Finish;
 
 end Camera;
