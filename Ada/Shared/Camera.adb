@@ -39,22 +39,22 @@ package body Camera is
                      Time     : Exposure.Item    := Exposure.From_Camera;
                      Iso      : Sensitivity.Item := Sensitivity.From_Camera) is
   begin
-    Log.Write ("Capture started");
+    Log.Write ("Capture " & Filename & " - Time: " & Time'image & " - Iso: " & Iso'image);
     Canon.Capture_Picture (Filename, Time, Iso);
   end Capture;
 
 
   procedure Stop is
   begin
+    Log.Write ("Stop");
     Canon.Stop_Capture;
-    Log.Write ("Capture stopped");
   end Stop;
 
 
   procedure Finish is
   begin
+    Log.Write ("Finish");
     Canon.End_Control;
-    Log.Write ("Finished");
   end Finish;
 
 end Camera;

@@ -29,18 +29,25 @@ with Sensitivity;
 
 procedure Camera_Test is
   package IO renames Ada.Text_IO;
+  Delay_Time : constant Duration := 0.1;
+  Timeout    : constant Duration := 10.0;
+  Counter    : constant Natural := Natural(Timeout / Delay_Time);
+  The_Count  : Integer;
 begin
   IO.Put_Line ("Camera Test");
   IO.Put_Line ("===========");
   Camera.Start;
-  IO.Put_Line ("Started");
+  IO.Put ("Started");
   loop
     declare
       Info : constant Camera.Information := Camera.Actual_Information;
     begin
       case Info.State is
-      when Camera.Connected =>
-        IO.Put ("Connected " & Info.Camera'image & " - enter exposure> ");
+      when Camera.Idle =>
+        The_Count := Counter;
+        IO.New_Line;
+        IO.Put_Line ("Idle");
+        IO.Put ("enter exposure> ");
         declare
           Command : constant String := IO.Get_Line;
         begin
@@ -51,25 +58,30 @@ begin
             declare
               Tv : constant Exposure.Item := Exposure.Value(Command);
             begin
-              Camera.Capture ("D:\Temp\Picture.CR2", Tv, Sensitivity.Value(12800));
-              IO.Put ("Capturing.");
+              The_Count := Counter;
+              Camera.Capture ("D:\Temp\Picture.CR2", Tv, Sensitivity.Value(125));
             end;
           exception
           when others =>
             IO.Put_Line ("Exposure """ & Command & """ not supported !!!");
           end;
         end;
-      when Camera.Capturing =>
-        IO.Put (".");
-      when Camera.Captured =>
-        IO.New_Line;
-        IO.Put_Line ("Captured");
-      when Camera.Disconnected =>
-        IO.Put_Line ("Disconnected");
-        delay 1.0;
+      when Camera.Connected =>
+        IO.Put_Line ("Connected " & Info.Camera'image);
+      when Camera.Capturing | Camera.Captured =>
+        IO.Put ("c");
+      when Camera.Downloading =>
+        IO.Put ("d");
+      when Camera.Stopping =>
+        IO.Put ("s");
       end case;
     end;
-    delay 0.3;
+    delay Delay_Time;
+    The_Count := @ - 1;
+    if The_Count = 0 then
+      IO.Put ("a");
+      Camera.Stop;
+    end if;
   end loop;
   Camera.Finish;
   IO.Put_Line ("Stopped");

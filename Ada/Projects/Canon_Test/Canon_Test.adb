@@ -30,7 +30,7 @@ begin
   Ada.Text_IO.Put_Line ("Canon Test");
   Ada.Text_IO.Put_Line ("==========");
   Canon.Capture (Filename => "D:\Temp\Picture.CR2",
-                 Exposure => 3.2,
+                 Exposure => 0.1,
                  Iso      => 3200);
 exception
 when Item: others =>

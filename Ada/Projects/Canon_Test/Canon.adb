@@ -101,12 +101,14 @@ package body Canon is
     pragma Unreferenced (Context);
     use type CI.Eds_Object_Event;
   begin
-  --IO.Put_Line ("[Canon] object event received: " & CI.Eds_Uint32'image (Event));
-    if Event = CI.Object_Event_Dir_Item_Created or else Event = CI.Object_Event_Dir_Item_Request_Transfer then
-    --IO.Put_Line ("[Canon] -> treating this as DirItem event");
+    --IO.Put_Line ("[Canon] object event received: " & CI.Eds_Uint32'image (Event));
+    if Event = CI.Object_Event_Dir_Item_Created
+      or else Event = CI.Object_Event_Dir_Item_Request_Transfer
+    then
+      --IO.Put_Line ("[Canon] -> treating this as DirItem event");
       Event_State.Set_Item (Object);
-  --else
-  --  IO.Put_Line ("[Canon] -> ignoring (volume/folder/etc.)");
+    --else
+    --  IO.Put_Line ("[Canon] -> ignoring (volume/folder/etc.)");
     end if;
     return CI.EDS_OK;
   end On_Object_Event;
@@ -159,64 +161,48 @@ package body Canon is
   -----------------------------------------------
   -- Local mapping for Tv to Canon enum values --
   -----------------------------------------------
+  --  Only used for Exposure < 1.0 s.
   function To_Eds_Tv (T : Exposure_Time) return CI.Eds_Uint32 is
-    Tus : constant Natural := Natural(T * 1_000_000.0); -- in Microseconds
+    Tus : constant Natural := Natural (T * 1_000_000.0); -- in Microseconds
   begin
     case Tus is
-    when 30_000_000 => return CI.K_Tv_30;
-    when 25_000_000 => return CI.K_TV_25;
-    when 20_000_000 => return CI.K_TV_20;
-    when 15_000_000 => return CI.K_TV_15;
-    when 13_000_000 => return CI.K_TV_13;
-    when 10_000_000 => return CI.K_TV_10;
-    when  8_000_000 => return CI.K_TV_8;
-    when  6_000_000 => return CI.K_TV_6;
-    when  5_000_000 => return CI.K_TV_5;
-    when  4_000_000 => return CI.K_TV_4;
-    when  3_200_000 => return CI.K_TV_3_2;
-    when  2_500_000 => return CI.K_TV_2_5;
-    when  2_000_000 => return CI.K_TV_2;
-    when  1_600_000 => return CI.K_TV_1_6;
-    when  1_300_000 => return CI.K_TV_1_3;
-    when  1_000_000 => return CI.K_TV_1;
-    when  0_800_000 => return CI.K_TV_0_8;
-    when  0_600_000 => return CI.K_TV_0_6;
-    when  0_500_000 => return CI.K_TV_0_5;
-    when  0_400_000 => return CI.K_TV_0_4;
-    when  0_300_000 => return CI.K_TV_0_3;
-    when  0_250_000 => return CI.K_TV_D_4;
-    when  0_200_000 => return CI.K_TV_D_5;
-    when  0_166_666 => return CI.K_TV_D_6;
-    when  0_125_000 => return CI.K_TV_D_8;
-    when  0_100_000 => return CI.K_TV_D_10;
-    when  0_076_923 => return CI.K_TV_D_13;
-    when  0_066_666 => return CI.K_TV_D_15;
-    when  0_050_000 => return CI.K_TV_D_20;
-    when  0_040_000 => return CI.K_TV_D_25;
-    when  0_033_333 => return CI.K_TV_D_30;
-    when  0_025_000 => return CI.K_TV_D_40;
-    when  0_020_000 => return CI.K_TV_D_50;
-    when  0_016_666 => return CI.K_TV_D_60;
-    when  0_012_500 => return CI.K_TV_D_80;
-    when  0_010_000 => return CI.K_TV_D_100;
-    when  0_008_000 => return CI.K_TV_D_125;
-    when  0_006_250 => return CI.K_TV_D_160;
-    when  0_005_000 => return CI.K_TV_D_200;
-    when  0_004_000 => return CI.K_TV_D_250;
-    when  0_003_125 => return CI.K_TV_D_320;
-    when  0_002_500 => return CI.K_TV_D_400;
-    when  0_002_000 => return CI.K_TV_D_500;
-    when  0_001_562 => return CI.K_TV_D_640;
-    when  0_001_250 => return CI.K_TV_D_800;
-    when  0_001_000 => return CI.K_TV_D_1000;
-    when  0_000_800 => return CI.K_TV_D_1250;
-    when  0_000_625 => return CI.K_TV_D_1600;
-    when  0_000_500 => return CI.K_TV_D_2000;
-    when  0_000_400 => return CI.K_TV_D_2500;
-    when  0_000_312 => return CI.K_TV_D_3200;
-    when  0_000_250 => return CI.K_TV_D_4000;
-    when others =>
-      Raise_Error ("Not supported exposure time:" & T'image & " seconds");
+      when 800_000 => return CI.K_TV_0_8;
+      when 600_000 => return CI.K_TV_0_6;
+      when 500_000 => return CI.K_TV_0_5;
+      when 400_000 => return CI.K_TV_0_4;
+      when 300_000 => return CI.K_TV_0_3;
+      when 250_000 => return CI.K_TV_D_4;
+      when 200_000 => return CI.K_TV_D_5;
+      when 166_666 => return CI.K_TV_D_6;
+      when 125_000 => return CI.K_TV_D_8;
+      when 100_000 => return CI.K_TV_D_10;
+      when  76_923 => return CI.K_TV_D_13;
+      when  66_666 => return CI.K_TV_D_15;
+      when  50_000 => return CI.K_TV_D_20;
+      when  40_000 => return CI.K_TV_D_25;
+      when  33_333 => return CI.K_TV_D_30;
+      when  25_000 => return CI.K_TV_D_40;
+      when  20_000 => return CI.K_TV_D_50;
+      when  16_666 => return CI.K_TV_D_60;
+      when  12_500 => return CI.K_TV_D_80;
+      when  10_000 => return CI.K_TV_D_100;
+      when   8_000 => return CI.K_TV_D_125;
+      when   6_250 => return CI.K_TV_D_160;
+      when   5_000 => return CI.K_TV_D_200;
+      when   4_000 => return CI.K_TV_D_250;
+      when   3_125 => return CI.K_TV_D_320;
+      when   2_500 => return CI.K_TV_D_400;
+      when   2_000 => return CI.K_TV_D_500;
+      when   1_562 => return CI.K_TV_D_640;
+      when   1_250 => return CI.K_TV_D_800;
+      when   1_000 => return CI.K_TV_D_1000;
+      when     800 => return CI.K_TV_D_1250;
+      when     625 => return CI.K_TV_D_1600;
+      when     500 => return CI.K_TV_D_2000;
+      when     400 => return CI.K_TV_D_2500;
+      when     312 => return CI.K_TV_D_3200;
+      when     250 => return CI.K_TV_D_4000;
+      when others  => Raise_Error ("Not supported exposure time:" & T'image & " seconds");
     end case;
   end To_Eds_Tv;
 
@@ -227,27 +213,31 @@ package body Canon is
                      Exposure : Exposure_Time;
                      Iso      : Iso_Value)
   is
-    Timeout : constant Duration := Duration(Exposure + 15.0);
-
+    --  For short exposures, we wait Exposure + 15 s for the file event.
+    --  For bulb exposures, we wait a fixed 60 s after BulbEnd.
     Camera_List : aliased CI.Camera_List;
     Camera      : aliased CI.Camera;
     Count       : aliased CI.Eds_Uint32;
     Device_Info : aliased CI.Device_Info;
     Item        : CI.Directory_Item := CI.No_Directory;
-    Start_Time  : constant Ada.Calendar.Time := Ada.Calendar.Clock;
-    Timed_Out   : Boolean := False;
 
-    procedure Set_Uint32_Property (Prop        : CI.Eds_Property_Id;
+    Event_Timeout : Duration;
+    Start_Time    : Ada.Calendar.Time;
+    Timed_Out     : Boolean := False;
+
+    procedure Set_Uint32_Property (Where_Label : String;
+                                   Prop        : CI.Eds_Property_Id;
                                    Value       : CI.Eds_Uint32;
-                                   Where_Label : String)
+                                   Param       : CI.Eds_Int32 := 0)
     is
       Val : aliased CI.Eds_Uint32 := Value;
       use type CI.Eds_Uint32;
     begin
+      IO.Put_Line (Where_Label & " - Propety:" & Prop'image & " - Value:" & Value'image);
       Check (Where_Label,
              CI.Set_Property_Data (Ref           => Camera,
                                    Property_Id   => Prop,
-                                   Param         => 0,
+                                   Param         => Param,
                                    Property_Size => CI.Eds_Uint32'size / 8,
                                    Property_Data => Val'address));
     end Set_Uint32_Property;
@@ -279,9 +269,23 @@ package body Canon is
         IO.Put_Line ("Camera description: " & String_Of (Device_Info.Sz_Device_Description));
         IO.Put_Line ("Device subtype:" & Device_Info.Device_Sub_Type'image);
 
+        --Set_Uint32_Property ("Enable Target Property",
+        --                     Prop  => 16#0100_0000#,
+        --                     Param => 16#00E1_3499#,
+        --                     Value => CI.Prop_Id_Mirror_Lock_Up_State);
+
+        --Set_Uint32_Property ("Enable Target Property",
+        --                     Prop  => 16#0100_0000#,
+        --                     Param => 16#517F_095D#,
+        --                     Value => CI.Prop_Id_Mirror_Up_Setting);
+
         Check ("Open session",
                CI.Open_Session (Camera));
 
+        Check ("UI lock",
+               CI.Send_Status_Command (Camera,
+                                       CI.Camera_Status_UI_Lock,
+                                       0));
         Set_Uint32_Property (Prop        => CI.Prop_Id_Image_Quality,
                              Value       => CI.Image_Quality_LR,
                              Where_Label => "Set image quality to RAW");
@@ -290,27 +294,65 @@ package body Canon is
                              Value       => To_Eds_Iso (Iso),
                              Where_Label => "Set ISO" & Iso'image);
 
-        Set_Uint32_Property (Prop        => CI.Prop_Id_Tv,
-                             Value       => To_Eds_Tv (Exposure),
-                             Where_Label => "Set exposure (Tv)" & Exposure'image);
+        -- Choose Tv / Bulb depending on Exposure
+        if Exposure < 1.0 then
+          -- Short exposure: normal Tv value, TakePicture
+          Set_Uint32_Property (Prop        => CI.Prop_Id_AE_Mode_Select,
+                               Value       => CI.K_AE_Mode_Manual,
+                               Where_Label => "Set AE Mode Select to Manual");
+          Set_Uint32_Property (Prop        => CI.Prop_Id_Tv,
+                               Value       => To_Eds_Tv (Exposure),
+                               Where_Label => "Set exposure (Tv)" & Exposure'image);
+        else
+          -- Long exposure: bulb mode
+          Set_Uint32_Property (Prop        => CI.Prop_Id_AE_Mode_Select,
+                               Value       => CI.K_AE_Mode_Bulb,
+                               Where_Label => "Set AE Mode Select to Bulb");
+        end if;
+
+      --Set_Uint32_Property (Prop        => CI.Prop_Id_Mirror_Lock_Up_State,
+      --                     Value       => CI.K_Eds_Mirror_Lockup_State_Disable,
+      --                     Where_Label => "Disable mirror up settings during shooting");
+
+      --Set_Uint32_Property (Prop        => CI.Prop_Id_Mirror_Up_Setting,
+      --                     Value       => CI.K_Eds_Mirror_Up_Setting_On,
+      --                     Where_Label => "Mirror up");
+      --delay 1.0
 
         Event_State.Reset;
+        Start_Time := Ada.Calendar.Clock;
+        Event_Timeout := Duration (Exposure + 15.0);
 
         Check ("Register object event handler",
                CI.Set_Object_Event_Handler (Camera,
                                             CI.Object_Event_All,
                                             Handler,
                                             System.Null_Address));
+        if Exposure < 1.0 then
+          Check ("Trigger single shot",
+                 CI.Send_Command (Camera,
+                                  CI.Camera_Command_Take_Picture,
+                                  0));
 
-        Check ("Trigger single shot",
-               CI.Send_Command (Camera,
-                                CI.Camera_Command_Take_Picture,
-                                0));
+        else
+          Check ("Press shutter button completely non AF",
+                 CI.Send_Command (Camera,
+                                  CI.Camera_Command_Press_Shutter_Button,
+                                  CI.Camera_Command_Shutter_Button_Completely_Non_AF));
 
-        -- wait (with timeout) for a *file* directory item event
+          delay Duration (Exposure);
+
+          Check ("Press shutter button off",
+                 CI.Send_Command (Camera,
+                                  CI.Camera_Command_Press_Shutter_Button,
+                                  CI.Camera_Command_Shutter_Button_Off));
+        end if;
+
+        -- Now wait (with timeout) for a *file* directory item event
         loop
           Check ("Get event",
-                 CI.Get_Event, Logging => False);
+                 CI.Get_Event,
+                 Logging => False);
 
           select
             Event_State.Wait_For_Item (Item);
@@ -318,7 +360,8 @@ package body Canon is
               Info : aliased CI.Directory_Item_Info;
             begin
               Check ("Get directory item info",
-                     CI.Get_Directory_Item_Info (Item, Info'access), Logging => False);
+                     CI.Get_Directory_Item_Info (Item, Info'access),
+                     Logging => False);
 
               if Info.Is_Folder /= 0 then
               --IO.Put_Line ("received folder item, ignoring: " & String_Of (Info.Sz_File_Name));
@@ -344,11 +387,15 @@ package body Canon is
             exit;
           end if;
 
-          if Ada.Calendar.Clock - Start_Time > Timeout then
+          if Ada.Calendar.Clock - Start_Time > Event_Timeout then
             Timed_Out := True;
             exit;
           end if;
         end loop;
+
+      --Set_Uint32_Property (Prop        => CI.Prop_Id_Mirror_Up_Setting,
+      --                     Value       => CI.K_Eds_Mirror_Up_Setting_Off,
+      --                     Where_Label => "Mirror down");
 
         if Timed_Out then
           Raise_Error ("Timeout: no directory item event received");
@@ -377,7 +424,8 @@ package body Canon is
                    CI.Download_Complete (Item));
 
             Check ("Delete file from camera",
-                    CI.Delete_Directory_Item (Item));
+                   CI.Delete_Directory_Item (Item));
+
             declare
               Dummy : CI.Eds_Error := CI.Release (File_Stream_Write);
             begin
@@ -387,6 +435,10 @@ package body Canon is
           end;
         end if;
 
+        Check ("UI unlock",
+               CI.Send_Status_Command (Camera,
+                                       CI.Camera_Status_UI_Unlock,
+                                       0));
         Check ("Close session",
                CI.Close_Session (Camera));
 
@@ -400,32 +452,32 @@ package body Canon is
     exception
       when Occurrence : others =>
         IO.Put_Line (Exceptions.Information_Of (Occurrence));
+        declare
+          Dummy : CI.Eds_Error;
         begin
-          declare
-            Dummy : CI.Eds_Error := CI.Close_Session (Camera);
           begin
-            null;
+            Dummy := CI.Send_Status_Command (Camera,
+                                             CI.Camera_Status_UI_Unlock,
+                                             0);
           exception
             when others => null;
           end;
-          declare
-            Dummy : CI.Eds_Error := CI.Release (Camera);
           begin
-            null;
+            Dummy := CI.Close_Session (Camera);
           exception
             when others => null;
           end;
-          declare
-            Dummy : CI.Eds_Error := CI.Release (Camera_List);
           begin
-            null;
+            Dummy := CI.Release (Camera);
+          exception
+            when others => null;
+          end;
+          begin
+            Dummy := CI.Release (Camera_List);
           exception
             when others => null;
           end;
         end;
-        -- Do NOT re-raise here if you want Take_Picture to "swallow"
-        -- errors and just log them; if you want caller-visible failures,
-        -- add:  raise;
     end;
 
     Check ("Terminating SDK",

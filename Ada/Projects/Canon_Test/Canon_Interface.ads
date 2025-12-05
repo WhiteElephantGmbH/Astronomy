@@ -52,7 +52,6 @@ package Canon_Interface is
  ---------------------------------
   -- Opaque Handle Types (void*) --
   ---------------------------------
-
   type Camera_List    is private;
   type Camera         is private;
   type Directory_Item is private;
@@ -63,7 +62,6 @@ package Canon_Interface is
   ------------------------
   -- SDK Initialisation --
   ------------------------
-
   function Initialize_SDK return Eds_Error
     with Import        => True,
          Convention    => C,
@@ -77,7 +75,6 @@ package Canon_Interface is
   ------------------------
   -- Camera Enumeration --
   ------------------------
-
   function Get_Camera_List (Out_List : access Camera_List) return Eds_Error
     with Import        => True,
          Convention    => C,
@@ -99,7 +96,6 @@ package Canon_Interface is
   ----------------------------
   -- Get Device Information --
   ----------------------------
-
   type Device_Info is record
     Sz_Port_Name          : aliased String (1 .. EDS_MAX_NAME);
     Sz_Device_Description : aliased String (1 .. EDS_MAX_NAME);
@@ -126,7 +122,6 @@ package Canon_Interface is
   ---------------------
   -- Session Control --
   ---------------------
-
   function Open_Session (Cam : Camera) return Eds_Error
     with Import        => True,
          Convention    => C,
@@ -140,7 +135,6 @@ package Canon_Interface is
   --------------------------
   -- Reference Management --
   --------------------------
-
   function Release (Ref : Camera_List) return Eds_Error
     with Import        => True,
          Convention    => C,
@@ -164,10 +158,18 @@ package Canon_Interface is
   ---------------------
   -- Camera Commands --
   ---------------------
+  Camera_Command_Take_Picture         : constant Eds_Uint32 := 16#00000000#;
+  Camera_Command_Bulb_Start           : constant Eds_Uint32 := 16#00000002#;
+  Camera_Command_Bulb_End             : constant Eds_Uint32 := 16#00000003#;
+  Camera_Command_Press_Shutter_Button : constant Eds_Uint32 := 16#00000004#;
 
-  Camera_Command_Take_Picture : constant Eds_Uint32 := 16#00000000#;
-  Camera_Command_Bulb_Start   : constant Eds_Uint32 := 16#00000002#;
-  Camera_Command_Bulp_End     : constant Eds_Uint32 := 16#00000003#;
+  --kEdsCameraCommand_ShutterButton_*
+  Camera_Command_Shutter_Button_Off               : constant := 16#00000000#;
+  Camera_Command_Shutter_Button_Halfway           : constant := 16#00000001#;
+  Camera_Command_Shutter_Button_Completely        : constant := 16#00000003#;
+  Camera_Command_Shutter_Button_Halfway_Non_AF    : constant := 16#00010001#;
+  Camera_Command_Shutter_Button_Completely_Non_AF : constant := 16#00010003#;
+
 
   function Send_Command (Cam     : Camera;
                          Command : Eds_Uint32;
@@ -175,7 +177,6 @@ package Canon_Interface is
     with Import        => True,
          Convention    => C,
          External_Name => "EdsSendCommand";
-
   -------------------
   -- Object Events --
   -------------------
@@ -203,7 +204,6 @@ package Canon_Interface is
   -------------------
   -- Event Pumping --
   -------------------
-
   function Get_Event return Eds_Error
     with Import        => True,
          Convention    => C,
@@ -212,7 +212,6 @@ package Canon_Interface is
   -------------------------
   -- Directory item info --
   -------------------------
-
   type Directory_Item_Info is record
     Size         : Eds_Uint64;
     Is_Folder    : Eds_Int32;  -- EdsBool is 'int' in C
@@ -246,7 +245,6 @@ package Canon_Interface is
   ---------------------------
   -- Delete Directory Item --
   ---------------------------
-
   function Delete_Directory_Item (Item : Directory_Item) return Eds_Error
     with Import        => True,
          Convention    => C,
@@ -255,7 +253,6 @@ package Canon_Interface is
   ----------------------
   -- File I/O on host --
   ----------------------
-
   function Create_File_Stream
     (File_Name   : System.Address;
      Disposition : Eds_Int32;  -- EdsFileCreateDisposition
@@ -282,14 +279,19 @@ package Canon_Interface is
   ----------------
   -- Properties --
   ----------------
-
   subtype Eds_Property_Id   is Eds_Uint32;
   subtype Eds_Image_Quality is Eds_Uint32;
 
   --  property ids
-  Prop_Id_Tv            : constant Eds_Property_Id := 16#0000_0406#;
-  Prop_Id_ISO           : constant Eds_Property_Id := 16#0000_0402#;
-  Prop_Id_Image_Quality : constant Eds_Property_Id := 16#0000_0100#;
+  Prop_Id_Image_Quality        : constant Eds_Property_Id := 16#0000_0100#; -- kEdsPropID_ImageQuality
+  Prop_Id_ISO                  : constant Eds_Property_Id := 16#0000_0402#; -- kEdsPropID_ISOSpeed
+  Prop_Id_Tv                   : constant Eds_Property_Id := 16#0000_0406#; -- kEdsPropID_Tv
+  Prop_Id_AE_Mode_Select       : constant Eds_Property_Id := 16#0000_0436#; -- kEdsPropID_AEModeSelect
+  Prop_Id_Mirror_Lock_Up_State : constant Eds_Property_Id := 16#0100_0421#; -- kEdsPropID_MirrorLockUpState
+  Prop_Id_Mirror_Up_Setting    : constant Eds_Property_Id := 16#0100_0438#; -- kEdsPropID_MirrorUpSetting
+
+  -- RAW only (no JPEG) – from EdsImageQuality_LR
+  Image_Quality_LR : constant Eds_Image_Quality := 16#0064FF0F#;
 
   -- ISO codes (EdsISOSpeed_*)
   K_ISO_100   : constant Eds_Uint32 := 16#48#;
@@ -329,10 +331,10 @@ package Canon_Interface is
   K_TV_D_5    : constant Eds_Uint32 := 16#4B#;
   K_TV_D_6    : constant Eds_Uint32 := 16#4D#; -- (1/3)
   K_TV_D_8    : constant Eds_Uint32 := 16#50#;
-  K_TV_D_10   : constant Eds_Uint32 := 16#54#;
+  K_TV_D_10   : constant Eds_Uint32 := 16#53#; -- (1/3)
   K_TV_D_13   : constant Eds_Uint32 := 16#55#;
   K_TV_D_15   : constant Eds_Uint32 := 16#58#;
-  K_TV_D_20   : constant Eds_Uint32 := 16#5C#;
+  K_TV_D_20   : constant Eds_Uint32 := 16#5B#; -- (1/3)
   K_TV_D_25   : constant Eds_Uint32 := 16#5D#;
   K_TV_D_30   : constant Eds_Uint32 := 16#60#;
   K_TV_D_40   : constant Eds_Uint32 := 16#63#;
@@ -357,8 +359,18 @@ package Canon_Interface is
   K_TV_D_3200 : constant Eds_Uint32 := 16#95#;
   K_TV_D_4000 : constant Eds_Uint32 := 16#98#;
 
-  -- RAW only (no JPEG) – from EdsImageQuality_LR
-  Image_Quality_LR : constant Eds_Image_Quality := 16#0064FF0F#;
+  --  codes EdsAEMode*
+  K_AE_Mode_Manual : constant Eds_Uint32 := 16#03#;
+  K_AE_Mode_Bulb   : constant Eds_Uint32 := 16#04#;
+
+  -- codes kEdsMirrorLockupState*
+  K_Eds_Mirror_Lockup_State_Disable   : constant Eds_Uint32 := 0;
+  K_Eds_Mirror_Lockup_State_Enable    : constant Eds_Uint32 := 1;
+  K_Eds_Mirror_Lockup_During_Shooting : constant Eds_Uint32 := 2;
+
+  -- codes kEdsMirrorUpSetting*
+  K_Eds_Mirror_Up_Setting_Off : constant Eds_Uint32 := 0;
+  K_Eds_Mirror_Up_Setting_On  : constant Eds_Uint32 := 1;
 
   function Set_Property_Data
     (Ref           : Camera;
@@ -369,6 +381,23 @@ package Canon_Interface is
     with Import        => True,
          Convention    => C,
          External_Name => "EdsSetPropertyData";
+
+  ---------------------
+  -- Status Commands --
+  ---------------------
+  subtype Eds_Camera_Status_Command is Eds_Uint32;
+
+  -- kEdsCameraStatusCommand_UI_*
+  Camera_Status_UI_Lock   : constant Eds_Camera_Status_Command := 16#0000_0000#;
+  Camera_Status_UI_Unlock : constant Eds_Camera_Status_Command := 16#0000_0001#;
+
+  function Send_Status_Command
+    (Cam    : Camera;
+     Status : Eds_Camera_Status_Command;
+     Param  : Eds_Uint32) return Eds_Error
+    with Import        => True,
+         Convention    => C,
+         External_Name => "EdsSendStatusCommand";
 
 private
 

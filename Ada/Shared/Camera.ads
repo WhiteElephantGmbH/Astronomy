@@ -22,7 +22,7 @@ package Camera is
 
   type Model is (Canon_Eos_6D, Canon_Eos_60D);
 
-  type Status is (Disconnected, Connected, Capturing, Captured);
+  type Status is (Idle, Connected, Capturing, Captured, Downloading, Stopping);
 
   type Information is record
     State  : Status;

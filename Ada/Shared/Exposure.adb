@@ -39,38 +39,6 @@ package body Exposure is
     The_Item : Item;
   begin
     case Tus is
-    when 30_000_000 =>
-      The_Tv := Tv_30_S;
-    when 25_000_000 =>
-      The_Tv := Tv_25_S;
-    when 20_000_000 =>
-      The_Tv := Tv_20_S;
-    when 15_000_000 =>
-      The_Tv := Tv_15_S;
-    when 13_000_000 =>
-      The_Tv := Tv_13_S;
-    when 10_000_000 =>
-      The_Tv := Tv_10_S;
-    when  8_000_000 =>
-      The_Tv := Tv_8_S;
-    when  6_000_000 =>
-      The_Tv := Tv_6_S;
-    when  5_000_000 =>
-      The_Tv := Tv_5_S;
-    when  4_000_000 =>
-      The_Tv := Tv_4_S;
-    when  3_200_000 =>
-      The_Tv := Tv_3_2_S;
-    when  2_500_000 =>
-      The_Tv := Tv_2_5_S;
-    when  2_000_000 =>
-      The_Tv := Tv_2_S;
-    when  1_600_000 =>
-      The_Tv := Tv_1_6_S;
-    when  1_300_000 =>
-      The_Tv := Tv_1_3_S;
-    when  1_000_000 =>
-      The_Tv := Tv_1_S;
     when  0_800_000 =>
       The_Tv := Tv_0_8_S;
     when  0_600_000 =>
@@ -208,9 +176,7 @@ package body Exposure is
         Image : constant String := V.T_Value'image;
       begin
         case V.T_Value is
-        when Tv_30_S .. Tv_4_S | Tv_2_S | Tv_1_S =>
-          S.Put (Image(Image'first + 3 .. Image'last - 2));
-        when Tv_3_2_S | Tv_2_5_S | Tv_1_6_S | Tv_1_3_S | Tv_0_8_S .. Tv_0_3_S =>
+        when Tv_0_8_S .. Tv_0_3_S =>
           S.Put ([Image(Image'first + 3), '.', Image(Image'last - 2)]);
         when Tv_D_4_S .. TV_D_32000_S =>
           S.Put ("1/" & Image(Image'first + 5 .. Image'last - 2));

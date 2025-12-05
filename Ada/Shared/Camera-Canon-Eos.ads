@@ -51,10 +51,9 @@ package Camera.Canon.Eos is
   File_Open_Always       : constant Int32 := 3;
   File_Truncate_Existing : constant Int32 := 4;
 
- ---------------------------------
-  -- Opaque Handle Types (void*) --
-  ---------------------------------
-
+ --------------------------
+  -- Opaque Handle Types --
+  -------------------------
   type Device_List    is private;
   type Device         is private;
   type Directory_Item is private;
@@ -65,7 +64,6 @@ package Camera.Canon.Eos is
   ------------------------
   -- SDK Initialisation --
   ------------------------
-
   function Initialize_SDK return Error
   with
     Import        => True,
@@ -81,7 +79,6 @@ package Camera.Canon.Eos is
   ------------------------
   -- Camera Enumeration --
   ------------------------
-
   function Get_Camera_List (The_List : access Device_List) return Error
   with
     Import        => True,
@@ -106,7 +103,6 @@ package Camera.Canon.Eos is
   ----------------------------
   -- Get Device Information --
   ----------------------------
-
   type Device_Info is record
     Sz_Port_Name          : aliased Name;
     Sz_Device_Description : aliased Name;
@@ -129,7 +125,6 @@ package Camera.Canon.Eos is
   ---------------------
   -- Session Control --
   ---------------------
-
   function Open_Session (Item : Device) return Error
   with
     Import        => True,
@@ -145,7 +140,6 @@ package Camera.Canon.Eos is
   --------------------------
   -- Reference Management --
   --------------------------
-
   function Release (Item : Device_List) return Error
   with
     Import        => True,
@@ -173,10 +167,17 @@ package Camera.Canon.Eos is
   ---------------------
   -- Camera Commands --
   ---------------------
+  Camera_Command_Take_Picture         : constant Uint32 := 16#0000_0000#; -- kEdsCameraCommand_TakePicture
+  Camera_Command_Bulb_Start           : constant Uint32 := 16#0000_0002#; -- kEdsCameraCommand_BulbStart
+  Camera_Command_Bulb_End             : constant Uint32 := 16#0000_0003#; -- kEdsCameraCommand_BulbEnd
+  Camera_Command_Press_Shutter_Button : constant Uint32 := 16#0000_0004#; -- kEdsCameraCommand_PressShutterButton
 
-  Camera_Command_Take_Picture : constant Uint32 := 16#00000000#;
-  Camera_Command_Bulb_Start   : constant Uint32 := 16#00000002#;
-  Camera_Command_Bulp_End     : constant Uint32 := 16#00000003#;
+  --kEdsCameraCommand_ShutterButton_*
+  Camera_Command_Shutter_Button_Off               : constant Uint32 := 16#0000_0000#;
+  Camera_Command_Shutter_Button_Halfway           : constant Uint32 := 16#0000_0001#;
+  Camera_Command_Shutter_Button_Completely        : constant Uint32 := 16#0000_0003#;
+  Camera_Command_Shutter_Button_Halfway_Non_AF    : constant Uint32 := 16#0001_0001#;
+  Camera_Command_Shutter_Button_Completely_Non_AF : constant Uint32 := 16#0001_0003#;
 
   function Send_Command (To      : Device;
                          Command : Uint32;
@@ -189,7 +190,6 @@ package Camera.Canon.Eos is
   -------------------
   -- Object Events --
   -------------------
-
   subtype Object_Event is Uint32;
 
   Object_Event_All                       : constant Object_Event := 16#00000200#;
@@ -214,7 +214,6 @@ package Camera.Canon.Eos is
   -------------------
   -- Event Pumping --
   -------------------
-
   function Get_Event return Error
     with Import        => True,
          Convention    => C,
@@ -223,7 +222,6 @@ package Camera.Canon.Eos is
   -------------------------
   -- Directory item info --
   -------------------------
-
   type Directory_Item_Info is record
     Size         : Uint64;
     Is_Folder    : Int32;  -- EdsBool is 'int' in C
@@ -247,7 +245,6 @@ package Camera.Canon.Eos is
   ---------------------------
   -- Delete Directory Item --
   ---------------------------
-
   function Delete_Directory_Item (Item : Directory_Item) return Error
   with
     Import        => True,
@@ -257,7 +254,6 @@ package Camera.Canon.Eos is
   ----------------------
   -- File I/O on host --
   ----------------------
-
   function Create_File_Stream
     (File_Name   : System.Address;
      Disposition : Int32; -- EdsFileCreateDisposition
@@ -285,14 +281,16 @@ package Camera.Canon.Eos is
   ----------------
   -- Properties --
   ----------------
-
   subtype Property_Id   is Uint32;
   subtype Image_Quality is Uint32;
 
-  --  property ids
-  Prop_Id_Tv            : constant Property_Id := 16#0000_0406#;
-  Prop_Id_ISO           : constant Property_Id := 16#0000_0402#;
-  Prop_Id_Image_Quality : constant Property_Id := 16#0000_0100#;
+  -- property ids
+  Prop_Id_Tv                   : constant Property_Id := 16#0000_0406#; -- kEdsPropID_ImageQuality
+  Prop_Id_ISO                  : constant Property_Id := 16#0000_0402#; -- kEdsPropID_ISOSpeed
+  Prop_Id_Image_Quality        : constant Property_Id := 16#0000_0100#; -- kEdsPropID_Tv
+  Prop_Id_AE_Mode_Select       : constant Property_Id := 16#0000_0436#; -- kEdsPropID_AEModeSelect
+  Prop_Id_Mirror_Lock_Up_State : constant Property_Id := 16#0100_0421#; -- kEdsPropID_MirrorLockUpState
+  Prop_Id_Mirror_Up_Setting    : constant Property_Id := 16#0100_0438#; -- kEdsPropID_MirrorUpSetting
 
   -- ISO codes (EdsISOSpeed_*)
   K_ISO_6      : constant Uint32 := 16#28#;
@@ -338,12 +336,15 @@ package Camera.Canon.Eos is
   K_Tv_Bulb    : constant Uint32 := 16#0C#;
   K_TV_30      : constant Uint32 := 16#10#;
   K_TV_25      : constant Uint32 := 16#13#;
-  K_TV_20      : constant Uint32 := 16#15#; -- (1/3)
+  K_TV_20      : constant Uint32 := 16#14#;
+  K_TV_20_S    : constant Uint32 := 16#15#; -- (1/3)
   K_TV_15      : constant Uint32 := 16#18#;
   K_TV_13      : constant Uint32 := 16#1B#;
-  K_TV_10      : constant Uint32 := 16#1D#; -- (1/3)
+  K_TV_10      : constant Uint32 := 16#1C#;
+  K_TV_10_S    : constant Uint32 := 16#1D#; -- (1/3)
   K_TV_8       : constant Uint32 := 16#20#;
-  K_TV_6       : constant Uint32 := 16#23#; -- (1/3)
+  K_TV_6_S     : constant Uint32 := 16#23#; -- (1/3)
+  K_TV_6       : constant Uint32 := 16#24#;
   K_TV_5       : constant Uint32 := 16#25#;
   K_TV_4       : constant Uint32 := 16#28#;
   K_TV_3_2     : constant Uint32 := 16#2B#;
@@ -356,14 +357,18 @@ package Camera.Canon.Eos is
   K_TV_0_6     : constant Uint32 := 16#3D#;
   K_TV_0_5     : constant Uint32 := 16#40#;
   K_TV_0_4     : constant Uint32 := 16#43#;
-  K_TV_0_3     : constant Uint32 := 16#45#; -- (1/3)
+  K_TV_0_3     : constant Uint32 := 16#44#;
+  K_TV_0_3_S   : constant Uint32 := 16#45#; -- (1/3)
   K_TV_D_4     : constant Uint32 := 16#48#;
   K_TV_D_5     : constant Uint32 := 16#4B#;
-  K_TV_D_6     : constant Uint32 := 16#4D#; -- (1/3)
+  K_TV_D_6     : constant Uint32 := 16#4C#;
+  K_TV_D_6_S   : constant Uint32 := 16#4D#; -- (1/3)
   K_TV_D_8     : constant Uint32 := 16#50#;
+  K_TV_D_10_S  : constant Uint32 := 16#53#; -- (1/3)
   K_TV_D_10    : constant Uint32 := 16#54#;
   K_TV_D_13    : constant Uint32 := 16#55#;
   K_TV_D_15    : constant Uint32 := 16#58#;
+  K_TV_D_20_S  : constant Uint32 := 16#5B#; -- (1/3)
   K_TV_D_20    : constant Uint32 := 16#5C#;
   K_TV_D_25    : constant Uint32 := 16#5D#;
   K_TV_D_30    : constant Uint32 := 16#60#;
@@ -402,6 +407,29 @@ package Camera.Canon.Eos is
   -- RAW only (no JPEG) – from EdsImageQuality_LR
   Image_Quality_LR : constant Image_Quality := 16#0064FF0F#;
 
+  --  codes EdsAEMode*
+  K_AE_Mode_Manual : constant Uint32 := 16#03#;
+  K_AE_Mode_Bulb   : constant Uint32 := 16#04#;
+
+  -- codes kEdsMirrorLockupState*
+  K_Eds_Mirror_Lockup_State_Disable   : constant Uint32 := 0;
+  K_Eds_Mirror_Lockup_State_Enable    : constant Uint32 := 1;
+  K_Eds_Mirror_Lockup_During_Shooting : constant Uint32 := 2;
+
+  -- codes kEdsMirrorUpSetting*
+  K_Eds_Mirror_Up_Setting_Off : constant Uint32 := 0;
+  K_Eds_Mirror_Up_Setting_On  : constant Uint32 := 1;
+
+  function Get_Property_Data (Item     : Device;
+                              Property : Property_Id;
+                              Param    : Int32;
+                              Size     : Uint32;
+                              Data     : System.Address) return Error
+  with
+    Import        => True,
+    Convention    => C,
+    External_Name => "EdsGetPropertyData";
+
   function Set_Property_Data (Item     : Device;
                               Property : Property_Id;
                               Param    : Int32;
@@ -411,6 +439,22 @@ package Camera.Canon.Eos is
     Import        => True,
     Convention    => C,
     External_Name => "EdsSetPropertyData";
+
+  ---------------------
+  -- Status Commands --
+  ---------------------
+  subtype Camera_Status_Command is Uint32;
+
+  -- kEdsCameraStatusCommand_UI_*
+  Camera_Status_UI_Lock   : constant Camera_Status_Command := 16#00000000#;
+  Camera_Status_UI_Unlock : constant Camera_Status_Command := 16#00000001#;
+
+  function Send_Status_Command (Item  : Device;
+                                State : Camera_Status_Command;
+                                Param : Uint32) return Error
+  with Import        => True,
+       Convention    => C,
+       External_Name => "EdsSendStatusCommand";
 
 private
 
