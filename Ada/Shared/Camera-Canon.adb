@@ -329,6 +329,11 @@ package body Camera.Canon is
     The_Exposure : Exposure.Item;
     The_Iso      : Sensitivity.Item;
 
+    Delta_Time : constant RT.Time_Span := RT.To_Time_Span (1.0 / 5);
+
+    use type RT.Time;
+
+
     type Session is record
       Device_List : aliased Eos.Device_List;
       Device      : aliased Eos.Device;
@@ -470,14 +475,19 @@ package body Camera.Canon is
     --   Downloads the RAW file from the camera to Filename    --
     --   Deletes the RAW file in the camera                    --
     -------------------------------------------------------------
-    The_Start_Time : RT.Time;
-    The_Timeout    : Duration;
-    The_Item       : Eos.Directory_Item;
-    Shutter_Is_On  : Boolean;
+    The_Start_Time  : RT.Time;
+    The_Wakeup_Time : RT.Time;
+    The_Timeout     : Duration;
+    The_Item        : Eos.Directory_Item;
+
+    Shutter_Is_On            : Boolean;
+    Shutter_Release          : Boolean;
+    The_Shutter_Release_Time : RT.Time;
 
     procedure Start_Capture is
     begin
       Shutter_Is_On := False;
+      Shutter_Release := False;
       Open;
       if not The_Iso.Is_From_Camera then
         Set (Property    => Eos.Prop_Id_ISO,
@@ -515,6 +525,8 @@ package body Camera.Canon is
                  Eos.Camera_Command_Press_Shutter_Button,
                  Eos.Camera_Command_Shutter_Button_Completely_Non_AF);
         Shutter_Is_On := True;
+        The_Shutter_Release_Time := RT.Clock + RT.To_Time_Span (Duration(The_Exposure.Time));
+        The_Wakeup_Time := RT.Clock;
       when Exposure.From_Camera =>
         null;
       end case;
@@ -531,12 +543,17 @@ package body Camera.Canon is
 
     procedure Continue_Capture is
       use type Eos.Int32;
-      use type RT.Time;
       use type Eos.Directory_Item;
     begin
-      if Shutter_Is_On and then RT.To_Duration (RT.Clock - The_Start_Time) > Duration(The_Exposure.Time) then
-        Command ("Release shutter button", Eos.Camera_Command_Shutter_Button_Off);
-        Shutter_Is_On := False;
+      if Shutter_Is_On then
+        if Shutter_Release then
+          Command ("Release shutter button", Eos.Camera_Command_Shutter_Button_Off);
+          Shutter_Release := False;
+          Shutter_Is_On := False;
+        elsif The_Wakeup_Time > The_Shutter_Release_Time then
+          The_Wakeup_Time := The_Shutter_Release_Time;
+          Shutter_Release := True;
+        end if;
       elsif RT.To_Duration (RT.Clock - The_Start_Time) > The_Timeout then
         if The_Item /= Eos.No_Directory then
           Check ("Delete incomplete file from camera", Eos.Delete_Directory_Item (The_Item));
@@ -620,6 +637,7 @@ package body Camera.Canon is
 
   begin -- Control
     Data.Set (Idle);
+    The_Wakeup_Time := RT.Clock + Delta_Time;
     loop
       select
         accept Capture_Picture (Filename : String;
@@ -637,7 +655,8 @@ package body Camera.Canon is
         end Shutdown;
         exit;
       or
-        delay 0.2;
+        delay until The_Wakeup_Time;
+        The_Wakeup_Time := RT.Clock + Delta_Time;
         case Data.Actual.State is
         when Capturing =>
           Continue_Capture;
