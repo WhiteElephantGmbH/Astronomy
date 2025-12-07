@@ -26,13 +26,37 @@ with Camera;
 with Exceptions;
 with Exposure;
 with Sensitivity;
+with Text;
 
 procedure Camera_Test is
+
   package IO renames Ada.Text_IO;
-  Delay_Time : constant Duration := 0.1;
+
+  procedure Show_Grid is
+    Grid : constant Camera.Green_Grid := Camera.Captured;
+  begin
+    for Row in Grid'range(1) loop
+      declare
+        Row_Image : constant String := "  " & Row'image;
+      begin
+        IO.Put (Row_Image(Row_Image'last - 3 .. Row_Image'last) & ":");
+        for Column in Grid'range(2) loop
+          declare
+            Column_Image : constant String := "     " & Grid(Row, Column)'image;
+          begin
+            IO.Put (Column_Image(Column_Image'last - 5 .. Column_Image'last));
+          end;
+        end loop;
+        IO.New_Line;
+      end;
+    end loop;
+  end Show_Grid;
+
+  Delay_Time : constant Duration := 0.2;
   Timeout    : constant Duration := 10.0;
   Counter    : constant Natural := Natural(Timeout / Delay_Time);
   The_Count  : Integer;
+
 begin
   IO.Put_Line ("Camera Test");
   IO.Put_Line ("===========");
@@ -47,31 +71,47 @@ begin
         The_Count := Counter;
         IO.New_Line;
         IO.Put_Line ("Idle");
-        IO.Put ("enter exposure> ");
+        IO.Put ("cmd> ");
         declare
-          Command : constant String := IO.Get_Line;
+          Parameters : constant Text.Strings := Text.Strings_Of (IO.Get_Line, Separator => ' ');
         begin
-          if Command = "" then
+          if Parameters.Count = 0 then
             exit;
+          elsif Parameters.Count /= 2 then
+            raise Constraint_Error;
           end if;
+          declare
+            Tv : constant Exposure.Item := Exposure.Value(Parameters(2));
           begin
-            declare
-              Tv : constant Exposure.Item := Exposure.Value(Command);
-            begin
-              The_Count := Counter;
+            case Text.Uppercase_Of (Parameters(1)(1)) is
+            when 'C' =>
               Camera.Capture ("D:\Temp\Picture.CR2", Tv, Sensitivity.Value(125));
-            end;
-          exception
-          when others =>
-            IO.Put_Line ("Exposure """ & Command & """ not supported !!!");
+            when 'G' =>
+              Camera.Capture (10, Tv);
+            when others =>
+              raise Constraint_Error;
+            end case;
           end;
+        exception
+        when others =>
+          IO.Put_Line ("### Illegal Command (expexted: ['C' | 'G'] <exposure>]) ###");
         end;
+      when Camera.Connecting =>
+        IO.Put ("o");
       when Camera.Connected =>
-        IO.Put_Line ("Connected " & Info.Camera'image);
-      when Camera.Capturing | Camera.Captured =>
+        IO.New_Line;
+        IO.Put_Line ("Connnected " & Info.Camera'image);
+      when Camera.Capturing =>
         IO.Put ("c");
+      when Camera.Captured =>
+        IO.Put ("C");
       when Camera.Downloading =>
         IO.Put ("d");
+      when Camera.Cropping =>
+        IO.Put ("r");
+      when Camera.Cropped =>
+        IO.New_Line;
+        Show_Grid;
       when Camera.Stopping =>
         IO.Put ("s");
       end case;

@@ -15,24 +15,19 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-private package Camera.Canon is
+package Camera.Raw is
 
-  procedure Start_Control;
+  procedure Prepare_Grid (File_Name : String;
+                          Size      : Square_Size);
+  -- Computes the central square crop of the processed image and returns green channel pixels in a 2D grid
+  -- Raises Raw_Error when:
+  --   libraw_init returns NULL,
+  --   LibRaw open/unpack/process/make_mem_image calls fail,
+  --   Size exceeds processed image dimensions,
+  --   processed image has unsupported format (bits /= 16, colors < 1),
+  --   NULL data pointer.
+  Raw_Error : exception;
 
-  function Actual_Info return Information;
+  function Grid return Green_Grid;
 
-  procedure Capture_Picture (Filename : String;
-                             Time     : Exposure.Item;
-                             Iso      : Sensitivity.Item);
-
-  procedure Capture_Grid (Size : Square_Size;
-                          Time : Exposure.Item;
-                          Iso  : Sensitivity.Item);
-
-  function Captured_Grid return Green_Grid;
-
-  procedure Stop_Capture;
-
-  procedure End_Control;
-
-end Camera.Canon;
+end Camera.Raw;

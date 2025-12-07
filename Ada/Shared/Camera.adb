@@ -44,6 +44,21 @@ package body Camera is
   end Capture;
 
 
+  procedure Capture (Size : Square_Size;
+                     Time : Exposure.Item := Exposure.From_Camera;
+                     Iso  : Sensitivity.Item := Sensitivity.From_Camera) is
+  begin
+    Log.Write ("Capture - Size:" & Size'image & " - Time: " & Time'image & " - Iso: " & Iso'image);
+    Canon.Capture_Grid (Size, Time, Iso);
+  end Capture;
+
+
+  function Captured return Green_Grid is
+  begin
+    return Canon.Captured_Grid;
+  end Captured;
+
+
   procedure Stop is
   begin
     Log.Write ("Stop");

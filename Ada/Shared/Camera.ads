@@ -22,12 +22,27 @@ package Camera is
 
   type Model is (Canon_Eos_6D, Canon_Eos_60D);
 
-  type Status is (Idle, Connected, Capturing, Captured, Downloading, Stopping);
+  type Status is (Idle, Connecting, Connected, Capturing, Captured, Downloading, Cropping, Cropped, Stopping);
 
   type Information is record
     State  : Status;
     Camera : Model;
   end record;
+
+  -- Maximums for Canon EOS 6D
+  Min_With_Or_Height : constant := 3648;
+  Max_With_Or_Height : constant := 5472;
+
+  Pixel_Size : constant := 16; -- allowed 8 or 16
+
+  type Pixel is new Natural range 0 .. 2 ** Pixel_Size - 1 with Size => Pixel_Size;
+
+  type Square_Size is new Natural range 2 .. Min_With_Or_Height with Dynamic_Predicate => Square_Size mod 2 = 0;
+
+  type Columns is range 1 .. Max_With_Or_Height;
+  type Rows    is range 1 .. Max_With_Or_Height;
+
+  type Green_Grid is array (Rows range <>, Columns range <>) of Pixel;
 
   procedure Start;
 
@@ -36,6 +51,12 @@ package Camera is
   procedure Capture (Filename : String;
                      Time     : Exposure.Item := Exposure.From_Camera;
                      Iso      : Sensitivity.Item := Sensitivity.From_Camera);
+
+  procedure Capture (Size : Square_Size;
+                     Time : Exposure.Item := Exposure.From_Camera;
+                     Iso  : Sensitivity.Item := Sensitivity.From_Camera);
+
+  function Captured return Green_Grid;
 
   procedure Stop;
 

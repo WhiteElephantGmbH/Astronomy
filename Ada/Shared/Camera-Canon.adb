@@ -18,6 +18,7 @@ pragma Style_White_Elephant;
 with Ada.Real_Time;
 with C.Helper;
 with Camera.Canon.Eos;
+with Camera.Raw;
 with System;
 with Text;
 with Traces;
@@ -28,11 +29,15 @@ package body Camera.Canon is
 
   package RT renames Ada.Real_Time;
 
-  task type Control is
+  task type Control with  Priority => System.Max_Priority is
 
     entry Capture_Picture (Filename : String;
                            Time     : Exposure.Item;
                            Iso      : Sensitivity.Item);
+
+    entry Capture_Grid (Size : Square_Size;
+                        Time : Exposure.Item;
+                        Iso  : Sensitivity.Item);
     entry Shutdown;
 
   end Control;
@@ -97,9 +102,12 @@ package body Camera.Canon is
 
     function Actual return Information;
 
+    function Grid return Green_Grid;
+
   private
     The_Information : Information;
   end Data;
+
 
 
   protected body Data is
@@ -131,6 +139,15 @@ package body Camera.Canon is
       return The_Information;
     end Actual;
 
+
+    function Grid return Green_Grid is
+    begin
+      if The_Information.State /= Cropped then
+        raise Program_Error;
+      end if;
+      return Camera.Raw.Grid;
+    end Grid;
+
   end Data;
 
 
@@ -144,8 +161,26 @@ package body Camera.Canon is
                              Time     : Exposure.Item;
                              Iso      : Sensitivity.Item) is
   begin
+    Data.Set (Connecting);
     The_Control.Capture_Picture (Filename, Time, Iso);
   end Capture_Picture;
+
+
+  procedure Capture_Grid (Size : Square_Size;
+                          Time : Exposure.Item;
+                          Iso  : Sensitivity.Item) is
+  begin
+    Data.Set (Connecting);
+    The_Control.Capture_Grid (Size, Time, Iso);
+  end Capture_Grid;
+
+
+  function Captured_Grid return Green_Grid is
+    Grid : constant Green_Grid := Data.Grid;
+  begin
+    Data.Set (Idle);
+    return Grid;
+  end Captured_Grid;
 
 
   procedure Stop_Capture is
@@ -325,9 +360,13 @@ package body Camera.Canon is
     end To_K_Tv;
 
 
-    The_Filename : Text.String   := [Default_Filename];
+    The_Filename : Text.String := [Default_Filename];
     The_Exposure : Exposure.Item;
     The_Iso      : Sensitivity.Item;
+
+
+    Is_Cropping   : Boolean;
+    The_Grid_Size : Square_Size;
 
     Delta_Time : constant RT.Time_Span := RT.To_Time_Span (1.0 / 5);
 
@@ -368,7 +407,7 @@ package body Camera.Canon is
     end Command;
 
 
-    procedure Disconnect is
+    procedure Disconnect (Next_State : Status := Idle) is
       Dummy : Eos.Error;
     begin
       begin
@@ -401,7 +440,7 @@ package body Camera.Canon is
       when others =>
         null;
       end;
-      Data.Set (Idle);
+      Data.Set (Next_State);
     end Disconnect;
 
     --------------------------------------------
@@ -627,7 +666,7 @@ package body Camera.Canon is
       begin
         null;
       end;
-      Disconnect;
+      Disconnect (Next_State => (if Is_Cropping then Cropping else Idle));
     exception
     when others =>
       Disconnect;
@@ -647,8 +686,21 @@ package body Camera.Canon is
           The_Filename := [Filename];
           The_Exposure := Time;
           The_Iso := Iso;
-          Start_Capture;
+          Is_Cropping := False;
         end;
+        Start_Capture;
+      or
+        accept Capture_Grid (Size : Square_Size;
+                             Time : Exposure.Item;
+                             Iso  : Sensitivity.Item)
+        do
+          The_Grid_Size := Size;
+          The_Exposure := Time;
+          The_Iso := Iso;
+          Is_Cropping := True;
+          The_Filename := [Default_Filename];
+        end;
+        Start_Capture;
       or
         accept Shutdown do
           Disconnect;
@@ -668,7 +720,10 @@ package body Camera.Canon is
             The_Item := Eos.No_Directory;
           end if;
           Disconnect;
-        when Connected | Downloading | Idle =>
+        when Cropping =>
+          Raw.Prepare_Grid (The_Filename.To_String, The_Grid_Size);
+          Data.Set (Cropped);
+        when Connecting | Connected | Downloading | Cropped | Idle =>
           null;
         end case;
       end select;
