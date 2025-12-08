@@ -32,6 +32,8 @@ private package Camera.Canon is
   function Captured_Grid return Green_Grid;
 
   procedure Stop_Capture;
+  
+  function Last_Error_Message return String;
 
   procedure End_Control;
 

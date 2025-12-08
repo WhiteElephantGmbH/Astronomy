@@ -28,6 +28,12 @@ package Camera.Raw is
   --   NULL data pointer.
   Raw_Error : exception;
 
+  procedure Stop_Preparing;
+
   function Grid return Green_Grid;
+
+  function Height return Rows;
+
+  function Width return Columns;
 
 end Camera.Raw;

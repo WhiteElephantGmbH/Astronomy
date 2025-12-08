@@ -16,6 +16,8 @@
 pragma Style_White_Elephant;
 
 with Camera.Canon;
+with Camera.Raw;
+
 with Traces;
 
 package body Camera is
@@ -59,11 +61,29 @@ package body Camera is
   end Captured;
 
 
+  function Image_Height return Rows is
+  begin
+    return Raw.Height;
+  end Image_Height;
+
+
+  function Image_Width return Columns is
+  begin
+    return Raw.Width;
+  end Image_Width;
+
+
   procedure Stop is
   begin
     Log.Write ("Stop");
     Canon.Stop_Capture;
   end Stop;
+
+
+  function Error_Message return String is
+  begin
+    return Canon.Last_Error_Message;
+  end Error_Message;
 
 
   procedure Finish is

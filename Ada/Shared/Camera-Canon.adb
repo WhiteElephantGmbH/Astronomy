@@ -38,6 +38,9 @@ package body Camera.Canon is
     entry Capture_Grid (Size : Square_Size;
                         Time : Exposure.Item;
                         Iso  : Sensitivity.Item);
+
+    entry Await_Stop;
+
     entry Shutdown;
 
   end Control;
@@ -98,14 +101,19 @@ package body Camera.Canon is
 
     procedure Set (Item : Model);
 
-    procedure Stop_Capturing;
-
     function Actual return Information;
 
     function Grid return Green_Grid;
 
+    procedure Set_Error (Message : String);
+
+    function Last_Error return String;
+
+    procedure Reset_Error;
+
   private
     The_Information : Information;
+    The_Last_Error  : Text.String;
   end Data;
 
 
@@ -114,7 +122,7 @@ package body Camera.Canon is
 
     procedure Set (State : Status) is
     begin
-      if State = Idle or else The_Information.State /= Stopping then
+      if The_Information.State /= Error then
         The_Information.State := State;
       end if;
     end Set;
@@ -124,14 +132,6 @@ package body Camera.Canon is
     begin
       The_Information.Camera := Item;
     end Set;
-
-
-    procedure Stop_Capturing is
-    begin
-      if The_Information.State in Capturing then
-        The_Information.State := Stopping;
-      end if;
-    end Stop_Capturing;
 
 
     function Actual return Information is
@@ -147,6 +147,25 @@ package body Camera.Canon is
       end if;
       return Camera.Raw.Grid;
     end Grid;
+
+
+    procedure Set_Error (Message : String) is
+    begin
+      The_Last_Error := [Message];
+      The_Information.State := Error;
+    end Set_Error;
+
+
+    function Last_Error return String is
+    begin
+      return The_Last_Error.To_String;
+    end Last_Error;
+
+
+    procedure Reset_Error is
+    begin
+      The_Information.State := Idle;
+    end Reset_Error;
 
   end Data;
 
@@ -185,8 +204,15 @@ package body Camera.Canon is
 
   procedure Stop_Capture is
   begin
-    Data.Stop_Capturing;
+    The_Control.Await_Stop;
   end Stop_Capture;
+
+
+  function Last_Error_Message return String is
+  begin
+    Data.Reset_Error;
+    return Data.Last_Error;
+  end Last_Error_Message;
 
 
   procedure End_Control is
@@ -200,12 +226,12 @@ package body Camera.Canon is
   ---------------------------
   function On_Object_Event (Event   : Eos.Object_Event;
                             Object  : Eos.Directory_Item;
-                            Context : System.Address) return Eos.Error
+                            Context : System.Address) return Eos.Result
     with Convention => StdCall;
 
   function On_Object_Event (Event   : Eos.Object_Event;
                             Object  : Eos.Directory_Item;
-                            Context : System.Address) return Eos.Error
+                            Context : System.Address) return Eos.Result
   is
     pragma Unreferenced (Context);
     use type Eos.Object_Event;
@@ -234,9 +260,10 @@ package body Camera.Canon is
     -----------
     Canon_Error : exception;
 
-    procedure Raise_Error (Msg : String) with No_Return is
+    procedure Raise_Error (Message : String) with No_Return is
     begin
-      Log.Error (Msg);
+      Log.Error (Message);
+      Data.Set_Error (Message);
       raise Canon_Error;
     end Raise_Error;
 
@@ -244,15 +271,15 @@ package body Camera.Canon is
     -- Check return codes --
     ------------------------
     procedure Check (Where   : String;
-                     Result  : Eos.Error;
+                     Result  : Eos.Result;
                      Logging : Boolean := True) is
-      use type Eos.Error;
+      use type Eos.Result;
     begin
       if Logging then
         Log.Write (Where);
       end if;
       if Result /= Eos.OK then
-        Raise_Error (Where & " failed, error =" & Eos.Error'image (Result));
+        Raise_Error (Where & " failed, error =" & Eos.Result'image (Result));
       end if;
     end Check;
 
@@ -364,10 +391,6 @@ package body Camera.Canon is
     The_Exposure : Exposure.Item;
     The_Iso      : Sensitivity.Item;
 
-
-    Is_Cropping   : Boolean;
-    The_Grid_Size : Square_Size;
-
     Delta_Time : constant RT.Time_Span := RT.To_Time_Span (1.0 / 5);
 
     use type RT.Time;
@@ -380,6 +403,10 @@ package body Camera.Canon is
     end record;
 
     The_Session : Session;
+    The_Item    : Eos.Directory_Item := Eos.No_Directory;
+
+    Is_Cropping   : Boolean;
+    The_Grid_Size : Square_Size;
 
 
     procedure Set (Where_Label : String;
@@ -399,6 +426,24 @@ package body Camera.Canon is
     end Set;
 
 
+    procedure Get (Where_Label : String;
+                   Property    : Eos.Property_Id;
+                   Value       : out Eos.Uint32;
+                   Param       : Eos.Int32 := 0)
+    is
+      Val : aliased Eos.Uint32;
+      use type Eos.Uint32;
+    begin
+      Check (Where_Label,
+             Eos.Get_Property_Data (Item     => The_Session.Device,
+                                    Property => Property,
+                                    Param    => Param,
+                                    Size     => Eos.Uint32'size / System.Storage_Unit,
+                                    Data     => Val'address));
+      Value := Val;
+    end Get;
+
+
     procedure Command (What  : String;
                        Item  : Eos.Uint32;
                        Param : Eos.Uint32 := 0) is
@@ -408,8 +453,18 @@ package body Camera.Canon is
 
 
     procedure Disconnect (Next_State : Status := Idle) is
-      Dummy : Eos.Error;
+      Dummy : Eos.Result;
+      use type Eos.Directory_Item;
     begin
+      if The_Item /= Eos.No_Directory then
+        begin
+          Check ("Delete file on camera",  Eos.Delete_Directory_Item (The_Item));
+          The_Item := Eos.No_Directory;
+        exception
+        when others =>
+          null;
+        end;
+      end if;
       begin
         Dummy := Eos.Send_Status_Command (The_Session.Device, Eos.Camera_Status_UI_Unlock, 0);
       exception
@@ -501,9 +556,6 @@ package body Camera.Canon is
            Where_Label => "Set image quality to RAW");
 
       Data.Set (Connected);
-    exception
-    when others =>
-      Disconnect;
     end Open;
 
 
@@ -517,13 +569,14 @@ package body Camera.Canon is
     The_Start_Time  : RT.Time;
     The_Wakeup_Time : RT.Time;
     The_Timeout     : Duration;
-    The_Item        : Eos.Directory_Item;
 
     Shutter_Is_On            : Boolean;
     Shutter_Release          : Boolean;
     The_Shutter_Release_Time : RT.Time;
 
     procedure Start_Capture is
+      The_Mode : Eos.Uint32;
+      use type Eos.Uint32;
     begin
       Shutter_Is_On := False;
       Shutter_Release := False;
@@ -533,19 +586,36 @@ package body Camera.Canon is
              Value       => To_K_Iso (The_Iso),
              Where_Label => "Set ISO " & The_Iso'image);
       end if;
+      Get (Property    => Eos.Prop_Id_AE_Mode_Select,
+           Value       => The_Mode,
+           Where_Label => "Get AE Mode");
       case The_Exposure.Mode is
       when Exposure.Tv_Mode =>
-        Set (Property    => Eos.Prop_Id_AE_Mode_Select,
-             Value       => Eos.K_AE_Mode_Manual,
-             Where_Label => "Set AE Mode Select to Manual");
-        delay 0.1; -- wait for set
+        case The_Camera is
+        when Canon_Eos_60D =>
+          if The_Mode /= Eos.K_AE_Mode_Manual then
+            Raise_Error ("Mode should be Manual");
+          end if;
+        when Canon_Eos_6D =>
+          Set (Property    => Eos.Prop_Id_AE_Mode_Select,
+               Value       => Eos.K_AE_Mode_Manual,
+               Where_Label => "Set AE Mode Select to Manual");
+          delay 0.1; -- wait for set
+        end case;
         Set (Property    => Eos.Prop_Id_Tv,
              Value       => To_K_Tv (The_Exposure),
              Where_Label => "Set exposure (Tv) " & The_Exposure'image);
       when Exposure.Timer_Mode =>
-        Set (Property    => Eos.Prop_Id_AE_Mode_Select,
-             Value       => Eos.K_AE_Mode_Bulb,
-             Where_Label => "Set AE mode select to Bulb");
+        case The_Camera is
+        when Canon_Eos_60D =>
+          if The_Mode /= Eos.K_AE_Mode_Bulb then
+            Raise_Error ("Mode should be Buld");
+          end if;
+        when Canon_Eos_6D =>
+          Set (Property    => Eos.Prop_Id_AE_Mode_Select,
+               Value       => Eos.K_AE_Mode_Bulb,
+               Where_Label => "Set AE mode select to Bulb");
+        end case;
       when Exposure.From_Camera =>
         null;
       end case;
@@ -571,7 +641,6 @@ package body Camera.Canon is
       end case;
       The_Start_Time := RT.Clock;
       The_Timeout := Duration(The_Exposure.Time) + 15.0;
-      The_Item := Eos.No_Directory;
 
       Data.Set (Capturing);
     exception
@@ -582,7 +651,6 @@ package body Camera.Canon is
 
     procedure Continue_Capture is
       use type Eos.Int32;
-      use type Eos.Directory_Item;
     begin
       if Shutter_Is_On then
         if Shutter_Release then
@@ -594,9 +662,6 @@ package body Camera.Canon is
           Shutter_Release := True;
         end if;
       elsif RT.To_Duration (RT.Clock - The_Start_Time) > The_Timeout then
-        if The_Item /= Eos.No_Directory then
-          Check ("Delete incomplete file from camera", Eos.Delete_Directory_Item (The_Item));
-        end if;
         Raise_Error ("Timeout: no directory item event received");
       end if;
 
@@ -614,11 +679,10 @@ package body Camera.Canon is
           if The_Info.Is_Folder /= 0 then
           --IO.Put_Line ("received folder item, ignoring: " & String_Of (Info.Sz_File_Name));
             declare
-              Dummy : Eos.Error := Eos.Release (The_Item);
+              Dummy : Eos.Result := Eos.Release (The_Item);
             begin
               null;
             end;
-            The_Item := Eos.No_Directory;
           else
             Log.Write ("Received file " & C.Helper.String_Of (The_Info.Sz_File_Name));
             Data.Set (Captured);
@@ -658,11 +722,8 @@ package body Camera.Canon is
 
       Check ("Download complete",
              Eos.Download_Complete (The_Item));
-
-      Check ("Delete file from camera",
-              Eos.Delete_Directory_Item (The_Item));
       declare
-        Dummy : Eos.Error := Eos.Release (File_Stream_Write);
+        Dummy : Eos.Result := Eos.Release (File_Stream_Write);
       begin
         null;
       end;
@@ -671,8 +732,6 @@ package body Camera.Canon is
     when others =>
       Disconnect;
     end Download;
-
-    use type Eos.Directory_Item;
 
   begin -- Control
     Data.Set (Idle);
@@ -702,6 +761,26 @@ package body Camera.Canon is
         end;
         Start_Capture;
       or
+        accept Await_Stop do
+          Log.Write ("Stopping");
+          loop
+            case Data.Actual.State is
+            when Capturing =>
+              The_Shutter_Release_Time := RT.Clock;
+              Continue_Capture;
+            when Cropping =>
+              Data.Set (Cropped);
+              exit;
+            when Cropped =>
+              Raw.Stop_Preparing;
+              exit;
+            when others =>
+              exit;
+            end case;
+          end loop;
+          Disconnect;
+        end Await_Stop;
+      or
         accept Shutdown do
           Disconnect;
         end Shutdown;
@@ -714,16 +793,10 @@ package body Camera.Canon is
           Continue_Capture;
         when Captured =>
           Download;
-        when Stopping =>
-          if The_Item /= Eos.No_Directory then
-            Check ("Delete file on camera after stop", Eos.Delete_Directory_Item (The_Item));
-            The_Item := Eos.No_Directory;
-          end if;
-          Disconnect;
         when Cropping =>
           Raw.Prepare_Grid (The_Filename.To_String, The_Grid_Size);
           Data.Set (Cropped);
-        when Connecting | Connected | Downloading | Cropped | Idle =>
+        when Connecting | Connected | Downloading | Cropped | Stopping | Idle | Error=>
           null;
         end case;
       end select;

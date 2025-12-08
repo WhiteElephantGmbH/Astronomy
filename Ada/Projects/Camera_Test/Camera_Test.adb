@@ -112,8 +112,13 @@ begin
       when Camera.Cropped =>
         IO.New_Line;
         Show_Grid;
+        IO.Put_Line ("Image Height:" & Camera.Image_Height'image);
+        IO.Put_Line ("Image Width :" & Camera.Image_Width'image);
       when Camera.Stopping =>
         IO.Put ("s");
+      when Camera.Error =>
+        IO.New_Line;
+        IO.Put_Line ("### " & Camera.Error_Message & " ###");
       end case;
     end;
     delay Delay_Time;

@@ -32,13 +32,13 @@ package Camera.Canon.Eos is
   subtype Name is C.Name(1 .. MAX_NAME);
 
   --  Basic types
-  subtype Error   is C.Int;
+  subtype Result  is C.Int;
   subtype Int32   is C.Int;
   subtype Uint32  is C.Unsigned_Long;
   subtype Uint64  is C.Unsigned_Long_Long;
   subtype Int64   is C.Long_Long;
 
-  OK : constant Error := 0;
+  OK : constant Result := 0;
 
   --  Access / create disposition
   Access_Read       : constant Int32 := 0;
@@ -64,14 +64,12 @@ package Camera.Canon.Eos is
   ------------------------
   -- SDK Initialisation --
   ------------------------
-  function Initialize_SDK return Error
-  with
+  function Initialize_SDK return Result with
     Import        => True,
     Convention    => C,
     External_Name => "EdsInitializeSDK";
 
-  function Terminate_SDK return Error
-  with
+  function Terminate_SDK return Result with
     Import        => True,
     Convention    => C,
     External_Name => "EdsTerminateSDK";
@@ -79,23 +77,20 @@ package Camera.Canon.Eos is
   ------------------------
   -- Camera Enumeration --
   ------------------------
-  function Get_Camera_List (The_List : access Device_List) return Error
-  with
+  function Get_Camera_List (The_List : access Device_List) return Result with
     Import        => True,
     Convention    => C,
     External_Name => "EdsGetCameraList";
 
   function Get_Child_Count (List      : Device_List;
-                            The_Count : access Uint32) return Error
-  with
+                            The_Count : access Uint32) return Result with
     Import        => True,
     Convention    => C,
     External_Name => "EdsGetChildCount";
 
   function Get_Camera_At_Index (List       : Device_List;
                                 Index      : Int32;
-                                The_Camera : access Device) return Error
-  with
+                                The_Camera : access Device) return Result with
     Import        => True,
     Convention    => C,
     External_Name => "EdsGetChildAtIndex";
@@ -108,16 +103,14 @@ package Camera.Canon.Eos is
     Sz_Device_Description : aliased Name;
     Device_Sub_Type       : Uint32;
     Reserved              : Uint32;
-  end record
-  with
+  end record with
     Pack,
     Convention => C;
 
   for Device_Info'size use 2 * (MAX_NAME * Byte_Size + Int32_Size);
 
   function Get_Device_Info (From     : Device;
-                            The_Info : access Device_Info) return Error
-  with
+                            The_Info : access Device_Info) return Result with
     Import        => True,
     Convention    => C,
     External_Name => "EdsGetDeviceInfo";
@@ -125,14 +118,12 @@ package Camera.Canon.Eos is
   ---------------------
   -- Session Control --
   ---------------------
-  function Open_Session (Item : Device) return Error
-  with
+  function Open_Session (Item : Device) return Result with
     Import        => True,
     Convention    => C,
     External_Name => "EdsOpenSession";
 
-  function Close_Session (Item : Device) return Error
-  with
+  function Close_Session (Item : Device) return Result with
     Import        => True,
     Convention    => C,
     External_Name => "EdsCloseSession";
@@ -140,26 +131,22 @@ package Camera.Canon.Eos is
   --------------------------
   -- Reference Management --
   --------------------------
-  function Release (Item : Device_List) return Error
-  with
+  function Release (Item : Device_List) return Result with
     Import        => True,
     Convention    => C,
     External_Name => "EdsRelease";
 
-  function Release (Item : Device) return Error
-  with
+  function Release (Item : Device) return Result with
     Import        => True,
     Convention    => C,
     External_Name => "EdsRelease";
 
-  function Release (Item : Directory_Item) return Error
-  with
+  function Release (Item : Directory_Item) return Result with
     Import        => True,
     Convention    => C,
     External_Name => "EdsRelease";
 
-  function Release (Item : Stream) return Error
-  with
+  function Release (Item : Stream) return Result with
     Import        => True,
     Convention    => C,
     External_Name => "EdsRelease";
@@ -181,8 +168,7 @@ package Camera.Canon.Eos is
 
   function Send_Command (To      : Device;
                          Command : Uint32;
-                         Param   : Uint32) return Error
-  with
+                         Param   : Uint32) return Result with
     Import        => True,
     Convention    => C,
     External_Name => "EdsSendCommand";
@@ -198,15 +184,13 @@ package Camera.Canon.Eos is
 
   type Object_Event_Handler is access function (Event   : Object_Event;
                                                 Object  : Directory_Item;
-                                                Context : System.Address) return Error
-  with
+                                                Context : System.Address) return Result with
     Convention => StdCall;
 
   function Set_Object_Event_Handler (For_Camera : Device;
                                      Event      : Object_Event;
                                      Handler    : Object_Event_Handler;
-                                     Context    : System.Address) return Error
-  with
+                                     Context    : System.Address) return Result with
     Import        => True,
     Convention    => C,
     External_Name => "EdsSetObjectEventHandler";
@@ -214,10 +198,10 @@ package Camera.Canon.Eos is
   -------------------
   -- Event Pumping --
   -------------------
-  function Get_Event return Error
-    with Import        => True,
-         Convention    => C,
-         External_Name => "EdsGetEvent";
+  function Get_Event return Result with
+    Import        => True,
+    Convention    => C,
+    External_Name => "EdsGetEvent";
 
   -------------------------
   -- Directory item info --
@@ -230,14 +214,12 @@ package Camera.Canon.Eos is
     Sz_File_Name : aliased Name;
     Format       : Uint32;
     Date_Time    : Uint32;
-  end record
-  with
+  end record with
     Pack,
     Convention => C;
 
   function Get_Directory_Item_Info (Item     : Directory_Item;
-                                    The_Info : access Directory_Item_Info) return Error
-  with
+                                    The_Info : access Directory_Item_Info) return Result with
     Import        => True,
     Convention    => C,
     External_Name => "EdsGetDirectoryItemInfo";
@@ -245,8 +227,7 @@ package Camera.Canon.Eos is
   ---------------------------
   -- Delete Directory Item --
   ---------------------------
-  function Delete_Directory_Item (Item : Directory_Item) return Error
-  with
+  function Delete_Directory_Item (Item : Directory_Item) return Result with
     Import        => True,
     Convention    => C,
     External_Name => "EdsDeleteDirectoryItem";
@@ -258,22 +239,19 @@ package Camera.Canon.Eos is
     (File_Name   : System.Address;
      Disposition : Int32; -- EdsFileCreateDisposition
      Eds_Access  : Int32;
-     Out_Stream  : access Stream) return Error
-  with
+     Out_Stream  : access Stream) return Result with
     Import        => True,
     Convention    => C,
     External_Name => "EdsCreateFileStream";
 
   function Download (Item      : Directory_Item;
                      Read_Size : Uint64;
-                     Dest      : Stream) return Error
-  with
+                     Dest      : Stream) return Result with
     Import        => True,
     Convention    => C,
     External_Name => "EdsDownload";
 
-  function Download_Complete (Item : Directory_Item) return Error
-  with
+  function Download_Complete (Item : Directory_Item) return Result with
     Import        => True,
     Convention    => C,
     External_Name => "EdsDownloadComplete";
@@ -424,8 +402,7 @@ package Camera.Canon.Eos is
                               Property : Property_Id;
                               Param    : Int32;
                               Size     : Uint32;
-                              Data     : System.Address) return Error
-  with
+                              Data     : System.Address) return Result with
     Import        => True,
     Convention    => C,
     External_Name => "EdsGetPropertyData";
@@ -434,8 +411,7 @@ package Camera.Canon.Eos is
                               Property : Property_Id;
                               Param    : Int32;
                               Size     : Uint32;
-                              Data     : System.Address) return Error
-  with
+                              Data     : System.Address) return Result with
     Import        => True,
     Convention    => C,
     External_Name => "EdsSetPropertyData";
@@ -451,10 +427,10 @@ package Camera.Canon.Eos is
 
   function Send_Status_Command (Item  : Device;
                                 State : Camera_Status_Command;
-                                Param : Uint32) return Error
-  with Import        => True,
-       Convention    => C,
-       External_Name => "EdsSendStatusCommand";
+                                Param : Uint32) return Result with
+    Import        => True,
+    Convention    => C,
+    External_Name => "EdsSendStatusCommand";
 
 private
 

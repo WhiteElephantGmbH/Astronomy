@@ -20,18 +20,17 @@ with Sensitivity;
 
 package Camera is
 
+  Max_With_Or_Height : constant := 5496; -- maximum for Canon 6D
+  Min_With_Or_Height : constant := 3464; -- minimum for Canon 60D
+
   type Model is (Canon_Eos_6D, Canon_Eos_60D);
 
-  type Status is (Idle, Connecting, Connected, Capturing, Captured, Downloading, Cropping, Cropped, Stopping);
+  type Status is (Idle, Connecting, Connected, Capturing, Captured, Downloading, Cropping, Cropped, Stopping, Error);
 
   type Information is record
     State  : Status;
     Camera : Model;
   end record;
-
-  -- Maximums for Canon EOS 6D
-  Min_With_Or_Height : constant := 3648;
-  Max_With_Or_Height : constant := 5472;
 
   Pixel_Size : constant := 16; -- allowed 8 or 16
 
@@ -58,7 +57,13 @@ package Camera is
 
   function Captured return Green_Grid;
 
+  function Image_Height return Rows;
+
+  function Image_Width return Columns;
+
   procedure Stop;
+
+  function Error_Message return String;
 
   procedure Finish;
 

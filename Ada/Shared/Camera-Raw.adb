@@ -56,45 +56,60 @@ package body Camera.Raw is
     return S & Ascii.Nul;
   end To_C_String;
 
-  type Sample_Ptr is access all Pixel
-    with Convention => C;
+  type Sample_Ptr is access all Pixel with Convention => C;
 
   function To_Sample_Ptr is new Ada.Unchecked_Conversion (Source => System.Address,
                                                           Target => Sample_Ptr);
 
 
-  Ctx : RI.Context;
+  Ctx : RI.Context := RI.Null_Context;
   Img : RI.Processed_Image_Ptr;
+
+  Grid_Is_Prepared : Boolean := False;
+
+  Undefined : constant := 0;
+
+  The_Height : Natural := Undefined;
+  The_Width  : Natural := Undefined;
+
 
   procedure Cleanup is
     use type RI.Processed_Image_Ptr;
+    use type RI.Context;
   begin
+    The_Height := Undefined;
+    The_Width := Undefined;
+    Grid_Is_Prepared := False;
     begin
       if Img /= null then
         RI.Dcraw_Clear_Mem (Img);
+        Img := null;
       end if;
     exception
     when others =>
       null;
     end;
-    begin
-      RI.Free_Image (Ctx);
-    exception
-    when others =>
-      null;
-    end;
-    begin
-      RI.Recycle (Ctx);
-    exception
-    when others =>
-      null;
-    end;
-    begin
-      RI.Close (Ctx);
-    exception
-    when others =>
-      null;
-    end;
+    if Ctx /= RI.Null_Context then
+      begin
+        RI.Free_Image (Ctx);
+      exception
+      when others =>
+        null;
+      end;
+      begin
+        RI.Recycle (Ctx);
+      exception
+      when others =>
+        null;
+      end;
+      begin
+        RI.Close (Ctx);
+      exception
+      when others =>
+        null;
+      end;
+      Ctx := RI.Null_Context;
+    end if;
   end Cleanup;
 
 
@@ -106,8 +121,6 @@ package body Camera.Raw is
 
   type Channel is range 1 .. 3;
 
-  The_Height    : Natural;
-  The_Width     : Natural;
   The_Colors    : Channel;
   The_Grid_Size : Square_Size;
 
@@ -126,6 +139,8 @@ package body Camera.Raw is
     use type RI.Processed_Image_Ptr;
 
   begin -- Prepare_Grid
+    The_Height := Undefined;
+    The_Width := Undefined;
     The_Grid_Size := Size;
     Ctx := RI.Init (0);
     if Ctx = RI.Null_Context then
@@ -166,8 +181,8 @@ package body Camera.Raw is
     end;
 
     Log.Write ("- Type  :" & Img.Img_Type'image);
-    Log.Write ("- Width :" & The_Width'image);
     Log.Write ("- Height:" & The_Height'image);
+    Log.Write ("- Width :" & The_Width'image);
     Log.Write ("- Colors:" & The_Colors'image);
     Log.Write ("- Bits  :" & Bits'image);
     Log.Write ("- Size  :" & Data_Size'image);
@@ -180,12 +195,18 @@ package body Camera.Raw is
     if Data_Size /= The_Width * The_Height * Natural(The_Colors) * Bytes_Per_Sample then
       Error ("Invalid image data size");
     end if;
-
+    Grid_Is_Prepared := True;
   exception
   when others =>
     Cleanup;
     raise;
   end Prepare_Grid;
+
+
+  procedure Stop_Preparing is
+  begin
+    Cleanup;
+  end Stop_Preparing;
 
 
   ----------
@@ -208,6 +229,9 @@ package body Camera.Raw is
     use type System.Address;
 
   begin -- Grid
+    if not Grid_Is_Prepared then
+      Error ("Grid not prepared");
+    end if;
     Log.Write ("Choose which channel to treat as 'green'");
     Log.Write ("- Green_Index:" & Green_Index'image);
     Log.Write ("- Row_Offset :" & Row_Offset'image);
@@ -253,5 +277,20 @@ package body Camera.Raw is
     Cleanup;
     raise;
   end Grid;
+
+
+  -----------
+  -- Image --
+  ---------=-
+  function Height return Rows is
+  begin
+    return Rows(The_Height);
+  end Height;
+
+
+  function Width return Columns is
+  begin
+    return Columns(The_Width);
+  end Width;
 
 end Camera.Raw;
