@@ -286,7 +286,7 @@ package body Camera.Canon is
     -------------------------------------------------
     -- Local mapping for ISO to  Canon enum values --
     -------------------------------------------------
-    function To_K_Iso (Item : Sensitivity.Item) return Eos.Uint32 is
+    function To_K_Iso (Item : Sensitivity.Item) return Eos.ISO_Speed is
       Iso : constant Sensitivity.Iso := Item.Value;
     begin
       case Iso is
@@ -329,7 +329,7 @@ package body Camera.Canon is
     -----------------------------------------------
     -- Local mapping for Tv to Canon enum values --
     -----------------------------------------------
-    function To_K_Tv (Item : Exposure.Item) return Eos.Uint32 is
+    function To_K_Tv (Item : Exposure.Item) return Eos.Tv_Value is
       Tv : constant Exposure.Tv := Item.Time_Value;
     begin
       case Tv is
@@ -383,7 +383,7 @@ package body Camera.Canon is
         end case;
       end case;
       Raise_Error ("Tv value " & Item'image & " not valid for " & The_Camera'image);
-      return 0; --!!!WE!!! GNAT Bug
+      return Eos.Tv_Value'last; --!!!WE!!! GNAT Bug
     end To_K_Tv;
 
 
@@ -426,34 +426,36 @@ package body Camera.Canon is
     end Set;
 
 
-    procedure Get (Where_Label : String;
-                   Property    : Eos.Property_Id;
+    procedure Get (Property    :     Eos.Property_Id;
                    Value       : out Eos.Uint32;
-                   Param       : Eos.Int32 := 0)
+                   Param       :     Eos.Int32 := 0)
     is
       Val : aliased Eos.Uint32;
       use type Eos.Uint32;
+      What : constant String := Text.Legible_Of (Property'image);
     begin
-      Check (Where_Label,
+      Check (What,
              Eos.Get_Property_Data (Item     => The_Session.Device,
                                     Property => Property,
                                     Param    => Param,
                                     Size     => Eos.Uint32'size / System.Storage_Unit,
                                     Data     => Val'address));
       Value := Val;
+      Log.Write (What & ":" & Value'image);
     end Get;
 
 
     procedure Command (What  : String;
-                       Item  : Eos.Uint32;
-                       Param : Eos.Uint32 := 0) is
+                       Item  : Eos.Camera_Command;
+                       Param : Eos.Int32 := 0) is
     begin
       Check (What, Eos.Send_Command (The_Session.Device, Item, Param));
     end Command;
 
 
     procedure Disconnect (Next_State : Status := Idle) is
-      Dummy : Eos.Result;
+      Dummy_Result : Eos.Result;
+      Dummy_Count  : Eos.Ref_Count;
       use type Eos.Directory_Item;
     begin
       if The_Item /= Eos.No_Directory then
@@ -466,31 +468,31 @@ package body Camera.Canon is
         end;
       end if;
       begin
-        Dummy := Eos.Send_Status_Command (The_Session.Device, Eos.Camera_Status_UI_Unlock, 0);
+        Dummy_Result := Eos.Send_Status_Command (The_Session.Device, Eos.Camera_Status_UI_Unlock, 0);
       exception
       when others =>
         null;
       end;
       begin
-        Dummy := Eos.Close_Session (The_Session.Device);
+        Dummy_Result := Eos.Close_Session (The_Session.Device);
       exception
       when others =>
         null;
       end;
       begin
-        Dummy := Eos.Release (The_Session.Device);
+        Dummy_Count := Eos.Release (The_Session.Device);
       exception
       when others =>
         null;
       end;
       begin
-        Dummy := Eos.Release (The_Session.Device_List);
+        Dummy_Count := Eos.Release (The_Session.Device_List);
       exception
       when others =>
         null;
       end;
       begin
-        Dummy := Eos.Terminate_SDK;
+        Dummy_Result := Eos.Terminate_SDK;
       exception
       when others =>
         null;
@@ -576,44 +578,43 @@ package body Camera.Canon is
 
     procedure Start_Capture is
       The_Mode : Eos.Uint32;
-      use type Eos.Uint32;
+      use type Eos.AE_Mode;
     begin
       Shutter_Is_On := False;
       Shutter_Release := False;
       Open;
       if not The_Iso.Is_From_Camera then
         Set (Property    => Eos.Prop_Id_ISO,
-             Value       => To_K_Iso (The_Iso),
+             Value       => To_K_Iso (The_Iso)'enum_rep,
              Where_Label => "Set ISO " & The_Iso'image);
       end if;
-      Get (Property    => Eos.Prop_Id_AE_Mode_Select,
-           Value       => The_Mode,
-           Where_Label => "Get AE Mode");
+      Get (Property => Eos.Prop_Id_AE_Mode_Select,
+           Value    => The_Mode);
       case The_Exposure.Mode is
       when Exposure.Tv_Mode =>
         case The_Camera is
         when Canon_Eos_60D =>
-          if The_Mode /= Eos.K_AE_Mode_Manual then
+          if Eos.AE_Mode'enum_val(The_Mode) /= Eos.K_AE_Mode_Manual then
             Raise_Error ("Mode should be Manual");
           end if;
         when Canon_Eos_6D =>
           Set (Property    => Eos.Prop_Id_AE_Mode_Select,
-               Value       => Eos.K_AE_Mode_Manual,
+               Value       => Eos.K_AE_Mode_Manual'enum_rep,
                Where_Label => "Set AE Mode Select to Manual");
           delay 0.1; -- wait for set
         end case;
         Set (Property    => Eos.Prop_Id_Tv,
-             Value       => To_K_Tv (The_Exposure),
+             Value       => To_K_Tv (The_Exposure)'enum_rep,
              Where_Label => "Set exposure (Tv) " & The_Exposure'image);
       when Exposure.Timer_Mode =>
         case The_Camera is
         when Canon_Eos_60D =>
-          if The_Mode /= Eos.K_AE_Mode_Bulb then
+          if Eos.AE_Mode'enum_val(The_Mode) /= Eos.K_AE_Mode_Bulb then
             Raise_Error ("Mode should be Buld");
           end if;
         when Canon_Eos_6D =>
           Set (Property    => Eos.Prop_Id_AE_Mode_Select,
-               Value       => Eos.K_AE_Mode_Bulb,
+               Value       => Eos.K_AE_Mode_Bulb'enum_rep,
                Where_Label => "Set AE mode select to Bulb");
         end case;
       when Exposure.From_Camera =>
@@ -632,7 +633,7 @@ package body Camera.Canon is
       when Exposure.Timer_Mode =>
         Command ("Press shutter button completely non AF",
                  Eos.Camera_Command_Press_Shutter_Button,
-                 Eos.Camera_Command_Shutter_Button_Completely_Non_AF);
+                 Eos.Camera_Command_Shutter_Button_Completely_Non_AF'enum_rep);
         Shutter_Is_On := True;
         The_Shutter_Release_Time := RT.Clock + RT.To_Time_Span (Duration(The_Exposure.Time));
         The_Wakeup_Time := RT.Clock;
@@ -654,7 +655,9 @@ package body Camera.Canon is
     begin
       if Shutter_Is_On then
         if Shutter_Release then
-          Command ("Release shutter button", Eos.Camera_Command_Shutter_Button_Off);
+          Command ("Release shutter button",
+          Eos.Camera_Command_Press_Shutter_Button,
+          Eos.Camera_Command_Shutter_Button_Off'enum_rep);
           Shutter_Release := False;
           Shutter_Is_On := False;
         elsif The_Wakeup_Time > The_Shutter_Release_Time then
@@ -677,9 +680,8 @@ package body Camera.Canon is
                  Logging => False);
 
           if The_Info.Is_Folder /= 0 then
-          --IO.Put_Line ("received folder item, ignoring: " & String_Of (Info.Sz_File_Name));
             declare
-              Dummy : Eos.Result := Eos.Release (The_Item);
+              Dummy : Eos.Ref_Count := Eos.Release (The_Item);
             begin
               null;
             end;
@@ -723,7 +725,7 @@ package body Camera.Canon is
       Check ("Download complete",
              Eos.Download_Complete (The_Item));
       declare
-        Dummy : Eos.Result := Eos.Release (File_Stream_Write);
+        Dummy : Eos.Ref_Count := Eos.Release (File_Stream_Write);
       begin
         null;
       end;

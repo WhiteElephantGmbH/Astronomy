@@ -55,9 +55,10 @@ procedure Camera_Test is
   Delay_Time : constant Duration := 0.2;
   Timeout    : constant Duration := 10.0;
   Counter    : constant Natural := Natural(Timeout / Delay_Time);
-  The_Count  : Integer;
 
-begin
+  The_Count : Integer;
+
+begin -- Camera_Test
   IO.Put_Line ("Camera Test");
   IO.Put_Line ("===========");
   Camera.Start;
