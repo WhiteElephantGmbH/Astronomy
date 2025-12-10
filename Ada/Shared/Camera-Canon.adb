@@ -224,6 +224,15 @@ package body Camera.Canon is
   ---------------------------
   -- object event callback --
   ---------------------------
+  -- Canon EDSDK lifetime rule:
+  --   Directory items received in this callback are only guaranteed to be
+  --   valid *during* the execution of the callback itself.  If we want to
+  --   use the directory item later (e.g. in another task to download the
+  --   image), we MUST call EdsRetain here to increment the reference
+  --   count.  The control task will eventually call EdsRelease to balance
+  --   this retain.  Without this retain the SDK may destroy the object
+  --   immediately after the callback returns, leading to crashes or
+  --   download failures.
   function On_Object_Event (Event   : Eos.Object_Event;
                             Object  : Eos.Directory_Item;
                             Context : System.Address) return Eos.Result
@@ -234,15 +243,16 @@ package body Camera.Canon is
                             Context : System.Address) return Eos.Result
   is
     pragma Unreferenced (Context);
-    use type Eos.Object_Event;
+    Count : Eos.Ref_Count;
   begin
-  --IO.Put_Line ("[Canon] object event received: " & Eos.Uint32'image (Event));
-    if Event = Eos.Object_Event_Dir_Item_Created or else Event = Eos.Object_Event_Dir_Item_Request_Transfer then
-    --IO.Put_Line ("[Canon] -> treating this as DirItem event");
+    case Event is
+    when Eos.Object_Event_Dir_Item_Created => --| Eos.Object_Event_Dir_Item_Request_Transfer =>
+      Count := Eos.Retain (Object);
+      Log.Write ("Received file - Event:" & Event'image & " - Count:" & Count'image);
       Event_State.Set (Object);
-  --else
-  --  IO.Put_Line ("[Canon] -> ignoring (volume/folder/etc.)");
-    end if;
+    when others =>
+      null;
+    end case;
     return Eos.OK;
   end On_Object_Event;
 
@@ -453,6 +463,24 @@ package body Camera.Canon is
     end Command;
 
 
+    procedure Disable_Electronic_View_Finder is
+      use type Eos.Uint32;
+    begin
+      Set (Property    => Eos.Prop_Id_Evf_Output_Device,
+           Value       => Eos.Evf_Output_None'enum_rep,
+           Where_Label => "Disable EVF output");
+      loop
+        declare
+          Value : Eos.Uint32;
+        begin
+          Get (Eos.Prop_Id_Evf_Output_Device, Value);
+          exit when Value = Eos.Evf_Output_None'enum_rep;
+          delay 0.1;
+        end;
+      end loop;
+    end Disable_Electronic_View_Finder;
+
+
     procedure Disconnect (Next_State : Status := Idle) is
       Dummy_Result : Eos.Result;
       Dummy_Count  : Eos.Ref_Count;
@@ -461,6 +489,11 @@ package body Camera.Canon is
       if The_Item /= Eos.No_Directory then
         begin
           Check ("Delete file on camera",  Eos.Delete_Directory_Item (The_Item));
+          declare
+            Count : constant Eos.Ref_Count := Eos.Release (The_Item);
+          begin
+            Log.Write ("Release directory item, Count:" & Count'image);
+          end;
           The_Item := Eos.No_Directory;
         exception
         when others =>
@@ -547,6 +580,8 @@ package body Camera.Canon is
 
       Check ("Open session",
              Eos.Open_Session (The_Session.Device));
+
+      Disable_Electronic_View_Finder;
 
       Check ("UI lock",
              Eos.Send_Status_Command (The_Session.Device,
@@ -681,9 +716,9 @@ package body Camera.Canon is
 
           if The_Info.Is_Folder /= 0 then
             declare
-              Dummy : Eos.Ref_Count := Eos.Release (The_Item);
+              Count : constant Eos.Ref_Count := Eos.Release (The_Item);
             begin
-              null;
+              Log.Write ("Release Folder - Count:" & Count'image);
             end;
           else
             Log.Write ("Received file " & C.Helper.String_Of (The_Info.Sz_File_Name));

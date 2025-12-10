@@ -32,7 +32,7 @@ package Camera.Canon.Eos is
   subtype Name is C.Name(1 .. MAX_NAME);
 
   --  Basic types
-  subtype Int32   is C.Int;
+  subtype Int32   is C.Long;
   subtype Uint32  is C.Unsigned_Long;
   subtype Uint64  is C.Unsigned_Long_Long;
   subtype Int64   is C.Long_Long;
@@ -153,6 +153,26 @@ package Camera.Canon.Eos is
     Import        => True,
     Convention    => StdCall,
     External_Name => "EdsRelease";
+
+  function Retain (Item : Device_List) return Ref_Count with
+    Import        => True,
+    Convention    => StdCall,
+    External_Name => "EdsRetain";
+
+  function Retain (Item : Device) return Ref_Count with
+    Import        => True,
+    Convention    => StdCall,
+    External_Name => "EdsRetain";
+
+  function Retain (Item : Directory_Item) return Ref_Count with
+    Import        => True,
+    Convention    => StdCall,
+    External_Name => "EdsRetain";
+
+  function Retain (Item : Stream) return Ref_Count with
+    Import        => True,
+    Convention    => StdCall,
+    External_Name => "EdsRetain";
 
   ---------------------
   -- Camera Commands --
@@ -286,6 +306,7 @@ package Camera.Canon.Eos is
     Prop_Id_ISO,                  -- kEdsPropID_ISOSpeed
     Prop_Id_Tv,                   -- kEdsPropID_Tv
     Prop_Id_AE_Mode_Select,       -- kEdsPropID_AEModeSelect
+    Prop_Id_Evf_Output_Device,    -- kEdsPropID_Evf_OutputDevice
     Prop_Id_Mirror_Lock_Up_State, -- kEdsPropID_MirrorLockUpState
     Prop_Id_Mirror_Up_Setting)    -- kEdsPropID_MirrorUpSetting
     with Size => Uint32'size;
@@ -297,8 +318,20 @@ package Camera.Canon.Eos is
     Prop_Id_ISO                  => 16#0000_0402#,
     Prop_Id_Tv                   => 16#0000_0406#,
     Prop_Id_AE_Mode_Select       => 16#0000_0436#,
+    Prop_Id_Evf_Output_Device    => 16#0000_0500#,
     Prop_Id_Mirror_Lock_Up_State => 16#0100_0421#,
     Prop_Id_Mirror_Up_Setting    => 16#0100_0438#);
+
+  type Evf_Output_Device is (
+     Evf_Output_None, -- EVF disabled
+     Evf_Output_TFT,  -- Camera LCD screen
+     Evf_Output_PC)   -- LiveView to PC
+     with Size => Uint32'size;
+
+  for Evf_Output_Device use (-- code kEdsEvfOutputDevice*
+     Evf_Output_None => 0,
+     Evf_Output_TFT  => 1,
+     Evf_Output_PC   => 2);
 
   subtype Image_Quality is Uint32;
 

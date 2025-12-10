@@ -15,7 +15,7 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-package Camera.Raw is
+private package Camera.Raw is
 
   procedure Prepare_Grid (File_Name : String;
                           Size      : Square_Size);
