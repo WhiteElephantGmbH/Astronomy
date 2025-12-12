@@ -19,8 +19,12 @@ with Interfaces.C;
 
 package C is
 
+  subtype Bool               is Interfaces.C.C_bool;
+  subtype Double             is Interfaces.C.double;
   subtype Long               is Interfaces.C.long;
   subtype Long_Long          is Interfaces.C.long_long;
+  subtype Int                is Interfaces.C.int;
+  subtype Uint8              is Interfaces.C.unsigned_char;
   subtype Unsigned_Long      is Interfaces.C.unsigned_long;
   subtype Unsigned_Long_Long is Interfaces.C.unsigned_long_long;
 

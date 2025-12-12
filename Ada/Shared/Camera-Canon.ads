@@ -19,21 +19,17 @@ private package Camera.Canon is
 
   procedure Start_Control;
 
-  function Actual_Info return Information;
+  function Is_Available return Boolean;
 
-  procedure Capture_Picture (Filename : String;
-                             Time     : Exposure.Item;
-                             Iso      : Sensitivity.Item);
+  procedure Capture_Picture (Filename  : String;
+                             Time      : Exposure.Item;
+                             Parameter : Sensitivity.Item); -- ISO value
 
-  procedure Capture_Grid (Size : Square_Size;
-                          Time : Exposure.Item;
-                          Iso  : Sensitivity.Item);
-
-  function Captured_Grid return Green_Grid;
+  procedure Capture_Grid (Size      : Square_Size;
+                          Time      : Exposure.Item;
+                          Parameter : Sensitivity.Item); -- ISO value
 
   procedure Stop_Capture;
-  
-  function Last_Error_Message return String;
 
   procedure End_Control;
 

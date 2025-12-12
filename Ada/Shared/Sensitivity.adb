@@ -19,35 +19,75 @@ with Text;
 
 package body Sensitivity is
 
-  function From_Camera return Item is ((Is_From_Camera => True,
-                                        others         => <>));
+  function Default return Item is ((others => <>));
+
 
   function Value (Iso_Value : Iso) return Item is
   begin
-    return (Is_From_Camera => False,
-            Value          => Iso_Value);
+    return (Kind   => Is_Iso,
+            Value  => Natural(Iso_Value),
+            others => <>);
+  end Value;
+
+
+  function Value (Gain_Value   : Gain;
+                  Offset_Value : Offset := 0) return Item is
+  begin
+    return (Kind        => Is_Gain_And_Offset,
+            Value       => Natural(Gain_Value),
+            With_Offset => Offset_Value);
   end Value;
 
 
   function Value (Image : String) return Item is
+    Items : constant Text.Strings := Text.Strings_Of (Image, Separator => ',');
   begin
-    return Value (Iso'value(Image));
+    case Items.Count is
+    when 0 =>
+      return Default;
+    when 1 =>
+      return Value (Iso'value(Image));
+    when 2 =>
+      declare
+        G : constant String := Items(1);
+        O : constant String := Items(2);
+      begin
+        if G(G'first) = '[' and O(O'last) = ']' then
+          return Value (Gain'value(G(G'first + 1 .. G'last)),
+                        Offset'value(O(O'first .. O'last - 1)));
+        end if;
+      end;
+    when others =>
+      null;
+    end case;
+    raise Constraint_Error;
   end Value;
 
 
-  function Is_From_Camera (The_Item : Item) return Boolean is (The_Item.Is_From_Camera);
+  function Is_Default (The_Item : Item) return Boolean is (The_Item.Kind = Is_Default);
 
-  function Value (The_Item : Item) return Iso is (The_Item.Value);
+  function Is_Iso_Or_Default (The_Item : Item) return Boolean is (The_Item.Kind /= Is_Gain_And_Offset);
+
+  function Is_Gain_And_Offset_Or_Default (The_Item : Item) return Boolean is (The_Item.Kind /= Is_Iso);
+
+  function Value (The_Item : Item) return Iso is (Iso(The_Item.Value));
+
+  function Value (The_Item : Item) return Gain is (Gain(The_Item.Value));
+
+  function Value (The_Item : Item) return Offset is (The_Item.With_Offset);
 
 
   procedure Put_Image (S : in out Ada.Strings.Text_Buffers.Root_Buffer_Type'class;
                        V :        Item) is
   begin
-    if V.Is_From_Camera then
+    case V.Kind is
+    when Is_Default =>
       S.Put ("[]");
-    else
+    when Is_Iso =>
       S.Put (Text.Trimmed (V.Value'image));
-    end if;
+    when Is_Gain_And_Offset =>
+      S.Put ("[" & Text.Trimmed (V.Value'image) & ", " & Text.Trimmed (V.With_Offset'image) & "]");
+    end case;
   exception
   when others =>
     null;

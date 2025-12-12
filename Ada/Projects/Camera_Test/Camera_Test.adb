@@ -78,24 +78,26 @@ begin -- Camera_Test
         begin
           if Parameters.Count = 0 then
             exit;
-          elsif Parameters.Count /= 2 then
+          elsif Parameters.Count > 3 then
             raise Constraint_Error;
           end if;
           declare
-            Tv : constant Exposure.Item := Exposure.Value(Parameters(2));
+            Time      : constant Exposure.Item := Exposure.Value(Parameters(2));
+            Parameter : constant Sensitivity.Item := (if Parameters.Count = 2 then Sensitivity.Default
+                                                                              else Sensitivity.Value (Parameters(3)));
           begin
             case Text.Uppercase_Of (Parameters(1)(1)) is
             when 'C' =>
-              Camera.Capture ("D:\Temp\Picture.CR2", Tv, Sensitivity.Value(125));
+              Camera.Capture ("D:\Temp\Picture.CR2", Time, Parameter);
             when 'G' =>
-              Camera.Capture (10, Tv);
+              Camera.Capture (10, Time, Parameter);
             when others =>
               raise Constraint_Error;
             end case;
           end;
         exception
         when others =>
-          IO.Put_Line ("### Illegal Command (expexted: ['C' | 'G'] <exposure>]) ###");
+          IO.Put_Line ("### Illegal Command (expexted: ['C' | 'G'] <time> [<iso> | '[' <gain> ',' <offset> ']']) ###");
         end;
       when Camera.Connecting =>
         IO.Put ("o");
@@ -113,8 +115,8 @@ begin -- Camera_Test
       when Camera.Cropped =>
         IO.New_Line;
         Show_Grid;
-        IO.Put_Line ("Image Height:" & Camera.Image_Height'image);
-        IO.Put_Line ("Image Width :" & Camera.Image_Width'image);
+        IO.Put_Line ("Image Height:" & Info.Height'image);
+        IO.Put_Line ("Image Width :" & Info.Width'image);
       when Camera.Stopping =>
         IO.Put ("s");
       when Camera.Error =>

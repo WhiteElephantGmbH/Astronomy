@@ -32,8 +32,4 @@ private package Camera.Raw is
 
   function Grid return Green_Grid;
 
-  function Height return Rows;
-
-  function Width return Columns;
-
 end Camera.Raw;

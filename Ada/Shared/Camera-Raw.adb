@@ -67,18 +67,10 @@ package body Camera.Raw is
 
   Grid_Is_Prepared : Boolean := False;
 
-  Undefined : constant := 0;
-
-  The_Height : Natural := Undefined;
-  The_Width  : Natural := Undefined;
-
-
   procedure Cleanup is
     use type RI.Processed_Image_Ptr;
     use type RI.Context;
   begin
-    The_Height := Undefined;
-    The_Width := Undefined;
     Grid_Is_Prepared := False;
     begin
       if Img /= null then
@@ -122,6 +114,8 @@ package body Camera.Raw is
   type Channel is range 1 .. 3;
 
   The_Colors    : Channel;
+  The_Width     : Natural;
+  The_Height    : Natural;
   The_Grid_Size : Square_Size;
 
   procedure Prepare_Grid (File_Name : String;
@@ -139,8 +133,6 @@ package body Camera.Raw is
     use type RI.Processed_Image_Ptr;
 
   begin -- Prepare_Grid
-    The_Height := Undefined;
-    The_Width := Undefined;
     The_Grid_Size := Size;
     Ctx := RI.Init (0);
     if Ctx = RI.Null_Context then
@@ -195,6 +187,8 @@ package body Camera.Raw is
     if Data_Size /= The_Width * The_Height * Natural(The_Colors) * Bytes_Per_Sample then
       Error ("Invalid image data size");
     end if;
+    Camera_Data.Set (Height => Rows(The_Height));
+    Camera_Data.Set (Width => Columns(The_Width));
     Grid_Is_Prepared := True;
   exception
   when others =>
@@ -230,7 +224,7 @@ package body Camera.Raw is
 
   begin -- Grid
     if not Grid_Is_Prepared then
-      Error ("Grid not prepared");
+      Raise_Error ("Grid not prepared");
     end if;
     Log.Write ("Choose which channel to treat as 'green'");
     Log.Write ("- Green_Index:" & Green_Index'image);
@@ -270,27 +264,12 @@ package body Camera.Raw is
     RI.Free_Image (Ctx); -- safe (no-op here)
     RI.Recycle (Ctx);
     RI.Close (Ctx);
-
+    Camera_Data.Set (Idle);
     return Result;
   exception
   when others =>
     Cleanup;
-    raise;
+    return [];
   end Grid;
-
-
-  -----------
-  -- Image --
-  ---------=-
-  function Height return Rows is
-  begin
-    return Rows(The_Height);
-  end Height;
-
-
-  function Width return Columns is
-  begin
-    return Columns(The_Width);
-  end Width;
 
 end Camera.Raw;

@@ -18,7 +18,7 @@ pragma Style_White_Elephant;
 with C;
 with System;
 
-package Camera.Canon.Eos is
+package Camera.Canon.C_Interface is
 
  -- interface from EDSDK.h, EDSDKTypes.h and EDSDKErrors.h
 
@@ -637,4 +637,4 @@ private
   No_Directory : constant Directory_Item :=
     Directory_Item (System.Null_Address);
 
-end Camera.Canon.Eos;
+end Camera.Canon.C_Interface;

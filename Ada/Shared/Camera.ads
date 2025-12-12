@@ -18,53 +18,84 @@ pragma Style_White_Elephant;
 with Exposure;
 with Sensitivity;
 
+private with Text;
+
 package Camera is
 
   Max_With_Or_Height : constant := 5496; -- maximum for Canon 6D
   Min_With_Or_Height : constant := 3464; -- minimum for Canon 60D
 
-  type Model is (Canon_Eos_6D, Canon_Eos_60D);
+  type Model is (Canon_Eos_6D, Canon_Eos_60D, QHY_600C);
+
+  subtype Canon_Model is Model range Canon_Eos_6D .. Canon_Eos_60D;
 
   type Status is (Idle, Connecting, Connected, Capturing, Captured, Downloading, Cropping, Cropped, Stopping, Error);
+
+  type Columns is range 1 .. Max_With_Or_Height;
+  type Rows    is range 1 .. Max_With_Or_Height;
 
   type Information is record
     State  : Status;
     Camera : Model;
+    Height : Rows;
+    Width  : Columns;
   end record;
 
   Pixel_Size : constant := 16; -- allowed 8 or 16
 
   type Pixel is new Natural range 0 .. 2 ** Pixel_Size - 1 with Size => Pixel_Size;
 
-  type Square_Size is new Natural range 2 .. Min_With_Or_Height with Dynamic_Predicate => Square_Size mod 2 = 0;
-
-  type Columns is range 1 .. Max_With_Or_Height;
-  type Rows    is range 1 .. Max_With_Or_Height;
-
   type Green_Grid is array (Rows range <>, Columns range <>) of Pixel;
+
+  type Square_Size is new Natural range 2 .. Min_With_Or_Height with Dynamic_Predicate => Square_Size mod 2 = 0;
 
   procedure Start;
 
   function Actual_Information return Information;
 
-  procedure Capture (Filename : String;
-                     Time     : Exposure.Item := Exposure.From_Camera;
-                     Iso      : Sensitivity.Item := Sensitivity.From_Camera);
+  procedure Capture (Filename  : String;
+                     Time      : Exposure.Item := Exposure.From_Camera;
+                     Parameter : Sensitivity.Item := Sensitivity.Default);
 
-  procedure Capture (Size : Square_Size;
-                     Time : Exposure.Item := Exposure.From_Camera;
-                     Iso  : Sensitivity.Item := Sensitivity.From_Camera);
+  procedure Capture (Size      : Square_Size;
+                     Time      : Exposure.Item := Exposure.From_Camera;
+                     Parameter : Sensitivity.Item := Sensitivity.Default);
 
   function Captured return Green_Grid;
-
-  function Image_Height return Rows;
-
-  function Image_Width return Columns;
 
   procedure Stop;
 
   function Error_Message return String;
 
   procedure Finish;
+
+private
+
+  procedure Raise_Error (Message : String) with No_Return;
+
+  protected Camera_Data is
+
+    procedure Set (State : Status);
+
+    procedure Set (Item : Model);
+
+    procedure Set (Height : Rows);
+
+    procedure Set (Width : Columns);
+
+    function Actual return Information;
+
+    function Grid return Green_Grid;
+
+    procedure Set_Error (Message : String);
+
+    function Last_Error return String;
+
+    procedure Reset_Error;
+
+  private
+    The_Information : Information;
+    The_Last_Error  : Text.String;
+  end Camera_Data;
 
 end Camera;
