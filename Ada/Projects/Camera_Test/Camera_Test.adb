@@ -15,8 +15,8 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-pragma Build (Description => "GID test",
-              Version     => (1, 0, 0, 0),
+pragma Build (Description => "Camera test",
+              Version     => (1, 0, 0, 1),
               Kind        => Console,
               Icon        => False,
               Compiler    => "GNATPRO\23.0");

@@ -109,7 +109,6 @@ package body Camera.Canon is
                              Time      : Exposure.Item;
                              Parameter : Sensitivity.Item) is
   begin
-    Camera_Data.Set (Connecting);
     The_Control.Capture_Picture (Filename, Time, Parameter);
   end Capture_Picture;
 
@@ -118,7 +117,6 @@ package body Camera.Canon is
                           Time      : Exposure.Item;
                           Parameter : Sensitivity.Item) is
   begin
-    Camera_Data.Set (Connecting);
     The_Control.Capture_Grid (Size, Time, Parameter);
   end Capture_Grid;
 
@@ -453,12 +451,16 @@ package body Camera.Canon is
       Count : aliased CI.Uint32;
       use type CI.Uint32;
     begin
+      Camera_Data.Check (Idle);
       Dummy_Result := CI.Initialize_SDK;
       Dummy_Result := CI.Get_Camera_List (The_Session.Device_List'access);
       Dummy_Result := CI.Get_Child_Count (The_Session.Device_List, Count'access);
       Log.Write ("Number of detected cameras:" & CI.Uint32'image (Count));
       Release_Device_List_And_Terminate_SDK;
       return Count = 1;
+    exception
+    when others =>
+      return False;
     end One_Device_Is_Ready;
 
     --------------------------------------------
@@ -543,6 +545,8 @@ package body Camera.Canon is
       The_Mode : CI.Uint32;
       use type CI.AE_Mode;
     begin
+      Camera_Data.Check (Idle);
+      Camera_Data.Set (Connecting);
       if not The_Iso.Is_Iso_Or_Default then
         Raise_Error ("Parameter must be ISO or default value");
       end if;
@@ -758,7 +762,7 @@ package body Camera.Canon is
         end Shutdown;
         exit;
       or
-        delay until The_Wakeup_Time;
+        when Camera_Data.Actual.Camera in Canon_Model => delay until The_Wakeup_Time;
         The_Wakeup_Time := RT.Clock + Delta_Time;
         case Camera_Data.Actual.State is
         when Capturing =>

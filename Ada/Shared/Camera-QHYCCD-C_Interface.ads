@@ -25,7 +25,7 @@ package Camera.QHYCCD.C_Interface is
   -- basic C types
   subtype Int    is C.Int;
   subtype Uint8  is C.Uint8;
-  subtype Uint32 is C.Unsigned_Long;
+  subtype Uint32 is C.Uint32;
   subtype Double is C.Double;
   subtype Bool   is C.Bool;
 
@@ -44,14 +44,18 @@ package Camera.QHYCCD.C_Interface is
   Stream_Live         : constant Stream_Mode := 16#01#;
 
   -- subset of control IDs we need for first picture
-  type Control_Id is (Control_Gain,          -- optional
-                      Control_Offset,        -- optional
-                      Control_Exposure) with -- in microseconds
-    Size => Int'size;
+  type Control_Id is (Control_Gain,         -- optional
+                      Control_Offset,       -- optional
+                      Control_Exposure,     -- in microseconds
+                      Control_Transfer_Bit, -- bits per pixel (8/16)
+                      Control_Channels)     -- requested channels (1/3)
+    with Size => Int'size;
 
-  for Control_Id use (Control_Gain     => 6,
-                      Control_Offset   => 7,
-                      Control_Exposure => 8);
+  for Control_Id use (Control_Gain         => 6,
+                      Control_Offset       => 7,
+                      Control_Exposure     => 8,
+                      Control_Transfer_Bit => 10,
+                      Control_Channels     => 11);
 
   function Init_Resource return Result with
     Import,
@@ -95,6 +99,21 @@ package Camera.QHYCCD.C_Interface is
     Import,
     Convention    => StdCall,
     External_Name => "InitQHYCCD";
+
+  function Set_Debayer_On_Off (H : Handle; On : Bool) return Result with
+    Import,
+    Convention    => StdCall,
+    External_Name => "SetQHYCCDDebayerOnOff";
+
+  function Is_Control_Available (H : Handle; Id : Control_Id) return Result with
+    Import,
+    Convention    => StdCall,
+    External_Name => "IsQHYCCDControlAvailable";
+
+  function Set_Bits_Mode (H : Handle; Bits : Uint32) return Result with
+    Import,
+    Convention    => StdCall,
+    External_Name => "SetQHYCCDBitsMode";
 
   function Set_Param (H     : Handle;
                       Id    : Control_Id;

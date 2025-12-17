@@ -71,7 +71,12 @@ package body Camera is
 
   function Captured return Green_Grid is
   begin
-    return Camera_Data.Grid;
+    case Camera_Data.Actual.Camera is
+    when Canon_Eos_6D | Canon_Eos_60D =>
+      return Raw.Grid;
+    when QHY600C =>
+      return QHYCCD.Grid;
+    end case;
   end Captured;
 
 
@@ -81,7 +86,7 @@ package body Camera is
     case Camera_Data.Actual.Camera is
     when Canon_Eos_6D | Canon_Eos_60D =>
       Canon.Stop_Capture;
-    when QHY_600C =>
+    when QHY600C =>
       QHYCCD.Stop_Capture;
     end case;
   end Stop;
@@ -155,18 +160,14 @@ package body Camera is
     end Actual;
 
 
-    function Grid return Green_Grid is
+    procedure Check (Item : Status) is
     begin
-      if The_Information.State /= Cropped then
-        raise Program_Error;
+      if The_Information.State /= Item then
+        The_Last_Error := ["Sequence Error - State must be " & Item'image];
+        The_Information.State := Error;
+        raise Camera_Error;
       end if;
-      case The_Information.Camera is
-      when Canon_Eos_6D | Canon_Eos_60D =>
-        return Raw.Grid;
-      when QHY_600C =>
-        return QHYCCD.Grid;
-      end case;
-    end Grid;
+    end Check;
 
 
     procedure Set_Error (Message : String) is
@@ -188,5 +189,10 @@ package body Camera is
     end Reset_Error;
 
   end Camera_Data;
+
+  ----------
+  -- Grid --
+  ----------
+
 
 end Camera;

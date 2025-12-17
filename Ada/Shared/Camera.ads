@@ -22,10 +22,10 @@ private with Text;
 
 package Camera is
 
-  Max_With_Or_Height : constant := 5496; -- maximum for Canon 6D
+  Max_With_Or_Height : constant := 9576; -- maximum for Canon QHY600C
   Min_With_Or_Height : constant := 3464; -- minimum for Canon 60D
 
-  type Model is (Canon_Eos_6D, Canon_Eos_60D, QHY_600C);
+  type Model is (Canon_Eos_6D, Canon_Eos_60D, QHY600C);
 
   subtype Canon_Model is Model range Canon_Eos_6D .. Canon_Eos_60D;
 
@@ -84,8 +84,8 @@ private
     procedure Set (Width : Columns);
 
     function Actual return Information;
-
-    function Grid return Green_Grid;
+    
+    procedure Check (Item : Status);
 
     procedure Set_Error (Message : String);
 

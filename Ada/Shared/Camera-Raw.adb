@@ -33,20 +33,13 @@ package body Camera.Raw is
   -- Local helpers --
   -------------------
 
-  procedure Error (Msg : String) is
-  begin
-    Log.Error (Msg);
-    raise Raw_Error with Msg;
-  end Error;
-
-
   procedure Check (Code  : C.int;
                    Where : String) is
     use type C.int;
   begin
     Log.Write (Where);
     if Code /= 0 then
-      Error (Where & " failed (LibRaw error code" & Integer'image (Integer (Code)) & ")");
+      Raise_Error (Where & " failed (LibRaw error code" & Integer'image (Integer (Code)) & ")");
     end if;
   end Check;
 
@@ -65,13 +58,11 @@ package body Camera.Raw is
   Ctx : RI.Context := RI.Null_Context;
   Img : RI.Processed_Image_Ptr;
 
-  Grid_Is_Prepared : Boolean := False;
 
   procedure Cleanup is
     use type RI.Processed_Image_Ptr;
     use type RI.Context;
   begin
-    Grid_Is_Prepared := False;
     begin
       if Img /= null then
         RI.Dcraw_Clear_Mem (Img);
@@ -133,10 +124,11 @@ package body Camera.Raw is
     use type RI.Processed_Image_Ptr;
 
   begin -- Prepare_Grid
+    Camera_Data.Check (Cropping);
     The_Grid_Size := Size;
     Ctx := RI.Init (0);
     if Ctx = RI.Null_Context then
-      Error ("libraw_init returned NULL context");
+      Raise_Error ("libraw_init returned NULL context");
     end if;
 
     Check (RI.Open_File (Ctx, File_C'address), "Open file via LibRaw");
@@ -157,7 +149,7 @@ package body Camera.Raw is
     Check (Proc_Err, "Make memory image");
 
     if Img = null then
-      Error ("Make memory image returned NULL pointer");
+      Raise_Error ("Make memory image returned NULL pointer");
     end if;
 
     Log.Write ("Extract dimensions and format info");
@@ -169,7 +161,7 @@ package body Camera.Raw is
       Data_Size := Natural(Img.Data_Size);
     exception
     when others =>
-      Error ("Invalid processed image data");
+      Raise_Error ("Invalid processed image data");
     end;
 
     Log.Write ("- Type  :" & Img.Img_Type'image);
@@ -180,16 +172,16 @@ package body Camera.Raw is
     Log.Write ("- Size  :" & Data_Size'image);
 
     if Bits /= Pixel'size then
-      Error ("Expected" & Pixel'size'image & "bits processed image, got" &
-             Bits'image & " bits (check libraw_set_output_bps support)");
+      Raise_Error ("Expected" & Pixel'size'image & "bits processed image, got" &
+                   Bits'image & " bits (check libraw_set_output_bps support)");
     end if;
 
     if Data_Size /= The_Width * The_Height * Natural(The_Colors) * Bytes_Per_Sample then
-      Error ("Invalid image data size");
+      Raise_Error ("Invalid image data size");
     end if;
     Camera_Data.Set (Height => Rows(The_Height));
     Camera_Data.Set (Width => Columns(The_Width));
-    Grid_Is_Prepared := True;
+    Camera_Data.Set (Cropped);
   exception
   when others =>
     Cleanup;
@@ -223,9 +215,7 @@ package body Camera.Raw is
     use type System.Address;
 
   begin -- Grid
-    if not Grid_Is_Prepared then
-      Raise_Error ("Grid not prepared");
-    end if;
+    Camera_Data.Check (Cropped);
     Log.Write ("Choose which channel to treat as 'green'");
     Log.Write ("- Green_Index:" & Green_Index'image);
     Log.Write ("- Row_Offset :" & Row_Offset'image);
