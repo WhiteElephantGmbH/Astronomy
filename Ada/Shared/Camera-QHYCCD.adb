@@ -111,7 +111,7 @@ package body Camera.QHYCCD is
   procedure Disconnect is
     procedure Dispose is new Ada.Unchecked_Deallocation (AS.Stream_Element_Array, Buffer);
   begin
-    Log.Write ("Disconnect");
+   Log.Write ("Disconnect");
     if The_Buffer /= null then
       Dispose (The_Buffer);
       The_Buffer := null;
@@ -753,7 +753,9 @@ package body Camera.QHYCCD is
 
       or
         accept Shutdown do
-          Disconnect;
+          if Camera_Data.Actual.Camera = QHY600C then
+            Disconnect;
+          end if;      
         end Shutdown;
         exit;
       end select;

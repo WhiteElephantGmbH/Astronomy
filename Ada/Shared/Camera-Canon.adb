@@ -405,6 +405,7 @@ package body Camera.Canon is
       Dummy_Count  : CI.Ref_Count;
       use type CI.Directory_Item;
     begin
+      Log.Write ("Disconnect");
       if The_Item /= CI.No_Directory then
         begin
           Check ("Delete file on camera",  CI.Delete_Directory_Item (The_Item));
@@ -759,7 +760,9 @@ package body Camera.Canon is
         end Await_Stop;
       or
         accept Shutdown do
-          Disconnect;
+          if Camera_Data.Actual.Camera in Canon_Model then
+            Disconnect;
+          end if;
         end Shutdown;
         exit;
       or
