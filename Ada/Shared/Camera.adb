@@ -44,6 +44,7 @@ package body Camera is
                      Parameter : Sensitivity.Item := Sensitivity.Default) is
   begin
     Log.Write ("Capture " & Filename & " - Time: " & Time'image & " - Parameter: " & Parameter'image);
+    Camera_Data.Set (Unknown);
     if Canon.Is_Available then
       Canon.Capture_Picture (Filename, Time, Parameter);
     elsif QHYCCD.Is_Available then
@@ -59,6 +60,7 @@ package body Camera is
                      Parameter : Sensitivity.Item := Sensitivity.Default) is
   begin
     Log.Write ("Capture - Size:" & Size'image & " - Time: " & Time'image & " - Parameter: " & Parameter'image);
+    Camera_Data.Set (Unknown);
     if Canon.Is_Available then
       Canon.Capture_Grid (Size, Time, Parameter);
     elsif QHYCCD.Is_Available then
@@ -76,6 +78,8 @@ package body Camera is
       return Raw.Grid;
     when QHY600C =>
       return QHYCCD.Grid;
+    when Unknown =>
+      Raise_Error ("No Camera Connected");
     end case;
   end Captured;
 
@@ -88,6 +92,8 @@ package body Camera is
       Canon.Stop_Capture;
     when QHY600C =>
       QHYCCD.Stop_Capture;
+    when Unknown =>
+      null;
     end case;
   end Stop;
 

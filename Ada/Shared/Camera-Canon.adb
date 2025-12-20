@@ -460,6 +460,7 @@ package body Camera.Canon is
       return Count = 1;
     exception
     when others =>
+      Release_Device_List_And_Terminate_SDK;
       return False;
     end One_Device_Is_Ready;
 
