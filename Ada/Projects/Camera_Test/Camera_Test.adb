@@ -53,7 +53,7 @@ procedure Camera_Test is
   end Show_Grid;
 
   Delay_Time : constant Duration := 0.2;
-  Timeout    : constant Duration := 10.0;
+  Timeout    : constant Duration := 30.0;
   Counter    : constant Natural := Natural(Timeout / Delay_Time);
 
   The_Count : Integer;
@@ -88,7 +88,7 @@ begin -- Camera_Test
           begin
             case Text.Uppercase_Of (Parameters(1)(1)) is
             when 'C' =>
-              Camera.Capture ("D:\Temp\Picture.CR2", Time, Parameter);
+              Camera.Capture ("D:\Temp\Picture.FITS", Time, Parameter);
             when 'G' =>
               Camera.Capture (10, Time, Parameter);
             when others =>

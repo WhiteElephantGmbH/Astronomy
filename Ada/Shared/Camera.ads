@@ -22,7 +22,7 @@ private with Text;
 
 package Camera is
 
-  Max_With_Or_Height : constant := 9576; -- maximum for Canon QHY600C
+  Max_With_Or_Height : constant := 9600; -- maximum for Canon QHY600C
   Min_With_Or_Height : constant := 3464; -- minimum for Canon 60D
 
   type Model is (Unknown, Canon_Eos_6D, Canon_Eos_60D, QHY600C);

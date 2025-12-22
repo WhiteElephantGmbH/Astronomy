@@ -43,19 +43,58 @@ package Camera.QHYCCD.C_Interface is
   Stream_Single_Frame : constant Stream_Mode := 16#00#;
   Stream_Live         : constant Stream_Mode := 16#01#;
 
-  -- subset of control IDs we need for first picture
-  type Control_Id is (Control_Gain,         -- optional
-                      Control_Offset,       -- optional
-                      Control_Exposure,     -- in microseconds
-                      Control_Transfer_Bit, -- bits per pixel (8/16)
-                      Control_Channels)     -- requested channels (1/3)
+  -- CONTROL_ID (from SDK qhyccdstruct.h table in the PDF)
+  -- NOTE: We keep the name Control_Id because it's used by Set/Get/Is_Control_Available.
+  type Control_Id is
+    (Control_Brightness,
+     Control_Contrast,
+     Control_WBR,
+     Control_WBB,
+     Control_WBG,
+     Control_Gamma,
+     Control_Gain,
+     Control_Offset,
+     Control_Exposure,
+     Control_Speed,
+     Control_Transfer_Bit,
+     Control_Channels,
+     Control_USB_Traffic,
+
+     Cam_Color,
+
+     Control_DDR,
+
+     Cam_Single_Frame_Mode,
+     Cam_Live_Video_Mode,
+     Cam_Is_Color)
     with Size => Int'size;
 
-  for Control_Id use (Control_Gain         => 6,
-                      Control_Offset       => 7,
-                      Control_Exposure     => 8,
-                      Control_Transfer_Bit => 10,
-                      Control_Channels     => 11);
+  for Control_Id use
+    (Control_Brightness    => 0,
+     Control_Contrast      => 1,
+     Control_WBR           => 2,
+     Control_WBB           => 3,
+     Control_WBG           => 4,
+     Control_Gamma         => 5,
+     Control_Gain          => 6,
+     Control_Offset        => 7,
+     Control_Exposure      => 8,
+     Control_Speed         => 9,
+     Control_Transfer_Bit  => 10,
+     Control_Channels      => 11,
+     Control_USB_Traffic   => 12,
+
+     Cam_Color             => 20,
+
+     Control_DDR           => 48,
+
+     Cam_Single_Frame_Mode => 57,
+     Cam_Live_Video_Mode   => 58,
+     Cam_Is_Color          => 59);
+
+  -- --------------------------------------------------------------------------
+  -- Resource + camera open/close
+  -- --------------------------------------------------------------------------
 
   function Init_Resource return Result with
     Import,
@@ -90,6 +129,41 @@ package Camera.QHYCCD.C_Interface is
     Convention    => StdCall,
     External_Name => "CloseQHYCCD";
 
+  -- --------------------------------------------------------------------------
+  -- Read mode (useful for cameras with multiple readout modes)
+  -- --------------------------------------------------------------------------
+
+  function Get_Number_Of_Read_Modes (H          : Handle;
+                                     Mode_Count : access Uint32) return Result with
+    Import,
+    Convention    => StdCall,
+    External_Name => "GetQHYCCDNumberOfReadModes";
+
+  function Get_Read_Mode_Name (H          : Handle;
+                               Mode       : Uint32;
+                               Name       : System.Address) return Result with
+    Import,
+    Convention    => StdCall,
+    External_Name => "GetQHYCCDReadModeName";
+
+  function Get_Read_Mode_Resolution (H      : Handle;
+                                     Mode   : Uint32;
+                                     Width  : access Uint32;
+                                     Height : access Uint32) return Result with
+    Import,
+    Convention    => StdCall,
+    External_Name => "GetQHYCCDReadModeResolution";
+
+  function Set_Read_Mode (H    : Handle;
+                          Mode : Uint32) return Result with
+    Import,
+    Convention    => StdCall,
+    External_Name => "SetQHYCCDReadMode";
+
+  -- --------------------------------------------------------------------------
+  -- Stream / init / capabilities
+  -- --------------------------------------------------------------------------
+
   function Set_Stream_Mode (H : Handle; Mode : Stream_Mode) return Result with
     Import,
     Convention    => StdCall,
@@ -110,10 +184,24 @@ package Camera.QHYCCD.C_Interface is
     Convention    => StdCall,
     External_Name => "IsQHYCCDControlAvailable";
 
-  function Set_Bits_Mode (H : Handle; Bits : Uint32) return Result with
+  -- --------------------------------------------------------------------------
+  -- Parameter API (range + get/set)
+  -- --------------------------------------------------------------------------
+
+  function Get_Param_Min_Max_Step (H     : Handle;
+                                  Id    : Control_Id;
+                                  Min   : access Double;
+                                  Max   : access Double;
+                                  Step  : access Double) return Result with
     Import,
     Convention    => StdCall,
-    External_Name => "SetQHYCCDBitsMode";
+    External_Name => "GetQHYCCDParamMinMaxStep";
+
+  function Get_Param (H  : Handle;
+                      Id : Control_Id) return Double with
+    Import,
+    Convention    => StdCall,
+    External_Name => "GetQHYCCDParam";
 
   function Set_Param (H     : Handle;
                       Id    : Control_Id;
@@ -121,6 +209,16 @@ package Camera.QHYCCD.C_Interface is
     Import,
     Convention    => StdCall,
     External_Name => "SetQHYCCDParam";
+
+  -- Some SDKs also expose SetQHYCCDBitsMode; keep it if you already use it.
+  function Set_Bits_Mode (H : Handle; Bits : Uint32) return Result with
+    Import,
+    Convention    => StdCall,
+    External_Name => "SetQHYCCDBitsMode";
+
+  -- --------------------------------------------------------------------------
+  -- Geometry / buffers / exposure
+  -- --------------------------------------------------------------------------
 
   function Get_Chip_Info (H      : Handle;
                           Chip_W : access Double;
@@ -180,6 +278,24 @@ package Camera.QHYCCD.C_Interface is
     Import,
     Convention    => StdCall,
     External_Name => "CancelQHYCCDExposingAndReadout";
+
+  -- --------------------------------------------------------------------------
+  -- Versions (handy for first-light logs)
+  -- --------------------------------------------------------------------------
+
+  function Get_SDK_Version (Year   : access Uint32;
+                            Month  : access Uint32;
+                            Day    : access Uint32;
+                            Subday : access Uint32) return Result with
+    Import,
+    Convention    => StdCall,
+    External_Name => "GetQHYCCDSDKVersion";
+
+  function Get_FW_Version (H   : Handle;
+                           Buf : System.Address) return Result with
+    Import,
+    Convention    => StdCall,
+    External_Name => "GetQHYCCDFWVersion";
 
 private
 

@@ -111,7 +111,7 @@ package body Camera.QHYCCD is
   procedure Disconnect is
     procedure Dispose is new Ada.Unchecked_Deallocation (AS.Stream_Element_Array, Buffer);
   begin
-   Log.Write ("Disconnect");
+    Log.Write ("Disconnect");
     if The_Buffer /= null then
       Dispose (The_Buffer);
       The_Buffer := null;
@@ -385,31 +385,167 @@ package body Camera.QHYCCD is
 
       use all type CI.Bool;
 
+      procedure Log_Range (Name : String;
+                           Id   : CI.Control_Id) is
+        Min  : aliased CI.Double;
+        Max  : aliased CI.Double;
+        Step : aliased CI.Double;
+        R    : CI.Result;
+      begin
+        if Has (Id) then
+          R := CI.Get_Param_Min_Max_Step (Exposing.Handle, Id, Min'access, Max'access, Step'access);
+          if R = CI.QHY_SUCCESS then
+            Log.Write ("### Range " & Name &
+                       " Min:" & Min'image &
+                       " Max:" & Max'image &
+                       " Step:" & Step'image);
+          else
+            Log.Warning ("Get range failed for " & Name & " error =" & R'image);
+          end if;
+        else
+          Log.Write ("### Range " & Name & " not available");
+        end if;
+      exception
+        when others =>
+          Log.Warning ("Get range failed for " & Name);
+      end Log_Range;
+
+      procedure Log_Caps is
+        function Yes_No (B : Boolean) return String is (if B then "Yes" else "No");
+      begin
+        Log.Write ("### Caps" &
+                   " - SingleFrame:" & Yes_No (Has (CI.Cam_Single_Frame_Mode)) &
+                   " - LiveVideo:" & Yes_No (Has (CI.Cam_Live_Video_Mode)) &
+                   " - IsColor:" & Yes_No (Has (CI.Cam_Is_Color)) &
+                   " - Debayer:Yes" &
+                   " - TransferBit:" & Yes_No (Has (CI.Control_Transfer_Bit)) &
+                   " - Speed:" & Yes_No (Has (CI.Control_Speed)) &
+                   " - USB:" & Yes_No (Has (CI.Control_USB_Traffic)) &
+                   " - DDR:" & Yes_No (Has (CI.Control_DDR)) &
+                   " - Channels:" & Yes_No (Has (CI.Control_Channels)) &
+                   " - Gain:" & Yes_No (Has (CI.Control_Gain)) &
+                   " - Offset:" & Yes_No (Has (CI.Control_Offset)) &
+                   " - Exposure:" & Yes_No (Has (CI.Control_Exposure)));
+      end Log_Caps;
+
+      procedure Log_Versions is
+        Year   : aliased CI.Uint32 := 0;
+        Month  : aliased CI.Uint32 := 0;
+        Day    : aliased CI.Uint32 := 0;
+        Subday : aliased CI.Uint32 := 0;
+
+        FW : aliased C.Name (1 .. 64) := [others => Ascii.Nul];
+
+        R : CI.Result;
+      begin
+        R := CI.Get_SDK_Version (Year'access, Month'access, Day'access, Subday'access);
+        if R = CI.QHY_SUCCESS then
+          Log.Write ("### SDK Version " &
+                     Year'image & "-" &
+                     Month'image & "-" &
+                     Day'image & " (" & Subday'image & ")");
+        else
+          Log.Warning ("Get SDK version failed error =" & R'image);
+        end if;
+
+        R := CI.Get_FW_Version (Exposing.Handle, FW'address);
+        if R = CI.QHY_SUCCESS then
+          Log.Write ("### FW Version " & C.Helper.String_Of (FW));
+        else
+          Log.Warning ("Get FW version failed error =" & R'image);
+        end if;
+      exception
+        when others =>
+          Log.Warning ("Get versions failed");
+      end Log_Versions;
+
+      procedure Setup_Read_Mode is
+        Mode_Count : aliased CI.Uint32 := 0;
+        R          : CI.Result;
+
+        Name_Buf : aliased C.Name (1 .. 64) := [others => Ascii.Nul];
+        W0       : aliased CI.Uint32 := 0;
+        H0       : aliased CI.Uint32 := 0;
+
+        Mode : constant CI.Uint32 := 0;
+
+      begin
+        R := CI.Get_Number_Of_Read_Modes (Exposing.Handle, Mode_Count'access);
+        if R = CI.QHY_SUCCESS then
+          Log.Write ("### Read modes:" & Mode_Count'image);
+        else
+          Log.Warning ("Get read mode count failed error =" & R'image);
+          return;
+        end if;
+
+        if Mode_Count = 0 then
+          return;
+        end if;
+
+        Check ("Set Read Mode", CI.Set_Read_Mode (Exposing.Handle, Mode));
+
+        R := CI.Get_Read_Mode_Name (Exposing.Handle, Mode, Name_Buf'address);
+        if R = CI.QHY_SUCCESS then
+          Log.Write ("### Read mode 0 name: " & C.Helper.String_Of (Name_Buf));
+        end if;
+
+        R := CI.Get_Read_Mode_Resolution (Exposing.Handle, Mode, W0'access, H0'access);
+        if R = CI.QHY_SUCCESS then
+          Log.Write ("### Read mode 0 resolution W:" & W0'image & " - H:" & H0'image);
+        end if;
+      exception
+        when others =>
+          Log.Warning ("Read mode setup failed");
+      end Setup_Read_Mode;
+
     begin -- Continue_Capture
       Camera_Data.Set (Capturing);
 
       Check ("Set Stream Mode", CI.Set_Stream_Mode (Exposing.Handle, CI.Stream_Single_Frame));
       Check ("Initialize", CI.Init_Camera (Exposing.Handle));
 
+      Log_Versions;
+      Log_Caps;
+      Setup_Read_Mode;
+
+      Log_Range ("TRANSFERBIT", CI.Control_Transfer_Bit);
+      Log_Range ("SPEED",       CI.Control_Speed);
+      Log_Range ("USBTRAFFIC",  CI.Control_USB_Traffic);
+      Log_Range ("DDR",         CI.Control_DDR);
+      Log_Range ("CHANNELS",    CI.Control_Channels);
+      Log_Range ("EXPOSURE",    CI.Control_Exposure);
+      Log_Range ("GAIN",        CI.Control_Gain);
+      Log_Range ("OFFSET",      CI.Control_Offset);
+
       -- Prefer 16-bit transfer if supported (common on QHY)
       if Has (CI.Control_Transfer_Bit) then
         Check ("Set TRANSFERBIT=16", CI.Set_Param (Exposing.Handle, CI.Control_Transfer_Bit, 16.0));
       end if;
 
-      case Kind is
-        when Grid =>
-          -- Grid wants raw / mono (1 channel), and NO debayer.
-          if Has (CI.Control_Channels) then
-            Check ("Set CHANNELS=1", CI.Set_Param (Exposing.Handle, CI.Control_Channels, 1.0));
-          end if;
-          Check ("Set Debayer Off", CI.Set_Debayer_On_Off (Exposing.Handle, False));
+      -- Try conservative defaults if available (helpful for first light / hangs)
+      if Has (CI.Control_Speed) then
+        Check ("Set SPEED=0", CI.Set_Param (Exposing.Handle, CI.Control_Speed, 0.0));
+      end if;
 
-        when Picture =>
-          -- Picture wants color: request debayered 3-channel output.
-          if Has (CI.Control_Channels) then
-            Check ("Set CHANNELS=3", CI.Set_Param (Exposing.Handle, CI.Control_Channels, 3.0));
-          end if;
-          Check ("Set Debayer On", CI.Set_Debayer_On_Off (Exposing.Handle, True));
+      if Has (CI.Control_USB_Traffic) then
+        Check ("Set USBTRAFFIC=0", CI.Set_Param (Exposing.Handle, CI.Control_USB_Traffic, 0.0));
+      end if;
+
+      if Has (CI.Control_DDR) then
+        Check ("Set DDR=1", CI.Set_Param (Exposing.Handle, CI.Control_DDR, 1.0));
+      end if;
+
+      case Kind is
+      when Grid =>
+        -- Grid wants raw / mono (1 channel), and NO debayer.
+        if Has (CI.Control_Channels) then
+          Check ("Set CHANNELS=1", CI.Set_Param (Exposing.Handle, CI.Control_Channels, 1.0));
+        end if;
+        Check ("Set Debayer Off", CI.Set_Debayer_On_Off (Exposing.Handle, False));
+
+      when Picture =>
+        -- Picture for ASTAP: debayer not needed; keep raw mono to avoid SDK buffer surprises.
+        Check ("Set Debayer Off", CI.Set_Debayer_On_Off (Exposing.Handle, False));
       end case;
 
       -- full frame defaults (bin 1, ROI full)
@@ -457,57 +593,79 @@ package body Camera.QHYCCD is
 
       Check ("Exp Single Frame", CI.Exp_Single_Frame (Exposing.Handle));
 
-      Check ("Get Single Frame",
-        CI.Get_Single_Frame (Exposing.Handle,
-                             The_Width'access, The_Height'access, The_Bpp'access, The_Channels'access,
-                             The_Buffer(The_Buffer'first)'address));
-
+      begin
+        Log.Write ("### Get frame start");
+        Check ("Get Single Frame",
+          CI.Get_Single_Frame (Exposing.Handle,
+                               The_Width'access, The_Height'access,
+                               The_Bpp'access, The_Channels'access,
+                               The_Buffer (The_Buffer'first)'address));
+      exception
+      when Item: others =>
+        Log.Termination (Item);
+        raise;
+      end;
       Log.Write ("### Frame W:" & The_Width'image &
                  " - H:" & The_Height'image &
                  " - Bpp:" & The_Bpp'image &
                  " - Ch:" & The_Channels'image &
                  " - MemLen:" & The_Length'image);
 
-      case Kind is
-      when Grid =>
-        if The_Channels /= 1 then
-          Log.Warning ("Grid expected Channels = 1, got" & The_Channels'image);
-        end if;
-      when Picture =>
-        if The_Channels /= 3 then
-          Log.Warning ("Picture expected Channels = 3, got" & The_Channels'image);
-        end if;
-      end case;
+      if The_Channels /= 1 then
+        Log.Warning ("Grid expected Channels = 1, got" & The_Channels'image);
+      end if;
 
       Camera_Data.Set (Height => Rows(The_Height));
       Camera_Data.Set (Width  => Columns(The_Width));
       Camera_Data.Set (Captured);
+      Log.Write ("### Continue_Capture done");
     end Continue_Capture;
 
     -- FITS helpers -------------------------------------------------------------
 
     function Card (K, V : String) return String is
+
       S0 : String(1 .. 80) := [others => ' '];
-      P  : Natural := 1;
+
+      procedure Put_Keyword (Key : String) is
+        P : Natural := 1;
+      begin
+        for I in Key'range loop
+          exit when P > 8;
+          S0(P) := Key(I);
+          P := P + 1;
+        end loop;
+      end Put_Keyword;
+
+      procedure Put_Value_Field (Val : String) is
+        -- FITS value field is columns 11..30 (20 chars), right-justified
+        Field : String(1 .. 20) := [others => ' '];
+        L     : constant Natural := Val'length;
+      begin
+        if L >= Field'length then
+          Field := Val(Val'last - Field'length + 1 .. Val'last);
+        else
+          Field(Field'last - L + 1 .. Field'last) := Val;
+        end if;
+
+        S0(11 .. 30) := Field;
+      end Put_Value_Field;
+
     begin
-      for I in K'range loop
-        exit when P > 8;
-        S0(P) := K(I);
-        P := P + 1;
-      end loop;
+      Put_Keyword (K);
+
+      if K = "END" then
+        -- no "= " and no value for END
+        return S0;
+      end if;
 
       S0(9)  := '=';
       S0(10) := ' ';
 
-      declare
-        Q : Natural := 11;
-      begin
-        for I in V'range loop
-          exit when Q > 80;
-          S0(Q) := V(I);
-          Q := Q + 1;
-        end loop;
-      end;
+      -- If caller provides a "raw" value already formatted (e.g. "'TEXT'"),
+      -- it should still go into the value field correctly.
+      Put_Value_Field (V);
+      Log.Write ("### S0: '" & S0 & "'");
 
       return S0;
     end Card;
@@ -518,6 +676,27 @@ package body Camera.QHYCCD is
     begin
       return Card (K, Text.Trimmed (V'image));
     end Card;
+
+
+    function Card_Logical (K : String;
+                           V : Boolean) return String is
+    begin
+      if V then
+        return Card (K, "T");
+      else
+        return Card (K, "F");
+      end if;
+    end Card_Logical;
+
+
+    function End_Card return String is
+      S0 : String(1 .. 80) := [others => ' '];
+    begin
+      S0(1) := 'E';
+      S0(2) := 'N';
+      S0(3) := 'D';
+      return S0;
+    end End_Card;
 
 
     procedure Write_Fits is
@@ -544,8 +723,6 @@ package body Camera.QHYCCD is
         end if;
       end Pad_To_2880;
 
-      -- Write data as FITS big-endian.
-      -- If Channels=3, assume SDK buffer is interleaved RGBRGB... and write planar R.. G.. B..
       procedure Write_Data is
         use type CI.Uint32;
         use type AS.Stream_Element_Offset;
@@ -657,7 +834,7 @@ package body Camera.QHYCCD is
 
       IO.Create (The_File, IO.Out_File, The_Filename.To_String);
 
-      Put_Block (Card ("SIMPLE", "T"));
+      Put_Block (Card_Logical ("SIMPLE", True));
       Put_Block (Card ("BITPIX", Bitpix));
 
       if The_Channels <= 1 then
@@ -676,13 +853,20 @@ package body Camera.QHYCCD is
         Put_Block (Card ("BZERO",  32768));
       end if;
 
-      Put_Block (Card ("END", ""));
+      Put_Block (End_Card);
       Pad_To_2880;
 
-      Write_Data;
+      Log.Write ("### Write_Data");
+       Write_Data;
+      Log.Write ("### Write_Data complete");
 
       Pad_To_2880;
       IO.Close (The_File);
+      Log.Write ("### Write_Fits complete");
+    exception
+    when Item: others =>
+      Log.Termination (Item);
+      raise;
     end Write_Fits;
 
     procedure Capture_Picture is
@@ -755,7 +939,7 @@ package body Camera.QHYCCD is
         accept Shutdown do
           if Camera_Data.Actual.Camera = QHY600C then
             Disconnect;
-          end if;      
+          end if;
         end Shutdown;
         exit;
       end select;
