@@ -30,6 +30,7 @@ package body Camera.QHYCCD is
   package IO renames AS.Stream_IO;
   package CI renames C_Interface;
 
+  subtype Stream_Offset is AS.Stream_Element_Offset;
 
   task type Control is
 
@@ -134,89 +135,48 @@ package body Camera.QHYCCD is
   end Disconnect;
 
 
-  function Grid return Green_Grid is
+  function Grid return Raw_Grid is
 
-    function U16_At (Row, Col : CI.Uint32) return Pixel is
-      -- assumes 16-bit little-endian, 1 channel
-      use type AS.Stream_Element_Offset;
+    function Pixel_Of (Row    : Rows;
+                       Column : Columns) return Pixel is
+      use type Stream_Offset;
       use type CI.Uint32;
-      Index_Bytes : constant AS.Stream_Element_Offset := AS.Stream_Element_Offset((Row * The_Width + Col) * 2);
-      Lo : constant AS.Stream_Element := The_Buffer(The_Buffer'first + Index_Bytes);
-      Hi : constant AS.Stream_Element := The_Buffer(The_Buffer'first + Index_Bytes + 1);
-      V  : constant Natural := Natural(Lo) + 256 * Natural(Hi);
+      -- assumes 16-bit little-endian, 1 channel
+      BI : constant Stream_Offset := Stream_Offset((Natural(Row - 1) * Natural(The_Width) + Natural(Column) - 1) * 2);
+      Lo : constant AS.Stream_Element := The_Buffer(The_Buffer'first + BI);
+      Hi : constant AS.Stream_Element := The_Buffer(The_Buffer'first + BI + 1);
     begin
-      return Pixel (V);
-    end U16_At;
+      return Pixel(Lo) + 256 * Pixel(Hi);
+    end Pixel_Of;
 
     use type CI.Uint32;
 
-    W : constant CI.Uint32 := The_Width;
-    H : constant CI.Uint32 := The_Height;
+    Side         : constant CI.Uint32 := CI.Uint32(The_Grid_Size);
+    First_Row    : constant Rows := Rows(The_Height - Side) / 2;
+    First_Column : constant Columns := Columns(The_Width - Side) / 2;
 
-    Side : constant CI.Uint32 := (if W < H then W else H);
-    X0   : constant CI.Uint32 := (W - Side) / 2;
-    Y0   : constant CI.Uint32 := (H - Side) / 2;
-
-    Cell : constant CI.Uint32 := Side / CI.Uint32 (The_Grid_Size);
-
-    The_Grid : Green_Grid (1 .. Rows(The_Grid_Size), 1 .. Columns(The_Grid_Size));
+    The_Grid : Raw_Grid(1 .. Rows(The_Grid_Size), 1 .. Columns(The_Grid_Size));
 
   begin -- Grid
     if Camera_Data.Actual.State /= Cropped then
       Raise_Error ("Grid not prepared");
     end if;
-
-    Log.Write ("### Grid W:" & W'image &
-               " - H:" & H'image &
-               " - Side:" & Side'image &
-               " - Cell:" & Cell'image &
-               " - Size:" & The_Grid_Size'image &
-               " - X0:" & X0'image &
-               " - Y0:" & Y0'image);
-
-    -- For QHY600C Bayer (assume RGGB): green at (even,odd) and (odd,even)
-    for R in 1 .. The_Grid_Size loop
-      for C in 1 .. The_Grid_Size loop
+    for Row_Grid in 1 .. Rows(Side) loop
+      for Column_Grid in 1 .. Columns(Side) loop
         declare
-          Sum   : Natural := 0;
-          Count : Natural := 0;
-
-          Y1 : constant CI.Uint32 := Y0 + CI.Uint32(R - 1) * Cell;
-          Y2 : constant CI.Uint32 := (if R = The_Grid_Size then Y0 + Side else Y1 + Cell);
-
-          X1 : constant CI.Uint32 := X0 + CI.Uint32(C - 1) * Cell;
-          X2 : constant CI.Uint32 := (if C = The_Grid_Size then X0 + Side else X1 + Cell);
+          Row    : constant Rows    := First_Row + Row_Grid - 1;
+          Column : constant Columns := First_Column + Column_Grid - 1;
         begin
-          for Y in Y1 .. Y2 - 1 loop
-            for X in X1 .. X2 - 1 loop
-              declare
-                Even_Y   : constant Boolean := (Y mod 2 = 0);
-                Even_X   : constant Boolean := (X mod 2 = 0);
-                Is_Green : constant Boolean := (Even_Y and not Even_X) or (not Even_Y and Even_X);
-              begin
-                if Is_Green then
-                  Sum := Sum + Natural(U16_At (Y, X));
-                  Count := Count + 1;
-                end if;
-              end;
-            end loop;
-          end loop;
-
-          if Count = 0 then
-            The_Grid (Rows(R), Columns(C)) := 0;
-          else
-            The_Grid (Rows(R), Columns(C)) := Pixel(Sum / Count);
-          end if;
+          The_Grid (Row_Grid, Column_Grid) := Pixel_Of (Row, Column);
         end;
       end loop;
     end loop;
-
     Disconnect;
     return The_Grid;
   exception
-    when others =>
-      Disconnect;
-      return [];
+  when others =>
+    Disconnect;
+    return [];
   end Grid;
 
 
@@ -294,8 +254,11 @@ package body Camera.QHYCCD is
     The_Exposure  : Exposure.Item;
     The_Parameter : Sensitivity.Item;
 
-    use type CI.Handle;
+    The_Length : CI.Uint32;
+    The_Gain   : Sensitivity.Gain;
+    The_Offset : Sensitivity.Offset;
 
+    use type CI.Handle;
 
     function One_Device_Is_Ready return Boolean is
       Count : CI.Camera_Count;
@@ -308,9 +271,9 @@ package body Camera.QHYCCD is
       Check ("Release Resource", CI.Release_Resource);
       return Count = 1;
     exception
-      when others =>
-        Disconnect;
-        return False;
+    when others =>
+      Disconnect;
+      return False;
     end One_Device_Is_Ready;
 
 
@@ -323,10 +286,12 @@ package body Camera.QHYCCD is
 
       if not The_Parameter.Is_Gain_And_Offset_Or_Default then
         Raise_Error ("Parameter must be Gain and Offset or default value");
-      end if;
-      if The_Exposure.Mode = Exposure.From_Camera then
+      elsif The_Exposure.Mode = Exposure.From_Camera then
         Raise_Error ("Exposure from Camera not supported");
       end if;
+
+      The_Gain := The_Parameter.Value;
+      The_Offset := The_Parameter.Value;
 
       Camera_Data.Set (Connecting);
 
@@ -356,13 +321,8 @@ package body Camera.QHYCCD is
       Camera_Data.Set (Connected);
     end Start_Capture;
 
-    The_Length : CI.Uint32;
-
 
     procedure Continue_Capture is
-
-      Gain   : constant Sensitivity.Gain   := The_Parameter.Value;
-      Offset : constant Sensitivity.Offset := The_Parameter.Value;
 
       Chip_W : aliased CI.Double;
       Chip_H : aliased CI.Double;
@@ -407,36 +367,30 @@ package body Camera.QHYCCD is
         Check ("Set Param Exposure", CI.Set_Param (Exposing.Handle, CI.Control_Exposure, CI.Double(Usec)));
       end;
 
-      Check ("Set Param Gain", CI.Set_Param (Exposing.Handle, CI.Control_Gain, CI.Double(Gain)));
-      Check ("Set Param Offset", CI.Set_Param (Exposing.Handle, CI.Control_Offset, CI.Double(Offset)));
+      Check ("Set Param Gain", CI.Set_Param (Exposing.Handle, CI.Control_Gain, CI.Double(The_Gain)));
+      Check ("Set Param Offset", CI.Set_Param (Exposing.Handle, CI.Control_Offset, CI.Double(The_Offset)));
 
       The_Length := CI.Get_Mem_Length (Exposing.Handle);
-      if The_Length = 0 then
-        Raise_Error ("Get Mem Length returned 0");
-      end if;
 
-      The_Buffer := new AS.Stream_Element_Array (1 .. AS.Stream_Element_Offset(The_Length));
+      The_Buffer := new AS.Stream_Element_Array (1 .. Stream_Offset(The_Length));
 
       Check ("Exp Single Frame", CI.Exp_Single_Frame (Exposing.Handle));
 
-      begin
-        Check ("Get Single Frame",
-          CI.Get_Single_Frame (Exposing.Handle,
-                               The_Width'access, The_Height'access,
-                               The_Bpp'access, The_Channels'access,
-                               The_Buffer (The_Buffer'first)'address));
-      exception
-      when Item: others =>
-        Log.Termination (Item);
-        raise;
-      end;
+      Check ("Get Single Frame",
+        CI.Get_Single_Frame (Exposing.Handle,
+                             The_Width'access, The_Height'access,
+                             The_Bpp'access, The_Channels'access,
+                             The_Buffer (The_Buffer'first)'address));
+
       Log.Write ("Frame Width:" & The_Width'image &
                  " - Height:" & The_Height'image &
                  " - Bpp:" & The_Bpp'image &
                  " - Channels:" & The_Channels'image &
                  " - Length:" & The_Length'image);
 
-      if The_Channels /= 1 then
+      if The_Length /= The_Width * The_Height * (The_Bpp / Standard'storage_unit) then
+        Raise_Error ("Incorrect Memory Lenght - actual:" & The_Length'image);
+      elsif The_Channels /= 1 then
         Raise_Error ("Expected Channels = 1, got" & The_Channels'image);
       end if;
 
@@ -446,121 +400,132 @@ package body Camera.QHYCCD is
     end Continue_Capture;
 
 
-    -- FITS helpers
-
-    function Card (K, V : String) return String is
-
-      S0 : String(1 .. 80) := [others => ' '];
-
-      procedure Put_Keyword (Key : String) is
-        P : Natural := 1;
-      begin
-        for I in Key'range loop
-          exit when P > 8;
-          S0(P) := Key(I);
-          P := P + 1;
-        end loop;
-      end Put_Keyword;
-
-      procedure Put_Value_Field (Val : String) is
-        -- FITS value field is columns 11..30 (20 chars), right-justified
-        Field : String(1 .. 20) := [others => ' '];
-        L     : constant Natural := Val'length;
-      begin
-        if L >= Field'length then
-          Field := Val(Val'last - Field'length + 1 .. Val'last);
-        else
-          Field(Field'last - L + 1 .. Field'last) := Val;
-        end if;
-        S0(11 .. 30) := Field;
-      end Put_Value_Field;
-
-    begin -- Card
-      Put_Keyword (K);
-      S0(9)  := '=';
-      S0(10) := ' ';
-      Put_Value_Field (V);
-      return S0;
-    end Card;
-
-
-    function Card (K : String;
-                   V : CI.Uint32) return String is
-    begin
-      return Card (K, Text.Trimmed (V'image));
-    end Card;
-
-
-    function Card_Logical (K : String;
-                           V : Boolean) return String is
-    begin
-      if V then
-        return Card (K, "T");
-      else
-        return Card (K, "F");
-      end if;
-    end Card_Logical;
-
-
-    function End_Card return String is
-      S0 : String(1 .. 80) := [others => ' '];
-    begin
-      S0(1) := 'E';
-      S0(2) := 'N';
-      S0(3) := 'D';
-      return S0;
-    end End_Card;
-
-
     procedure Write_Fits is
 
-      The_File : IO.File_Type;
+      Block_Size : constant := 2880;
 
-      The_Index : Natural := 0;
+      use type CI.Uint32;
+
+      Bitpix : constant CI.Uint32 := The_Bpp;
+      BPS    : constant CI.Uint32 := Bitpix / Standard'storage_unit; -- bytes per sample
+      Height : constant CI.Uint32 := The_Height;
+      Width  : constant CI.Uint32 := The_Width;
+
+      subtype Card_String    is String(1..80);
+      subtype Keyword_String is String(1..8);
+      subtype Value_String   is String(1..21);
+
+      type Pixel_Size is delta 0.01 range 0.0 .. 99.99;
+
+      Pixel_Height : constant Pixel_Size := 3.76; -- um;
+      Pixel_Width  : constant Pixel_Size := 3.76; -- um;
+
+
+      function Keyword_Of (Key : String) return Keyword_String is
+        Image : Keyword_String := [others => ' '];
+      begin
+        Image(Image'first .. Image'first + Key'length - 1) := Key;
+        return Image;
+      end Keyword_Of;
+
+
+      function Value_Of (Item : String) return Value_String is
+        Image : Value_String := [others => ' '];
+      begin
+        Image(Image'last - Item'length + 1 .. Image'last) := Item;
+        return Image;
+      end Value_Of;
+
+
+      function Card (Key   : String;
+                     Value : String := "") return String is
+        Image : Card_String := [others => ' '];
+        Item  : constant String := Keyword_Of (Key) & (if Value = "" then "" else "= '" & Value & "'");
+      begin
+        Image(Image'first .. Image'first + Item'length - 1) := Item;
+        return Image;
+      end Card;
+
+
+      function Card_Value (Key   : String;
+                           Value : String) return Card_String is
+        Image : Card_String := [others => ' '];
+        Item  : constant String := Keyword_Of (Key) & "= " & Value_Of (Value);
+      begin
+        Image(Image'first .. Image'first + Item'length - 1) := Item;
+        return Image;
+      end Card_Value;
+
+
+      function Card (Key   : String;
+                     Value : CI.Uint32) return Card_String is
+      begin
+        return Card_Value (Key, Value'image);
+      end Card;
+
+
+      function Card (Key   : String;
+                     Value : Pixel_Size) return Card_String is
+      begin
+        return Card_Value (Key, Value'image);
+      end Card;
+
+
+      function Card (Key   : String;
+                     Value : Exposure.Duration) return Card_String is
+      begin
+        return Card_Value (Key, Value'image);
+      end Card;
+
+
+      function Card (Key   : String;
+                     Value : Boolean) return Card_String is
+      begin
+        return Card_Value (Key, (if Value then "T" else "F"));
+      end Card;
+
+
+      The_File  : IO.File_Type;
+      The_Count : Natural := 0;
 
       procedure Put_Block (S0 : String) is
-        Buf : AS.Stream_Element_Array(1 .. AS.Stream_Element_Offset(S0'length));
+        Buf : AS.Stream_Element_Array(1 .. Stream_Offset(S0'length));
       begin
         for I in S0'range loop
-          Buf(AS.Stream_Element_Offset(I - S0'first + 1)) := AS.Stream_Element(Character'pos(S0(I)));
+          Buf(Stream_Offset(I - S0'first + 1)) := AS.Stream_Element(Character'pos(S0(I)));
         end loop;
         IO.Write (The_File, Buf);
-        The_Index := @ + Buf'length;
+        The_Count := @ + Buf'length;
       end Put_Block;
 
 
-      procedure Pad_To_2880 is
-        use type IO.Count;
-        Position : constant IO.Count := IO.Index (The_File);
-        Reminder : constant IO.Count := Position mod 2880;
-        Z        : constant AS.Stream_Element_Array(1 .. 2880) := [others => 0];
+      procedure Pad_To_Block_End is
+        Reminder : constant Natural := The_Count mod Block_Size;
       begin
         if Reminder /= 0 then
-          IO.Write (The_File, Z(1 .. AS.Stream_Element_Offset(2880 - Reminder)));
-          The_Index := @ + 2880 - Natural(Reminder);
+          declare
+            Pad_Count : constant Natural := Block_Size - Reminder;
+            Zero_Pad  : constant AS.Stream_Element_Array(1 .. Stream_Offset(Pad_Count)) := [others => 0];
+          begin
+            IO.Write (The_File, Zero_Pad);
+            The_Count := @ + Pad_Count;
+          end;
         end if;
-      end Pad_To_2880;
+      end Pad_To_Block_End;
 
 
       procedure Write_Data is
 
-        use type CI.Uint32;
-        use type AS.Stream_Element_Offset;
+        use type Stream_Offset;
 
-        W    : constant CI.Uint32 := The_Width;
-        H    : constant CI.Uint32 := The_Height;
-        Bits : constant CI.Uint32 := The_Bpp;
-        BPS  : constant CI.Uint32 := 2; -- bytes per sample
-
-        -- small streaming buffer to avoid huge allocations
         Chunk : AS.Stream_Element_Array(1 .. 8192);
-        Pos   : AS.Stream_Element_Offset := Chunk'first;
+        Pos   : Stream_Offset := Chunk'first;
 
         procedure Flush is
         begin
           if Pos > Chunk'first then
             IO.Write (The_File, Chunk(Chunk'first .. Pos - 1));
-            The_Index := @ + Natural(Pos - Chunk'first);
+            The_Count := @ + Natural(Pos - Chunk'first);
             Pos := Chunk'first;
           end if;
         end Flush;
@@ -574,39 +539,25 @@ package body Camera.QHYCCD is
           end if;
         end Emit;
 
-        -- fetch a byte from the raw buffer (1-based indexing)
-        function Byte_At (I : AS.Stream_Element_Offset) return AS.Stream_Element is
+        -- fetch a byte from the buffer
+        function Byte_At (I : Stream_Offset) return AS.Stream_Element is
         begin
           return The_Buffer(The_Buffer'first + I);
         end Byte_At;
 
         -- emit one sample as big-endian
-        procedure Emit_Sample (Sample_Byte_Offset : AS.Stream_Element_Offset) is
-          Lo : AS.Stream_Element;
-          Hi : AS.Stream_Element;
+        procedure Emit_Sample (Sample_Byte_Offset : Stream_Offset) is
         begin
-          if Bits = 16 then
-            Lo := Byte_At (Sample_Byte_Offset);
-            Hi := Byte_At (Sample_Byte_Offset + 1);
-            -- little -> big
-            Emit (Hi);
-            Emit (Lo);
-          else
-            Emit (Byte_At (Sample_Byte_Offset));
-          end if;
+          Emit (Byte_At (Sample_Byte_Offset + 1));
+          Emit (Byte_At (Sample_Byte_Offset));
         end Emit_Sample;
 
-        Pixels : constant AS.Stream_Element_Offset :=
-          AS.Stream_Element_Offset(W) * AS.Stream_Element_Offset(H);
+        Pixels : constant Stream_Offset := Stream_Offset(Width) * Stream_Offset(Height);
 
       begin -- Write_Data
-        if Bits /= 16 then
-          Raise_Error ("Unsupported bpp for FITS:" & CI.Uint32'image(Bits));
-        end if;
-
         for P in 0 .. Pixels - 1 loop
           declare
-            Off : constant AS.Stream_Element_Offset := P * AS.Stream_Element_Offset(BPS);
+            Off : constant Stream_Offset := P * Stream_Offset(BPS);
           begin
             Emit_Sample(Off);
           end;
@@ -615,39 +566,39 @@ package body Camera.QHYCCD is
         Flush;
       end Write_Data;
 
-      Bitpix : CI.Uint32;
-      use type CI.Uint32;
-
     begin -- Write_Fits
       Camera_Data.Set (Downloading);
 
-      if The_Bpp = 16 then
-        Bitpix := 16;
-      else
-        Raise_Error ("Unsupported bpp for FITS:" & CI.Uint32'image(The_Bpp));
+      if Bitpix /= 16 then
+        Raise_Error ("Unsupported bits per pixel for FITS:" & CI.Uint32'image(Bitpix));
       end if;
 
       IO.Create (The_File, IO.Out_File, The_Filename.To_String);
 
-      Put_Block (Card_Logical ("SIMPLE", True));
+      Put_Block (Card ("SIMPLE", True));
       Put_Block (Card ("BITPIX", Bitpix));
-
       Put_Block (Card ("NAXIS",  2));
-      Put_Block (Card ("NAXIS1", The_Width));
-      Put_Block (Card ("NAXIS2", The_Height));
-
+      Put_Block (Card ("NAXIS1", Width));
+      Put_Block (Card ("NAXIS2", Height));
+      Put_Block (Card ("BLKLEVEL", CI.Uint32(The_Offset)));
+      Put_Block (Card ("GAIN", CI.Uint32(The_Gain)));
+      Put_Block (Card ("BAYERPAT", "RGGB"));
+      Put_Block (Card ("XBINNING", 1));
+      Put_Block (Card ("YPIXSZ", Pixel_Height));
+      Put_Block (Card ("XPIXSZ", Pixel_Width));
+      Put_Block (Card ("EXPTIME", The_Exposure.Time));
+      Put_Block (Card ("ROWORDER", "TOP-DOWN"));
       Put_Block (Card ("BSCALE", 1));
       Put_Block (Card ("BZERO",  32768));
-
-      Put_Block (End_Card);
-      Pad_To_2880;
+      Put_Block (Card ("EXTEND",  True));
+      Put_Block (Card ("INSTRUME", Camera_Data.Actual.Camera'image));
+      Put_Block (Card ("END"));
+      Pad_To_Block_End;
 
       Write_Data;
 
-      Log.Write ("Index:" & The_Index'image);
-      Pad_To_2880;
+      Pad_To_Block_End;
       IO.Close (The_File);
-      Log.Write ("Index:" & The_Index'image);
     exception
     when Item: others =>
       Log.Termination (Item);
@@ -664,7 +615,11 @@ package body Camera.QHYCCD is
       end if;
       Disconnect;
     exception
-    when others =>
+    when Camera_Error =>
+      Disconnect;
+    when Item: others =>
+      Log.Termination (Item);
+      Camera_Data.Set_Error ("Internal Error");
       Disconnect;
     end Capture_Picture;
 
@@ -677,7 +632,11 @@ package body Camera.QHYCCD is
         Camera_Data.Set (Cropped);
       end if;
     exception
-    when others =>
+    when Camera_Error =>
+      Disconnect;
+    when Item: others =>
+      Log.Termination (Item);
+      Camera_Data.Set_Error ("Internal Error");
       Disconnect;
     end Capture_Grid;
 
@@ -694,8 +653,8 @@ package body Camera.QHYCCD is
                                 Time      : Exposure.Item;
                                 Parameter : Sensitivity.Item)
         do
-          The_Filename  := [Filename];
-          The_Exposure  := Time;
+          The_Filename := [Filename];
+          The_Exposure := Time;
           The_Parameter := Parameter;
         end Capture_Picture;
         Capture_Picture;

@@ -198,12 +198,12 @@ package body Camera.Raw is
   ----------
   -- Grid --
   ----------
-  function Grid return Green_Grid is
+  function Grid return Raw_Grid is
 
     subtype Row_Index    is Rows    range 1 .. Rows(The_Grid_Size);
     subtype Column_Index is Columns range 1 .. Columns(The_Grid_Size);
 
-    Result : Green_Grid (Row_Index, Column_Index);
+    Result : Raw_Grid (Row_Index, Column_Index);
 
     Base_Adr    : constant System.Address := Img.Data'address;
     Green_Index : constant Natural := (if The_Colors >= 2 then 1 else 0);

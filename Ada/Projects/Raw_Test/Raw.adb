@@ -78,7 +78,7 @@ package body Raw is
   -------------
 
   function Grid_Of (File_Name : String;
-                    Size      : Square_Size) return Green_Grid
+                    Size      : Square_Size) return Grid
   is
     Ctx       : constant RI.Context := RI.Init (0);
     File_C    : aliased String := To_C_String (File_Name);
@@ -102,7 +102,7 @@ package body Raw is
     subtype Row_Index    is Rows    range 1 .. Rows(Size);
     subtype Column_Index is Columns range 1 .. Columns(Size);
 
-    Result : Green_Grid (Row_Index, Column_Index);
+    Result : Grid(Row_Index, Column_Index);
 
     use type RI.Context;
     use type SE.Storage_Offset;

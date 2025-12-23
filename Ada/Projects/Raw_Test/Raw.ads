@@ -48,7 +48,7 @@ package Raw is
     Last  : Rows;
   end record;
 
-  type Green_Grid is array (Rows range <>, Columns range <>) of Pixel;
+  type Grid is array (Rows range <>, Columns range <>) of Pixel;
 
   --  Compute the central square crop of the processed image and return
   --  the green channel samples in a 2D grid: Size rows, Size columns.
@@ -60,7 +60,7 @@ package Raw is
   --    * processed image has unsupported format (bits /= 16, colors < 1),
   --    * NULL data pointer.
   function Grid_Of (File_Name : String;
-                    Size      : Square_Size) return Green_Grid;
+                    Size      : Square_Size) return Grid;
 
   Raw_Error : exception;
 

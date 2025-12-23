@@ -33,7 +33,7 @@ procedure Camera_Test is
   package IO renames Ada.Text_IO;
 
   procedure Show_Grid is
-    Grid : constant Camera.Green_Grid := Camera.Captured;
+    Grid : constant Camera.Raw_Grid := Camera.Captured;
   begin
     for Row in Grid'range(1) loop
       declare
@@ -88,7 +88,7 @@ begin -- Camera_Test
           begin
             case Text.Uppercase_Of (Parameters(1)(1)) is
             when 'C' =>
-              Camera.Capture ("D:\Temp\Picture.CR2", Time, Parameter);
+              Camera.Capture ("D:\Temp\Picture", Time, Parameter);
             when 'G' =>
               Camera.Capture (10, Time, Parameter);
             when others =>

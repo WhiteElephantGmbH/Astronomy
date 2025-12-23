@@ -43,18 +43,18 @@ begin
 
     Last_Index : constant := 1024;
 
-    Green_Grid : constant Raw.Green_Grid := Raw.Grid_Of ("D:\Temp\Picture.CR2", Last_Index);
+    Raw_Grid : constant Raw.Grid := Raw.Grid_Of ("D:\Temp\Picture.CR2", Last_Index);
 
-    procedure Show_Green_Grid is
+    procedure Show_Grid is
     begin
-      for Row in Green_Grid'range(1) loop
+      for Row in Raw_Grid'range(1) loop
         declare
           Row_Image : constant String := "  " & Row'image;
         begin
           IO.Put (Row_Image(Row_Image'last - 3 .. Row_Image'last) & ":");
-          for Column in Green_Grid'range(2) loop
+          for Column in Raw_Grid'range(2) loop
             declare
-              Column_Image : constant String := "     " & Green_Grid(Row, Column)'image;
+              Column_Image : constant String := "     " & Raw_Grid(Row, Column)'image;
             begin
               IO.Put (Column_Image(Column_Image'last - 5 .. Column_Image'last));
             end;
@@ -62,7 +62,7 @@ begin
           IO.New_Line;
         end;
       end loop;
-    end Show_Green_Grid;
+    end Show_Grid;
 
 
     function Evaluated_Half_Flux return Raw.Pixel is
@@ -70,7 +70,7 @@ begin
       The_Sum     : Huge_Natural := 0;
       The_Count   : Natural := 0;
     begin
-      for Value of Green_Grid loop
+      for Value of Raw_Grid loop
         if Value > Black_Level then
           The_Count := @ + 1;
           The_Sum := @ + Huge_Natural(Value);
@@ -96,16 +96,16 @@ begin
     begin
       The_Right_Angle.Edge := (Row    => Row,
                                Column => Column);
-      for The_Column in Column .. Green_Grid'last(2) loop
-        if Green_Grid(Row, The_Column) > Half_Flux then
+      for The_Column in Column .. Raw_Grid'last(2) loop
+        if Raw_Grid(Row, The_Column) > Half_Flux then
           The_Right_Angle.Ends.Column := The_Column;
           The_Right_Angle.Size := @ + 1;
         else
           exit;
         end if;
       end loop;
-      for The_Row in Row .. Green_Grid'last(1) loop
-        if Green_Grid(The_Row, Column) > Half_Flux then
+      for The_Row in Row .. Raw_Grid'last(1) loop
+        if Raw_Grid(The_Row, Column) > Half_Flux then
           The_Right_Angle.Ends.Row := The_Row;
           The_Right_Angle.Size := @ + 1;
         else
@@ -119,8 +119,8 @@ begin
       The_Right_Angle : Right_Angle;
       Max_Right_Angle : Right_Angle;
     begin
-      for Column in Green_Grid'range(2) loop
-        for Row in Green_Grid'range(1) loop
+      for Column in Raw_Grid'range(2) loop
+        for Row in Raw_Grid'range(1) loop
           The_Right_Angle := Right_Angle_At (Row, Column);
           if The_Right_Angle.Size > Max_Right_Angle.Size then
             Max_Right_Angle := The_Right_Angle;
@@ -158,24 +158,24 @@ begin
       else
         First_Column := Raw.Columns'first;
       end if;
-      if Last_Column < Green_Grid'last(2) - Column_Offset then
+      if Last_Column < Raw_Grid'last(2) - Column_Offset then
         Last_Column := @ + Column_Offset;
       else
-        Last_Column := Green_Grid'last(2);
+        Last_Column := Raw_Grid'last(2);
       end if;
       if First_Row > Row_Offset then
         First_Row := @ - Row_Offset;
       else
         First_Row := Raw.Rows'first;
       end if;
-      if Last_Row < Green_Grid'last(1) - Row_Offset then
+      if Last_Row < Raw_Grid'last(1) - Row_Offset then
         Last_Row := @ + Row_Offset;
       else
-        Last_Row := Green_Grid'last(1);
+        Last_Row := Raw_Grid'last(1);
       end if;
       for The_Row in First_Row .. Last_Row loop
         for The_Column in First_Column .. Last_Column loop
-          if Green_Grid(The_Row, The_Column) > Half_Flux or else Is_In_RA (The_Row, The_Column) then
+          if Raw_Grid(The_Row, The_Column) > Half_Flux or else Is_In_RA (The_Row, The_Column) then
             Column_Sum := @ + Huge_Natural(The_Column);
             Row_Sum := @ + Huge_Natural(The_Row);
             The_Count := @ + 1;
@@ -193,9 +193,9 @@ begin
 
   begin
     IO.New_Line;
-    if Natural(Green_Grid'last(1)) <= 20 then
-      IO.Put_Line ("Green Grid:");
-      Show_Green_Grid;
+    if Natural(Raw_Grid'last(1)) <= 20 then
+      IO.Put_Line ("Raw Grid:");
+      Show_Grid;
     end if;
     IO.Put_Line ("Half Flux:" & Half_Flux'image);
     IO.Put_Line ("Center Position:" & The_Center'image);

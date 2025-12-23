@@ -29,7 +29,7 @@ private package Camera.QHYCCD is
                           Time      : Exposure.Item;     -- 0.000_001 .. 3600.000_000 seconds
                           Parameter : Sensitivity.Item); -- Gain 0 .. 140 and Offset 0 .. 255
 
-  function Grid return Green_Grid;
+  function Grid return Raw_Grid;
 
   procedure Stop_Capture;
 

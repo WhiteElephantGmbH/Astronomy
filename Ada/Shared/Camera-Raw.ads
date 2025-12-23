@@ -29,6 +29,6 @@ private package Camera.Raw is
 
   procedure Stop_Preparing;
 
-  function Grid return Green_Grid;
+  function Grid return Raw_Grid;
 
 end Camera.Raw;
