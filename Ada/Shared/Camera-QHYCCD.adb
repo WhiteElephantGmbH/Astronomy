@@ -354,6 +354,7 @@ package body Camera.QHYCCD is
                           Img_W'access,  Img_H'access,
                           Pix_W'access,  Pix_H'access,
                           Bpp0'access));
+      Log.Write ("ChipInfo - Img_W:" & Img_W'image & " - Img_H:" & Img_H'image & " - Bpp0:" & Bpp0'image);
 
       Check ("Set Bin Mode", CI.Set_Bin_Mode (Exposing.Handle, 1, 1));
       Check ("Set Resolution", CI.Set_Resolution (Exposing.Handle, 0, 0, Img_W, Img_H));
@@ -388,11 +389,47 @@ package body Camera.QHYCCD is
                  " - Channels:" & The_Channels'image &
                  " - Length:" & The_Length'image);
 
-      if The_Length /= The_Width * The_Height * (The_Bpp / Standard'storage_unit) then
-        Raise_Error ("Incorrect Memory Lenght - actual:" & The_Length'image);
-      elsif The_Channels /= 1 then
+      if The_Channels /= 1 then
         Raise_Error ("Expected Channels = 1, got" & The_Channels'image);
       end if;
+      declare
+         Bytes_Per_Sample : constant CI.Uint32 := The_Bpp / Standard'storage_unit; -- 16/8 = 2
+         Expected         : constant CI.Uint32 := The_Width * The_Height * The_Channels * Bytes_Per_Sample;
+      begin
+         Log.Write ("Frame Expected bytes:" & Expected'image & " (W*H*Ch*BPS), MemLength:" & The_Length'image);
+         if The_Length < Expected then
+            Raise_Error ("Buffer too small: MemLength=" & The_Length'image & " < Expected=" & Expected'image);
+         elsif The_Length > Expected then
+            Log.Warning ("MemLength > payload: MemLength=" & The_Length'image & " Expected=" & Expected'image);
+         end if;
+      end;
+      declare
+        function H2 (B : AS.Stream_Element) return String is
+          Hex : constant String := "0123456789ABCDEF";
+          V   : constant Natural := Natural(B);
+        begin
+          return "" & Hex(V/16 + 1) & Hex(V mod 16 + 1);
+        end;
+        use type Stream_Offset;
+      begin
+        Log.Write ("First 16 bytes: " &
+          H2(The_Buffer(The_Buffer'first + 0)) & " " &
+          H2(The_Buffer(The_Buffer'first + 1)) & " " &
+          H2(The_Buffer(The_Buffer'first + 2)) & " " &
+          H2(The_Buffer(The_Buffer'first + 3)) & " " &
+          H2(The_Buffer(The_Buffer'first + 4)) & " " &
+          H2(The_Buffer(The_Buffer'first + 5)) & " " &
+          H2(The_Buffer(The_Buffer'first + 6)) & " " &
+          H2(The_Buffer(The_Buffer'first + 7)) & " " &
+          H2(The_Buffer(The_Buffer'first + 8)) & " " &
+          H2(The_Buffer(The_Buffer'first + 9)) & " " &
+          H2(The_Buffer(The_Buffer'first + 10)) & " " &
+          H2(The_Buffer(The_Buffer'first + 11)) & " " &
+          H2(The_Buffer(The_Buffer'first + 12)) & " " &
+          H2(The_Buffer(The_Buffer'first + 13)) & " " &
+          H2(The_Buffer(The_Buffer'first + 14)) & " " &
+          H2(The_Buffer(The_Buffer'first + 15)));
+      end;
 
       Camera_Data.Set (Height => Rows(The_Height));
       Camera_Data.Set (Width  => Columns(The_Width));
