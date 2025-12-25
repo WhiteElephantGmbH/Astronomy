@@ -15,27 +15,29 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Interfaces;
-
 package Raw_Data is
+
+  type Columns is range 1 .. 10000;
+  type Rows    is range 1 .. 10000;
+
+  Pixel_Bits : constant := 16;
+
+  type Pixel is new Natural range 0 .. 2 ** Pixel_Bits - 1
+    with Size => Pixel_Bits;
+
+  type Raw_Grid is array (Rows range <>, Columns range <>) of Pixel;
+
+  type Square_Size is new Natural range 2 .. 2000
+    with Dynamic_Predicate => Square_Size mod 2 = 0;
+
+  function Grid
+    (Filename : String;       -- <name>.CR2
+     Size     : Square_Size) return Raw_Grid;
 
   File_Not_Found : exception;
   Invalid_File   : exception;
   Not_Found      : exception;
-
-  subtype Byte is Interfaces.Unsigned_8;
-
-  type Byte_Array is array (Positive range <>) of Byte;
-  type Byte_Array_Access is access all Byte_Array;
-
-  procedure Read (Filename : String);
-
-  function Raw_Width return Natural;
-  function Raw_Height return Natural;
-  function Raw_Bits return Natural;
-  function Raw_Compression return Natural;
-
-  function Raw_Buffer return Byte_Array_Access;
-  function Raw_Buffer_Bytes return Natural;
+  Unsupported    : exception;
+  Size_Error     : exception;
 
 end Raw_Data;

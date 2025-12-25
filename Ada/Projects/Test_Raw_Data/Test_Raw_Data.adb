@@ -21,39 +21,41 @@ pragma Build (Description => "Test Raw Data",
               Icon        => False,
               Compiler    => "GNATPRO\23.0");
 
-
 with Ada.Text_IO;
 with Raw_Data;
 
 procedure Test_Raw_Data is
-  use Ada.Text_IO;
-  use type Raw_Data.Byte_Array_Access;
+
+  package IO renames Ada.Text_IO;
+
+  Grid : constant Raw_Data.Raw_Grid := Raw_Data.Grid ("Sample.CR2", 10);
+
 begin
-  Raw_Data.Read ("sample.CR2");
-
-  Put_Line ("RAW width       : " & Natural'image (Raw_Data.Raw_Width));
-  Put_Line ("RAW height      : " & Natural'image (Raw_Data.Raw_Height));
-  Put_Line ("Bits per sample : " & Natural'image (Raw_Data.Raw_Bits));
-  Put_Line ("Compression     : " & Natural'image (Raw_Data.Raw_Compression));
-  Put_Line ("Buffer bytes    : " & Natural'image (Raw_Data.Raw_Buffer_Bytes));
-
-  if Raw_Data.Raw_Buffer /= null then
-    Put_Line ("First 16 bytes:");
+  for Row in Grid'range(1) loop
     declare
-      B : constant Raw_Data.Byte_Array_Access := Raw_Data.Raw_Buffer;
+      Row_Image : constant String := "  " & Row'image;
     begin
-      for I in 1 .. Integer'min (16, Raw_Data.Raw_Buffer_Bytes) loop
-        Put (Integer (B (I))'image & " ");
+      IO.Put (Row_Image(Row_Image'last - 3 .. Row_Image'last) & ":");
+      for Column in Grid'range(2) loop
+        declare
+          Column_Image : constant String := "     " & Grid(Row, Column)'image;
+        begin
+          IO.Put (Column_Image(Column_Image'last - 5 .. Column_Image'last));
+        end;
       end loop;
-      New_Line;
+      IO.New_Line;
     end;
-  end if;
+  end loop;
 
 exception
   when Raw_Data.File_Not_Found =>
-    Put_Line ("File not found.");
-  when Raw_Data.Not_Found =>
-    Put_Line ("RAW data not found.");
+    IO.Put_Line ("File not found.");
   when Raw_Data.Invalid_File =>
-    Put_Line ("Invalid CR2 file.");
+    IO.Put_Line ("Invalid CR2 file.");
+  when Raw_Data.Not_Found =>
+    IO.Put_Line ("RAW data not found.");
+  when Raw_Data.Size_Error =>
+    IO.Put_Line ("Size Error.");
+  when Raw_Data.Unsupported =>
+    IO.Put_Line ("Unsupported.");
 end Test_Raw_Data;
