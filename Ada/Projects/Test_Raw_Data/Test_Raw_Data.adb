@@ -30,7 +30,7 @@ procedure Test_Raw_Data is
 
 begin
   declare
-    Grid : constant Raw_Data.Raw_Grid := Raw_Data.Grid ("Sample.CR2", 1000);
+    Grid : constant Raw_Data.Raw_Grid := Raw_Data.Grid ("Sample.CR2", 2000);
   begin
     IO.Put_Line ("Test Raw Data");
     IO.Put_Line ("=============");
@@ -41,7 +41,7 @@ begin
           Pixel : constant Raw_Data.Pixel := Grid(Row, Column);
           use type Raw_Data.Pixel;
         begin
-          if Pixel > 15000 then
+          if Pixel > 10000 then
             IO.Put_Line ("Pixel at row:" & Row'image & ", Column:" & Column'image & " =" & Pixel'image);
           end if;
         end;

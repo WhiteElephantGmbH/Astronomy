@@ -34,7 +34,7 @@ begin
   IO.Put_Line ("============");
 
   declare
-    Grid : constant Lib_Raw.Grid := Lib_Raw.Grid_Of ("Sample.CR2", 1000);
+    Grid : constant Lib_Raw.Grid := Lib_Raw.Grid_Of ("Sample.CR2", 2000);
   begin
     for Row in Grid'range(1) loop
       for Column in Grid'range(2) loop
@@ -42,7 +42,7 @@ begin
           Pixel : constant Lib_Raw.Pixel := Grid(Row, Column);
           use type Lib_Raw.Pixel;
         begin
-          if Pixel > 15000 then
+          if Pixel > 10000 then
             IO.Put_Line ("Pixel at row:" & Row'image & ", Column:" & Column'image & " =" & Pixel'image);
           end if;
         end;

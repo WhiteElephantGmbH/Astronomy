@@ -521,7 +521,6 @@ package body Raw_Data is
             Sof.Width := W;
             Sof.Comps := Nc;
 
-            -- skip comp descriptors
             if Natural (Nc) * 3 > Natural (L - 2) then
               raise Invalid_File;
             end if;
@@ -560,7 +559,7 @@ package body Raw_Data is
             Sos.Predictor := B (P);
             P := P + 1;
 
-            P := P + 1; -- Se (unused)
+            P := P + 1; -- Se
 
             declare
               AhAl : constant U8 := B (P);
@@ -572,10 +571,14 @@ package body Raw_Data is
             if Sos.Predictor < 1 or else Sos.Predictor > 7 then
               raise Invalid_File;
             end if;
+            if Sos.Pt > 15 then
+              raise Invalid_File;
+            end if;
 
             Entropy_Pos := Start + Natural (L - 2);
             return;
           end;
+
         end if;
 
         Pos := Pos + Natural (L);
@@ -636,6 +639,7 @@ package body Raw_Data is
       T0  : constant Huff_Table := Huff (Td0, 0);
       T1  : constant Huff_Table := Huff (Td1, 0);
 
+      Pt  : constant Natural := Natural (Sos.Pt);
       Sel : constant U8 := Sos.Predictor;
 
       Result : Raw_Grid (Rows (1) .. Rows (Needed), Columns (1) .. Columns (Needed));
@@ -673,14 +677,12 @@ package body Raw_Data is
         end if;
       end Put_Sample;
 
-      Init_Pred : constant Integer :=
-        (if Sof.Precision = 0 then 0 else Integer (Pow2 (Natural (Sof.Precision) - 1)));
+      -- IMPORTANT: predictor domain is *reduced precision* (Precision - Pt)
+      Bits_Total   : constant Natural := Natural (Sof.Precision);
+      Bits_Reduced : constant Natural := (if Bits_Total >= Pt then Bits_Total - Pt else 0);
 
-      -- NOTE:
-      -- We intentionally DO NOT apply Pt scaling here.
-      -- Applying (Pred+Diff)<<Pt caused the observed ~x4 mismatch versus LibRaw.
-      -- For your CR2 samples, LibRaw's raw2image values match the unscaled reconstruction.
-      Pt : constant Natural := Natural (Sos.Pt) with Unreferenced;
+      Init_Pred : constant Integer :=
+        (if Bits_Reduced = 0 then 0 else Integer (Pow2 (Bits_Reduced - 1)));
 
     begin
       if not In_Range then
@@ -688,6 +690,10 @@ package body Raw_Data is
       end if;
 
       if T0.Symbols = null or else T1.Symbols = null then
+        raise Invalid_File;
+      end if;
+
+      if Bits_Reduced = 0 then
         raise Invalid_File;
       end if;
 
@@ -706,14 +712,19 @@ package body Raw_Data is
             Pred   : constant Integer := Predictor (Sel, Left, Above, UpLeft);
             SSSS   : constant U8 := Decode_Huff (R, T0);
             Diff_S : Integer := 0;
+            Rec    : Integer;
             Samp   : Long_Long_Integer;
           begin
             if SSSS /= 0 then
               Diff_S := Extend_Signed (Integer (BR_Get (R, Natural (SSSS))), Natural (SSSS));
             end if;
 
-            Samp := Long_Long_Integer (Pred + Diff_S);
-            Curr0 (X) := Integer (Samp);
+            -- IMPORTANT: store reconstructed sample in reduced domain
+            Rec := Pred + Diff_S;
+            Curr0 (X) := Rec;
+
+            -- output scale-up happens only here
+            Samp := Long_Long_Integer (Rec) * Pow2 (Pt);
             Put_Sample (Y, 2 * X - 1, Samp);
           end;
 
@@ -725,14 +736,17 @@ package body Raw_Data is
             Pred   : constant Integer := Predictor (Sel, Left, Above, UpLeft);
             SSSS   : constant U8 := Decode_Huff (R, T1);
             Diff_S : Integer := 0;
+            Rec    : Integer;
             Samp   : Long_Long_Integer;
           begin
             if SSSS /= 0 then
               Diff_S := Extend_Signed (Integer (BR_Get (R, Natural (SSSS))), Natural (SSSS));
             end if;
 
-            Samp := Long_Long_Integer (Pred + Diff_S);
-            Curr1 (X) := Integer (Samp);
+            Rec := Pred + Diff_S;
+            Curr1 (X) := Rec;
+
+            Samp := Long_Long_Integer (Rec) * Pow2 (Pt);
             Put_Sample (Y, 2 * X, Samp);
           end;
         end loop;
