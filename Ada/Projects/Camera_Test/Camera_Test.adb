@@ -65,7 +65,7 @@ begin -- Camera_Test
   IO.Put ("Started");
   loop
     declare
-      Info : constant Camera.Information := Camera.Actual_Information;
+      function Info return Camera.Information is (Camera.Actual_Information);
     begin
       case Info.State is
       when Camera.Idle =>

@@ -746,11 +746,7 @@ package body Camera.Canon is
             when Capturing =>
               The_Shutter_Release_Time := RT.Clock;
               Continue_Capture;
-            when Cropping =>
-              Camera_Data.Set (Cropped);
-              exit;
-            when Cropped =>
-              Raw.Stop_Preparing;
+            when Cropping | Cropped =>
               exit;
             when others =>
               exit;
@@ -775,7 +771,6 @@ package body Camera.Canon is
           Download;
         when Cropping =>
           Raw.Prepare_Grid (The_Filename.To_String, The_Grid_Size);
-          Camera_Data.Set (Cropped);
         when Connecting | Connected | Downloading | Cropped | Stopping | Idle | Error=>
           null;
         end case;
