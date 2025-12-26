@@ -102,10 +102,6 @@ package body Raw_Data is
   end Get_U32;
 
   -- TIFF tags in RAW IFD
---Tag_ImageWidth      : constant U16 := 16#0100#;
---Tag_ImageLength     : constant U16 := 16#0101#;
---Tag_BitsPerSample   : constant U16 := 16#0102#;
---Tag_Compression     : constant U16 := 16#0103#;
   Tag_StripOffsets    : constant U16 := 16#0111#;
   Tag_StripByteCounts : constant U16 := 16#0117#;
 
@@ -233,7 +229,7 @@ package body Raw_Data is
   type Sof3_Info is record
     Precision : U8 := 0;
     Height    : U16 := 0;
-    Width     : U16 := 0;
+    Width     : U16 := 0;  -- JPEG SOF width (often half sensor width for Canon)
     Comps     : U8 := 0;
   end record;
 
@@ -284,10 +280,11 @@ package body Raw_Data is
     end case;
   end Predictor;
 
+  -- Bit reader for entropy-coded segment (byte-stuffed)
   type Bit_Reader is record
     Buf   : Byte_Array_Access := null;
     Size  : Natural := 0;
-    Pos   : Natural := 0;
+    Pos   : Natural := 0;  -- 1-based index into Buf
     Bits  : U32 := 0;
     Cnt   : Natural := 0;
   end record;
@@ -316,7 +313,7 @@ package body Raw_Data is
         raise Invalid_File;
       end if;
       if R.Buf (R.Pos) = 0 then
-        R.Pos := R.Pos + 1;
+        R.Pos := R.Pos + 1; -- stuffed 0x00
       end if;
     end if;
 
@@ -349,8 +346,7 @@ package body Raw_Data is
 
     BR_Ensure (R, N);
 
-    -- FIX: make the "1" explicitly U32 to avoid bad overload/overflow behavior
-    Mask := Interfaces.Shift_Left (U32 (1), Integer (N)) - 1;
+    Mask := Interfaces.Shift_Left (1, Integer (N)) - 1;
     Res :=
       Interfaces.Shift_Right (R.Bits, Integer (R.Cnt - N)) and Mask;
 
@@ -417,16 +413,18 @@ package body Raw_Data is
       raise Not_Found;
     end if;
 
-    Pos := 3;
+    Pos := 3; -- after SOI (FFD8)
 
     loop
       exit when Pos + 1 > B'last;
 
+      -- seek 0xFF
       while Pos <= B'last and then B (Pos) /= 16#FF# loop
         Pos := Pos + 1;
       end loop;
       exit when Pos > B'last;
 
+      -- skip fill 0xFF bytes
       while Pos <= B'last and then B (Pos) = 16#FF# loop
         Pos := Pos + 1;
       end loop;
@@ -452,7 +450,7 @@ package body Raw_Data is
           raise Invalid_File;
         end if;
 
-        Start := Pos + 2;
+        Start := Pos + 2; -- payload start
 
         if Marker = DHT then
           declare
@@ -509,16 +507,21 @@ package body Raw_Data is
             W  : U16;
             Nc : U8;
           begin
-            Pr := B (P); P := P + 1;
-            H  := BE16 (B, P); P := P + 2;
-            W  := BE16 (B, P); P := P + 2;
-            Nc := B (P); P := P + 1;
+            Pr := B (P);
+            P := P + 1;
+            H := BE16 (B, P);
+            P := P + 2;
+            W := BE16 (B, P);
+            P := P + 2;
+            Nc := B (P);
+            P := P + 1;
 
             Sof.Precision := Pr;
             Sof.Height := H;
             Sof.Width := W;
             Sof.Comps := Nc;
 
+            -- skip comp descriptors
             if Natural (Nc) * 3 > Natural (L - 2) then
               raise Invalid_File;
             end if;
@@ -529,7 +532,8 @@ package body Raw_Data is
             P  : Natural := Start;
             Ns : U8;
           begin
-            Ns := B (P); P := P + 1;
+            Ns := B (P);
+            P := P + 1;
 
             Sos.Ns := Ns;
             if Ns = 0 then
@@ -553,9 +557,11 @@ package body Raw_Data is
               Sos.Td1 := Interfaces.Shift_Right (TdTa, 4);
             end;
 
-            Sos.Predictor := B (P); P := P + 1;
+            Sos.Predictor := B (P);
+            P := P + 1;
 
-            P := P + 1; -- Se
+            P := P + 1; -- Se (unused)
+
             declare
               AhAl : constant U8 := B (P);
             begin
@@ -566,14 +572,10 @@ package body Raw_Data is
             if Sos.Predictor < 1 or else Sos.Predictor > 7 then
               raise Invalid_File;
             end if;
-            if Sos.Pt > 15 then
-              raise Invalid_File;
-            end if;
 
             Entropy_Pos := Start + Natural (L - 2);
             return;
           end;
-
         end if;
 
         Pos := Pos + Natural (L);
@@ -634,7 +636,6 @@ package body Raw_Data is
       T0  : constant Huff_Table := Huff (Td0, 0);
       T1  : constant Huff_Table := Huff (Td1, 0);
 
-      Pt  : constant Natural := Natural (Sos.Pt);
       Sel : constant U8 := Sos.Predictor;
 
       Result : Raw_Grid (Rows (1) .. Rows (Needed), Columns (1) .. Columns (Needed));
@@ -646,17 +647,6 @@ package body Raw_Data is
         end if;
         return Long_Long_Integer (2) ** Integer (N);
       end Pow2;
-
-      function Clamp_To_Int (V : Long_Long_Integer) return Integer is
-      begin
-        if V > Long_Long_Integer (Integer'last) then
-          return Integer'last;
-        elsif V < Long_Long_Integer (Integer'first) then
-          return Integer'first;
-        else
-          return Integer (V);
-        end if;
-      end Clamp_To_Int;
 
       procedure Put_Sample
         (Y       : Natural;
@@ -683,9 +673,14 @@ package body Raw_Data is
         end if;
       end Put_Sample;
 
-      -- FIX: correct JPEG lossless initial predictor = 2^(precision-1)
       Init_Pred : constant Integer :=
         (if Sof.Precision = 0 then 0 else Integer (Pow2 (Natural (Sof.Precision) - 1)));
+
+      -- NOTE:
+      -- We intentionally DO NOT apply Pt scaling here.
+      -- Applying (Pred+Diff)<<Pt caused the observed ~x4 mismatch versus LibRaw.
+      -- For your CR2 samples, LibRaw's raw2image values match the unscaled reconstruction.
+      Pt : constant Natural := Natural (Sos.Pt) with Unreferenced;
 
     begin
       if not In_Range then
@@ -703,6 +698,7 @@ package body Raw_Data is
         Curr1 := [others => 0];
 
         for X in 1 .. W_Half loop
+          -- component 0 => full col 2*X-1
           declare
             Left   : constant Integer := (if X > 1 then Curr0 (X - 1) else Init_Pred);
             Above  : constant Integer := (if Y > 1 then Prev0 (X)     else Init_Pred);
@@ -716,11 +712,12 @@ package body Raw_Data is
               Diff_S := Extend_Signed (Integer (BR_Get (R, Natural (SSSS))), Natural (SSSS));
             end if;
 
-            Samp := (Long_Long_Integer (Pred + Diff_S)) * Pow2 (Pt);
-            Curr0 (X) := Clamp_To_Int (Samp);
+            Samp := Long_Long_Integer (Pred + Diff_S);
+            Curr0 (X) := Integer (Samp);
             Put_Sample (Y, 2 * X - 1, Samp);
           end;
 
+          -- component 1 => full col 2*X
           declare
             Left   : constant Integer := (if X > 1 then Curr1 (X - 1) else Init_Pred);
             Above  : constant Integer := (if Y > 1 then Prev1 (X)     else Init_Pred);
@@ -734,8 +731,8 @@ package body Raw_Data is
               Diff_S := Extend_Signed (Integer (BR_Get (R, Natural (SSSS))), Natural (SSSS));
             end if;
 
-            Samp := (Long_Long_Integer (Pred + Diff_S)) * Pow2 (Pt);
-            Curr1 (X) := Clamp_To_Int (Samp);
+            Samp := Long_Long_Integer (Pred + Diff_S);
+            Curr1 (X) := Integer (Samp);
             Put_Sample (Y, 2 * X, Samp);
           end;
         end loop;

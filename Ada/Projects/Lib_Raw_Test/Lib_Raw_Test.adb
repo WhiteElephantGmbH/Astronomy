@@ -15,53 +15,45 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-package Raw is
+pragma Build (Description => "Lib Raw Test",
+              Version     => (1, 0, 0, 0),
+              Kind        => Console,
+              Icon        => False,
+              Compiler    => "GNATPRO\23.0");
 
-  Pixel_Size : constant := 16; -- allowed 8 or 16
+with Ada.Text_IO;
+with Exceptions;
+with Lib_Raw;
 
-  -- Maximums for Canon EOS 6D
-  Min_With_Or_Height : constant := 3648;
-  Max_With_Or_Height : constant := 5472;
+procedure Lib_Raw_Test is
 
-  type Pixel is new Natural range 0 .. 2 ** Pixel_Size - 1 with Size => Pixel_Size;
+  package IO renames Ada.Text_IO;
 
-  type Square_Size is new Natural range 2 .. Min_With_Or_Height with Dynamic_Predicate => Square_Size mod 2 = 0;
+begin
+  IO.Put_Line ("Lib Raw Test");
+  IO.Put_Line ("============");
 
-  --  Green grid: Square_Size rows, each with Square_Size pixels.
-  --
-  --  Semantics (using dcraw-style processed image via LibRaw C API):
-  --    * We call libraw_open_file + libraw_unpack + libraw_dcraw_process.
-  --    * Then libraw_dcraw_make_mem_image() to get an RGB (or similar) image buffer in memory.
-  --    * We force LibRaw to disable auto-bright, and set a linear gamma (1.0).
-  --    * We take the central square crop of size Size x Size
-  --    * For each pixel in that crop we extract the green channel value.
-  type Columns is range 1 .. Max_With_Or_Height;
-  type Rows    is range 1 .. Max_With_Or_Height;
+  declare
+    Grid : constant Lib_Raw.Grid := Lib_Raw.Grid_Of ("Sample.CR2", 1000);
+  begin
+    for Row in Grid'range(1) loop
+      for Column in Grid'range(2) loop
+        declare
+          Pixel : constant Lib_Raw.Pixel := Grid(Row, Column);
+          use type Lib_Raw.Pixel;
+        begin
+          if Pixel > 15000 then
+            IO.Put_Line ("Pixel at row:" & Row'image & ", Column:" & Column'image & " =" & Pixel'image);
+          end if;
+        end;
+      end loop;
+    end loop;
+  end;
+  IO.Put_Line ("End");
 
-  type Position is record
-    Column : Columns;
-    Row    : Rows;
-  end record;
-
-  type Row_Range is record
-    First : Rows;
-    Last  : Rows;
-  end record;
-
-  type Grid is array (Rows range <>, Columns range <>) of Pixel;
-
-  --  Compute the central square crop of the processed image and return
-  --  the green channel samples in a 2D grid: Size rows, Size columns.
-  --
-  --  Raises Raw_Error when:
-  --    * libraw_init returns NULL,
-  --    * LibRaw open/unpack/process/make_mem_image calls fail,
-  --    * Size exceeds processed image dimensions,
-  --    * processed image has unsupported format (bits /= 16, colors < 1),
-  --    * NULL data pointer.
-  function Grid_Of (File_Name : String;
-                    Size      : Square_Size) return Grid;
-
-  Raw_Error : exception;
-
-end Raw;
+exception
+when Lib_Raw.Raw_Error =>
+  IO.Put_Line ("### Raw Error");
+when Item: others =>
+  IO.Put_Line (Exceptions.Information_Of (Item));
+end Lib_Raw_Test;

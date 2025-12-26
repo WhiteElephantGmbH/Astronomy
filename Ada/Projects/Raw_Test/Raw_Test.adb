@@ -21,10 +21,12 @@ pragma Build (Description => "Raw Test",
               Icon        => False,
               Compiler    => "GNATPRO\23.0");
 
-with Ada.Text_IO;
-with Raw;
-with Exceptions;
 with Ada.Numerics.Generic_Elementary_Functions;
+with Ada.Text_IO;
+with Camera;
+with Exposure;
+with Exceptions;
+with Sensitivity;
 
 procedure Raw_Test is
 
@@ -33,17 +35,28 @@ procedure Raw_Test is
 
   Pi : constant Float := Ada.Numerics.Pi;
 
-  use type Raw.Pixel;
+  use type Camera.Pixel;
+  use type Camera.Status;
 
 begin
   IO.Put_Line ("Raw Test");
   IO.Put_Line ("========");
+  Camera.Start;
+  delay 1.0;
+  Camera.Capture (Size      => 10,
+                  Time      => Exposure.Value ("1/2"),
+                  Parameter => Sensitivity.Default);
+  IO.Put ("capture .");
+  while Camera.Actual_Information.State /= Camera.Cropped loop
+    delay (1.0);
+    IO.Put (".");
+  end loop;
+  IO.New_Line;
+
   declare
     subtype Huge_Natural is Long_Long_Integer range 0 .. Long_Long_Integer'last;
 
-    Last_Index : constant := 1024;
-
-    Raw_Grid : constant Raw.Grid := Raw.Grid_Of ("D:\Temp\Picture.CR2", Last_Index);
+    Raw_Grid : constant Camera.Raw_Grid := Camera.Captured;
 
     procedure Show_Grid is
     begin
@@ -65,7 +78,7 @@ begin
     end Show_Grid;
 
 
-    function Evaluated_Half_Flux return Raw.Pixel is
+    function Evaluated_Half_Flux return Camera.Pixel is
       Black_Level : constant := 0;
       The_Sum     : Huge_Natural := 0;
       The_Count   : Natural := 0;
@@ -79,19 +92,24 @@ begin
       if The_Count = 0 then
         return 0;
       end if;
-      return Raw.Pixel (The_Sum / Huge_Natural(The_Count));
+      return Camera.Pixel (The_Sum / Huge_Natural(The_Count));
     end Evaluated_Half_Flux;
 
-    Half_Flux : constant Raw.Pixel := Evaluated_Half_Flux;
+    Half_Flux : constant Camera.Pixel := Evaluated_Half_Flux;
+
+    type Position is record
+      Row    : Camera.Rows;
+      Column : Camera.Columns;
+    end record;
 
     type Right_Angle is record
-      Edge : Raw.Position;
-      Ends : Raw.Position;
+      Edge : Position;
+      Ends : Position;
       Size : Natural := 0;
     end record;
 
-    function Right_Angle_At (Row    : Raw.Rows;
-                             Column : Raw.Columns) return Right_Angle is
+    function Right_Angle_At (Row    : Camera.Rows;
+                             Column : Camera.Columns) return Right_Angle is
       The_Right_Angle : Right_Angle;
     begin
       The_Right_Angle.Edge := (Row    => Row,
@@ -130,25 +148,25 @@ begin
       return Max_Right_Angle;
     end Evaluated_Max_Rigth_Angle;
 
-    use type Raw.Rows;
-    use type Raw.Columns;
+    use type Camera.Rows;
+    use type Camera.Columns;
 
     RA            : constant Right_Angle := Evaluated_Max_Rigth_Angle;
-    Row_Offset    : constant Raw.Rows := (RA.Ends.Row - RA.Edge.Row) / 2;
-    Column_Offset : constant Raw.Columns := (RA.Ends.Column - RA.Edge.Column) / 2;
+    Row_Offset    : constant Camera.Rows := (RA.Ends.Row - RA.Edge.Row) / 2;
+    Column_Offset : constant Camera.Columns := (RA.Ends.Column - RA.Edge.Column) / 2;
 
-    function Is_In_RA (Row    : Raw.Rows;
-                       Column : Raw.Columns) return Boolean is
+    function Is_In_RA (Row    : Camera.Rows;
+                       Column : Camera.Columns) return Boolean is
     begin
       return Row    > RA.Edge.Row    and Row    < RA.Ends.Row and
              Column > RA.Edge.Column and Column < RA.Ends.Column;
      end Is_In_RA;
 
-    function Evaluated_Half_Flux_Diameter (Center : out Raw.Position) return Natural is
-      First_Column : Raw.Columns := RA.Edge.Column;
-      Last_Column  : Raw.Columns := RA.Ends.Column;
-      First_Row    : Raw.Rows := RA.Edge.Row;
-      Last_Row     : Raw.Rows := RA.Ends.Row;
+    function Evaluated_Half_Flux_Diameter (Center : out Position) return Natural is
+      First_Column : Camera.Columns := RA.Edge.Column;
+      Last_Column  : Camera.Columns := RA.Ends.Column;
+      First_Row    : Camera.Rows := RA.Edge.Row;
+      Last_Row     : Camera.Rows := RA.Ends.Row;
       Column_Sum   : Huge_Natural := 0;
       Row_Sum      : Huge_Natural := 0;
       The_Count    : Huge_Natural := 0;
@@ -156,7 +174,7 @@ begin
       if First_Column > Column_Offset then
         First_Column := @ - Column_Offset;
       else
-        First_Column := Raw.Columns'first;
+        First_Column := Camera.Columns'first;
       end if;
       if Last_Column < Raw_Grid'last(2) - Column_Offset then
         Last_Column := @ + Column_Offset;
@@ -166,7 +184,7 @@ begin
       if First_Row > Row_Offset then
         First_Row := @ - Row_Offset;
       else
-        First_Row := Raw.Rows'first;
+        First_Row := Camera.Rows'first;
       end if;
       if Last_Row < Raw_Grid'last(1) - Row_Offset then
         Last_Row := @ + Row_Offset;
@@ -182,12 +200,12 @@ begin
           end if;
         end loop;
       end loop;
-      Center := (Column => Raw.Columns (Column_Sum / The_Count),
-                 Row    => Raw.Rows (Row_Sum / The_Count));
+      Center := (Column => Camera.Columns (Column_Sum / The_Count),
+                 Row    => Camera.Rows (Row_Sum / The_Count));
       return Natural (2.0 * NF.Sqrt (Float(The_Count) / Pi));
     end Evaluated_Half_Flux_Diameter;
 
-    The_Center : Raw.Position;
+    The_Center : Position;
 
     Half_Flux_Diameter : constant Natural := Evaluated_Half_Flux_Diameter (The_Center);
 
@@ -201,8 +219,10 @@ begin
     IO.Put_Line ("Center Position:" & The_Center'image);
     IO.Put_Line ("Half Flux Diameter:" & Half_Flux_Diameter'image);
   end;
+  Camera.Finish;
 
 exception
 when Item: others =>
   Ada.Text_IO.Put_Line (Exceptions.Information_Of (Item));
+  Camera.Finish;
 end Raw_Test;
