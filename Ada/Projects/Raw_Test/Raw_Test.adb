@@ -145,6 +145,7 @@ begin
           end if;
         end loop;
       end loop;
+      IO.Put_Line ("Max Right Angle:" & Max_Right_Angle'image);
       return Max_Right_Angle;
     end Evaluated_Max_Rigth_Angle;
 
@@ -152,8 +153,8 @@ begin
     use type Camera.Columns;
 
     RA            : constant Right_Angle := Evaluated_Max_Rigth_Angle;
-    Row_Offset    : constant Camera.Rows := (RA.Ends.Row - RA.Edge.Row) / 2;
-    Column_Offset : constant Camera.Columns := (RA.Ends.Column - RA.Edge.Column) / 2;
+    Row_Offset    : constant Camera.Rows := (Camera.Rows'first + RA.Ends.Row - RA.Edge.Row) / 2;
+    Column_Offset : constant Camera.Columns := (Camera.Columns'first + RA.Ends.Column - RA.Edge.Column) / 2;
 
     function Is_In_RA (Row    : Camera.Rows;
                        Column : Camera.Columns) return Boolean is
@@ -172,7 +173,7 @@ begin
       The_Count    : Huge_Natural := 0;
     begin
       if First_Column > Column_Offset then
-        First_Column := @ - Column_Offset;
+        First_Column := (@ - Column_Offset);
       else
         First_Column := Camera.Columns'first;
       end if;
