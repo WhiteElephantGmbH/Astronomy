@@ -15,8 +15,8 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-pragma Build (Description => "Camera test",
-              Version     => (1, 0, 0, 1),
+pragma Build (Description => "Half Flux Diameter Test",
+              Version     => (1, 0, 0, 0),
               Kind        => Console,
               Icon        => False,
               Compiler    => "GNATPRO\23.0");
@@ -25,33 +25,13 @@ with Ada.Text_IO;
 with Camera;
 with Exceptions;
 with Exposure;
-with Os.System;
+with HFD;
 with Sensitivity;
 with Text;
 
-procedure Camera_Test is
+procedure HFD_Test is
 
   package IO renames Ada.Text_IO;
-
-  procedure Show_Grid is
-    Grid : constant Camera.Raw_Grid := Camera.Captured;
-  begin
-    for Row in Grid'range(1) loop
-      declare
-        Row_Image : constant String := "  " & Row'image;
-      begin
-        IO.Put (Row_Image(Row_Image'last - 3 .. Row_Image'last) & ":");
-        for Column in Grid'range(2) loop
-          declare
-            Column_Image : constant String := "     " & Grid(Row, Column)'image;
-          begin
-            IO.Put (Column_Image(Column_Image'last - 5 .. Column_Image'last));
-          end;
-        end loop;
-        IO.New_Line;
-      end;
-    end loop;
-  end Show_Grid;
 
   Delay_Time : constant Duration := 0.2;
   Timeout    : constant Duration := 15.0;
@@ -60,10 +40,9 @@ procedure Camera_Test is
   The_Count : Integer;
 
 begin -- Camera_Test
-  IO.Put_Line ("Camera Test");
-  IO.Put_Line ("===========");
+  IO.Put_Line ("HFD Test");
+  IO.Put_Line ("========");
   Camera.Start;
-  IO.Put ("Started");
   loop
     declare
       function Info return Camera.Information is (Camera.Actual_Information);
@@ -72,7 +51,6 @@ begin -- Camera_Test
       when Camera.Idle =>
         The_Count := Counter;
         IO.New_Line;
-        IO.Put_Line ("Idle");
         IO.Put ("cmd> ");
         declare
           Parameters : constant Text.Strings := Text.Strings_Of (IO.Get_Line, Separator => ' ');
@@ -88,17 +66,15 @@ begin -- Camera_Test
                                                                               else Sensitivity.Value (Parameters(3)));
           begin
             case Text.Uppercase_Of (Parameters(1)(1)) is
-            when 'C' =>
-              Camera.Capture (Os.System.Temp_Path & "Picture", Time, Parameter);
             when 'G' =>
-              Camera.Capture (10, Time, Parameter);
+              Camera.Capture (1000, Time, Parameter);
             when others =>
               raise Constraint_Error;
             end case;
           end;
         exception
         when others =>
-          IO.Put_Line ("### Illegal Command (expexted: ['C' | 'G'] <time> [<iso> | '[' <gain> ',' <offset> ']']) ###");
+          IO.Put_Line ("### Illegal Command (expexted: ['G' <time> [<iso> | '[' <gain> ',' <offset> ']']]) ###");
         end;
       when Camera.Connecting =>
         IO.Put ("o");
@@ -115,9 +91,7 @@ begin -- Camera_Test
         IO.Put ("r");
       when Camera.Cropped =>
         IO.New_Line;
-        Show_Grid;
-        IO.Put_Line ("Image Height:" & Info.Height'image);
-        IO.Put_Line ("Image Width :" & Info.Width'image);
+        HFD.Evaluate (Camera.Captured);
       when Camera.Stopping =>
         IO.Put ("s");
       when Camera.Error =>
@@ -133,9 +107,8 @@ begin -- Camera_Test
     end if;
   end loop;
   Camera.Finish;
-  IO.Put_Line ("Stopped");
 
 exception
 when Item: others =>
   IO.Put_Line (Exceptions.Information_Of (Item));
-end Camera_Test;
+end HFD_Test;

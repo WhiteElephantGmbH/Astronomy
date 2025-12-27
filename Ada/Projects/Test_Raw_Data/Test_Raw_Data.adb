@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2023 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                           (c) 2025 by White Elephant GmbH, Schaffhausen, Switzerland                              *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,27 +15,50 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Ada.Environment_Variables;
-with Ada.Strings.UTF_Encoding.Strings;
-with Shlobj;
+pragma Build (Description => "Test Raw Data",
+              Version     => (1, 0, 0, 0),
+              Kind        => Console,
+              Icon        => False,
+              Compiler    => "GNATPRO\23.0");
 
-package body Os.System is
+with Ada.Text_IO;
+with Raw_Data;
 
-  function Program_Files_Folder return String is
+procedure Test_Raw_Data is
+
+  package IO renames Ada.Text_IO;
+
+begin
+  declare
+    Grid : constant Raw_Data.Raw_Grid := Raw_Data.Grid ("Sample.CR2", 2000);
   begin
-    return Shlobj.Folder_Path_For (Shlobj.Program_Files'access);
-  end Program_Files_Folder;
+    IO.Put_Line ("Test Raw Data");
+    IO.Put_Line ("=============");
 
+    for Row in Grid'range(1) loop
+      for Column in Grid'range(2) loop
+        declare
+          Pixel : constant Raw_Data.Pixel := Grid(Row, Column);
+          use type Raw_Data.Pixel;
+        begin
+          if Pixel > 10000 then
+            IO.Put_Line ("Pixel at row:" & Row'image & ", Column:" & Column'image & " =" & Pixel'image);
+          end if;
+        end;
+      end loop;
+    end loop;
+  end;
+  IO.Put_Line ("End");
 
-  function Program_Files_X86_Folder return String is
-  begin
-    return Shlobj.Folder_Path_For (Shlobj.Program_Files_X86'access);
-  end Program_Files_X86_Folder;
-
-
-  function Temp_Path return String is
-  begin
-    return Ada.Strings.UTF_Encoding.Strings.Encode (Ada.Environment_Variables.Value ("TEMP")) & "\";
-  end Temp_Path;
-
-end Os.System;
+exception
+  when Raw_Data.File_Not_Found =>
+    IO.Put_Line ("File not found.");
+  when Raw_Data.Invalid_File =>
+    IO.Put_Line ("Invalid CR2 file.");
+  when Raw_Data.Not_Found =>
+    IO.Put_Line ("RAW data not found.");
+  when Raw_Data.Size_Error =>
+    IO.Put_Line ("Size Error.");
+  when Raw_Data.Unsupported =>
+    IO.Put_Line ("Unsupported.");
+end Test_Raw_Data;

@@ -22,14 +22,14 @@ private package Camera.QHYCCD is
   function Is_Available return Boolean;
 
   procedure Capture_Picture (Filename  : String;
-                             Time      : Exposure.Item;     -- seconds
-                             Parameter : Sensitivity.Item); -- Gain and Offset
+                             Time      : Exposure.Item;     -- 0.000_001 .. 3600.000_000 seconds
+                             Parameter : Sensitivity.Item); -- Gain 0 .. 140 and Offset 0 .. 255
 
   procedure Capture_Grid (Size      : Square_Size;
-                          Time      : Exposure.Item;     -- seconds
-                          Parameter : Sensitivity.Item); -- Gain and Offset
+                          Time      : Exposure.Item;     -- 0.000_001 .. 3600.000_000 seconds
+                          Parameter : Sensitivity.Item); -- Gain 0 .. 140 and Offset 0 .. 255
 
-  function Grid return Green_Grid;
+  function Grid return Raw_Grid;
 
   procedure Stop_Capture;
 

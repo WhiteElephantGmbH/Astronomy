@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2023 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                           (c) 2025 by White Elephant GmbH, Schaffhausen, Switzerland                              *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,27 +15,23 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Ada.Environment_Variables;
-with Ada.Strings.UTF_Encoding.Strings;
-with Shlobj;
+package Lib_Raw is
 
-package body Os.System is
+  Pixel_Size : constant := 16;
 
-  function Program_Files_Folder return String is
-  begin
-    return Shlobj.Folder_Path_For (Shlobj.Program_Files'access);
-  end Program_Files_Folder;
+  type Pixel is new Natural range 0 .. 2 ** Pixel_Size - 1 with Size => Pixel_Size;
 
+  type Columns is range 1 .. 10000;
+  type Rows    is range 1 .. 10000;
 
-  function Program_Files_X86_Folder return String is
-  begin
-    return Shlobj.Folder_Path_For (Shlobj.Program_Files_X86'access);
-  end Program_Files_X86_Folder;
+  type Square_Size is new Natural range 2 .. 2000
+    with Dynamic_Predicate => Square_Size mod 2 = 0;
 
+  type Grid is array (Rows range <>, Columns range <>) of Pixel;
 
-  function Temp_Path return String is
-  begin
-    return Ada.Strings.UTF_Encoding.Strings.Encode (Ada.Environment_Variables.Value ("TEMP")) & "\";
-  end Temp_Path;
+  function Grid_Of (File_Name : String;
+                    Size      : Square_Size) return Grid;
 
-end Os.System;
+  Raw_Error : exception;
+
+end Lib_Raw;

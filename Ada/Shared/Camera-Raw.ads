@@ -19,16 +19,7 @@ private package Camera.Raw is
 
   procedure Prepare_Grid (File_Name : String;
                           Size      : Square_Size);
-  -- Computes the central square crop of the processed image and returns green channel pixels in a 2D grid
-  -- Raises Error when:
-  --   libraw_init returns NULL,
-  --   LibRaw open/unpack/process/make_mem_image calls fail,
-  --   Size exceeds processed image dimensions,
-  --   processed image has unsupported format (bits /= 16, colors < 1),
-  --   NULL data pointer.
 
-  procedure Stop_Preparing;
-
-  function Grid return Green_Grid;
+  function Grid return Raw_Grid;
 
 end Camera.Raw;

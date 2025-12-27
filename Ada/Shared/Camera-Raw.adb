@@ -16,8 +16,9 @@
 pragma Style_White_Elephant;
 
 with Ada.Unchecked_Conversion;
-with Interfaces.C;
+with C;
 with Camera.Raw_Interface;
+with File;
 with System.Storage_Elements;
 with Traces;
 
@@ -25,237 +26,171 @@ package body Camera.Raw is
 
   package Log is new Traces ("Camera.Raw");
 
-  package C  renames Interfaces.C;
   package RI renames Raw_Interface;
   package SE renames System.Storage_Elements;
-
-  -------------------
-  -- Local helpers --
-  -------------------
-
-  procedure Check (Code  : C.int;
-                   Where : String) is
-    use type C.int;
-  begin
-    Log.Write (Where);
-    if Code /= 0 then
-      Raise_Error (Where & " failed (LibRaw error code" & Integer'image (Integer (Code)) & ")");
-    end if;
-  end Check;
-
-
-  function To_C_String (S : String) return String is
-  begin
-    return S & Ascii.Nul;
-  end To_C_String;
-
-  type Sample_Ptr is access all Pixel with Convention => C;
-
-  function To_Sample_Ptr is new Ada.Unchecked_Conversion (Source => System.Address,
-                                                          Target => Sample_Ptr);
-
-
-  Ctx : RI.Context := RI.Null_Context;
-  Img : RI.Processed_Image_Ptr;
-
-
-  procedure Cleanup is
-    use type RI.Processed_Image_Ptr;
-    use type RI.Context;
-  begin
-    begin
-      if Img /= null then
-        RI.Dcraw_Clear_Mem (Img);
-        Img := null;
-      end if;
-    exception
-    when others =>
-      null;
-    end;
-    if Ctx /= RI.Null_Context then
-      begin
-        RI.Free_Image (Ctx);
-      exception
-      when others =>
-        null;
-      end;
-      begin
-        RI.Recycle (Ctx);
-      exception
-      when others =>
-        null;
-      end;
-      begin
-        RI.Close (Ctx);
-      exception
-      when others =>
-        null;
-      end;
-      Ctx := RI.Null_Context;
-    end if;
-  end Cleanup;
-
 
   ------------------
   -- Prepare_Grid --
   ------------------
 
-  Bytes_Per_Sample : constant Integer := Pixel'size / System.Storage_Unit;
-
-  type Channel is range 1 .. 3;
-
-  The_Colors    : Channel;
-  The_Width     : Natural;
-  The_Height    : Natural;
+  The_Filename  : Text.String;
   The_Grid_Size : Square_Size;
 
   procedure Prepare_Grid (File_Name : String;
-                          Size      : Square_Size)
-  is
-    File_C   : aliased String := To_C_String (File_Name);
-    Proc_Err : aliased C.int := 0;
-
-    type Bit_Count is range 1 .. 32;
-
-    Bits      : Bit_Count;
-    Data_Size : Natural;
-
-    use type RI.Context;
-    use type RI.Processed_Image_Ptr;
-
-  begin -- Prepare_Grid
-    Camera_Data.Check (Cropping);
-    The_Grid_Size := Size;
-    Ctx := RI.Init (0);
-    if Ctx = RI.Null_Context then
-      Raise_Error ("libraw_init returned NULL context");
-    end if;
-
-    Check (RI.Open_File (Ctx, File_C'address), "Open file via LibRaw");
-
-    Check (RI.Unpack (Ctx), "Unpack RAW");
-
-    Log.Write ("Configure sample size, linear, no auto-bright");
-    RI.Set_Output_Bps (Ctx, Pixel'size);
-    --  Disable auto-brightening
-    RI.Set_No_Auto_Bright (Ctx, 1);
-    --  Linear gamma: gamma[0] = 1.0, gamma[1] = 1.0
-    RI.Set_Gamma (Ctx, 0, 1.0);
-    RI.Set_Gamma (Ctx, 1, 1.0);
-
-    Check (RI.Dcraw_Process (Ctx), "Process Dcraw");
-
-    Img := RI.Dcraw_Make_Mem_Image (Ctx, Proc_Err'access);
-    Check (Proc_Err, "Make memory image");
-
-    if Img = null then
-      Raise_Error ("Make memory image returned NULL pointer");
-    end if;
-
-    Log.Write ("Extract dimensions and format info");
-    begin
-      The_Width  := Natural(Img.Width);
-      The_Height := Natural(Img.Height);
-      The_Colors := Channel(Img.Colors);
-      Bits := Bit_Count(Img.Bits);
-      Data_Size := Natural(Img.Data_Size);
-    exception
-    when others =>
-      Raise_Error ("Invalid processed image data");
-    end;
-
-    Log.Write ("- Type  :" & Img.Img_Type'image);
-    Log.Write ("- Height:" & The_Height'image);
-    Log.Write ("- Width :" & The_Width'image);
-    Log.Write ("- Colors:" & The_Colors'image);
-    Log.Write ("- Bits  :" & Bits'image);
-    Log.Write ("- Size  :" & Data_Size'image);
-
-    if Bits /= Pixel'size then
-      Raise_Error ("Expected" & Pixel'size'image & "bits processed image, got" &
-                   Bits'image & " bits (check libraw_set_output_bps support)");
-    end if;
-
-    if Data_Size /= The_Width * The_Height * Natural(The_Colors) * Bytes_Per_Sample then
-      Raise_Error ("Invalid image data size");
-    end if;
-    Camera_Data.Set (Height => Rows(The_Height));
-    Camera_Data.Set (Width => Columns(The_Width));
-    Camera_Data.Set (Cropped);
-  exception
-  when others =>
-    Cleanup;
-    raise;
-  end Prepare_Grid;
-
-
-  procedure Stop_Preparing is
+                          Size      : Square_Size)is
   begin
-    Cleanup;
-  end Stop_Preparing;
+    if File.Exists (File_Name) then
+      The_Filename := [File_Name];
+      The_Grid_Size := Size;
+      Camera_Data.Set (Cropped);
+    else
+      Camera_Data.Set_Error ("File Not Found");
+    end if;
+  end Prepare_Grid;
 
 
   ----------
   -- Grid --
   ----------
-  function Grid return Green_Grid is
 
-    subtype Row_Index    is Rows    range 1 .. Rows(The_Grid_Size);
-    subtype Column_Index is Columns range 1 .. Columns(The_Grid_Size);
+  function Grid return Raw_Grid is
 
-    Result : Green_Grid (Row_Index, Column_Index);
+    -- We only need the *first field* of libraw_data_t:
+    --   ushort (*image)[4];
+    type Lib_Raw_Data_Prefix is record
+      Image : System.Address;
+    end record with
+      Convention => C;
 
-    Base_Adr    : constant System.Address := Img.Data'address;
-    Green_Index : constant Natural := (if The_Colors >= 2 then 1 else 0);
-    SS          : constant Natural := Natural(The_Grid_Size);
-    Row_Offset  : constant Natural := (The_Height - SS) / 2;
-    Col_Offset  : constant Natural := (The_Width - SS) / 2;
+    type Lib_Raw_Data_Prefix_Access is access all Lib_Raw_Data_Prefix;
 
-    use type SE.Storage_Offset;
+    function To_Prefix is new Ada.Unchecked_Conversion (Source => RI.Context,
+                                                        Target => Lib_Raw_Data_Prefix_Access);
+
+    -- Pixel quad: image[p][0..3]
+    type Ushort is new C.Unsigned_Short;
+    type Pixel4 is array (Natural range 0 .. 3) of Ushort
+      with Convention => C;
+
+    function Pixel4_From_Address (A : System.Address) return Pixel4 is
+      type Pixel4_Access is access all Pixel4;
+      function To_Pixel4 is new Ada.Unchecked_Conversion
+        (Source => System.Address, Target => Pixel4_Access);
+    begin
+      return To_Pixel4 (A).all;
+    end Pixel4_From_Address;
+
+    Ctx    : constant RI.Context := RI.Init (0);
+    File_C : aliased String := The_Filename.To_String & Ascii.Nul;
+
+    Img_W  : Natural := 0;
+    Img_H  : Natural := 0;
+
+    GS : constant Natural := Natural (The_Grid_Size);
+
+    subtype Row_Index    is Rows    range 1 .. Rows (GS);
+    subtype Column_Index is Columns range 1 .. Columns (GS);
+
+    Result : Raw_Grid (Row_Index, Column_Index);
+
+    use type RI.Context;
     use type System.Address;
+    use type SE.Storage_Offset;
+
+    procedure Cleanup is
+    begin
+      RI.Free_Image (Ctx);
+      RI.Recycle (Ctx);
+      RI.Close (Ctx);
+    end Cleanup;
+
+    procedure Check (Code  : C.Int;
+                     Where : String) is
+      use type C.Int;
+    begin
+      Log.Write (Where);
+      if Code /= 0 then
+        Raise_Error (Where & " failed (LibRaw error code" & Integer'image (Integer (Code)) & ")");
+      end if;
+    end Check;
 
   begin -- Grid
     Camera_Data.Check (Cropped);
-    Log.Write ("Choose which channel to treat as 'green'");
-    Log.Write ("- Green_Index:" & Green_Index'image);
-    Log.Write ("- Row_Offset :" & Row_Offset'image);
-    Log.Write ("- Col_Offset :" & Col_Offset'image);
-    Log.Write ("Extract green samples from the central crop");
-    -- Memory layout from libraw_dcraw_make_mem_image:
-    --   Row-major, pixels in [0 .. H-1] × [0 .. W-1].
-    --   For each pixel: Channels samples, each 2 bytes (unsigned short).
-    --
-    --   sample_index =
-    --     (global_row * W + global_col) * Channels + Green_Index;
-    --
-    --   byte_offset =
-    --     sample_index * Bytes_Per_Sample;
-    for Row in Row_Index loop
-      declare
-        R0         : constant Natural := Natural(Row) - 1;
-        Global_Row : constant Natural := Row_Offset + R0;
+    if Ctx = RI.Null_Context then
+      Raise_Error ("libraw init returned NULL");
+    end if;
+    Check (RI.Open_File (Ctx, File_C'address), "libraw open_file");
+    Check (RI.Unpack (Ctx), "libraw unpack");
+    Check (RI.Raw2_Image (Ctx), "libraw raw2image");
+
+    Img_W := Natural (RI.Get_Iwidth (Ctx));
+    Img_H := Natural (RI.Get_Iheight (Ctx));
+
+    if GS > Img_W or else GS > Img_H then
+      Raise_Error ("Size exceeds raw dimensions");
+    end if;
+    Camera_Data.Set (Width => Columns(Img_W));
+    Camera_Data.Set (Height => Rows(Img_H));
+
+    declare
+      Row_Offset : constant Natural := (Img_H - GS) / 2;
+      Col_Offset : constant Natural := (Img_W - GS) / 2;
+
+      Pfx  : constant Lib_Raw_Data_Prefix_Access := To_Prefix (Ctx);
+      Base : constant System.Address := Pfx.Image;
+
+      Bytes_Per_Pixel : constant SE.Storage_Offset := SE.Storage_Offset (Pixel4'size / System.Storage_Unit);
+
+      function Pixel_Address (Global_Row, Global_Col : Natural) return System.Address is
+        Idx : constant Natural := Global_Row * Img_W + Global_Col;
+        Off : constant SE.Storage_Offset := SE.Storage_Offset (Idx) * Bytes_Per_Pixel;
       begin
-        for Col in Column_Index loop
-          declare
-            C0         : constant Natural := Natural(Col) - 1;
-            Global_Col : constant Natural := Col_Offset + C0;
-            Pixel_Idx  : constant Natural := Global_Row * The_Width + Global_Col;
-            Sample_Idx : constant Natural := Pixel_Idx * Natural(The_Colors) + Green_Index;
-            Byte_Off   : constant SE.Storage_Offset := SE.Storage_Offset (Sample_Idx * Bytes_Per_Sample);
-            Sample     : constant Sample_Ptr := To_Sample_Ptr (Base_Adr + Byte_Off);
-          begin
-            Result (Row, Col) := Sample.all;
-          end;
-        end loop;
-      end;
-    end loop;
-    Log.Write ("Clean up LibRaw objects");
-    RI.Dcraw_Clear_Mem (Img);
-    RI.Free_Image (Ctx); -- safe (no-op here)
-    RI.Recycle (Ctx);
-    RI.Close (Ctx);
-    Camera_Data.Set (Idle);
-    return Result;
+        return Base + Off;
+      end Pixel_Address;
+
+    begin
+      if Base = System.Null_Address then
+        Raise_Error ("ctx -> image is NULL (raw2image failed)");
+      end if;
+
+      for Row in Row_Index loop
+        declare
+          Global_Row : constant Natural := Row_Offset + (Natural (Row) - 1);
+        begin
+          for Col in Column_Index loop
+            declare
+              Global_Col : constant Natural := Col_Offset + (Natural (Col) - 1);
+
+              Cfa : constant Integer :=
+                Integer (RI.COLOR (Ctx, C.Int (Global_Row), C.Int (Global_Col)));
+
+              P4  : constant Pixel4 :=
+                Pixel4_From_Address (Pixel_Address (Global_Row, Global_Col));
+
+              V   : Natural := 0;
+            begin
+              if Cfa >= 0 and then Cfa <= 3 then
+                V := Natural (P4 (Natural (Cfa)));
+              else
+                -- “6” can happen for special/non-bayer cases; keep 0 for now
+                V := 0;
+              end if;
+
+              if V > Natural(Pixel'last) then
+                V := Natural(Pixel'last);
+              end if;
+
+              Result (Row, Col) := Pixel (V);
+            end;
+          end loop;
+        end;
+      end loop;
+
+      Cleanup;
+      Camera_Data.Set (Idle);
+
+      return Result;
+    end;
   exception
   when others =>
     Cleanup;

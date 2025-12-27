@@ -22,10 +22,10 @@ private with Text;
 
 package Camera is
 
-  Max_With_Or_Height : constant := 9576; -- maximum for Canon QHY600C
+  Max_With_Or_Height : constant := 9600; -- maximum for Canon QHY600C
   Min_With_Or_Height : constant := 3464; -- minimum for Canon 60D
 
-  type Model is (Canon_Eos_6D, Canon_Eos_60D, QHY600C);
+  type Model is (Unknown, Canon_Eos_6D, Canon_Eos_60D, QHY600C);
 
   subtype Canon_Model is Model range Canon_Eos_6D .. Canon_Eos_60D;
 
@@ -41,11 +41,11 @@ package Camera is
     Width  : Columns;
   end record;
 
-  Pixel_Size : constant := 16; -- allowed 8 or 16
+  Pixel_Bits : constant := 16;
 
-  type Pixel is new Natural range 0 .. 2 ** Pixel_Size - 1 with Size => Pixel_Size;
+  type Pixel is new Natural range 0 .. 2 ** Pixel_Bits - 1 with Size => Pixel_Bits;
 
-  type Green_Grid is array (Rows range <>, Columns range <>) of Pixel;
+  type Raw_Grid is array (Rows range <>, Columns range <>) of Pixel;
 
   type Square_Size is new Natural range 2 .. Min_With_Or_Height with Dynamic_Predicate => Square_Size mod 2 = 0;
 
@@ -61,7 +61,7 @@ package Camera is
                      Time      : Exposure.Item := Exposure.From_Camera;
                      Parameter : Sensitivity.Item := Sensitivity.Default);
 
-  function Captured return Green_Grid;
+  function Captured return Raw_Grid;
 
   procedure Stop;
 
@@ -70,6 +70,8 @@ package Camera is
   procedure Finish;
 
 private
+
+  Camera_Error : exception;
 
   procedure Raise_Error (Message : String) with No_Return;
 
@@ -84,7 +86,7 @@ private
     procedure Set (Width : Columns);
 
     function Actual return Information;
-    
+
     procedure Check (Item : Status);
 
     procedure Set_Error (Message : String);

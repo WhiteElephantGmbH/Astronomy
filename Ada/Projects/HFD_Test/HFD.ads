@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2023 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                           (c) 2025 by White Elephant GmbH, Schaffhausen, Switzerland                              *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,27 +15,10 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Ada.Environment_Variables;
-with Ada.Strings.UTF_Encoding.Strings;
-with Shlobj;
+with Camera;
 
-package body Os.System is
+package HFD is
 
-  function Program_Files_Folder return String is
-  begin
-    return Shlobj.Folder_Path_For (Shlobj.Program_Files'access);
-  end Program_Files_Folder;
+  procedure Evaluate (Grid : Camera.Raw_Grid);
 
-
-  function Program_Files_X86_Folder return String is
-  begin
-    return Shlobj.Folder_Path_For (Shlobj.Program_Files_X86'access);
-  end Program_Files_X86_Folder;
-
-
-  function Temp_Path return String is
-  begin
-    return Ada.Strings.UTF_Encoding.Strings.Encode (Ada.Environment_Variables.Value ("TEMP")) & "\";
-  end Temp_Path;
-
-end Os.System;
+end HFD;

@@ -19,9 +19,9 @@ private with Ada.Strings.Text_Buffers;
 
 package Sensitivity is
 
-  type Gain is new Natural range 0 .. 56;
+  type Gain is new Natural range 0 .. 140;
 
-  type Offset is new Natural;
+  type Offset is new Natural range 0 .. 255;
 
   type Iso is new Natural range 6 .. 819200 with
     Static_Predicate => Iso in  6 |    12 |                     25 |                     50 |

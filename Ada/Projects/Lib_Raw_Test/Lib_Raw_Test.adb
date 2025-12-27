@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2023 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                           (c) 2025 by White Elephant GmbH, Schaffhausen, Switzerland                              *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,27 +15,45 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Ada.Environment_Variables;
-with Ada.Strings.UTF_Encoding.Strings;
-with Shlobj;
+pragma Build (Description => "Lib Raw Test",
+              Version     => (1, 0, 0, 0),
+              Kind        => Console,
+              Icon        => False,
+              Compiler    => "GNATPRO\23.0");
 
-package body Os.System is
+with Ada.Text_IO;
+with Exceptions;
+with Lib_Raw;
 
-  function Program_Files_Folder return String is
+procedure Lib_Raw_Test is
+
+  package IO renames Ada.Text_IO;
+
+begin
+  IO.Put_Line ("Lib Raw Test");
+  IO.Put_Line ("============");
+
+  declare
+    Grid : constant Lib_Raw.Grid := Lib_Raw.Grid_Of ("Sample.CR2", 2000);
   begin
-    return Shlobj.Folder_Path_For (Shlobj.Program_Files'access);
-  end Program_Files_Folder;
+    for Row in Grid'range(1) loop
+      for Column in Grid'range(2) loop
+        declare
+          Pixel : constant Lib_Raw.Pixel := Grid(Row, Column);
+          use type Lib_Raw.Pixel;
+        begin
+          if Pixel > 10000 then
+            IO.Put_Line ("Pixel at row:" & Row'image & ", Column:" & Column'image & " =" & Pixel'image);
+          end if;
+        end;
+      end loop;
+    end loop;
+  end;
+  IO.Put_Line ("End");
 
-
-  function Program_Files_X86_Folder return String is
-  begin
-    return Shlobj.Folder_Path_For (Shlobj.Program_Files_X86'access);
-  end Program_Files_X86_Folder;
-
-
-  function Temp_Path return String is
-  begin
-    return Ada.Strings.UTF_Encoding.Strings.Encode (Ada.Environment_Variables.Value ("TEMP")) & "\";
-  end Temp_Path;
-
-end Os.System;
+exception
+when Lib_Raw.Raw_Error =>
+  IO.Put_Line ("### Raw Error");
+when Item: others =>
+  IO.Put_Line (Exceptions.Information_Of (Item));
+end Lib_Raw_Test;

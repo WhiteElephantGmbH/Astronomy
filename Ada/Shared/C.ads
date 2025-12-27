@@ -26,6 +26,7 @@ package C is
   subtype Int                is Interfaces.C.int;
   subtype Uint8              is Interfaces.Unsigned_8;
   subtype Uint32             is Interfaces.Unsigned_32;
+  subtype Unsigned_Short     is Interfaces.C.unsigned_short;
   subtype Unsigned_Long      is Interfaces.C.unsigned_long;
   subtype Unsigned_Long_Long is Interfaces.C.unsigned_long_long;
 

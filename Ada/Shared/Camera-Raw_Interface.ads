@@ -92,6 +92,14 @@ package Camera.Raw_Interface is
     Convention    => C,
     External_Name => "libraw_get_iheight";
 
+  -- int libraw_COLOR(libraw_data_t *lr, int row, int col);
+  function COLOR (Ctx : Context;
+                  Row : C.int;
+                  Col : C.int) return C.int with
+    Import        => True,
+    Convention    => C,
+    External_Name => "libraw_COLOR";
+
   -------------------
   -- Error strings --
   -------------------
@@ -101,96 +109,6 @@ package Camera.Raw_Interface is
     Import        => True,
     Convention    => C,
     External_Name => "libraw_strerror";
-
-  ----------------------------------------------
-  -- RAW mosaic access (dimensions, if needed) --
-  ----------------------------------------------
-
-  -- int libraw_get_raw_width(libraw_data_t *lr);
-  function Get_Raw_Width (Ctx : Context) return C.int with
-    Import        => True,
-    Convention    => C,
-    External_Name => "libraw_get_raw_width";
-
-  -- int libraw_get_raw_height(libraw_data_t *lr);
-  function Get_Raw_Height (Ctx : Context) return C.int with
-    Import        => True,
-    Convention    => C,
-    External_Name => "libraw_get_raw_height";
-
-  -----------------------------------------
-  -- Processed image via dcraw emulation --
-  -----------------------------------------
-
-  -- int libraw_dcraw_process(libraw_data_t *lr);
-  function Dcraw_Process (Ctx : Context) return C.int with
-    Import        => True,
-    Convention    => C,
-    External_Name => "libraw_dcraw_process";
-
-  -- C struct (from libraw_types.h):
-  --
-  -- typedef struct
-  -- {
-  --   enum LibRaw_image_formats type;
-  --   ushort height, width, colors, bits;
-  --   unsigned int data_size;
-  --   unsigned char data[1];
-  -- } libraw_processed_image_t;
-  --
-  -- We model 'data' as a single byte; we use its 'Address as the start of the larger buffer allocated by LibRaw.
-
-  type Processed_Image is record
-    Img_Type  : C.int;
-    Height    : C.unsigned_short;
-    Width     : C.unsigned_short;
-    Colors    : C.unsigned_short;
-    Bits      : C.unsigned_short;
-    Data_Size : C.unsigned; -- unsigned int in C
-    Data      : aliased C.unsigned_char;
-  end record
-    with Convention => C;
-
-  type Processed_Image_Ptr is access all Processed_Image with Convention => C;
-
-  -- libraw_processed_image_t * libraw_dcraw_make_mem_image(libraw_data_t *lr, int *errc);
-  function Dcraw_Make_Mem_Image (Ctx        : Context;
-                                 Error_Code : access C.int) return Processed_Image_Ptr with
-    Import        => True,
-    Convention    => C,
-    External_Name => "libraw_dcraw_make_mem_image";
-
-  -- void libraw_dcraw_clear_mem(libraw_processed_image_t *);
-  procedure Dcraw_Clear_Mem (Img : Processed_Image_Ptr) with
-    Import        => True,
-    Convention    => C,
-    External_Name => "libraw_dcraw_clear_mem";
-
-  --------------------------------
-  -- Output / development knobs --
-  --------------------------------
-
-  -- void libraw_set_output_bps(libraw_data_t *lr, int value);
-  procedure Set_Output_Bps (Ctx   : Context;
-                            Value : C.int) with
-    Import        => True,
-    Convention    => C,
-    External_Name => "libraw_set_output_bps";
-
-  -- void libraw_set_no_auto_bright(libraw_data_t *lr, int value);
-  procedure Set_No_Auto_Bright (Ctx   : Context;
-                                Value : C.int) with
-    Import        => True,
-    Convention    => C,
-    External_Name => "libraw_set_no_auto_bright";
-
-  -- void libraw_set_gamma(libraw_data_t *lr, int index, float value);
-  procedure Set_Gamma (Ctx   : Context;
-                       Index : C.int;
-                       Value : C.C_float) with
-    Import        => True,
-    Convention    => C,
-    External_Name => "libraw_set_gamma";
 
 private
 

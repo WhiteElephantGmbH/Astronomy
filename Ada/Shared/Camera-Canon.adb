@@ -405,6 +405,7 @@ package body Camera.Canon is
       Dummy_Count  : CI.Ref_Count;
       use type CI.Directory_Item;
     begin
+      Log.Write ("Disconnect");
       if The_Item /= CI.No_Directory then
         begin
           Check ("Delete file on camera",  CI.Delete_Directory_Item (The_Item));
@@ -460,6 +461,7 @@ package body Camera.Canon is
       return Count = 1;
     exception
     when others =>
+      Release_Device_List_And_Terminate_SDK;
       return False;
     end One_Device_Is_Ready;
 
@@ -744,11 +746,7 @@ package body Camera.Canon is
             when Capturing =>
               The_Shutter_Release_Time := RT.Clock;
               Continue_Capture;
-            when Cropping =>
-              Camera_Data.Set (Cropped);
-              exit;
-            when Cropped =>
-              Raw.Stop_Preparing;
+            when Cropping | Cropped =>
               exit;
             when others =>
               exit;
@@ -758,7 +756,9 @@ package body Camera.Canon is
         end Await_Stop;
       or
         accept Shutdown do
-          Disconnect;
+          if Camera_Data.Actual.Camera in Canon_Model then
+            Disconnect;
+          end if;
         end Shutdown;
         exit;
       or
@@ -771,7 +771,6 @@ package body Camera.Canon is
           Download;
         when Cropping =>
           Raw.Prepare_Grid (The_Filename.To_String, The_Grid_Size);
-          Camera_Data.Set (Cropped);
         when Connecting | Connected | Downloading | Cropped | Stopping | Idle | Error=>
           null;
         end case;

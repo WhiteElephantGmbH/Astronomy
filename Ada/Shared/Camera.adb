@@ -18,7 +18,7 @@ pragma Style_White_Elephant;
 with Camera.Canon;
 with Camera.QHYCCD;
 with Camera.Raw;
-
+with File;
 with Traces;
 
 package body Camera is
@@ -42,12 +42,26 @@ package body Camera is
   procedure Capture (Filename  : String;
                      Time      : Exposure.Item    := Exposure.From_Camera;
                      Parameter : Sensitivity.Item := Sensitivity.Default) is
-  begin
+
+    function Filename_With_Extension (Default : String) return String is
+    begin
+      if File.Extension_Of (Filename) = "" then
+        return Filename & '.' & Default;
+      else
+        return Filename;
+      end if;
+    exception
+    when others =>
+      Raise_Error ("Incorrect Filename: " & Filename);
+    end Filename_With_Extension;
+
+  begin -- Capture
     Log.Write ("Capture " & Filename & " - Time: " & Time'image & " - Parameter: " & Parameter'image);
+    Camera_Data.Set (Unknown);
     if Canon.Is_Available then
-      Canon.Capture_Picture (Filename, Time, Parameter);
+      Canon.Capture_Picture (Filename_With_Extension (Default => "CR2"), Time, Parameter);
     elsif QHYCCD.Is_Available then
-      QHYCCD.Capture_Picture (Filename, Time, Parameter);
+      QHYCCD.Capture_Picture (Filename_With_Extension (Default => "FITS"), Time, Parameter);
     else
       Camera_Data.Set_Error ("No Camera Available");
     end if;
@@ -59,6 +73,7 @@ package body Camera is
                      Parameter : Sensitivity.Item := Sensitivity.Default) is
   begin
     Log.Write ("Capture - Size:" & Size'image & " - Time: " & Time'image & " - Parameter: " & Parameter'image);
+    Camera_Data.Set (Unknown);
     if Canon.Is_Available then
       Canon.Capture_Grid (Size, Time, Parameter);
     elsif QHYCCD.Is_Available then
@@ -69,13 +84,16 @@ package body Camera is
   end Capture;
 
 
-  function Captured return Green_Grid is
+  function Captured return Raw_Grid is
   begin
     case Camera_Data.Actual.Camera is
     when Canon_Eos_6D | Canon_Eos_60D =>
       return Raw.Grid;
     when QHY600C =>
       return QHYCCD.Grid;
+    when Unknown =>
+      Camera_Data.Set_Error ("No Camera Connected");
+      return [];
     end case;
   end Captured;
 
@@ -88,6 +106,8 @@ package body Camera is
       Canon.Stop_Capture;
     when QHY600C =>
       QHYCCD.Stop_Capture;
+    when Unknown =>
+      null;
     end case;
   end Stop;
 
@@ -106,7 +126,6 @@ package body Camera is
   -----------
   -- Error --
   -----------
-  Camera_Error : exception;
 
   procedure Raise_Error (Message : String) is
   begin
