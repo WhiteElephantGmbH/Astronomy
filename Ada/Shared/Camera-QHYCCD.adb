@@ -291,7 +291,9 @@ package body Camera.QHYCCD is
       end if;
 
       The_Gain := The_Parameter.Value;
+      Log.Write ("Gain:" & The_Gain'image);
       The_Offset := The_Parameter.Value;
+      Log.Write ("Offset:" & The_Offset'image);
 
       Camera_Data.Set (Connecting);
 
@@ -359,7 +361,6 @@ package body Camera.QHYCCD is
       Check ("Set Bin Mode", CI.Set_Bin_Mode (Exposing.Handle, 1, 1));
       Check ("Set Resolution", CI.Set_Resolution (Exposing.Handle, 0, 0, Img_W, Img_H));
 
-      -- exposure in microseconds
       declare
         Usec : constant CI.Uint32 := CI.Uint32 (The_Exposure.Time * 1_000_000.0);
         Msec : constant CI.Uint32 := Usec / 1000;
@@ -393,44 +394,14 @@ package body Camera.QHYCCD is
         Raise_Error ("Expected Channels = 1, got" & The_Channels'image);
       end if;
       declare
-         Bytes_Per_Sample : constant CI.Uint32 := The_Bpp / Standard'storage_unit; -- 16/8 = 2
-         Expected         : constant CI.Uint32 := The_Width * The_Height * The_Channels * Bytes_Per_Sample;
+        Bytes_Per_Sample : constant CI.Uint32 := The_Bpp / Standard'storage_unit;
+        Expected         : constant CI.Uint32 := The_Width * The_Height * The_Channels * Bytes_Per_Sample;
       begin
-         Log.Write ("Frame Expected bytes:" & Expected'image & " (W*H*Ch*BPS), MemLength:" & The_Length'image);
+         Log.Write ("Frame Expected bytes:" & Expected'image);
          if The_Length < Expected then
             Raise_Error ("Buffer too small: MemLength=" & The_Length'image & " < Expected=" & Expected'image);
-         elsif The_Length > Expected then
-            Log.Warning ("MemLength > payload: MemLength=" & The_Length'image & " Expected=" & Expected'image);
          end if;
       end;
-      declare
-        function H2 (B : AS.Stream_Element) return String is
-          Hex : constant String := "0123456789ABCDEF";
-          V   : constant Natural := Natural(B);
-        begin
-          return "" & Hex(V/16 + 1) & Hex(V mod 16 + 1);
-        end;
-        use type Stream_Offset;
-      begin
-        Log.Write ("First 16 bytes: " &
-          H2(The_Buffer(The_Buffer'first + 0)) & " " &
-          H2(The_Buffer(The_Buffer'first + 1)) & " " &
-          H2(The_Buffer(The_Buffer'first + 2)) & " " &
-          H2(The_Buffer(The_Buffer'first + 3)) & " " &
-          H2(The_Buffer(The_Buffer'first + 4)) & " " &
-          H2(The_Buffer(The_Buffer'first + 5)) & " " &
-          H2(The_Buffer(The_Buffer'first + 6)) & " " &
-          H2(The_Buffer(The_Buffer'first + 7)) & " " &
-          H2(The_Buffer(The_Buffer'first + 8)) & " " &
-          H2(The_Buffer(The_Buffer'first + 9)) & " " &
-          H2(The_Buffer(The_Buffer'first + 10)) & " " &
-          H2(The_Buffer(The_Buffer'first + 11)) & " " &
-          H2(The_Buffer(The_Buffer'first + 12)) & " " &
-          H2(The_Buffer(The_Buffer'first + 13)) & " " &
-          H2(The_Buffer(The_Buffer'first + 14)) & " " &
-          H2(The_Buffer(The_Buffer'first + 15)));
-      end;
-
       Camera_Data.Set (Height => Rows(The_Height));
       Camera_Data.Set (Width  => Columns(The_Width));
       Camera_Data.Set (Captured);

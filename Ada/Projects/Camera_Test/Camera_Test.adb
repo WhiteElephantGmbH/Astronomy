@@ -25,6 +25,7 @@ with Ada.Text_IO;
 with Camera;
 with Exceptions;
 with Exposure;
+with Os.System;
 with Sensitivity;
 with Text;
 
@@ -88,7 +89,7 @@ begin -- Camera_Test
           begin
             case Text.Uppercase_Of (Parameters(1)(1)) is
             when 'C' =>
-              Camera.Capture ("D:\Temp\Picture", Time, Parameter);
+              Camera.Capture (Os.System.Temp_Path & "Picture", Time, Parameter);
             when 'G' =>
               Camera.Capture (10, Time, Parameter);
             when others =>
