@@ -296,10 +296,13 @@ package body Camera.Canon is
       return CI.Tv_Value'last; --!!!WE!!! GNAT Bug
     end To_K_Tv;
 
-
     The_Filename : Text.String := [Default_Filename];
     The_Exposure : Exposure.Item;
     The_Iso      : Sensitivity.Item;
+
+    Max_Tv_Time       : constant Duration := 30.0;
+    Max_Download_Time : constant Duration := 15.0;
+    AE_Mode_Set_Time  : constant Duration := 0.1;
 
     Delta_Time : constant RT.Time_Span := RT.To_Time_Span (1.0 / 5);
 
@@ -442,6 +445,13 @@ package body Camera.Canon is
       Camera_Data.Set (Next_State);
     end Disconnect;
 
+
+    procedure Internal_Error (Item : Exceptions.Occurrence) is
+    begin
+      Disconnect;
+      Camera_Data.Set_Fatal (Item);
+    end Internal_Error;
+
     ---------------------------------------------
     --  Is_One_Device_Ready                    --
     --    Initializes EDSDK                    --
@@ -573,7 +583,7 @@ package body Camera.Canon is
           Set (Property    => CI.Prop_Id_AE_Mode_Select,
                Value       => CI.K_AE_Mode_Manual'enum_rep,
                Where_Label => "Set AE Mode Select to Manual");
-          delay 0.1; -- wait for set
+          delay AE_Mode_Set_Time;
         end case;
         Set (Property    => CI.Prop_Id_Tv,
              Value       => To_K_Tv (The_Exposure)'enum_rep,
@@ -590,16 +600,30 @@ package body Camera.Canon is
                Where_Label => "Set AE mode select to Bulb");
         end case;
       when Exposure.From_Camera =>
-        null;
+        case The_Camera is
+        when Canon_Eos_60D =>
+          if CI.AE_Mode'enum_val(The_Mode) /= CI.K_AE_Mode_Manual then
+            Raise_Error ("Mode should be Manual");
+          end if;
+        when Canon_Eos_6D =>
+          Set (Property    => CI.Prop_Id_AE_Mode_Select,
+               Value       => CI.K_AE_Mode_Manual'enum_rep,
+               Where_Label => "Set AE Mode Select to Manual");
+          delay AE_Mode_Set_Time;
+        end case;
       end case;
 
       Event_State.Reset;
       Check ("Register object event handler",
              CI.Set_Object_Event_Handler (The_Session.Device,
-                                           CI.Object_Event_All,
-                                           Handler,
-                                           System.Null_Address));
+                                          CI.Object_Event_All,
+                                          Handler,
+                                          System.Null_Address));
+      The_Timeout := Duration(The_Exposure.Time) + Max_Download_Time;
       case The_Exposure.Mode is
+      when Exposure.From_Camera =>
+        The_Timeout := Max_Tv_Time + Max_Download_Time;
+        Command ("Trigger single shot (exposure from camera)", CI.Camera_Command_Take_Picture);
       when Exposure.Tv_Mode =>
         Command ("Trigger single shot", CI.Camera_Command_Take_Picture);
       when Exposure.Timer_Mode =>
@@ -609,16 +633,14 @@ package body Camera.Canon is
         Shutter_Is_On := True;
         The_Shutter_Release_Time := RT.Clock + RT.To_Time_Span (Duration(The_Exposure.Time));
         The_Wakeup_Time := RT.Clock;
-      when Exposure.From_Camera =>
-        null;
       end case;
       The_Start_Time := RT.Clock;
-      The_Timeout := Duration(The_Exposure.Time) + 15.0;
-
       Camera_Data.Set (Capturing);
     exception
-    when others =>
+    when Camera_Error =>
       Disconnect;
+    when Occurrence: others =>
+      Internal_Error (Occurrence);
     end Start_Capture;
 
 
@@ -667,8 +689,10 @@ package body Camera.Canon is
         null;
       end select;
     exception
-    when others =>
+    when Camera_Error =>
       Disconnect;
+    when Occurrence: others =>
+      Internal_Error (Occurrence);
     end Continue_Capture;
 
 
@@ -703,8 +727,10 @@ package body Camera.Canon is
       end;
       Disconnect (Next_State => (if Is_Cropping then Cropping else Idle));
     exception
-    when others =>
+    when Camera_Error =>
       Disconnect;
+    when Occurrence: others =>
+      Internal_Error (Occurrence);
     end Download;
 
   begin -- Control

@@ -83,22 +83,23 @@ begin -- Camera_Test
             raise Constraint_Error;
           end if;
           declare
-            Time      : constant Exposure.Item := Exposure.Value(Parameters(2));
+            Exp_Time : constant Exposure.Item := (if Parameters.Count = 1 then Exposure.From_Camera
+                                                                          else Exposure.Value(Parameters(2)));
             Parameter : constant Sensitivity.Item := (if Parameters.Count = 2 then Sensitivity.Default
                                                                               else Sensitivity.Value (Parameters(3)));
           begin
             case Text.Uppercase_Of (Parameters(1)(1)) is
             when 'C' =>
-              Camera.Capture (Os.System.Temp_Path & "Picture", Time, Parameter);
+              Camera.Capture (Os.System.Temp_Path & "Picture", Exp_Time, Parameter);
             when 'G' =>
-              Camera.Capture (10, Time, Parameter);
+              Camera.Capture (10, Exp_Time, Parameter);
             when others =>
               raise Constraint_Error;
             end case;
           end;
         exception
         when others =>
-          IO.Put_Line ("### Illegal Command (expexted: ['C' | 'G'] <time> [<iso> | '[' <gain> ',' <offset> ']']) ###");
+          IO.Put_Line ("### Unknown - expexted: [('C' | 'G') [<time> [<iso> | '[' <gain> ',' <offset> ']']]] ###");
         end;
       when Camera.Connecting =>
         IO.Put ("o");

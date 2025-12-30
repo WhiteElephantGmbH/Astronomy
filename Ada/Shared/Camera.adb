@@ -18,6 +18,7 @@ pragma Style_White_Elephant;
 with Camera.Canon;
 with Camera.QHYCCD;
 with Camera.Raw;
+with Directory;
 with File;
 with Traces;
 
@@ -44,15 +45,15 @@ package body Camera is
                      Parameter : Sensitivity.Item := Sensitivity.Default) is
 
     function Filename_With_Extension (Default : String) return String is
+      Folder : constant String := File.Containing_Directory_Of (Filename);
     begin
-      if File.Extension_Of (Filename) = "" then
+      if not Directory.Exists (Folder) then
+        Raise_Error ("Unknown picture directory " & Folder);
+      elsif File.Extension_Of (Filename) = "" then
         return Filename & '.' & Default;
       else
         return Filename;
       end if;
-    exception
-    when others =>
-      Raise_Error ("Incorrect Filename: " & Filename);
     end Filename_With_Extension;
 
   begin -- Capture
@@ -65,6 +66,9 @@ package body Camera is
     else
       Camera_Data.Set_Error ("No Camera Available");
     end if;
+  exception
+  when Occurrence: others =>
+    Camera_Data.Set_Fatal (Occurrence);
   end Capture;
 
 
@@ -81,6 +85,9 @@ package body Camera is
     else
       Camera_Data.Set_Error ("No Camera Available");
     end if;
+  exception
+  when Occurrence: others =>
+    Camera_Data.Set_Fatal (Occurrence);
   end Capture;
 
 
@@ -95,6 +102,10 @@ package body Camera is
       Camera_Data.Set_Error ("No Camera Connected");
       return [];
     end case;
+  exception
+  when Occurrence: others =>
+    Camera_Data.Set_Fatal (Occurrence);
+    return [];
   end Captured;
 
 
@@ -109,6 +120,9 @@ package body Camera is
     when Unknown =>
       null;
     end case;
+  exception
+  when Occurrence: others =>
+    Camera_Data.Set_Fatal (Occurrence);
   end Stop;
 
 
@@ -194,6 +208,12 @@ package body Camera is
       The_Last_Error := [Message];
       The_Information.State := Error;
     end Set_Error;
+
+
+    procedure Set_Fatal (Item : Exceptions.Occurrence) is
+    begin
+      Set_Error ("Internal_Error - " & Exceptions.Name_Of (Item));
+    end Set_Fatal;
 
 
     function Last_Error return String is

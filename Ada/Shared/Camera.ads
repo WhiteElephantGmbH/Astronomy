@@ -15,6 +15,7 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with Exceptions;
 with Exposure;
 with Sensitivity;
 
@@ -90,6 +91,8 @@ private
     procedure Check (Item : Status);
 
     procedure Set_Error (Message : String);
+
+    procedure Set_Fatal (Item : Exceptions.Occurrence);
 
     function Last_Error return String;
 

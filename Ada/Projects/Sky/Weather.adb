@@ -94,7 +94,7 @@ package body Weather is
     return Is_Defined;
   exception
   when others =>
-    Log.Error ("request failed");
+    Log.Warning ("data not available");
     return False;
   end Requested;
 

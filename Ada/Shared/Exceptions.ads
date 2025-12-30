@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2002 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2002 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -19,8 +19,10 @@ with Ada.Exceptions;
 
 package Exceptions is
 
-  function Name_Of (Occurrence : Ada.Exceptions.Exception_Occurrence) return String;
+  subtype Occurrence is Ada.Exceptions.Exception_Occurrence;
 
-  function Information_Of (Occurrence : Ada.Exceptions.Exception_Occurrence) return String;
+  function Name_Of (Item : Occurrence) return String;
+
+  function Information_Of (Item : Occurrence) return String;
 
 end Exceptions;

@@ -21,18 +21,7 @@ package Exposure is
 
   Time_Delta : constant := 0.000_001;
 
-  type Duration is delta Time_Delta range Time_Delta .. 4194.0 with Small => Time_Delta, Size  => 32,
-    Static_Predicate => Duration in -- Seconds
-     0.8         | 0.6         | 0.5         | 0.4         | 0.3         |
-     1.0 / 4     | 1.0 / 5     | 1.0 / 6     | 1.0 / 8     |
-     1.0 / 10    | 1.0 / 13    | 1.0 / 15    | 1.0 / 20    | 1.0 / 25    | 1.0 / 30   |
-     1.0 / 40    | 1.0 / 50    | 1.0 / 60    | 1.0 / 80    |
-     1.0 / 100   | 1.0 / 125   | 1.0 / 160   | 1.0 / 200   | 1.0 / 250   | 1.0 / 320  |
-     1.0 / 400   | 1.0 / 500   | 1.0 / 640   | 1.0 / 800   |
-     1.0 / 1000  | 1.0 / 1250  | 1.0 / 1600  | 1.0 / 2000  | 1.0 / 2500  | 1.0 / 3200 |
-     1.0 / 4000  | 1.0 / 5000  | 1.0 / 6400  | 1.0 / 8000  |
-     1.0 / 10000 | 1.0 / 12800 | 1.0 / 16000 | 1.0 / 20000 | 1.0 / 25600 | 1.0 / 32000
-     or Duration >= 1.0;
+  type Duration is delta Time_Delta range Time_Delta .. 4194.0 with Small => Time_Delta, Size  => 32;
 
   type Kind is (From_Camera, Tv_Mode, Timer_Mode);
 

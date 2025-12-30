@@ -38,6 +38,7 @@ package body Exposure is
     The_Tv   : Tv;
     The_Item : Item;
   begin
+    The_Item.Time_Value := The_Time;
     case Tus is
     when  0_800_000 =>
       The_Tv := Tv_0_8_S;
@@ -130,7 +131,6 @@ package body Exposure is
     when  0_000_031 =>
       The_Tv := TV_D_32000_S;
     when others =>
-      The_Item.Time_Value := The_Time;
       The_Item.Mode := Timer_Mode;
       return The_Item;
     end case;

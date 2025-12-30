@@ -433,6 +433,8 @@ package body Telescope is
         end if;
       end Capture_Handling;
 
+      use type Camera.Status;
+
     begin -- Update_Handling
       Get_Information;
       Update_Time_Delta;
@@ -449,7 +451,7 @@ package body Telescope is
           Ten_Micron.Start_Solving;
         end if;
       when Capturing =>
-        if Picture.Exists and then Solve_Picture then
+        if Camera.Actual_Information.State = Camera.Idle and then Picture.Exists and then Solve_Picture then
           Ten_Micron.Start_Solving;
         end if;
       when Solving =>

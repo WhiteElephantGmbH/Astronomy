@@ -25,12 +25,9 @@ package body Fits is
 
   package Log is new Traces ("Fits");
 
-  subtype Card is String(1..80);
+  subtype Card is String(1 .. 80);
 
-  type Header is array (1..36) of Card;
-
-  package Fits_Io is new Ada.Direct_IO (Header);
-
+  package Fits_Io is new Ada.Direct_IO (Card);
 
   Undefined : constant := 0;
 
@@ -44,7 +41,7 @@ package body Fits is
   function Read_Header (Filename : String) return Boolean is
 
     The_File   : Fits_Io.File_Type;
-    The_Header : Header;
+    The_Card   : Card;
     Has_Header : Boolean := False;
 
     function Opened_File return Boolean is
@@ -52,7 +49,7 @@ package body Fits is
       for Unused_Count in 1 .. 3 loop
         begin
           Fits_Io.Open (The_File, Fits_Io.In_File, Filename);
-          return True;
+         return True;
         exception
         when Ada.IO_Exceptions.Use_Error =>
           Log.Write ("Retry opening " & Filename);
@@ -66,6 +63,9 @@ package body Fits is
       return False;
     end Opened_File;
 
+    Id_Size    : constant := 8;
+    Value_Size : constant := 20;
+
   begin -- Read_Header
     The_Axis_Elements_1 := Undefined;
     The_Axis_Elements_2 := Undefined;
@@ -73,25 +73,52 @@ package body Fits is
     if not Opened_File then
       return False;
     end if;
-    Fits_Io.Read (The_File, The_Header);
-    Fits_Io.Close (The_File);
-    for The_Card of The_Header loop
+    Header:
+    loop
+      Fits_Io.Read (The_File, The_Card);
       declare
-        Parts : constant Text.Strings := Text.Strings_Of (The_Card, Separator => ' ', Symbols => "=/");
-        Id    : constant String := Parts(1);
+        Id : constant String := Text.Trimmed (The_Card(The_Card'first .. The_Card'first + Id_Size - 1));
       begin
         if Id = "END" then
-          exit;
-        elsif Parts.Count >= 3 and Parts(2) = "=" then
+          exit Header;
+        elsif The_Card(The_Card'first + Id_Size) /= '=' then
+          if Has_Header then
+            Log.Error ("Missing '=' after " & Id);
+            Has_Header := False;
+          end if;
+          exit Header;
+        else
+          for Character of Id loop
+            if not (Text.Lowercase_Of (Character) in ' ' | '-' | '_' | '0' .. '9' | 'a' .. 'z') then
+              if Has_Header then
+                Log.Error ("Incorrect Id: " & Id);
+                Has_Header := False;
+              end if;
+              exit Header;
+            end if;
+          end loop;
           declare
-            Value : constant String := Parts(3);
+            First : constant Positive := The_Card'first + Id_Size + 2;
+
+            function Last return Positive is
+              Index : Positive := First + 1;
+            begin
+              while The_Card(Index) /= ''' loop
+                Index := @ + 1;
+              end loop;
+              return Index;
+            end Last;
+
+            Value : constant String := (if The_Card(First) = '''
+                                        then The_Card(First + 1 .. Last - 1)
+                                        else Text.Trimmed (The_Card(First .. First + Value_Size - 1)));
           begin
             if not Has_Header then
               if Id = "SIMPLE" and then Value = "T" then
                 Log.Write ("Standard header detected");
                 Has_Header := True;
               else
-                return False;
+                exit Header;
               end if;
             elsif Id = "INSTRUME" then
               Log.Write ("Instrument: " & Value);
@@ -104,16 +131,28 @@ package body Fits is
             elsif Id = "JD_UTC" then
               The_Mid_Exposer_Date := Time.JD'value(Value);
               Log.Write ("Mid exposure time: " & Time.Image_Of (Time.Ut_Of (The_Mid_Exposer_Date)));
+            elsif Id = "EXPTIME" then
+              Log.Write ("Exposure Time: " & Value);
+            elsif Id = "GAIN" then
+              Log.Write ("Gain: " & Value);
+            elsif Id = "BLKLEVEL" then
+              Log.Write ("Black Level (Offset): " & Value);
+            elsif Id = "CCD-TEMP" then
+              Log.Write ("CCD Temperature: " & Value);
+            elsif Id = "SWCREATE" then
+              Log.Write ("Created by: " & Value);
             else
               null;
             end if;
           end;
         end if;
       end;
-    end loop;
+    end loop Header;
+    Fits_Io.Close (The_File);
     return Has_Header;
   exception
-  when others =>
+  when Item: others =>
+    Log.Termination (Item);
     Fits_Io.Close (The_File);
     return False;
   end Read_Header;

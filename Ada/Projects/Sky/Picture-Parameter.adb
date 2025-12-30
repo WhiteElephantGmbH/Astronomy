@@ -15,6 +15,9 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with Directory;
+with Error;
+with File;
 with Os.System;
 with Section;
 
@@ -32,7 +35,11 @@ package body Picture.Parameter is
     Astap.Define (Executable => Section.Filename_Of (Astap_Key));
     declare
       Picture_Filename : constant String := Section.String_Of (Filename_Key);
+      Folder           : constant String := File.Containing_Directory_Of (Picture_Filename);
     begin
+      if not Directory.Exists (Folder) then
+        Error.Raise_With ("Unknown picture directory " & Folder);
+      end if;
       Define (Name   => Picture_Filename,
               Height => Section.Degrees_Of (Height_Key, Maximum_Heigth),
               Width  => Section.Degrees_Of (Width_Key, Maximum_Width));

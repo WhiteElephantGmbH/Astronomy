@@ -28,7 +28,7 @@ package body PWI4 is
 
   use type Text.String;
 
-  The_Ip_Address_And_Port : Text.String := ["127.0.0.1:8220"];
+  The_Ip_Address_And_Port : Text.String := ["127.0.0.1:8220"]; -- Default
 
   The_Process_Id : Os.Process.Id;
 

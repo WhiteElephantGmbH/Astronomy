@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2002 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2002 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -20,9 +20,9 @@ with Text;
 
 package body Exceptions is
 
-  function Name_Of (Occurrence : Ada.Exceptions.Exception_Occurrence) return String is
-    Message : constant String := Text.Trimmed (Ada.Exceptions.Exception_Message (Occurrence));
-    Name    : constant String := Ada.Exceptions.Exception_Name (Occurrence);
+  function Name_Of (Item : Occurrence) return String is
+    Message : constant String := Text.Trimmed (Ada.Exceptions.Exception_Message (Item));
+    Name    : constant String := Ada.Exceptions.Exception_Name (Item);
   begin
     if Message = "" then
       return Name;
@@ -32,14 +32,14 @@ package body Exceptions is
   end Name_Of;
 
 
-  function Information_Of (Occurrence : Ada.Exceptions.Exception_Occurrence) return String is
+  function Information_Of (Item : Occurrence) return String is
   begin
     declare
-      Header    : constant String := "Exception: " & Name_Of (Occurrence) & Ascii.Lf;
-      Traceback : constant String := GNAT.Traceback.Symbolic.Symbolic_Traceback (Occurrence);
+      Header    : constant String := "Exception: " & Name_Of (Item) & Ascii.Lf;
+      Traceback : constant String := GNAT.Traceback.Symbolic.Symbolic_Traceback (Item);
     begin
       if Text.Trimmed (Traceback) = "" then
-        return Header & Ada.Exceptions.Exception_Information (Occurrence);
+        return Header & Ada.Exceptions.Exception_Information (Item);
       else
         return Header & Traceback;
       end if;

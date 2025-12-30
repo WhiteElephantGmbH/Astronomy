@@ -20,7 +20,9 @@ with Ada.Streams.Stream_IO;
 with Ada.Unchecked_Deallocation;
 with Camera.QHYCCD.C_Interface;
 with C.Helper;
+with Time;
 with Traces;
+with Os.Application;
 
 package body Camera.QHYCCD is
 
@@ -32,16 +34,18 @@ package body Camera.QHYCCD is
 
   subtype Stream_Offset is AS.Stream_Element_Offset;
 
+  type Temperatur is delta 0.1 range -99.9 .. 99.9;
+
   task type Control is
 
     entry Get (Is_Ready : out Boolean);
 
     entry Capture_Picture (Filename  : String;
-                           Time      : Exposure.Item;
+                           The_Time  : Exposure.Item;
                            Parameter : Sensitivity.Item); -- Gain and Offset
 
     entry Capture_Grid (Size      : Square_Size;
-                        Time      : Exposure.Item;
+                        The_Time  : Exposure.Item;
                         Parameter : Sensitivity.Item); -- Gain and Offset
 
     entry Await_Stop;
@@ -83,18 +87,18 @@ package body Camera.QHYCCD is
 
 
   procedure Capture_Picture (Filename  : String;
-                             Time      : Exposure.Item;
+                             The_Time  : Exposure.Item;
                              Parameter : Sensitivity.Item) is
   begin
-    The_Control.Capture_Picture (Filename, Time, Parameter);
+    The_Control.Capture_Picture (Filename, The_Time, Parameter);
   end Capture_Picture;
 
 
   procedure Capture_Grid (Size      : Square_Size;
-                          Time      : Exposure.Item;
+                          The_Time  : Exposure.Item;
                           Parameter : Sensitivity.Item) is
   begin
-    The_Control.Capture_Grid (Size, Time, Parameter);
+    The_Control.Capture_Grid (Size, The_Time, Parameter);
   end Capture_Grid;
 
 
@@ -250,9 +254,11 @@ package body Camera.QHYCCD is
 
     The_Camera : Model;
 
-    The_Filename  : Text.String := [Default_Filename];
-    The_Exposure  : Exposure.Item;
-    The_Parameter : Sensitivity.Item;
+    The_Filename   : Text.String := [Default_Filename];
+    The_Exposure   : Exposure.Item;
+    The_Parameter  : Sensitivity.Item;
+    Mid_Exposure   : Time.JD;
+    CCD_Temperatur : Temperatur;
 
     The_Length : CI.Uint32;
     The_Gain   : Sensitivity.Gain;
@@ -358,15 +364,20 @@ package body Camera.QHYCCD is
                           Bpp0'access));
       Log.Write ("ChipInfo - Img_W:" & Img_W'image & " - Img_H:" & Img_H'image & " - Bpp0:" & Bpp0'image);
 
+      CCD_Temperatur := Temperatur (CI.Get_Param (Exposing.Handle, CI.Control_CURRTEMP));
+
       Check ("Set Bin Mode", CI.Set_Bin_Mode (Exposing.Handle, 1, 1));
       Check ("Set Resolution", CI.Set_Resolution (Exposing.Handle, 0, 0, Img_W, Img_H));
 
       declare
         Usec : constant CI.Uint32 := CI.Uint32 (The_Exposure.Time * 1_000_000.0);
         Msec : constant CI.Uint32 := Usec / 1000;
+        use type Time.Ut;
+        Ut : constant Time.Ut := Time.Universal + Duration(The_Exposure.Time / 2.0);
       begin
         Check ("Set Single Frame Timeout", CI.Set_Single_Frame_Timeout (Exposing.Handle, Msec + Readout_Time));
         Check ("Set Param Exposure", CI.Set_Param (Exposing.Handle, CI.Control_Exposure, CI.Double(Usec)));
+        Mid_Exposure := Time.Julian_Date_Of (Ut);
       end;
 
       Check ("Set Param Gain", CI.Set_Param (Exposing.Handle, CI.Control_Gain, CI.Double(The_Gain)));
@@ -585,21 +596,25 @@ package body Camera.QHYCCD is
 
       Put_Block (Card ("SIMPLE", True));
       Put_Block (Card ("BITPIX", Bitpix));
-      Put_Block (Card ("NAXIS",  2));
+      Put_Block (Card ("NAXIS", 2));
       Put_Block (Card ("NAXIS1", Width));
       Put_Block (Card ("NAXIS2", Height));
       Put_Block (Card ("BLKLEVEL", CI.Uint32(The_Offset)));
       Put_Block (Card ("GAIN", CI.Uint32(The_Gain)));
       Put_Block (Card ("BAYERPAT", "RGGB"));
+      Put_Block (Card ("YBINNING", 1));
       Put_Block (Card ("XBINNING", 1));
       Put_Block (Card ("YPIXSZ", Pixel_Height));
       Put_Block (Card ("XPIXSZ", Pixel_Width));
-      Put_Block (Card ("EXPTIME", The_Exposure.Time));
       Put_Block (Card ("ROWORDER", "TOP-DOWN"));
       Put_Block (Card ("BSCALE", 1));
-      Put_Block (Card ("BZERO",  32768));
-      Put_Block (Card ("EXTEND",  True));
+      Put_Block (Card ("BZERO", 32768));
+      Put_Block (Card ("EXTEND", True));
+      Put_Block (Card ("CCD-TEMP", CCD_Temperatur'image));
+      Put_Block (Card ("JD_UTC", Mid_Exposure'image));
+      Put_Block (Card ("EXPTIME", The_Exposure.Time));
       Put_Block (Card ("INSTRUME", Camera_Data.Actual.Camera'image));
+      Put_Block (Card ("SWCREATE", Os.Application.Name & " v" & Os.Application.Version));
       Put_Block (Card ("END"));
       Pad_To_Block_End;
 
@@ -607,10 +622,6 @@ package body Camera.QHYCCD is
 
       Pad_To_Block_End;
       IO.Close (The_File);
-    exception
-    when Item: others =>
-      Log.Termination (Item);
-      raise;
     end Write_Fits;
 
 
@@ -625,10 +636,9 @@ package body Camera.QHYCCD is
     exception
     when Camera_Error =>
       Disconnect;
-    when Item: others =>
-      Log.Termination (Item);
-      Camera_Data.Set_Error ("Internal Error");
+    when Occurrence: others =>
       Disconnect;
+      Camera_Data.Set_Fatal (Occurrence);
     end Capture_Picture;
 
 
@@ -642,10 +652,9 @@ package body Camera.QHYCCD is
     exception
     when Camera_Error =>
       Disconnect;
-    when Item: others =>
-      Log.Termination (Item);
-      Camera_Data.Set_Error ("Internal Error");
+    when Occurrence: others =>
       Disconnect;
+      Camera_Data.Set_Fatal (Occurrence);
     end Capture_Grid;
 
   begin -- Control
@@ -658,22 +667,22 @@ package body Camera.QHYCCD is
 
       or
         accept Capture_Picture (Filename  : String;
-                                Time      : Exposure.Item;
+                                The_Time  : Exposure.Item;
                                 Parameter : Sensitivity.Item)
         do
           The_Filename := [Filename];
-          The_Exposure := Time;
+          The_Exposure := The_Time;
           The_Parameter := Parameter;
         end Capture_Picture;
         Capture_Picture;
 
       or
         accept Capture_Grid (Size      : Square_Size;
-                             Time      : Exposure.Item;
+                             The_Time  : Exposure.Item;
                              Parameter : Sensitivity.Item)
         do
           The_Grid_Size := Size;
-          The_Exposure  := Time;
+          The_Exposure  := The_Time;
           The_Parameter := Parameter;
         end Capture_Grid;
         Capture_Grid;
