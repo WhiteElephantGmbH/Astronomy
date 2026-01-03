@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2022 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2022 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -24,7 +24,6 @@ with Handbox.HPS;
 with Http_Server.HPS;
 with Input;
 with Picture;
-with Pole_Axis;
 with Remote;
 with Traces;
 with User;
@@ -48,17 +47,13 @@ package body Telescope is
 
     entry Go_To;
 
-    entry Go_To_Left;
-
-    entry Go_To_Right;
-
-    entry Go_To_Top;
-
     entry Go_To_Next;
 
     entry Park;
 
     entry Prepare_Tle;
+
+    entry Start_Auto_Focus;
 
     entry Stop;
 
@@ -138,24 +133,6 @@ package body Telescope is
   end Go_To;
 
 
-  procedure Go_To_Left is
-  begin
-    Control.Go_To_Left;
-  end Go_To_Left;
-
-
-  procedure Go_To_Right is
-  begin
-    Control.Go_To_Right;
-  end Go_To_Right;
-
-
-  procedure Go_To_Top is
-  begin
-    Control.Go_To_Top;
-  end Go_To_Top;
-
-
   procedure Go_To_Next is
   begin
     Control.Go_To_Next;
@@ -172,6 +149,12 @@ package body Telescope is
   begin
     Control.Park;
   end Park;
+
+
+  procedure Start_Auto_Focus is
+  begin
+    Control.Start_Auto_Focus;
+  end Start_Auto_Focus;
 
 
   procedure Stop is
@@ -286,9 +269,6 @@ package body Telescope is
 
     The_Picture_Direction : Space.Direction;
     The_Picture_Lmst      : Time.Value;
-
-    Evaluate_Pole_Setup : access procedure;
-
 
     type Timer_State is (Stopped, Increasing, Decreasing);
 
@@ -461,17 +441,14 @@ package body Telescope is
             Picture.Evaluate (Center => The_Picture_Direction,
                               Lmst   => The_Picture_Lmst);
             if User.In_Setup_Mode then
-              if Evaluate_Pole_Setup /= null then
-                Evaluate_Pole_Setup.all;
+              --!!! Focusing ???
+              Alignment.Define (Direction => The_Picture_Direction,
+                                Lmst      => The_Picture_Lmst,
+                                Pier_Side => The_Information.Pier_Side);
+              if Alignment.Align_More then
+                User.Perform_Goto_Next;
               else
-                Alignment.Define (Direction => The_Picture_Direction,
-                                  Lmst      => The_Picture_Lmst,
-                                  Pier_Side => The_Information.Pier_Side);
-                if Alignment.Align_More then
-                  User.Perform_Goto_Next;
-                else
-                  User.Perform_Stop;
-                end if;
+                User.Perform_Stop;
               end if;
             else
               User.Enable_Align_On_Picture;
@@ -481,7 +458,7 @@ package body Telescope is
         exception
         when Picture.Not_Solved =>
           Ten_Micron.End_Solving;
-          if User.In_Setup_Mode and Evaluate_Pole_Setup = null then
+          if User.In_Setup_Mode then
             User.Perform_Goto_Next;
           end if;
         end;
@@ -525,16 +502,6 @@ package body Telescope is
       The_Picture_Direction := Space.Unknown_Direction;
     end Synch_On_Picture;
 
-
-    procedure Position_To (The_Direction : Space.Direction) is
-    begin
-      Alignment.Clear;
-      The_Next_Star := Space.Unknown_Direction;
-      Set_Sideral_Rates;
-      Ten_Micron.Slew_To (The_Direction, Ten_Micron.Axis_Position);
-      Remote.Define (Target => "");
-    end Position_To;
-
   begin -- Control_Task
     if Focuser_Client.Server_Exists then
       Focuser_Client.Initialize;
@@ -555,7 +522,6 @@ package body Telescope is
           end Align;
         or
           accept Go_To do
-            Evaluate_Pole_Setup := null;
             Alignment.Clear;
             Set_Tracking_Rates;
             Ten_Micron.Slew_To (Actual_Target_Direction, Target_Kind);
@@ -571,26 +537,7 @@ package body Telescope is
             end if;
           end Go_To;
         or
-          accept Go_To_Left do
-            Evaluate_Pole_Setup := Pole_Axis.Evaluate_Left'access;
-            Position_To (Space.Axis_Pole_Left);
-            Is_Preparing_For_Capture := True;
-          end Go_To_Left;
-        or
-          accept Go_To_Right do
-            Evaluate_Pole_Setup := Pole_Axis.Evaluate_Right'access;
-            Position_To (Space.Axis_Pole_Right);
-            Is_Preparing_For_Capture := True;
-          end Go_To_Right;
-        or
-          accept Go_To_Top do
-            Evaluate_Pole_Setup := Pole_Axis.Evaluate_Top'access;
-            Position_To (Space.Axis_Pole_Top);
-            Is_Preparing_For_Capture := True;
-          end Go_To_Top;
-        or
           accept Go_To_Next do
-            Evaluate_Pole_Setup := null;
             The_Picture_Direction := Space.Unknown_Direction;
             The_Next_Star := Alignment.Next_Star;
             Set_Sideral_Rates;
@@ -611,6 +558,11 @@ package body Telescope is
             Set_Sideral_Rates;
             Ten_Micron.Park;
           end Park;
+        or
+          accept Start_Auto_Focus do
+            Set_Sideral_Rates;
+            --!!! implement
+          end Start_Auto_Focus;
         or
           accept Stop do
             Remote.Define (Target => "");
@@ -675,8 +627,6 @@ package body Telescope is
             The_Data.Time_Delta := The_Delta_Time;
             The_Data.Align_Points := Alignment.Star_Count;
             The_Data.Alignment_Info := Alignment.Info;
-            The_Data.Cone_Error := Pole_Axis.Cone_Error;
-            The_Data.Pole_Offsets := Pole_Axis.Offsets;
             Set_Server_Information (The_Data);
           end Get;
         or delay 0.5;

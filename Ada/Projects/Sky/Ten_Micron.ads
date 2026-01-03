@@ -35,6 +35,7 @@ package Ten_Micron is
                  Catching,      -- slewing to catch the satellite
                  Ended,         -- the transit has ended
                  Capturing,     -- Camera is capturing a picture
+                 Focusing,      -- Camera is Focusing
                  Solving,       -- picture solving
                  Disconnected); -- no connection to mount
 

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2023 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2023 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -38,6 +38,21 @@ package body Camera is
   begin
     return Camera_Data.Actual;
   end Actual_Information;
+
+
+  function Model_Image return String is
+  begin
+    case Actual_Information.Camera is
+    when Unknown =>
+      return "";
+    when Canon_Eos_60D =>
+      return "Canon EOS 60D";
+    when Canon_Eos_6D =>
+      return "Canon EOS 6D";
+    when QHY600C =>
+      return "QHY600C";
+    end case;
+  end Model_Image;
 
 
   procedure Capture (Filename  : String;

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                        (c) 2022 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                         *
+-- *                        (c) 2022 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                         *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -20,6 +20,7 @@ with Ada.Real_Time;
 with Ada.Unchecked_Conversion;
 with Alignment;
 with Application;
+with Camera;
 with Earth;
 with Gui.Enumeration_Menu_Of;
 with Gui.Registered;
@@ -29,7 +30,6 @@ with Name.Catalog;
 with Objects;
 with Os;
 with Persistent;
-with Pole_Axis;
 with Refraction;
 with Remote;
 with Site;
@@ -45,7 +45,7 @@ package body User is
 
   package Log is new Traces ("User");
 
-  Setup_Object_Key : constant String := "Setup Object";
+  Command_Key : constant String := "Command";
 
   Control_Page   : Gui.Page;
   Action_Button  : Gui.Button;
@@ -73,7 +73,7 @@ package body User is
   Setup_Page           : Gui.Page;
   Setup_Action_Button  : Gui.Button;
   Setup_Control_Button : Gui.Button;
-  Setup_Control        : Gui.Plain_Combo_Box;
+  Setup_Command_Box    : Gui.Plain_Combo_Box;
   Picture_Ra           : Gui.Plain_Edit_Box;
   Picture_Dec          : Gui.Plain_Edit_Box;
   Align_Points         : Gui.Plain_Edit_Box;
@@ -86,9 +86,7 @@ package body User is
   Alt_Knob_Down_Box    : Gui.Plain_Edit_Box;
   Modeling_Terms_Box   : Gui.Plain_Edit_Box;
   Rms_Error_Box        : Gui.Plain_Edit_Box;
-  Cone_Error           : Gui.Plain_Edit_Box;
-  Az_Offset            : Gui.Plain_Edit_Box;
-  Alt_Offset           : Gui.Plain_Edit_Box;
+  Camera_Box           : Gui.Plain_Edit_Box;
 
   type Page is (Is_Control, Is_Display, Is_Setup);
 
@@ -106,7 +104,7 @@ package body User is
   Align_Change                : Boolean := False;
   Align_On_Picture_Is_Enabled : Boolean := False;
 
-  The_Setup_Object : Setup_Object := Pole_Left;
+  The_Setup_Command : Setup_Command := Auto_Focus;
 
   subtype State is Telescope.State;
 
@@ -121,6 +119,8 @@ package body User is
   Action_Routine   : Action_Handler;
   The_Last_Action  : Action := Action'pred (Button_Action'first);
   Last_Action_Time : Ada.Real_Time.Time := Ada.Real_Time.Time_First;
+
+  Setup_Command_Is_Active : Boolean := False;
 
 
   procedure Signal_Action (The_Action : Action) is
@@ -192,6 +192,7 @@ package body User is
 
   procedure Perform_Stop is
   begin
+    Setup_Command_Is_Active := False;
     Signal_Action (Stop);
   end Perform_Stop;
 
@@ -199,6 +200,7 @@ package body User is
   procedure Perform_Align is
   begin
     Signal_Action (Align);
+    Setup_Command_Is_Active := False;
     Align_On_Picture_Is_Enabled := False;
   end Perform_Align;
 
@@ -215,7 +217,7 @@ package body User is
   end Perform_Goto_Next;
 
 
-  procedure Perform_Setup_Goto is
+  procedure Perform_Setup_Command is
 
     function Identifier_Of (Item : String) return String is
       The_Image : String := Text.Trimmed (Item);
@@ -228,30 +230,27 @@ package body User is
       return The_Image;
     end Identifier_Of;
 
-    Setup_Object_Image : constant String := Identifier_Of (Gui.Contents_Of (Setup_Control));
+    Setup_Command_Image : constant String := Identifier_Of (Gui.Contents_Of (Setup_Command_Box));
 
-  begin -- Perform_Setup_Goto
-    The_Setup_Object := Setup_Object'value(Setup_Object_Image);
-    Log.Write ("Setup Object - " & Setup_Object_Image);
-    case The_Setup_Object is
+  begin -- Perform_Setup_Command
+    The_Setup_Command := Setup_Command'value(Setup_Command_Image);
+    Setup_Command_Is_Active := True;
+    Log.Write ("Setup Command - " & Setup_Command_Image);
+    case The_Setup_Command is
+    when Auto_Focus =>
+      Signal_Action (Auto_Focus_Start);
     when Align_Stars =>
       Signal_Action (Go_To_Next);
-    when Pole_Left =>
-      Signal_Action (Go_To_Left);
-    when Pole_Right =>
-      Signal_Action (Go_To_Right);
-    when Pole_Top =>
-      Signal_Action (Go_To_Top);
     end case;
   exception
   when others =>
-    Log.Error ("Perform_Setup_Goto");
-  end Perform_Setup_Goto;
+    Log.Error ("Perform_Setup_Command");
+  end Perform_Setup_Command;
 
 
   procedure Perform_Clear is
   begin
-    Pole_Axis.Clear;
+    Setup_Command_Is_Active := False;
     Alignment.Clear;
   end Perform_Clear;
 
@@ -294,6 +293,11 @@ package body User is
 
 
   procedure Show (Information : Telescope.Data) is
+
+    procedure Show_Camera_Information is
+    begin
+      Gui.Set_Text (Camera_Box, Camera.Model_Image);
+    end Show_Camera_Information;
 
     procedure Disable (The_Button : Gui.Button) is
     begin
@@ -373,7 +377,7 @@ package body User is
           Enable_Goto;
         end if;
         Enable_Stop;
-      when Capturing | Solving =>
+      when Capturing | Focusing | Solving =>
         Disable_Action;
         Enable_Stop;
       end case;
@@ -407,10 +411,10 @@ package body User is
         Perform_Setup_Control := The_Control;
       end Enable_Control;
 
-      procedure Enable_Goto is
+      procedure Enable_Command is
       begin
-        Enable_Action ("Goto", Perform_Setup_Goto'access);
-      end Enable_Goto;
+        Enable_Action ("Do", Perform_Setup_Command'access);
+      end Enable_Command;
 
       procedure Enable_Stop is
       begin
@@ -425,18 +429,14 @@ package body User is
       when Parked =>
         Disable_Action;
         Enable_Control ("Unpark", Perform_Unpark'access);
-      when Slewing | Parking | Homing | Following | Transit_State | Positioned =>
-        Enable_Goto;
-        if Pole_Axis.Has_Values then
-          Enable_Control ("Clear", Perform_Clear'access);
-        else
-          Enable_Stop;
-        end if;
+      when Parking | Homing | Following | Transit_State | Positioned =>
+        Enable_Command;
+        Enable_Stop;
       when Stopped | Outside =>
         if Alignment.Ready then
           Enable_Action ("Align", Perform_Align'access);
         else
-          Enable_Goto;
+          Enable_Command;
         end if;
         if Alignment.Star_Count > 0 then
           Enable_Control ("Clear", Perform_Clear'access);
@@ -444,9 +444,11 @@ package body User is
           Enable_Control ("Park", Perform_Park'access);
         end if;
       when Tracking =>
-        Enable_Goto;
+        if not Setup_Command_Is_Active then
+          Enable_Command;
+        end if;
         Enable_Stop;
-      when Capturing | Solving =>
+      when Capturing | Focusing | Slewing | Solving =>
         Disable_Action;
         Enable_Stop;
       end case;
@@ -472,7 +474,6 @@ package body User is
       return Image;
     end Image_Of;
 
-    use type Angle.Value;
     use type Time.Ut;
     use type Telescope.Time_Offset;
 
@@ -583,26 +584,7 @@ package body User is
           Gui.Set_Text (Rms_Error_Box, "");
         end if;
       end;
-      if Information.Cone_Error = Angle.Zero then
-        Gui.Set_Text (Cone_Error, "");
-      else
-        Gui.Set_Text (Cone_Error, Angle.Image_Of (Information.Cone_Error, Show_Signed => True));
-      end if;
-      if Earth.Direction_Is_Known (Information.Pole_Offsets) then
-        if Earth.Az_Of (Information.Pole_Offsets) = Angle.Zero then
-          Gui.Set_Text (Az_Offset, "");
-        else
-          Gui.Set_Text (Az_Offset, Earth.Az_Offset_Image_Of (Information.Pole_Offsets));
-        end if;
-        if Earth.Alt_Of (Information.Pole_Offsets) = Angle.Zero then
-          Gui.Set_Text (Alt_Offset, "");
-        else
-          Gui.Set_Text (Alt_Offset, Earth.Alt_Offset_Image_Of (Information.Pole_Offsets));
-        end if;
-      else
-        Gui.Set_Text (Az_Offset, "");
-        Gui.Set_Text (Alt_Offset, "");
-      end if;
+      Show_Camera_Information;
     end case;
   end Show;
 
@@ -890,13 +872,13 @@ package body User is
         Setup_Control_Button := Gui.Create (Setup_Page, "", Handle_Setup_Control'access);
         Gui.Disable (Setup_Control_Button);
 
-        Setup_Control := Gui.Create (Setup_Page, Setup_Object_Key,
-                                     The_Size           => Text_Size,
-                                     The_Title_Size     => Title_Size);
-        for Value in Setup_Object'range loop
-          Gui.Add_Text (Setup_Control, Text.Legible_Of (Value'img));
+        Setup_Command_Box := Gui.Create (Setup_Page, Command_Key,
+                                         The_Size       => Text_Size,
+                                         The_Title_Size => Title_Size);
+        for Value in Setup_Command'range loop
+          Gui.Add_Text (Setup_Command_Box, Text.Legible_Of (Value'img));
         end loop;
-        Gui.Select_Text (Setup_Control, Text.Legible_Of (The_Setup_Object'img));
+        Gui.Select_Text (Setup_Command_Box, Text.Legible_Of (The_Setup_Command'img));
 
         Picture_Ra := Gui.Create (Setup_Page, "Picture RA", "",
                                   Is_Modifiable  => False,
@@ -948,16 +930,7 @@ package body User is
                                      Is_Modifiable  => False,
                                      The_Size       => Text_Size,
                                      The_Title_Size => Title_Size);
-
-        Cone_Error := Gui.Create (Setup_Page, "Cone Error", "",
-                                  Is_Modifiable  => False,
-                                  The_Size       => Text_Size,
-                                  The_Title_Size => Title_Size);
-        Az_Offset := Gui.Create (Setup_Page, "Az Offset", "",
-                                 Is_Modifiable  => False,
-                                 The_Size       => Text_Size,
-                                 The_Title_Size => Title_Size);
-        Alt_Offset := Gui.Create (Setup_Page, "Alt Offset", "",
+        Camera_Box := Gui.Create (Setup_Page, "Camera", "",
                                   Is_Modifiable  => False,
                                   The_Size       => Text_Size,
                                   The_Title_Size => Title_Size);

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2022 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2022 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -17,7 +17,6 @@ pragma Style_White_Elephant;
 
 with Alignment;
 with Angle;
-with Earth;
 with Name;
 with Space;
 with Ten_Micron;
@@ -47,8 +46,6 @@ package Telescope is
     Moving_Speed       : Angle.Value := Angle.Zero;
     Align_Points       : Natural := 0;
     Alignment_Info     : Alignment.Information;
-    Cone_Error         : Angle.Value := Angle.Zero;
-    Pole_Offsets       : Earth.Direction;
     Universal_Time     : Time.Ut := Time.Unknown;
     Time_Delta         : Time_Offset;
   end record;
@@ -66,17 +63,13 @@ package Telescope is
 
   procedure Go_To;
 
-  procedure Go_To_Left;
-
-  procedure Go_To_Right;
-
-  procedure Go_To_Top;
-
   procedure Go_To_Next;
 
   procedure Prepare_Tle;
 
   procedure Park;
+
+  procedure Start_Auto_Focus;
 
   procedure Stop;
 
