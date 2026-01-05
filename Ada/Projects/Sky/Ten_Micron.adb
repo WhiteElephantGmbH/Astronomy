@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2022 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2022 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
@@ -43,7 +43,7 @@ package body Ten_Micron is
   begin
     Last_State := Item;
     case The_Status is
-    when Capturing | Solving =>
+    when Capturing | Focusing | Solving =>
       case Item is
       when Positioned | Tracking =>
         return;
@@ -687,6 +687,20 @@ package body Ten_Micron is
     Log.Write ("end solving");
     The_Status := Last_State;
   end End_Solving;
+
+
+  procedure Start_Focusing is
+  begin
+    Log.Write ("start focusing");
+    The_Status := Focusing;
+  end Start_Focusing;
+
+
+  procedure End_Focusing is
+  begin
+    Log.Write ("end focusing");
+    The_Status := Last_State;
+  end End_Focusing;
 
 
   procedure Load_Tle (Name : String) is

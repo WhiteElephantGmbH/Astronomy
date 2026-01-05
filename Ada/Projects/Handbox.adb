@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2019 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2019 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -44,11 +44,11 @@ package body Handbox is
 
   Is_Available : Boolean := False;
 
-  procedure Close is
+  procedure Finish is
   begin
     The_Device.Free;
     The_Reader.Close;
-  end Close;
+  end Finish;
 
 
   task body Reader is

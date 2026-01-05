@@ -16,7 +16,6 @@
 pragma Style_White_Elephant;
 
 with Application;
-with Camera;
 with Clock;
 with Error;
 with Gui;
@@ -473,7 +472,6 @@ package body Control is
     Start_Stellarium_Server;
     Read_Data;
     begin
-      Camera.Start;
       Clock.Start;
       Telescope.Start (Information_Update_Handler'access);
       Targets.Start (Clear    => User.Clear_Targets'access,
@@ -485,11 +483,9 @@ package body Control is
                     Termination'access);
       Stellarium.Close;
       Stellarium.Shutdown;
-      Camera.Finish;
       Clock.Finish;
     exception
     when others =>
-      Camera.Finish;
       Clock.Finish;
       raise;
     end;

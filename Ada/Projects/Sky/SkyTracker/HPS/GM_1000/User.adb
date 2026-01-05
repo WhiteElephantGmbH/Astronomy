@@ -22,6 +22,7 @@ with Alignment;
 with Application;
 with Camera;
 with Earth;
+with Focus;
 with Gui.Registered;
 with Lexicon;
 with Lx200;
@@ -86,6 +87,8 @@ package body User is
   Rms_Error_Box        : Gui.Plain_Edit_Box;
   Camera_Model_Box     : Gui.Plain_Edit_Box;
   Camera_State_Box     : Gui.Plain_Edit_Box;
+  Focuser_Model_Box    : Gui.Plain_Edit_Box;
+  Focus_State_Box      : Gui.Plain_Edit_Box;
 
   type Page is (Is_Control, Is_Display, Is_Setup);
 
@@ -275,6 +278,19 @@ package body User is
       Gui.Set_Text (Camera_Model_Box, Camera.Model_Image);
       Gui.Set_Text (Camera_State_Box, Text.Legible_Of (Camera.Actual_Information.State'image));
     end Show_Camera_Information;
+
+    procedure Show_Focus_Information is
+      Focusing_State : constant Focus.Status := Focus.Actual_Information.State;
+    begin
+      Gui.Set_Text (Focuser_Model_Box, Focus.Focuser_Image);
+      Gui.Set_Text (Focus_State_Box, Text.Legible_Of (Focusing_State'image));
+      case Focusing_State is
+      when Focus.Undefined | Focus.Positioned =>
+        Setup_Command_Is_Active := False;
+      when others =>
+        null;
+      end case;
+    end Show_Focus_Information;
 
     procedure Disable (The_Button : Gui.Button) is
     begin
@@ -562,6 +578,7 @@ package body User is
         end if;
       end;
       Show_Camera_Information;
+      Show_Focus_Information;
     end case;
   end Show;
 
@@ -915,6 +932,14 @@ package body User is
                                         Is_Modifiable  => False,
                                         The_Size       => Text_Size,
                                         The_Title_Size => Title_Size);
+        Focuser_Model_Box := Gui.Create (Setup_Page, "Focuser", "",
+                                         Is_Modifiable  => False,
+                                         The_Size       => Text_Size,
+                                         The_Title_Size => Title_Size);
+        Focus_State_Box := Gui.Create (Setup_Page, "Focusing State", "",
+                                       Is_Modifiable  => False,
+                                       The_Size       => Text_Size,
+                                       The_Title_Size => Title_Size);
       end Define_Setup_Page;
 
     begin -- Create_Interface

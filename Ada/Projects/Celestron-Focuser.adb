@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2025 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2025 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -148,10 +148,10 @@ package body Celestron.Focuser is
   end Set;
 
 
-  procedure Close is
+  procedure Finish is
   begin
     The_Control.Stop;
-  end Close;
+  end Finish;
 
 
   task body Control is

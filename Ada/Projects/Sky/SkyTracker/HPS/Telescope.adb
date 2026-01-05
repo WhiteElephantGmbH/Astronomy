@@ -19,6 +19,7 @@ with Ada.Real_Time;
 with Astro;
 with Camera;
 with Clock;
+with Focus;
 with Focuser_Client;
 with Handbox.HPS;
 with Http_Server.HPS;
@@ -114,6 +115,8 @@ package body Telescope is
 
   procedure Start (Update_Handler : Information_Update_Handler) is
   begin
+    Camera.Start;
+    Focus.Start;
     Handbox.Start (Handbox.HPS.Handle'access);
     Input.Open (Execute'access);
     Signal_Information_Update := Update_Handler;
@@ -453,7 +456,6 @@ package body Telescope is
             Picture.Evaluate (Center => The_Picture_Direction,
                               Lmst   => The_Picture_Lmst);
             if User.In_Setup_Mode then
-              --!!! Focusing ???
               Alignment.Define (Direction => The_Picture_Direction,
                                 Lmst      => The_Picture_Lmst,
                                 Pier_Side => The_Information.Pier_Side);
@@ -474,6 +476,25 @@ package body Telescope is
             User.Perform_Goto_Next;
           end if;
         end;
+      when Focusing =>
+        if User.In_Setup_Mode then
+          Log.Write ("XXXX Focusing - State: " & Focus.Actual_Information.State'image);
+          case Focus.Actual_Information.State is
+          when Focus.Positioned =>
+            Ten_Micron.End_Focusing;
+          when Focus.Evaluating =>
+            null;
+          when Focus.Positioning =>
+            null;
+          when Focus.Undefined =>
+            null;
+          when Focus.Error =>
+            Ten_Micron.End_Focusing;
+          end case;
+        else
+          Ten_Micron.End_Focusing;
+          Focus.Stop;
+        end if;
       when Stopped | Waiting =>
         Aligning_Enabled := False;
         Is_Preparing_For_Capture := False;
@@ -573,7 +594,8 @@ package body Telescope is
         or
           accept Start_Auto_Focus do
             Set_Sideral_Rates;
-            --!!! implement
+            Ten_Micron.Start_Focusing;
+            Focus.Evaluate;
           end Start_Auto_Focus;
         or
           accept Stop do
@@ -583,6 +605,8 @@ package body Telescope is
               Picture.Stop_Solving;
             when Capturing =>
               Camera.Stop;
+            when Focusing =>
+              Focus.Stop;
             when others =>
               null;
             end case;
@@ -651,11 +675,17 @@ package body Telescope is
       end;
     end loop;
     Input.Close;
-    Handbox.Close;
+    Handbox.Finish;
+    Focus.Finish;
+    Camera.Finish;
     Log.Write ("end");
   exception
   when Item: others =>
     Log.Termination (Item);
+    Input.Close;
+    Handbox.Finish;
+    Focus.Finish;
+    Camera.Finish;
   end Control_Task;
 
 end Telescope;

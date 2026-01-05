@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2025 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                           (c) 2026 by White Elephant GmbH, Schaffhausen, Switzerland                              *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,14 +15,71 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with Exceptions;
+with Text;
+
 package Focus is
 
-  type Diameter is new Natural;
+  subtype Distance is Natural range 0 .. 2**24 - 1;
 
-  function Half_Flux_Diameter (Filename : String) return Diameter;
+  type Lash is new Distance range 0 .. 2**8 - 1;
 
-  File_Not_Found  : exception;
-  Unknown_File    : exception;
-  No_Object_Found : exception;
+  type Status is (Undefined, Positioning, Evaluating, Positioned, Error);
+
+  type Focuser_Model is (Unknown, Celestron);
+
+  type Information is record
+    State    : Status;
+    Focuser  : Focuser_Model;
+    Position : Distance;
+    Backlash : Lash;
+  end record;
+
+  procedure Start;
+
+  function Actual_Information return Information;
+
+  function Focuser_Image return String;
+
+  procedure Evaluate;
+
+  procedure Stop;
+
+  function Error_Message return String;
+
+  procedure Finish;
+
+private
+
+  Focus_Error : exception;
+
+  procedure Raise_Error (Message : String) with No_Return;
+
+  protected Focus_Data is
+
+    procedure Set (State : Status);
+
+    procedure Set (Item : Focuser_Model);
+
+    procedure Set (Start_Position : Distance);
+
+    procedure Set (Backlash : Lash);
+
+    function Actual return Information;
+
+    procedure Check (Item : Status);
+
+    procedure Set_Error (Message : String);
+
+    procedure Set_Fatal (Item : Exceptions.Occurrence);
+
+    function Last_Error return String;
+
+    procedure Reset_Error;
+
+  private
+    The_Information : Information;
+    The_Last_Error  : Text.String;
+  end Focus_Data;
 
 end Focus;

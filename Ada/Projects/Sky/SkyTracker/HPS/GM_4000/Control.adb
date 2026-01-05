@@ -16,7 +16,6 @@
 pragma Style_White_Elephant;
 
 with Application;
-with Camera;
 with Error;
 with Gui;
 with Horizon;
@@ -477,24 +476,16 @@ package body Control is
     Parameter.Read;
     Start_Stellarium_Server;
     Read_Data;
-    begin
-      Camera.Start;
-      Telescope.Start (Information_Update_Handler'access);
-      Targets.Start (Clear    => User.Clear_Targets'access,
-                     Define   => User.Define'access,
-                     Update   => User.Update_Targets'access,
-                     Arriving => Neo.Is_Arriving'access);
-      User.Execute (Startup'access,
-                    User_Action_Handler'access,
-                    Termination'access);
-      Stellarium.Close;
-      Stellarium.Shutdown;
-      Camera.Finish;
-    exception
-    when others =>
-      Camera.Finish;
-      raise;
-    end;
+    Telescope.Start (Information_Update_Handler'access);
+    Targets.Start (Clear    => User.Clear_Targets'access,
+                   Define   => User.Define'access,
+                   Update   => User.Update_Targets'access,
+                   Arriving => Neo.Is_Arriving'access);
+    User.Execute (Startup'access,
+                  User_Action_Handler'access,
+                  Termination'access);
+    Stellarium.Close;
+    Stellarium.Shutdown;
   exception
   when Error.Occurred =>
     Stellarium.Close;

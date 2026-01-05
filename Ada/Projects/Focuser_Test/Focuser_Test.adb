@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2025 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2025 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -103,14 +103,14 @@ begin
     The_Data := Focuser_Client.Actual_Data;
   end loop;
   IO.Put_Line ("Close Handbox");
-  Handbox.Close;
+  Handbox.Finish;
   Focuser_Client.Shutdown;
   IO.Put_Line ("Complete");
 exception
 when Focuser_Client.Server_Not_Available =>
   IO.Put_Line ("Focuser Server not avalable");
-  Handbox.Close;
+  Handbox.Finish;
 when Item: others =>
   IO.Put_Line ("Exception: " & Exceptions.Information_Of (Item));
-  Handbox.Close;
+  Handbox.Finish;
 end Focuser_Test;

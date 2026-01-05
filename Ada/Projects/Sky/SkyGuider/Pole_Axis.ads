@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2020 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2021 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,36 +15,23 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-pragma Build (Description => "GID test",
-              Version     => (1, 0, 0, 3),
-              Kind        => Console,
-              Icon        => False,
-              Compiler    => "GNATPRO\23.0");
+with Angle;
+with Earth;
 
-with Focus;
-with Ada.Exceptions;
-with Ada.Text_IO;
+package Pole_Axis is
 
-procedure Focus_Test is
-begin
-  Ada.Text_IO.Put_Line ("Focus Test");
-  Ada.Text_IO.Put_Line ("==========");
-  declare
-    Diameter : constant Focus.Diameter := Focus.Half_Flux_Diameter ("Granatstern.jpg");
-  begin
-    Ada.Text_IO.Put_Line ("HFD Granatstern:" & Diameter'img);
-  end;
-  declare
-    Diameter : constant Focus.Diameter := Focus.Half_Flux_Diameter ("D:\Picture\Albireo.png");
-  begin
-    Ada.Text_IO.Put_Line ("HFD Albireo:" & Diameter'img);
-  end;
-  declare
-    Diameter : constant Focus.Diameter := Focus.Half_Flux_Diameter ("D:\Picture\Andromeda.png");
-  begin
-    Ada.Text_IO.Put_Line ("HFD Andromeda:" & Diameter'img);
-  end;
-exception
-when Item: others =>
-  Ada.Text_IO.Put_Line (Ada.Exceptions.Exception_Information (Item));
-end Focus_Test;
+  procedure Clear;
+
+  function Has_Values return Boolean;
+
+  procedure Evaluate_Top;
+
+  procedure Evaluate_Left;
+
+  procedure Evaluate_Right;
+
+  function Cone_Error return Angle.Value;
+
+  function Offsets return Earth.Direction;
+
+end Pole_Axis;
