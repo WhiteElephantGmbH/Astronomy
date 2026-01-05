@@ -86,7 +86,8 @@ package body User is
   Alt_Knob_Down_Box    : Gui.Plain_Edit_Box;
   Modeling_Terms_Box   : Gui.Plain_Edit_Box;
   Rms_Error_Box        : Gui.Plain_Edit_Box;
-  Camera_Box           : Gui.Plain_Edit_Box;
+  Camera_Model_Box     : Gui.Plain_Edit_Box;
+  Camera_State_Box     : Gui.Plain_Edit_Box;
 
   type Page is (Is_Control, Is_Display, Is_Setup);
 
@@ -296,7 +297,8 @@ package body User is
 
     procedure Show_Camera_Information is
     begin
-      Gui.Set_Text (Camera_Box, Camera.Model_Image);
+      Gui.Set_Text (Camera_Model_Box, Camera.Model_Image);
+      Gui.Set_Text (Camera_State_Box, Text.Legible_Of (Camera.Actual_Information.State'image));
     end Show_Camera_Information;
 
     procedure Disable (The_Button : Gui.Button) is
@@ -930,10 +932,14 @@ package body User is
                                      Is_Modifiable  => False,
                                      The_Size       => Text_Size,
                                      The_Title_Size => Title_Size);
-        Camera_Box := Gui.Create (Setup_Page, "Camera", "",
-                                  Is_Modifiable  => False,
-                                  The_Size       => Text_Size,
-                                  The_Title_Size => Title_Size);
+        Camera_Model_Box := Gui.Create (Setup_Page, "Camera", "",
+                                        Is_Modifiable  => False,
+                                        The_Size       => Text_Size,
+                                        The_Title_Size => Title_Size);
+        Camera_State_Box := Gui.Create (Setup_Page, "Camera State", "",
+                                        Is_Modifiable  => False,
+                                        The_Size       => Text_Size,
+                                        The_Title_Size => Title_Size);
       end Define_Setup_Page;
 
     begin -- Create_Interface

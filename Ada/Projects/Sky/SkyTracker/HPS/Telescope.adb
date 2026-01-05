@@ -404,11 +404,21 @@ package body Telescope is
 
     procedure Update_Handling is
 
+      procedure Check_Camera_Error is
+        use type Camera.Status;
+      begin
+        if Camera.Actual_Information.State = Camera.Error then
+          User.Show_Error (Camera.Error_Message);
+          User.Perform_Stop;
+        end if;
+      end Check_Camera_Error;
+
       procedure Capture_Handling is
       begin
         if Is_Preparing_For_Capture then
           Ten_Micron.Start_Capturing;
           Camera.Capture (Picture.Filename);
+          Check_Camera_Error;
           Is_Preparing_For_Capture := False;
         end if;
       end Capture_Handling;
@@ -433,6 +443,8 @@ package body Telescope is
       when Capturing =>
         if Camera.Actual_Information.State = Camera.Idle and then Picture.Exists and then Solve_Picture then
           Ten_Micron.Start_Solving;
+        else
+          Check_Camera_Error;
         end if;
       when Solving =>
         begin

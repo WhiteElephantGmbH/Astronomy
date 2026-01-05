@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2021 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                      *
+-- *                           (c) 2021 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                      *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -237,7 +237,12 @@ package body Picture is
     if Is_Solving then
       Is_Solving := False;
       Astap.Stop;
-      File.Delete (Filename);
+      begin
+        File.Delete (Filename);
+      exception
+      when others =>
+        Log.Warning ("File deletion failed for " & Filename);
+      end;
     end if;
   end Stop_Solving;
 
