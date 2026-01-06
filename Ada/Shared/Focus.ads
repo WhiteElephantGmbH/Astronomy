@@ -16,28 +16,20 @@
 pragma Style_White_Elephant;
 
 with Exceptions;
+with Focuser;
 with Text;
 
 package Focus is
 
-  subtype Distance is Natural range 0 .. 2**24 - 1;
+  subtype Distance is Focuser.Distance;
 
-  type Lash is new Distance range 0 .. 2**8 - 1;
+  type Lash_Correction is range -2**7 .. 2**7 - 1;
 
-  type Status is (Undefined, Positioning, Evaluating, Positioned, Error);
+  type Status is (Stopped, Starting, Positioning, Positioned, Evaluating, Evaluated, Error);
 
-  type Focuser_Model is (Unknown, Celestron);
-
-  type Information is record
-    State    : Status;
-    Focuser  : Focuser_Model;
-    Position : Distance;
-    Backlash : Lash;
-  end record;
-
-  procedure Start;
-
-  function Actual_Information return Information;
+  procedure Start (Device : Focuser.Object_Access);
+  
+  function Actual_State return Status;
 
   function Focuser_Image return String;
 
@@ -53,19 +45,22 @@ private
 
   Focus_Error : exception;
 
+  procedure Error (Message : String);
+
   procedure Raise_Error (Message : String) with No_Return;
 
   protected Focus_Data is
 
-    procedure Set (State : Status);
+    procedure Set (Item : Status);
 
-    procedure Set (Item : Focuser_Model);
+    procedure Set (First_Position : Distance;
+                   With_Increment : Distance);
 
-    procedure Set (Start_Position : Distance);
+    function State return Status;
 
-    procedure Set (Backlash : Lash);
+    function Start_Position return Distance;
 
-    function Actual return Information;
+    function Increment return Distance;
 
     procedure Check (Item : Status);
 
@@ -76,10 +71,12 @@ private
     function Last_Error return String;
 
     procedure Reset_Error;
-
+    
   private
-    The_Information : Information;
-    The_Last_Error  : Text.String;
+    The_State          : Status := Stopped;
+    The_Start_Position : Distance := 12000;
+    The_Increment      : Distance := 100;
+    The_Last_Error     : Text.String;
   end Focus_Data;
 
 end Focus;

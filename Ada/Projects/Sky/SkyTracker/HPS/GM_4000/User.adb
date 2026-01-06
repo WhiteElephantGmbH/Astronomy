@@ -108,7 +108,8 @@ package body User is
   Align_Change                : Boolean := False;
   Align_On_Picture_Is_Enabled : Boolean := False;
 
-  The_Setup_Command : Setup_Command := Auto_Focus;
+  The_Setup_Command    : Setup_Command := Auto_Focus;
+  Setup_Command_Change : Boolean := False;
 
   subtype State is Telescope.State;
 
@@ -222,24 +223,9 @@ package body User is
 
 
   procedure Perform_Setup_Command is
-
-    function Identifier_Of (Item : String) return String is
-      The_Image : String := Text.Trimmed (Item);
-    begin
-      for Index in The_Image'range loop
-        if The_Image(Index) = ' ' then
-          The_Image(Index) := '_';
-        end if;
-      end loop;
-      return The_Image;
-    end Identifier_Of;
-
-    Setup_Command_Image : constant String := Identifier_Of (Gui.Contents_Of (Setup_Command_Box));
-
-  begin -- Perform_Setup_Command
-    The_Setup_Command := Setup_Command'value(Setup_Command_Image);
+  begin
     Setup_Command_Is_Active := True;
-    Log.Write ("Setup Command - " & Setup_Command_Image);
+    Log.Write ("Setup Command - " & Text.Legible_Of (The_Setup_Command'image));
     case The_Setup_Command is
     when Auto_Focus =>
       Signal_Action (Auto_Focus_Start);
@@ -305,12 +291,12 @@ package body User is
     end Show_Camera_Information;
 
     procedure Show_Focus_Information is
-      Focusing_State : constant Focus.Status := Focus.Actual_Information.State;
+      Focusing_State : constant Focus.Status := Focus.Actual_State;
     begin
       Gui.Set_Text (Focuser_Model_Box, Focus.Focuser_Image);
       Gui.Set_Text (Focus_State_Box, Text.Legible_Of (Focusing_State'image));
       case Focusing_State is
-      when Focus.Undefined | Focus.Positioned =>
+      when Focus.Stopped | Focus.Evaluated =>
         Setup_Command_Is_Active := False;
       when others =>
         null;
@@ -448,13 +434,18 @@ package body User is
         Disable_Action;
         Enable_Control ("Unpark", Perform_Unpark'access);
       when Parking | Homing | Following | Transit_State | Positioned =>
-        Enable_Command;
+        Disable_Action;
         Enable_Stop;
       when Stopped | Outside =>
         if Alignment.Ready then
           Enable_Action ("Align", Perform_Align'access);
         else
-          Enable_Command;
+          case The_Setup_Command is
+          when Auto_Focus =>
+            Disable_Action;
+          when Align_Stars =>
+            Enable_Command;
+          end case;
         end if;
         if Alignment.Star_Count > 0 then
           Enable_Control ("Clear", Perform_Clear'access);
@@ -499,8 +490,10 @@ package body User is
     if (The_Status /= Information.Status)
       or (Last_Target_Selection /= The_Target_Selection)
       or Align_Change
+      or Setup_Command_Change
     then
       Align_Change := False;
+      Setup_Command_Change := False;
       The_Status := Information.Status;
       Last_Target_Selection := The_Target_Selection;
       Define_Control_Buttons;
@@ -644,6 +637,27 @@ package body User is
   begin
     Perform_Setup_Control.all;
   end Handle_Setup_Control;
+
+
+  procedure Handle_Setup_Command_Change is
+
+    function Identifier_Of (Item : String) return String is
+      The_Image : String := Text.Trimmed (Item);
+    begin
+      for Index in The_Image'range loop
+        if The_Image(Index) = ' ' then
+          The_Image(Index) := '_';
+        end if;
+      end loop;
+      return The_Image;
+    end Identifier_Of;
+
+    Setup_Command_Image : constant String := Identifier_Of (Gui.Contents_Of (Setup_Command_Box));
+
+  begin -- Handle_Setup_Command_Change
+    The_Setup_Command := Setup_Command'value(Setup_Command_Image);
+    Setup_Command_Change := True;
+  end Handle_Setup_Command_Change;
 
 
   function Target_Name return String is
@@ -891,7 +905,7 @@ package body User is
         Setup_Control_Button := Gui.Create (Setup_Page, "", Handle_Setup_Control'access);
         Gui.Disable (Setup_Control_Button);
 
-        Setup_Command_Box := Gui.Create (Setup_Page, Command_Key,
+        Setup_Command_Box := Gui.Create (Setup_Page, Command_Key, Handle_Setup_Command_Change'access,
                                          The_Size       => Text_Size,
                                          The_Title_Size => Title_Size);
         for Value in Setup_Command'range loop

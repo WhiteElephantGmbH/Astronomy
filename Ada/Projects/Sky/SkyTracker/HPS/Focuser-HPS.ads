@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2025 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                           (c) 2026 by White Elephant GmbH, Schaffhausen, Switzerland                              *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,62 +15,30 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Focus;
+package Focuser.HPS is
 
-package Celestron.Focuser is
+  type Device is new Object with private;
 
-  type Command is (Decrease_Rate, Increase_Rate, Move_In, Move_Out, Home, Stop);
+  function New_Device return Object_Access;
 
-  procedure Start;
+  overriding
+  function State (Unused : Device) return Status;
 
-  subtype Distance is Focus.Distance;
+  overriding
+  function Name (Unused : Device) return String;
 
-  type Lash is new Distance range 0 .. 2**8 - 1;
+  overriding
+  function Actual_Position (Unused : Device) return Distance;
 
-  subtype Rate is Natural range 1 .. 4;
+  overriding
+  procedure Move_To (Unused   : Device;
+                     Position : Distance);
 
-  Default_Port_Number   : constant := 12000;
-  Default_Home_Position : constant := 20376;
-  Default_Backlash      : constant := 25;
+  overriding
+  procedure Stop (Unused : Device);
 
-  Get_Data_Command : constant String := "get_data";
-  Execute_Command  : constant String := "execute";
-  Move_To_Command  : constant String := "move_to";
-  Set_Home_Command : constant String := "set_home";
-  Set_Lash_Command : constant String := "set_lash";
-  Shutdown_Command : constant String := "shutdown";
+private
 
-  type Data is record
-    Exists   : Boolean := False;
-    Moving   : Boolean := False;
-    Position : Distance := Distance'last;
-    Home     : Distance := Distance'last;
-    Backlash : Lash := Lash'last;
-    Speed    : Rate := Rate'first;
-  end record;
+  type Device is new Object with null record;
 
-  No_Data : constant Data := (others => <>);
-
-  function Exists return Boolean;
-
-  function Moving return Boolean;
-
-  function Home_Position return Distance;
-
-  function Backlash return Lash;
-
-  function Position return Distance;
-
-  function Speed return Rate;
-
-  procedure Execute (Item : Command);
-
-  procedure Move_To (Item : Distance);
-
-  procedure Set_Home (Item : Distance);
-
-  procedure Set (Item : Lash);
-
-  procedure Finish;
-
-end Celestron.Focuser;
+end Focuser.HPS;

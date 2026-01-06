@@ -20,6 +20,7 @@ with Astro;
 with Camera;
 with Clock;
 with Focus;
+with Focuser.HPS;
 with Focuser_Client;
 with Handbox.HPS;
 with Http_Server.HPS;
@@ -116,7 +117,7 @@ package body Telescope is
   procedure Start (Update_Handler : Information_Update_Handler) is
   begin
     Camera.Start;
-    Focus.Start;
+    Focus.Start (Focuser.HPS.New_Device);
     Handbox.Start (Handbox.HPS.Handle'access);
     Input.Open (Execute'access);
     Signal_Information_Update := Update_Handler;
@@ -478,18 +479,14 @@ package body Telescope is
         end;
       when Focusing =>
         if User.In_Setup_Mode then
-          Log.Write ("XXXX Focusing - State: " & Focus.Actual_Information.State'image);
-          case Focus.Actual_Information.State is
-          when Focus.Positioned =>
+          case Focus.Actual_State is
+          when Focus.Evaluated =>
             Ten_Micron.End_Focusing;
-          when Focus.Evaluating =>
-            null;
-          when Focus.Positioning =>
-            null;
-          when Focus.Undefined =>
-            null;
           when Focus.Error =>
             Ten_Micron.End_Focusing;
+            User.Show_Error (Focus.Error_Message);
+          when others =>
+            null;
           end case;
         else
           Ten_Micron.End_Focusing;

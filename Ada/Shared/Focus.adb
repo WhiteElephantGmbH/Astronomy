@@ -35,27 +35,28 @@ package body Focus is
   end Control;
 
   The_Control : access Control;
+  The_Focuser : Focuser.Object_Access;
 
-
-  procedure Start is
+  procedure Start (Device : Focuser.Object_Access) is
   begin
+    The_Focuser := Device;
     The_Control := new Control;
   end Start;
 
 
-  function Actual_Information return Information is
+  function Actual_State return Status is
   begin
-    return Focus_Data.Actual;
-  end Actual_Information;
+    return Focus_Data.State;
+  end Actual_State;
 
 
   function Focuser_Image return String is
   begin
-    case Actual_Information.Focuser is
-    when Unknown =>
+    case The_Focuser.State is
+    when Focuser.Disconnected =>
       return "";
-    when Celestron =>
-      return "Celestron";
+    when others =>
+      return The_Focuser.Name;
     end case;
   end Focuser_Image;
 
@@ -98,36 +99,54 @@ package body Focus is
     Delta_Time : constant RT.Time_Span := RT.To_Time_Span (1.0 / 2);
 
     use type RT.Time;
+    use type Focuser.Status;
 
-    The_Wakeup_Time : RT.Time := RT.Clock + Delta_Time;
-
-    The_Count : Natural := 0;
+    The_Wakeup_Time   : RT.Time := RT.Clock + Delta_Time;
+    The_Next_Position : Focuser.Distance := Focus_Data.Start_Position;
 
   begin -- Control
     Log.Write ("start");
-    Focus_Data.Set (Unknown);
+    Focus_Data.Set (Stopped);
     loop
       select
         accept Start_Autofocus;
-        Focus_Data.Set (Evaluating);
-        The_Count := 10;
+        case The_Focuser.State is
+        when Focuser.Stopped | Focuser.Moving =>
+          The_Focuser.Move_To (The_Next_Position);
+          Focus_Data.Set (Positioning);
+        when Focuser.Disconnected =>
+          Error ("Focuser not connected");
+        end case;
       or
-        accept Await_Stop;
-        Log.Write ("Stopping");
-        The_Count := 0;
+        accept Await_Stop do
+          Log.Write ("Stopping");
+          if The_Focuser.State = Focuser.Moving then
+            The_Focuser.Stop;
+          end if;
+          Focus_Data.Set (Stopped);
+        end Await_Stop;
       or
         accept Shutdown;
         exit;
       or
         delay until The_Wakeup_Time;
         The_Wakeup_Time := RT.Clock + Delta_Time;
-        if The_Count = 0 then
-          Focus_Data.Set (Undefined);
-        elsif The_Count = 1 then
-          Focus_Data.Set (Positioned);
-        else
-          The_Count := @ - 1;
-        end if;
+        case Focus_Data.State is
+        when Positioning =>
+          case The_Focuser.State is
+          when Focuser.Stopped =>
+            if The_Next_Position = The_Focuser.Actual_Position then
+              Focus_Data.Set (Positioned);
+              The_Next_Position := @ + Focus_Data.Increment;
+            end if;
+          when Focuser.Moving =>
+            null;
+          when Focuser.Disconnected =>
+            Error ("Focuser lost connection");
+          end case;
+        when others =>
+          null;
+        end case;
       end select;
     end loop;
     Log.Write ("finish");
@@ -141,14 +160,20 @@ package body Focus is
 -- Private --
 -------------
 
-  -----------
-  -- Error --
-  -----------
+  --------------------
+  -- Error Handling --
+  --------------------
 
-  procedure Raise_Error (Message : String) is
+  procedure Error (Message : String) is
   begin
     Log.Error (Message);
     Focus_Data.Set_Error (Message);
+  end Error;
+
+
+  procedure Raise_Error (Message : String) is
+  begin
+    Error (Message);
     raise Focus_Error;
   end Raise_Error;
 
@@ -158,53 +183,54 @@ package body Focus is
   ----------
   protected body Focus_Data is
 
-    procedure Set (State : Status) is
+    procedure Set (Item : Status) is
     begin
-      if The_Information.State /= Error then
-        The_Information.State := State;
+      if The_State /= Error then
+        The_State := Item;
       end if;
     end Set;
 
 
-    procedure Set (Item : Focuser_Model) is
+    procedure Set (First_Position : Distance;
+                   With_Increment : Distance) is
     begin
-      The_Information.Focuser := Item;
+      The_Start_Position := First_Position;
+      The_Increment := With_Increment;
     end Set;
 
 
-    procedure Set (Start_Position : Distance) is
+    function State return Status is
     begin
-      The_Information.Position := Start_Position;
-    end Set;
+      return The_State;
+    end State;
 
 
-    procedure Set (Backlash : Lash) is
+    function Start_Position return Distance is
     begin
-      The_Information.Backlash := Backlash;
-    end Set;
+      return The_Start_Position;
+    end Start_Position;
 
 
-    function Actual return Information is
+    function Increment return Distance is
     begin
-      return The_Information;
-    end Actual;
-
-
-    procedure Check (Item : Status) is
-    begin
-      if The_Information.State /= Item then
-        The_Last_Error := ["Sequence Error - State must be " & Item'image];
-        The_Information.State := Error;
-        raise Focus_Error;
-      end if;
-    end Check;
+      return The_Increment;
+    end Increment;
 
 
     procedure Set_Error (Message : String) is
     begin
       The_Last_Error := [Message];
-      The_Information.State := Error;
+      The_State := Error;
     end Set_Error;
+
+
+    procedure Check (Item : Status) is
+    begin
+      if The_State /= Item then
+        Set_Error ("Sequence Error - State must be " & Item'image);
+        raise Focus_Error;
+      end if;
+    end Check;
 
 
     procedure Set_Fatal (Item : Exceptions.Occurrence) is
@@ -221,7 +247,7 @@ package body Focus is
 
     procedure Reset_Error is
     begin
-      The_Information.State := Undefined;
+      The_State := Stopped;
     end Reset_Error;
 
   end Focus_Data;

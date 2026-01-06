@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2025 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                           (c) 2026 by White Elephant GmbH, Schaffhausen, Switzerland                              *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,62 +15,54 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Focus;
+with Celestron.Focuser;
+with Focuser_Client;
 
-package Celestron.Focuser is
+package body Focuser.HPS is
 
-  type Command is (Decrease_Rate, Increase_Rate, Move_In, Move_Out, Home, Stop);
+  function New_Device return Object_Access is (new Device);
 
-  procedure Start;
 
-  subtype Distance is Focus.Distance;
+  overriding
+  function State (Unused : Device) return Status is
+    Data : constant Celestron.Focuser.Data := Focuser_Client.Actual_Data;
+  begin
+    if Data.Exists then
+      if Data.Moving then
+        return Moving;
+      else
+        return Stopped;
+      end if;
+    end if;
+    return Disconnected;
+  end State;
 
-  type Lash is new Distance range 0 .. 2**8 - 1;
 
-  subtype Rate is Natural range 1 .. 4;
+  overriding
+  function Name (Unused : Device) return String is ("Celestron");
 
-  Default_Port_Number   : constant := 12000;
-  Default_Home_Position : constant := 20376;
-  Default_Backlash      : constant := 25;
 
-  Get_Data_Command : constant String := "get_data";
-  Execute_Command  : constant String := "execute";
-  Move_To_Command  : constant String := "move_to";
-  Set_Home_Command : constant String := "set_home";
-  Set_Lash_Command : constant String := "set_lash";
-  Shutdown_Command : constant String := "shutdown";
+  function Actual_Position (Unused : Device) return Distance is
+    Data : constant Celestron.Focuser.Data := Focuser_Client.Actual_Data;
+  begin
+    return Data.Position;
+  end Actual_Position;
 
-  type Data is record
-    Exists   : Boolean := False;
-    Moving   : Boolean := False;
-    Position : Distance := Distance'last;
-    Home     : Distance := Distance'last;
-    Backlash : Lash := Lash'last;
-    Speed    : Rate := Rate'first;
-  end record;
 
-  No_Data : constant Data := (others => <>);
+  overriding
+  procedure Move_To (Unused   : Device;
+                     Position : Distance) is
+    Unused_Data : Celestron.Focuser.Data;
+  begin
+    Unused_Data := Focuser_Client.Move_To (Position);
+  end Move_To;
 
-  function Exists return Boolean;
 
-  function Moving return Boolean;
+  overriding
+  procedure Stop (Unused : Device) is
+    Unused_Data : Celestron.Focuser.Data;
+  begin
+    Unused_Data := Focuser_Client.Execute (Celestron.Focuser.Stop);
+  end Stop;
 
-  function Home_Position return Distance;
-
-  function Backlash return Lash;
-
-  function Position return Distance;
-
-  function Speed return Rate;
-
-  procedure Execute (Item : Command);
-
-  procedure Move_To (Item : Distance);
-
-  procedure Set_Home (Item : Distance);
-
-  procedure Set (Item : Lash);
-
-  procedure Finish;
-
-end Celestron.Focuser;
+end Focuser.HPS;
