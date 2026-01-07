@@ -110,6 +110,7 @@ package body User is
 
   The_Setup_Command    : Setup_Command := Auto_Focus;
   Setup_Command_Change : Boolean := False;
+  Is_Focusing          : Boolean := False;
 
   subtype State is Telescope.State;
 
@@ -229,8 +230,10 @@ package body User is
     case The_Setup_Command is
     when Auto_Focus =>
       Signal_Action (Auto_Focus_Start);
+      Is_Focusing := True;
     when Align_Stars =>
       Signal_Action (Go_To_Next);
+      Is_Focusing := False;
     end case;
   exception
   when others =>
@@ -293,12 +296,21 @@ package body User is
     procedure Show_Focus_Information is
       Focusing_State : constant Focus.Status := Focus.Actual_State;
     begin
-      Gui.Set_Text (Focuser_Model_Box, Focus.Focuser_Image);
-      Gui.Set_Text (Focus_State_Box, Text.Legible_Of (Focusing_State'image));
       case Focusing_State is
-      when Focus.Stopped | Focus.Evaluated =>
-        Setup_Command_Is_Active := False;
+      when Focus.No_Focuser =>
+        Gui.Set_Text (Focuser_Model_Box, "");
+        Gui.Set_Text (Focus_State_Box, "");
       when others =>
+        Gui.Set_Text (Focuser_Model_Box, Focus.Focuser_Image);
+        Gui.Set_Text (Focus_State_Box, Text.Legible_Of (Focusing_State'image));
+      end case;
+      case Focusing_State is
+      when Focus.No_Focuser | Focus.Undefined | Focus.Evaluated =>
+        if Is_Focusing then
+          Is_Focusing := False;
+          Setup_Command_Is_Active := False;
+        end if;
+      when Focus.Positioning | Focus.Capturing | Focus.Error =>
         null;
       end case;
     end Show_Focus_Information;
@@ -975,7 +987,7 @@ package body User is
                                          Is_Modifiable  => False,
                                          The_Size       => Text_Size,
                                          The_Title_Size => Title_Size);
-        Focus_State_Box := Gui.Create (Setup_Page, "Focusing State", "",
+        Focus_State_Box := Gui.Create (Setup_Page, "Focus State", "",
                                        Is_Modifiable  => False,
                                        The_Size       => Text_Size,
                                        The_Title_Size => Title_Size);

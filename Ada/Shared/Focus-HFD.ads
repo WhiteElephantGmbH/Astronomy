@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2026 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                           (c) 2025 by White Elephant GmbH, Schaffhausen, Switzerland                              *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,73 +15,8 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Focuser;
-with Camera;
-private with Exceptions;
-private with Text;
+package Focus.HFD is
 
-package Focus is
+  procedure Evaluate (Grid : Camera.Raw_Grid);
 
-  subtype Distance is Focuser.Distance;
-
-  type Lash_Correction is range -2**7 .. 2**7 - 1;
-
-  type Status is (No_Focuser, Undefined, Positioning, Capturing, Evaluated, Error);
-
-  procedure Start (Device : Focuser.Object_Access);
-
-  function Actual_State return Status;
-
-  function Focuser_Image return String;
-
-  procedure Evaluate;
-
-  procedure Stop;
-
-  function Error_Message return String;
-
-  procedure Finish;
-
-private
-
-  Focus_Error : exception;
-
-  procedure Error (Message : String);
-
-  procedure Raise_Error (Message : String) with No_Return;
-
-  protected Focus_Data is
-
-    procedure Set (Item : Status);
-
-    procedure Set (First_Position  : Distance;
-                   First_Increment : Distance;
-                   Square_Size     : Camera.Square_Size);
-
-    function State return Status;
-
-    function Start_Position return Distance;
-
-    function Start_Increment return Distance;
-
-    function Grid_Size return Camera.Square_Size;
-
-    procedure Check (Item : Status);
-
-    procedure Set_Error (Message : String);
-
-    procedure Set_Fatal (Item : Exceptions.Occurrence);
-
-    function Last_Error return String;
-
-    procedure Reset_Error;
-
-  private
-    The_State           : Status := No_Focuser;
-    The_Start_Position  : Distance := 12000;
-    The_Start_Increment : Distance := 100;
-    The_Grid_Size       : Camera.Square_Size := 1000;
-    The_Last_Error      : Text.String;
-  end Focus_Data;
-
-end Focus;
+end Focus.HFD;

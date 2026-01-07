@@ -16,6 +16,7 @@
 pragma Style_White_Elephant;
 
 with Ada.Real_Time;
+with Focus.HFD;
 with Traces;
 
 package body Focus is
@@ -102,11 +103,10 @@ package body Focus is
     use type Focuser.Status;
 
     The_Wakeup_Time   : RT.Time := RT.Clock + Delta_Time;
-    The_Next_Position : Focuser.Distance := Focus_Data.Start_Position;
+    The_Next_Position : constant Focuser.Distance := Focus_Data.Start_Position; --!!!
 
   begin -- Control
     Log.Write ("start");
-    Focus_Data.Set (Stopped);
     loop
       select
         accept Start_Autofocus;
@@ -120,10 +120,16 @@ package body Focus is
       or
         accept Await_Stop do
           Log.Write ("Stopping");
-          if The_Focuser.State = Focuser.Moving then
+          case The_Focuser.State is
+          when Focuser.Moving =>
             The_Focuser.Stop;
-          end if;
-          Focus_Data.Set (Stopped);
+          when Focuser.Stopped =>
+            Focus_Data.Set (Undefined);
+          when Focuser.Disconnected =>
+            Focus_Data.Set (No_Focuser);
+          end case;
+          Camera.Stop;
+          Log.Write ("Stopped");
         end Await_Stop;
       or
         accept Shutdown;
@@ -132,19 +138,55 @@ package body Focus is
         delay until The_Wakeup_Time;
         The_Wakeup_Time := RT.Clock + Delta_Time;
         case Focus_Data.State is
+        when No_Focuser =>
+          case The_Focuser.State is
+          when Focuser.Stopped | Focuser.Moving =>
+            Focus_Data.Set (Undefined);
+          when Focuser.Disconnected =>
+            null;
+          end case;
         when Positioning =>
           case The_Focuser.State is
           when Focuser.Stopped =>
             if The_Next_Position = The_Focuser.Actual_Position then
-              Focus_Data.Set (Positioned);
-              The_Next_Position := @ + Focus_Data.Increment;
+              Camera.Capture (Focus_Data.Grid_Size);
+              Focus_Data.Set (Capturing);
             end if;
           when Focuser.Moving =>
             null;
           when Focuser.Disconnected =>
             Error ("Focuser lost connection");
           end case;
-        when others =>
+        when Capturing =>
+          case Camera.Actual_Information.State is
+          when Camera.Cropped =>
+            HFD.Evaluate (Camera.Captured);
+          --!!!The_Next_Position := @ + Focus_Data.Start_Increment;
+            Focus_Data.Set (Evaluated);
+          when Camera.Error =>
+            Error ("Camera: " & Camera.Error_Message);
+          when others =>
+            null;
+          end case;
+        when Evaluated =>
+          case The_Focuser.State is
+          when Focuser.Stopped =>
+            if The_Next_Position /= The_Focuser.Actual_Position then
+              Focus_Data.Set (Undefined);
+            end if;
+          when Focuser.Moving =>
+            Focus_Data.Set (Undefined);
+          when Focuser.Disconnected =>
+            Focus_Data.Set (No_Focuser);
+          end case;
+        when Undefined =>
+          case The_Focuser.State is
+          when Focuser.Stopped | Focuser.Moving =>
+            null;
+          when Focuser.Disconnected =>
+            Focus_Data.Set (No_Focuser);
+          end case;
+        when Error =>
           null;
         end case;
       end select;
@@ -191,11 +233,13 @@ package body Focus is
     end Set;
 
 
-    procedure Set (First_Position : Distance;
-                   With_Increment : Distance) is
+    procedure Set (First_Position  : Distance;
+                   First_Increment : Distance;
+                   Square_Size     : Camera.Square_Size) is
     begin
       The_Start_Position := First_Position;
-      The_Increment := With_Increment;
+      The_Start_Increment := First_Increment;
+      The_Grid_Size := Square_Size;
     end Set;
 
 
@@ -211,10 +255,16 @@ package body Focus is
     end Start_Position;
 
 
-    function Increment return Distance is
+    function Start_Increment return Distance is
     begin
-      return The_Increment;
-    end Increment;
+      return The_Start_Increment;
+    end Start_Increment;
+
+
+    function Grid_Size return Camera.Square_Size is
+    begin
+      return The_Grid_Size;
+    end Grid_Size;
 
 
     procedure Set_Error (Message : String) is
@@ -227,7 +277,7 @@ package body Focus is
     procedure Check (Item : Status) is
     begin
       if The_State /= Item then
-        Set_Error ("Sequence Error - State must be " & Item'image);
+        Error ("Sequence Error - State must be " & Item'image);
         raise Focus_Error;
       end if;
     end Check;
@@ -235,7 +285,7 @@ package body Focus is
 
     procedure Set_Fatal (Item : Exceptions.Occurrence) is
     begin
-      Set_Error ("Internal_Error - " & Exceptions.Name_Of (Item));
+      Error ("Internal_Error - " & Exceptions.Name_Of (Item));
     end Set_Fatal;
 
 
@@ -247,7 +297,7 @@ package body Focus is
 
     procedure Reset_Error is
     begin
-      The_State := Stopped;
+      The_State := No_Focuser;
     end Reset_Error;
 
   end Focus_Data;
