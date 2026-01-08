@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2023 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2023 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -53,6 +53,8 @@ package Camera is
   procedure Start;
 
   function Actual_Information return Information;
+
+  function Model_Image return String;
 
   procedure Capture (Filename  : String;
                      Time      : Exposure.Item := Exposure.From_Camera;

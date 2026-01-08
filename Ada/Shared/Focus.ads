@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2025 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                           (c) 2026 by White Elephant GmbH, Schaffhausen, Switzerland                              *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,14 +15,92 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with Focuser;
+with Camera;
+private with Exceptions;
+private with Text;
+
 package Focus is
 
-  type Diameter is new Natural;
+  subtype Distance is Focuser.Distance;
 
-  function Half_Flux_Diameter (Filename : String) return Diameter;
+  type Lash_Correction is range -2**7 .. 2**7 - 1;
 
-  File_Not_Found  : exception;
-  Unknown_File    : exception;
-  No_Object_Found : exception;
+  type Diameter is new Natural range 0 .. Camera.Min_With_Or_Height;
+
+  type Status is (No_Focuser, Undefined, Positioning, Capturing, Evaluated, Error);
+
+  procedure Start (Device : Focuser.Object_Access);
+
+  function Actual_State return Status;
+
+  function Focuser_Image return String;
+
+  procedure Evaluate;
+
+  type Result is record
+    Half_Flux : Camera.Pixel := 0;
+    HFD       : Diameter := 0;
+    Position  : Distance := 0;
+  end record;
+
+  function Evaluation_Result return Result;
+
+  procedure Stop;
+
+  function Error_Message return String;
+
+  procedure Finish;
+
+private
+
+  Focus_Error : exception;
+
+  procedure Error (Message : String);
+
+  procedure Raise_Error (Message : String) with No_Return;
+
+  protected Focus_Data is
+
+    procedure Set (Item : Status);
+
+    procedure Set (First_Position  : Distance;
+                   First_Increment : Distance;
+                   Square_Size     : Camera.Square_Size);
+
+    function State return Status;
+
+    function Start_Position return Distance;
+
+    function Start_Increment return Distance;
+
+    function Grid_Size return Camera.Square_Size;
+
+    procedure Set (Half_Flux : Camera.Pixel);
+
+    procedure Set (Half_Flux_Diameter : Diameter);
+
+    procedure Set (Position : Distance);
+
+    function Evaluation return Result;
+
+    procedure Check (Item : Status);
+
+    procedure Set_Error (Message : String);
+
+    procedure Set_Fatal (Item : Exceptions.Occurrence);
+
+    function Last_Error return String;
+
+    procedure Reset_Error;
+
+  private
+    The_State           : Status := No_Focuser;
+    The_Start_Position  : Distance := 12000;
+    The_Start_Increment : Distance := 100;
+    The_Grid_Size       : Camera.Square_Size := 1000;
+    The_Result          : Result;
+    The_Last_Error      : Text.String;
+  end Focus_Data;
 
 end Focus;

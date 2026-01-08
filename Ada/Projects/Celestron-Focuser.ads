@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2025 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2025 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,13 +15,15 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with Focus;
+
 package Celestron.Focuser is
 
   type Command is (Decrease_Rate, Increase_Rate, Move_In, Move_Out, Home, Stop);
 
   procedure Start;
 
-  subtype Distance is Natural range 0 .. 2**24 - 1;
+  subtype Distance is Focus.Distance;
 
   type Lash is new Distance range 0 .. 2**8 - 1;
 
@@ -69,6 +71,6 @@ package Celestron.Focuser is
 
   procedure Set (Item : Lash);
 
-  procedure Close;
+  procedure Finish;
 
 end Celestron.Focuser;

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2025 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2025 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -171,6 +171,10 @@ package body Camera.Canon is
   Handler : constant CI.Object_Event_Handler := On_Object_Event'access;
 
 
+  -------------
+  -- Control --
+  -------------
+
   task body Control is
 
     Default_Filename : constant String := "Raw_Picture.CR2";
@@ -307,7 +311,6 @@ package body Camera.Canon is
     Delta_Time : constant RT.Time_Span := RT.To_Time_Span (1.0 / 5);
 
     use type RT.Time;
-
 
     type Session is record
       Device_List : aliased CI.Device_List;
@@ -797,7 +800,7 @@ package body Camera.Canon is
           Download;
         when Cropping =>
           Raw.Prepare_Grid (The_Filename.To_String, The_Grid_Size);
-        when Connecting | Connected | Downloading | Cropped | Stopping | Idle | Error=>
+        when Connecting | Connected | Downloading | Cropped | Stopping | Idle | Error =>
           null;
         end case;
       end select;

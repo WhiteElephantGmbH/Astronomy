@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2025 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                           (c) 2026 by White Elephant GmbH, Schaffhausen, Switzerland                              *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,231 +15,430 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Ada.Calendar;
-with Ada.Streams.Stream_IO;
-with Ada.Numerics.Generic_Elementary_Functions;
-with GID;
+with Ada.Real_Time;
+with Focus.HFD;
 with Traces;
-with Unsigned;
 
 package body Focus is
 
   package Log is new Traces ("Focus");
 
-  package Numeric is new Ada.Numerics.Generic_Elementary_Functions (Float);
+  package RT renames Ada.Real_Time;
 
+  task type Control is
 
-  function Half_Flux_Diameter (Filename : String) return Diameter is
+    entry Start_Autofocus;
 
-    GID_Image : GID.Image_Descriptor;
+    entry Await_Stop;
 
-    The_Diameter : Diameter;
+    entry Shutdown;
 
-    procedure Evaluate_Diameter is
+  end Control;
 
-      Width  : constant Positive := GID.Pixel_Width (GID_Image);
-      Height : constant Positive := GID.Pixel_Height (GID_Image);
-      Bits   : constant Positive := GID.Bits_per_Pixel (GID_Image);
+  The_Control : access Control;
+  The_Focuser : Focuser.Object_Access;
 
-      type Value is new Unsigned.Byte;
-
-      Center_X    : constant Natural := Width / 2;
-      Center_Y    : constant Natural := Height / 2;
-      Center_Area : constant Natural := Height / 8;
-
-      type Column is new Natural range Center_X - Center_Area .. Center_X + Center_Area - 1;
-      type Row    is new Natural range Center_Y - Center_Area .. Center_Y + Center_Area - 1;
-
-      type Image is array (Column, Row) of Value with Pack;
-
-      The_Image : Image;
-
-
-      procedure Set_Image is
-
-        type Color_Range is mod 2**8;
-
-        Actual_X     : Natural;
-        Actual_Y     : Natural;
-        Is_Set       : Boolean := False;
-        New_Position : Boolean := False;
-
-        procedure Set_X_Y (X, Y: Natural) is
-        begin
-          Actual_X := X;
-          Actual_Y := Y;
-          New_Position := True;
-          Is_Set := True;
-        end Set_X_Y;
-
-        procedure Put_Pixel (Red    : Color_Range;
-                             Green  : Color_Range;
-                             Blue   : Color_Range;
-                             Unused : Color_Range) is
-        begin
-          if not Is_Set then
-            raise Program_Error;
-          end if;
-          if not New_Position then
-            Actual_X := Actual_X + 1;
-          end if;
-          if Actual_X >= Natural(Column'first) and Actual_X <= Natural(Column'last) and
-             Actual_Y >= Natural(Row'first) and Actual_Y <= Natural(Row'last)
-          then
-            The_Image(Column(Actual_X), Row(Actual_Y)) := Value((Natural(Red) + Natural(Green) + Natural(Blue)) / 3);
-          end if;
-          New_Position := False;
-        end Put_Pixel;
-
-        procedure Feedback (Percents : Natural) is
-        begin
-          null;
-        end Feedback;
-
-        procedure Load_Image is new GID.Load_Image_Contents (Primary_Color_Range => Color_Range,
-                                                             Set_X_Y             => Set_X_Y,
-                                                             Put_Pixel           => Put_Pixel,
-                                                             Feedback            => Feedback,
-                                                             mode                => GID.fast);
-        Next_Frame : Ada.Calendar.Day_Duration;
-
-      begin -- Set_Image
-        Load_Image (image      => GID_Image,
-                    next_frame => Next_Frame);
-      end Set_Image;
-
-
-      Max_Value   : Value := 0;
-      The_Average : Value;
-
-      procedure Find_Average_And_Maximum is
-        The_Total  : Long_Long_Integer := 0;
-        The_Value  : Value;
-      begin
-        for The_Column in Column loop
-          for The_Row in Row loop
-            The_Value := The_Image(The_Column, The_Row);
-            if The_Value > Max_Value then
-              Max_Value := The_Value;
-            end if;
-            The_Total := The_Total + Long_Long_Integer(The_Value);
-          end loop;
-        end loop;
-        The_Average := Value(The_Total / Long_Long_Integer(Center_Area * 2) ** 2);
-        Log.Write ("  Average:" & The_Average'image);
-        Log.Write ("  Maximum:" & Max_Value'image);
-      end Find_Average_And_Maximum;
-
-
-      Center_Column : Column;
-      Center_Row    : Row;
-      Max_Count     : Natural := 0;
-
-      procedure Find_Largest_Object is
-        The_Count : Natural := 0;
-        Limit     : constant Value := Max_Value - (Max_Value - The_Average) / 2;
-      begin
-        Log.Write ("  Limit:" & Limit'image);
-        for The_Column in Column loop
-          for The_Row in Row loop
-            if The_Image(The_Column, The_Row) > Limit then
-              The_Count := The_Count + 1;
-            else
-              if The_Count > Max_Count then
-                Max_Count := The_Count;
-                Center_Column := The_Column;
-                Center_Row := The_Row;
-              end if;
-              The_Count := 0;
-            end if;
-          end loop;
-        end loop;
-        if Max_Count < 2 then
-          raise No_Object_Found;
-        end if;
-        Center_Row := Row(Natural(Center_Row) - Max_Count / 2);
-        Log.Write ("  Column:" & Center_Column'image);
-        Log.Write ("  Row:" & Natural'(Height - Natural(Center_Row))'image); -- Photo Shop compatibe row
-        Log.Write ("  Size:" & Max_Count'image);
-      end Find_Largest_Object;
-
-
-      The_Pixel_Count  : Natural := 0;
-
-      procedure Count_Object_Pixels is
-        The_First_Column : Column  := Center_Column;
-        The_Last_Column  : Column  := Center_Column;
-        The_First_Row    : Row     := Center_Row;
-        The_Last_Row     : Row     := Center_Row;
-      begin
-        loop
-          exit when The_First_Column = Column'first;
-          The_First_Column := The_First_Column - 1;
-          exit when The_Image(The_First_Column, Center_Row) < The_Average;
-        end loop;
-        loop
-          exit when The_Last_Column = Column'last;
-          The_Last_Column := The_Last_Column + 1;
-          exit when The_Image(The_Last_Column, Center_Row) < The_Average;
-        end loop;
-        loop
-          exit when The_First_Row = Row'first;
-          The_First_Row := The_First_Row - 1;
-          exit when The_Image(Center_Column, The_First_Row) < The_Average;
-        end loop;
-        loop
-          exit when The_Last_Row = Row'last;
-          The_Last_Row := The_Last_Row + 1;
-          exit when The_Image(Center_Column, The_Last_Row) < The_Average;
-        end loop;
-        for The_Column in The_First_Column .. The_Last_Column loop
-          for The_Row in The_First_Row .. The_Last_Row loop
-            if The_Image(The_Column, The_Row) > The_Average then
-              The_Pixel_Count := The_Pixel_Count + 1;
-            end if;
-          end loop;
-        end loop;
-        Log.Write ("  Pixel Count:" & The_Pixel_Count'image);
-      end Count_Object_Pixels;
-
-    begin -- Evaluated_Diameter
-      if not (Bits = 32 or Bits = 24) then
-        Log.Error ("not supported number of bits:" & Bits'image);
-        raise Unknown_File;
-      end if;
-      Set_Image;
-      Find_Average_And_Maximum;
-      Find_Largest_Object;
-      Count_Object_Pixels;
-      The_Diameter := Diameter(Numeric.Sqrt (Float(The_Pixel_Count)));
-      Log.Write ("> HFD =" & The_Diameter'image);
-    end Evaluate_Diameter;
-
-    The_File  : Ada.Streams.Stream_IO.File_Type;
-
+  procedure Start (Device : Focuser.Object_Access) is
   begin
-    Log.Write ("Half_Flux_Diameter of " & Filename);
+    The_Focuser := Device;
+    The_Control := new Control;
+  end Start;
+
+
+  function Actual_State return Status is
+  begin
+    return Focus_Data.State;
+  end Actual_State;
+
+
+  function Focuser_Image return String is
+  begin
+    case The_Focuser.State is
+    when Focuser.Disconnected =>
+      return "";
+    when others =>
+      return The_Focuser.Name;
+    end case;
+  end Focuser_Image;
+
+
+  procedure Evaluate is
+  begin
+    Log.Write ("Evaluate");
+    The_Control.Start_Autofocus;
+  exception
+  when Occurrence: others =>
+    Focus_Data.Set_Fatal (Occurrence);
+  end Evaluate;
+
+
+  function Evaluation_Result return Result is
+  begin
+    return Focus_Data.Evaluation;
+  end Evaluation_Result;
+
+
+  procedure Stop is
+  begin
+    The_Control.Await_Stop;
+  end Stop;
+
+
+  function Error_Message return String is
+  begin
+    Focus_Data.Reset_Error;
+    return Focus_Data.Last_Error;
+  end Error_Message;
+
+
+  procedure Finish is
+  begin
+    The_Control.Shutdown;
+  end Finish;
+
+
+  -------------
+  -- Control --
+  -------------
+
+  task body Control is
+
+    Delta_Time : constant RT.Time_Span := RT.To_Time_Span (1.0 / 2);
+
+    use type RT.Time;
+    use type Focuser.Status;
+
+    Minimum_Start_HFD : constant Diameter := 50;
+
+    type Data is record
+      Position : Distance;
+      HFD      : Diameter;
+    end record;
+
+    type Index is (First, Second, Third, Last);
+
+    The_Data     : array (Index) of Data;
+    The_Index    : Index;
+    The_Position : Distance;
+
+
+    function Inside_Position (Fa, Fb : Distance;
+                              Da, Db : Diameter) return Distance is
+      P : Focus.Distance;
     begin
-      Ada.Streams.Stream_IO.Open (File => The_File,
-                                  Mode => Ada.Streams.Stream_IO.In_File,
-                                  Name => Filename);
+      Log.Write ("Inside - Fa:" & Fa'image & " - Fb:" & Fb'image);
+      Log.Write ("       - Da:" & Da'image & " - Db:" & Db'image);
+      P := Fa + Distance (Natural(Fb - Fa) * Natural(Da) / (Natural(Da + Db)));
+      Log.Write ("P:" & P'image);
+      return P;
     exception
     when others =>
-      raise File_Not_Found;
-    end;
-    declare
+      Raise_Error ("Inside position calculation failed");
+    end Inside_Position;
+
+
+    function Outside_Position (Fa, Fb : Focus.Distance;
+                               Da, Db : Diameter) return Focus.Distance is
+      P : Distance;
     begin
-      GID.Load_Image_Header (image => GID_Image,
-                             from  => Ada.Streams.Stream_IO.Stream(The_File).all);
-      Evaluate_Diameter;
-      Ada.Streams.Stream_IO.Close (The_File);
-      return The_Diameter;
+      Log.Write ("Outside - Fa:" & Fa'image & " - Fb:" & Fb'image);
+      Log.Write ("        - Da:" & Da'image & " - Db:" & Db'image);
+      if Da > Db then
+        P := Fb + Distance (Natural(Fb - Fa) * Natural(Da) / (Natural(Da - Db)));
+        P := Fa + 2 * (P - Fa);
+      else
+        Raise_Error ("Start position too high");
+      end if;
+      Log.Write ("P:" & P'image);
+      return P;
     exception
-    when Item: others =>
-      Log.Termination (Item);
-    end;
-    Ada.Streams.Stream_IO.Close (The_File);
-    raise Unknown_File;
-  end Half_Flux_Diameter;
+    when Focus_Error =>
+      raise;
+    when others =>
+      Raise_Error ("Outside position calculation failed");
+    end Outside_Position;
+
+
+    procedure Start_Evaluation is
+    begin
+      The_Index := First;
+      The_Position := Focus_Data.Start_Position;
+      The_Focuser.Move_To (The_Position);
+      Focus_Data.Set (Positioning);
+    end Start_Evaluation;
+
+
+    procedure Evaluate_Position is
+      Actual_HFD      : constant Diameter := Focus_Data.Evaluation.HFD;
+      Actual_Position : constant Distance := The_Position;
+    begin
+      The_Data(The_Index).HFD := Actual_HFD;
+      The_Data(The_Index).Position := Actual_Position;
+      case The_Index is
+      when First =>
+        if Actual_HFD > Minimum_Start_HFD then -- first star is visible
+          Log.Write ("First HFD:" & Actual_HFD'image);
+          The_Index := Second;
+        end if;
+        The_Position := Actual_Position + Focus_Data.Start_Increment;
+        The_Focuser.Move_To (The_Position);
+        Focus_Data.Set (Positioning);
+      when Second =>
+        The_Position := Outside_Position (Fa => The_Data(First).Position,
+                                          Fb => The_Data(Second).Position,
+                                          Da => The_Data(First).HFD,
+                                          Db => The_Data(Second).HFD);
+        The_Index := Third;
+        The_Focuser.Move_To (The_Position);
+        Focus_Data.Set (Positioning);
+      when Third =>
+        The_Position := Inside_Position (Fa => The_Data(First).Position,
+                                         Fb => The_Data(Third).Position,
+                                         Da => The_Data(First).HFD,
+                                         Db => The_Data(Third).HFD);
+        The_Focuser.Move_To (The_Position);
+        Focus_Data.Set (Positioning);
+        The_Index := Last;
+      when Last =>
+        Focus_Data.Set (The_Position);
+        Focus_Data.Set (Evaluated);
+      end case;
+    exception
+    when Focus_Error =>
+      null;
+    end Evaluate_Position;
+
+    The_Wakeup_Time : RT.Time := RT.Clock + Delta_Time;
+
+  begin -- Control
+    Log.Write ("start");
+    loop
+      select
+        accept Start_Autofocus;
+        case The_Focuser.State is
+        when Focuser.Stopped | Focuser.Moving =>
+          Start_Evaluation;
+        when Focuser.Disconnected =>
+          Error ("Focuser not connected");
+        end case;
+      or
+        accept Await_Stop do
+          Log.Write ("Stopping");
+          case The_Focuser.State is
+          when Focuser.Moving =>
+            The_Focuser.Stop;
+          when Focuser.Stopped =>
+            Focus_Data.Set (Undefined);
+          when Focuser.Disconnected =>
+            Focus_Data.Set (No_Focuser);
+          end case;
+          Camera.Stop;
+          Log.Write ("Stopped");
+        end Await_Stop;
+      or
+        accept Shutdown;
+        exit;
+      or
+        delay until The_Wakeup_Time;
+        The_Wakeup_Time := RT.Clock + Delta_Time;
+        begin
+          case Focus_Data.State is
+          when No_Focuser =>
+            case The_Focuser.State is
+            when Focuser.Stopped | Focuser.Moving =>
+              Focus_Data.Set (Undefined);
+            when Focuser.Disconnected =>
+              null;
+            end case;
+          when Positioning =>
+            case The_Focuser.State is
+            when Focuser.Stopped =>
+              if The_Position = The_Focuser.Actual_Position then
+                Camera.Capture (Focus_Data.Grid_Size);
+                Focus_Data.Set (Capturing);
+              else
+                Error ("Focuser positioning inaccurate");
+              end if;
+            when Focuser.Moving =>
+              null;
+            when Focuser.Disconnected =>
+              Error ("Focuser lost connection");
+            end case;
+          when Capturing =>
+            case Camera.Actual_Information.State is
+            when Camera.Cropped =>
+              HFD.Evaluate (Camera.Captured);
+              if The_Position /= The_Focuser.Actual_Position then
+                Error ("Focuser position moved");
+              else
+                Evaluate_Position;
+              end if;
+            when Camera.Error =>
+              Error ("Camera: " & Camera.Error_Message);
+            when others =>
+              null;
+            end case;
+          when Evaluated =>
+            case The_Focuser.State is
+            when Focuser.Stopped =>
+              if The_Position /= The_Focuser.Actual_Position then
+                Focus_Data.Set (Undefined);
+              end if;
+            when Focuser.Moving =>
+              Focus_Data.Set (Undefined);
+            when Focuser.Disconnected =>
+              Focus_Data.Set (No_Focuser);
+            end case;
+          when Undefined =>
+            case The_Focuser.State is
+            when Focuser.Stopped | Focuser.Moving =>
+              null;
+            when Focuser.Disconnected =>
+              Focus_Data.Set (No_Focuser);
+            end case;
+          when Error =>
+            null;
+          end case;
+        exception
+        when Occurrence: others =>
+          Focus_Data.Set_Fatal (Occurrence);
+        end;
+      end select;
+    end loop;
+    Log.Write ("finish");
+  exception
+  when Occurrance: others =>
+    Log.Termination (Occurrance);
+  end Control;
+
+
+-------------
+-- Private --
+-------------
+
+  --------------------
+  -- Error Handling --
+  --------------------
+
+  procedure Error (Message : String) is
+  begin
+    Log.Error (Message);
+    Focus_Data.Set_Error (Message);
+  end Error;
+
+
+  procedure Raise_Error (Message : String) is
+  begin
+    Error (Message);
+    raise Focus_Error;
+  end Raise_Error;
+
+
+  ----------
+  -- Data --
+  ----------
+  protected body Focus_Data is
+
+    procedure Set (Item : Status) is
+    begin
+      if The_State /= Error then
+        The_State := Item;
+      end if;
+    end Set;
+
+
+    procedure Set (First_Position  : Distance;
+                   First_Increment : Distance;
+                   Square_Size     : Camera.Square_Size) is
+    begin
+      The_Start_Position := First_Position;
+      The_Start_Increment := First_Increment;
+      The_Grid_Size := Square_Size;
+    end Set;
+
+
+    function State return Status is
+    begin
+      return The_State;
+    end State;
+
+
+    function Start_Position return Distance is
+    begin
+      return The_Start_Position;
+    end Start_Position;
+
+
+    function Start_Increment return Distance is
+    begin
+      return The_Start_Increment;
+    end Start_Increment;
+
+
+    function Grid_Size return Camera.Square_Size is
+    begin
+      return The_Grid_Size;
+    end Grid_Size;
+
+
+    procedure Set (Half_Flux : Camera.Pixel) is
+    begin
+      The_Result.Half_Flux := Half_Flux;
+    end Set;
+
+
+    procedure Set (Half_Flux_Diameter : Diameter) is
+    begin
+      The_Result.HFD := Half_Flux_Diameter;
+    end Set;
+
+
+    procedure Set (Position : Distance) is
+    begin
+      The_Result.Position := Position;
+    end Set;
+
+
+    function Evaluation return Result is
+    begin
+      return The_Result;
+    end Evaluation;
+
+
+    procedure Set_Error (Message : String) is
+    begin
+      The_Result := (others => <>);
+      The_Last_Error := [Message];
+      The_State := Error;
+    end Set_Error;
+
+
+    procedure Check (Item : Status) is
+    begin
+      if The_State /= Item then
+        Error ("Sequence Error - State must be " & Item'image);
+        raise Focus_Error;
+      end if;
+    end Check;
+
+
+    procedure Set_Fatal (Item : Exceptions.Occurrence) is
+    begin
+      Error ("Internal_Error - " & Exceptions.Name_Of (Item));
+    end Set_Fatal;
+
+
+    function Last_Error return String is
+    begin
+      return The_Last_Error.To_String;
+    end Last_Error;
+
+
+    procedure Reset_Error is
+    begin
+      The_State := No_Focuser;
+    end Reset_Error;
+
+  end Focus_Data;
 
 end Focus;

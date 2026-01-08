@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2022 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                      *
+-- *                           (c) 2022 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                      *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -16,7 +16,6 @@
 pragma Style_White_Elephant;
 
 with Application;
-with Camera;
 with Error;
 with Gui;
 with Horizon;
@@ -49,11 +48,9 @@ package body Control is
                    Define_Target,
                    Align,
                    Go_To,
-                   Go_To_Left,
-                   Go_To_Right,
-                   Go_To_Top,
                    Go_To_Next,
                    Park,
+                   Start_Auto_Focus,
                    Stop,
                    Unpark,
                    New_Goto_Direction,
@@ -180,16 +177,12 @@ package body Control is
           The_Command := Align;
         when User.Go_To =>
           The_Command := Go_To;
-        when User.Go_To_Left =>
-          The_Command := Go_To_Left;
-        when User.Go_To_Right =>
-          The_Command := Go_To_Right;
-        when User.Go_To_Top =>
-          The_Command := Go_To_Top;
         when User.Go_To_Next =>
           The_Command := Go_To_Next;
         when User.Park =>
           The_Command := Park;
+        when User.Auto_Focus_Start =>
+          The_Command := Start_Auto_Focus;
         when User.Stop =>
           The_Command := Stop;
         when User.Unpark =>
@@ -272,6 +265,7 @@ package body Control is
          | Unparking
          | Disconnected
          | Capturing
+         | Focusing
          | Solving
       =>
         Log.Warning ("goto not executed");
@@ -323,6 +317,7 @@ package body Control is
          | Parked
          | Tracking
          | Transit_State
+         | Focusing
          | Solving
          | Homing
          | Parking
@@ -385,16 +380,12 @@ package body Control is
         Telescope.Align;
       when Go_To =>
         Telescope.Go_To;
-      when Go_To_Left =>
-        Telescope.Go_To_Left;
-      when Go_To_Right =>
-        Telescope.Go_To_Right;
-      when Go_To_Top =>
-        Telescope.Go_To_Top;
       when Go_To_Next =>
         Telescope.Go_To_Next;
       when Park =>
         Telescope.Park;
+      when Start_Auto_Focus =>
+        Telescope.Start_Auto_Focus;
       when Stop =>
         Telescope.Stop;
       when Unpark =>
@@ -485,7 +476,6 @@ package body Control is
     Parameter.Read;
     Start_Stellarium_Server;
     Read_Data;
-    Camera.Start;
     Telescope.Start (Information_Update_Handler'access);
     Targets.Start (Clear    => User.Clear_Targets'access,
                    Define   => User.Define'access,
@@ -494,17 +484,14 @@ package body Control is
     User.Execute (Startup'access,
                   User_Action_Handler'access,
                   Termination'access);
-    Camera.Finish;
     Stellarium.Close;
     Stellarium.Shutdown;
   exception
   when Error.Occurred =>
-    Camera.Finish;
-    User.Show_Error (Error.Message);
     Stellarium.Close;
     Stellarium.Shutdown;
+    User.Show_Error (Error.Message);
   when Occurrence: others =>
-    Camera.Finish;
     Log.Termination (Occurrence);
   end Start;
 

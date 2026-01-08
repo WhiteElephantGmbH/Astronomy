@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2019 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2019 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -417,7 +417,7 @@ package body Control is
           Handle_Telescope_Information;
           Telescope_Information_Is_Handled := True;
         when Close =>
-          Handbox.Close;
+          Handbox.Finish;
           Targets.Stop;
           Telescope.Close;
           Remote.Close;
@@ -438,7 +438,7 @@ package body Control is
   exception
   when Occurrence: others =>
     Log.Termination (Occurrence);
-    Handbox.Close;
+    Handbox.Finish;
     Targets.Stop;
     Gui.Close;
     Telescope.Close;

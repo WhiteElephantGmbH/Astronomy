@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2022 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2022 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
@@ -35,6 +35,7 @@ package Ten_Micron is
                  Catching,      -- slewing to catch the satellite
                  Ended,         -- the transit has ended
                  Capturing,     -- Camera is capturing a picture
+                 Focusing,      -- Camera is Focusing
                  Solving,       -- picture solving
                  Disconnected); -- no connection to mount
 
@@ -125,6 +126,10 @@ package Ten_Micron is
   procedure Start_Solving;
 
   procedure End_Solving;
+
+  procedure Start_Focusing;
+
+  procedure End_Focusing;
 
   procedure Load_Tle (Name : String);
 
