@@ -91,6 +91,9 @@ package body User is
   Camera_State_Box     : Gui.Plain_Edit_Box;
   Focuser_Model_Box    : Gui.Plain_Edit_Box;
   Focus_State_Box      : Gui.Plain_Edit_Box;
+  Half_Flux_Box        : Gui.Plain_Edit_Box;
+  Focus_HFD_Box        : Gui.Plain_Edit_Box;
+  Focus_Position_Box   : Gui.Plain_Edit_Box;
 
   type Page is (Is_Control, Is_Display, Is_Setup);
 
@@ -287,6 +290,16 @@ package body User is
 
   procedure Show (Information : Telescope.Data) is
 
+    function Image_Of (Item         : String;
+                       No_Value_For : String := "") return String is
+      Image : constant String := Text.Trimmed (Item);
+    begin
+      if Image = No_Value_For then
+        return "";
+      end if;
+      return Image;
+    end Image_Of;
+
     procedure Show_Camera_Information is
     begin
       Gui.Set_Text (Camera_Model_Box, Camera.Model_Image);
@@ -295,14 +308,21 @@ package body User is
 
     procedure Show_Focus_Information is
       Focusing_State : constant Focus.Status := Focus.Actual_State;
+      Evaluation     : constant Focus.Result := Focus.Evaluation_Result;
     begin
       case Focusing_State is
       when Focus.No_Focuser =>
         Gui.Set_Text (Focuser_Model_Box, "");
         Gui.Set_Text (Focus_State_Box, "");
+        Gui.Set_Text (Half_Flux_Box, "");
+        Gui.Set_Text (Focus_HFD_Box, "");
+        Gui.Set_Text (Focus_Position_Box, "");
       when others =>
         Gui.Set_Text (Focuser_Model_Box, Focus.Focuser_Image);
         Gui.Set_Text (Focus_State_Box, Text.Legible_Of (Focusing_State'image));
+        Gui.Set_Text (Half_Flux_Box, Image_Of (Evaluation.Half_Flux'image, No_Value_For => "0"));
+        Gui.Set_Text (Focus_HFD_Box, Image_Of (Evaluation.HFD'image, No_Value_For => "0"));
+        Gui.Set_Text (Focus_Position_Box, Image_Of (Evaluation.Position'image, No_Value_For => "0"));
       end case;
       case Focusing_State is
       when Focus.No_Focuser | Focus.Undefined | Focus.Evaluated =>
@@ -484,16 +504,6 @@ package body User is
       Gui.Set_Text (Pier_Side, "");
       The_Actual_Direction := Earth.Unknown_Direction;
     end Clear_Actual_Values;
-
-    function Image_Of (Item         : String;
-                       No_Value_For : String := "") return String is
-      Image : constant String := Text.Trimmed (Item);
-    begin
-      if Image = No_Value_For then
-        return "";
-      end if;
-      return Image;
-    end Image_Of;
 
     use type Time.Ut;
     use type Telescope.Time_Offset;
@@ -991,6 +1001,18 @@ package body User is
                                        Is_Modifiable  => False,
                                        The_Size       => Text_Size,
                                        The_Title_Size => Title_Size);
+        Half_Flux_Box := Gui.Create (Setup_Page, "Half Flux", "",
+                                     Is_Modifiable  => False,
+                                     The_Size       => Text_Size,
+                                     The_Title_Size => Title_Size);
+        Focus_HFD_Box := Gui.Create (Setup_Page, "Focus HFD", "",
+                                     Is_Modifiable  => False,
+                                     The_Size       => Text_Size,
+                                     The_Title_Size => Title_Size);
+        Focus_Position_Box := Gui.Create (Setup_Page, "Auto Focus", "",
+                                          Is_Modifiable  => False,
+                                          The_Size       => Text_Size,
+                                          The_Title_Size => Title_Size);
       end Define_Setup_Page;
 
     begin -- Create_Interface

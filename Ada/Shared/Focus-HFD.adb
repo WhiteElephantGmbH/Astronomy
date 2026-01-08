@@ -30,7 +30,12 @@ package body Focus.HFD is
 
 
   procedure Evaluate (Grid : Camera.Raw_Grid) is
+    use type Camera.Raw_Grid;
   begin
+    if Grid = [] then
+      Error ("No Grid - " & Camera.Error_Message);
+      return;
+    end if;
     declare
       subtype Huge_Natural is Long_Long_Integer range 0 .. Long_Long_Integer'last;
 
@@ -101,7 +106,7 @@ package body Focus.HFD is
             end if;
           end loop;
         end loop;
-        Log.Write ("Max Right Angle:" & Max_Right_Angle'image);
+        Log.Write ("Max Right Angle Size:" & Max_Right_Angle.Size'image);
         return Max_Right_Angle;
       end Evaluated_Max_Rigth_Angle;
 
@@ -119,7 +124,7 @@ package body Focus.HFD is
                Column > RA.Edge.Column and Column < RA.Ends.Column;
        end Is_In_RA;
 
-      function Evaluated_Half_Flux_Diameter (Center : out Position) return Natural is
+      function Evaluated_Half_Flux_Diameter (Center : out Position) return Diameter is
         First_Column : Camera.Columns := RA.Edge.Column;
         Last_Column  : Camera.Columns := RA.Ends.Column;
         First_Row    : Camera.Rows := RA.Edge.Row;
@@ -159,17 +164,19 @@ package body Focus.HFD is
         end loop;
         Center := (Column => Camera.Columns (Column_Sum / The_Count),
                    Row    => Camera.Rows (Row_Sum / The_Count));
-        return Natural (2.0 * NF.Sqrt (Float(The_Count) / Pi));
+        return Diameter (2.0 * NF.Sqrt (Float(The_Count) / Pi));
       end Evaluated_Half_Flux_Diameter;
 
       The_Center : Position;
 
-      Half_Flux_Diameter : constant Natural := Evaluated_Half_Flux_Diameter (The_Center);
+      Half_Flux_Diameter : constant Diameter := Evaluated_Half_Flux_Diameter (The_Center);
 
     begin
       Log.Write ("Half Flux:" & Half_Flux'image);
-      Log.Write ("Center Position:" & The_Center'image);
+      Focus_Data.Set (Half_Flux);
       Log.Write ("Half Flux Diameter:" & Half_Flux_Diameter'image);
+      Log.Write ("Center - Row:" & The_Center.Row'image & " - Column:" & The_Center.Column'image);
+      Focus_Data.Set (Half_Flux_Diameter);
     end;
   exception
   when Occurrence: others =>

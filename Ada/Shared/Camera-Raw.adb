@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2025 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2025 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -107,10 +107,11 @@ package body Camera.Raw is
     procedure Check (Code  : C.Int;
                      Where : String) is
       use type C.Int;
+      New_Line : constant String := [Ascii.Cr, Ascii.Lf];
     begin
       Log.Write (Where);
       if Code /= 0 then
-        Raise_Error (Where & " failed (LibRaw error code" & Integer'image (Integer (Code)) & ")");
+        Raise_Error (Where & " failed" & New_Line & "(LibRaw error code" & Integer'image (Integer (Code)) & ")");
       end if;
     end Check;
 
@@ -119,7 +120,7 @@ package body Camera.Raw is
     if Ctx = RI.Null_Context then
       Raise_Error ("libraw init returned NULL");
     end if;
-    Check (RI.Open_File (Ctx, File_C'address), "libraw open_file");
+    Check (RI.Open_File (Ctx, File_C'address), "libraw open_file " & The_Filename.To_String);
     Check (RI.Unpack (Ctx), "libraw unpack");
     Check (RI.Raw2_Image (Ctx), "libraw raw2image");
 
@@ -188,12 +189,15 @@ package body Camera.Raw is
 
       Cleanup;
       Camera_Data.Set (Idle);
-
       return Result;
     end;
   exception
-  when others =>
+  when Camera_Error =>
     Cleanup;
+    return [];
+  when Occurrence: others =>
+    Cleanup;
+    Camera_Data.Set_Fatal (Occurrence);
     return [];
   end Grid;
 

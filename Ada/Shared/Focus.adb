@@ -72,6 +72,12 @@ package body Focus is
   end Evaluate;
 
 
+  function Evaluation_Result return Result is
+  begin
+    return Focus_Data.Evaluation;
+  end Evaluation_Result;
+
+
   procedure Stop is
   begin
     The_Control.Await_Stop;
@@ -102,8 +108,107 @@ package body Focus is
     use type RT.Time;
     use type Focuser.Status;
 
-    The_Wakeup_Time   : RT.Time := RT.Clock + Delta_Time;
-    The_Next_Position : constant Focuser.Distance := Focus_Data.Start_Position; --!!!
+    Minimum_Start_HFD : constant Diameter := 50;
+
+    type Data is record
+      Position : Distance;
+      HFD      : Diameter;
+    end record;
+
+    type Index is (First, Second, Third, Last);
+
+    The_Data     : array (Index) of Data;
+    The_Index    : Index;
+    The_Position : Distance;
+
+
+    function Inside_Position (Fa, Fb : Distance;
+                              Da, Db : Diameter) return Distance is
+      P : Focus.Distance;
+    begin
+      Log.Write ("Inside - Fa:" & Fa'image & " - Fb:" & Fb'image);
+      Log.Write ("       - Da:" & Da'image & " - Db:" & Db'image);
+      P := Fa + Distance (Natural(Fb - Fa) * Natural(Da) / (Natural(Da + Db)));
+      Log.Write ("P:" & P'image);
+      return P;
+    exception
+    when others =>
+      Raise_Error ("Inside position calculation failed");
+    end Inside_Position;
+
+
+    function Outside_Position (Fa, Fb : Focus.Distance;
+                               Da, Db : Diameter) return Focus.Distance is
+      P : Distance;
+    begin
+      Log.Write ("Outside - Fa:" & Fa'image & " - Fb:" & Fb'image);
+      Log.Write ("        - Da:" & Da'image & " - Db:" & Db'image);
+      if Da > Db then
+        P := Fb + Distance (Natural(Fb - Fa) * Natural(Da) / (Natural(Da - Db)));
+        P := Fa + 2 * (P - Fa);
+      else
+        Raise_Error ("Start position too high");
+      end if;
+      Log.Write ("P:" & P'image);
+      return P;
+    exception
+    when Focus_Error =>
+      raise;
+    when others =>
+      Raise_Error ("Outside position calculation failed");
+    end Outside_Position;
+
+
+    procedure Start_Evaluation is
+    begin
+      The_Index := First;
+      The_Position := Focus_Data.Start_Position;
+      The_Focuser.Move_To (The_Position);
+      Focus_Data.Set (Positioning);
+    end Start_Evaluation;
+
+
+    procedure Evaluate_Position is
+      Actual_HFD      : constant Diameter := Focus_Data.Evaluation.HFD;
+      Actual_Position : constant Distance := The_Position;
+    begin
+      The_Data(The_Index).HFD := Actual_HFD;
+      The_Data(The_Index).Position := Actual_Position;
+      case The_Index is
+      when First =>
+        if Actual_HFD > Minimum_Start_HFD then -- first star is visible
+          Log.Write ("First HFD:" & Actual_HFD'image);
+          The_Index := Second;
+        end if;
+        The_Position := Actual_Position + Focus_Data.Start_Increment;
+        The_Focuser.Move_To (The_Position);
+        Focus_Data.Set (Positioning);
+      when Second =>
+        The_Position := Outside_Position (Fa => The_Data(First).Position,
+                                          Fb => The_Data(Second).Position,
+                                          Da => The_Data(First).HFD,
+                                          Db => The_Data(Second).HFD);
+        The_Index := Third;
+        The_Focuser.Move_To (The_Position);
+        Focus_Data.Set (Positioning);
+      when Third =>
+        The_Position := Inside_Position (Fa => The_Data(First).Position,
+                                         Fb => The_Data(Third).Position,
+                                         Da => The_Data(First).HFD,
+                                         Db => The_Data(Third).HFD);
+        The_Focuser.Move_To (The_Position);
+        Focus_Data.Set (Positioning);
+        The_Index := Last;
+      when Last =>
+        Focus_Data.Set (The_Position);
+        Focus_Data.Set (Evaluated);
+      end case;
+    exception
+    when Focus_Error =>
+      null;
+    end Evaluate_Position;
+
+    The_Wakeup_Time : RT.Time := RT.Clock + Delta_Time;
 
   begin -- Control
     Log.Write ("start");
@@ -112,8 +217,7 @@ package body Focus is
         accept Start_Autofocus;
         case The_Focuser.State is
         when Focuser.Stopped | Focuser.Moving =>
-          The_Focuser.Move_To (The_Next_Position);
-          Focus_Data.Set (Positioning);
+          Start_Evaluation;
         when Focuser.Disconnected =>
           Error ("Focuser not connected");
         end case;
@@ -137,58 +241,66 @@ package body Focus is
       or
         delay until The_Wakeup_Time;
         The_Wakeup_Time := RT.Clock + Delta_Time;
-        case Focus_Data.State is
-        when No_Focuser =>
-          case The_Focuser.State is
-          when Focuser.Stopped | Focuser.Moving =>
-            Focus_Data.Set (Undefined);
-          when Focuser.Disconnected =>
-            null;
-          end case;
-        when Positioning =>
-          case The_Focuser.State is
-          when Focuser.Stopped =>
-            if The_Next_Position = The_Focuser.Actual_Position then
-              Camera.Capture (Focus_Data.Grid_Size);
-              Focus_Data.Set (Capturing);
-            end if;
-          when Focuser.Moving =>
-            null;
-          when Focuser.Disconnected =>
-            Error ("Focuser lost connection");
-          end case;
-        when Capturing =>
-          case Camera.Actual_Information.State is
-          when Camera.Cropped =>
-            HFD.Evaluate (Camera.Captured);
-          --!!!The_Next_Position := @ + Focus_Data.Start_Increment;
-            Focus_Data.Set (Evaluated);
-          when Camera.Error =>
-            Error ("Camera: " & Camera.Error_Message);
-          when others =>
-            null;
-          end case;
-        when Evaluated =>
-          case The_Focuser.State is
-          when Focuser.Stopped =>
-            if The_Next_Position /= The_Focuser.Actual_Position then
+        begin
+          case Focus_Data.State is
+          when No_Focuser =>
+            case The_Focuser.State is
+            when Focuser.Stopped | Focuser.Moving =>
               Focus_Data.Set (Undefined);
-            end if;
-          when Focuser.Moving =>
-            Focus_Data.Set (Undefined);
-          when Focuser.Disconnected =>
-            Focus_Data.Set (No_Focuser);
-          end case;
-        when Undefined =>
-          case The_Focuser.State is
-          when Focuser.Stopped | Focuser.Moving =>
+            when Focuser.Disconnected =>
+              null;
+            end case;
+          when Positioning =>
+            case The_Focuser.State is
+            when Focuser.Stopped =>
+              if The_Position = The_Focuser.Actual_Position then
+                Camera.Capture (Focus_Data.Grid_Size);
+                Focus_Data.Set (Capturing);
+              end if;
+            when Focuser.Moving =>
+              null;
+            when Focuser.Disconnected =>
+              Error ("Focuser lost connection");
+            end case;
+          when Capturing =>
+            case Camera.Actual_Information.State is
+            when Camera.Cropped =>
+              HFD.Evaluate (Camera.Captured);
+              if The_Position /= The_Focuser.Actual_Position then
+                Error ("Focuser positioning inaccurate");
+              else
+                Evaluate_Position;
+              end if;
+            when Camera.Error =>
+              Error ("Camera: " & Camera.Error_Message);
+            when others =>
+              null;
+            end case;
+          when Evaluated =>
+            case The_Focuser.State is
+            when Focuser.Stopped =>
+              if The_Position /= The_Focuser.Actual_Position then
+                Focus_Data.Set (Undefined);
+              end if;
+            when Focuser.Moving =>
+              Focus_Data.Set (Undefined);
+            when Focuser.Disconnected =>
+              Focus_Data.Set (No_Focuser);
+            end case;
+          when Undefined =>
+            case The_Focuser.State is
+            when Focuser.Stopped | Focuser.Moving =>
+              null;
+            when Focuser.Disconnected =>
+              Focus_Data.Set (No_Focuser);
+            end case;
+          when Error =>
             null;
-          when Focuser.Disconnected =>
-            Focus_Data.Set (No_Focuser);
           end case;
-        when Error =>
-          null;
-        end case;
+        exception
+        when Occurrence: others =>
+          Focus_Data.Set_Fatal (Occurrence);
+        end;
       end select;
     end loop;
     Log.Write ("finish");
@@ -267,8 +379,33 @@ package body Focus is
     end Grid_Size;
 
 
+    procedure Set (Half_Flux : Camera.Pixel) is
+    begin
+      The_Result.Half_Flux := Half_Flux;
+    end Set;
+
+
+    procedure Set (Half_Flux_Diameter : Diameter) is
+    begin
+      The_Result.HFD := Half_Flux_Diameter;
+    end Set;
+
+
+    procedure Set (Position : Distance) is
+    begin
+      The_Result.Position := Position;
+    end Set;
+
+
+    function Evaluation return Result is
+    begin
+      return The_Result;
+    end Evaluation;
+
+
     procedure Set_Error (Message : String) is
     begin
+      The_Result := (others => <>);
       The_Last_Error := [Message];
       The_State := Error;
     end Set_Error;

@@ -26,6 +26,8 @@ package Focus is
 
   type Lash_Correction is range -2**7 .. 2**7 - 1;
 
+  type Diameter is new Natural range 0 .. Camera.Min_With_Or_Height;
+
   type Status is (No_Focuser, Undefined, Positioning, Capturing, Evaluated, Error);
 
   procedure Start (Device : Focuser.Object_Access);
@@ -35,6 +37,14 @@ package Focus is
   function Focuser_Image return String;
 
   procedure Evaluate;
+
+  type Result is record
+    Half_Flux : Camera.Pixel := 0;
+    HFD       : Diameter := 0;
+    Position  : Distance := 0;
+  end record;
+
+  function Evaluation_Result return Result;
 
   procedure Stop;
 
@@ -66,6 +76,14 @@ private
 
     function Grid_Size return Camera.Square_Size;
 
+    procedure Set (Half_Flux : Camera.Pixel);
+
+    procedure Set (Half_Flux_Diameter : Diameter);
+
+    procedure Set (Position : Distance);
+
+    function Evaluation return Result;
+
     procedure Check (Item : Status);
 
     procedure Set_Error (Message : String);
@@ -81,6 +99,7 @@ private
     The_Start_Position  : Distance := 12000;
     The_Start_Increment : Distance := 100;
     The_Grid_Size       : Camera.Square_Size := 1000;
+    The_Result          : Result;
     The_Last_Error      : Text.String;
   end Focus_Data;
 
