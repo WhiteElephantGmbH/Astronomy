@@ -56,8 +56,8 @@ package body Camera is
 
 
   procedure Capture (Filename  : String;
-                     Time      : Exposure.Item    := Exposure.From_Camera;
-                     Parameter : Sensitivity.Item := Sensitivity.Default) is
+                     Time      : Exposure.Item;
+                     Parameter : Sensitivity.Item) is
 
     function Filename_With_Extension (Default : String) return String is
       Folder : constant String := File.Containing_Directory_Of (Filename);
@@ -87,9 +87,15 @@ package body Camera is
   end Capture;
 
 
+  procedure Capture (Filename : String) is
+  begin
+    Capture (Filename, The_Exposure_Parameter, The_Sensitivity_Parameter);
+  end Capture;
+
+
   procedure Capture (Size      : Square_Size;
-                     Time      : Exposure.Item := Exposure.From_Camera;
-                     Parameter : Sensitivity.Item := Sensitivity.Default) is
+                     Time      : Exposure.Item;
+                     Parameter : Sensitivity.Item) is
   begin
     Log.Write ("Capture - Size:" & Size'image & " - Time: " & Time'image & " - Parameter: " & Parameter'image);
     Camera_Data.Set (Unknown);
@@ -103,6 +109,12 @@ package body Camera is
   exception
   when Occurrence: others =>
     Camera_Data.Set_Fatal (Occurrence);
+  end Capture;
+
+
+  procedure Capture (Size : Square_Size) is
+  begin
+    Capture (Size, The_Exposure_Parameter, The_Sensitivity_Parameter);
   end Capture;
 
 
@@ -164,6 +176,12 @@ package body Camera is
   end Raise_Error;
 
 
+  function Has_Error return Boolean is
+  begin
+    return Camera_Data.Actual.State = Failed;
+  end Has_Error;
+
+
   function Error_Message return String is
   begin
     Camera_Data.Reset_Error;
@@ -174,11 +192,12 @@ package body Camera is
   ----------
   -- Data --
   ----------
+
   protected body Camera_Data is
 
     procedure Set (State : Status) is
     begin
-      if The_Information.State /= Error then
+      if The_Information.State /= Failed then
         The_Information.State := State;
       end if;
     end Set;
@@ -212,7 +231,7 @@ package body Camera is
     begin
       if The_Information.State /= Item then
         The_Last_Error := ["Sequence Error - State must be " & Item'image];
-        The_Information.State := Error;
+        The_Information.State := Failed;
         raise Camera_Error;
       end if;
     end Check;
@@ -221,7 +240,7 @@ package body Camera is
     procedure Set_Error (Message : String) is
     begin
       The_Last_Error := [Message];
-      The_Information.State := Error;
+      The_Information.State := Failed;
     end Set_Error;
 
 
@@ -243,10 +262,5 @@ package body Camera is
     end Reset_Error;
 
   end Camera_Data;
-
-  ----------
-  -- Grid --
-  ----------
-
 
 end Camera;

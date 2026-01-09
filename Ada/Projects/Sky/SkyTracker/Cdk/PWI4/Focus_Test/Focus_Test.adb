@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2025 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                           (c) 2025 by White Elephant GmbH, Schaffhausen, Switzerland                              *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,64 +15,49 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-pragma Build (Description => "Camera test",
-              Version     => (1, 0, 0, 2),
+pragma Build (Description => "Focus test",
+              Version     => (1, 0, 0, 0),
               Kind        => Console,
               Icon        => False,
               Compiler    => "GNATPRO\23.0");
 
 with Ada.Text_IO;
-with Camera;
+with Camera.Parameter;
 with Exceptions;
 with Exposure;
-with Os.System;
+with Focus;
+with Focuser.PWI4;
 with Sensitivity;
 with Text;
 
-procedure Camera_Test is
+procedure Focus_Test is
 
   package IO renames Ada.Text_IO;
 
-  procedure Show_Grid is
-    Grid : constant Camera.Raw_Grid := Camera.Captured;
+  Delay_Time : constant Duration := 0.5;
+
+  procedure Error (Message : String) is
   begin
-    for Row in Grid'range(1) loop
-      declare
-        Row_Image : constant String := "  " & Row'image;
-      begin
-        IO.Put (Row_Image(Row_Image'last - 3 .. Row_Image'last) & ":");
-        for Column in Grid'range(2) loop
-          declare
-            Column_Image : constant String := "     " & Grid(Row, Column)'image;
-          begin
-            IO.Put (Column_Image(Column_Image'last - 5 .. Column_Image'last));
-          end;
-        end loop;
-        IO.New_Line;
-      end;
-    end loop;
-  end Show_Grid;
-
-  Delay_Time : constant Duration := 0.2;
-  Timeout    : constant Duration := 15.0;
-  Counter    : constant Natural := Natural(Timeout / Delay_Time);
-
-  The_Count : Integer;
+    IO.New_Line;
+    IO.Put_Line ("### " & Message & " ###");
+  end Error;
 
 begin -- Camera_Test
-  IO.Put_Line ("Camera Test");
-  IO.Put_Line ("===========");
+  IO.Put_Line ("Focus Test");
+  IO.Put_Line ("==========");
   Camera.Start;
-  IO.Put ("Started");
+  Focus.Start (Focuser.PWI4.New_Device);
+  delay 1.0; -- wait for started;
   loop
     declare
-      function Info return Camera.Information is (Camera.Actual_Information);
+      function State return Focus.Status is (Focus.Actual_State);
     begin
-      case Info.State is
-      when Camera.Idle =>
-        The_Count := Counter;
+      case State is
+      when Focus.No_Focuser =>
+        Error ("No focuser connected");
+        exit;
+      when Focus.Undefined =>
         IO.New_Line;
-        IO.Put_Line ("Idle");
         IO.Put ("cmd> ");
         declare
           Parameters : constant Text.Strings := Text.Strings_Of (IO.Get_Line, Separator => ' ');
@@ -91,56 +76,44 @@ begin -- Camera_Test
                                                       then Sensitivity.Default
                                                       else Sensitivity.Value (Parameters(3)));
           begin
+            Camera.Parameter.Define (Exp_Time, Parameter);
             case Text.Uppercase_Of (Command(Command'first)) is
-            when 'C' =>
-              Camera.Capture (Os.System.Temp_Path & "Picture", Exp_Time, Parameter);
-            when 'G' =>
-              Camera.Capture (10, Exp_Time, Parameter);
+            when 'F' =>
+              Focus.Evaluate;
             when others =>
               raise Constraint_Error;
             end case;
           end;
         exception
-        when Item: others =>
-          IO.Put_Line ("### Unknown - expexted: [('C' | 'G') [<time> [<iso> | '[' <gain> ',' <offset> ']']]] ###");
-          IO.Put_Line (Exceptions.Information_Of (Item));
+        when others =>
+          IO.Put_Line ("### Unknown - expexted: ['F' [<time> [ '[' <gain> ',' <offset> ']']] ###");
         end;
-      when Camera.Connecting =>
-        IO.Put ("o");
-      when Camera.Connected =>
+      when Focus.Positioning =>
+        IO.Put ('p');
+      when Focus.Capturing =>
+        IO.Put ('c');
+      when Focus.Evaluated =>
         IO.New_Line;
-        IO.Put_Line ("Connnected " & Info.Camera'image);
-      when Camera.Capturing =>
-        IO.Put ("c");
-      when Camera.Captured =>
-        IO.Put ("C");
-      when Camera.Downloading =>
-        IO.Put ("d");
-      when Camera.Cropping =>
-        IO.Put ("r");
-      when Camera.Cropped =>
-        IO.New_Line;
-        Show_Grid;
-        IO.Put_Line ("Image Height:" & Info.Height'image);
-        IO.Put_Line ("Image Width :" & Info.Width'image);
-      when Camera.Stopping =>
-        IO.Put ("s");
-      when Camera.Failed =>
-        IO.New_Line;
-        IO.Put_Line ("### " & Camera.Error_Message & " ###");
+        declare
+          Result : constant Focus.Result := Focus.Evaluation_Result;
+        begin
+          IO.Put ("Half Flux:" & Result.Half_Flux'image);
+          IO.Put ("HFD      :" & Result.HFD'image);
+          IO.Put ("Position :" & Result.Position'image);
+        end;
+      when Focus.Failed =>
+        Error (Focus.Error_Message);
+        exit;
       end case;
     end;
     delay Delay_Time;
-    The_Count := @ - 1;
-    if The_Count = 0 then
-      IO.Put ("a");
-      Camera.Stop;
-    end if;
   end loop;
+  Focus.Finish;
   Camera.Finish;
-  IO.Put_Line ("Stopped");
 
 exception
 when Item: others =>
   IO.Put_Line (Exceptions.Information_Of (Item));
-end Camera_Test;
+  Focus.Finish;
+  Camera.Finish;
+end Focus_Test;

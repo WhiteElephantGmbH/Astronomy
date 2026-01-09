@@ -28,7 +28,7 @@ package Focus is
 
   type Diameter is new Natural range 0 .. Camera.Min_With_Or_Height;
 
-  type Status is (No_Focuser, Undefined, Positioning, Capturing, Evaluated, Error);
+  type Status is (No_Focuser, Undefined, Positioning, Capturing, Evaluated, Failed);
 
   procedure Start (Device : Focuser.Object_Access);
 

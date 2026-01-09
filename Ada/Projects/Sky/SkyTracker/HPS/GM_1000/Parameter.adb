@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2022 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2022 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -18,6 +18,7 @@ pragma Style_White_Elephant;
 with Ada.Text_IO;
 with Alignment.Parameter;
 with Application;
+with Camera.Parameter;
 with Clock.Parameter;
 with Configuration;
 with Error;
@@ -70,6 +71,8 @@ package body Parameter is
       Put ("");
       Clock.Parameter.Defaults (Put'access);
       Put ("");
+      Camera.Parameter.Defaults (Put'access);
+      Put ("");
       Picture.Parameter.Defaults (Put'access, Height => "0.51", Width => "0.74");
       Put ("");
       Alignment.Parameter.Defaults (Put'access);
@@ -92,6 +95,7 @@ package body Parameter is
     begin
       Language.Parameter.Define (Handle); -- must be first
       Ten_Micron.Parameter.Define (Handle);
+      Camera.Parameter.Define (Handle);
       Focuser_Client.Parameter.Define (Handle);
       Http_Server.Parameter.Define (Handle);
       Sun.Parameter.Define (Handle);

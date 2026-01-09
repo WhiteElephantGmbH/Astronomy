@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2025 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2025 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -94,7 +94,7 @@ begin -- Camera_Test
         HFD.Evaluate (Camera.Captured);
       when Camera.Stopping =>
         IO.Put ("s");
-      when Camera.Error =>
+      when Camera.Failed =>
         IO.New_Line;
         IO.Put_Line ("### " & Camera.Error_Message & " ###");
       end case;

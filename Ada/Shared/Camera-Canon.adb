@@ -800,7 +800,7 @@ package body Camera.Canon is
           Download;
         when Cropping =>
           Raw.Prepare_Grid (The_Filename.To_String, The_Grid_Size);
-        when Connecting | Connected | Downloading | Cropped | Stopping | Idle | Error =>
+        when Connecting | Connected | Downloading | Cropped | Stopping | Idle | Failed =>
           null;
         end case;
       end select;

@@ -694,7 +694,7 @@ package body Camera.QHYCCD is
       or
         accept Await_Stop do
           Log.Write ("Stopping");
-          if not (Camera_Data.Actual.State in Idle | Error) then
+          if not (Camera_Data.Actual.State in Idle | Failed) then
             Disconnect;
           end if;
         end Await_Stop;

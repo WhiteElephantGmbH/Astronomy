@@ -255,7 +255,11 @@ package body Focus is
             when Focuser.Stopped =>
               if The_Position = The_Focuser.Actual_Position then
                 Camera.Capture (Focus_Data.Grid_Size);
-                Focus_Data.Set (Capturing);
+                if Camera.Has_Error then
+                  Error (Camera.Error_Message);
+                else
+                  Focus_Data.Set (Capturing);
+                end if;
               else
                 Error ("Focuser positioning inaccurate");
               end if;
@@ -273,8 +277,8 @@ package body Focus is
               else
                 Evaluate_Position;
               end if;
-            when Camera.Error =>
-              Error ("Camera: " & Camera.Error_Message);
+            when Camera.Failed =>
+              Error (Camera.Error_Message);
             when others =>
               null;
             end case;
@@ -296,7 +300,7 @@ package body Focus is
             when Focuser.Disconnected =>
               Focus_Data.Set (No_Focuser);
             end case;
-          when Error =>
+          when Failed =>
             null;
           end case;
         exception
@@ -337,11 +341,12 @@ package body Focus is
   ----------
   -- Data --
   ----------
+
   protected body Focus_Data is
 
     procedure Set (Item : Status) is
     begin
-      if The_State /= Error then
+      if The_State /= Failed then
         The_State := Item;
       end if;
     end Set;
@@ -409,7 +414,7 @@ package body Focus is
     begin
       The_Result := (others => <>);
       The_Last_Error := [Message];
-      The_State := Error;
+      The_State := Failed;
     end Set_Error;
 
 

@@ -411,7 +411,7 @@ package body Telescope is
       procedure Check_Camera_Error is
         use type Camera.Status;
       begin
-        if Camera.Actual_Information.State = Camera.Error then
+        if Camera.Actual_Information.State = Camera.Failed then
           User.Show_Error (Camera.Error_Message);
           User.Perform_Stop;
         end if;
@@ -482,7 +482,7 @@ package body Telescope is
           case Focus.Actual_State is
           when Focus.Evaluated =>
             Ten_Micron.End_Focusing;
-          when Focus.Error =>
+          when Focus.Failed =>
             Ten_Micron.End_Focusing;
             User.Show_Error (Focus.Error_Message);
           when others =>

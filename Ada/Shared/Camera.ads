@@ -30,7 +30,7 @@ package Camera is
 
   subtype Canon_Model is Model range Canon_Eos_6D .. Canon_Eos_60D;
 
-  type Status is (Idle, Connecting, Connected, Capturing, Captured, Downloading, Cropping, Cropped, Stopping, Error);
+  type Status is (Idle, Connecting, Connected, Capturing, Captured, Downloading, Cropping, Cropped, Stopping, Failed);
 
   type Columns is range 1 .. Max_With_Or_Height;
   type Rows    is range 1 .. Max_With_Or_Height;
@@ -57,22 +57,33 @@ package Camera is
   function Model_Image return String;
 
   procedure Capture (Filename  : String;
-                     Time      : Exposure.Item := Exposure.From_Camera;
-                     Parameter : Sensitivity.Item := Sensitivity.Default);
+                     Time      : Exposure.Item;
+                     Parameter : Sensitivity.Item);
+
+  procedure Capture (Filename : String);
 
   procedure Capture (Size      : Square_Size;
-                     Time      : Exposure.Item := Exposure.From_Camera;
-                     Parameter : Sensitivity.Item := Sensitivity.Default);
+                     Time      : Exposure.Item;
+                     Parameter : Sensitivity.Item);
+
+  procedure Capture (Size : Square_Size);
 
   function Captured return Raw_Grid;
 
   procedure Stop;
+
+  function Has_Error return Boolean;
 
   function Error_Message return String;
 
   procedure Finish;
 
 private
+
+  Camera_Id : constant String := "Camera";
+
+  The_Exposure_Parameter    : Exposure.Item;
+  The_Sensitivity_Parameter : Sensitivity.Item;
 
   Camera_Error : exception;
 
