@@ -57,7 +57,7 @@ package body Camera.Canon is
 
 
   ----------------------------------------------------------
-  -- shared state to pass info from callback to main task --
+  -- Shared state to pass info from callback to main task --
   ----------------------------------------------------------
   protected Event_State is
 
@@ -134,7 +134,7 @@ package body Camera.Canon is
 
 
   ---------------------------
-  -- object event callback --
+  -- Object event callback --
   ---------------------------
   -- Canon EDSDK lifetime rule:
   --   Directory items received in this callback are only guaranteed to be
@@ -456,9 +456,9 @@ package body Camera.Canon is
     end Internal_Error;
 
     ---------------------------------------------
-    --  Is_One_Device_Ready                    --
-    --    Initializes EDSDK                    --
-    --    Gets the number of connected cameras --
+    -- Is_One_Device_Ready                    --
+    --   Initializes EDSDK                    --
+    --   Gets the number of connected cameras --
     ---------------------------------------------
     function One_Device_Is_Ready return Boolean is
       Dummy_Result : CI.Result;
@@ -479,11 +479,11 @@ package body Camera.Canon is
     end One_Device_Is_Ready;
 
     --------------------------------------------
-    --  Open                                  --
-    --    Initializes EDSDK                   --
-    --    Finds the first connected Canon EOS --
-    --    Opens a session                     --
-    --    Sets image quality to RAW only      --
+    -- Open                                  --
+    --   Initializes EDSDK                   --
+    --   Finds the first connected Canon EOS --
+    --   Opens a session                     --
+    --   Sets image quality to RAW only      --
     --------------------------------------------
     procedure Open is
       Count : aliased CI.Uint32;

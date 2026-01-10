@@ -204,7 +204,6 @@ package body Camera.QHYCCD is
       The_Handle := Item;
     end Initialize;
 
-
     function Handle return CI.Handle is (The_Handle);
 
 
@@ -228,10 +227,9 @@ package body Camera.QHYCCD is
         The_Handle := CI.No_Handle;
       end if;
     exception
-      when others =>
-        The_Handle := CI.No_Handle;
+    when others =>
+      The_Handle := CI.No_Handle;
     end Close;
-
   end Exposing;
 
 
@@ -270,6 +268,7 @@ package body Camera.QHYCCD is
 
     use type CI.Handle;
 
+
     function One_Device_Is_Ready return Boolean is
       Count : CI.Camera_Count;
       use type CI.Camera_Count;
@@ -293,31 +292,25 @@ package body Camera.QHYCCD is
       use type Exposure.Kind;
     begin
       Camera_Data.Check (Idle);
-
       if not The_Parameter.Is_Gain_And_Offset_Or_Default then
         Raise_Error ("Parameter must be Gain and Offset or default value");
       elsif The_Exposure.Mode = Exposure.From_Camera then
         Raise_Error ("Exposure from Camera not supported");
       end if;
-
       The_Gain := The_Parameter.Value;
       Log.Write ("Gain:" & The_Gain'image);
       The_Offset := The_Parameter.Value;
       Log.Write ("Offset:" & The_Offset'image);
-
       Camera_Data.Set (Connecting);
-
       Check ("Init Resource", CI.Init_Resource);
       if CI.Scan /= 1 then
         Raise_Error ("One and only one camera must be connected");
       end if;
-
       Check ("Get Id", CI.Get_Id (0, Id_Buffer'address));
       Exposing.Initialize (CI.Open (Id_Buffer'address));
       if Exposing.Handle = CI.No_Handle then
         Raise_Error ("Open failed");
       end if;
-
       declare
         Id_Parts    : constant Text.Strings := Text.Strings_Of (C.Helper.String_Of (Id_Buffer), Separator => '-');
         Camera_Name : constant String := Id_Parts (1);
@@ -325,10 +318,9 @@ package body Camera.QHYCCD is
         Log.Write ("Camera Name: " & Camera_Name);
         The_Camera := Model'value(Camera_Name);
       exception
-        when others =>
-          Raise_Error ("Unknown Camera " & Camera_Name);
+      when others =>
+        Raise_Error ("Unknown Camera " & Camera_Name);
       end;
-
       Camera_Data.Set (The_Camera);
       Camera_Data.Set (Connected);
     end Start_Capture;
@@ -345,34 +337,28 @@ package body Camera.QHYCCD is
       Bpp0   : aliased CI.Uint32;
 
       use type CI.Uint32;
-
       use all type CI.Bool;
 
     begin -- Continue_Capture
       Camera_Data.Set (Capturing);
-
       Check ("Set Stream Mode", CI.Set_Stream_Mode (Exposing.Handle, CI.Stream_Single_Frame));
       Check ("Initialize", CI.Init_Camera (Exposing.Handle));
       Check ("Set Read Mode", CI.Set_Read_Mode (Exposing.Handle, CI.Photo_Graphic_DSO_16_BIT));
-
       Check ("Set TRANSFERBIT=16", CI.Set_Param (Exposing.Handle, CI.Control_Transfer_Bit, 16.0));
       Check ("Set USBTRAFFIC=0", CI.Set_Param (Exposing.Handle, CI.Control_USB_Traffic, 0.0));
       Check ("Set Debayer Off", CI.Set_Debayer_On_Off (Exposing.Handle, False));
 
-      -- full frame defaults (bin 1, ROI full)
       Check ("Get Chip Info",
-        CI.Get_Chip_Info (Exposing.Handle,
-                          Chip_W'access, Chip_H'access,
-                          Img_W'access,  Img_H'access,
-                          Pix_W'access,  Pix_H'access,
-                          Bpp0'access));
+             CI.Get_Chip_Info (Exposing.Handle,
+                               Chip_W'access, Chip_H'access,
+                               Img_W'access, Img_H'access,
+                               Pix_W'access, Pix_H'access,
+                               Bpp0'access));
       Log.Write ("ChipInfo - Img_W:" & Img_W'image & " - Img_H:" & Img_H'image & " - Bpp0:" & Bpp0'image);
 
       CCD_Temperatur := Temperatur (CI.Get_Param (Exposing.Handle, CI.Control_CURRTEMP));
-
       Check ("Set Bin Mode", CI.Set_Bin_Mode (Exposing.Handle, 1, 1));
       Check ("Set Resolution", CI.Set_Resolution (Exposing.Handle, 0, 0, Img_W, Img_H));
-
       declare
         Usec : constant CI.Uint32 := CI.Uint32 (The_Exposure.Time * 1_000_000.0);
         Msec : constant CI.Uint32 := Usec / 1000;
@@ -383,21 +369,17 @@ package body Camera.QHYCCD is
         Check ("Set Param Exposure", CI.Set_Param (Exposing.Handle, CI.Control_Exposure, CI.Double(Usec)));
         Mid_Exposure := Time.Julian_Date_Of (Ut);
       end;
-
       Check ("Set Param Gain", CI.Set_Param (Exposing.Handle, CI.Control_Gain, CI.Double(The_Gain)));
       Check ("Set Param Offset", CI.Set_Param (Exposing.Handle, CI.Control_Offset, CI.Double(The_Offset)));
 
       The_Length := CI.Get_Mem_Length (Exposing.Handle);
-
       The_Buffer := new AS.Stream_Element_Array (1 .. Stream_Offset(The_Length));
-
       Check ("Exp Single Frame", CI.Exp_Single_Frame (Exposing.Handle));
-
       Check ("Get Single Frame",
-        CI.Get_Single_Frame (Exposing.Handle,
-                             The_Width'access, The_Height'access,
-                             The_Bpp'access, The_Channels'access,
-                             The_Buffer (The_Buffer'first)'address));
+             CI.Get_Single_Frame (Exposing.Handle,
+             The_Width'access, The_Height'access,
+             The_Bpp'access, The_Channels'access,
+             The_Buffer (The_Buffer'first)'address));
 
       Log.Write ("Frame Width:" & The_Width'image &
                  " - Height:" & The_Height'image &
@@ -412,10 +394,10 @@ package body Camera.QHYCCD is
         Bytes_Per_Sample : constant CI.Uint32 := The_Bpp / Standard'storage_unit;
         Expected         : constant CI.Uint32 := The_Width * The_Height * The_Channels * Bytes_Per_Sample;
       begin
-         Log.Write ("Frame Expected bytes:" & Expected'image);
-         if The_Length < Expected then
-            Raise_Error ("Buffer too small: MemLength=" & The_Length'image & " < Expected=" & Expected'image);
-         end if;
+        Log.Write ("Frame Expected bytes:" & Expected'image);
+        if The_Length < Expected then
+          Raise_Error ("Buffer too small: MemLength=" & The_Length'image & " < Expected=" & Expected'image);
+        end if;
       end;
       Camera_Data.Set (Height => Rows(The_Height));
       Camera_Data.Set (Width  => Columns(The_Width));
@@ -502,6 +484,20 @@ package body Camera.QHYCCD is
 
 
       function Card (Key   : String;
+                     Value : Temperatur) return Card_String is
+      begin
+        return Card_Value (Key, Value'image);
+      end Card;
+
+
+      function Card (Key   : String;
+                     Value : Time.JD) return Card_String is
+      begin
+        return Card_Value (Key, Value'image);
+      end Card;
+
+
+      function Card (Key   : String;
                      Value : Boolean) return Card_String is
       begin
         return Card_Value (Key, (if Value then "T" else "F"));
@@ -562,7 +558,6 @@ package body Camera.QHYCCD is
           end if;
         end Emit;
 
-        -- fetch a byte from the buffer
         function Byte_At (I : Stream_Offset) return AS.Stream_Element is
         begin
           return The_Buffer(The_Buffer'first + I);
@@ -585,19 +580,15 @@ package body Camera.QHYCCD is
             Emit_Sample(Off);
           end;
         end loop;
-
         Flush;
       end Write_Data;
 
     begin -- Write_Fits
       Camera_Data.Set (Downloading);
-
       if Bitpix /= 16 then
         Raise_Error ("Unsupported bits per pixel for FITS:" & CI.Uint32'image(Bitpix));
       end if;
-
       IO.Create (The_File, IO.Out_File, The_Filename.To_String);
-
       Put_Block (Card ("SIMPLE", True));
       Put_Block (Card ("BITPIX", Bitpix));
       Put_Block (Card ("NAXIS", 2));
@@ -614,16 +605,14 @@ package body Camera.QHYCCD is
       Put_Block (Card ("BSCALE", 1));
       Put_Block (Card ("BZERO", 32768));
       Put_Block (Card ("EXTEND", True));
-      Put_Block (Card ("CCD-TEMP", CCD_Temperatur'image));
-      Put_Block (Card ("JD_UTC", Mid_Exposure'image));
+      Put_Block (Card ("CCD-TEMP", CCD_Temperatur));
+      Put_Block (Card ("JD_UTC", Mid_Exposure));
       Put_Block (Card ("EXPTIME", The_Exposure.Time));
       Put_Block (Card ("INSTRUME", Camera_Data.Actual.Camera'image));
-      Put_Block (Card ("SWCREATE", Os.Application.Name & " v" & Os.Application.Version));
+      Put_Block (Card ("SWCREATE", "White Elephant GmbH - " & Os.Application.Name & " v" & Os.Application.Version));
       Put_Block (Card ("END"));
       Pad_To_Block_End;
-
       Write_Data;
-
       Pad_To_Block_End;
       IO.Close (The_File);
     end Write_Fits;
@@ -668,7 +657,6 @@ package body Camera.QHYCCD is
         accept Get (Is_Ready : out Boolean) do
           Is_Ready := One_Device_Is_Ready;
         end Get;
-
       or
         accept Capture_Picture (Filename  : String;
                                 The_Time  : Exposure.Item;
@@ -679,7 +667,6 @@ package body Camera.QHYCCD is
           The_Parameter := Parameter;
         end Capture_Picture;
         Capture_Picture;
-
       or
         accept Capture_Grid (Size      : Square_Size;
                              The_Time  : Exposure.Item;
@@ -690,7 +677,6 @@ package body Camera.QHYCCD is
           The_Parameter := Parameter;
         end Capture_Grid;
         Capture_Grid;
-
       or
         accept Await_Stop do
           Log.Write ("Stopping");
@@ -698,7 +684,6 @@ package body Camera.QHYCCD is
             Disconnect;
           end if;
         end Await_Stop;
-
       or
         accept Shutdown do
           if Camera_Data.Actual.Camera = QHY600C then

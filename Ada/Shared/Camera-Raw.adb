@@ -55,10 +55,9 @@ package body Camera.Raw is
 
   function Grid return Raw_Grid is
 
-    -- We only need the *first field* of libraw_data_t:
-    --   ushort (*image)[4];
     type Lib_Raw_Data_Prefix is record
       Image : System.Address;
+      -- .. : other fiels not used
     end record with
       Convention => C;
 
@@ -67,15 +66,12 @@ package body Camera.Raw is
     function To_Prefix is new Ada.Unchecked_Conversion (Source => RI.Context,
                                                         Target => Lib_Raw_Data_Prefix_Access);
 
-    -- Pixel quad: image[p][0..3]
     type Ushort is new C.Unsigned_Short;
-    type Pixel4 is array (Natural range 0 .. 3) of Ushort
-      with Convention => C;
+    type Pixel4 is array (Natural range 0 .. 3) of Ushort with Convention => C;
 
     function Pixel4_From_Address (A : System.Address) return Pixel4 is
       type Pixel4_Access is access all Pixel4;
-      function To_Pixel4 is new Ada.Unchecked_Conversion
-        (Source => System.Address, Target => Pixel4_Access);
+      function To_Pixel4 is new Ada.Unchecked_Conversion (System.Address, Pixel4_Access);
     begin
       return To_Pixel4 (A).all;
     end Pixel4_From_Address;
@@ -111,7 +107,7 @@ package body Camera.Raw is
     begin
       Log.Write (Where);
       if Code /= 0 then
-        Raise_Error (Where & " failed" & New_Line & "(LibRaw error code" & Integer'image (Integer (Code)) & ")");
+        Raise_Error (Where & " failed" & New_Line & "(LibRaw error code" & Integer'image (Integer(Code)) & ")");
       end if;
     end Check;
 
@@ -124,8 +120,8 @@ package body Camera.Raw is
     Check (RI.Unpack (Ctx), "libraw unpack");
     Check (RI.Raw2_Image (Ctx), "libraw raw2image");
 
-    Img_W := Natural (RI.Get_Iwidth (Ctx));
-    Img_H := Natural (RI.Get_Iheight (Ctx));
+    Img_W := Natural(RI.Get_Iwidth (Ctx));
+    Img_H := Natural(RI.Get_Iheight (Ctx));
 
     if GS > Img_W or else GS > Img_H then
       Raise_Error ("Size exceeds raw dimensions");
@@ -144,7 +140,7 @@ package body Camera.Raw is
 
       function Pixel_Address (Global_Row, Global_Col : Natural) return System.Address is
         Idx : constant Natural := Global_Row * Img_W + Global_Col;
-        Off : constant SE.Storage_Offset := SE.Storage_Offset (Idx) * Bytes_Per_Pixel;
+        Off : constant SE.Storage_Offset := SE.Storage_Offset(Idx) * Bytes_Per_Pixel;
       begin
         return Base + Off;
       end Pixel_Address;
@@ -153,40 +149,30 @@ package body Camera.Raw is
       if Base = System.Null_Address then
         Raise_Error ("ctx -> image is NULL (raw2image failed)");
       end if;
-
       for Row in Row_Index loop
         declare
-          Global_Row : constant Natural := Row_Offset + (Natural (Row) - 1);
+          Global_Row : constant Natural := Row_Offset + (Natural(Row) - 1);
         begin
           for Col in Column_Index loop
             declare
-              Global_Col : constant Natural := Col_Offset + (Natural (Col) - 1);
-
-              Cfa : constant Integer :=
-                Integer (RI.COLOR (Ctx, C.Int (Global_Row), C.Int (Global_Col)));
-
-              P4  : constant Pixel4 :=
-                Pixel4_From_Address (Pixel_Address (Global_Row, Global_Col));
-
-              V   : Natural := 0;
+              Global_Col : constant Natural := Col_Offset + (Natural(Col) - 1);
+              Cfa        : constant Integer := Integer(RI.COLOR (Ctx, C.Int(Global_Row), C.Int(Global_Col)));
+              P4         : constant Pixel4 := Pixel4_From_Address (Pixel_Address (Global_Row, Global_Col));
+              V          : Natural := 0;
             begin
               if Cfa >= 0 and then Cfa <= 3 then
-                V := Natural (P4 (Natural (Cfa)));
+                V := Natural(P4 (Natural(Cfa)));
               else
-                -- “6” can happen for special/non-bayer cases; keep 0 for now
-                V := 0;
+                V := 0; -- “6” can happen for special/non-bayer cases; keep 0 for now
               end if;
-
               if V > Natural(Pixel'last) then
                 V := Natural(Pixel'last);
               end if;
-
-              Result (Row, Col) := Pixel (V);
+              Result (Row, Col) := Pixel(V);
             end;
           end loop;
         end;
       end loop;
-
       Cleanup;
       Camera_Data.Set (Idle);
       return Result;
