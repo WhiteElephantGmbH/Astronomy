@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2023 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2023 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -35,8 +35,6 @@ package body Http_Server.PWI4 is
   package Protected_Focuser is new Protected_Storage (Focuser_Data);
 
   package Protected_Rotator is new Protected_Storage (Rotator_Data);
-
-  use type Text.String;
 
 
   function Image_Of (Item : Degrees) return String is
@@ -91,7 +89,7 @@ package body Http_Server.PWI4 is
     procedure Set_Mount_Values is
       Mount  : constant JS.JSON_Value := JS.Create_Object;
       Data   : constant Mount_Data    := Protected_Mount.Data;
-      State  : constant String        := +Protected_Mount_State.Data;
+      State  : constant String        := Protected_Mount_State.Data.S;
       Speed  : constant String        := Moving_Speed;
       Axis0  : constant String        := Image_Of (Data.Axis0);
       Axis1  : constant String        := Image_Of (Data.Axis1);

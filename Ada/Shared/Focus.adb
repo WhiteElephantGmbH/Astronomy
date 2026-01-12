@@ -435,7 +435,7 @@ package body Focus is
 
     function Last_Error return String is
     begin
-      return The_Last_Error.To_String;
+      return The_Last_Error.S;
     end Last_Error;
 
 

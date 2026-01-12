@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2025 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2025 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -133,7 +133,7 @@ package body Server is
   exception
   when Error =>
     Focuser.Execute (Focuser.Stop);
-    return AWS.Response.Acknowledge (AWS.Messages.S400, Error_Message.To_String);
+    return AWS.Response.Acknowledge (AWS.Messages.S400, Error_Message.S);
   when Item: others =>
     Focuser.Execute (Focuser.Stop);
     Log.Termination (Item);

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2010 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2010 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 -->Style: White_Elephant
@@ -23,8 +23,6 @@ package body Data is
 
   The_Stars : array (Positive range 1..Max_Number_Of_Stars) of Star;
   HR_Number : Natural;
-
-  use type Text.String;
 
   procedure Reset is
   begin
@@ -62,7 +60,7 @@ package body Data is
 
   function Name return String is
   begin
-    return +The_Stars(HR_Number).Name;
+    return The_Stars(HR_Number).Name.S;
   end Name;
 
 
@@ -133,7 +131,7 @@ package body Data is
   function Name_Of (HR : Natural) return String is
   begin
     if HR > 0 then
-      return +The_Stars (HR).Name;
+      return The_Stars (HR).Name.S;
     end if;
     return "";
   end Name_Of;

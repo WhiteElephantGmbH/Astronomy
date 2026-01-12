@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2013 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2013 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -47,8 +47,6 @@ package body Stellarium is
 
   The_Set_Satellite_Group : Text.String;
 
-  use type Text.String;
-
 
   procedure Set_Satellite_Group (Name : String) is
   begin
@@ -59,7 +57,7 @@ package body Stellarium is
 
   function Satellite_Group return String is
   begin
-    return +The_Set_Satellite_Group;
+    return The_Set_Satellite_Group.S;
   end Satellite_Group;
 
 

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2024 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2024 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -69,7 +69,7 @@ package body Generator.Data is
 
     procedure Generate_Name_Id is
 
-      Ansi_Name : constant String := Text.Ansi_Of_Utf8 (+The_Feature.Name);
+      Ansi_Name : constant String := Text.Ansi_Of_Utf8 (The_Feature.Name.S);
 
       Last_Is_Separator : Boolean := True;
 
@@ -188,7 +188,7 @@ package body Generator.Data is
         Error ("Unknown ID: " & Id_Name);
       end;
       Generate_Name_Id;
-      if Text.Is_Utf8_Encoded (+The_Feature.Id) then
+      if Text.Is_Utf8_Encoded (The_Feature.Id.S) then
         Error ("Illegal Name" & The_Feature.Name);
       end if;
 
@@ -214,7 +214,7 @@ package body Generator.Data is
           Upper_Limmit := 100.0;
         end if;
         if (The_Feature.Longitude > 100.0) and (The_Feature.Longitude < 360.0 - Upper_Limmit) then
-          Log.Warning (String'(+The_Feature.Name) & " not visible - Longitude:" & Longitude);
+          Log.Warning (String'(The_Feature.Name.S) & " not visible - Longitude:" & Longitude);
           return;
         end if;
       exception
@@ -228,7 +228,7 @@ package body Generator.Data is
       begin
         The_Feature.Size := Feature_Size'value(Size);
         if The_Feature.Size < Database.Minimum_Feature_Size then
-          Log.Warning (String'(+The_Feature.Name) & " too small - Size:" & Size);
+          Log.Warning (String'(The_Feature.Name.S) & " too small - Size:" & Size);
           return;
         end if;
       exception
@@ -300,7 +300,7 @@ package body Generator.Data is
       Output;
       Output ("  type Feature_Name is (");
       for The_Item of The_Features loop
-        Output ("    " & The_Item.Id.To_String & (if The_Item.Id = The_Features.Last_Element.Id then ");" else ","));
+        Output ("    " & The_Item.Id.S & (if The_Item.Id = The_Features.Last_Element.Id then ");" else ","));
       end loop;
     end Put_Feature_Ids;
 
@@ -346,7 +346,7 @@ package body Generator.Data is
 
         function Name return String is
         begin
-          return The.Name.To_String;
+          return The.Name.S;
         end Name;
 
       begin -- Feature_Image

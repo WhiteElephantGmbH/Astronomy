@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2011 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2011 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -52,7 +52,6 @@ package body Name is
       Object : Sky.Object := Sky.Undefined;
     end case;
   end record;
-  use type Text.String;
 
 
   function "=" (Left, Right : Id) return Boolean is
@@ -106,7 +105,7 @@ package body Name is
   begin
     case Item.Data_Id is
     when Sky.Favorites =>
-      return +Item.Element.Name;
+      return Item.Element.Name.S;
     when Sky.Extended_Catalogs =>
       return Sky.Data.Name_Of (Item.Element_Number, Item.Data_Id);
     end case;
@@ -553,7 +552,7 @@ package body Name is
                     The_Element.Kind := Moon;
                     if Parts.Count > 1 then
                       declare
-                        Feature        : constant String := The_Element.Name.To_String;
+                        Feature        : constant String := The_Element.Name.S;
                         Feature_Number : Positive;
                       begin
                         Feature_Number := Sky.Data.Moon_Feature_Number_Of (Feature);
@@ -594,7 +593,7 @@ package body Name is
                 if The_Element.Object = Sky.Undefined then
                   Error.Raise_With ("Unknown Name - " & Line);
                 end if;
-                The_Element.Name := [Sky.Catalog.Object_Image_Of (The_Element.Object, +@)];
+                The_Element.Name := [Sky.Catalog.Object_Image_Of (The_Element.Object, The_Element.Name.S)];
               end;
             end if;
           end Add_Sky_Object;

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2021 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                      *
+-- *                           (c) 2021 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                      *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -107,7 +107,7 @@ package body Astap is
     end Spd_Image;
 
     Height_Image : constant String := Value(Height)'image;
-    Executable   : constant String := +The_Executable;
+    Executable   : constant String := The_Executable.S;
     Parameters   : constant String
       := "-f " & Filename & " -ra" & Ra_Image & " -spd" & Spd_Image & " -fov" & Height_Image & " -r 180 -o " & Filename;
 

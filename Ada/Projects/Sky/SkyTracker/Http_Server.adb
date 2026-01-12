@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2023 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2023 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -23,8 +23,6 @@ package body Http_Server is
 
   package Protected_Control is new Protected_Storage (Control_Data);
 
-  use type Text.String;
-
   The_Server : AWS.Server.HTTP;
 
   procedure Start (Callback : AWS.Response.Callback) is
@@ -33,7 +31,7 @@ package body Http_Server is
       Log.Warning ("No GUI client");
     else
       declare
-        Client_Filename : constant String := +The_Client_Filename;
+        Client_Filename : constant String := The_Client_Filename.S;
       begin
         Log.Write ("Start " & Client_Filename);
         AWS.Server.Start (Web_Server => The_Server,

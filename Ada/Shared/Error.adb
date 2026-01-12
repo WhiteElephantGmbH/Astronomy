@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2013 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2013 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -41,7 +41,7 @@ package body Error is
 
 
   function Message return String is
-    Image : constant String := The_Message.To_String;
+    Image : constant String := The_Message.S;
   begin
     Text.Clear (The_Message);
     return Image;

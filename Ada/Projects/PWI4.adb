@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2023 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2023 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -104,7 +104,7 @@ package body PWI4 is
     Log.Error (Error_Info);
   end Set_Error_Info;
 
-  function Error_Info return String is (+The_Error_Info);
+  function Error_Info return String is (The_Error_Info.S);
 
 
   procedure Execute (Item : String) is

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2025 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2025 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
@@ -151,7 +151,6 @@ package body Picture is
       Picture_Directory  : constant String := (if Argument_Count = 0 then Default_Dirctory else Cmd.Argument(1));
       The_Filename       : Text.String;
       The_Detection_Time : Duration := 0.01; -- must be > 0.0
-      use type Text.String;
     begin
       if not Directory.Exists (Picture_Directory) then
         Error ("Source directory " & Picture_Directory & " not found");
@@ -162,7 +161,7 @@ package body Picture is
       loop
         for Filename of File.Iterator_For (Picture_Directory) loop
           if Text.Lowercase_Of (File.Extension_Of (Filename)) in "cr2" | "fits" | "jpeg" | "jpg" then
-            if The_Filename.Is_Empty or else File.Is_Newer (Filename, +The_Filename) then
+            if The_Filename.Is_Empty or else File.Is_Newer (Filename, The_Filename.S) then
               The_Filename := [Filename];
             end if;
           end if;
@@ -174,7 +173,7 @@ package body Picture is
         The_Detection_Time := @ + Detection_Delay;
         delay Detection_Delay;
       end loop;
-      Copy_Completed (+The_Filename, Destination_Filename);
+      Copy_Completed (The_Filename.S, Destination_Filename);
     end;
   exception
   when Item: Ada.IO_Exceptions.Use_Error =>

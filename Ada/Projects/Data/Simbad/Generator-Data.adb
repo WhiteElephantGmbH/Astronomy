@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                        (c) 2024 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                         *
+-- *                        (c) 2024 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                         *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -1289,12 +1289,11 @@ package body Generator.Data is
 
       function Ids_Header return String is
         Header_Image : Text.String;
-        use type Text.String;
       begin
         for C in Ids_Cat loop
           Text.Append (Header_Image, Right_Adjusted (Image_Of (C), Field_Size_Of (C) + 2));
         end loop;
-        return +Header_Image;
+        return Header_Image.S;
       end Ids_Header;
 
       The_Object_Id_For_Name : array (First_Id .. Id(The_Names.Length)) of Id;
@@ -1309,8 +1308,6 @@ package body Generator.Data is
           end if;
         end loop;
       end Evaluate_Object_Id_For_Names;
-
-      use type Text.String;
 
     begin -- Put_Header
       Output ("-- *********************************************************************************************************************");
@@ -1365,7 +1362,7 @@ package body Generator.Data is
           Postfix         : constant String := (if Name_Id = Id(The_Names.Length) then " " else ",");
           Name_Field_Size : constant Natural := Prefix'length + Max_Name_Length + Postfix'length;
         begin
-          Output (Left_Adjusted (Prefix & Base_Name_Of (+The_Association.Name) & Postfix, Name_Field_Size) & " --" & Name_Id'image);
+          Output (Left_Adjusted (Prefix & Base_Name_Of (The_Association.Name.S) & Postfix, Name_Field_Size) & " --" & Name_Id'image);
         end;
       end loop;
       Output ("  );");
@@ -1379,7 +1376,7 @@ package body Generator.Data is
           Object_Id : constant String := The_Object_Id_For_Name(Name_Id)'image;
           Line_End  : constant String := (if Name_Id = Id(The_Names.Length) then " " else ",");
         begin
-          Output (Right_Adjusted (Object_Id, 7) & Line_End & " -- " & (+The_Association.Name));
+          Output (Right_Adjusted (Object_Id, 7) & Line_End & " -- " & (The_Association.Name.S));
         end;
       end loop;
       Output ("  ];");
@@ -1453,12 +1450,11 @@ package body Generator.Data is
 
       function Ids return String is
         Ids_Image : Text.String;
-        use type Text.String;
       begin
         for C in Ids_Cat loop
           Text.Append (Ids_Image, Image_Of (The_Object.Ids(C), Field_Size_Of (C)) & Separator);
         end loop;
-        return +Ids_Image;
+        return Ids_Image.S;
       end Ids;
 
       function Ra_J2000 return String is (Value_Item (The_Object.Ra_J2000'image, Ra_Field_Size));

@@ -588,7 +588,7 @@ package body Camera.QHYCCD is
       if Bitpix /= 16 then
         Raise_Error ("Unsupported bits per pixel for FITS:" & CI.Uint32'image(Bitpix));
       end if;
-      IO.Create (The_File, IO.Out_File, The_Filename.To_String);
+      IO.Create (The_File, IO.Out_File, The_Filename.S);
       Put_Block (Card ("SIMPLE", True));
       Put_Block (Card ("BITPIX", Bitpix));
       Put_Block (Card ("NAXIS", 2));

@@ -77,7 +77,7 @@ package body Camera.Raw is
     end Pixel4_From_Address;
 
     Ctx    : constant RI.Context := RI.Init (0);
-    File_C : aliased String := The_Filename.To_String & Ascii.Nul;
+    File_C : aliased String := The_Filename.S & Ascii.Nul;
 
     Img_W  : Natural := 0;
     Img_H  : Natural := 0;
@@ -116,7 +116,7 @@ package body Camera.Raw is
     if Ctx = RI.Null_Context then
       Raise_Error ("libraw init returned NULL");
     end if;
-    Check (RI.Open_File (Ctx, File_C'address), "libraw open_file " & The_Filename.To_String);
+    Check (RI.Open_File (Ctx, File_C'address), "libraw open_file " & The_Filename.S);
     Check (RI.Unpack (Ctx), "libraw unpack");
     Check (RI.Raw2_Image (Ctx), "libraw raw2image");
 

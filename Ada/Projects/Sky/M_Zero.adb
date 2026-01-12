@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2021 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2021 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
@@ -85,8 +85,7 @@ package body M_Zero is
 
 
   function Error_Message return String is
-    use type Text.String;
-    Message : constant String := +The_Error;
+    Message : constant String := The_Error.S;
   begin
     if Message = "" then
       return "No Error";

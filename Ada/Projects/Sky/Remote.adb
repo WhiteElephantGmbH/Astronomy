@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2021 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2021 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -46,7 +46,7 @@ package body Remote is
 
   function Telescope_Name return String is
   begin
-    return +The_Telescope_Name;
+    return The_Telescope_Name.S;
   end Telescope_Name;
 
 
@@ -128,7 +128,7 @@ package body Remote is
 
     procedure Send (Info : String) is
 
-      Key : constant String := The_Key.To_String;
+      Key : constant String := The_Key.S;
 
       Remote_Address : constant String := Network.Image_Of (The_Remote_Address);
       Remote_Port    : constant String := Network.Image_Of (The_Remote_Port);

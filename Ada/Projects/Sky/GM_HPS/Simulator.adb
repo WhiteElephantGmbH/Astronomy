@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2022 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2022 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
@@ -23,7 +23,6 @@ package body Simulator is
   Start_Hiding : Boolean := False;
   Hiding       : Boolean := False;
 
-  use type Text.String;
   use type Time.JD;
 
   type Mount is (GM_1000, GM_4000);
@@ -417,7 +416,7 @@ package body Simulator is
               Send ("E#");
             else
               Put_Line ("Get loaded TLE");
-              Send (+Loaded_TLE_Data & "#");
+              Send (Loaded_TLE_Data.S & "#");
             end if;
           elsif Data = ":TLES#" then
             if Tle_Is_Precalculated then

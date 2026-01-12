@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2016 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2016 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -627,7 +627,6 @@ package body Network.Tcp is
       The_Data      : Data (1..1);
       The_Character : Character;
       The_String    : Text.String;
-      use type Text.String;
       function Convert is new Ada.Unchecked_Conversion (Data_Item, Character);
     begin
       loop
@@ -647,7 +646,7 @@ package body Network.Tcp is
         The_String.Append (The_Character);
         exit when The_Character = Terminator;
       end loop;
-      return +The_String;
+      return The_String.S;
     end;
   end Raw_String_From;
 

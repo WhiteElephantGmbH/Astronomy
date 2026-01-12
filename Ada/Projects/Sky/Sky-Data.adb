@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2024 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2024 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -178,7 +178,7 @@ package body Sky.Data is
     elsif Id in Moon_Object then
       return Moon_Feature_Name_Of (Id);
     else
-      return +The_Extension_Table(Id).Name;
+      return The_Extension_Table(Id).Name.S;
     end if;
   end Name_Of;
 
@@ -191,7 +191,7 @@ package body Sky.Data is
   begin -- Name_Of
     case The_Kind is
     when Neo =>
-      return +The_Extension_Table(Number).Name;
+      return The_Extension_Table(Number).Name.S;
     when Moon =>
       return Moon_Feature_Name_Of (Number);
     when Catalogs =>
@@ -205,7 +205,7 @@ package body Sky.Data is
     if Id in Catalog.Index then
       return Catalog.Descriptor_Of (Id);
     else
-      return +The_Extension_Table(Id).Descriptor;
+      return The_Extension_Table(Id).Descriptor.S;
     end if;
   end Descriptor_Of;
 

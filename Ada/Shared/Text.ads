@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2002 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2002 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -171,30 +171,28 @@ package Text is
 
   function String_Of (Item : Standard.String) return String with Inline;
 
-  function To_String (Item : String) return Standard.String with Inline;
-
-  function "+" (Item : String) return Standard.String renames To_String;
+  function S (Item : String) return Standard.String with Inline;
 
   function First (Item : String) return Character with Inline;
 
   function Last (Item : String) return Character with Inline;
 
-  function "=" (Left : String; Right : Standard.String) return Boolean is (Left.To_String = Right);
-  function "=" (Left : Standard.String; Right : String) return Boolean is (Left = Right.To_String);
+  function "=" (Left : String; Right : Standard.String) return Boolean is (Left.S = Right);
+  function "=" (Left : Standard.String; Right : String) return Boolean is (Left = Right.S);
 
-  function "<" (Left : String; Right : String)          return Boolean is (Left.To_String < Right.To_String);
-  function "<" (Left : Standard.String; Right : String) return Boolean is (Left < Right.To_String);
-  function "<" (Left : String; Right : Standard.String) return Boolean is (Left.To_String < Right);
+  function "<" (Left : String; Right : String)          return Boolean is (Left.S < Right.S);
+  function "<" (Left : Standard.String; Right : String) return Boolean is (Left < Right.S);
+  function "<" (Left : String; Right : Standard.String) return Boolean is (Left.S < Right);
 
-  function "<=" (Left : String; Right : String)          return Boolean is (Left.To_String <= Right.To_String);
-  function "<=" (Left : Standard.String; Right : String) return Boolean is (Left <= Right.To_String);
-  function "<=" (Left : String; Right : Standard.String) return Boolean is (Left.To_String <= Right);
+  function "<=" (Left : String; Right : String)          return Boolean is (Left.S <= Right.S);
+  function "<=" (Left : Standard.String; Right : String) return Boolean is (Left <= Right.S);
+  function "<=" (Left : String; Right : Standard.String) return Boolean is (Left.S <= Right);
 
-  function Matches (Left, Right : String) return Boolean is (Matches (Left.To_String, Right.To_String));
+  function Matches (Left, Right : String) return Boolean is (Matches (Left.S, Right.S));
 
-  function Matches (Left : Standard.String; Right : String) return Boolean is (Matches (Left, Right.To_String));
+  function Matches (Left : Standard.String; Right : String) return Boolean is (Matches (Left, Right.S));
 
-  function Matches (Left : String; Right : Standard.String) return Boolean is (Matches (Left.To_String, Right));
+  function Matches (Left : String; Right : Standard.String) return Boolean is (Matches (Left.S, Right));
 
 --procedure Clear (Item : in out String); -- inherited
 
@@ -226,10 +224,10 @@ package Text is
                 Right : String) return String is (String_Of (Left) & Right);
 
   function "&" (Left  : Standard.String;
-                Right : String) return Standard.String is (Left & Right.To_String);
+                Right : String) return Standard.String is (Left & Right.S);
 
   function "&" (Left  : String;
-                Right : Standard.String) return Standard.String is (Left.To_String & Right);
+                Right : Standard.String) return Standard.String is (Left.S & Right);
 
   function Index_Of (In_String     : String;
                      Item          : Character;
@@ -258,9 +256,9 @@ package Text is
 
   procedure Make_Uppercase (Item : in out String);
 
-  function To_Lowercase (Item : String) return Standard.String is (Lowercase_Of (Item.To_String));
+  function To_Lowercase (Item : String) return Standard.String is (Lowercase_Of (Item.S));
 
-  function To_Uppercase (Item : String) return Standard.String is (Uppercase_Of (Item.To_String));
+  function To_Uppercase (Item : String) return Standard.String is (Uppercase_Of (Item.S));
 
   function Slice (Item : String;
                   From : Positive;
@@ -269,7 +267,7 @@ package Text is
   procedure Trim (Item : in out String);
   -- Trims left and right whitespace.
 
-  function Trimmed (Item : String) return Standard.String is (Trimmed (Item.To_String));
+  function Trimmed (Item : String) return Standard.String is (Trimmed (Item.S));
   -- Trims left and right whitespace.
 
   procedure Truncate (Item       : in out String;

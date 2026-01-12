@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2019 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2019 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -40,8 +40,6 @@ with Traces;
 package body Parameter is
 
   package Log is new Traces ("Parameter");
-
-  use type Text.String;
 
   Filename : constant String := Application.Composure (Application.Name, "ini");
 
@@ -406,7 +404,7 @@ package body Parameter is
 
   function Pointing_Model return String is
   begin
-    return +The_Pointing_Model;
+    return The_Pointing_Model.S;
   end Pointing_Model;
 
 

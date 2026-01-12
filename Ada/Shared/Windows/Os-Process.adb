@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2002 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2002 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -249,8 +249,6 @@ package body Os.Process is
       end if;
     end Standard_Output;
 
-    use type Text.String;
-
   begin -- Execution_Of
     Security.nLength             := Win32.DWORD (Base.SECURITY_ATTRIBUTES'size / 8);
     Security.lpSecurityDescriptor:= System.Null_Address;
@@ -300,7 +298,7 @@ package body Os.Process is
       end if;
     end loop;
     Unused := Base.CloseHandle (Inbound); -- No longer used
-    return +The_Result;
+    return The_Result.S;
 
   exception
   when Execution_Failed =>

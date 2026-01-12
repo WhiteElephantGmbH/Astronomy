@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2019 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2019 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
@@ -883,8 +883,6 @@ package body PWI2.XML is
 
     The_Pointing_Model : Text.String;
 
-    use type Text.String;
-
     procedure Define_Pointing_Model (Filename : String) is
     begin
       The_Pointing_Model := [Filename];
@@ -893,7 +891,7 @@ package body PWI2.XML is
 
     function Defined_Pointing_Model return String is
     begin
-      return +The_Pointing_Model;
+      return The_Pointing_Model.S;
     end Defined_Pointing_Model;
 
 

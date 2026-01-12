@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                        (c) 2021 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                         *
+-- *                        (c) 2021 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                         *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -112,7 +112,7 @@ package body Exif is
 
   function Date_Time_Digitized return String is
   begin
-    return The_Date_Time_Digitized.To_String;
+    return The_Date_Time_Digitized.S;
   end Date_Time_Digitized;
 
 

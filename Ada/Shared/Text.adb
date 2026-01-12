@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2002 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2002 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -476,14 +476,14 @@ package body Text is
   end String_Of;
 
 
-  function To_String (Item : String) return Standard.String is
+  function S (Item : String) return Standard.String is
     The_String : Standard.String (1 .. Item.Count);
   begin
     for The_Index in 1 .. Count(Item) loop
       The_String(Natural(The_Index)) := Item(The_Index);
     end loop;
     return The_String;
-  end To_String;
+  end S;
 
 
   procedure Append (Item : in out String;
@@ -627,7 +627,7 @@ package body Text is
   procedure Put_String_Image (S : in out Ada.Strings.Text_Buffers.Root_Buffer_Type'class;
                               V : String) is
   begin
-    S.Put ('"' & V.To_String & '"');
+    S.Put ('"' & V.S & '"');
   end Put_String_Image;
 
 

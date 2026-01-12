@@ -44,7 +44,7 @@ package body Picture is
 
   function Filename return String is
   begin
-    return The_Filename.To_String;
+    return The_Filename.S;
   end Filename;
 
 

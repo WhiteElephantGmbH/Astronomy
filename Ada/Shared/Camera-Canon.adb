@@ -700,7 +700,7 @@ package body Camera.Canon is
 
 
     procedure Download is
-      File_Name         : aliased constant String := The_Filename.To_String & Ascii.Nul;
+      File_Name         : aliased constant String := The_Filename.S & Ascii.Nul;
       The_Info          : aliased CI.Directory_Item_Info;
       File_Stream_Write : aliased CI.Stream;
     begin
@@ -710,7 +710,7 @@ package body Camera.Canon is
                                          The_Info => The_Info'access));
 
       Log.Write ("RAW size from camera (bytes): " & CI.Uint64'image (The_Info.Size));
-      Log.Write ("Download " & C.Helper.String_Of (The_Info.Sz_File_Name) & " to " & The_Filename.To_String);
+      Log.Write ("Download " & C.Helper.String_Of (The_Info.Sz_File_Name) & " to " & The_Filename.S);
 
       Check ("Create file stream (write)",
              CI.Create_File_Stream (File_Name   => File_Name'address,
@@ -799,7 +799,7 @@ package body Camera.Canon is
         when Captured =>
           Download;
         when Cropping =>
-          Raw.Prepare_Grid (The_Filename.To_String, The_Grid_Size);
+          Raw.Prepare_Grid (The_Filename.S, The_Grid_Size);
         when Connecting | Connected | Downloading | Cropped | Stopping | Idle | Failed =>
           null;
         end case;

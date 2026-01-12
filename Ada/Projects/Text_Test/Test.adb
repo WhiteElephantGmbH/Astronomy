@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                            (c) 2024 by White Elephant GmbH, Schaffhausen, Switzerland                             *
+-- *                        (c) 2024 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                         *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
@@ -64,7 +64,7 @@ package body Test is
       IO.Put_Line ("-> " & E'image);
     end loop;
     IO.Put_Line ("");
-    IO.Put_Line ("C = A -> " & C'image & Equal (+A, C));
+    IO.Put_Line ("C = A -> " & C'image & Equal (A.S, C));
     IO.Put_Line ("");
 
     IO.Put_Line ("Empty => " & D'image & Equal (D'image, "[]"));

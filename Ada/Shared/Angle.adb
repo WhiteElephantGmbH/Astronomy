@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2014 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2014 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -237,7 +237,6 @@ package body Angle is
                      Show_Signed : Boolean := False) return String is
 
     use type Degrees;
-    use type Text.String;
 
     Factor : constant Seconds := Seconds(Degrees'(10.0 ** Natural(Decimals)));
 
@@ -293,7 +292,7 @@ package body Angle is
       The_Text.Append (String'(Text.Trimmed(Decimals_3'image(The_Seconds))));
     end case;
     The_Text.Append (Actual_Units(Second));
-    return Text.Utf8_Of (+The_Text);
+    return Text.Utf8_Of (The_Text.S);
   end Image_Of;
 
 

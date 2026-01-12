@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2023 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2023 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
@@ -49,7 +49,7 @@ package body Client is
           The_Url := The_Url & Data;
         end case;
         declare
-          Url    : constant String := +The_Url;
+          Url    : constant String := The_Url.S;
         begin
           IO.Put_Line ("URL: <<<" & Url & ">>>");
           declare
