@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2023 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2023 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -44,6 +44,7 @@ package Telescope is
                  Approaching,
                  Following,
                  Tracking,
+                 Focusing,
                  Solving);
 
   subtype Is_Tracking is State range Following .. Tracking;
@@ -58,8 +59,10 @@ package Telescope is
     Model_Points : Device.Points;
   end record;
 
+  subtype M3_Position is Device.M3.Position;
+
   type M3_Data is record
-    Position : Device.M3.Position;
+    Position : M3_Position;
   end record;
 
   type Focuser_Data is record
@@ -105,6 +108,8 @@ package Telescope is
   procedure Define_Max_Focuser_Position (The_Position : Device.Microns);
 
   procedure Define_Fucuser_Zoom_Size (The_Size : Device.Microns);
+
+  procedure Evaluate_Focus;
 
   procedure Startup;
 

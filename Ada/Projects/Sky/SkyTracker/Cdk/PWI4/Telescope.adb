@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2023 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2023 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -19,6 +19,7 @@ with Ada.Real_Time;
 with Cdk_700;
 with Cwe;
 with Error;
+with Focus;
 with Gui;
 with Http_Server.PWI4;
 with Input;
@@ -78,6 +79,8 @@ package body Telescope is
     entry Position_To (Landmark : Name.Id);
 
     entry Focuser_Goto (The_Position : Device.Microns);
+
+    entry Auto_Focus;
 
     entry Rotator_Goto_Field (The_Angle : Device.Degrees);
 
@@ -287,6 +290,12 @@ package body Telescope is
   end Define_Fucuser_Zoom_Size;
 
 
+  procedure Evaluate_Focus is
+  begin
+    Control.Auto_Focus;
+  end Evaluate_Focus;
+
+
   function Information return Data is
     The_Data : Data;
   begin
@@ -334,6 +343,7 @@ package body Telescope is
                    Position,
                    User_Adjust,
                    User_Setup,
+                   Start_Auto_Focus,
                    Mount_Unknown,
                    Mount_Disconnected,
                    Mount_Error,
@@ -587,6 +597,14 @@ package body Telescope is
         Goto_Target;
       end if;
     end Follow_New_Target;
+    
+    
+    procedure Auto_Focus_Start is
+    begin
+      Focus.Evaluate;
+      Log.Write ("start auto focusing");
+      The_State := Focusing;
+    end Auto_Focus_Start;
 
 
     procedure Do_Park is
@@ -1283,10 +1301,35 @@ package body Telescope is
         Offset_Handling;
       when User_Setup =>
         Setup_Handling;
+      when Start_Auto_Focus =>
+        Auto_Focus_Start;
       when others =>
         null;
       end case;
     end Tracking_State;
+
+    --------------
+    -- Focusing --
+    --------------
+    procedure Focusing_State is
+    begin
+      case The_Event is
+      when Mount_Startup =>
+        Focus.Stop;
+        The_State := Mount_Startup_State (The_Event);
+      when Mount_Stopped =>
+        Focus.Stop;
+        The_State := Stopped;
+      when Mount_Approach =>
+        Focus.Stop;
+        The_State := Approaching;
+      when Halt =>
+        Focus.Stop;
+        Stop_Target;
+      when others =>
+        null;
+      end case;
+    end Focusing_State;
 
     --------------
     -- Solving --
@@ -1375,6 +1418,9 @@ package body Telescope is
             Focuser.Go_To (The_Position);
           end Focuser_Goto;
         or
+          accept Auto_Focus;
+          The_Event := Start_Auto_Focus;
+        or
           accept Rotator_Goto_Field (The_Angle : Device.Degrees) do
             Last_Rotator_Offset := Undefined_Offset;
             Rotator.Goto_Field (The_Angle);
@@ -1401,7 +1447,7 @@ package body Telescope is
               when Setup =>
                 The_Event := User_Setup;
                 The_User_Setup := The_Command;
-               end case;
+              end case;
             end if;
           end Execute;
         or
@@ -1549,6 +1595,7 @@ package body Telescope is
           when Waiting       => Waiting_State;
           when Approaching   => Approaching_State;
           when Is_Tracking   => Tracking_State;
+          when Focusing      => Focusing_State;
           when Solving       => Solving_State;
           end case;
           Has_New_Data := True;

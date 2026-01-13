@@ -329,6 +329,18 @@ package body Text is
   end Legible_Of;
 
 
+  function Identifier_Of (Item : Standard.String) return Standard.String is
+    The_Image : Standard.String := Trimmed (Item);
+  begin
+    for The_Character of The_Image loop
+      if The_Character = ' ' then
+        The_Character := '_';
+      end if;
+    end loop;
+    return The_Image;
+  end Identifier_Of;
+
+
   function Reduced (Item : Standard.String) return Standard.String is
 
     type Separator is (No_Separator, Blank, New_Line);

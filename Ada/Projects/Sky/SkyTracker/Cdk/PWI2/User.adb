@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2019 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2019 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -562,18 +562,6 @@ package body User is
   end Clear_Target;
 
 
-  function Identifier_Of (Item : String) return String is
-    The_Image : String := Text.Trimmed (Item);
-  begin
-    for Index in The_Image'range loop
-      if The_Image(Index) = ' ' then
-        The_Image(Index) := '_';
-      end if;
-    end loop;
-    return The_Image;
-  end Identifier_Of;
-
-
   function Image_Orientation return Telescope.Orientation is
   begin
     return The_Image_Orientation;
@@ -583,7 +571,7 @@ package body User is
   procedure Set_Orientation is
   begin
     begin
-      The_Image_Orientation := Telescope.Orientation'value(Identifier_Of (Gui.Contents_Of (Orientation_Box)));
+      The_Image_Orientation := Telescope.Orientation'value(Text.Identifier_Of (Gui.Contents_Of (Orientation_Box)));
     exception
     when others =>
       The_Image_Orientation := Telescope.Correct;

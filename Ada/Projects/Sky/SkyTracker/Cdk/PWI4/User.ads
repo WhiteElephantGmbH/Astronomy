@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2019 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2019 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -22,9 +22,9 @@ with Telescope;
 
 package User is
 
-  type Action is (Define_Catalog, Define_Target, Startup, Shutdown, Stop, Go_To, Update, Close);
+  type Action is (Define_Catalog, Define_Target, Startup, Shutdown, Stop, Go_To, Auto_Focus, Update, Close);
 
-  subtype Button_Action is Action range Startup .. Go_To;
+  subtype Button_Action is Action range Startup .. Auto_Focus;
 
   type Action_Handler is access procedure (The_Action : Action);
 
@@ -47,6 +47,8 @@ package User is
                      The_Termination_Handler : not null access procedure);
 
   procedure Perform_Goto;
+
+  procedure Perform_Auto_Focus;
 
   procedure Perform_Stop;
 

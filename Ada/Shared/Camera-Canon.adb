@@ -506,15 +506,10 @@ package body Camera.Canon is
              CI.Get_Device_Info (From     => The_Session.Device,
                                   The_Info => The_Session.Device_Info'access));
       declare
-        Device_Description : String := C.Helper.String_Of (The_Session.Device_Info.Sz_Device_Description);
+        Device_Description : constant String := C.Helper.String_Of (The_Session.Device_Info.Sz_Device_Description);
       begin
         Log.Write ("Camera description: " & Device_Description);
-        for The_Character of Device_Description loop
-          if The_Character = ' ' then
-            The_Character := '_';
-          end if;
-        end loop;
-        The_Camera := Model'value (Device_Description);
+        The_Camera := Model'value (Text.Identifier_Of (Device_Description));
         Camera_Data.Set (The_Camera);
       exception
       when others =>

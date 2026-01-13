@@ -120,18 +120,23 @@ package Text is
 
   function Legible_Of (Item : Standard.String) return Standard.String;
   -- Function to return a "legible" version of the supplied string.
-  --    Underscores are replaced with spaces.
-  --    Leading & trailing spaces are removed.
-  --    Multiple spaces are condensed into a single space.
-  --    The first character and characters following a space or a '.'
-  --    are capitalized, otherwise the string is reduced to lowercase.
+  --   Underscores are replaced with spaces.
+  --   Leading & trailing spaces are removed.
+  --   Multiple spaces are condensed into a single space.
+  --   The first character and characters following a space or a '.'
+  --   are capitalized, otherwise the string is reduced to lowercase.
+
+  function Identifier_Of (Item : Standard.String) return Standard.String;
+  -- Function to return a "identifier" version of the supplied string.
+  --   Spaces are replaced with underscores.
+  --   Leading & trailing spaces are removed.
 
   function Reduced (Item : Standard.String) return Standard.String;
   -- Function to return a "reduced" version of the supplied string.
-  --    white_spaces :== {<cr> | <lf> | <tab> | space}.
-  --    Leading & trailing white_spaces are removed.
-  --    {<tab> | space} replaced with a single space.
-  --    [white_spaces] (<cr> | <lf>) [white_spaces] replaced with a single <cr>.
+  --   white_spaces :== {<cr> | <lf> | <tab> | space}.
+  --   Leading & trailing white_spaces are removed.
+  --   {<tab> | space} replaced with a single space.
+  --   [white_spaces] (<cr> | <lf>) [white_spaces] replaced with a single <cr>.
 
 
   generic
