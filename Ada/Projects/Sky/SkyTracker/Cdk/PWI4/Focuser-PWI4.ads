@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                               (c) 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                           (c) 2026 by White Elephant GmbH, Schaffhausen, Switzerland                              *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,50 +15,30 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Error;
-with Section;
+package Focuser.PWI4 is
 
-package body Camera.Parameter is
+  type Device is new Object with private;
 
-  Exposure_Time_Key : constant String := "Exposure Time";
-  Sensitivity_Key   : constant String := "Sensitivity";
+  function New_Device return Object_Access;
 
+  overriding
+  function State (Unused : Device) return Status;
 
-  function Exposure_For (Key : String) return Exposure.Item is
-    Image : constant String := Section.String_Value_Of (Key);
-  begin
-    return Exposure.Value (Image);
-  exception
-  when others =>
-    Error.Raise_With ("Incorrect Exposure Time: " & Image);
-  end Exposure_For;
+  overriding
+  function Name (Unused : Device) return String;
 
+  overriding
+  function Actual_Position (Unused : Device) return Distance;
 
-  function Sensitivity_For (Key : String) return Sensitivity.Item is
-    Image : constant String := Section.String_Value_Of (Key);
-  begin
-    return Sensitivity.Value (Image);
-  exception
-  when others =>
-    Error.Raise_With ("Incorrect Sensitivity: " & Image);
-  end Sensitivity_For;
+  overriding
+  procedure Move_To (Unused   : Device;
+                     Position : Distance);
 
+  overriding
+  procedure Stop (Unused : Device);
 
-  procedure Define (Handle : Configuration.File_Handle) is
-  begin
-    Section.Set (Configuration.Handle_For (Handle, Camera_Id));
-    if Section.Exists then
-      The_Exposure_Parameter := Exposure_For (Exposure_Time_Key);
-      The_Sensitivity_Parameter := Sensitivity_For (Sensitivity_Key);
-    end if;
-  end Define;
+private
 
+  type Device is new Object with null record;
 
-  procedure Defaults (Put : access procedure (Item : String)) is
-  begin
-    Put ("[" & Camera_Id & "]");
-    Put (Exposure_Time_Key & " = 4.0");
-    Put (Sensitivity_Key & "   = 6400");
-  end Defaults;
-
-end Camera.Parameter;
+end Focuser.PWI4;

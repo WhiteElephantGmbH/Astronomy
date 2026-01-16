@@ -16,10 +16,12 @@
 pragma Style_White_Elephant;
 
 with Ada.Real_Time;
+with Camera;
 with Cdk_700;
 with Cwe;
 with Error;
 with Focus;
+with Focuser.PWI4;
 with Gui;
 with Http_Server.PWI4;
 with Input;
@@ -45,7 +47,7 @@ package body Telescope is
 
   package M3 renames Device.M3;
 
-  package Focuser renames Device.Focuser;
+  package PWI4_Focuser renames Device.Focuser;
 
   package Rotator renames Device.Rotator;
 
@@ -90,7 +92,7 @@ package body Telescope is
 
     entry New_Mount_State (New_State : Mount.State);
 
-    entry New_Focuser_State (New_State : Focuser.State);
+    entry New_Focuser_State (New_State : PWI4_Focuser.State);
 
     entry New_M3_Position (New_Position : M3.Position);
 
@@ -180,7 +182,7 @@ package body Telescope is
   end Mount_State_Handler;
 
 
-  procedure Focuser_State_Handler (New_State : Focuser.State) is
+  procedure Focuser_State_Handler (New_State : PWI4_Focuser.State) is
   begin
     if not Control'terminated then
       Control.New_Focuser_State (New_State);
@@ -214,6 +216,8 @@ package body Telescope is
 
   procedure Start (Update_Handler : Information_Update_Handler) is
   begin
+    Camera.Start;
+    Focus.Start (Focuser.PWI4.New_Device);
     Signal_Information_Update := Update_Handler;
     Input.Open (Execute'access);
     Control := new Control_Task;
@@ -364,11 +368,11 @@ package body Telescope is
 
     Mount_Is_Stopped : Boolean := True;
 
-    The_Focuser_State : Focuser.State := Focuser.Unknown;
+    The_Focuser_State : PWI4_Focuser.State := PWI4_Focuser.Unknown;
     The_Mount_State   : Mount.State := Mount.Unknown;
     The_M3_Position   : M3.Position := M3.Unknown;
 
-    use type Focuser.State;
+    use type PWI4_Focuser.State;
     use type Mount.State;
 
     The_User_Adjust : Adjust;
@@ -597,8 +601,8 @@ package body Telescope is
         Goto_Target;
       end if;
     end Follow_New_Target;
-    
-    
+
+
     procedure Auto_Focus_Start is
     begin
       Focus.Evaluate;
@@ -773,7 +777,7 @@ package body Telescope is
       Mount.Enable;
       if Cdk_700.Had_Powerup then
         The_Completion_Time := Time.Universal + Enabling_Duration;
-        Focuser.Find_Home;
+        PWI4_Focuser.Find_Home;
         Rotator.Find_Home;
       else
         The_Completion_Time := Time.In_The_Past;
@@ -787,7 +791,7 @@ package body Telescope is
       Fans.Turn (To => Fans.Off);
       M3.Turn_To_Occular;
       Mount.Find_Home (The_Completion_Time);
-      Focuser.Go_To (Focuser.Stored_Position);
+      PWI4_Focuser.Go_To (PWI4_Focuser.Stored_Position);
       Rotator.Goto_Mech (180.0);
       The_State := Homing;
     end Find_Home_And_Set_Defaults;
@@ -848,7 +852,7 @@ package body Telescope is
       when Mount_Error =>
         return Mount_Error;
       when Mount_Connected =>
-        if The_Focuser_State > Focuser.Disconnected then
+        if The_Focuser_State > PWI4_Focuser.Disconnected then
           return Connected;
         else
           return Disconnected;
@@ -895,7 +899,7 @@ package body Telescope is
       when Startup =>
         if Site.Verified (Device.Site_Info) then
           Mount.Connect;
-          Focuser.Connect; -- and Rotator if IRF90
+          PWI4_Focuser.Connect; -- and Rotator if IRF90
           The_State := Connecting;
         else
           Error.Set ("Incorrect Location");
@@ -958,7 +962,7 @@ package body Telescope is
       when Mount_Error =>
         The_State := Mount_Error;
       when Mount_Connected =>
-        if The_Focuser_State > Focuser.Disconnected then
+        if The_Focuser_State > PWI4_Focuser.Disconnected then
           Enabling;
         end if;
       when Focuser_Connected =>
@@ -1415,7 +1419,7 @@ package body Telescope is
           The_Event := Position;
         or
           accept Focuser_Goto (The_Position : Device.Microns) do
-            Focuser.Go_To (The_Position);
+            PWI4_Focuser.Go_To (The_Position);
           end Focuser_Goto;
         or
           accept Auto_Focus;
@@ -1486,16 +1490,16 @@ package body Telescope is
             Has_New_Data := True;
           end New_Mount_State;
         or
-          accept New_Focuser_State (New_State : Focuser.State) do
+          accept New_Focuser_State (New_State : PWI4_Focuser.State) do
             Log.Write ("Focuser State " & New_State'img);
             The_Focuser_State := New_State;
             case New_State is
-            when Focuser.Unknown | Focuser.Disconnected =>
+            when PWI4_Focuser.Unknown | PWI4_Focuser.Disconnected =>
               null;
-            when Focuser.Connected =>
+            when PWI4_Focuser.Connected =>
               The_Event := Focuser_Connected;
               Has_New_Data := True;
-            when Focuser.Moving =>
+            when PWI4_Focuser.Moving =>
               The_Event := Focuser_Moving;
               Has_New_Data := True;
             end case;
@@ -1510,11 +1514,11 @@ package body Telescope is
           accept Get (The_Data : out Data) do
             The_Data.Status := The_State;
             The_Data.M3.Position := The_M3_Position;
-            The_Data.Focuser.Exists := Focuser.Exists;
-            The_Data.Focuser.Moving := The_Focuser_State = Focuser.Moving;
-            The_Data.Focuser.Position := Focuser.Actual_Position;
+            The_Data.Focuser.Exists := PWI4_Focuser.Exists;
+            The_Data.Focuser.Moving := The_Focuser_State = PWI4_Focuser.Moving;
+            The_Data.Focuser.Position := PWI4_Focuser.Actual_Position;
             if The_State >= Stopped then
-              Focuser.Stored_Position := The_Data.Focuser.Position;
+              PWI4_Focuser.Stored_Position := The_Data.Focuser.Position;
             end if;
             The_Data.Focuser.Max_Position := Max_Fucuser_Position;
             The_Data.Focuser.Zoom_Size := Fucuser_Zoom_Size;
@@ -1610,10 +1614,16 @@ package body Telescope is
       end;
     end loop;
     Input.Close;
+    Focus.Finish;
+    Camera.Finish;
     Device.Finalize;
     Log.Write ("Control end");
   exception
   when Item: others =>
+    Input.Close;
+    Focus.Finish;
+    Camera.Finish;
+    Device.Finalize;
     Log.Termination (Item);
   end Control_Task;
 
