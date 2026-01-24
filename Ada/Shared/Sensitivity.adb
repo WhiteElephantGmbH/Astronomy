@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2025 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2025 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -43,10 +43,12 @@ package body Sensitivity is
     Items : constant Text.Strings := Text.Strings_Of (Image, Separator => ',');
   begin
     case Items.Count is
-    when 0 =>
-      return Default;
     when 1 =>
-      return Value (Iso'value(Image));
+      if Items(1) = "[]" then
+        return Default;
+      else
+        return Value (Iso'value(Items(1)));
+      end if;
     when 2 =>
       declare
         G : constant String := Items(1);

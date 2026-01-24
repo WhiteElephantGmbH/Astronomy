@@ -15,9 +15,14 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with Configuration;
+
 package Camera.Parameter is
 
-  procedure Define (The_Exposure    : Exposure.Item;
-                    The_Sensitivity : Sensitivity.Item);
+  procedure Define (Handle : Configuration.File_Handle);
+
+  procedure Defaults (Put               : access procedure (Item : String);
+                      Exposure_Time     : Exposure.Item;
+                      Sensitivity_Value : Sensitivity.Item);
 
 end Camera.Parameter;

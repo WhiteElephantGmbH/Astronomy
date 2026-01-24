@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2023 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2023 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -20,6 +20,7 @@ with Ada.Unchecked_Conversion;
 with Application;
 with Cwe;
 with Gui.Enumeration_Menu_Of;
+with Gui.Radio_Menu_Of;
 with Gui.Registered;
 with Lexicon;
 with Name.Catalog;
@@ -27,6 +28,7 @@ with Persistent;
 with Remote;
 with Sky.Catalog;
 with Targets.Filter;
+with Text;
 with Traces;
 
 package body User is
@@ -46,7 +48,12 @@ package body User is
   The_Target_Selection  : Target_Selection := No_Target;
   Last_Target_Selection : Target_Selection := Target_Object;
 
-  The_Status : Telescope.State := Telescope.Unknown;
+  The_Status      : Telescope.State := Telescope.Unknown;
+
+  subtype M3_Position  is Telescope.M3_Position;
+  use all type M3_Position;
+
+  The_M3_Position : M3_Position := Unknown;
 
   Action_Routine   : Action_Handler;
   The_Last_Action  : Action := Action'pred (Button_Action'first);
@@ -85,26 +92,67 @@ package body User is
   end Set_Target_Name;
 
 
-  function Image_Of (The_Mode : Cwe.Mode) return String is
+  type Option_Group is (Ocular, Camera);
+
+  package Option_Menu is new Gui.Radio_Menu_Of (Option_Group);
+
+
+  type Ocular_Option is (Normal, Customer_Wow_Experience);
+
+  function Image_Of (The_Option : Ocular_Option) return String is
   begin
-    case The_Mode is
-    when Cwe.Off =>
-      return Lexicon.Image_Of (Lexicon.Off);
-    when Cwe.On =>
-      return Lexicon.Image_Of (Lexicon.On);
+    case The_Option is
+    when Normal =>
+      return "Normal";
+    when Customer_Wow_Experience =>
+      return "CWE";
     end case;
   end Image_Of;
 
-  package Cwe_Menu is new Gui.Enumeration_Menu_Of (Cwe.Mode, Gui.Radio, Image_Of);
 
-  procedure Cwe_Handler (The_Mode : Cwe.Mode) is
+  type Camera_Option is (Normal, Auto_Focus, Add_Model_Point);
+
+  function Image_Of (The_Option : Camera_Option) return String is
   begin
-    Log.Write ("CWE: " & The_Mode'img);
-    Cwe.Set (To => The_Mode);
+    return Text.Legible_Of (The_Option'image);
+  end Image_Of;
+
+
+  function Option_Images return Option_Menu.Images is
+    Ocular_Option_Images : Text.List;
+    Camera_Option_Images : Text.List;
+  begin
+    for Element in Ocular_Option loop
+      Ocular_Option_Images.Append (Image_Of (Element));
+    end loop;
+    for Element in Camera_Option loop
+      Camera_Option_Images.Append (Image_Of (Element));
+    end loop;
+    return [Ocular => Ocular_Option_Images.To_Vector,
+            Camera => Camera_Option_Images.To_Vector];
+  end Option_Images;
+
+
+  Last_Camera_Option : Camera_Option := Camera_Option'last;
+  The_Camera_Option  : Camera_Option := Normal;
+
+  procedure Option_Handler (The_Group  : Option_Group;
+                            The_Option : String) is
+  begin
+    Log.Write ("Group  : " & The_Group'image);
+    Log.Write ("Option : " & The_Option);
+    case The_Group is
+    when Ocular =>
+      Cwe.Set (To => (if The_Option = "CWE" then Cwe.On else Cwe.Off));
+      The_Camera_Option := Normal;
+    when Camera =>
+      The_Camera_Option := Camera_Option'value(Text.Identifier_Of (The_Option));
+      Cwe.Set (Cwe.Off);
+    end case;
   exception
   when others =>
-    Log.Error ("Cwe_Handler");
-  end Cwe_Handler;
+    Log.Error ("Option_Handler");
+  end Option_Handler;
 
 
   function Image_Of (The_Command : Remote.Command) return String is
@@ -259,6 +307,21 @@ package body User is
   end Enable_Goto_Button;
 
 
+  procedure Disable_Auto_Focus_Button is
+  begin
+    Perform_Left_Handler := null;
+    Gui.Disable (Left_Button);
+  end Disable_Auto_Focus_Button;
+
+
+  procedure Enable_Auto_Focus_Button is
+  begin
+    Perform_Left_Handler := Perform_Auto_Focus'access;
+    Gui.Set_Text (Left_Button, "Auto Focus");
+    Gui.Enable (Left_Button);
+  end Enable_Auto_Focus_Button;
+
+
   procedure Enable_Shutdown_Button is
   begin
     Perform_Right_Handler := Perform_Shutdown'access;
@@ -275,12 +338,31 @@ package body User is
   end Disable_Shutdown_Button;
 
 
+  procedure Handle_Camera_Commands is
+  begin
+    case The_M3_Position is
+    when Camera =>
+      Option_Menu.Set (Camera);
+    when others =>
+      Option_Menu.Set (Ocular);
+    end case;
+  end Handle_Camera_Commands;
+
+
   procedure Show (Information : Telescope.Data) is
     use type Telescope.State;
   begin
-    if (The_Status /= Information.Status) or (Last_Target_Selection /= The_Target_Selection) then
+    if Information.M3.Position /= The_M3_Position then
+      The_M3_Position := Information.M3.Position;
+      Handle_Camera_Commands;
+    end if;
+    if (The_Status /= Information.Status) or
+       (Last_Target_Selection /= The_Target_Selection) or
+       (Last_Camera_Option /= The_Camera_Option)
+    then
       The_Status := Information.Status;
       Last_Target_Selection := The_Target_Selection;
+      Last_Camera_Option := The_Camera_Option;
       case The_Status is
       when Telescope.Unknown | Telescope.Mount_Error =>
         Disable_Startup_Button;
@@ -303,11 +385,24 @@ package body User is
       when Telescope.Positioned | Telescope.Waiting =>
         Enable_Stop_Button;
         Enable_Goto_Button;
-      when Telescope.Positioning | Telescope.Preparing | Telescope.Approaching | Telescope.Is_Tracking =>
+      when Telescope.Positioning | Telescope.Preparing | Telescope.Approaching | Telescope.Following =>
         Enable_Goto_Button;
+        Enable_Stop_Button;
+      when Telescope.Tracking =>
+        case The_Camera_Option is
+        when Normal =>
+          Enable_Goto_Button;
+        when Auto_Focus =>
+          Enable_Auto_Focus_Button;
+        when Add_Model_Point =>
+          Enable_Goto_Button; -- !!!
+        end case;
         Enable_Stop_Button;
       when Telescope.Solving =>
         Disable_Goto_Button;
+        Enable_Stop_Button;
+      when Telescope.Focusing =>
+        Disable_Auto_Focus_Button;
         Enable_Stop_Button;
       when Telescope.Stopping =>
         Disable_Goto_Button;
@@ -337,6 +432,12 @@ package body User is
     Cwe.New_Offset;
     Signal_Action (Go_To);
   end Perform_Goto;
+
+
+  procedure Perform_Auto_Focus is
+  begin
+    Signal_Action (Auto_Focus);
+  end Perform_Auto_Focus;
 
 
   procedure Perform_Stop is
@@ -474,7 +575,7 @@ package body User is
     begin -- Create_Interface
       Name.Catalog.Create_Menu (Define_Signal'access);
       Targets.Filter.Create_Menu (Update_Signal'access);
-      Cwe_Menu.Create ("CWE", Cwe_Handler'access);
+      Option_Menu.Create ("Option", Option_Images, Option_Handler'access);
       if Remote.Configured then
         Demo_21_Menu.Create ("Demo 21", Demo_21_Handler'access);
       end if;

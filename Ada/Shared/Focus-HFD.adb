@@ -16,11 +16,8 @@
 pragma Style_White_Elephant;
 
 with Ada.Numerics.Generic_Elementary_Functions;
-with Traces;
 
 package body Focus.HFD is
-
-  package Log is new Traces ("Focus.HFD");
 
   package NF is new Ada.Numerics.Generic_Elementary_Functions (Float);
 
@@ -31,9 +28,11 @@ package body Focus.HFD is
 
   procedure Evaluate (Grid : Camera.Raw_Grid) is
     use type Camera.Raw_Grid;
+    use type Camera.Rows;
+    use type Camera.Columns;
   begin
     if Grid = [] then
-      Error ("No Grid - " & Camera.Error_Message);
+      Set_Error ("No Grid - " & Camera.Error_Message);
       return;
     end if;
     declare
@@ -110,12 +109,18 @@ package body Focus.HFD is
         return Max_Right_Angle;
       end Evaluated_Max_Rigth_Angle;
 
-      use type Camera.Rows;
-      use type Camera.Columns;
+      RA : constant Right_Angle := Evaluated_Max_Rigth_Angle;
 
-      RA            : constant Right_Angle := Evaluated_Max_Rigth_Angle;
-      Row_Offset    : constant Camera.Rows := (Camera.Rows'first + RA.Ends.Row - RA.Edge.Row) / 2;
-      Column_Offset : constant Camera.Columns := (Camera.Columns'first + RA.Ends.Column - RA.Edge.Column) / 2;
+      function Evaluated_Offset return Position is
+      begin
+        return (Row    => (Camera.Rows'first + RA.Ends.Row - RA.Edge.Row) / 2,
+                Column => (Camera.Columns'first + RA.Ends.Column - RA.Edge.Column) / 2);
+      exception
+      when others =>
+        return (Camera.Rows'first, Camera.Columns'first);
+      end Evaluated_Offset;
+
+      Offset : constant Position := Evaluated_Offset;
 
       function Is_In_RA (Row    : Camera.Rows;
                          Column : Camera.Columns) return Boolean is
@@ -133,23 +138,23 @@ package body Focus.HFD is
         Row_Sum      : Huge_Natural := 0;
         The_Count    : Huge_Natural := 0;
       begin
-        if First_Column > Column_Offset then
-          First_Column := (@ - Column_Offset);
+        if First_Column > Offset.Column then
+          First_Column := (@ - Offset.Column);
         else
           First_Column := Camera.Columns'first;
         end if;
-        if Last_Column < Grid'last(2) - Column_Offset then
-          Last_Column := @ + Column_Offset;
+        if Last_Column < Grid'last(2) - Offset.Column then
+          Last_Column := @ + Offset.Column;
         else
           Last_Column := Grid'last(2);
         end if;
-        if First_Row > Row_Offset then
-          First_Row := @ - Row_Offset;
+        if First_Row > Offset.Row then
+          First_Row := @ - Offset.Row;
         else
           First_Row := Camera.Rows'first;
         end if;
-        if Last_Row < Grid'last(1) - Row_Offset then
-          Last_Row := @ + Row_Offset;
+        if Last_Row < Grid'last(1) - Offset.Row then
+          Last_Row := @ + Offset.Row;
         else
           Last_Row := Grid'last(1);
         end if;

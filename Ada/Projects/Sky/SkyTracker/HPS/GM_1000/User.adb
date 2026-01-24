@@ -638,18 +638,7 @@ package body User is
 
   procedure Handle_Setup_Command_Change is
 
-    function Identifier_Of (Item : String) return String is
-      The_Image : String := Text.Trimmed (Item);
-    begin
-      for Index in The_Image'range loop
-        if The_Image(Index) = ' ' then
-          The_Image(Index) := '_';
-        end if;
-      end loop;
-      return The_Image;
-    end Identifier_Of;
-
-    Setup_Command_Image : constant String := Identifier_Of (Gui.Contents_Of (Setup_Command_Box));
+    Setup_Command_Image : constant String := Text.Identifier_Of (Gui.Contents_Of (Setup_Command_Box));
 
   begin -- Handle_Setup_Command_Change
     The_Setup_Command := Setup_Command'value(Setup_Command_Image);
@@ -671,6 +660,7 @@ package body User is
 
   procedure Show_Error (Image : String) is
   begin
+    Log.Warning ("Error: " & Image);
     Gui.Message_Box (Image);
     Gui.Beep;
   end Show_Error;

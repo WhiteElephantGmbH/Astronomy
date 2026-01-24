@@ -18,7 +18,7 @@ pragma Style_White_Elephant;
 with Exceptions;
 with Exposure;
 with Sensitivity;
-
+private with Traces;
 private with Text;
 
 package Camera is
@@ -81,6 +81,8 @@ package Camera is
 private
 
   Camera_Id : constant String := "Camera";
+
+  package Log is new Traces (Camera_Id);
 
   The_Exposure_Parameter    : Exposure.Item;
   The_Sensitivity_Parameter : Sensitivity.Item;

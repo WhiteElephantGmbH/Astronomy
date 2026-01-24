@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2023 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2023 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -17,13 +17,16 @@ pragma Style_White_Elephant;
 
 with Ada.Text_IO;
 with Application;
+with Camera.Parameter;
 with Cdk_700.Parameter;
 with Configuration;
 with Cwe;
 with Device;
 with Doubly_Linked_Lists_Extension;
 with Error;
+with Exposure;
 with File;
+with Focus.Parameter;
 with Http_Server.Parameter;
 with Language.Parameter;
 with Moon.Parameter;
@@ -32,6 +35,7 @@ with Os.System;
 with Picture.Parameter;
 with Remote.Parameter;
 with Section;
+with Sensitivity;
 with Stellarium.Parameter;
 with Sun.Parameter;
 with Telescope;
@@ -129,6 +133,10 @@ package body Parameter is
       Moon.Parameter.Defaults (Put'access);
       Put ("");
       Remote.Parameter.Defaults (Put'access, "cdk_Ost");
+      Put ("");
+      Camera.Parameter.Defaults (Put'access, Exposure.Value (4.0), Sensitivity.Default);
+      Put ("");
+      Focus.Parameter.Defaults (Put'access);
       Put ("");
       Picture.Parameter.Defaults (Put'access);
       Put ("");
@@ -260,6 +268,8 @@ package body Parameter is
       Sun.Parameter.Define (Handle);
       Moon.Parameter.Define (Handle);
       Remote.Parameter.Define (Handle);
+      Camera.Parameter.Define (Handle);
+      Focus.Parameter.Define (Handle);
       Picture.Parameter.Define (Handle);
       Stellarium.Parameter.Define (Handle);
     exception

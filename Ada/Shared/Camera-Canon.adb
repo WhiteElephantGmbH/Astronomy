@@ -20,11 +20,8 @@ with C.Helper;
 with Camera.Canon.C_Interface;
 with Camera.Raw;
 with System;
-with Traces;
 
 package body Camera.Canon is
-
-  package Log is new Traces ("Canon");
 
   package CI renames Camera.Canon.C_Interface;
   package RT renames Ada.Real_Time;
@@ -506,15 +503,10 @@ package body Camera.Canon is
              CI.Get_Device_Info (From     => The_Session.Device,
                                   The_Info => The_Session.Device_Info'access));
       declare
-        Device_Description : String := C.Helper.String_Of (The_Session.Device_Info.Sz_Device_Description);
+        Device_Description : constant String := C.Helper.String_Of (The_Session.Device_Info.Sz_Device_Description);
       begin
         Log.Write ("Camera description: " & Device_Description);
-        for The_Character of Device_Description loop
-          if The_Character = ' ' then
-            The_Character := '_';
-          end if;
-        end loop;
-        The_Camera := Model'value (Device_Description);
+        The_Camera := Model'value (Text.Identifier_Of (Device_Description));
         Camera_Data.Set (The_Camera);
       exception
       when others =>

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2026 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                               (c) 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,66 +15,12 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Traces;
+with Configuration;
 
-package body Focuser.PWI4 is
+package Focus.Parameter is
 
-  package Log is new Traces ("Focuser.PWI4");
+  procedure Define (Handle : Configuration.File_Handle);
 
-  function New_Device return Object_Access is (new Device);
+  procedure Defaults (Put : access procedure (Item : String));
 
-  The_State     : Status := Stopped;
-  The_Increment : Natural;
-  The_Position  : Natural := 11000;
-  The_Goal      : Natural;
-
-  overriding
-  function State (Unused : Device) return Status is
-  begin
-    case The_State is
-    when Moving =>
-      The_Position := @ + The_Increment;
-      if abs (The_Position - The_Goal) < abs (The_Increment) then
-        The_State := Stopped;
-        The_Position := The_Goal;
-      end if;
-      Log.Write ("Position:" & The_Position'image);
-    when others =>
-      null;
-    end case;
-    return The_State;
-  end State;
-
-
-  overriding
-  function Name (Unused : Device) return String is ("IRF90");
-
-
-  overriding
-  function Actual_Position (Unused : Device) return Distance is
-  begin
-    Log.Write ("Actual_Position:" & The_Position'image);
-    return The_Position;
-  end Actual_Position;
-
-
-  overriding
-  procedure Move_To (Unused   : Device;
-                     Position : Distance) is
-  begin
-    The_Goal := Natural(Position);
-    The_Increment := The_Goal - The_Position;
-    if (abs The_Increment) > 5 then
-      The_Increment := @ / 5;
-    end if;
-    The_State := Moving;
-  end Move_To;
-
-
-  overriding
-  procedure Stop (Unused : Device) is
-  begin
-    The_State := Stopped;
-  end Stop;
-
-end Focuser.PWI4;
+end Focus.Parameter;

@@ -17,11 +17,8 @@ pragma Style_White_Elephant;
 
 with Ada.Real_Time;
 with Focus.HFD;
-with Traces;
 
 package body Focus is
-
-  package Log is new Traces ("Focus");
 
   package RT renames Ada.Real_Time;
 
@@ -80,6 +77,8 @@ package body Focus is
 
   procedure Stop is
   begin
+    Camera.Stop;
+    The_Focuser.Stop;
     The_Control.Await_Stop;
   end Stop;
 
@@ -103,10 +102,12 @@ package body Focus is
 
   task body Control is
 
-    Delta_Time : constant RT.Time_Span := RT.To_Time_Span (1.0 / 2);
-
     use type RT.Time;
     use type Focuser.Status;
+
+    Delta_Time : constant RT.Time_Span := RT.To_Time_Span (1.0 / 2);
+
+    The_Wakeup_Time : RT.Time := RT.Clock + Delta_Time;
 
     Minimum_Start_HFD : constant Diameter := 50;
 
@@ -163,7 +164,12 @@ package body Focus is
     begin
       The_Index := First;
       The_Position := Focus_Data.Start_Position;
-      The_Focuser.Move_To (The_Position);
+      if The_Position = Start_From_Actual then
+        The_Position := The_Focuser.Actual_Position;
+      else
+        The_Focuser.Move_To (The_Position);
+        The_Wakeup_Time := RT.Clock + Delta_Time;
+      end if;
       Focus_Data.Set (Positioning);
     end Start_Evaluation;
 
@@ -208,7 +214,11 @@ package body Focus is
       null;
     end Evaluate_Position;
 
-    The_Wakeup_Time : RT.Time := RT.Clock + Delta_Time;
+
+    function At_Position (Focuser_Position : Distance) return Boolean is
+    begin
+      return abs (Integer(The_Position) - Integer(Focuser_Position)) <= Focus_Data.Position_Tolerance;
+    end At_Position;
 
   begin -- Control
     Log.Write ("start");
@@ -219,7 +229,7 @@ package body Focus is
         when Focuser.Stopped | Focuser.Moving =>
           Start_Evaluation;
         when Focuser.Disconnected =>
-          Error ("Focuser not connected");
+          Set_Error ("Focuser not connected");
         end case;
       or
         accept Await_Stop do
@@ -240,7 +250,6 @@ package body Focus is
         exit;
       or
         delay until The_Wakeup_Time;
-        The_Wakeup_Time := RT.Clock + Delta_Time;
         begin
           case Focus_Data.State is
           when No_Focuser =>
@@ -253,39 +262,45 @@ package body Focus is
           when Positioning =>
             case The_Focuser.State is
             when Focuser.Stopped =>
-              if The_Position = The_Focuser.Actual_Position then
-                Camera.Capture (Focus_Data.Grid_Size);
-                if Camera.Has_Error then
-                  Error (Camera.Error_Message);
+              declare
+                Actual_Position : constant Distance := The_Focuser.Actual_Position;
+              begin
+                if At_Position (Actual_Position) then
+                  Camera.Capture (Focus_Data.Grid_Size);
+                  if Camera.Has_Error then
+                    Set_Error (Camera.Error_Message);
+                  else
+                    Focus_Data.Set (Capturing);
+                  end if;
                 else
-                  Focus_Data.Set (Capturing);
+                  Set_Error ("Focuser positioning inaccurate - expected:" & The_Position'image &
+                                                       " - actual:" & Actual_Position'image);
                 end if;
-              else
-                Error ("Focuser positioning inaccurate");
-              end if;
+              end;
             when Focuser.Moving =>
               null;
             when Focuser.Disconnected =>
-              Error ("Focuser lost connection");
+              Set_Error ("Focuser lost connection");
             end case;
           when Capturing =>
             case Camera.Actual_Information.State is
             when Camera.Cropped =>
               HFD.Evaluate (Camera.Captured);
               if The_Position /= The_Focuser.Actual_Position then
-                Error ("Focuser position moved");
+                Set_Error ("Focuser position moved");
               else
                 Evaluate_Position;
+
               end if;
             when Camera.Failed =>
-              Error (Camera.Error_Message);
+              Set_Error (Camera.Error_Message);
             when others =>
               null;
             end case;
           when Evaluated =>
             case The_Focuser.State is
             when Focuser.Stopped =>
-              if The_Position /= The_Focuser.Actual_Position then
+              if not At_Position (The_Focuser.Actual_Position) then
                 Focus_Data.Set (Undefined);
               end if;
             when Focuser.Moving =>
@@ -304,9 +319,12 @@ package body Focus is
             null;
           end case;
         exception
+        when Focus_Error =>
+          null;
         when Occurrence: others =>
           Focus_Data.Set_Fatal (Occurrence);
         end;
+        The_Wakeup_Time := RT.Clock + Delta_Time;
       end select;
     end loop;
     Log.Write ("finish");
@@ -324,16 +342,15 @@ package body Focus is
   -- Error Handling --
   --------------------
 
-  procedure Error (Message : String) is
+  procedure Set_Error (Message : String) is
   begin
-    Log.Error (Message);
-    Focus_Data.Set_Error (Message);
-  end Error;
+    Focus_Data.Set_Failed (Message);
+  end Set_Error;
 
 
   procedure Raise_Error (Message : String) is
   begin
-    Error (Message);
+    Set_Error (Message);
     raise Focus_Error;
   end Raise_Error;
 
@@ -354,10 +371,12 @@ package body Focus is
 
     procedure Set (First_Position  : Distance;
                    First_Increment : Distance;
+                   Tolerance       : Distance;
                    Square_Size     : Camera.Square_Size) is
     begin
       The_Start_Position := First_Position;
       The_Start_Increment := First_Increment;
+      The_Tolerance := Tolerance;
       The_Grid_Size := Square_Size;
     end Set;
 
@@ -378,6 +397,12 @@ package body Focus is
     begin
       return The_Start_Increment;
     end Start_Increment;
+
+
+    function Position_Tolerance return Distance is
+    begin
+      return The_Tolerance;
+    end Position_Tolerance;
 
 
     function Grid_Size return Camera.Square_Size is
@@ -410,26 +435,28 @@ package body Focus is
     end Evaluation;
 
 
-    procedure Set_Error (Message : String) is
+    procedure Set_Failed (Message : String) is
     begin
       The_Result := (others => <>);
       The_Last_Error := [Message];
       The_State := Failed;
-    end Set_Error;
+    end Set_Failed;
 
 
     procedure Check (Item : Status) is
     begin
       if The_State /= Item then
-        Error ("Sequence Error - State must be " & Item'image);
+        Set_Error ("Sequence Error - State must be " & Item'image);
         raise Focus_Error;
       end if;
     end Check;
 
 
     procedure Set_Fatal (Item : Exceptions.Occurrence) is
+      Message : constant String := Exceptions.Name_Of (Item);
     begin
-      Error ("Internal_Error - " & Exceptions.Name_Of (Item));
+      Log.Error (Message);
+      Set_Error ("Internal_Error - " & Message);
     end Set_Fatal;
 
 

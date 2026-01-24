@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                               (c) 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                           (c) 2026 by White Elephant GmbH, Schaffhausen, Switzerland                              *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,13 +15,30 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-package body Camera.Parameter is
+package Focuser.IRF90 is
 
-  procedure Define (The_Exposure    : Exposure.Item;
-                    The_Sensitivity : Sensitivity.Item) is
-  begin
-    The_Exposure_Parameter := The_Exposure;
-    The_Sensitivity_Parameter := The_Sensitivity;
-  end Define;
+  type Item is new Object with private;
 
-end Camera.Parameter;
+  function New_Device return Object_Access;
+
+  overriding
+  function State (Unused : Item) return Status;
+
+  overriding
+  function Name (Unused : Item) return String;
+
+  overriding
+  function Actual_Position (Unused : Item) return Distance;
+
+  overriding
+  procedure Move_To (Unused   : Item;
+                     Position : Distance);
+
+  overriding
+  procedure Stop (Unused : Item);
+
+private
+
+  type Item is new Object with null record;
+
+end Focuser.IRF90;

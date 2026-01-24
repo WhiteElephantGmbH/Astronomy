@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2023 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2023 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -16,9 +16,12 @@
 pragma Style_White_Elephant;
 
 with Ada.Real_Time;
+with Camera;
 with Cdk_700;
 with Cwe;
 with Error;
+with Focus;
+with Focuser.IRF90;
 with Gui;
 with Http_Server.PWI4;
 with Input;
@@ -44,7 +47,7 @@ package body Telescope is
 
   package M3 renames Device.M3;
 
-  package Focuser renames Device.Focuser;
+  package PWI4_Focuser renames Device.Focuser;
 
   package Rotator renames Device.Rotator;
 
@@ -79,6 +82,8 @@ package body Telescope is
 
     entry Focuser_Goto (The_Position : Device.Microns);
 
+    entry Auto_Focus;
+
     entry Rotator_Goto_Field (The_Angle : Device.Degrees);
 
     entry Rotator_Goto_Mech (The_Position : Device.Degrees);
@@ -87,7 +92,7 @@ package body Telescope is
 
     entry New_Mount_State (New_State : Mount.State);
 
-    entry New_Focuser_State (New_State : Focuser.State);
+    entry New_Focuser_State (New_State : PWI4_Focuser.State);
 
     entry New_M3_Position (New_Position : M3.Position);
 
@@ -177,7 +182,7 @@ package body Telescope is
   end Mount_State_Handler;
 
 
-  procedure Focuser_State_Handler (New_State : Focuser.State) is
+  procedure Focuser_State_Handler (New_State : PWI4_Focuser.State) is
   begin
     if not Control'terminated then
       Control.New_Focuser_State (New_State);
@@ -211,6 +216,8 @@ package body Telescope is
 
   procedure Start (Update_Handler : Information_Update_Handler) is
   begin
+    Camera.Start;
+    Focus.Start (Focuser.IRF90.New_Device);
     Signal_Information_Update := Update_Handler;
     Input.Open (Execute'access);
     Control := new Control_Task;
@@ -287,6 +294,12 @@ package body Telescope is
   end Define_Fucuser_Zoom_Size;
 
 
+  procedure Evaluate_Focus is
+  begin
+    Control.Auto_Focus;
+  end Evaluate_Focus;
+
+
   function Information return Data is
     The_Data : Data;
   begin
@@ -334,6 +347,7 @@ package body Telescope is
                    Position,
                    User_Adjust,
                    User_Setup,
+                   Start_Auto_Focus,
                    Mount_Unknown,
                    Mount_Disconnected,
                    Mount_Error,
@@ -354,11 +368,11 @@ package body Telescope is
 
     Mount_Is_Stopped : Boolean := True;
 
-    The_Focuser_State : Focuser.State := Focuser.Unknown;
+    The_Focuser_State : PWI4_Focuser.State := PWI4_Focuser.Unknown;
     The_Mount_State   : Mount.State := Mount.Unknown;
     The_M3_Position   : M3.Position := M3.Unknown;
 
-    use type Focuser.State;
+    use type PWI4_Focuser.State;
     use type Mount.State;
 
     The_User_Adjust : Adjust;
@@ -589,6 +603,14 @@ package body Telescope is
     end Follow_New_Target;
 
 
+    procedure Auto_Focus_Start is
+    begin
+      Focus.Evaluate;
+      Log.Write ("start auto focusing");
+      The_State := Focusing;
+    end Auto_Focus_Start;
+
+
     procedure Do_Park is
     begin
       The_Land_Position := Earth.Unknown_Direction;
@@ -755,7 +777,7 @@ package body Telescope is
       Mount.Enable;
       if Cdk_700.Had_Powerup then
         The_Completion_Time := Time.Universal + Enabling_Duration;
-        Focuser.Find_Home;
+        PWI4_Focuser.Find_Home;
         Rotator.Find_Home;
       else
         The_Completion_Time := Time.In_The_Past;
@@ -769,10 +791,24 @@ package body Telescope is
       Fans.Turn (To => Fans.Off);
       M3.Turn_To_Occular;
       Mount.Find_Home (The_Completion_Time);
-      Focuser.Go_To (Focuser.Stored_Position);
+      PWI4_Focuser.Go_To (PWI4_Focuser.Stored_Position);
       Rotator.Goto_Mech (180.0);
       The_State := Homing;
     end Find_Home_And_Set_Defaults;
+
+
+    procedure Auto_Focusing is
+    begin
+      case Focus.Actual_State is
+      when Focus.Evaluated =>
+        The_State := Tracking;
+      when Focus.Failed =>
+        User.Show_Error (Focus.Error_Message);
+        The_State := Tracking;
+      when others =>
+        null;
+      end case;
+    end Auto_Focusing;
 
 
     function Solve_Picture return Boolean is
@@ -830,7 +866,7 @@ package body Telescope is
       when Mount_Error =>
         return Mount_Error;
       when Mount_Connected =>
-        if The_Focuser_State > Focuser.Disconnected then
+        if The_Focuser_State > PWI4_Focuser.Disconnected then
           return Connected;
         else
           return Disconnected;
@@ -877,7 +913,7 @@ package body Telescope is
       when Startup =>
         if Site.Verified (Device.Site_Info) then
           Mount.Connect;
-          Focuser.Connect; -- and Rotator if IRF90
+          PWI4_Focuser.Connect; -- and Rotator if IRF90
           The_State := Connecting;
         else
           Error.Set ("Incorrect Location");
@@ -940,7 +976,7 @@ package body Telescope is
       when Mount_Error =>
         The_State := Mount_Error;
       when Mount_Connected =>
-        if The_Focuser_State > Focuser.Disconnected then
+        if The_Focuser_State > PWI4_Focuser.Disconnected then
           Enabling;
         end if;
       when Focuser_Connected =>
@@ -1283,10 +1319,35 @@ package body Telescope is
         Offset_Handling;
       when User_Setup =>
         Setup_Handling;
+      when Start_Auto_Focus =>
+        Auto_Focus_Start;
       when others =>
         null;
       end case;
     end Tracking_State;
+
+    --------------
+    -- Focusing --
+    --------------
+    procedure Focusing_State is
+    begin
+      case The_Event is
+      when Mount_Disconnected | Mount_Enabled | Mount_Connected | Mount_Error =>
+        Focus.Stop;
+        The_State := Mount_Startup_State (The_Event);
+      when Mount_Stopped =>
+        Focus.Stop;
+        The_State := Stopped;
+      when Mount_Approach =>
+        Focus.Stop;
+        The_State := Approaching;
+      when Halt =>
+        Focus.Stop;
+        Stop_Target;
+      when others =>
+        null;
+      end case;
+    end Focusing_State;
 
     --------------
     -- Solving --
@@ -1372,8 +1433,11 @@ package body Telescope is
           The_Event := Position;
         or
           accept Focuser_Goto (The_Position : Device.Microns) do
-            Focuser.Go_To (The_Position);
+            PWI4_Focuser.Go_To (The_Position);
           end Focuser_Goto;
+        or
+          accept Auto_Focus;
+          The_Event := Start_Auto_Focus;
         or
           accept Rotator_Goto_Field (The_Angle : Device.Degrees) do
             Last_Rotator_Offset := Undefined_Offset;
@@ -1401,7 +1465,7 @@ package body Telescope is
               when Setup =>
                 The_Event := User_Setup;
                 The_User_Setup := The_Command;
-               end case;
+              end case;
             end if;
           end Execute;
         or
@@ -1440,16 +1504,16 @@ package body Telescope is
             Has_New_Data := True;
           end New_Mount_State;
         or
-          accept New_Focuser_State (New_State : Focuser.State) do
+          accept New_Focuser_State (New_State : PWI4_Focuser.State) do
             Log.Write ("Focuser State " & New_State'img);
             The_Focuser_State := New_State;
             case New_State is
-            when Focuser.Unknown | Focuser.Disconnected =>
+            when PWI4_Focuser.Unknown | PWI4_Focuser.Disconnected =>
               null;
-            when Focuser.Connected =>
+            when PWI4_Focuser.Connected =>
               The_Event := Focuser_Connected;
               Has_New_Data := True;
-            when Focuser.Moving =>
+            when PWI4_Focuser.Moving =>
               The_Event := Focuser_Moving;
               Has_New_Data := True;
             end case;
@@ -1464,11 +1528,11 @@ package body Telescope is
           accept Get (The_Data : out Data) do
             The_Data.Status := The_State;
             The_Data.M3.Position := The_M3_Position;
-            The_Data.Focuser.Exists := Focuser.Exists;
-            The_Data.Focuser.Moving := The_Focuser_State = Focuser.Moving;
-            The_Data.Focuser.Position := Focuser.Actual_Position;
+            The_Data.Focuser.Exists := PWI4_Focuser.Exists;
+            The_Data.Focuser.Moving := The_Focuser_State = PWI4_Focuser.Moving;
+            The_Data.Focuser.Position := PWI4_Focuser.Actual_Position;
             if The_State >= Stopped then
-              Focuser.Stored_Position := The_Data.Focuser.Position;
+              PWI4_Focuser.Stored_Position := The_Data.Focuser.Position;
             end if;
             The_Data.Focuser.Max_Position := Max_Fucuser_Position;
             The_Data.Focuser.Zoom_Size := Fucuser_Zoom_Size;
@@ -1516,6 +1580,8 @@ package body Telescope is
             end if;
           when Following =>
             Check_Above_Horizon;
+          when Focusing =>
+            Auto_Focusing;
           when Solving =>
             Picture_Solving;
           when Waiting =>
@@ -1549,6 +1615,7 @@ package body Telescope is
           when Waiting       => Waiting_State;
           when Approaching   => Approaching_State;
           when Is_Tracking   => Tracking_State;
+          when Focusing      => Focusing_State;
           when Solving       => Solving_State;
           end case;
           Has_New_Data := True;
@@ -1563,10 +1630,16 @@ package body Telescope is
       end;
     end loop;
     Input.Close;
+    Focus.Finish;
+    Camera.Finish;
     Device.Finalize;
     Log.Write ("Control end");
   exception
   when Item: others =>
+    Input.Close;
+    Focus.Finish;
+    Camera.Finish;
+    Device.Finalize;
     Log.Termination (Item);
   end Control_Task;
 

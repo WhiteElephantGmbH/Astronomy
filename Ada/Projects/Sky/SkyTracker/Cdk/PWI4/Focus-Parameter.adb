@@ -15,50 +15,68 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with PWI4;
 with Error;
 with Section;
 
-package body Camera.Parameter is
+package body Focus.Parameter is
 
-  Exposure_Time_Key : constant String := "Exposure Time";
-  Sensitivity_Key   : constant String := "Sensitivity";
+  Start_At_Key  : constant String := "Start At";
+  Increment_Key : constant String := "Increment";
+  Tolerance_Key : constant String := "Tolerance";
+  Grid_Size_Key : constant String := "Grid Size";
 
 
-  function Exposure_For (Key : String) return Exposure.Item is
+  function Distance_For (Key : String) return Distance is
     Image : constant String := Section.String_Value_Of (Key);
   begin
-    return Exposure.Value (Image);
+    return Distance(PWI4.Microns'value(Image) / PWI4.Microns_Delta);
   exception
   when others =>
-    Error.Raise_With ("Incorrect Exposure Time: " & Image);
-  end Exposure_For;
+    Error.Raise_With ("Incorrect Position: " & Image);
+  end Distance_For;
 
 
-  function Sensitivity_For (Key : String) return Sensitivity.Item is
+  function Size_For (Key : String) return Camera.Square_Size is
     Image : constant String := Section.String_Value_Of (Key);
   begin
-    return Sensitivity.Value (Image);
+    return Camera.Square_Size'value (Image);
   exception
   when others =>
-    Error.Raise_With ("Incorrect Sensitivity: " & Image);
-  end Sensitivity_For;
+    Error.Raise_With ("Incorrect Grid Size: " & Image);
+  end Size_For;
 
 
   procedure Define (Handle : Configuration.File_Handle) is
   begin
-    Section.Set (Configuration.Handle_For (Handle, Camera_Id));
+    Section.Set (Configuration.Handle_For (Handle, Id));
     if Section.Exists then
-      The_Exposure_Parameter := Exposure_For (Exposure_Time_Key);
-      The_Sensitivity_Parameter := Sensitivity_For (Sensitivity_Key);
+      declare
+        Start_At  : constant Distance := Distance_For (Start_At_Key);
+        Increment : constant Distance := Distance_For (Increment_Key);
+        Tolerance : constant Distance := Distance_For (Tolerance_Key);
+        Grid_Size : constant Camera.Square_Size := Size_For (Grid_Size_Key);
+      begin
+        Log.Write ("Start At :" & Start_At 'image);
+        Log.Write ("Increment:" & Increment'image);
+        Log.Write ("Tolerance:" & Tolerance'image);
+        Log.Write ("Grid Size:" & Grid_Size'image);
+        Focus_Data.Set (First_Position  => Start_At,
+                        First_Increment => Increment,
+                        Tolerance       => Tolerance,
+                        Square_Size     => Grid_Size);
+      end;
     end if;
   end Define;
 
 
   procedure Defaults (Put : access procedure (Item : String)) is
   begin
-    Put ("[" & Camera_Id & "]");
-    Put (Exposure_Time_Key & " = 4.0");
-    Put (Sensitivity_Key & "   = 6400");
+    Put ("[" & Id & "]");
+    Put (Start_At_Key & "  = 6000.0");
+    Put (Increment_Key & " = 50.0");
+    Put (Tolerance_Key & " = 0.5");
+    Put (Grid_Size_Key & " = 1000");
   end Defaults;
 
-end Camera.Parameter;
+end Focus.Parameter;

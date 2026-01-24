@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2023 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2023 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -403,6 +403,29 @@ package body Device is
   end Action;
 
 
+  protected Focuser_State is
+
+    procedure Set (State : Focuser.State);
+
+    function Actual return Focuser.State;
+
+  private
+    The_Focuser_State  : Focuser.State := Focuser.Unknown;
+  end Focuser_State;
+
+
+  protected body Focuser_State is
+
+    procedure Set (State : Focuser.State) is
+    begin
+      The_Focuser_State := State;
+    end Set;
+
+    function Actual return Focuser.State is (The_Focuser_State);
+
+  end Focuser_State;
+
+
   task type Control with Priority => System.Max_Priority is
 
     entry Start (Mount_State_Handler   : Mount.State_Handler_Access;
@@ -457,7 +480,6 @@ package body Device is
     The_Mount_State    : Mount.State := Mount.Unknown;
     Last_Mount_State   : Mount.State := Mount.Unknown;
     Last_Az_Position   : Degrees := 0.0;
-    The_Focuser_State  : Focuser.State := Focuser.Unknown;
     Last_Focuser_State : Focuser.State := Focuser.Unknown;
     The_M3_Position    : M3.Position := M3.Unknown;
     Last_M3_Position   : M3.Position := M3.Unknown;
@@ -465,8 +487,6 @@ package body Device is
 
     Simulated_Mount_Connected : Boolean := False;
 
-    Simulated_Focuser_Connected         : Boolean := False;
-    Simulated_Focuser_Moving            : Boolean := False;
     The_Simulated_Focuser_Goto_Position : Microns;
 
     The_Simulated_Rotator_Goto_Position : Degrees := The_Simulated_Rotator_Mech_Position;
@@ -648,11 +668,10 @@ package body Device is
           when No_Action =>
             null;
           when Connect =>
-            Simulated_Focuser_Connected := True;
+            Focuser_State.Set (Focuser.Connected);
             Log.Write ("Simulated focuser connect");
           when Disconnect =>
-            Simulated_Focuser_Moving := False;
-            Simulated_Focuser_Connected := False;
+            Focuser_State.Set (Focuser.Disconnected);
             The_Simulated_Rotator_State := Stopped;
             Log.Write ("Simulated focuser disconnect");
           when Find_Home =>
@@ -661,10 +680,10 @@ package body Device is
             The_Simulated_Focuser_Goto_Position := 1000.0;
           when Go_To =>
             The_Simulated_Focuser_Goto_Position := The_Parameter.Focuser_Position;
-            Simulated_Focuser_Moving := True;
+            Focuser_State.Set (Focuser.Moving);
             Log.Write ("Simulated focuser goto :" & The_Simulated_Focuser_Goto_Position'image);
           when Stop =>
-            Simulated_Focuser_Moving := False;
+            Focuser_State.Set (Focuser.Connected);
             Log.Write ("Simulated focuser stop");
           end case;
         else
@@ -740,7 +759,7 @@ package body Device is
         if The_Mount_State /= Mount.Error then
           PWI4.Get_System;
           if Is_Simulation then
-            if Simulated_Focuser_Moving then
+            if Focuser.Actual_State = Focuser.Moving then
               if abs(The_Simulated_Focuser_Position - The_Simulated_Focuser_Goto_Position) > 4.0 then
                 The_Simulated_Focuser_Position := @ + (The_Simulated_Focuser_Goto_Position - @) / 2;
               elsif The_Simulated_Focuser_Position > The_Simulated_Focuser_Goto_Position then
@@ -754,7 +773,7 @@ package body Device is
                   The_Simulated_Focuser_Position := The_Simulated_Focuser_Goto_Position;
                 end if;
               else
-                Simulated_Focuser_Moving := False;
+                Focuser_State.Set (Focuser.Connected);
               end if;
             end if;
             case The_Simulated_Rotator_State is
@@ -835,29 +854,19 @@ package body Device is
         end if;
       end;
 
-      if Is_Simulation then
-        if Simulated_Focuser_Connected then
-          if Simulated_Focuser_Moving then
-            The_Focuser_State := Focuser.Moving;
-          else
-            The_Focuser_State := Focuser.Connected;
-          end if;
-        else
-          The_Focuser_State := Focuser.Disconnected;
-        end if;
-      else
+      if not Is_Simulation then
         if PWI4.Focuser.Exists then
           if PWI4.Focuser.Connected then
             if PWI4.Focuser.Moving then
-              The_Focuser_State := Focuser.Moving;
+              Focuser_State.Set (Focuser.Moving);
             else
-              The_Focuser_State := Focuser.Connected;
+              Focuser_State.Set (Focuser.Connected);
             end if;
           else
-            The_Focuser_State := Focuser.Disconnected;
+            Focuser_State.Set (Focuser.Disconnected);
           end if;
         else
-          The_Focuser_State := Focuser.Unknown;
+          Focuser_State.Set (Focuser.Unknown);
         end if;
       end if;
 
@@ -882,9 +891,9 @@ package body Device is
         The_Mount_State_Handler (The_Mount_State);
         Last_Mount_State := The_Mount_State;
       end if;
-      if The_Focuser_State /= Last_Focuser_State then
-        The_Focuser_State_Handler (The_Focuser_State);
-        Last_Focuser_State := The_Focuser_State;
+      if Focuser_State.Actual /= Last_Focuser_State then
+        Last_Focuser_State := Focuser_State.Actual;
+        The_Focuser_State_Handler (Last_Focuser_State);
       end if;
       if The_M3_Position /= Last_M3_Position then
         The_M3_Position_Handler (The_M3_Position);
@@ -1219,6 +1228,8 @@ package body Device is
   package body Focuser is
 
     function Exists return Boolean renames PWI4.Focuser.Exists;
+
+    function Actual_State return State is (Focuser_State.Actual);
 
     function Actual_Position return Microns is
     begin

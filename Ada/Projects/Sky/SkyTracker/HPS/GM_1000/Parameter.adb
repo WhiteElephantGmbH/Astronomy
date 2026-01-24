@@ -22,12 +22,15 @@ with Camera.Parameter;
 with Clock.Parameter;
 with Configuration;
 with Error;
+with Exposure;
 with File;
+with Focus.Parameter;
 with Focuser_Client.Parameter;
 with Http_Server.Parameter;
 with Language.Parameter;
 with Moon.Parameter;
 with Picture.Parameter;
+with Sensitivity;
 with Stellarium.Parameter;
 with Sun.Parameter;
 with Ten_Micron.Parameter;
@@ -71,7 +74,9 @@ package body Parameter is
       Put ("");
       Clock.Parameter.Defaults (Put'access);
       Put ("");
-      Camera.Parameter.Defaults (Put'access);
+      Camera.Parameter.Defaults (Put'access, Exposure.Value (4.0), Sensitivity.Value ("6400"));
+      Put ("");
+      Focus.Parameter.Defaults (Put'access);
       Put ("");
       Picture.Parameter.Defaults (Put'access, Height => "0.51", Width => "0.74");
       Put ("");
@@ -96,6 +101,7 @@ package body Parameter is
       Language.Parameter.Define (Handle); -- must be first
       Ten_Micron.Parameter.Define (Handle);
       Camera.Parameter.Define (Handle);
+      Focus.Parameter.Define (Handle);
       Focuser_Client.Parameter.Define (Handle);
       Http_Server.Parameter.Define (Handle);
       Sun.Parameter.Define (Handle);

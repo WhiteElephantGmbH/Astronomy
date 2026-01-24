@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2025 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2025 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -32,7 +32,7 @@ package Sensitivity is
 
   type Item is tagged private;
 
-  function Default return Item; -- Cannon -> from Camera; others => Gain=0, Offset=0
+  function Default return Item;
 
   function Value (Iso_Value : Iso) return Item;
 

@@ -20,11 +20,8 @@ with C;
 with Camera.Raw_Interface;
 with File;
 with System.Storage_Elements;
-with Traces;
 
 package body Camera.Raw is
-
-  package Log is new Traces ("Camera.Raw");
 
   package RI renames Raw_Interface;
   package SE renames System.Storage_Elements;

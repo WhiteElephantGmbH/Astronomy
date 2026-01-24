@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                               (c) 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                           (c) 2024 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                      *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -77,7 +77,7 @@ package body Stellarium.Parameter is
     Put ("[" & Id & "]");
     Put (Port_Key & "             = 10001");
     Put (Program_Key & "          = " & Os.System.Program_Files_Folder & "Stellarium\Stellarium.exe");
-    Put (Search_Tolerance_Key & " = 1'");
+    Put (Search_Tolerance_Key & " = 10""");
     if Satellites /= "" then
       Put (Magnitude_Key & "        = 8.0");
       Put (Satellite_Group_Key & "  = " & Satellites);

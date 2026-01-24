@@ -21,12 +21,9 @@ with Ada.Unchecked_Deallocation;
 with Camera.QHYCCD.C_Interface;
 with C.Helper;
 with Time;
-with Traces;
 with Os.Application;
 
 package body Camera.QHYCCD is
-
-  package Log is new Traces ("Qhyccd");
 
   package AS renames Ada.Streams;
   package IO renames AS.Stream_IO;

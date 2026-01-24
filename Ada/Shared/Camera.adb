@@ -20,11 +20,8 @@ with Camera.QHYCCD;
 with Camera.Raw;
 with Directory;
 with File;
-with Traces;
 
 package body Camera is
-
-  package Log is new Traces ("Camera");
 
   procedure Start is
   begin

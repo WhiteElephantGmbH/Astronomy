@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2026 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                               (c) 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,30 +15,12 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-package Focuser.PWI4 is
+with Configuration;
 
-  type Device is new Object with private;
+package Focus.Parameter is
 
-  function New_Device return Object_Access;
+  procedure Define (Handle : Configuration.File_Handle);
 
-  overriding
-  function State (Unused : Device) return Status;
+  procedure Defaults (Put : access procedure (Item : String));
 
-  overriding
-  function Name (Unused : Device) return String;
-
-  overriding
-  function Actual_Position (Unused : Device) return Distance;
-
-  overriding
-  procedure Move_To (Unused   : Device;
-                     Position : Distance);
-
-  overriding
-  procedure Stop (Unused : Device);
-
-private
-
-  type Device is new Object with null record;
-
-end Focuser.PWI4;
+end Focus.Parameter;

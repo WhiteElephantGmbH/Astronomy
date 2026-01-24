@@ -52,6 +52,7 @@ package body Control is
                    Shutdown,
                    Stop,
                    Go_To,
+                   Auto_Focus,
                    New_Goto_Direction,
                    Update,
                    New_Telescope_Information,
@@ -119,6 +120,9 @@ package body Control is
         Command_Is_Pending := True;
       when User.Go_To =>
         Next_Command := Go_To;
+        Command_Is_Pending := True;
+      when User.Auto_Focus =>
+        Next_Command := Auto_Focus;
         Command_Is_Pending := True;
       when User.Stop =>
         Next_Command := Stop;
@@ -397,6 +401,8 @@ package body Control is
           end if;
         when New_Goto_Direction =>
           Handle_Goto;
+        when Auto_Focus =>
+          Telescope.Evaluate_Focus;
         when New_Telescope_Information =>
           Handle_Telescope_Information;
           Telescope_Information_Is_Handled := True;

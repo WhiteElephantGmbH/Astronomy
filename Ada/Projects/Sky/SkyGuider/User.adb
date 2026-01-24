@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2021 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2021 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -438,18 +438,6 @@ package body User is
   end Clear_Target;
 
 
-  function Identifier_Of (Item : String) return String is
-    The_Image : String := Text.Trimmed (Item);
-  begin
-    for Index in The_Image'range loop
-      if The_Image(Index) = ' ' then
-        The_Image(Index) := '_';
-      end if;
-    end loop;
-    return The_Image;
-  end Identifier_Of;
-
-
   procedure Perform_Goto is
   begin
     Signal_Action (Go_To);
@@ -605,7 +593,7 @@ package body User is
 
   procedure Define_Setup_Object is
 
-    Setup_Object_Image : constant String := Identifier_Of (Gui.Contents_Of (Setup_Control));
+    Setup_Object_Image : constant String :=Text.Identifier_Of (Gui.Contents_Of (Setup_Control));
 
   begin -- Define_Operation
     The_Setup_Object := Setup_Object'value(Setup_Object_Image);

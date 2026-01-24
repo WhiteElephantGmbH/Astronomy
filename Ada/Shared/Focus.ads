@@ -19,6 +19,7 @@ with Focuser;
 with Camera;
 private with Exceptions;
 private with Text;
+private with Traces;
 
 package Focus is
 
@@ -54,9 +55,15 @@ package Focus is
 
 private
 
+  Id : constant String := "Focus";
+
+  package Log is new Traces (Id);
+
+  Start_From_Actual : constant Distance := Distance'last;
+
   Focus_Error : exception;
 
-  procedure Error (Message : String);
+  procedure Set_Error (Message : String);
 
   procedure Raise_Error (Message : String) with No_Return;
 
@@ -66,6 +73,7 @@ private
 
     procedure Set (First_Position  : Distance;
                    First_Increment : Distance;
+                   Tolerance       : Distance;
                    Square_Size     : Camera.Square_Size);
 
     function State return Status;
@@ -73,6 +81,8 @@ private
     function Start_Position return Distance;
 
     function Start_Increment return Distance;
+
+    function Position_Tolerance return Distance;
 
     function Grid_Size return Camera.Square_Size;
 
@@ -86,7 +96,7 @@ private
 
     procedure Check (Item : Status);
 
-    procedure Set_Error (Message : String);
+    procedure Set_Failed (Message : String);
 
     procedure Set_Fatal (Item : Exceptions.Occurrence);
 
@@ -96,8 +106,9 @@ private
 
   private
     The_State           : Status := No_Focuser;
-    The_Start_Position  : Distance := 12000;
+    The_Start_Position  : Distance := Start_From_Actual;
     The_Start_Increment : Distance := 100;
+    The_Tolerance       : Distance := 0;
     The_Grid_Size       : Camera.Square_Size := 1000;
     The_Result          : Result;
     The_Last_Error      : Text.String;
