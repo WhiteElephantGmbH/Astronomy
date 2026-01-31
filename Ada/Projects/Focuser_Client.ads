@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2025 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2025 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,6 +15,7 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with Focal;
 with Celestron.Focuser;
 private with Network;
 
@@ -30,7 +31,7 @@ package Focuser_Client is
 
   function Execute (Command : Focuser.Command) return Focuser.Data;
 
-  function Move_To (Position : Focuser.Distance) return Focuser.Data;
+  function Move_To (Position : Focal.Distance) return Focuser.Data;
 
   procedure Shutdown;
 
@@ -43,7 +44,7 @@ private
   The_Server_Exists  : Boolean := False;
   The_Client_Address : Network.Ip_Address := Network.Ip_Address_Of_Host ("localhost");
   The_Client_Port    : Network.Port_Number := Focuser.Default_Port_Number;
-  The_Home_Position  : Focuser.Distance := Focuser.Default_Home_Position;
-  The_Backlash       : Focuser.Lash := Focuser.Default_Backlash;
+  The_Home_Position  : Focal.Distance := Focuser.Default_Home_Position;
+  The_Backlash       : Focal.Backlash := Focuser.Default_Backlash;
 
 end Focuser_Client;

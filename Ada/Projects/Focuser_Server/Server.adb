@@ -36,16 +36,16 @@ package body Server is
   package JS renames GNATCOLL.JSON;
 
   type Focuser_Data is record
-    Home_Position : Focuser.Distance;
-    Backlash      : Focuser.Lash;
+    Home_Position : Focal.Distance;
+    Backlash      : Focal.Backlash;
   end record;
 
   package Persistent_Focuser is new Persistent (Focuser_Data, "Focuser");
 
   The_Persistent_Focuser_Data : Persistent_Focuser.Data;
 
-  The_Home_Position : Focuser.Distance renames The_Persistent_Focuser_Data.Storage.Home_Position;
-  The_Backlash      : Focuser.Lash     renames The_Persistent_Focuser_Data.Storage.Backlash;
+  The_Home_Position : Focal.Distance renames The_Persistent_Focuser_Data.Storage.Home_Position;
+  The_Backlash      : Focal.Backlash renames The_Persistent_Focuser_Data.Storage.Backlash;
 
 
   function Response return String is
@@ -110,14 +110,14 @@ package body Server is
         elsif Action = Focuser.Execute_Command then
           Focuser.Execute (Focuser.Command'val(Natural'value(Value)));
         elsif Action = Focuser.Move_To_Command then
-          Focuser.Move_To (Focuser.Distance'value(Value));
+          Focuser.Move_To (Focal.Distance'value(Value));
         elsif Action = Focuser.Set_Home_Command then
-          The_Home_Position := Focuser.Distance'value(Value);
+          The_Home_Position := Focal.Distance'value(Value);
           Focuser.Set_Home (The_Home_Position);
           The_Persistent_Focuser_Data.Save;
           return AWS.Response.Acknowledge (AWS.Messages.S200, Response_Ok);
         elsif Action = Focuser.Set_Lash_Command then
-          The_Backlash := Focuser.Lash'value(Value);
+          The_Backlash := Focal.Backlash'value(Value);
           Focuser.Set (The_Backlash);
           The_Persistent_Focuser_Data.Save;
           return AWS.Response.Acknowledge (AWS.Messages.S200, Response_Ok);
@@ -153,7 +153,7 @@ package body Server is
   end Start;
 
 
-  function Home_Position return Focuser.Distance is
+  function Home_Position return Focal.Distance is
   begin
     if Persistent_Focuser.Storage_Is_Empty then
       The_Home_Position := Focuser.Default_Home_Position;
@@ -162,7 +162,7 @@ package body Server is
   end Home_Position;
 
 
-  function Backlash return Focuser.Lash is
+  function Backlash return Focal.Backlash is
   begin
     if Persistent_Focuser.Storage_Is_Empty then
       The_Backlash := Focuser.Default_Backlash;

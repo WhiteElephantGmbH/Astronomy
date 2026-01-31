@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2025 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2025 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,6 +15,7 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with Focal;
 with Celestron.Focuser;
 
 package Server is
@@ -23,9 +24,9 @@ package Server is
 
   procedure Start;
 
-  function Home_Position return Focuser.Distance;
+  function Home_Position return Focal.Distance;
 
-  function Backlash return Focuser.Lash;
+  function Backlash return Focal.Backlash;
 
   procedure Update (Data : Focuser.Data);
 

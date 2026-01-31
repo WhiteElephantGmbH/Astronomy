@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2025 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2025 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -26,24 +26,24 @@ package body Focuser_Client.Parameter is
   Backlash_Key      : constant String := "Backlash";
 
 
-  function Distance_For (Key : String) return Focuser.Distance is
+  function Distance_For (Key : String) return Focal.Distance is
     Value : constant Integer := Section.Value_Of (Key);
   begin
-    return Focuser.Distance (Value);
+    return Focal.Distance (Value);
   exception
   when others =>
     Error.Raise_With (Key & Value'image & " out of range");
   end Distance_For;
 
 
-  function Lash_For (Key : String) return Focuser.Lash is
+  function Backlash_For (Key : String) return Focal.Backlash is
     Value : constant Integer := Section.Value_Of (Key);
   begin
-    return Focuser.Lash (Value);
+    return Focal.Backlash (Value);
   exception
   when others =>
     Error.Raise_With (Key & Value'image & " out of range");
-  end Lash_For;
+  end Backlash_For;
 
 
   procedure Define (Handle : Configuration.File_Handle) is
@@ -54,7 +54,7 @@ package body Focuser_Client.Parameter is
       The_Client_Address := Section.Ip_Address_For (Id);
       The_Client_Port := Section.Port_For (Id);
       The_Home_Position := Distance_For (Home_Position_Key);
-      The_Backlash := Lash_For (Backlash_Key);
+      The_Backlash := Backlash_For (Backlash_Key);
     end if;
   end Define;
 

@@ -15,17 +15,13 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Focus;
+with Focal;
 
 package Celestron.Focuser is
 
   type Command is (Decrease_Rate, Increase_Rate, Move_In, Move_Out, Home, Stop);
 
   procedure Start;
-
-  subtype Distance is Focus.Distance;
-
-  type Lash is new Distance range 0 .. 2**8 - 1;
 
   subtype Rate is Natural range 1 .. 4;
 
@@ -43,9 +39,9 @@ package Celestron.Focuser is
   type Data is record
     Exists   : Boolean := False;
     Moving   : Boolean := False;
-    Position : Distance := Distance'last;
-    Home     : Distance := Distance'last;
-    Backlash : Lash := Lash'last;
+    Position : Focal.Distance := Focal.Distance'last;
+    Home     : Focal.Distance := Focal.Distance'last;
+    Backlash : Focal.Backlash := Focal.Backlash'last;
     Speed    : Rate := Rate'first;
   end record;
 
@@ -55,21 +51,21 @@ package Celestron.Focuser is
 
   function Moving return Boolean;
 
-  function Home_Position return Distance;
+  function Home_Position return Focal.Distance;
 
-  function Backlash return Lash;
+  function Backlash return Focal.Backlash;
 
-  function Position return Distance;
+  function Position return Focal.Distance;
 
   function Speed return Rate;
 
   procedure Execute (Item : Command);
 
-  procedure Move_To (Item : Distance);
+  procedure Move_To (Item : Focal.Distance);
 
-  procedure Set_Home (Item : Distance);
+  procedure Set_Home (Item : Focal.Distance);
 
-  procedure Set (Item : Lash);
+  procedure Set (Item : Focal.Backlash);
 
   procedure Finish;
 

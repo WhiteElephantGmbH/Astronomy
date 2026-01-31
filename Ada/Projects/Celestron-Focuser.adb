@@ -49,14 +49,14 @@ package body Celestron.Focuser is
     entry Request_Moving_State;
     entry Get_Moving (Item : out Boolean);
     entry Request_Backlash;
-    entry Get_Backlash (Item : out Lash);
+    entry Get_Backlash (Item : out Focal.Backlash);
     entry Request_Position;
-    entry Get_Position (Item : out Distance);
+    entry Get_Position (Item : out Focal.Distance);
     entry Get_Speed (Item : out Rate);
-    entry Get_Home (Item : out Distance);
-    entry Set (Item : Distance);
-    entry Set (Item : Lash);
-    entry Set_Home (Item : Distance);
+    entry Get_Home (Item : out Focal.Distance);
+    entry Set (Item : Focal.Distance);
+    entry Set (Item : Focal.Backlash);
+    entry Set_Home (Item : Focal.Distance);
     entry Execute (Item : Command);
     entry Stop;
   end Control;
@@ -89,16 +89,16 @@ package body Celestron.Focuser is
   end Moving;
 
 
-  function Home_Position return Distance is
-    The_Position : Distance;
+  function Home_Position return Focal.Distance is
+    The_Position : Focal.Distance;
   begin
     The_Control.Get_Home (The_Position);
     return The_Position;
   end Home_Position;
 
 
-  function Backlash return Lash is
-    The_Backlash : Lash;
+  function Backlash return Focal.Backlash is
+    The_Backlash : Focal.Backlash;
   begin
     The_Control.Request_Backlash;
     The_Control.Get_Backlash (The_Backlash);
@@ -106,8 +106,8 @@ package body Celestron.Focuser is
   end Backlash;
 
 
-  function Position return Distance is
-    The_Position : Distance;
+  function Position return Focal.Distance is
+    The_Position : Focal.Distance;
   begin
     The_Control.Request_Position;
     The_Control.Get_Position (The_Position);
@@ -130,19 +130,19 @@ package body Celestron.Focuser is
   end Execute;
 
 
-  procedure Move_To (Item : Distance) is
+  procedure Move_To (Item : Focal.Distance) is
   begin
     The_Control.Set (Item);
   end Move_To;
 
 
-  procedure Set_Home (Item : Distance) is
+  procedure Set_Home (Item : Focal.Distance) is
   begin
     The_Control.Set_Home (Item);
   end Set_Home;
 
 
-  procedure Set (Item : Lash) is
+  procedure Set (Item : Focal.Backlash) is
   begin
      The_Control.Set (Item);
   end Set;
@@ -163,12 +163,12 @@ package body Celestron.Focuser is
     The_Device    : Serial_Io.Device;
     Is_Available  : Boolean := False;
     Is_Moving     : Boolean := False;
-    The_Backlash  : Lash := Lash'last;
-    New_Backlash  : Lash := 0;
+    The_Backlash  : Focal.Backlash := Focal.Backlash'last;
+    New_Backlash  : Focal.Backlash := 0;
     Moving_Out    : Boolean := True;
-    The_Position  : Distance := Distance'last;
-    New_Position  : Distance;
-    At_Home       : Distance := Default_Home_Position;
+    The_Position  : Focal.Distance := Focal.Distance'last;
+    New_Position  : Focal.Distance;
+    At_Home       : Focal.Distance := Default_Home_Position;
     The_Command   : Command;
     The_Rate      : Rate := Startup_Rate;
 
@@ -270,7 +270,7 @@ package body Celestron.Focuser is
     begin
       if Is_Available then
         Send ([Get_Backlash_Id]);
-        The_Backlash := Lash(Unsigned.Word_Of (Received_For (Get_Backlash_Id)));
+        The_Backlash := Focal.Backlash(Unsigned.Word_Of (Received_For (Get_Backlash_Id)));
         Log.Write ("backlash:" & The_Backlash'image);
       end if;
     end Get_Backlash;
@@ -280,7 +280,7 @@ package body Celestron.Focuser is
     begin
       if Is_Available then
         Send ([Get_Position_Id]);
-        The_Position := Distance(Unsigned.Longword_Of_Big_Endian (Received_For (Get_Position_Id)));
+        The_Position := Focal.Distance(Unsigned.Longword_Of_Big_Endian (Received_For (Get_Position_Id)));
         Log.Write ("position:" & The_Position'image);
       end if;
     end Get_Position;
@@ -318,7 +318,7 @@ package body Celestron.Focuser is
     end Set_Backlash;
 
 
-    procedure Start_Moving_To (Pos : Distance) is
+    procedure Start_Moving_To (Pos : Focal.Distance) is
       use type Unsigned.Byte_String;
       P : constant Unsigned.Byte_String := Unsigned.String_Of (Unsigned.Longword(Pos));
     begin
@@ -338,7 +338,7 @@ package body Celestron.Focuser is
 
 
     procedure Goto_Home_Position is
-      Backward_Home : constant Distance := At_Home - Distance(The_Backlash);
+      Backward_Home : constant Focal.Distance := At_Home - Focal.Distance(The_Backlash);
     begin
       if Moving_Out then
         if The_Position < At_Home then
@@ -423,18 +423,18 @@ package body Celestron.Focuser is
           accept Request_Backlash;
           Get_Backlash;
         or
-          accept Get_Backlash (Item : out Lash) do
+          accept Get_Backlash (Item : out Focal.Backlash) do
             Item := The_Backlash;
           end Get_Backlash;
         or
           accept Request_Position;
           Get_Position;
         or
-          accept Get_Position (Item : out Distance) do
+          accept Get_Position (Item : out Focal.Distance) do
             if Moving_Out then
               Item := The_Position;
             else
-              Item := The_Position + Distance(The_Backlash);
+              Item := The_Position + Focal.Distance(The_Backlash);
             end if;
           end Get_Position;
         or
@@ -442,20 +442,20 @@ package body Celestron.Focuser is
             Item := The_Rate;
           end Get_Speed;
         or
-          accept Get_Home (Item : out Distance) do
+          accept Get_Home (Item : out Focal.Distance) do
             Item := At_Home;
           end Get_Home;
         or
-          accept Set_Home (Item : Distance) do
+          accept Set_Home (Item : Focal.Distance) do
             At_Home := Item;
           end Set_Home;
         or
-          accept Set (Item : Lash) do
+          accept Set (Item : Focal.Backlash) do
             New_Backlash := Item;
           end Set;
           Set_Backlash;
         or
-          accept Set (Item : Distance) do
+          accept Set (Item : Focal.Distance) do
             New_Position := Item;
           end Set;
           Start_Moving;

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2025 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2025 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -76,7 +76,7 @@ package body Focuser_Client is
           The_Data.Moving := Moving.Get;
           The_Data.Position := Position.Get;
           The_Data.Home := Home.Get;
-          The_Data.Backlash := Focuser.Lash(Natural'(Backlash.Get));
+          The_Data.Backlash := Focal.Backlash(Natural'(Backlash.Get));
           The_Data.Speed := Speed.Get;
           return The_Data;
         end;
@@ -99,7 +99,7 @@ package body Focuser_Client is
   end Execute;
 
 
-  function Move_To (Position : Focuser.Distance) return Focuser.Data is
+  function Move_To (Position : Focal.Distance) return Focuser.Data is
   begin
     Log.Write ("Move_To:" & Position'image);
     return Get (Command   => Focuser.Move_To_Command,

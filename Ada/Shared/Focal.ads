@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2022 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                           (c) 2026 by White Elephant GmbH, Schaffhausen, Switzerland                              *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,15 +15,10 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-pragma Build (Description => "SkyTracker control program for GM 4000 HPS",
-              Version     => (2, 4, 7, 5),
-              Kind        => Windows,
-              Libraries   => ("AWSS64", "COLL64"),
-              Compiler    => "GNATPRO\23.0");
+package Focal is
 
-with Control;
+  subtype Distance is Natural range 0 .. 2**24 - 1;
 
-procedure SkyTracker is
-begin
-  Control.Start;
-end SkyTracker;
+  type Backlash is new Distance range 0 .. 2**8 - 1;
+
+end Focal;

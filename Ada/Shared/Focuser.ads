@@ -15,11 +15,13 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with Focal;
+
 package Focuser is
 
   type Status is (Disconnected, Moving, Stopped);
 
-  subtype Distance is Natural range 0 .. 2**24 - 1;
+  subtype Distance is Focal.Distance;
 
   type Object is interface;
 
