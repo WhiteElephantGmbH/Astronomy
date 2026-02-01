@@ -30,7 +30,9 @@ package User is
 
   type Action_Handler is access procedure (The_Action : Action);
 
-  type Setup_Command is (Align_Stars, Auto_Focus);
+  type Setup_Command is (Auto_Focus, Align_Stars);
+
+  subtype Setup_Command_No_Fucuser is Setup_Command range Align_Stars .. Setup_Command'last;
 
   procedure Show (Visible_In : Duration);
 

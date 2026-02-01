@@ -42,6 +42,7 @@ package body Parameter is
 
   Filename : constant String := Application.Composure (Application.Name, "ini");
 
+
   procedure Read is
 
     procedure Create_Default_Parameters is
@@ -60,13 +61,13 @@ package body Parameter is
       when others =>
         Error.Raise_With ("Can't create " & Filename);
       end;
-      Language.Parameter.Defaults (Put'access); -- must be first
+      Language.Parameter.Defaults (Put'access);
       Put ("");
       Ten_Micron.Parameter.Defaults (Put'access, Ip_Address => "169.254.42.42", Port => 3490);
       Put ("");
       Focuser_Client.Parameter.Defaults (Put'access);
       Put ("");
-       Http_Server.Parameter.Defaults (Put'access, "Handbox_HPS", Port => 9001);
+      Http_Server.Parameter.Defaults (Put'access, "Handbox_HPS", Port => 9001);
       Put ("");
       Sun.Parameter.Defaults (Put'access);
       Put ("");
@@ -83,7 +84,6 @@ package body Parameter is
       Alignment.Parameter.Defaults (Put'access);
       Put ("");
       Stellarium.Parameter.Defaults (Put'access, "10micron");
-      Put ("");
       Ada.Text_IO.Close (The_File);
     exception
     when Error.Occurred =>

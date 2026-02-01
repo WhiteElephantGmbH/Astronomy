@@ -117,8 +117,10 @@ package body Telescope is
   procedure Start (Update_Handler : Information_Update_Handler) is
   begin
     Camera.Start;
-    Focus.Start (Focuser.HPS.New_Device);
-    Handbox.Start (Handbox.HPS.Handle'access);
+    if Focuser_Client.Server_Exists then
+      Focus.Start (Focuser.HPS.New_Device);
+      Handbox.Start (Handbox.HPS.Handle'access);
+    end if;
     Input.Open (Execute'access);
     Signal_Information_Update := Update_Handler;
     Control := new Control_Task;
@@ -672,16 +674,20 @@ package body Telescope is
       end;
     end loop;
     Input.Close;
-    Handbox.Finish;
-    Focus.Finish;
+    if Focuser_Client.Server_Exists then
+      Handbox.Finish;
+      Focus.Finish;
+    end if;
     Camera.Finish;
     Log.Write ("end");
   exception
   when Item: others =>
     Log.Termination (Item);
     Input.Close;
-    Handbox.Finish;
-    Focus.Finish;
+    if Focuser_Client.Server_Exists then
+      Handbox.Finish;
+      Focus.Finish;
+    end if;
     Camera.Finish;
   end Control_Task;
 

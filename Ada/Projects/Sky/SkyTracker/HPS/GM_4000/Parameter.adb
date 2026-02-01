@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2022 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2022 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -18,14 +18,18 @@ pragma Style_White_Elephant;
 with Ada.Text_IO;
 with Alignment.Parameter;
 with Application;
+with Camera.Parameter;
 with Configuration;
 with Error;
+with Exposure;
 with File;
+with Focus.Parameter;
 with Focuser_Client.Parameter;
 with Http_Server.Parameter;
 with Language.Parameter;
 with Moon.Parameter;
 with Picture.Parameter;
+with Sensitivity;
 with Remote.Parameter;
 with Stellarium.Parameter;
 with Sun.Parameter;
@@ -68,6 +72,10 @@ package body Parameter is
       Sun.Parameter.Defaults (Put'access);
       Put ("");
       Moon.Parameter.Defaults (Put'access);
+      Put ("");
+      Camera.Parameter.Defaults (Put'access, Exposure.Value (4.0), Sensitivity.Value ("6400"));
+      Put ("");
+      Focus.Parameter.Defaults (Put'access);
       Put ("");
       Picture.Parameter.Defaults (Put'access);
       Put ("");

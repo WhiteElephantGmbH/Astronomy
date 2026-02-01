@@ -23,6 +23,7 @@ with Application;
 with Camera;
 with Earth;
 with Focus;
+with Focuser_Client;
 with Gui.Registered;
 with Lexicon;
 with Lx200;
@@ -109,7 +110,7 @@ package body User is
   Align_Change                : Boolean := False;
   Align_On_Picture_Is_Enabled : Boolean := False;
 
-  The_Setup_Command    : Setup_Command := Auto_Focus;
+  The_Setup_Command    : Setup_Command;
   Setup_Command_Change : Boolean := False;
   Is_Focusing          : Boolean := False;
 
@@ -881,6 +882,11 @@ package body User is
 
         Title_Size : constant Natural := Gui.Text_Size_Of (Align_Points_Text) + Separation;
         Text_Size  : constant Natural := Gui.Text_Size_Of ("Align Stars v") + Separation;
+
+        First_Setup_Command : constant Setup_Command := (if Focuser_Client.Server_Exists then
+                                                           Setup_Command'first
+                                                         else
+                                                           Setup_Command_No_Fucuser'first);
       begin
         Setup_Page := Gui.Add_Page (The_Title  => "Setup",
                                     The_Action => Enter_Setup_Page'access,
@@ -895,9 +901,10 @@ package body User is
         Setup_Command_Box := Gui.Create (Setup_Page, Command_Key, Handle_Setup_Command_Change'access,
                                          The_Size       => Text_Size,
                                          The_Title_Size => Title_Size);
-        for Value in Setup_Command'range loop
+        for Value in First_Setup_Command .. Setup_Command'last  loop
           Gui.Add_Text (Setup_Command_Box, Text.Legible_Of (Value'img));
         end loop;
+        The_Setup_Command := First_Setup_Command;
         Gui.Select_Text (Setup_Command_Box, Text.Legible_Of (The_Setup_Command'img));
 
         Picture_Ra := Gui.Create (Setup_Page, "Picture RA", "",

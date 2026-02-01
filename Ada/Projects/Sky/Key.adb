@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2023 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2023 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
@@ -10,7 +10,7 @@ with Traces;
 
 package body Key is
 
-  package Log is new Traces (Package_Name & " Key");
+  package Log is new Traces (Package_Name & "_Key");
 
 
   function New_Item return String is
