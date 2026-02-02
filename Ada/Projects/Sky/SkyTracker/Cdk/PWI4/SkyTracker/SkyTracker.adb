@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2023 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2023 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -16,7 +16,7 @@
 pragma Style_White_Elephant;
 
 pragma Build (Description => "SkyTracker control program for CDK700 (PWI4 1.6)",
-              Version     => (4, 0, 12, 1),
+              Version     => (4, 1, 0, 1),
               Kind        => Windows,
               Libraries   => ("AWS64", "COLL64"),
               Compiler    => "GNATPRO\23.0");

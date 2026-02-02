@@ -53,6 +53,7 @@ package body Control is
                    Stop,
                    Go_To,
                    Auto_Focus,
+                   Add_Model_Point,
                    New_Goto_Direction,
                    Update,
                    New_Telescope_Information,
@@ -123,6 +124,9 @@ package body Control is
         Command_Is_Pending := True;
       when User.Auto_Focus =>
         Next_Command := Auto_Focus;
+        Command_Is_Pending := True;
+      when User.Add_Model_Point =>
+        Next_Command := Add_Model_Point;
         Command_Is_Pending := True;
       when User.Stop =>
         Next_Command := Stop;
@@ -403,6 +407,8 @@ package body Control is
           Handle_Goto;
         when Auto_Focus =>
           Telescope.Evaluate_Focus;
+        when Add_Model_Point =>
+          Telescope.Add_Model_Point;
         when New_Telescope_Information =>
           Handle_Telescope_Information;
           Telescope_Information_Is_Handled := True;

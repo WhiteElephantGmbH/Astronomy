@@ -136,6 +136,9 @@ package body User is
   Last_Camera_Option : Camera_Option := Camera_Option'last;
   The_Camera_Option  : Camera_Option := Normal;
 
+  New_Model_Point : Boolean := False;
+
+
   procedure Option_Handler (The_Group  : Option_Group;
                             The_Option : String) is
   begin
@@ -147,6 +150,7 @@ package body User is
       The_Camera_Option := Normal;
     when Camera =>
       The_Camera_Option := Camera_Option'value(Text.Identifier_Of (The_Option));
+      New_Model_Point := True;
       Cwe.Set (Cwe.Off);
     end case;
   exception
@@ -286,11 +290,17 @@ package body User is
   end Enable_Stop_Button;
 
 
-  procedure Disable_Goto_Button is
+  procedure Disable_Left_Button is
   begin
     Perform_Left_Handler := null;
-    Set_Goto_Text;
     Gui.Disable (Left_Button);
+  end Disable_Left_Button;
+
+
+  procedure Disable_Goto_Button is
+  begin
+    Set_Goto_Text;
+    Disable_Left_Button;
   end Disable_Goto_Button;
 
 
@@ -301,17 +311,17 @@ package body User is
       Perform_Left_Handler := Perform_Goto'access;
       Gui.Enable (Left_Button);
     else
-      Perform_Left_Handler := null;
       Disable_Goto_Button;
     end if;
   end Enable_Goto_Button;
 
 
-  procedure Disable_Auto_Focus_Button is
+  procedure Enable_Add_Model_Point_Button is
   begin
-    Perform_Left_Handler := null;
-    Gui.Disable (Left_Button);
-  end Disable_Auto_Focus_Button;
+    Perform_Left_Handler := Perform_Add_Model_Point'access;
+    Gui.Set_Text (Left_Button, "Model Point");
+    Gui.Enable (Left_Button);
+  end Enable_Add_Model_Point_Button;
 
 
   procedure Enable_Auto_Focus_Button is
@@ -395,14 +405,21 @@ package body User is
         when Auto_Focus =>
           Enable_Auto_Focus_Button;
         when Add_Model_Point =>
-          Enable_Goto_Button; -- !!!
+          if New_Model_Point then
+            Enable_Add_Model_Point_Button;
+          else
+            Enable_Goto_Button;
+          end if;
         end case;
+        Enable_Stop_Button;
+      when Telescope.Capturing =>
+        Disable_Left_Button;
         Enable_Stop_Button;
       when Telescope.Solving =>
         Disable_Goto_Button;
         Enable_Stop_Button;
       when Telescope.Focusing =>
-        Disable_Auto_Focus_Button;
+        Disable_Left_Button;
         Enable_Stop_Button;
       when Telescope.Stopping =>
         Disable_Goto_Button;
@@ -430,6 +447,7 @@ package body User is
   procedure Perform_Goto is
   begin
     Cwe.New_Offset;
+    New_Model_Point := True;
     Signal_Action (Go_To);
   end Perform_Goto;
 
@@ -438,6 +456,13 @@ package body User is
   begin
     Signal_Action (Auto_Focus);
   end Perform_Auto_Focus;
+
+
+  procedure Perform_Add_Model_Point is
+  begin
+    Signal_Action (Add_Model_Point);
+    New_Model_Point := False;
+  end Perform_Add_Model_Point;
 
 
   procedure Perform_Stop is

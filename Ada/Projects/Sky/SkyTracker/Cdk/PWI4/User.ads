@@ -22,9 +22,11 @@ with Telescope;
 
 package User is
 
-  type Action is (Define_Catalog, Define_Target, Startup, Shutdown, Stop, Go_To, Auto_Focus, Update, Close);
+  type Action is (Define_Catalog, Define_Target,
+                  Startup, Shutdown, Stop, Go_To, Auto_Focus, Add_Model_Point, -- Button_Action
+                  Update, Close);
 
-  subtype Button_Action is Action range Startup .. Auto_Focus;
+  subtype Button_Action is Action range Startup .. Add_Model_Point;
 
   type Action_Handler is access procedure (The_Action : Action);
 
@@ -49,6 +51,8 @@ package User is
   procedure Perform_Goto;
 
   procedure Perform_Auto_Focus;
+
+  procedure Perform_Add_Model_Point;
 
   procedure Perform_Stop;
 

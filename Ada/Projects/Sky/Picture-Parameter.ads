@@ -16,10 +16,11 @@
 pragma Style_White_Elephant;
 
 with Configuration;
+with Os.System;
 
 package Picture.Parameter is
 
-  Default_Picture : constant String := "D:\SkyTracker\Picture\Image.CR2";
+  Default_Picture : constant String := Os.System.Temp_Path & "SkyTracker_Capture.Fits";
   Default_Height  : constant String := "0.51";
   Default_Width   : constant String := "0.74";
 

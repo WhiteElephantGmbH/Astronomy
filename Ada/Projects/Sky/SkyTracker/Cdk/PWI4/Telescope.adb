@@ -84,6 +84,8 @@ package body Telescope is
 
     entry Auto_Focus;
 
+    entry Add_Model_Point;
+
     entry Rotator_Goto_Field (The_Angle : Device.Degrees);
 
     entry Rotator_Goto_Mech (The_Position : Device.Degrees);
@@ -300,6 +302,12 @@ package body Telescope is
   end Evaluate_Focus;
 
 
+  procedure Add_Model_Point is
+  begin
+    Control.Add_Model_Point;
+  end Add_Model_Point;
+
+
   function Information return Data is
     The_Data : Data;
   begin
@@ -348,6 +356,7 @@ package body Telescope is
                    User_Adjust,
                    User_Setup,
                    Start_Auto_Focus,
+                   Start_Add_Model_Point,
                    Mount_Unknown,
                    Mount_Disconnected,
                    Mount_Error,
@@ -611,6 +620,14 @@ package body Telescope is
     end Auto_Focus_Start;
 
 
+    procedure Add_Model_Point_Start is
+    begin
+      Log.Write ("start add model point");
+      Camera.Capture (Picture.Filename);
+      The_State := Capturing;
+    end Add_Model_Point_Start;
+
+
     procedure Do_Park is
     begin
       The_Land_Position := Earth.Unknown_Direction;
@@ -827,6 +844,24 @@ package body Telescope is
       Log.Termination (Item);
       return False;
     end Solve_Picture;
+
+
+    procedure Picture_Capturing is
+    begin
+      case Camera.Actual_Information.State is
+      when Camera.Idle =>
+        if Solve_Picture then
+          The_State := Solving;
+        else
+          The_State := Tracking;
+        end if;
+      when Camera.Failed =>
+        User.Show_Error (Camera.Error_Message);
+        The_State := Tracking;
+      when others =>
+        null;
+      end case;
+    end Picture_Capturing;
 
 
     procedure Picture_Solving is
@@ -1321,33 +1356,35 @@ package body Telescope is
         Setup_Handling;
       when Start_Auto_Focus =>
         Auto_Focus_Start;
+      when Start_Add_Model_Point =>
+        Add_Model_Point_Start;
       when others =>
         null;
       end case;
     end Tracking_State;
 
-    --------------
-    -- Focusing --
-    --------------
-    procedure Focusing_State is
+    ---------------
+    -- Capturing --
+    ---------------
+    procedure Capturing_State is
     begin
       case The_Event is
-      when Mount_Disconnected | Mount_Enabled | Mount_Connected | Mount_Error =>
-        Focus.Stop;
+      when Mount_Startup =>
+        Camera.Stop;
         The_State := Mount_Startup_State (The_Event);
       when Mount_Stopped =>
-        Focus.Stop;
+        Camera.Stop;
         The_State := Stopped;
       when Mount_Approach =>
-        Focus.Stop;
+        Camera.Stop;
         The_State := Approaching;
       when Halt =>
-        Focus.Stop;
+        Camera.Stop;
         Stop_Target;
       when others =>
         null;
       end case;
-    end Focusing_State;
+    end Capturing_State;
 
     --------------
     -- Solving --
@@ -1371,6 +1408,29 @@ package body Telescope is
         null;
       end case;
     end Solving_State;
+
+    --------------
+    -- Focusing --
+    --------------
+    procedure Focusing_State is
+    begin
+      case The_Event is
+      when Mount_Disconnected | Mount_Enabled | Mount_Connected | Mount_Error =>
+        Focus.Stop;
+        The_State := Mount_Startup_State (The_Event);
+      when Mount_Stopped =>
+        Focus.Stop;
+        The_State := Stopped;
+      when Mount_Approach =>
+        Focus.Stop;
+        The_State := Approaching;
+      when Halt =>
+        Focus.Stop;
+        Stop_Target;
+      when others =>
+        null;
+      end case;
+    end Focusing_State;
 
     Has_New_Data : Boolean := True;
 
@@ -1438,6 +1498,9 @@ package body Telescope is
         or
           accept Auto_Focus;
           The_Event := Start_Auto_Focus;
+        or
+          accept Add_Model_Point;
+          The_Event := Start_Add_Model_Point;
         or
           accept Rotator_Goto_Field (The_Angle : Device.Degrees) do
             Last_Rotator_Offset := Undefined_Offset;
@@ -1575,15 +1638,14 @@ package body Telescope is
             end if;
           when Tracking =>
             Update_Target_Direction;
-            if Picture.Exists and then Solve_Picture then
-              The_State := Solving;
-            end if;
           when Following =>
             Check_Above_Horizon;
-          when Focusing =>
-            Auto_Focusing;
+          when Capturing =>
+            Picture_Capturing;
           when Solving =>
             Picture_Solving;
+          when Focusing =>
+            Auto_Focusing;
           when Waiting =>
             The_Event := Mount_Stopped;
           when Mount_Error =>
@@ -1615,8 +1677,9 @@ package body Telescope is
           when Waiting       => Waiting_State;
           when Approaching   => Approaching_State;
           when Is_Tracking   => Tracking_State;
-          when Focusing      => Focusing_State;
+          when Capturing     => Capturing_State;
           when Solving       => Solving_State;
+          when Focusing      => Focusing_State;
           end case;
           Has_New_Data := True;
         end if;

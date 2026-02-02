@@ -44,6 +44,7 @@ package Telescope is
                  Approaching,
                  Following,
                  Tracking,
+                 Capturing,
                  Focusing,
                  Solving);
 
@@ -110,6 +111,8 @@ package Telescope is
   procedure Define_Fucuser_Zoom_Size (The_Size : Device.Microns);
 
   procedure Evaluate_Focus;
+
+  procedure Add_Model_Point;
 
   procedure Startup;
 
