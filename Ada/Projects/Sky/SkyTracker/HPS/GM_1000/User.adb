@@ -301,12 +301,12 @@ package body User is
         Gui.Set_Text (Focus_Position_Box, Image_Of (Evaluation.Position'image, No_Value_For => "0"));
       end case;
       case Focusing_State is
-      when Focus.No_Focuser | Focus.Undefined | Focus.Evaluated =>
+      when Focus.No_Focuser | Focus.Undefined | Focus.Focused =>
         if Is_Focusing then
           Is_Focusing := False;
           Setup_Command_Is_Active := False;
         end if;
-      when Focus.Positioning | Focus.Capturing | Focus.Failed =>
+      when Focus.Positioning | Focus.Capturing | Focus.Evaluated | Focus.Failed =>
         null;
       end case;
     end Show_Focus_Information;

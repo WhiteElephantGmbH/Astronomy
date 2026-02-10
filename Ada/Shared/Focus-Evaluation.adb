@@ -15,59 +15,72 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Celestron.Focuser;
-with Focuser_Client;
-with Traces;
+with Astro;
 
-package body Focuser.HPS is
+package body Focus.Evaluation is
 
-  package Log is new Traces ("Focuser.HPS");
+  use Astro;
 
-  function New_Device return Object_Access is (new Device);
-
-
-  overriding
-  function State (Unused : Device) return Status is
-    Data : constant Celestron.Focuser.Data := Focuser_Client.Actual_Data;
+  function Model (X  : REAL;
+                  X0 : REAL;
+                  A  : REAL;
+                  B  : REAL) return REAL is
   begin
-    if Data.Exists then
-      if Data.Moving then
-        return Moving;
-      else
-        return Stopped;
-      end if;
-    end if;
-    return Disconnected;
-  end State;
+    return SQRT (A * (X - X0) * (X - X0) + B);
+  end Model;
 
 
-  overriding
-  function Name (Unused : Device) return String is ("Celestron");
-
-
-  function Actual_Position (Unused : Device) return Distance is
-    Data : constant Celestron.Focuser.Data := Focuser_Client.Actual_Data;
+  function Error (Start_Position : Distance;
+                  Step_Increment : Distance;
+                  HFD_Array      : Vektor;
+                  X0             : REAL;
+                  A              : REAL;
+                  B              : REAL) return REAL is
+    E : REAL     := 0.0;
+    P : Distance := Start_Position;
   begin
-    return Data.Position;
-  end Actual_Position;
+    for I in HFD_Array'range loop
+      declare
+         W : constant REAL := 1.0 / (REAL(HFD_Array(I)) * REAL(HFD_Array(I)));
+         M : constant REAL := Model (REAL(P), X0, A, B);
+         D : constant REAL := REAL(HFD_Array(I)) - M;
+      begin
+         E := E + W * D * D;
+      end;
+      P := P + Step_Increment;
+    end loop;
+    return E;
+  end Error;
 
 
-  overriding
-  procedure Move_To (Unused   : Device;
-                     Position : Distance) is
-    Unused_Data : Celestron.Focuser.Data;
+  function Best_For (Start_Position : Distance;
+                     Step_Increment : Distance;
+                     HFD_Array      : Vektor) return Distance is
+
+    X0 : REAL := REAL(Start_Position);
+
+    A  : constant REAL := 0.001;
+    B  : constant REAL := REAL(HFD_Array(HFD_Array'first)) ** 2;
+
+    Inc    : REAL := 50.0;
+    Best_E : REAL := Error (Start_Position, Step_Increment, HFD_Array, X0, A, B);
+
   begin
-    Log.Write ("Move_To" & Position'image);
-    Unused_Data := Focuser_Client.Move_To (Position);
-  end Move_To;
+    Log.Write ("Best_Of: " & HFD_Array'image);
+    for Unused in 1 .. 200 loop
+      declare
+        Try_X0 : constant REAL := X0 + Inc;
+        E2     : constant REAL := Error (Start_Position, Step_Increment, HFD_Array, Try_X0, A, B);
+      begin
+        if E2 < Best_E then
+          X0 := Try_X0;
+          Best_E := E2;
+        else
+          Inc := -Inc * 0.5;
+        end if;
+      end;
+    end loop;
+    return Distance(X0);
+  end Best_For;
 
-
-  overriding
-  procedure Stop (Unused : Device) is
-    Unused_Data : Celestron.Focuser.Data;
-  begin
-    Log.Write ("Stop");
-    Unused_Data := Focuser_Client.Execute (Celestron.Focuser.Stop);
-  end Stop;
-
-end Focuser.HPS;
+end Focus.Evaluation;

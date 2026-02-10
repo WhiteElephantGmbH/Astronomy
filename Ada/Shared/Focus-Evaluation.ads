@@ -15,59 +15,12 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Celestron.Focuser;
-with Focuser_Client;
-with Traces;
+private package Focus.Evaluation is
 
-package body Focuser.HPS is
+  type Vektor is array (Positive range <>) of Diameter;
 
-  package Log is new Traces ("Focuser.HPS");
+  function Best_For (Start_Position : Distance;
+                     Step_Increment : Distance;
+                     HFD_Array      : Vektor) return Distance;
 
-  function New_Device return Object_Access is (new Device);
-
-
-  overriding
-  function State (Unused : Device) return Status is
-    Data : constant Celestron.Focuser.Data := Focuser_Client.Actual_Data;
-  begin
-    if Data.Exists then
-      if Data.Moving then
-        return Moving;
-      else
-        return Stopped;
-      end if;
-    end if;
-    return Disconnected;
-  end State;
-
-
-  overriding
-  function Name (Unused : Device) return String is ("Celestron");
-
-
-  function Actual_Position (Unused : Device) return Distance is
-    Data : constant Celestron.Focuser.Data := Focuser_Client.Actual_Data;
-  begin
-    return Data.Position;
-  end Actual_Position;
-
-
-  overriding
-  procedure Move_To (Unused   : Device;
-                     Position : Distance) is
-    Unused_Data : Celestron.Focuser.Data;
-  begin
-    Log.Write ("Move_To" & Position'image);
-    Unused_Data := Focuser_Client.Move_To (Position);
-  end Move_To;
-
-
-  overriding
-  procedure Stop (Unused : Device) is
-    Unused_Data : Celestron.Focuser.Data;
-  begin
-    Log.Write ("Stop");
-    Unused_Data := Focuser_Client.Execute (Celestron.Focuser.Stop);
-  end Stop;
-
-end Focuser.HPS;
+end Focus.Evaluation;

@@ -209,12 +209,8 @@ package body Telescope is
 
   function Actual_Target_Direction return Space.Direction is
   begin
-    if User.In_Setup_Mode then
-      if Space.Direction_Is_Known (The_Next_Star) then
-        return The_Next_Star;
-      else
-        return Space.Pole_Search_Direction;
-      end if;
+    if User.In_Setup_Mode and then Space.Direction_Is_Known (The_Next_Star) then
+      return The_Next_Star;
     elsif Next_Get_Direction = null then
       return Space.Unknown_Direction;
     else

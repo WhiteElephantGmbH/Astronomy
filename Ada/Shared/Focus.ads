@@ -29,7 +29,9 @@ package Focus is
 
   type Diameter is new Natural range 0 .. Camera.Min_With_Or_Height;
 
-  type Status is (No_Focuser, Undefined, Positioning, Capturing, Evaluated, Failed);
+  type Status is (No_Focuser, Undefined, Positioning, Capturing, Evaluated, Focused, Failed);
+
+  subtype HFD_Sample_Count is Natural range 5 .. 11;
 
   procedure Start (Device : Focuser.Object_Access);
 
@@ -67,6 +69,8 @@ private
 
   procedure Raise_Error (Message : String) with No_Return;
 
+  HFD_Samples : HFD_Sample_Count := HFD_Sample_Count'first;
+
   protected Focus_Data is
 
     procedure Set (Item : Status);
@@ -80,7 +84,7 @@ private
 
     function Start_Position return Distance;
 
-    function Start_Increment return Distance;
+    function Position_Increment return Distance;
 
     function Position_Tolerance return Distance;
 
