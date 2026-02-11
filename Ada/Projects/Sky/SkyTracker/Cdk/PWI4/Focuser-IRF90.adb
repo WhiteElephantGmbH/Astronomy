@@ -51,7 +51,6 @@ package body Focuser.IRF90 is
   function Actual_Position (Unused : Item) return Distance is
     Position : constant Distance := Distance(PWI4_Focuser.Actual_Position / PWI4.Microns_Delta);
   begin
-    Log.Write ("Actual_Position:" & Position'image);
     return Position;
   end Actual_Position;
 

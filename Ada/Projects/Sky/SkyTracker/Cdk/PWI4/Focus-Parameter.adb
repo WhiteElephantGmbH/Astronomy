@@ -23,13 +23,13 @@ package body Focus.Parameter is
 
   Samples_Key   : constant String := "Samples";
   Start_At_Key  : constant String := "Start At";
-  Increment_Key : constant String := "Increment";
+  Step_Key      : constant String := "Step";
   Tolerance_Key : constant String := "Tolerance";
   Grid_Size_Key : constant String := "Grid Size";
 
 
   function Distance_For (Key : String) return Distance is
-    Image : constant String := Section.String_Value_Of (Key);
+    Image : constant String := Section.String_Of (Key, Id);
   begin
     return Distance(PWI4.Microns'value(Image) / PWI4.Microns_Delta);
   exception
@@ -38,8 +38,18 @@ package body Focus.Parameter is
   end Distance_For;
 
 
+  function Step_For (Key : String) return Step is
+    Image : constant String := Section.String_Of (Key, Id);
+  begin
+    return Step(PWI4.Microns'value(Image) / PWI4.Microns_Delta);
+  exception
+  when others =>
+    Error.Raise_With ("Incorrect Step : " & Image);
+  end Step_For;
+
+
   function Count_For (Key : String) return HFD_Sample_Count is
-    Image : constant String := Section.String_Value_Of (Key);
+    Image : constant String := Section.String_Of (Key, Id);
   begin
     return HFD_Sample_Count'value(Image);
   exception
@@ -50,7 +60,7 @@ package body Focus.Parameter is
 
 
   function Size_For (Key : String) return Camera.Square_Size is
-    Image : constant String := Section.String_Value_Of (Key);
+    Image : constant String := Section.String_Of (Key, Id);
   begin
     return Camera.Square_Size'value (Image);
   exception
@@ -63,23 +73,16 @@ package body Focus.Parameter is
   begin
     Section.Set (Configuration.Handle_For (Handle, Id));
     if Section.Exists then
-      HFD_Samples := Count_For (Samples_Key);
-      Log.Write (Samples_Key & " :" & Samples_Key'image);
-      declare
-        Start_At  : constant Distance := Distance_For (Start_At_Key);
-        Increment : constant Distance := Distance_For (Increment_Key);
-        Tolerance : constant Distance := Distance_For (Tolerance_Key);
-        Grid_Size : constant Camera.Square_Size := Size_For (Grid_Size_Key);
-      begin
-        Log.Write (Start_At_Key & " :" & Start_At 'image);
-        Log.Write (Increment_Key & " :" & Increment'image);
-        Log.Write (Tolerance_Key & " :" & Tolerance'image);
-        Log.Write (Grid_Size_Key & " :" & Grid_Size'image);
-        Focus_Data.Set (First_Position  => Start_At,
-                        First_Increment => Increment,
-                        Tolerance       => Tolerance,
-                        Square_Size     => Grid_Size);
-      end;
+      The_HFD_Samples := Count_For (Samples_Key);
+      Log.Write (Samples_Key & " :" & The_HFD_Samples'image);
+      The_Start_Position := Distance_For (Start_At_Key);
+      Log.Write (Start_At_Key & " :" & The_Start_Position 'image);
+      The_Position_Step := Step_For (Step_Key);
+      Log.Write (Step_Key & " :" & The_Position_Step'image);
+      The_Tolerance := Distance_For (Tolerance_Key);
+      Log.Write (Tolerance_Key & " :" & The_Tolerance'image);
+      The_Grid_Size := Size_For (Grid_Size_Key);
+      Log.Write (Grid_Size_Key & " :" & The_Grid_Size'image);
     end if;
   end Define;
 
@@ -89,7 +92,7 @@ package body Focus.Parameter is
     Put ("[" & Id & "]");
     Put (Samples_Key  & "  =" & HFD_Sample_Count'first'image);
     Put (Start_At_Key & "  = 6000.0");
-    Put (Increment_Key & " = 50.0");
+    Put (Step_Key & "      = 50.0");
     Put (Tolerance_Key & " = 0.5");
     Put (Grid_Size_Key & " = 1000");
   end Defaults;

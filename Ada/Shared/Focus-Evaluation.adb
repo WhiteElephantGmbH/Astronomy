@@ -31,7 +31,7 @@ package body Focus.Evaluation is
 
 
   function Error (Start_Position : Distance;
-                  Step_Increment : Distance;
+                  Position_Step  : Step;
                   HFD_Array      : Vektor;
                   X0             : REAL;
                   A              : REAL;
@@ -47,14 +47,14 @@ package body Focus.Evaluation is
       begin
          E := E + W * D * D;
       end;
-      P := P + Step_Increment;
+      P := P + Position_Step;
     end loop;
     return E;
   end Error;
 
 
   function Best_For (Start_Position : Distance;
-                     Step_Increment : Distance;
+                     Position_Step  : Step;
                      HFD_Array      : Vektor) return Distance is
 
     X0 : REAL := REAL(Start_Position);
@@ -63,14 +63,14 @@ package body Focus.Evaluation is
     B  : constant REAL := REAL(HFD_Array(HFD_Array'first)) ** 2;
 
     Inc    : REAL := 50.0;
-    Best_E : REAL := Error (Start_Position, Step_Increment, HFD_Array, X0, A, B);
+    Best_E : REAL := Error (Start_Position, Position_Step, HFD_Array, X0, A, B);
 
   begin
     Log.Write ("Best_Of: " & HFD_Array'image);
     for Unused in 1 .. 200 loop
       declare
         Try_X0 : constant REAL := X0 + Inc;
-        E2     : constant REAL := Error (Start_Position, Step_Increment, HFD_Array, Try_X0, A, B);
+        E2     : constant REAL := Error (Start_Position, Position_Step, HFD_Array, Try_X0, A, B);
       begin
         if E2 < Best_E then
           X0 := Try_X0;

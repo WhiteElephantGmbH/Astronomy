@@ -20,7 +20,7 @@ private package Focus.Evaluation is
   type Vektor is array (Positive range <>) of Diameter;
 
   function Best_For (Start_Position : Distance;
-                     Step_Increment : Distance;
+                     Position_Step  : Step;
                      HFD_Array      : Vektor) return Distance;
 
 end Focus.Evaluation;

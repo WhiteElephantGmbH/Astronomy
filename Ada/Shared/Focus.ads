@@ -31,8 +31,6 @@ package Focus is
 
   type Status is (No_Focuser, Undefined, Positioning, Capturing, Evaluated, Focused, Failed);
 
-  subtype HFD_Sample_Count is Natural range 5 .. 11;
-
   procedure Start (Device : Focuser.Object_Access);
 
   function Actual_State return Status;
@@ -61,7 +59,17 @@ private
 
   package Log is new Traces (Id);
 
+  subtype HFD_Sample_Count is Natural range 5 .. 11;
+
+  subtype Step is Integer range -10000 .. 10000;
+
   Start_From_Actual : constant Distance := Distance'last;
+
+  The_HFD_Samples    : HFD_Sample_Count := HFD_Sample_Count'first;
+  The_Start_Position : Distance := Start_From_Actual;
+  The_Position_Step  : Step := 100;
+  The_Tolerance      : Distance := 0;
+  The_Grid_Size      : Camera.Square_Size := 1000;
 
   Focus_Error : exception;
 
@@ -69,26 +77,11 @@ private
 
   procedure Raise_Error (Message : String) with No_Return;
 
-  HFD_Samples : HFD_Sample_Count := HFD_Sample_Count'first;
-
   protected Focus_Data is
 
     procedure Set (Item : Status);
 
-    procedure Set (First_Position  : Distance;
-                   First_Increment : Distance;
-                   Tolerance       : Distance;
-                   Square_Size     : Camera.Square_Size);
-
     function State return Status;
-
-    function Start_Position return Distance;
-
-    function Position_Increment return Distance;
-
-    function Position_Tolerance return Distance;
-
-    function Grid_Size return Camera.Square_Size;
 
     procedure Set (Half_Flux : Camera.Pixel);
 
@@ -109,13 +102,9 @@ private
     procedure Reset_Error;
 
   private
-    The_State           : Status := No_Focuser;
-    The_Start_Position  : Distance := Start_From_Actual;
-    The_Start_Increment : Distance := 100;
-    The_Tolerance       : Distance := 0;
-    The_Grid_Size       : Camera.Square_Size := 1000;
-    The_Result          : Result;
-    The_Last_Error      : Text.String;
+    The_State      : Status := No_Focuser;
+    The_Result     : Result;
+    The_Last_Error : Text.String;
   end Focus_Data;
 
 end Focus;

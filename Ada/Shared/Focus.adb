@@ -104,11 +104,19 @@ package body Focus is
 
   task body Control is
 
-    HFD_Delta  : constant Diameter := 100;
-    HFD_Spread : constant Natural := HFD_Samples / 2;
+    HFD_Samples : constant HFD_Sample_Count := The_HFD_Samples;
+    HFD_Delta   : constant Diameter := 100;
+    HFD_Spread  : constant Natural := HFD_Samples / 2;
 
     The_HFD   : Evaluation.Vektor(1 .. HFD_Samples * 2); -- stop after samples * 2
     The_Index : Natural;
+
+    Start_Position : constant Distance := The_Start_Position;
+    Tolerance      : constant Distance := The_Tolerance;
+    Position_Step  : constant Step := The_Position_Step;
+    Max_Backlash   : constant Step := (Position_Step / abs Position_Step) * Step(Focal.Backlash'last);
+
+    Grid_Size : constant Camera.Square_Size := The_Grid_Size;
 
     First_Index   : Positive;
     Minimum_Index : Positive;
@@ -159,11 +167,10 @@ package body Focus is
     function Focus_Position return Distance is
       First         : constant Positive := Minimum_Index - HFD_Spread;
       Last          : constant Positive := Minimum_Index + HFD_Spread;
-      Increment     : constant Distance := Focus_Data.Position_Increment;
-      From_Position : constant Distance := Focus_Data.Start_Position + (First - The_HFD'first) * Increment;
+      From_Position : constant Distance := Start_Position + (First - The_HFD'first) * Position_Step;
     begin
       return Evaluation.Best_For (Start_Position => From_Position,
-                                  Step_Increment => Increment,
+                                  Position_Step  => Position_Step,
                                   HFD_Array      => The_HFD(First .. Last));
     exception
     when others =>
@@ -184,7 +191,7 @@ package body Focus is
     begin
       The_Index := 0;
       First_Index := The_HFD'first;
-      The_Position := Focus_Data.Start_Position;
+      The_Position := Start_Position;
       if The_Position = Start_From_Actual then
         The_Position := The_Focuser.Actual_Position;
       else
@@ -195,10 +202,11 @@ package body Focus is
     end Start_Evaluation;
 
 
-    --Simulated_HFD : constant Evaluation.Vektor := [500, 300, 210, 100, 190, 310, 400];
+    Simulated_HFD : constant Evaluation.Vektor := [500, 300, 200, 100, 200, 300, 400];
 
     procedure Evaluate_Position is
-      Actual_HFD      : constant Diameter := Focus_Data.Evaluation.HFD; -- Simulated_HFD(The_Index + 1);
+      Actual_HFD      : constant Diameter := Simulated_HFD(The_Index + 1);
+    --Actual_HFD      : constant Diameter := Focus_Data.Evaluation.HFD;
       Actual_Position : constant Distance := The_Position;
     begin
       if The_Index = The_HFD'last then
@@ -208,11 +216,11 @@ package body Focus is
       The_Index := @ + 1;
       The_HFD(The_Index) := Actual_HFD;
       if The_Index >= HFD_Samples and then Found_Minimum then
-        The_Position := Focus_Position - Distance(Focal.Backlash'last);
+        The_Position := Focus_Position - Max_Backlash;
         The_Focuser.Move_To (The_Position);
         Focus_Data.Set (Evaluated);
       else
-        The_Position := Actual_Position + Focus_Data.Position_Increment;
+        The_Position := Actual_Position + Position_Step;
         The_Focuser.Move_To (The_Position);
         Focus_Data.Set (Positioning);
       end if;
@@ -224,7 +232,7 @@ package body Focus is
 
     function At_Position (Focuser_Position : Distance) return Boolean is
     begin
-      return abs (Integer(The_Position) - Integer(Focuser_Position)) <= Focus_Data.Position_Tolerance;
+      return abs (Integer(The_Position) - Integer(Focuser_Position)) <= Tolerance;
     end At_Position;
 
   begin -- Control
@@ -273,7 +281,7 @@ package body Focus is
                 Actual_Position : constant Distance := The_Focuser.Actual_Position;
               begin
                 if At_Position (Actual_Position) then
-                  Camera.Capture (Focus_Data.Grid_Size);
+                  Camera.Capture (Grid_Size);
                   if Camera.Has_Error then
                     Set_Error (Camera.Error_Message);
                   else
@@ -310,7 +318,7 @@ package body Focus is
                 Actual_Position : constant Distance := The_Focuser.Actual_Position;
               begin
                 if At_Position (Actual_Position) then
-                  The_Position := @ + Distance(Focal.Backlash'last);
+                  The_Position := @ + Max_Backlash;
                   The_Focuser.Move_To (The_Position);
                   Focus_Data.Set (Focused);
                 end if;
@@ -392,46 +400,10 @@ package body Focus is
     end Set;
 
 
-    procedure Set (First_Position  : Distance;
-                   First_Increment : Distance;
-                   Tolerance       : Distance;
-                   Square_Size     : Camera.Square_Size) is
-    begin
-      The_Start_Position := First_Position;
-      The_Start_Increment := First_Increment;
-      The_Tolerance := Tolerance;
-      The_Grid_Size := Square_Size;
-    end Set;
-
-
     function State return Status is
     begin
       return The_State;
     end State;
-
-
-    function Start_Position return Distance is
-    begin
-      return The_Start_Position;
-    end Start_Position;
-
-
-    function Position_Increment return Distance is
-    begin
-      return The_Start_Increment;
-    end Position_Increment;
-
-
-    function Position_Tolerance return Distance is
-    begin
-      return The_Tolerance;
-    end Position_Tolerance;
-
-
-    function Grid_Size return Camera.Square_Size is
-    begin
-      return The_Grid_Size;
-    end Grid_Size;
 
 
     procedure Set (Half_Flux : Camera.Pixel) is
