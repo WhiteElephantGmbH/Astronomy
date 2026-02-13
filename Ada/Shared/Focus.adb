@@ -202,11 +202,11 @@ package body Focus is
     end Start_Evaluation;
 
 
-    Simulated_HFD : constant Evaluation.Vektor := [500, 300, 200, 100, 200, 300, 400];
+    --Simulated_HFD : constant Evaluation.Vektor := [500, 300, 200, 100, 200, 300, 400];
 
     procedure Evaluate_Position is
-      Actual_HFD      : constant Diameter := Simulated_HFD(The_Index + 1);
-    --Actual_HFD      : constant Diameter := Focus_Data.Evaluation.HFD;
+    --Actual_HFD      : constant Diameter := Simulated_HFD(The_Index + 1);
+      Actual_HFD      : constant Diameter := Focus_Data.Evaluation.HFD;
       Actual_Position : constant Distance := The_Position;
     begin
       if The_Index = The_HFD'last then
