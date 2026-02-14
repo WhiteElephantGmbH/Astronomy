@@ -288,24 +288,29 @@ package body Focus is
                     Focus_Data.Set (Capturing);
                   end if;
                 else
-                  Set_Error ("Focuser positioning inaccurate - expected:" & The_Position'image &
-                                                           " - actual:" & Actual_Position'image);
+                  Set_Error ("Positioning inaccurate - expected:" & The_Position'image &
+                                                   " - actual:" & Actual_Position'image);
                 end if;
               end;
             when Focuser.Moving =>
               null;
             when Focuser.Disconnected =>
-              Set_Error ("Focuser lost connection");
+              Set_Error ("Focuser Disconnected");
             end case;
           when Capturing =>
             case Camera.Actual_Information.State is
             when Camera.Cropped =>
               HFD.Evaluate (Camera.Captured);
-              if The_Position /= The_Focuser.Actual_Position then
-                Set_Error ("Focuser position moved");
-              else
-                Evaluate_Position;
-              end if;
+              declare
+                Actual_Position : constant Distance := The_Focuser.Actual_Position;
+              begin
+                if At_Position (Actual_Position) then
+                  Evaluate_Position;
+                else
+                  Set_Error ("Positioning moved - expected:" & The_Position'image &
+                                              " - actual:" & Actual_Position'image);
+                end if;
+              end;
             when Camera.Failed =>
               Set_Error (Camera.Error_Message);
             when others =>
