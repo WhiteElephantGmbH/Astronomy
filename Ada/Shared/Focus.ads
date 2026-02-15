@@ -25,11 +25,9 @@ package Focus is
 
   subtype Distance is Focuser.Distance;
 
-  type Lash_Correction is range -2**7 .. 2**7 - 1;
-
   type Diameter is new Natural range 0 .. Camera.Min_With_Or_Height;
 
-  type Status is (No_Focuser, Undefined, Positioning, Capturing, Evaluated, Focused, Failed);
+  type Status is (No_Focuser, Undefined, Starting, Positioning, Capturing, Evaluated, Focused, Failed);
 
   procedure Start (Device : Focuser.Object_Access);
 
@@ -65,11 +63,15 @@ private
 
   Start_From_Actual : constant Distance := Distance'last;
 
+  Sample_Factor : constant := 2;
+
   The_HFD_Samples    : HFD_Sample_Count := HFD_Sample_Count'first;
   The_Start_Position : Distance := Start_From_Actual;
   The_Position_Step  : Step := 100;
   The_Tolerance      : Distance := 0;
   The_Grid_Size      : Camera.Square_Size := 1000;
+  
+  function Minimum_Start_Position return Distance;
 
   Focus_Error : exception;
 

@@ -44,7 +44,7 @@ package body Focus.Parameter is
     return Step(PWI4.Microns'value(Image) / PWI4.Microns_Delta);
   exception
   when others =>
-    Error.Raise_With ("Incorrect Step : " & Image);
+    Error.Raise_With ("Incorrect Step: " & Image);
   end Step_For;
 
 
@@ -79,6 +79,9 @@ package body Focus.Parameter is
       Log.Write (Start_At_Key & " :" & The_Start_Position 'image);
       The_Position_Step := Step_For (Step_Key);
       Log.Write (Step_Key & " :" & The_Position_Step'image);
+      if The_Start_Position < Minimum_Start_Position then
+        Error.Raise_With ("Focusing start to low (<" & Minimum_Start_Position'image & "):" & The_Start_Position'image);
+      end if;
       The_Tolerance := Distance_For (Tolerance_Key);
       Log.Write (Tolerance_Key & " :" & The_Tolerance'image);
       The_Grid_Size := Size_For (Grid_Size_Key);
@@ -90,7 +93,7 @@ package body Focus.Parameter is
   procedure Defaults (Put : access procedure (Item : String)) is
   begin
     Put ("[" & Id & "]");
-    Put (Samples_Key  & "  =" & HFD_Sample_Count'first'image);
+    Put (Samples_Key & "   =" & HFD_Sample_Count'first'image);
     Put (Start_At_Key & "  = 6000.0");
     Put (Step_Key & "      = 50.0");
     Put (Tolerance_Key & " = 0.5");

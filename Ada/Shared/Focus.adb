@@ -108,7 +108,7 @@ package body Focus is
     HFD_Delta   : constant Diameter := 100;
     HFD_Spread  : constant Natural := HFD_Samples / 2;
 
-    The_HFD   : Evaluation.Vektor(1 .. HFD_Samples * 2); -- stop after samples * 2
+    The_HFD   : Evaluation.Vektor(1 .. HFD_Samples * Sample_Factor); -- stop after samples * 2
     The_Index : Natural;
 
     Start_Position : constant Distance := The_Start_Position;
@@ -194,11 +194,10 @@ package body Focus is
       The_Position := Start_Position;
       if The_Position = Start_From_Actual then
         The_Position := The_Focuser.Actual_Position;
-      else
-        The_Focuser.Move_To (The_Position);
-        The_Wakeup_Time := RT.Clock + Delta_Time;
       end if;
-      Focus_Data.Set (Positioning);
+      The_Focuser.Move_To (The_Position - Max_Backlash);
+      The_Wakeup_Time := RT.Clock + Delta_Time;
+      Focus_Data.Set (Starting);
     end Start_Evaluation;
 
 
@@ -273,6 +272,16 @@ package body Focus is
               Focus_Data.Set (Undefined);
             when Focuser.Disconnected =>
               null;
+            end case;
+          when Starting =>
+            case The_Focuser.State is
+            when Focuser.Stopped =>
+              The_Focuser.Move_To (The_Position);
+              Focus_Data.Set (Positioning);
+            when Focuser.Moving =>
+              null;
+            when Focuser.Disconnected =>
+              Set_Error ("Focuser Disconnected");
             end case;
           when Positioning =>
             case The_Focuser.State is
@@ -394,6 +403,18 @@ package body Focus is
   ----------
   -- Data --
   ----------
+
+  function Minimum_Start_Position return Distance is
+    Minimum_Position : constant Distance := 500;
+  begin
+    pragma Assert (Minimum_Position > Distance(Focal.Backlash'last));
+    if The_Position_Step < 0 then
+      return Minimum_Position + (abs The_Position_Step * The_HFD_Samples * Sample_Factor);
+    else
+      return Minimum_Position;
+    end if;
+  end Minimum_Start_Position;
+
 
   protected body Focus_Data is
 

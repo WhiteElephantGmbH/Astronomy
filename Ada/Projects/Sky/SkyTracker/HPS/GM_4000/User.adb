@@ -331,7 +331,7 @@ package body User is
           Is_Focusing := False;
           Setup_Command_Is_Active := False;
         end if;
-      when Focus.Positioning | Focus.Capturing | Focus.Evaluated | Focus.Failed =>
+      when Focus.Starting | Focus.Positioning | Focus.Capturing | Focus.Evaluated | Focus.Failed =>
         null;
       end case;
     end Show_Focus_Information;
