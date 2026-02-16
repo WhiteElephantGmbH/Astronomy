@@ -756,8 +756,7 @@ package body Device is
         end if;
       or
         delay 1.0 / PWI4.Request_Rate;
-        if The_Mount_State /= Mount.Error then
-          PWI4.Get_System;
+        if The_Mount_State /= Mount.Error and then PWI4.Got_System_Status then
           if Is_Simulation then
             if Focuser.Actual_State = Focuser.Moving then
               if abs(The_Simulated_Focuser_Position - The_Simulated_Focuser_Goto_Position) > 4.0 then

@@ -15,6 +15,7 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with Exceptions;
 with Traces;
 with Text;
 
@@ -195,6 +196,8 @@ package body PWI4.Protocol is
 
   protected System is
 
+    procedure Set_Error;
+
     procedure Set (Status : Status_Code);
 
     procedure Set (Data : Protocol.Response);
@@ -214,7 +217,7 @@ package body PWI4.Protocol is
   end System;
 
 
-  procedure Parse (Data : String) is
+  function Parsed (Data : String) return Boolean is
 
     The_Index : Integer := Data'first - 1;
 
@@ -248,6 +251,7 @@ package body PWI4.Protocol is
                         I_Dec_J2000_Degs,
                         I_Dist_To_Target_Arcsec,
                         I_Distance_To_Sun_Degs,
+                        I_Dome,
                         I_Exists,
                         I_Field_Angle_Degs,
                         I_Field_Angle_Here_Degs,
@@ -267,9 +271,11 @@ package body PWI4.Protocol is
                         I_Is_Connected,
                         I_Is_Moving,
                         I_Is_On,
+                        I_Is_Position_Initialized,
                         I_Is_Running,
                         I_Is_Slewing,
                         I_Is_Tracking,
+                        I_Is_Tracking_Enabled,
                         I_Latitude_Degs,
                         I_Lmst_Hours,
                         I_Julian_Date,
@@ -420,6 +426,9 @@ package body PWI4.Protocol is
         when I_Is_Enabled =>
           Log_Write (Axis & ".is_enabled=" & Next_Value);
           The_Response.Mount.Flags.Axis_Is_Enabled(N) := Boolean_Of (Value);
+        when I_Is_Position_Initialized =>
+          Log_Write (Axis & ".is_position_initialized=" & Next_Value);
+          The_Response.Mount.Flags.Axis_Is_Initialized(N) := Boolean_Of (Value);
         when I_Rms_Error_Arcsec =>
           Log_Write (Axis & ".rms_error_arcsec=" & Next_Value);
         when I_Dist_To_Target_Arcsec =>
@@ -682,6 +691,9 @@ package body PWI4.Protocol is
       when I_Is_Slewing =>
         Log_Write ("rotator.is_slewing=" & Next_Value);
         The_Response.Rotator.Is_Slewing := Boolean_Of (Value);
+      when I_Is_Tracking_Enabled =>
+        Log_Write ("rotator.is_tracking_enabled=" & Next_Value);
+        The_Response.Rotator.Is_Tracking_Enabled := Boolean_Of (Value);
       when others =>
         raise Parsing_Error;
       end case;
@@ -753,7 +765,17 @@ package body PWI4.Protocol is
       end case;
     end Parse_Heater;
 
-  begin -- Parse
+    procedure Parse_Dome is
+    begin
+      case Next_Identifier is
+      when I_Exists =>
+        Log_Write ("dome.exists=" & Next_Value);
+      when others =>
+        raise Parsing_Error;
+      end case;
+    end Parse_Dome;
+
+  begin -- Parsed
     if Data'length = 0 or else Data(Data'last) /= Ascii.Lf then
       raise Parsing_Error;
     end if;
@@ -777,17 +799,22 @@ package body PWI4.Protocol is
         Parse_Autofocus;
       when I_Heater =>
         Parse_Heater;
+      when I_Dome =>
+        Parse_Dome;
       when others =>
         raise Parsing_Error;
       end case;
     end loop;
     System.Set (The_Response);
     Log_Response.Normal;
+    return True;
   exception
-  when others =>
-    Log_Error (Data);
-    raise;
-  end Parse;
+  when Item: others =>
+    Log_Error (Data & Exceptions.Name_Of (Item));
+    System.Set_Error;
+    Set_Error ("PWI4 Protocol Error");
+    return False;
+  end Parsed;
 
 
   procedure Set_Error (Status : Status_Code) is
@@ -850,11 +877,17 @@ package body PWI4.Protocol is
 
   protected body System is
 
+    procedure Set_Error is
+    begin
+      The_Data.Mount.Flags.Has_Error := True;
+      The_Data.Mount.Flags.Is_Connected := False;
+    end Set_Error;
+
+
     procedure Set (Status : Status_Code) is
     begin
       Log.Write ("Set Error : " & Status'image);
-      The_Data.Mount.Flags.Has_Error := True;
-      The_Data.Mount.Flags.Is_Connected := False;
+      Set_Error;
     end Set;
 
 
