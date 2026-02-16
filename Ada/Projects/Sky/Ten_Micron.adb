@@ -39,6 +39,13 @@ package body Ten_Micron is
   end Is_Expert_Mode;
 
 
+  function Is_Simulation_Mode return Boolean is
+  begin
+    return Is_In_Simulation_Mode;
+  end Is_Simulation_Mode;
+
+
+
   procedure Set_Status (Item : State) is
   begin
     Last_State := Item;

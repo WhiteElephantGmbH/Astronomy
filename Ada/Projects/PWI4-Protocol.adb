@@ -770,6 +770,8 @@ package body PWI4.Protocol is
       case Next_Identifier is
       when I_Exists =>
         Log_Write ("dome.exists=" & Next_Value);
+      when I_Is_Connected =>
+        Log_Write ("dome.is_connected=" & Next_Value);
       when others =>
         raise Parsing_Error;
       end case;

@@ -29,7 +29,8 @@ package Focus is
 
   type Status is (No_Focuser, Undefined, Starting, Positioning, Capturing, Evaluated, Focused, Failed);
 
-  procedure Start (Device : Focuser.Object_Access);
+  procedure Start (Device       : Focuser.Object_Access;
+                   Is_Simulated : Boolean := False);
 
   function Actual_State return Status;
 
@@ -57,7 +58,7 @@ private
 
   package Log is new Traces (Id);
 
-  subtype HFD_Sample_Count is Natural range 5 .. 11;
+  subtype HFD_Sample_Count is Natural range 5 .. 13;
 
   subtype Step is Integer range -10000 .. 10000;
 
@@ -70,7 +71,7 @@ private
   The_Position_Step  : Step := 100;
   The_Tolerance      : Distance := 0;
   The_Grid_Size      : Camera.Square_Size := 1000;
-  
+
   function Minimum_Start_Position return Distance;
 
   Focus_Error : exception;

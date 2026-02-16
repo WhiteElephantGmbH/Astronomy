@@ -219,7 +219,7 @@ package body Telescope is
   procedure Start (Update_Handler : Information_Update_Handler) is
   begin
     Camera.Start;
-    Focus.Start (Focuser.IRF90.New_Device);
+    Focus.Start (Focuser.IRF90.New_Device, Cdk_700.Is_Simulated);
     Signal_Information_Update := Update_Handler;
     Input.Open (Execute'access);
     Control := new Control_Task;

@@ -34,11 +34,8 @@ with Sensitivity;
 with Stellarium.Parameter;
 with Sun.Parameter;
 with Ten_Micron.Parameter;
-with Traces;
 
 package body Parameter is
-
-  package Log is new Traces ("Parameter");
 
   Filename : constant String := Application.Composure (Application.Name, "ini");
 
@@ -88,8 +85,7 @@ package body Parameter is
     exception
     when Error.Occurred =>
       raise;
-    when Item: others =>
-      Log.Termination (Item);
+    when others =>
       Ada.Text_IO.Delete (The_File);
       Error.Raise_With ("Internal Error - creating default parameters");
     end Create_Default_Parameters;

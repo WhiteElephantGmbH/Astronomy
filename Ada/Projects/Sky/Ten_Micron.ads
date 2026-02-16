@@ -104,6 +104,8 @@ package Ten_Micron is
 
   function Is_Expert_Mode return Boolean;
 
+  function Is_Simulation_Mode return Boolean;
+
   procedure Startup_If_Disconnected;
 
   procedure Define (The_Air_Pressure : Refraction.Hectopascal);
@@ -173,8 +175,9 @@ private
 
   package Log is new Traces (Id);
 
-  Is_In_Expert_Mode  : Boolean;
-  The_Server_Address : Network.Ip_Address;
-  The_Server_Port    : Network.Port_Number;
+  Is_In_Expert_Mode     : Boolean;
+  Is_In_Simulation_Mode : Boolean;
+  The_Server_Address    : Network.Ip_Address;
+  The_Server_Port       : Network.Port_Number;
 
 end Ten_Micron;

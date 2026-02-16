@@ -117,7 +117,6 @@ package body PWI4 is
   function Executed (Item : String) return Boolean is
     Url : constant String := "http://" & The_Ip_Address_And_Port;
   begin
-    Log.Write ("Execute " & Item);
     declare
       Data   : constant AWS.Response.Data := AWS.Client.Get (Url & '/' & Item);
       Status : constant AWS.Messages.Status_Code := AWS.Response.Status_Code (Data);
@@ -156,6 +155,7 @@ package body PWI4 is
 
   procedure Execute (Command : String) is
   begin
+    Log.Write ("Execute " & Command);
     if not Executed (Command) then
       Log.Error (Command & "not Executed");
     end if;

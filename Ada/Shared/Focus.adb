@@ -34,12 +34,15 @@ package body Focus is
 
   end Control;
 
-  The_Control : access Control;
-  The_Focuser : Focuser.Object_Access;
+  The_Control   : access Control;
+  The_Focuser   : Focuser.Object_Access;
+  Is_Simulation : Boolean;
 
-  procedure Start (Device : Focuser.Object_Access) is
+  procedure Start (Device       : Focuser.Object_Access;
+                   Is_Simulated : Boolean := False) is
   begin
     The_Focuser := Device;
+    Is_Simulation := Is_Simulated;
     The_Control := new Control;
   end Start;
 
@@ -201,12 +204,13 @@ package body Focus is
     end Start_Evaluation;
 
 
-    --Simulated_HFD : constant Evaluation.Vektor := [500, 300, 200, 100, 200, 300, 400];
-
     procedure Evaluate_Position is
-    --Actual_HFD      : constant Diameter := Simulated_HFD(The_Index + 1);
-      Actual_HFD      : constant Diameter := Focus_Data.Evaluation.HFD;
+
       Actual_Position : constant Distance := The_Position;
+
+      Simulated_HFD : constant Evaluation.Vektor := [700, 600, 500, 400, 300, 200, 100, 200, 300, 400, 500, 600, 700];
+      Actual_HFD    : constant Diameter
+                    := (if Is_Simulation then Simulated_HFD(The_Index + 1) else Focus_Data.Evaluation.HFD);
     begin
       if The_Index = The_HFD'last then
         Raise_Error ("Focus position not found");

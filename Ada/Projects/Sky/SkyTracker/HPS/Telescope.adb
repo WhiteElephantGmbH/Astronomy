@@ -118,7 +118,7 @@ package body Telescope is
   begin
     Camera.Start;
     if Focuser_Client.Server_Exists then
-      Focus.Start (Focuser.HPS.New_Device);
+      Focus.Start (Focuser.HPS.New_Device, Ten_Micron.Is_Simulation_Mode);
       Handbox.Start (Handbox.HPS.Handle'access);
     end if;
     Input.Open (Execute'access);
