@@ -462,37 +462,42 @@ package body Control is
 
   begin -- Start
     if (not Os.Is_Osx) and then (not Os.Application.Is_First_Instance) then
-    --
-    -- Note: This test is to prevent this application from being run more than once concurrently.
-    --       If we mandate that this application is always run from within an OSX .app bundle then
-    --       OSX will enforce this and therefore this test is not required.
-    --       In this case it is better not to attempt detecting first instance because if the application
-    --       is terminated by force quit the mutex is not released but remains until the host is rebooted.
-    --
-      User.Show_Error (Application.Name & " already running");
-      return;
+      --
+      -- Note: This test is to prevent this application from being run more than once concurrently.
+      --       If we mandate that this application is always run from within an OSX .app bundle then
+      --       OSX will enforce this and therefore this test is not required.
+      --       In this case it is better not to attempt detecting first instance because if the application
+      --       is terminated by force quit the mutex is not released but remains until the host is rebooted.
+      --
+      Error.Raise_With (Application.Name & " already running");
     end if;
     Os.Process.Set_Priority_Class (Os.Process.Realtime);
     Parameter.Read;
-    Start_Stellarium_Server;
-    Read_Data;
-    Telescope.Start (Information_Update_Handler'access);
-    Targets.Start (Clear    => User.Clear_Targets'access,
-                   Define   => User.Define'access,
-                   Update   => User.Update_Targets'access,
-                   Arriving => Neo.Is_Arriving'access);
-    User.Execute (Startup'access,
-                  User_Action_Handler'access,
-                  Termination'access);
-    Stellarium.Close;
-    Stellarium.Shutdown;
+    begin
+      Start_Stellarium_Server;
+      Read_Data;
+      Telescope.Start (Information_Update_Handler'access);
+      Targets.Start (Clear    => User.Clear_Targets'access,
+                     Define   => User.Define'access,
+                     Update   => User.Update_Targets'access,
+                     Arriving => Neo.Is_Arriving'access);
+      User.Execute (Startup'access,
+                    User_Action_Handler'access,
+                    Termination'access);
+      Stellarium.Close;
+      Stellarium.Shutdown;
+    exception
+    when others =>
+      Stellarium.Close;
+      Stellarium.Shutdown;
+      raise;
+    end;
   exception
   when Error.Occurred =>
-    Stellarium.Close;
-    Stellarium.Shutdown;
-    User.Show_Error (Error.Message);
+    User.Show_Error;
   when Occurrence: others =>
     Log.Termination (Occurrence);
+    User.Show_Error ("Fatal Error");
   end Start;
 
 end Control;

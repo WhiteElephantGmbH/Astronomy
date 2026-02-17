@@ -32,7 +32,7 @@ package User is
 
   subtype Percent is Progress.Percent;
 
-  procedure Show_Error (The_Text : String := Error.Message);
+  procedure Show_Error (Message : String := Error.Message);
 
   procedure Show (The_Progress : Percent);
 

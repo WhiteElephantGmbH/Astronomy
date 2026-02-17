@@ -684,9 +684,10 @@ package body User is
   end Show_Description;
 
 
-  procedure Show_Error (Image : String) is
+  procedure Show_Error (Message : String := Error.Message) is
   begin
-    Gui.Message_Box (Image);
+    Log.Warning ("Error: " & Message);
+    Gui.Message_Box (Message);
     Gui.Beep;
   end Show_Error;
 

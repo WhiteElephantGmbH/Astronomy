@@ -15,6 +15,7 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with Error;
 with Name;
 with Telescope;
 
@@ -69,6 +70,6 @@ package User is
 
   procedure Show_Description (Image : String);
 
-  procedure Show_Error (Image : String);
+  procedure Show_Error (Message : String := Error.Message);
 
 end User;

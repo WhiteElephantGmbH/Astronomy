@@ -462,6 +462,7 @@ package body Control is
     Action_Handler.Signal_New_Telescope_Data;
   end Information_Update_Handler;
 
+
   procedure Start is
 
     The_Manager : access Manager with Unreferenced;
@@ -524,6 +525,7 @@ package body Control is
     User.Show_Error;
   when Occurrence: others =>
     Log.Termination (Occurrence);
+    User.Show_Error ("Fatal Error");
   end Start;
 
 end Control;

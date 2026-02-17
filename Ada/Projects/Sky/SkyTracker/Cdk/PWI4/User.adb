@@ -182,11 +182,11 @@ package body User is
   end Demo_21_Handler;
 
 
-  procedure Show_Error (The_Text : String := Error.Message) is
+  procedure Show_Error (Message : String := Error.Message) is
   begin
+    Log.Warning ("Show Error: " & Message);
     Gui.Beep;
-    Gui.Message_Box (The_Text);
-    Log.Warning ("Show Error: " & The_Text);
+    Gui.Message_Box (Message);
   end Show_Error;
 
 
