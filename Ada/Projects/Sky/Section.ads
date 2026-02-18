@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2024 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2024 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -63,7 +63,9 @@ package Section is
 
   function String_Value_Of (Key : String) return String;
 
-  function Value_Of (Key  : String;
-                     Name : String := "") return Integer;
+  function Value_Of (Key     : String;
+                     Name    : String  := "";
+                     Minimum : Integer := Integer'first;
+                     Maximum : Integer := Integer'last) return Integer;
 
 end Section;

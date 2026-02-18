@@ -15,7 +15,6 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Error;
 with Section;
 
 package body Focuser_Client.Parameter is
@@ -27,22 +26,18 @@ package body Focuser_Client.Parameter is
 
 
   function Distance_For (Key : String) return Focal.Distance is
-    Value : constant Integer := Section.Value_Of (Key);
+    Minimum : constant Integer := Integer(Focal.Distance'first);
+    Maximum : constant Integer := Integer(Focal.Distance'last);
   begin
-    return Focal.Distance (Value);
-  exception
-  when others =>
-    Error.Raise_With (Key & Value'image & " out of range");
+    return Focal.Distance(Section.Value_Of (Key, Id, Minimum, Maximum));
   end Distance_For;
 
 
   function Backlash_For (Key : String) return Focal.Backlash is
-    Value : constant Integer := Section.Value_Of (Key);
+    Minimum : constant Integer := Integer(Focal.Backlash'first);
+    Maximum : constant Integer := Integer(Focal.Backlash'last);
   begin
-    return Focal.Backlash (Value);
-  exception
-  when others =>
-    Error.Raise_With (Key & Value'image & " out of range");
+    return Focal.Backlash(Section.Value_Of (Key, Id, Minimum, Maximum));
   end Backlash_For;
 
 

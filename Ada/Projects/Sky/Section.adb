@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2024 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2024 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -216,11 +216,23 @@ package body Section is
   end String_Value_Of;
 
 
-  function Value_Of (Key  : String;
-                     Name : String := "") return Integer is
+  function Value_Of (Key     : String;
+                     Name    : String  := "";
+                     Minimum : Integer := Integer'first;
+                     Maximum : Integer := Integer'last) return Integer is
     Item : constant String := String_Of (Key, Name);
   begin
-    return Integer'value(Image_Of(Item));
+    pragma Assert (Minimum <= Maximum);
+    declare
+      Value : constant Integer := Integer'value(Image_Of(Item));
+    begin
+      if Value > Maximum then
+        Error.Raise_With (">" & Maximum'image);
+      elsif Value < Minimum then
+        Error.Raise_With ("<" & Minimum'image);
+      end if;
+      return Value;
+    end;
   exception
   when others =>
     Error.Raise_With ("Incorrect " & (if Name = "" then "" else Name & " ") & Key & ": <" & Item & ">");

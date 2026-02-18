@@ -61,24 +61,23 @@ package body Focus.Parameter is
 
 
   function Size_For (Key : String) return Camera.Square_Size is
-    Image : constant String := Section.String_Of (Key, Id);
+    Minimum : constant Integer := 500;
+    Maximum : constant Integer := Integer(Camera.Min_With_Or_Height);
   begin
-    return Camera.Square_Size'value (Image);
+    return Camera.Square_Size(Section.Value_Of (Key, Id, Minimum, Maximum));
   exception
+  when Error.Occurred =>
+    raise;
   when others =>
-    Error.Raise_With ("Incorrect Grid Size: " & Image);
+    Error.Raise_With ("Focus Grid Size must be even");
   end Size_For;
 
 
   function Diameter_For (Key : String) return Diameter is
-    Image        : constant String := Section.String_Of (Key, Id);
-    Max_Diameter : constant Diameter := Diameter(The_Grid_Size) / 2;
-    subtype HFD_Diameter is Diameter range Diameter'first .. Max_Diameter;
+    Minimum : constant Integer := 10;
+    Maximum : constant Integer := Integer(The_Grid_Size) / 2;
   begin
-    return HFD_Diameter'value (Image);
-  exception
-  when others =>
-    Error.Raise_With ("Incorrect Diameter (<=" & Max_Diameter'image & "): " & Image);
+    return Diameter(Section.Value_Of (Key, Id, Minimum, Maximum));
   end Diameter_For;
 
 
