@@ -21,11 +21,13 @@ with Section;
 
 package body Focus.Parameter is
 
-  Samples_Key   : constant String := "Samples";
-  Start_At_Key  : constant String := "Start At";
-  Step_Key      : constant String := "Step";
-  Tolerance_Key : constant String := "Tolerance";
-  Grid_Size_Key : constant String := "Grid Size";
+  Samples_Key       : constant String := "Samples";
+  Start_At_Key      : constant String := "Start At";
+  Step_Key          : constant String := "Step";
+  Tolerance_Key     : constant String := "Tolerance";
+  Grid_Size_Key     : constant String := "Grid Size";
+  HFD_Threshold_Key : constant String := "HFD Threshold";
+  Minimum_Delta_Key : constant String := "Minimum Delta";
 
 
   function Distance_For (Key : String) return Distance is
@@ -69,6 +71,18 @@ package body Focus.Parameter is
   end Size_For;
 
 
+  function Diameter_For (Key : String) return Diameter is
+    Image        : constant String := Section.String_Of (Key, Id);
+    Max_Diameter : constant Diameter := Diameter(The_Grid_Size) / 2;
+    subtype HFD_Diameter is Diameter range Diameter'first .. Max_Diameter;
+  begin
+    return HFD_Diameter'value (Image);
+  exception
+  when others =>
+    Error.Raise_With ("Incorrect Diameter (<=" & Max_Diameter'image & "): " & Image);
+  end Diameter_For;
+
+
   procedure Define (Handle : Configuration.File_Handle) is
   begin
     Section.Set (Configuration.Handle_For (Handle, Id));
@@ -86,6 +100,10 @@ package body Focus.Parameter is
       Log.Write (Tolerance_Key & " :" & The_Tolerance'image);
       The_Grid_Size := Size_For (Grid_Size_Key);
       Log.Write (Grid_Size_Key & " :" & The_Grid_Size'image);
+      The_HFD_Threshold  := Diameter_For (HFD_Threshold_Key);
+      Log.Write (HFD_Threshold_Key & " :" & The_HFD_Threshold'image);
+      The_Minimum_Delta := Diameter_For (Minimum_Delta_Key);
+      Log.Write (Minimum_Delta_Key & " :" & The_Minimum_Delta'image);
     end if;
   end Define;
 
@@ -93,11 +111,13 @@ package body Focus.Parameter is
   procedure Defaults (Put : access procedure (Item : String)) is
   begin
     Put ("[" & Id & "]");
-    Put (Samples_Key & "   =" & HFD_Sample_Count'first'image);
-    Put (Start_At_Key & "  = 6000.0");
-    Put (Step_Key & "      = 50.0");
-    Put (Tolerance_Key & " = 0.5");
-    Put (Grid_Size_Key & " = 1000");
+    Put (Samples_Key & "       =" & HFD_Sample_Count'last'image);
+    Put (Start_At_Key & "      = 6000.0");
+    Put (Step_Key & "          = 50.0");
+    Put (Tolerance_Key & "     = 0.5");
+    Put (Grid_Size_Key & "     = 1000");
+    Put (HFD_Threshold_Key & " = 100");
+    Put (Minimum_Delta_Key & " = 25");
   end Defaults;
 
 end Focus.Parameter;

@@ -58,7 +58,7 @@ private
 
   package Log is new Traces (Id);
 
-  subtype HFD_Sample_Count is Natural range 5 .. 13;
+  subtype HFD_Sample_Count is Positive range 5 .. 17;
 
   subtype Step is Integer range -10000 .. 10000;
 
@@ -71,8 +71,13 @@ private
   The_Position_Step  : Step := 100;
   The_Tolerance      : Distance := 0;
   The_Grid_Size      : Camera.Square_Size := 1000;
+  The_HFD_Threshold  : Diameter := 100;
+  The_Minimum_Delta  : Diameter := 25;
+  Is_Simulation      : Boolean := False;
 
   function Minimum_Start_Position return Distance;
+
+  function Simulated_HFD return Diameter;
 
   Focus_Error : exception;
 

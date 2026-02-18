@@ -34,9 +34,8 @@ package body Focus is
 
   end Control;
 
-  The_Control   : access Control;
-  The_Focuser   : Focuser.Object_Access;
-  Is_Simulation : Boolean;
+  The_Control : access Control;
+  The_Focuser : Focuser.Object_Access;
 
   procedure Start (Device       : Focuser.Object_Access;
                    Is_Simulated : Boolean := False) is
@@ -105,14 +104,16 @@ package body Focus is
   -- Control --
   -------------
 
+  The_Index : Positive; -- used in simulation;
+
   task body Control is
 
-    HFD_Samples : constant HFD_Sample_Count := The_HFD_Samples;
-    HFD_Delta   : constant Diameter := 100;
-    HFD_Spread  : constant Natural := HFD_Samples / 2;
+    HFD_Samples   : constant HFD_Sample_Count := The_HFD_Samples;
+    HFD_Spread    : constant Positive := HFD_Samples / 2;
+    HFD_Threshold : constant Diameter := The_HFD_Threshold;
+    Minimum_Delta : constant Diameter := The_Minimum_Delta;
 
     The_HFD   : Evaluation.Vektor(1 .. HFD_Samples * Sample_Factor); -- stop after samples * 2
-    The_Index : Natural;
 
     Start_Position : constant Distance := The_Start_Position;
     Tolerance      : constant Distance := The_Tolerance;
@@ -137,13 +138,13 @@ package body Focus is
         if First_Maximum < The_HFD(Index) then
           First_Maximum := The_HFD(Index);
           First_Index := Index;
-        elsif First_Maximum > HFD_Delta then
+        elsif First_Maximum > HFD_Threshold then
           exit;
         end if;
       end loop;
       Log.Write ("First_Maximum:" & First_Maximum'image);
       Log.Write ("First_Index:" & First_Index'image);
-      if First_Maximum <= HFD_Delta then
+      if First_Maximum <= HFD_Threshold then
         return False;
       end if;
       for Index in First_Index .. The_Index loop
@@ -163,7 +164,7 @@ package body Focus is
       Log.Write ("Last_Maximum:" & Last_Maximum'image);
       Log.Write ("Last_Index:" & Last_Index'image);
       return (Minimum_Index - First_Index) >= HFD_Spread and (Last_Index - Minimum_Index) >= HFD_Spread and
-             (First_Maximum - The_Minimum) > HFD_Delta and (Last_Maximum - The_Minimum) > HFD_Delta;
+             (First_Maximum - The_Minimum) > Minimum_Delta and (Last_Maximum - The_Minimum) > Minimum_Delta;
     end Found_Minimum;
 
 
@@ -192,7 +193,7 @@ package body Focus is
 
     procedure Start_Evaluation is
     begin
-      The_Index := 0;
+      The_Index := The_HFD'first;
       First_Index := The_HFD'first;
       The_Position := Start_Position;
       if The_Position = Start_From_Actual then
@@ -205,24 +206,20 @@ package body Focus is
 
 
     procedure Evaluate_Position is
-
       Actual_Position : constant Distance := The_Position;
-
-      Simulated_HFD : constant Evaluation.Vektor := [700, 600, 500, 400, 300, 200, 100, 200, 300, 400, 500, 600, 700];
-      Actual_HFD    : constant Diameter
-                    := (if Is_Simulation then Simulated_HFD(The_Index + 1) else Focus_Data.Evaluation.HFD);
+      Actual_HFD      : constant Diameter := Focus_Data.Evaluation.HFD;
     begin
-      if The_Index = The_HFD'last then
-        Raise_Error ("Focus position not found");
-      end if;
       Log.Write ("Evaluate_Position:" & Actual_Position'image);
-      The_Index := @ + 1;
       The_HFD(The_Index) := Actual_HFD;
       if The_Index >= HFD_Samples and then Found_Minimum then
         The_Position := Focus_Position - Max_Backlash;
         The_Focuser.Move_To (The_Position);
         Focus_Data.Set (Evaluated);
       else
+        if The_Index = The_HFD'last then
+          Raise_Error ("Focus position not found");
+        end if;
+        The_Index := @ + 1;
         The_Position := Actual_Position + Position_Step;
         The_Focuser.Move_To (The_Position);
         Focus_Data.Set (Positioning);
@@ -418,6 +415,19 @@ package body Focus is
       return Minimum_Position;
     end if;
   end Minimum_Start_Position;
+
+
+  function Simulated_HFD return Diameter is
+    Data : constant Evaluation.Vektor
+         := [130, 122, 121, 116, 114, 111, 107, 105, 104, 118, 109, 108, 107, 108, 105, 115, 125, 128, 130, 138, 143];
+  begin
+    if not Is_Simulation then
+      raise Program_Error;
+    elsif The_Index <= Data'last then
+      return Data(The_Index);
+    end if;
+    return Data(Data'last);
+  end Simulated_HFD;
 
 
   protected body Focus_Data is

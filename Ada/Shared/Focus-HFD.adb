@@ -25,7 +25,6 @@ package body Focus.HFD is
 
   use type Camera.Pixel;
 
-
   procedure Evaluate (Grid : Camera.Raw_Grid) is
     use type Camera.Raw_Grid;
     use type Camera.Rows;
@@ -169,6 +168,9 @@ package body Focus.HFD is
         end loop;
         Center := (Column => Camera.Columns (Column_Sum / The_Count),
                    Row    => Camera.Rows (Row_Sum / The_Count));
+        if Is_Simulation then
+          return Simulated_HFD;
+        end if;
         return Diameter (2.0 * NF.Sqrt (Float(The_Count) / Pi));
       end Evaluated_Half_Flux_Diameter;
 
