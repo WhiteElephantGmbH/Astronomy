@@ -38,9 +38,11 @@ package Focus is
 
   procedure Evaluate;
 
+  HFD_Not_Found : constant Diameter := 0;
+
   type Result is record
     Half_Flux : Camera.Pixel := 0;
-    HFD       : Diameter := 0;
+    HFD       : Diameter := HFD_Not_Found;
     Position  : Distance := 0;
   end record;
 
