@@ -209,6 +209,11 @@ package body Focus is
       Actual_Position : constant Distance := The_Position;
       Actual_HFD      : constant Diameter := Focus_Data.Evaluation.HFD;
     begin
+      if Actual_HFD = Focus.HFD_Not_Found then
+        Log.Warning ("HFD not found at" & Actual_Position'image);
+        Focus_Data.Set (Positioning);
+        return;
+      end if;
       Log.Write ("Evaluate_Position:" & Actual_Position'image);
       The_HFD(The_Index) := Actual_HFD;
       if The_Index >= HFD_Samples and then Found_Minimum then

@@ -163,9 +163,6 @@ package body Focus.HFD is
         Row_Sum      : Huge_Natural := 0;
         The_Count    : Huge_Natural := 0;
       begin
-        if Is_Simulation then
-          return Simulated_HFD;
-        end if;
         if not Is_Square then
           return HFD_Not_Found;
         end if;
@@ -204,6 +201,9 @@ package body Focus.HFD is
           HF_Diameter : constant Diameter := Diameter (2.0 * NF.Sqrt (Float(The_Count) / Pi));
         begin
           if Is_In_Grid (HF_Diameter, Natural(Center.Column)) and Is_In_Grid (HF_Diameter, Natural(Center.Row)) then
+            if Is_Simulation then
+              return Simulated_HFD;
+            end if;
             return HF_Diameter;
           end if;
           return HFD_Not_Found;
