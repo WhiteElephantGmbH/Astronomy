@@ -619,7 +619,9 @@ package body User is
         end if;
       end;
       Show_Camera_Information;
-      Show_Focus_Information;
+      if Focuser_Client.Server_Exists then
+        Show_Focus_Information;
+      end if;
     end case;
   end Show;
 
@@ -991,26 +993,28 @@ package body User is
                                         Is_Modifiable  => False,
                                         The_Size       => Text_Size,
                                         The_Title_Size => Title_Size);
-        Focuser_Model_Box := Gui.Create (Setup_Page, "Focuser", "",
+        if Focuser_Client.Server_Exists then
+          Focuser_Model_Box := Gui.Create (Setup_Page, "Focuser", "",
+                                           Is_Modifiable  => False,
+                                           The_Size       => Text_Size,
+                                           The_Title_Size => Title_Size);
+          Focus_State_Box := Gui.Create (Setup_Page, "Focus State", "",
                                          Is_Modifiable  => False,
                                          The_Size       => Text_Size,
                                          The_Title_Size => Title_Size);
-        Focus_State_Box := Gui.Create (Setup_Page, "Focus State", "",
+          Half_Flux_Box := Gui.Create (Setup_Page, "Half Flux", "",
                                        Is_Modifiable  => False,
                                        The_Size       => Text_Size,
                                        The_Title_Size => Title_Size);
-        Half_Flux_Box := Gui.Create (Setup_Page, "Half Flux", "",
-                                     Is_Modifiable  => False,
-                                     The_Size       => Text_Size,
-                                     The_Title_Size => Title_Size);
-        Focus_HFD_Box := Gui.Create (Setup_Page, "Focus HFD", "",
-                                     Is_Modifiable  => False,
-                                     The_Size       => Text_Size,
-                                     The_Title_Size => Title_Size);
-        Focus_Position_Box := Gui.Create (Setup_Page, "Auto Focus", "",
-                                          Is_Modifiable  => False,
-                                          The_Size       => Text_Size,
-                                          The_Title_Size => Title_Size);
+          Focus_HFD_Box := Gui.Create (Setup_Page, "Focus HFD", "",
+                                       Is_Modifiable  => False,
+                                       The_Size       => Text_Size,
+                                       The_Title_Size => Title_Size);
+          Focus_Position_Box := Gui.Create (Setup_Page, "Auto Focus", "",
+                                            Is_Modifiable  => False,
+                                            The_Size       => Text_Size,
+                                            The_Title_Size => Title_Size);
+        end if;
       end Define_Setup_Page;
 
     begin -- Create_Interface

@@ -61,8 +61,8 @@ package body Parameter is
       Language.Parameter.Defaults (Put'access);
       Put ("");
       Ten_Micron.Parameter.Defaults (Put'access, Ip_Address => "192.168.26.180", Port => 3490);
-      Put ("");
-      Focuser_Client.Parameter.Defaults (Put'access);
+      --Put ("");
+      --Focuser_Client.Parameter.Defaults (Put'access);
       Put ("");
       Http_Server.Parameter.Defaults (Put'access, "Handbox_HPS", Port => 9001);
       Put ("");
@@ -70,9 +70,9 @@ package body Parameter is
       Put ("");
       Moon.Parameter.Defaults (Put'access);
       Put ("");
-      Camera.Parameter.Defaults (Put'access, Exposure.Value (4.0), Sensitivity.Value ("6400"));
-      Put ("");
-      Focus.Parameter.Defaults (Put'access);
+      Camera.Parameter.Defaults (Put'access, Exposure.Value (2.0), Sensitivity.Default);
+      --Put ("");
+      --Focus.Parameter.Defaults (Put'access);
       Put ("");
       Picture.Parameter.Defaults (Put'access);
       Put ("");
