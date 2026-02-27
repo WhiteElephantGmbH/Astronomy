@@ -495,7 +495,7 @@ package body Focus is
     procedure Set_Fatal (Item : Exceptions.Occurrence) is
       Message : constant String := Exceptions.Name_Of (Item);
     begin
-      Log.Error (Message);
+      Log.Error (Exceptions.Information_Of (Item));
       Set_Error ("Internal_Error - " & Message);
     end Set_Fatal;
 

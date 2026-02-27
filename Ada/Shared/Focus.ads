@@ -68,6 +68,8 @@ private
 
   Sample_Factor : constant := 2;
 
+  Max_Half_Flux : constant := 8000;
+
   The_HFD_Samples    : HFD_Sample_Count := HFD_Sample_Count'first;
   The_Start_Position : Distance := Start_From_Actual;
   The_Position_Step  : Step := 50;

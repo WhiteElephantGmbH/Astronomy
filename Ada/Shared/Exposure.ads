@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2025 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2025 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -26,6 +26,22 @@ package Exposure is
   type Kind is (From_Camera, Tv_Mode, Timer_Mode);
 
   type Tv is (
+    Tv_30_S,
+    Tv_25_S,
+    Tv_20_S,
+    Tv_15_S,
+    Tv_13_S,
+    Tv_10_S,
+    Tv_8_S,
+    Tv_6_S,
+    Tv_5_S,
+    Tv_4_S,
+    Tv_3_2_S,
+    Tv_2_5_S,
+    Tv_2_S,
+    Tv_1_6_S,
+    Tv_1_3_S,
+    Tv_1_S,
     Tv_0_8_S,
     Tv_0_6_S,
     Tv_0_5_S,
@@ -76,7 +92,8 @@ package Exposure is
 
   function Value (Image : String) return Item;
 
-  function Value (The_Time : Duration) return Item;
+  function Value (The_Time    : Duration;
+                  Force_Timer : Boolean := False) return Item;
 
   function Mode (The_Item : Item) return Kind;
 

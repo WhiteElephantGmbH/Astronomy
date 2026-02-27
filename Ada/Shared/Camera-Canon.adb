@@ -244,6 +244,22 @@ package body Camera.Canon is
       Tv : constant Exposure.Tv := Item.Time_Value;
     begin
       case Tv is
+        when Exposure.Tv_30_S     => return CI.K_TV_30;
+        when Exposure.Tv_25_S     => return CI.K_TV_25;
+        when Exposure.Tv_20_S     => return CI.K_TV_20_S;
+        when Exposure.Tv_15_S     => return CI.K_TV_15;
+        when Exposure.Tv_13_S     => return CI.K_TV_13;
+        when Exposure.Tv_10_S     => return CI.K_TV_10_S;
+        when Exposure.Tv_8_S      => return CI.K_TV_8;
+        when Exposure.Tv_6_S      => return CI.K_TV_6_S;
+        when Exposure.Tv_5_S      => return CI.K_TV_5;
+        when Exposure.Tv_4_S      => return CI.K_TV_4;
+        when Exposure.Tv_3_2_S    => return CI.K_TV_3_2;
+        when Exposure.Tv_2_5_S    => return CI.K_TV_2_5;
+        when Exposure.Tv_2_S      => return CI.K_TV_2;
+        when Exposure.Tv_1_6_S    => return CI.K_TV_1_6;
+        when Exposure.Tv_1_3_S    => return CI.K_TV_1_3;
+        when Exposure.Tv_1_S      => return CI.K_TV_1;
         when Exposure.Tv_0_8_S    => return CI.K_TV_0_8;
         when Exposure.Tv_0_6_S    => return CI.K_TV_0_6;
         when Exposure.Tv_0_5_S    => return CI.K_TV_0_5;
@@ -339,9 +355,9 @@ package body Camera.Canon is
     end Set;
 
 
-    procedure Get (Property    :     CI.Property_Id;
-                   Value       : out CI.Uint32;
-                   Param       :     CI.Int32 := 0)
+    procedure Get (Property :     CI.Property_Id;
+                   Value    : out CI.Uint32;
+                   Param    :     CI.Int32 := 0)
     is
       Val : aliased CI.Uint32;
       use type CI.Uint32;
@@ -665,7 +681,7 @@ package body Camera.Canon is
         begin
           Check ("Get directory item info",
                  CI.Get_Directory_Item_Info (Item     => The_Item,
-                                              The_Info => The_Info'access),
+                                             The_Info => The_Info'access),
                  Logging => False);
 
           if The_Info.Is_Folder /= 0 then

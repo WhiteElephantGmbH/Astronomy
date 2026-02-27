@@ -31,8 +31,7 @@ package body Focus.HFD is
     use type Camera.Columns;
   begin
     if Grid = [] then
-      Set_Error ("No Grid - " & Camera.Error_Message);
-      return;
+      Raise_Error ("No Grid - " & Camera.Error_Message);
     end if;
     declare
       subtype Huge_Natural is Long_Long_Integer range 0 .. Long_Long_Integer'last;
@@ -53,7 +52,7 @@ package body Focus.HFD is
           return The_HF_Threshold;
         end if;
         The_Half_Flux := Camera.Pixel(The_Sum / Huge_Natural(The_Count));
-        if The_Half_Flux > Camera.Pixel'last / 2 - The_HF_Threshold then
+        if The_Half_Flux > Max_Half_Flux - The_HF_Threshold then
           Raise_Error ("Half flux is too bright:" & The_Half_Flux'image);
         end if;
         return The_Half_Flux + The_HF_Threshold;

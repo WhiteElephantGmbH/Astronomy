@@ -243,7 +243,8 @@ package body Camera is
 
     procedure Set_Fatal (Item : Exceptions.Occurrence) is
     begin
-      Set_Error ("Internal_Error - " & Exceptions.Name_Of (Item));
+      Log.Error (Exceptions.Information_Of (Item));
+      Set_Error ("Internal_Error - " & Exceptions.Information_Of (Item));
     end Set_Fatal;
 
 

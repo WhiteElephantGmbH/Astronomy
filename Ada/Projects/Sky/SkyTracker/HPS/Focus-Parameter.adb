@@ -26,7 +26,7 @@ package body Focus.Parameter is
   Tolerance_Key     : constant String := "Tolerance";
   Grid_Size_Key     : constant String := "Grid Size";
   HF_Threshold_Key  : constant String := "HF Threshold";
-  Trigger_Level_Key : constant String := "Trigger_Level";
+  Trigger_Level_Key : constant String := "Trigger Level";
   Minimum_Delta_Key : constant String := "Minimum Delta";
 
 
