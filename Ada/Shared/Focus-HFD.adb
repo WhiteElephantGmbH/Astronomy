@@ -38,9 +38,10 @@ package body Focus.HFD is
       subtype Huge_Natural is Long_Long_Integer range 0 .. Long_Long_Integer'last;
 
       function Evaluated_Half_Flux return Camera.Pixel is
-        Black_Level : constant := 0;
-        The_Sum     : Huge_Natural := 0;
-        The_Count   : Natural := 0;
+        Black_Level   : constant := 0;
+        The_Sum       : Huge_Natural := 0;
+        The_Count     : Natural := 0;
+        The_Half_Flux : Camera.Pixel;
       begin
         for Value of Grid loop
           if Value > Black_Level then
@@ -49,9 +50,13 @@ package body Focus.HFD is
           end if;
         end loop;
         if The_Count = 0 then
-          return 0;
+          return The_HF_Threshold;
         end if;
-        return Camera.Pixel (The_Sum / Huge_Natural(The_Count));
+        The_Half_Flux := Camera.Pixel(The_Sum / Huge_Natural(The_Count));
+        if The_Half_Flux > Camera.Pixel'last / 2 - The_HF_Threshold then
+          Raise_Error ("Half flux is too bright:" & The_Half_Flux'image);
+        end if;
+        return The_Half_Flux + The_HF_Threshold;
       end Evaluated_Half_Flux;
 
       Half_Flux : constant Camera.Pixel := Evaluated_Half_Flux;
@@ -100,8 +105,8 @@ package body Focus.HFD is
         for Column in Grid'range(2) loop
           for Row in Grid'range(1) loop
             The_Right_Angle := Right_Angle_At (Row, Column);
-            if The_Right_Angle.Column_Size > Max_Right_Angle.Column_Size and
-              The_Right_Angle.Row_Size > Max_Right_Angle.Row_Size
+            if The_Right_Angle.Column_Size + The_Right_Angle.Row_Size >
+               Max_Right_Angle.Column_Size + Max_Right_Angle.Row_Size
             then
               Max_Right_Angle := The_Right_Angle;
             end if;
@@ -222,6 +227,8 @@ package body Focus.HFD is
       Focus_Data.Set (Half_Flux_Diameter);
     end;
   exception
+  when Focus_Error =>
+    null;
   when Occurrence: others =>
     Focus_Data.Set_Fatal (Occurrence);
   end Evaluate;

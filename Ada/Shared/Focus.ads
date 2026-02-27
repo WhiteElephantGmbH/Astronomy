@@ -70,10 +70,11 @@ private
 
   The_HFD_Samples    : HFD_Sample_Count := HFD_Sample_Count'first;
   The_Start_Position : Distance := Start_From_Actual;
-  The_Position_Step  : Step := 100;
+  The_Position_Step  : Step := 50;
   The_Tolerance      : Distance := 0;
   The_Grid_Size      : Camera.Square_Size := 1000;
-  The_HFD_Threshold  : Diameter := 100;
+  The_HF_Threshold   : Camera.Pixel := 100;
+  The_Trigger_Level  : Diameter := 80;
   The_Minimum_Delta  : Diameter := 25;
   Is_Simulation      : Boolean := False;
 

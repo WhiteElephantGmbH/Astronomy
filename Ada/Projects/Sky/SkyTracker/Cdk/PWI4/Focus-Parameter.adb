@@ -26,7 +26,8 @@ package body Focus.Parameter is
   Step_Key          : constant String := "Step";
   Tolerance_Key     : constant String := "Tolerance";
   Grid_Size_Key     : constant String := "Grid Size";
-  HFD_Threshold_Key : constant String := "HFD Threshold";
+  HF_Threshold_Key  : constant String := "HF Threshold";
+  Trigger_Level_Key : constant String := "Trigger_Level";
   Minimum_Delta_Key : constant String := "Minimum Delta";
 
 
@@ -74,6 +75,13 @@ package body Focus.Parameter is
   end Size_For;
 
 
+  function Pixel_For (Key : String) return Camera.Pixel is
+    Minimum : constant Integer := 0;
+    Maximum : constant Integer := 500;
+  begin
+    return Camera.Pixel(Section.Value_Of (Key, Id, Minimum, Maximum));
+  end Pixel_For;
+
 
   function Diameter_For (Key : String) return Diameter is
     Minimum : constant Integer := 10;
@@ -88,22 +96,24 @@ package body Focus.Parameter is
     Section.Set (Configuration.Handle_For (Handle, Id));
     if Section.Exists then
       The_HFD_Samples := Count_For (Samples_Key);
-      Log.Write (Samples_Key & " :" & The_HFD_Samples'image);
+      Log.Write (Samples_Key & ":" & The_HFD_Samples'image);
       The_Start_Position := Distance_For (Start_At_Key);
-      Log.Write (Start_At_Key & " :" & The_Start_Position 'image);
+      Log.Write (Start_At_Key & ":" & The_Start_Position 'image);
       The_Position_Step := Step_For (Step_Key);
-      Log.Write (Step_Key & " :" & The_Position_Step'image);
+      Log.Write (Step_Key & ":" & The_Position_Step'image);
       if The_Start_Position < Minimum_Start_Position then
         Error.Raise_With ("Focusing start to low (<" & Minimum_Start_Position'image & "):" & The_Start_Position'image);
       end if;
       The_Tolerance := Distance_For (Tolerance_Key);
-      Log.Write (Tolerance_Key & " :" & The_Tolerance'image);
+      Log.Write (Tolerance_Key & ":" & The_Tolerance'image);
       The_Grid_Size := Size_For (Grid_Size_Key);
-      Log.Write (Grid_Size_Key & " :" & The_Grid_Size'image);
-      The_HFD_Threshold  := Diameter_For (HFD_Threshold_Key);
-      Log.Write (HFD_Threshold_Key & " :" & The_HFD_Threshold'image);
+      Log.Write (Grid_Size_Key & ":" & The_Grid_Size'image);
+      The_HF_Threshold := Pixel_For (HF_Threshold_Key);
+      Log.Write (HF_Threshold_Key & ":" & The_HF_Threshold'image);
+      The_Trigger_Level := Diameter_For (Trigger_Level_Key);
+      Log.Write (Trigger_Level_Key & ":" & The_Trigger_Level'image);
       The_Minimum_Delta := Diameter_For (Minimum_Delta_Key);
-      Log.Write (Minimum_Delta_Key & " :" & The_Minimum_Delta'image);
+      Log.Write (Minimum_Delta_Key & ":" & The_Minimum_Delta'image);
     end if;
   end Define;
 
@@ -113,10 +123,11 @@ package body Focus.Parameter is
     Put ("[" & Id & "]");
     Put (Samples_Key & "       =" & HFD_Sample_Count'last'image);
     Put (Start_At_Key & "      = 6000.0");
-    Put (Step_Key & "          = 50.0");
+    Put (Step_Key & "          = 25.0");
     Put (Tolerance_Key & "     = 0.5");
     Put (Grid_Size_Key & "     = 1000");
-    Put (HFD_Threshold_Key & " = 100");
+    Put (HF_Threshold_Key & "  = 100");
+    Put (Trigger_Level_Key & " = 80");
     Put (Minimum_Delta_Key & " = 25");
   end Defaults;
 

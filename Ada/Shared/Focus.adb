@@ -110,7 +110,7 @@ package body Focus is
 
     HFD_Samples   : constant HFD_Sample_Count := The_HFD_Samples;
     HFD_Spread    : constant Positive := HFD_Samples / 2;
-    HFD_Threshold : constant Diameter := The_HFD_Threshold;
+    Trigger_Level : constant Diameter := The_Trigger_Level;
     Minimum_Delta : constant Diameter := The_Minimum_Delta;
 
     The_HFD   : Evaluation.Vektor(1 .. HFD_Samples * Sample_Factor); -- stop after samples * 2
@@ -138,13 +138,13 @@ package body Focus is
         if First_Maximum < The_HFD(Index) then
           First_Maximum := The_HFD(Index);
           First_Index := Index;
-        elsif First_Maximum > HFD_Threshold then
+        elsif First_Maximum > Trigger_Level then
           exit;
         end if;
       end loop;
       Log.Write ("First_Maximum:" & First_Maximum'image);
       Log.Write ("First_Index:" & First_Index'image);
-      if First_Maximum <= HFD_Threshold then
+      if First_Maximum <= Trigger_Level then
         return False;
       end if;
       for Index in First_Index .. The_Index loop
