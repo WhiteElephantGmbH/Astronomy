@@ -66,7 +66,7 @@ package body Focus.Evaluation is
     Best_E : REAL := Error (Start_Position, Position_Step, HFD_Array, X0, A, B);
 
   begin
-    Log.Write ("Best_Of: " & HFD_Array'image);
+    Log.Write ("Samples: " & HFD_Array'image);
     for Unused in 1 .. 200 loop
       declare
         Try_X0 : constant REAL := X0 + Inc;

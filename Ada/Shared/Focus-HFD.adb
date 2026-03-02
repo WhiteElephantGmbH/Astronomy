@@ -111,8 +111,8 @@ package body Focus.HFD is
             end if;
           end loop;
         end loop;
-        Log.Write ("Max Right Angle - Column Size:" & Max_Right_Angle.Column_Size'image &
-                                  " - Row Size:" & Max_Right_Angle.Row_Size'image);
+        Log.Write ("Maximum right angle - Column size:" & Max_Right_Angle.Column_Size'image &
+                                      " - Row size:" & Max_Right_Angle.Row_Size'image);
         return Max_Right_Angle;
       end Evaluated_Max_Rigth_Angle;
 
@@ -219,9 +219,9 @@ package body Focus.HFD is
       Half_Flux_Diameter : constant Diameter := Evaluated_Half_Flux_Diameter (The_Center);
 
     begin
-      Log.Write ("Half Flux:" & Half_Flux'image);
+      Log.Write ("Half flux:" & Half_Flux'image);
       Focus_Data.Set (Half_Flux);
-      Log.Write ("Half Flux Diameter:" & Half_Flux_Diameter'image);
+      Log.Write ("Half flux diameter:" & Half_Flux_Diameter'image);
       Log.Write ("Center - Row:" & The_Center.Row'image & " - Column:" & The_Center.Column'image);
       Focus_Data.Set (Half_Flux_Diameter);
     end;

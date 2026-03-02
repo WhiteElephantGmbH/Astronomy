@@ -19,7 +19,9 @@ with Ada.Containers.Doubly_Linked_Lists;
 with Angle;
 with Configuration;
 with Earth;
+with Exposure;
 with Network;
+with Sensitivity;
 
 package Section is
 
@@ -48,6 +50,9 @@ package Section is
                         Lower_Limit : Duration := 0.0;
                         Upper_Limit : Duration) return Duration;
 
+  function Exposure_Of (Key  : String;
+                        Name : String) return Exposure.Item;
+
   function Filename_Of (Key  : String;
                         Name : String := "") return String;
 
@@ -57,6 +62,9 @@ package Section is
   function Ip_Address_For (Name : String) return Network.Ip_Address;
 
   function Port_For (Name : String) return Network.Port_Number;
+
+  function Sensitivity_Of (Key  : String;
+                           Name : String) return Sensitivity.Item;
 
   function String_Of (Key  : String;
                       Name : String := "") return String;

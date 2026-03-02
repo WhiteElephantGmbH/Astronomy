@@ -93,6 +93,7 @@ package Exposure is
   function Value (Image : String) return Item;
 
   function Value (The_Time    : Duration;
+                  Is_Exact    : Boolean;
                   Force_Timer : Boolean := False) return Item;
 
   function Mode (The_Item : Item) return Kind;

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                               (c) 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                           (c) 2024 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                      *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -49,7 +49,7 @@ package body Fits is
       for Unused_Count in 1 .. 3 loop
         begin
           Fits_Io.Open (The_File, Fits_Io.In_File, Filename);
-         return True;
+          return True;
         exception
         when Ada.IO_Exceptions.Use_Error =>
           Log.Write ("Retry opening " & Filename);

@@ -72,7 +72,7 @@ package body Parameter is
       Put ("");
       Clock.Parameter.Defaults (Put'access);
       Put ("");
-      Camera.Parameter.Defaults (Put'access, Exposure.Value (4.0), Sensitivity.Value ("6400"));
+      Camera.Parameter.Defaults (Put'access, Exposure.Value ("4"), Sensitivity.Value ("6400"));
       Put ("");
       Focus.Parameter.Defaults (Put'access);
       Put ("");

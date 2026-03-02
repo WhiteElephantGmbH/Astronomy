@@ -146,6 +146,17 @@ package body Section is
   end Duration_Of;
 
 
+  function Exposure_Of (Key  : String;
+                        Name : String) return Exposure.Item is
+    Image : constant String := String_Of (Key, Name);
+  begin
+    return Exposure.Value (Image);
+  exception
+  when others =>
+    Error.Raise_With ("Incorrect " & Name & " " & Key & ": <" & Image & ">" );
+  end Exposure_Of;
+
+
   function Filename_Of (Key  : String;
                         Name : String := "") return String is
     Filename : constant String := String_Of (Key, Name);
@@ -194,6 +205,17 @@ package body Section is
   when others =>
     Error.Raise_With (Name & " port number" & Value'image & " out of range");
   end Port_For;
+
+
+  function Sensitivity_Of (Key  : String;
+                           Name : String) return Sensitivity.Item is
+    Image : constant String := String_Of (Key, Name);
+  begin
+    return Sensitivity.Value (Image);
+  exception
+  when others =>
+    Error.Raise_With ("Incorrect " & Name & " " & Key & ": <" & Image & ">" );
+  end Sensitivity_Of;
 
 
   function String_Of (Key  : String;

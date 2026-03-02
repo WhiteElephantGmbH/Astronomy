@@ -20,6 +20,7 @@ with Text;
 package body Exposure is
 
   function Value (Image : String) return Item is
+    Is_Exact     : constant Boolean := not Text.Found ('.', Image);
     Parts        : constant Text.Strings := Text.Strings_Of (Image, Separator => '/');
     The_Duration : Duration;
     Force_Timer  : Boolean := False;
@@ -31,12 +32,13 @@ package body Exposure is
       Force_Timer := Text.Found ('.', Image);
     end if;
     return The_Item : Item do
-      The_Item := Value (The_Duration, Force_Timer);
+      The_Item := Value (The_Duration, Is_Exact, Force_Timer);
     end return;
   end Value;
 
 
   function Value (The_Time    : Duration;
+                  Is_Exact    : Boolean;
                   Force_Timer : Boolean := False) return Item is
     Tus      : constant Natural := Natural(The_Time * 1_000_000.0); -- in Microseconds
     The_Tv   : Tv;
@@ -167,6 +169,9 @@ package body Exposure is
     when 0_000_031 =>
       The_Tv := TV_D_32000_S;
     when others =>
+      if Is_Exact then
+        raise Constraint_Error;
+      end if;
       The_Item.Mode := Timer_Mode;
       return The_Item;
     end case;

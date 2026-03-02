@@ -120,7 +120,9 @@ package body Focus is
     Position_Step  : constant Step := The_Position_Step;
     Max_Backlash   : constant Step := (Position_Step / abs Position_Step) * Step(Focal.Backlash'last);
 
-    Grid_Size : constant Camera.Square_Size := The_Grid_Size;
+    Camera_Grid_Size   : constant Camera.Square_Size := The_Grid_Size;
+    Camera_Exposure    : constant Exposure.Item := The_Exposure;
+    Camera_Sensitivity : constant Sensitivity.Item := The_Sensitivity;
 
     First_Index   : Positive;
     Minimum_Index : Positive;
@@ -132,8 +134,6 @@ package body Focus is
       Last_Maximum  : Diameter := Diameter'first;
       Last_Index    : Natural;
     begin
-      Log.Write ("First_Index:" & First_Index'image);
-      Log.Write ("The_Index:" & The_Index'image);
       for Index in First_Index .. The_Index loop
         if First_Maximum < The_HFD(Index) then
           First_Maximum := The_HFD(Index);
@@ -142,8 +142,8 @@ package body Focus is
           exit;
         end if;
       end loop;
-      Log.Write ("First_Maximum:" & First_Maximum'image);
-      Log.Write ("First_Index:" & First_Index'image);
+      Log.Write ("First maximum:" & First_Maximum'image);
+      Log.Write ("First maximum index:" & First_Index'image);
       if First_Maximum <= Trigger_Level then
         return False;
       end if;
@@ -153,18 +153,34 @@ package body Focus is
           Minimum_Index := Index;
         end if;
       end loop;
-      Log.Write ("The_Minimum:" & The_Minimum'image);
-      Log.Write ("Minimum_Index:" & Minimum_Index'image);
+      Log.Write ("Minimum:" & The_Minimum'image);
+      Log.Write ("Minimum index:" & Minimum_Index'image);
       for Index in Minimum_Index .. The_Index loop
         if Last_Maximum < The_HFD(Index) then
           Last_Maximum := The_HFD(Index);
           Last_Index := Index;
         end if;
       end loop;
-      Log.Write ("Last_Maximum:" & Last_Maximum'image);
-      Log.Write ("Last_Index:" & Last_Index'image);
-      return (Minimum_Index - First_Index) >= HFD_Spread and (Last_Index - Minimum_Index) >= HFD_Spread and
-             (First_Maximum - The_Minimum) > Minimum_Delta and (Last_Maximum - The_Minimum) > Minimum_Delta;
+      Log.Write ("Last maximum:" & Last_Maximum'image);
+      Log.Write ("Last maximum index:" & Last_Index'image);
+      if Last_Index - Minimum_Index >= HFD_Spread then
+        declare
+          First_Spread : constant Natural := Minimum_Index - First_Index;
+        begin
+          if First_Spread >= HFD_Spread then
+            declare
+              First_Delta : constant Diameter := First_Maximum - The_Minimum;
+            begin
+              if First_Delta >= Minimum_Delta then
+                return Last_Maximum - The_Minimum >= Minimum_Delta;
+              end if;
+              Raise_Error ("Focus: Delta too small:" & First_Delta'image);
+            end;
+          end if;
+          Raise_Error ("Focus: Not enough samples between first maximum and minimum:" & First_Spread'image);
+        end;
+      end if;
+      return False;
     end Found_Minimum;
 
 
@@ -178,7 +194,7 @@ package body Focus is
                                   HFD_Array      => The_HFD(First .. Last));
     exception
     when others =>
-      Raise_Error ("Focus calculation failed");
+      Raise_Error ("Focus: Calculation failed");
     end Focus_Position;
 
 
@@ -214,7 +230,7 @@ package body Focus is
         Focus_Data.Set (Positioning);
         return;
       end if;
-      Log.Write ("Evaluate_Position:" & Actual_Position'image);
+      Log.Write ("Evaluate at position:" & Actual_Position'image);
       The_HFD(The_Index) := Actual_HFD;
       if The_Index >= HFD_Samples and then Found_Minimum then
         The_Position := Focus_Position - Max_Backlash;
@@ -222,7 +238,7 @@ package body Focus is
         Focus_Data.Set (Evaluated);
       else
         if The_Index = The_HFD'last then
-          Raise_Error ("Focus position not found");
+          Raise_Error ("Focus: Position not found");
         end if;
         The_Index := @ + 1;
         The_Position := Actual_Position + Position_Step;
@@ -241,7 +257,7 @@ package body Focus is
     end At_Position;
 
   begin -- Control
-    Log.Write ("start");
+    Log.Write ("Start");
     loop
       select
         accept Start_Autofocus;
@@ -296,15 +312,17 @@ package body Focus is
                 Actual_Position : constant Distance := The_Focuser.Actual_Position;
               begin
                 if At_Position (Actual_Position) then
-                  Camera.Capture (Grid_Size);
+                  Camera.Capture (Camera_Grid_Size,
+                                  Camera_Exposure,
+                                  Camera_Sensitivity);
                   if Camera.Has_Error then
                     Set_Error (Camera.Error_Message);
                   else
                     Focus_Data.Set (Capturing);
                   end if;
                 else
-                  Set_Error ("Positioning inaccurate - expected:" & The_Position'image &
-                                                   " - actual:" & Actual_Position'image);
+                  Set_Error ("Focuser: Position inaccurate - expected:" & The_Position'image &
+                                                         " - actual:" & Actual_Position'image);
                 end if;
               end;
             when Focuser.Moving =>
@@ -322,8 +340,8 @@ package body Focus is
                 if At_Position (Actual_Position) then
                   Evaluate_Position;
                 else
-                  Set_Error ("Positioning moved - expected:" & The_Position'image &
-                                              " - actual:" & Actual_Position'image);
+                  Set_Error ("Focuser: Position moved - expected:" & The_Position'image &
+                                                    " - actual:" & Actual_Position'image);
                 end if;
               end;
             when Camera.Failed =>
@@ -378,7 +396,7 @@ package body Focus is
         The_Wakeup_Time := RT.Clock + Delta_Time;
       end select;
     end loop;
-    Log.Write ("finish");
+    Log.Write ("Finish");
   exception
   when Occurrance: others =>
     Log.Termination (Occurrance);
@@ -496,7 +514,7 @@ package body Focus is
       Message : constant String := Exceptions.Name_Of (Item);
     begin
       Log.Error (Exceptions.Information_Of (Item));
-      Set_Error ("Internal_Error - " & Message);
+      Set_Error ("Internal Error - " & Message);
     end Set_Fatal;
 
 

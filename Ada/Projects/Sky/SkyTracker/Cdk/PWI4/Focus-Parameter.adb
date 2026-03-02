@@ -25,6 +25,8 @@ package body Focus.Parameter is
   Start_At_Key      : constant String := "Start At";
   Step_Key          : constant String := "Step";
   Tolerance_Key     : constant String := "Tolerance";
+  Exposure_Time_Key : constant String := "Exposure Time";
+  Sensitivity_Key   : constant String := "Sensitivity";
   Grid_Size_Key     : constant String := "Grid Size";
   HF_Threshold_Key  : constant String := "HF Threshold";
   Trigger_Level_Key : constant String := "Trigger Level";
@@ -106,6 +108,10 @@ package body Focus.Parameter is
       end if;
       The_Tolerance := Distance_For (Tolerance_Key);
       Log.Write (Tolerance_Key & ":" & The_Tolerance'image);
+      The_Exposure := Section.Exposure_Of (Exposure_Time_Key, Id);
+      Log.Write (Exposure_Time_Key & The_Exposure'image);
+      The_Sensitivity := Section.Sensitivity_Of (Sensitivity_Key, Id);
+      Log.Write (Sensitivity_Key & The_Sensitivity'image);
       The_Grid_Size := Size_For (Grid_Size_Key);
       Log.Write (Grid_Size_Key & ":" & The_Grid_Size'image);
       The_HF_Threshold := Pixel_For (HF_Threshold_Key);
@@ -122,13 +128,15 @@ package body Focus.Parameter is
   begin
     Put ("[" & Id & "]");
     Put (Samples_Key & "       =" & HFD_Sample_Count'last'image);
-    Put (Start_At_Key & "      = 6000.0");
-    Put (Step_Key & "          = 25.0");
-    Put (Tolerance_Key & "     = 0.5");
+    Put (Start_At_Key & "      = 1700.0");
+    Put (Step_Key & "          = 100.0");
+    Put (Tolerance_Key & "     = 1.0");
+    Put (Exposure_Time_Key & " = 1.5");
+    Put (Sensitivity_Key & "   = [56, 30]");
     Put (Grid_Size_Key & "     = 1000");
-    Put (HF_Threshold_Key & "  = 100");
+    Put (HF_Threshold_Key & "  = 50");
     Put (Trigger_Level_Key & " = 80");
-    Put (Minimum_Delta_Key & " = 25");
+    Put (Minimum_Delta_Key & " = 20");
   end Defaults;
 
 end Focus.Parameter;

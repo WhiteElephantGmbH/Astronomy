@@ -15,9 +15,11 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
-with Focuser;
 with Camera;
+with Focuser;
 private with Exceptions;
+private with Exposure;
+private with Sensitivity;
 private with Text;
 private with Traces;
 
@@ -74,6 +76,8 @@ private
   The_Start_Position : Distance := Start_From_Actual;
   The_Position_Step  : Step := 50;
   The_Tolerance      : Distance := 0;
+  The_Exposure       : Exposure.Item;
+  The_Sensitivity    : Sensitivity.Item;
   The_Grid_Size      : Camera.Square_Size := 1000;
   The_HF_Threshold   : Camera.Pixel := 100;
   The_Trigger_Level  : Diameter := 80;

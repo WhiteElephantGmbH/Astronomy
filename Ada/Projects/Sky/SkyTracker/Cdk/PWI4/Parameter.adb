@@ -134,7 +134,7 @@ package body Parameter is
       Put ("");
       Remote.Parameter.Defaults (Put'access, "cdk_Ost");
       Put ("");
-      Camera.Parameter.Defaults (Put'access, Exposure.Value (4.0), Sensitivity.Default);
+      Camera.Parameter.Defaults (Put'access, Exposure.Value ("4"), Sensitivity.Default);
       Put ("");
       Focus.Parameter.Defaults (Put'access);
       Put ("");

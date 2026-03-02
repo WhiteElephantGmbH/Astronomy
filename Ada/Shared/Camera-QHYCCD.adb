@@ -415,7 +415,7 @@ package body Camera.QHYCCD is
 
       subtype Card_String    is String(1..80);
       subtype Keyword_String is String(1..8);
-      subtype Value_String   is String(1..21);
+      subtype Value_String   is String(1..20);
 
       type Pixel_Size is delta 0.01 range 0.0 .. 99.99;
 
