@@ -600,7 +600,7 @@ package body User is
     begin -- Create_Interface
       Name.Catalog.Create_Menu (Define_Signal'access);
       Targets.Filter.Create_Menu (Update_Signal'access);
-      Option_Menu.Create ("Option", Option_Images, Option_Handler'access);
+      Option_Menu.Create (Lexicon.Image_Of (Lexicon.Option), Option_Images, Option_Handler'access);
       if Remote.Configured then
         Demo_21_Menu.Create ("Demo 21", Demo_21_Handler'access);
       end if;
