@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2021 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2021 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -14,8 +14,6 @@
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
-
-private with Angle;
 
 with Name;
 with Space;
@@ -94,15 +92,6 @@ package Targets is
 
 private
 
-  type Az_Range is record
-    From : Angle.Value := Angle.Zero; -- all directions
-    To   : Angle.Value := Angle.Zero;
-  end record;
-
-  procedure Set (The_Range : Az_Range);
-
-  type Switch is (Off, On);
-
-  procedure Set (Sorted : Switch);
+  procedure Set (Sort_Direction : Name.Sort_Direction);
 
 end Targets;

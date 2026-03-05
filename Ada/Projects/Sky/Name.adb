@@ -365,7 +365,8 @@ package body Name is
   end Define;
 
 
-  procedure Sort (The_List : in out Id_List) is
+  procedure Sort (The_List     : in out Id_List;
+                  In_Direction :        Sort_Direction) is
 
     function Altitude_Of (Object : Id) return Angle.Signed is
       Space_Direction : constant Space.Direction := Direction_Of (Object, Time.Universal);
@@ -375,16 +376,47 @@ package body Name is
       return Angle.Signed'(+Earth.Alt_Of (Earth_Direction));
     end Altitude_Of;
 
-    function Compare_Altitude (Left, Right : Id) return Boolean is
+    function Azimuth_Distance_Of (Object    : Id;
+                                  Direction : Angle.Value) return Angle.Unsigned is
+      Space_Direction : constant Space.Direction := Direction_Of (Object, Time.Universal);
+      Earth_Direction : constant Earth.Direction := Objects.Direction_Of (Space_Direction, Time.Lmst);
       use type Angle.Signed;
     begin
+      return Angle.Unsigned (abs Angle.Signed'(Earth.Az_Of (Earth_Direction) - Direction));
+    end Azimuth_Distance_Of;
+
+    function Compare (Left, Right : Id) return Boolean is
+      use type Angle.Signed;
+      use type Angle.Unsigned;
+    begin
       if Kind_Of (Left) = Sky_Object and Kind_Of (Right) = Sky_Object then
-        return Altitude_Of (Left) > Altitude_Of (Right);
+        case In_Direction is
+        when North =>
+          return Azimuth_Distance_Of (Left, Angle.North) >  Azimuth_Distance_Of (Right, Angle.North);
+        when North_East =>
+          return Azimuth_Distance_Of (Left, Angle.North_East) >  Azimuth_Distance_Of (Right, Angle.North_East);
+        when East =>
+          return Azimuth_Distance_Of (Left, Angle.East) >  Azimuth_Distance_Of (Right, Angle.East);
+        when South_East =>
+          return Azimuth_Distance_Of (Left, Angle.South_East) >  Azimuth_Distance_Of (Right, Angle.South_East);
+        when South =>
+          return Azimuth_Distance_Of (Left, Angle.South) >  Azimuth_Distance_Of (Right, Angle.South);
+        when South_West =>
+          return Azimuth_Distance_Of (Left, Angle.South_West) >  Azimuth_Distance_Of (Right, Angle.South_West);
+        when West =>
+          return Azimuth_Distance_Of (Left, Angle.West) >  Azimuth_Distance_Of (Right, Angle.West);
+        when North_West =>
+          return Azimuth_Distance_Of (Left, Angle.North_West) >  Azimuth_Distance_Of (Right, Angle.North_West);
+        when Zenith =>
+          return Altitude_Of (Left) > Altitude_Of (Right);
+        when No_Sort =>
+          raise Constraint_Error;
+        end case;
       end if;
       return False; -- don't sort others than sky objects
-    end Compare_Altitude;
+    end Compare;
 
-    package Tool is new Names.Generic_Sorting (Compare_Altitude);
+    package Tool is new Names.Generic_Sorting (Compare);
 
   begin -- Sort
     case The_List.Kind is
@@ -745,7 +777,7 @@ package body Name is
         Put ("");
         Put ("C14 | " & Image_Of (Lexicon.Persei_Clusters));
         Put ("C33 | " & Image_Of (Lexicon.East_Veil_Nebula));
-        Put ("C34 | " & Image_Of (Lexicon.Veil_Nebula));
+        Put ("C34 | " & Image_Of (Lexicon.Cirrus_Nebula));
         Put ("C39 | " & Image_Of (Lexicon.Eskimo_Nebula));
         Put ("C46 | " & Image_Of (Lexicon.Hubbles_Nebula));
         Put ("C55 | " & Image_Of (Lexicon.Saturn_Nebula));

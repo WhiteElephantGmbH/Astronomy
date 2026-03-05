@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2011 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2011 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -53,7 +53,10 @@ package Name is
 
   procedure Define (Catalog : Sky.Catalog_Id);
 
-  procedure Sort (The_List : in out Id_List);
+  type Sort_Direction is (No_Sort, North, North_East, East, South_East, South, South_West, West, North_West, Zenith);
+
+  procedure Sort (The_List     : in out Id_List;
+                  In_Direction :        Sort_Direction);
 
   function Actual_List return Id_List;
 

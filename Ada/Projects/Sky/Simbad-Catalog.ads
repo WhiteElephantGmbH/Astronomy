@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2023 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2023 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -150,7 +150,7 @@ package Simbad.Catalog is
 
   Persei_Clusters_Index  : constant HD_Index  := 14250; -- C14 between the two clusters
   East_Veil_Nebula_Index : constant NGC_Index := 6992;  -- C33
-  Veil_Nebula_Index      : constant NGC_Index := 6960;  -- C34
+  Cirrus_Nebula_Index    : constant NGC_Index := 6960;  -- C34
   Eskimo_Nebula_Index    : constant NGC_Index := 2392;  -- C39
   Hubbles_Nebula_Index   : constant NGC_Index := 2261;  -- C46
 

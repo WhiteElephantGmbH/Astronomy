@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2021 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2021 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -117,13 +117,11 @@ package body Targets is
 
     entry Define_Catalog;
 
-    entry Set (The_Range : Az_Range);
-
     entry Set (The_Selection : Selection);
 
     entry Set (The_Selection : Moon_Feature_Selection);
 
-    entry Set (Sorted : Switch);
+    entry Set (Sort_Direction : Name.Sort_Direction);
 
     entry Update_List;
 
@@ -162,12 +160,6 @@ package body Targets is
   end Define_Catalog;
 
 
-  procedure Set (The_Range : Az_Range) is
-  begin
-    The_Handler.Set (The_Range);
-  end Set;
-
-
   procedure Set (The_Selection : Selection) is
   begin
     The_Handler.Set (The_Selection);
@@ -180,9 +172,9 @@ package body Targets is
   end Set;
 
 
-  procedure Set (Sorted : Switch) is
+  procedure Set (Sort_Direction : Name.Sort_Direction) is
   begin
-    The_Handler.Set (Sorted);
+    The_Handler.Set (Sort_Direction);
   end Set;
 
 
@@ -219,11 +211,10 @@ package body Targets is
     Targets_Defined : Boolean := False;
     New_List        : Boolean := False;
 
-    The_Actual_Az_Range   : Az_Range;
     Is_Moon_Catalog       : Boolean := False;
     The_Actual_Selection  : Selection;
     The_Feature_Selection : Moon_Feature_Selection := All_Features;
-    Is_Az_Sorted          : Boolean := False;
+    The_Sort_Direction    : Name.Sort_Direction := Name.No_Sort;
 
     function Is_Selected (The_Objects : Object_Kind) return Boolean is
     begin
@@ -292,8 +283,7 @@ package body Targets is
       function Is_Visible (Direction : Space.Direction) return Boolean is
         Position : constant Earth.Direction := Objects.Direction_Of (Direction, Time.Lmst);
       begin
-        return Angle.In_Range (Earth.Az_Of (Position), The_Actual_Az_Range.From, The_Actual_Az_Range.To)
-               and then Sky_Line.Is_Above (Direction => Position);
+        return Sky_Line.Is_Above (Direction => Position);
       end Is_Visible;
 
       function Is_Selected_And_Visible (Item      : Selection;
@@ -395,9 +385,11 @@ package body Targets is
         end if;
       end Add_Visible;
 
+      use type Name.Sort_Direction;
+
     begin -- Define_Targets
-      if Is_Az_Sorted then
-        Name.Sort (The_Targets);
+      if The_Sort_Direction /= Name.No_Sort then
+        Name.Sort (The_Targets, The_Sort_Direction);
         New_List := True;
       end if;
       Moon.Define (Time.Universal);
@@ -431,10 +423,6 @@ package body Targets is
           Log.Warning ("Site not defined");
         end if;
       or
-        accept Set (The_Range : Az_Range) do
-          The_Actual_Az_Range := The_Range;
-        end Set;
-      or
         accept Set (The_Selection : Selection) do
           Is_Moon_Catalog := False;
           The_Actual_Selection := The_Selection;
@@ -445,8 +433,8 @@ package body Targets is
           The_Feature_Selection := The_Selection;
         end Set;
       or
-        accept Set (Sorted : Switch) do
-          Is_Az_Sorted := Sorted = On;
+        accept Set (Sort_Direction : Name.Sort_Direction) do
+          The_Sort_Direction := Sort_Direction;
         end Set;
       or
         accept Update_List;

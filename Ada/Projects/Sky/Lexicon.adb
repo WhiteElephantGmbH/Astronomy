@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2017 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2017 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -239,7 +239,7 @@ package body Lexicon is
     Chertan                   => E (Chertan,                   "Chertan",                  "Chertan",                      "Chertan",                      "Τσέρταν",                        "Chertan",                          "Chertan"),
     Chi_Per_Cluster           => E (Chi_Per_Cluster,           "Chi Persei Cluster",       "Amas Chi Persei",              "χ Persei Haufen",              "Σμήνος Χι του Περσέως",            "Ammasso Chi Perseo",             "Cúmulo Chi de Perseo"),
     Chow                      => E (Chow,                      "Chow",                     "Chow",                         "Chow",                         "Τσάου",                          "Chow",                             "Chow"),
-    Cirrus_Nebula             => E (Cirrus_Nebula,             "Cirrus Nebula",            "Nébuleuse du Cirrus",          "Cirrusnebel",                  "Νεφέλωμα Κίρρους",               "Nebulosa Cirrus",                  "Nebulosa Cirro"),
+    Cirrus_Nebula             => E (Cirrus_Nebula,             "Cirrus Nebula",            "Nébuleuse du Cirrus",          "Schleiernebel",                "Νεφέλωμα Κίρρους",               "Nebulosa Cirrus",                  "Nebulosa Cirro"),
     Citadelle                 => E (Citadelle,                 "Citadelle",                "Citadelle",                    "Citadelle",                    "Κιταντέλ",                       "Citadella",                        "Citadela"),
     Citala                    => E (Citala,                    "Citala",                   "Citala",                       "Citala",                       "Σιτάλα",                         "Citala",                           "Citala"),
     Coalsack_Cluster          => E (Coalsack_Cluster,          "Coalsack Cluster",         "Amas du Sac de Charbon",       "Kohlensack",                   "Σμήνος Άνθρακα",                 "Ammasso del Sacco di Carbone",     "Enjambre del Saco de Carbón"),
@@ -660,7 +660,6 @@ package body Lexicon is
     Eskimo_Nebula             => E (Eskimo_Nebula,             "Eskimo Nebula",            "Nébuleuse Eskimo",             "Eskimonebel",                  "Νεφέλωμα Εσκιμώος",              "Nebulosa Eskimo",                  "Nebulosa del Esquimal"),
     Hubbles_Nebula            => E (Hubbles_Nebula,            "Hubble's Nebula",          "Nébuleuse de Hubble",          "Hubbles Nebel",                "Νεφέλωμα του Hubble",            "Nebulosa di Hubble",               "Nebulosa Hubble"),
     Persei_Clusters           => E (Persei_Clusters,           "Persei Clusters",          "Amas Persei",                  "Persei Doppelhaufen",          "Σμήνος του Περσέως",             "Ammasso Perseo",                   "Cúmulo de Perseo"),
-    Veil_Nebula               => E (Veil_Nebula,               "Veil Nebula",              "Nébuleuse de Voile",           "Schleiernebel",                "Νεφέλωμα Βέλο",                  "Nebulosa Velo",                    "Nebulosa del Velo"),
 
     Alpha2_Cvn_Variable       => E (Alpha2_Cvn_Variable,       "alpha2 CVn Variable",      "alpha2 CVn Variable",          "Alpha2 CVn Variable",          "alpha2 CVn Variable",            "alpha2 CVn Variable",              "alpha2 CVn Variable"),
     Asymptotic_Giant_Branch   => E (Asymptotic_Giant_Branch,   "Asymptotic Giant Branch",  "Asymptotic Giant Branch",      "Asymptotischer Riesenast",     "Asymptotic Giant Branch",        "Asymptotic Giant Branch",          "Asymptotic Giant Branch"),
@@ -1842,7 +1841,7 @@ package body Lexicon is
     Cliffs                    => E (Cliffs,                    "Cliffs",                   "Cliffs",                       "Klippen",                      "Rupes",                          "Rupes",                            "Rupes"),
     Craters                   => E (Craters,                   "Craters",                  "Crater & Catenas",             "Krater",                       "Crater & Catenas",               "Crater & Catenas",                 "Crater & Catenas)"),
     Direction                 => E (Direction,                 "Direction",                "Direction",                    "Richtung",                     "Κατεύθυνση",                     "Direzione",                        "Dirección"),
-    East                      => E (East,                      "E",                        "E",                            "O",                            "Α",                              "E",                                "E"),
+    East                      => E (East,                      "East",                     "Est",                          "Ost",                          "Ανατολή",                        "Est",                              "Este"),
     Fans                      => E (Fans,                      "Fans",                     "Ventilateurs",                 "Ventilatoren",                 "Ανεμιστήρες",                    "Fan",                              "Ventiladores"),
     Favorites                 => E (Favorites,                 "Favorites",                "Favoris",                      "Favoriten",                    "Αγαπημένα",                      "Preferiti",                        "Favoritos"),
     Finish                    => E (Finish,                    "End",                      "Fin",                          "Ende",                         "Τέλος",                          "Fine",                             "Fin"),
@@ -1858,13 +1857,14 @@ package body Lexicon is
     Names                     => E (Names,                     "Names",                    "Noms",                         "Namen",                        "Ονόματα",                        "Nomi",                             "Nombres"),
     Neos                      => E (Neos,                      "NEOs",                     "Géocroiseurs",                 "NEOs",                         "Νέος",                           "Πλησίον της γής αντικείμενα",      "Objetos próximos a La Tierra"),
     Neptune                   => E (Neptune,                   "Neptune",                  "Neptune",                      "Neptun",                       "Ποσειδώνας",                     "Nettuno",                          "Neptuno"),
-    North                     => E (North,                     "N",                        "N",                            "N",                            "Β",                              "N",                                "N"),
+    North                     => E (North,                     "North",                    "Nord",                         "Nord",                         "Βόρειος",                        "Nord",                             "Norte"),
     Oceans                    => E (Oceans,                    "Oceans",                   "Oceanus",                      "Ozeane",                       "Oceanus",                        "Oceanus",                          "Oceanus"),
     Ocular                    => E (Ocular,                    "Ocular",                   "Oculaire",                     "Okular",                       "οφθαλμικός",                     "Oculare",                          "Ocular"),
     Off                       => E (Off,                       "Off",                      "Off",                          "Aus",                          "Off",                            "Off",                              "Off"),
     On                        => E (On,                        "On",                       "On",                           "Ein",                          "On",                             "On",                               "On"),
     Open_Clusters             => E (Open_Clusters,             "Open clusters",            "Amas ouverts",                 "Offene Sternhaufen",           "Ανοιχτά αστρικά σμήνη",          "Ammassi aperti",                   "Cúmulos abiertos"),
     Optic                     => E (Optic,                     "Optic",                    "Optique",                      "Optik",                        "Οπτικός",                        "Ottica",                           "Óptica"),
+    Option                    => E (Option,                    "Option",                   "Option",                       "Option",                       "Επιλογή",                        "Opzione",                          "Opción"),
     Park_Position             => E (Park_Position,             "Park position",            "Position de repos",            "Parkposition",                 "θέση ανάπαυσης",                 "Posizione riposo",                 "Posición de reposo"),
     Pluto                     => E (Pluto,                     "Pluto",                    "Pluton",                       "Pluto",                        "Πλούτωνας",                      "Plutone",                          "Plutón"),
     Qr_Code                   => E (Qr_Code,                   "QR Code",                  "Code QR",                      "QR Code",                      "Κωδικός QR",                     "Codice QR",                        "Código QR"),
@@ -1875,7 +1875,7 @@ package body Lexicon is
     Seas                      => E (Seas,                      "Mares",                    "Mares",                        "Meere",                        "Mares",                          "Mares",                            "Mares"),
     Selection                 => E (Selection,                 "Selection",                "Sélection",                    "Auswahl",                      "Επιλογή",                        "Selezione",                        "Selección"),
     Solar_System              => E (Solar_System,              "Solar system",             "Systèm solaire",               "Sonnensystem",                 "Ηλιακό σύστημα",                 "Sistema solare",                   "Sistema solar"),
-    South                     => E (South,                     "S",                        "S",                            "S",                            "Ν",                              "S",                                "S"),
+    South                     => E (South,                     "South",                    "Sud",                          "Süd",                          "Νότος",                          "Sud",                              "Sur"),
     Stars                     => E (Stars,                     "Stars",                    "Étoiles",                      "Sterne",                       "Αστέρια",                        "Stelle",                           "Estrellas"),
     Start                     => E (Start,                     "Start",                    "Début",                        "Start",                        "Έναρξη",                         "Inizio",                           "Principio"),
     Sun                       => E (Sun,                       "Sun",                      "Soleil",                       "Sonne",                        "Ἥλιος",                          "Sole",                             "Sol"),
@@ -1883,10 +1883,11 @@ package body Lexicon is
     Swirls                    => E (Swirls,                    "Swirls",                   "Swirls",                       "Wirbel",                       "Swirls",                         "Swirls",                           "Swirls"),
     Target                    => E (Target,                    "Target",                   "Cible",                        "Ziel",                         "Στόχος",                         "Bersaglio",                        "Objetivo"),
     Uranus                    => E (Uranus,                    "Uranus",                   "Uranus",                       "Uranus",                       "Ουρανός",                        "Urano",                            "Urano"),
-    Valleys                   => E (Valleys,                   "Valleys",                  "Vallis",                       "Täler",                        "Vallis",                         "Vallis",                          "Valleys"),
+    Valleys                   => E (Valleys,                   "Valleys",                  "Vallis",                       "Täler",                        "Vallis",                         "Vallis",                           "Valleys"),
     Venus                     => E (Venus,                     "Venus",                    "Vénus",                        "Venus",                        "Αφροδίτη",                       "Venere",                           "Venus"),
     Visible                   => E (Visible,                   "visible",                  "visible",                      "sichtbar",                     "ορατό",                          "visibile",                         "visible"),
-    West                      => E (West,                      "W",                        "O",                            "W",                            "Δ",                              "O",                                "O")];
+    West                      => E (West,                      "West",                     "Ouest",                        "West",                         "Δύση",                           "Oeste",                            "Oeste"),
+    Zenith                    => E (Zenith,                    "Zenith",                   "Zénith",                       "Zenit",                        "Ζενίθ",                          "Zenit",                            "Cenit")];
 
   pragma Style_Checks ("M120");
 

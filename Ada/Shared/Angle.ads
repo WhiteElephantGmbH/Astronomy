@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2014 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2014 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -37,10 +37,14 @@ package Angle is
 
   Semi_Circle : constant Value; -- 180 degrees
 
-  North : constant Value; -- 0 degrees
-  East  : constant Value; -- 90 degrees
-  South : constant Value; -- 180 degrees
-  West  : constant Value; -- 270 degrees
+  South      : constant Value; -- 0 degrees
+  South_West : constant Value; -- 45 degrees
+  West       : constant Value; -- 90 degrees
+  North_West : constant Value; -- 135 degrees
+  North      : constant Value; -- 180 degrees
+  North_East : constant Value; -- 225 degrees
+  East       : constant Value; -- 270 degrees
+  South_East : constant Value; -- 315 degrees
 
   One_Minute : constant Value;
 
@@ -150,9 +154,13 @@ private
   Semi_Circle : constant Value := 16#8000_0000#; -- 180 degrees
   One_Minute  : constant Value := Quadrant / (90 * 60);
 
-  North : constant Value := Zero;
-  East  : constant Value := Quadrant;
-  South : constant Value := Semi_Circle;
-  West  : constant Value := 3 * Quadrant;
+  South      : constant Value := Zero;
+  South_West : constant Value := Quadrant / 2;   -- 45 degrees
+  West       : constant Value := Quadrant;
+  North_West : constant Value := South_West * 3; -- 135 degrees
+  North      : constant Value := Semi_Circle;
+  North_East : constant Value := South_West * 5; -- 225 degrees
+  East       : constant Value := 3 * Quadrant;
+  South_East : constant Value := South_West * 7; -- 315 degrees
 
 end Angle;

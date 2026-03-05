@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2023 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2023 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -280,8 +280,6 @@ package body Simbad.Catalog is
       return Number_Of (Persei_Clusters_Index);
     when Lexicon.East_Veil_Nebula =>
       return Number_Of (East_Veil_Nebula_Index);
-    when Lexicon.Veil_Nebula =>
-      return Number_Of (Veil_Nebula_Index);
     when others =>
       return Unknown;
     end case;

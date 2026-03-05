@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2024 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2024 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -43,7 +43,7 @@ package body Sky.Catalog is
 
   C14_Id : constant Positive := Positive(SC.Persei_Clusters_Index);
   C33_Id : constant Positive := Positive(SC.East_Veil_Nebula_Index);
-  C34_Id : constant Positive := Positive(SC.Veil_Nebula_Index);
+  C34_Id : constant Positive := Positive(SC.Cirrus_Nebula_Index);
   C39_Id : constant Positive := Positive(SC.Eskimo_Nebula_Index);
   C46_Id : constant Positive := Positive(SC.Hubbles_Nebula_Index);
 
@@ -496,7 +496,7 @@ package body Sky.Catalog is
     elsif Item = C33_Index then
       return Lexicon.Image_Of (Lexicon.East_Veil_Nebula);
     elsif Item = C34_Index then
-      return Lexicon.Image_Of (Lexicon.Veil_Nebula);
+      return Lexicon.Image_Of (Lexicon.Cirrus_Nebula);
     elsif Item = C39_Index then
       return Lexicon.Image_Of (Lexicon.Eskimo_Nebula);
     elsif Item = C46_Index then
