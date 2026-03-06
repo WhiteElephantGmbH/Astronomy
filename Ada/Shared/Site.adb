@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2021 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2021 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -16,6 +16,7 @@
 pragma Style_White_Elephant;
 
 with Persistent;
+with Text;
 with Traces;
 
 package body Site is
@@ -44,6 +45,7 @@ package body Site is
   procedure Define (Item : Data) is
   begin
     The_Site := Item;
+    Log.Write ("Location  := " & Text.Legible_Of (The_Site.Location'image));
     Log.Write ("Latitude  := " & Angle.Image_Of (The_Site.Latitude));
     Log.Write ("Longitude := " & Angle.Image_Of (The_Site.Longitude));
     Log.Write ("Elevation :="  & Integer'image (The_Site.Elevation) & 'm');
@@ -63,6 +65,13 @@ package body Site is
   begin
     return Defined;
   end Is_Defined;
+
+
+  function Location return Telescope_Location is
+  begin
+    Check_Defined;
+    return The_Site.Location;
+  end Location;
 
 
   function Latitude return Angle.Value is

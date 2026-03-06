@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2023 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2023 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -94,7 +94,8 @@ package body User is
     Set_Status ("");
     Parameter.Read;
     Generate_Button.Disable;
-    Site.Define (Site.Data'(Latitude  => Value_Of (Latitude, Default_Latitude),
+    Site.Define (Site.Data'(Location  => Site.Unknown,
+                            Latitude  => Value_Of (Latitude, Default_Latitude),
                             Longitude => Value_Of (Longitude, Default_Longitude),
                             Elevation => 0));
     Map.Draw (Ut     => Universal_Time,

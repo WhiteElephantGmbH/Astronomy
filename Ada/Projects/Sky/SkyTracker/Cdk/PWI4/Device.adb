@@ -930,7 +930,8 @@ package body Device is
     Data : constant PWI4.Site_Info := PWI4.Site.Info;
     use type Angle.Value;
   begin
-    return (Latitude  => +Angle.Degrees(Data.Latitude),
+    return (Location  => Site.Unknown,
+            Latitude  => +Angle.Degrees(Data.Latitude),
             Longitude => +Angle.Degrees(Data.Longitude),
             Elevation => Integer(Data.Height));
   end Site_Info;

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2021 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2021 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -19,7 +19,10 @@ with Angle;
 
 package Site is
 
+  type Telescope_Location is (Cdk_East, Cdk_West, Apo, Home, Unknown);
+
   type Data is record
+    Location  : Telescope_Location;
     Latitude  : Angle.Value;
     Longitude : Angle.Value;
     Elevation : Integer; -- in meters
@@ -32,6 +35,8 @@ package Site is
   procedure Define (Item : Data);
 
   function Is_Defined return Boolean;
+
+  function Location return Telescope_Location;
 
   function Latitude return Angle.Value;
 

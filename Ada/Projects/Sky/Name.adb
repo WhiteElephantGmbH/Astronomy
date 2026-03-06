@@ -23,6 +23,7 @@ with Error;
 with File;
 with Lexicon;
 with Objects;
+with Site;
 with Sky.Catalog;
 with Sky.Data;
 with Sssb;
@@ -736,10 +737,16 @@ package body Name is
       begin -- Create_Default_Favorites
         Ada.Text_IO.Create (The_File, Name => Filename);
         Ada.Text_IO.Put (The_File, Text.Bom_8);
-        if Support_Axis_Positions then
-          Put ("AP Home | 30° 00' 00"" | -125° 00' 00""");
+        case Site.Location is
+        when Site.Cdk_West =>
+          Put ("LM Wegweiser | 259° 49' 13"" | 2° 56' 15""");
           Put ("");
-        end if;
+        when Site.Apo =>
+          Put ("AP Deckel weg | 30° 00' 00"" | -125° 00' 00""");
+          Put ("");
+        when others =>
+          null;
+        end case;
         Put (Image_Of (Lexicon.Mercury));
         Put (Image_Of (Lexicon.Venus));
         Put (Image_Of (Lexicon.Mars));
@@ -750,11 +757,6 @@ package body Name is
         Put (Image_Of (Lexicon.Pluto));
         Put_Moon;
         Put ("");
-        if Support_Land_Marks then
-          -- example for observatorium Schaffhausen
-          Put ("LM " & Image_Of (Lexicon.Road_Sign) & " | 259° 49' 13"" | 2° 56' 15""");
-          Put ("");
-        end if;
         Put (Image_Of (Lexicon.Albereo));
         Put (Image_Of (Lexicon.Aldebaran));
         Put (Image_Of (Lexicon.Altair));

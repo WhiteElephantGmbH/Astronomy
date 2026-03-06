@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2019 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2019 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
@@ -128,7 +128,8 @@ package body PWI2.Settings is
     elsif The_Upper_Alt_Goto_Limit = Undefined_Limit then
       raise Missing_Upper_Alt_Goto_Limit;
     end if;
-    Site.Define ((Latitude  => +The_Latitude,
+    Site.Define ((Location  => Site.Unknown,
+                  Latitude  => +The_Latitude,
                   Longitude => +The_Longitude,
                   Elevation => The_Elevation));
   end Read;

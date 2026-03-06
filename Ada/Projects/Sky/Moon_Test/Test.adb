@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                            (c) 2024 by White Elephant GmbH, Schaffhausen, Switzerland                             *
+-- *                        (c) 2024 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                         *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
@@ -553,7 +553,8 @@ package body Test is
     Put_Line ("* M O O N   T E S T *");
     Put_Line ("*********************");
     Put_Line ("");
-    Site.Define ((Latitude  => Angle.Value_Of ("47d42'19.79"""),
+    Site.Define ((Location  => Site.Unknown,
+                  Latitude  => Angle.Value_Of ("47d42'19.79"""),
                   Longitude => Angle.Value_Of ("8d36'35.50"""),
                   Elevation => 540)); -- in meters
     Put_Line ("");

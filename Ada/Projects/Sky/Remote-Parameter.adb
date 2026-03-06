@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                               (c) 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                           (c) 2024 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                      *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -55,10 +55,10 @@ package body Remote.Parameter is
   procedure Defaults (Put       : access procedure (Item : String);
                       Telescope : String) is
   begin
-    Put ("[" & Id & "]");
-    Put (Telescope_Key & "  = " & Telescope);
-    Put (Ip_Address_Key & " = 217.160.64.198");
-    Put (Port_Key & "       = 5000");
+    Put (";[" & Id & "]");
+    Put (";" & Telescope_Key & "  = " & Telescope);
+    Put (";" & Ip_Address_Key & " = 217.160.64.198");
+    Put (";" & Port_Key & "       = 5000");
   end Defaults;
 
 end Remote.Parameter;

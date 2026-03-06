@@ -36,6 +36,7 @@ with Picture.Parameter;
 with Remote.Parameter;
 with Section;
 with Sensitivity;
+with Site;
 with Stellarium.Parameter;
 with Sun.Parameter;
 with Telescope;
@@ -102,6 +103,8 @@ package body Parameter is
         Ada.Text_IO.Put_Line (The_File, Line);
       end Put;
 
+      use all type Site.Telescope_Location;
+
     begin -- Create_Default_Parameters
       begin
         Ada.Text_IO.Create (The_File, Name => Filename);
@@ -116,13 +119,13 @@ package body Parameter is
       Put ("[" & PWI_Id & "]");
       Put (Program_Key & "           = " & PWI_Program_Files & "\PlaneWave interface 4\PWI4.exe");
       Put (Shutdown_Key & "          = True");
-      Put (M3_Ocular_Port_Key & "    = 1");
+      Put (M3_Ocular_Port_Key & "    = " & (if Site.Location = Cdk_West then "2" else "1"));
       Put (Fans_Key & "              = Off");
       Put (Ip_Address_Key & "        = Localhost");
       Put (Port_Key & "              = 8220");
       Put (Moving_Speed_List_Key & " = 30""/s, 3'/s, 20'/s, 2°/s");
       Put (Cwe_Distance_Key & "      = 30'");
-      Put (Park_Position_Az_Key & "  = 75" & Angle.Degree);
+      Put (Park_Position_Az_Key & "  = " & (if Site.Location = Cdk_West then "255" else "75") & Angle.Degree);
       Put (Focuser_Maximum_Key & "   = 10000");
       Put (Focuser_Zoom_Size_Key & " = 300");
       Put ("");
@@ -132,13 +135,15 @@ package body Parameter is
       Put ("");
       Moon.Parameter.Defaults (Put'access);
       Put ("");
-      Remote.Parameter.Defaults (Put'access, "cdk_Ost");
+      Remote.Parameter.Defaults (Put'access, (if Site.Location = Cdk_West then "cdk_West" else "cdk_Ost"));
       Put ("");
       Camera.Parameter.Defaults (Put'access, Exposure.Value ("4"), Sensitivity.Default);
       Put ("");
       Focus.Parameter.Defaults (Put'access);
       Put ("");
-      Picture.Parameter.Defaults (Put'access);
+      Picture.Parameter.Defaults (Put'access,
+                                  Height => (if Site.Location = Cdk_West then "0.311" else "0.44"),
+                                  Width  => (if Site.Location = Cdk_West then "0.448" else "0.66"));
       Put ("");
       Stellarium.Parameter.Defaults (Put'access, "CDK");
       Ada.Text_IO.Close (The_File);

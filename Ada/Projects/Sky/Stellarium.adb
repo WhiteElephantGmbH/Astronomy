@@ -118,6 +118,24 @@ package body Stellarium is
   Landscapes_Directory : constant String := Application_Data_Directory & File.Folder_Separator & "landscapes";
   Landscape_Directory  : constant File.Folder := Landscapes_Directory + Landscape_Name;
 
+
+  function Telescope_Location return Site.Telescope_Location is
+    Name : constant String := Text.Uppercase_Of (Landscape_Name);
+  begin
+    if Name in "CDK 1" | "CDK OST" then
+      return Site.Cdk_East;
+    elsif Name in "CDK 2" | "CDK WEST" then
+      return Site.Cdk_West;
+    elsif Name in "APO" then
+      return Site.Apo;
+    elsif Name in "HOME" | "BASADINGEN" then
+      return Site.Home;
+    else
+      return Site.Unknown;
+    end if;
+  end Telescope_Location;
+
+
   function Landscape_Config_Name return String is
   begin
     declare
@@ -186,7 +204,8 @@ package body Stellarium is
           Latitude_Image  : constant String       := Items(Text.First_Index);
           Longitude_Image : constant String       := Items(Text.First_Index + 1);
         begin
-          Site.Define (Site.Data'(Latitude  => Value_Of (Latitude_Image),
+          Site.Define (Site.Data'(Location  => Site.Unknown,
+                                  Latitude  => Value_Of (Latitude_Image),
                                   Longitude => Value_Of (Longitude_Image),
                                   Elevation => 0));
         end;
@@ -207,7 +226,8 @@ package body Stellarium is
       Altitude  : constant String := Configuration.Value_Of (Location_Section, "altitude");
     begin
       if Latitude /= "" and then Longitude /= "" and then Altitude /= "" then
-        Site.Define (Site.Data'(Latitude  => Angle.Value_Of (Latitude),
+        Site.Define (Site.Data'(Location  => Telescope_Location,
+                                Latitude  => Angle.Value_Of (Latitude),
                                 Longitude => Angle.Value_Of (Longitude),
                                 Elevation => Integer'value(Altitude)));
         return True;
@@ -238,7 +258,8 @@ package body Stellarium is
               Lon_Image : constant String := Items(Text.First_Index + 6);
               Alt_Image : constant String := Items(Text.First_Index + 7);
             begin
-              Site.Define (Site.Data'(Latitude  => Value_Of (Lat_Image(Lat_Image'first .. Lat_Image'last - 1),
+              Site.Define (Site.Data'(Location  => Telescope_Location,
+                                      Latitude  => Value_Of (Lat_Image(Lat_Image'first .. Lat_Image'last - 1),
                                                              Is_Positive => Lat_Image(Lat_Image'last) = 'N'),
                                       Longitude => Value_Of (Lon_Image(Lon_Image'first .. Lon_Image'last - 1),
                                                              Is_Positive => Lon_Image(Lon_Image'last) = 'E'),
