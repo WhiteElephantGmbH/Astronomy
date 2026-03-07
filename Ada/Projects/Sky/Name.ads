@@ -53,7 +53,9 @@ package Name is
 
   procedure Define (Catalog : Sky.Catalog_Id);
 
-  type Sort_Direction is (No_Sort, North, North_East, East, South_East, South, South_West, West, North_West, Zenith);
+  type Sorting is (No_Sort, North, North_East, East, South_East, South, South_West, West, North_West, Zenith);
+
+  subtype Sort_Direction is Sorting range Sorting'succ(Sorting'first) .. Sorting'last;
 
   procedure Sort (The_List     : in out Id_List;
                   In_Direction :        Sort_Direction);

@@ -121,7 +121,7 @@ package body Targets is
 
     entry Set (The_Selection : Moon_Feature_Selection);
 
-    entry Set (Sort_Direction : Name.Sort_Direction);
+    entry Set (Sort_Direction : Name.Sorting);
 
     entry Update_List;
 
@@ -172,7 +172,7 @@ package body Targets is
   end Set;
 
 
-  procedure Set (Sort_Direction : Name.Sort_Direction) is
+  procedure Set (Sort_Direction : Name.Sorting) is
   begin
     The_Handler.Set (Sort_Direction);
   end Set;
@@ -214,7 +214,7 @@ package body Targets is
     Is_Moon_Catalog       : Boolean := False;
     The_Actual_Selection  : Selection;
     The_Feature_Selection : Moon_Feature_Selection := All_Features;
-    The_Sort_Direction    : Name.Sort_Direction := Name.No_Sort;
+    The_Sort_Direction    : Name.Sorting := Name.No_Sort;
 
     function Is_Selected (The_Objects : Object_Kind) return Boolean is
     begin
@@ -385,7 +385,7 @@ package body Targets is
         end if;
       end Add_Visible;
 
-      use type Name.Sort_Direction;
+      use type Name.Sorting;
 
     begin -- Define_Targets
       if The_Sort_Direction /= Name.No_Sort then
@@ -433,7 +433,7 @@ package body Targets is
           The_Feature_Selection := The_Selection;
         end Set;
       or
-        accept Set (Sort_Direction : Name.Sort_Direction) do
+        accept Set (Sort_Direction : Name.Sorting) do
           The_Sort_Direction := Sort_Direction;
         end Set;
       or

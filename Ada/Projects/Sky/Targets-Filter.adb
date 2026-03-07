@@ -60,7 +60,7 @@ package body Targets.Filter is
   end Selection_Handler;
 
 
-  function Image_Of (Item : Name.Sort_Direction) return String is
+  function Image_Of (Item : Name.Sorting) return String is
   begin
     case Item is
     when Name.No_Sort =>
@@ -87,9 +87,9 @@ package body Targets.Filter is
   end Image_Of;
 
 
-  package View_Menu is new Gui.Enumeration_Menu_Of (Name.Sort_Direction, Gui.Radio, Image_Of);
+  package View_Menu is new Gui.Enumeration_Menu_Of (Name.Sorting, Gui.Radio, Image_Of);
 
-  procedure View_Handler (The_Direction : Name.Sort_Direction) is
+  procedure View_Handler (The_Direction : Name.Sorting) is
   begin
     Log.Write ("Sort Direction: " & The_Direction'img);
     Set (The_Direction);

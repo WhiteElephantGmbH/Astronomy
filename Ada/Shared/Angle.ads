@@ -33,18 +33,19 @@ package Angle is
 
   Zero : constant Value;
 
+  Octant   : constant Value; -- 45 degrees
   Quadrant : constant Value; -- 90 degrees
 
   Semi_Circle : constant Value; -- 180 degrees
 
-  South      : constant Value; -- 0 degrees
-  South_West : constant Value; -- 45 degrees
-  West       : constant Value; -- 90 degrees
-  North_West : constant Value; -- 135 degrees
-  North      : constant Value; -- 180 degrees
-  North_East : constant Value; -- 225 degrees
-  East       : constant Value; -- 270 degrees
-  South_East : constant Value; -- 315 degrees
+  North      : constant Value; -- 0 degrees
+  North_East : constant Value; -- 45 degrees
+  East       : constant Value; -- 90 degrees
+  South_East : constant Value; -- 135 degrees
+  South      : constant Value; -- 180 degrees
+  South_West : constant Value; -- 225 degrees
+  West       : constant Value; -- 270 degrees
+  North_West : constant Value; -- 315 degrees
 
   One_Minute : constant Value;
 
@@ -150,17 +151,18 @@ private
 
   Epsilon : constant Value := 1;
 
+  Octant      : constant Value := 16#2000_0000#; -- 45 degrees
   Quadrant    : constant Value := 16#4000_0000#; -- 90 degrees
   Semi_Circle : constant Value := 16#8000_0000#; -- 180 degrees
   One_Minute  : constant Value := Quadrant / (90 * 60);
 
-  South      : constant Value := Zero;
-  South_West : constant Value := Quadrant / 2;   -- 45 degrees
-  West       : constant Value := Quadrant;
-  North_West : constant Value := South_West * 3; -- 135 degrees
-  North      : constant Value := Semi_Circle;
-  North_East : constant Value := South_West * 5; -- 225 degrees
-  East       : constant Value := 3 * Quadrant;
-  South_East : constant Value := South_West * 7; -- 315 degrees
+  North      : constant Value := Zero;
+  North_East : constant Value := Octant;     -- 45 degrees
+  East       : constant Value := Quadrant;
+  South_East : constant Value := Octant * 3; -- 135 degrees
+  South      : constant Value := Semi_Circle;
+  South_West : constant Value := Octant * 5; -- 225 degrees
+  West       : constant Value := 3 * Quadrant;
+  North_West : constant Value := Octant * 7; -- 315 degrees
 
 end Angle;

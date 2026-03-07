@@ -92,6 +92,6 @@ package Targets is
 
 private
 
-  procedure Set (Sort_Direction : Name.Sort_Direction);
+  procedure Set (Sort_Direction : Name.Sorting);
 
 end Targets;

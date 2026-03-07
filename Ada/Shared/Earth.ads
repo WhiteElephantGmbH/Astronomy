@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2014 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2014 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -24,6 +24,16 @@ package Earth is
   Unknown_Direction : constant Direction;
 
   Zero_Direction : constant Direction;
+
+  North      : constant Direction;
+  North_East : constant Direction;
+  East       : constant Direction;
+  South_East : constant Direction;
+  South      : constant Direction;
+  South_West : constant Direction;
+  West       : constant Direction;
+  North_West : constant Direction;
+  Zenith     : constant Direction;
 
   function Direction_Of (Alt : Angle.Value;
                          Az  : Angle.Value;
@@ -72,5 +82,15 @@ private
   Unknown_Direction : constant Direction := (others => <>);
 
   Zero_Direction : constant Direction := (Is_Known => True, others => <>);
+
+  North      : constant Direction := (Is_Known => True, Alt => Angle.Octant,   Az => Angle.North,      others => <>);
+  North_East : constant Direction := (Is_Known => True, Alt => Angle.Octant,   Az => Angle.North_East, others => <>);
+  East       : constant Direction := (Is_Known => True, Alt => Angle.Octant,   Az => Angle.East,       others => <>);
+  South_East : constant Direction := (Is_Known => True, Alt => Angle.Octant,   Az => Angle.South_East, others => <>);
+  South      : constant Direction := (Is_Known => True, Alt => Angle.Octant,   Az => Angle.South,      others => <>);
+  South_West : constant Direction := (Is_Known => True, Alt => Angle.Octant,   Az => Angle.South_West, others => <>);
+  West       : constant Direction := (Is_Known => True, Alt => Angle.Octant,   Az => Angle.West,       others => <>);
+  North_West : constant Direction := (Is_Known => True, Alt => Angle.Octant,   Az => Angle.North_West, others => <>);
+  Zenith     : constant Direction := (Is_Known => True, Alt => Angle.Quadrant, Az => Angle.Zero,       others => <>);
 
 end Earth;

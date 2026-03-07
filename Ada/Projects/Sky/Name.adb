@@ -366,53 +366,46 @@ package body Name is
   end Define;
 
 
+  type Distances is array (Sky.Catalog.Index) of Angle.Degrees;
+
+  The_Distances : Distances;
+
   procedure Sort (The_List     : in out Id_List;
                   In_Direction :        Sort_Direction) is
 
-    function Altitude_Of (Object : Id) return Angle.Signed is
-      Space_Direction : constant Space.Direction := Direction_Of (Object, Time.Universal);
-      Earth_Direction : constant Earth.Direction := Objects.Direction_Of (Space_Direction, Time.Lmst);
-      use type Angle.Signed;
-    begin
-      return Angle.Signed'(+Earth.Alt_Of (Earth_Direction));
-    end Altitude_Of;
+    Now : constant Time.Ut := Time.Universal;
 
-    function Azimuth_Distance_Of (Object    : Id;
-                                  Direction : Angle.Value) return Angle.Unsigned is
-      Space_Direction : constant Space.Direction := Direction_Of (Object, Time.Universal);
-      Earth_Direction : constant Earth.Direction := Objects.Direction_Of (Space_Direction, Time.Lmst);
-      use type Angle.Signed;
+    type Sort_Directions is array (Sort_Direction) of Earth.Direction;
+
+    Directions : constant Sort_Directions := [North      => Earth.North,
+                                              North_East => Earth.North_East,
+                                              East       => Earth.East,
+                                              South_East => Earth.South_East,
+                                              South      => Earth.South,
+                                              South_West => Earth.South_West,
+                                              West       => Earth.West,
+                                              North_West => Earth.North_West,
+                                              Zenith     => Earth.Zenith];
+    procedure Calculate_Distances is
+      Direction : constant Space.Direction := Objects.Direction_Of (Directions(In_Direction), Now);
     begin
-      return Angle.Unsigned (abs Angle.Signed'(Earth.Az_Of (Earth_Direction) - Direction));
-    end Azimuth_Distance_Of;
+      for The_Id of The_List.Ids loop
+        if Kind_Of (The_Id) = Sky_Object then
+          The_Distances (Object_Of (The_Id)) := Space.Angle_Between (Direction_Of (The_Id, Now), Direction);
+        end if;
+      end loop;
+    end Calculate_Distances;
+
+    function Distance_Of (Item : Id) return Angle.Degrees is
+    begin
+      return The_Distances (Object_Of (Item));
+    end Distance_Of;
 
     function Compare (Left, Right : Id) return Boolean is
-      use type Angle.Signed;
-      use type Angle.Unsigned;
+      use type Angle.Degrees;
     begin
       if Kind_Of (Left) = Sky_Object and Kind_Of (Right) = Sky_Object then
-        case In_Direction is
-        when North =>
-          return Azimuth_Distance_Of (Left, Angle.North) >  Azimuth_Distance_Of (Right, Angle.North);
-        when North_East =>
-          return Azimuth_Distance_Of (Left, Angle.North_East) >  Azimuth_Distance_Of (Right, Angle.North_East);
-        when East =>
-          return Azimuth_Distance_Of (Left, Angle.East) >  Azimuth_Distance_Of (Right, Angle.East);
-        when South_East =>
-          return Azimuth_Distance_Of (Left, Angle.South_East) >  Azimuth_Distance_Of (Right, Angle.South_East);
-        when South =>
-          return Azimuth_Distance_Of (Left, Angle.South) >  Azimuth_Distance_Of (Right, Angle.South);
-        when South_West =>
-          return Azimuth_Distance_Of (Left, Angle.South_West) >  Azimuth_Distance_Of (Right, Angle.South_West);
-        when West =>
-          return Azimuth_Distance_Of (Left, Angle.West) >  Azimuth_Distance_Of (Right, Angle.West);
-        when North_West =>
-          return Azimuth_Distance_Of (Left, Angle.North_West) >  Azimuth_Distance_Of (Right, Angle.North_West);
-        when Zenith =>
-          return Altitude_Of (Left) > Altitude_Of (Right);
-        when No_Sort =>
-          raise Constraint_Error;
-        end case;
+        return Distance_Of (Left) < Distance_Of (Right);
       end if;
       return False; -- don't sort others than sky objects
     end Compare;
@@ -421,7 +414,8 @@ package body Name is
 
   begin -- Sort
     case The_List.Kind is
-    when Sky.Favorites | Sky.Catalogs=>
+    when Sky.Favorites | Sky.Catalogs =>
+      Calculate_Distances;
       Tool.Sort (The_List.Ids);
     when Sky.Moon | Sky.Neo =>
       null;
