@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2023 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2023 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -16,6 +16,7 @@
 pragma Style_White_Elephant;
 
 with Traces;
+with Time;
 
 package body Input is
 
@@ -146,7 +147,7 @@ package body Input is
           Execute (The_Command);
         end case;
       or
-        delay 20.0;
+        delay until Time.In_Future (20.0);
         if Is_Changing then
           Execute (End_Command);
           Is_Changing := False;

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2019 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2019 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,6 +15,7 @@
 -- *********************************************************************************************************************
 pragma Style_White_Elephant;
 
+with Time;
 with Traces;
 
 package body User.Input is
@@ -236,7 +237,7 @@ package body User.Input is
           Telescope.Execute (Telescope.Set_Slewing_Rate);
         end case;
       or
-        delay 20.0;
+        delay until Time.In_Future (20.0);
         if Is_Moving then
           Telescope.Execute (Telescope.End_Move);
           Is_Moving := False;

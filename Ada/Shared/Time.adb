@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2012 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2012 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -20,6 +20,13 @@ with Site;
 with Text;
 
 package body Time is
+
+  function In_Future (Time_Offset : Duration) return Ada.Real_Time.Time is
+    use type Ada.Real_Time.Time;
+  begin
+    return Ada.Real_Time.Clock + Ada.Real_Time.To_Time_Span (Time_Offset);
+  end In_Future;
+
 
   function "+" (Left  : Ut;
                 Right : Duration) return Ut is

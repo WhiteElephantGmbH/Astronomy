@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2019 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2019 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -467,7 +467,7 @@ package body Device is
             PWI2.Rotator.Stop;
           end case;
         or
-          delay 1.0;
+          delay until Time.In_Future (1.0);
           PWI2.Get_System;
         end select;
         if Action.Is_Simulating then

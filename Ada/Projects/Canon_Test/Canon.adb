@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2025 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2025 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -20,6 +20,7 @@ with Ada.Text_IO;
 with Canon_Interface;
 with Exceptions;
 with System;
+with Time;
 
 package body Canon is
 
@@ -378,7 +379,7 @@ package body Canon is
               end if;
             end;
           or
-            delay 0.1;
+            delay until Time.In_Future (0.1);
           end select;
           IO.Put (".");
 

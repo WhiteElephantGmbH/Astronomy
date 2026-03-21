@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2012 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2012 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -16,10 +16,21 @@
 pragma Style_White_Elephant;
 
 with Ada.Calendar;
+with Ada.Real_Time;
 with Angle;
 with Astro;
 
 package Time is
+
+  -------------------
+  -- Ada Real Time --
+  -------------------
+
+  function In_Future (Time_Offset : Duration) return Ada.Real_Time.Time;
+
+  ------------------
+  -- Ada Calendar --
+  ------------------
 
   Epsilon : constant := 1.0E-4;
 
@@ -47,7 +58,7 @@ package Time is
 
 
   -------------------------
-  -- local date and time --
+  -- Local Date and Time --
   -------------------------
 
   function Local_Time return Value;
@@ -60,7 +71,7 @@ package Time is
 
 
   --------------------
-  -- universal time --
+  -- Universal Time --
   --------------------
 
   Ut_Range_Error : exception;
@@ -113,7 +124,7 @@ package Time is
 
 
   -----------------------------
-  -- local mean sideral time --
+  -- Local Mean Sideral Time --
   -----------------------------
 
   function Lmst return Value;
@@ -122,7 +133,7 @@ package Time is
 
 
   ----------------
-  -- standard T --
+  -- Standard T --
   ----------------
 
   subtype T is Astro.REAL; -- in 100 years since year 2000

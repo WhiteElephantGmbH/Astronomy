@@ -755,7 +755,7 @@ package body Device is
           end case;
         end if;
       or
-        delay 1.0 / PWI4.Request_Rate;
+        delay until Time.In_Future (1.0 / PWI4.Request_Rate);
         if The_Mount_State /= Mount.Error and then PWI4.Got_System_Status then
           if Is_Simulation then
             if Focuser.Actual_State = Focuser.Moving then

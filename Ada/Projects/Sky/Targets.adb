@@ -465,7 +465,7 @@ package body Targets is
       or
         accept Stop;
         exit;
-      or delay 20.0;
+      or delay until Time.In_Future (20.0);
         if Site.Is_Defined then
           Define_Targets;
         end if;

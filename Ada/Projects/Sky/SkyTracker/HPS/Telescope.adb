@@ -660,7 +660,7 @@ package body Telescope is
             The_Data.Alignment_Info := Alignment.Info;
             Set_Server_Information (The_Data);
           end Get;
-        or delay 0.5;
+        or delay until Time.In_Future (0.5);
           Update_Handling;
         end select;
         Remote.Define (Is_On_Target => The_Information.Status in Tracking | Following);
