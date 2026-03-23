@@ -13,7 +13,7 @@
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with Ada.Containers.Doubly_Linked_Lists;
 with Ada.Text_IO;
@@ -1311,12 +1311,12 @@ package body Generator.Data is
 
     begin -- Put_Header
       Output ("-- *********************************************************************************************************************");
-      Output ("-- *                       (c) 2024 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *");
+      Output ("-- *                       (c) 2024 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *");
       Output ("-- *                                               www.white-elephant.ch                                               *");
       Output ("-- *********************************************************************************************************************");
       Output ("-- Generated object information from the Astronomical Database - Université de Strasbourg");
       Output;
-      Output ("pragma Style_White_Elephant;");
+      Output ("pragma Style_Astronomy;");
       Output;
       Output ("pragma Restrictions (No_Elaboration_Code);");
       Output;

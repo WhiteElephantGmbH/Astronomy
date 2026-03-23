@@ -13,7 +13,7 @@
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with Ada.Calendar;
 with Ada.Real_Time;
@@ -26,7 +26,12 @@ package Time is
   -- Ada Real Time --
   -------------------
 
+  For_Termination : constant Duration := 0.01;
+
   function In_Future (Time_Offset : Duration) return Ada.Real_Time.Time;
+
+  procedure Wait (Time_Spawn : Duration := For_Termination);
+
 
   ------------------
   -- Ada Calendar --

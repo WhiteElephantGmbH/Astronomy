@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2016 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2016 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -13,11 +13,12 @@
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with Ada.Containers.Doubly_Linked_Lists;
 with Ada.Exceptions;
 with Ada.Unchecked_Deallocation;
+with Time;
 with Traces;
 
 package body Network.Tcp.Servers is
@@ -118,7 +119,7 @@ package body Network.Tcp.Servers is
         end Remove;
         The_Terminating_Client.The_Reader.Finish;
         while not The_Terminating_Client.The_Reader'terminated loop
-          delay 0.01;
+          Time.Wait;
         end loop;
         Deallocate (The_Terminating_Client.The_Reader);
         declare

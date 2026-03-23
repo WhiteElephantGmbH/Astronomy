@@ -1,8 +1,8 @@
 -- *********************************************************************************************************************
--- *                       (c) 2023 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2023 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with Ada.Command_Line;
 with Ada.Text_IO;
@@ -12,6 +12,7 @@ with Sky.Catalog;
 with File;
 with Os.System;
 with Text;
+with Time;
 with Traces;
 
 package body Nebulae is
@@ -156,7 +157,7 @@ package body Nebulae is
                  Height   => Picture_Height,
                  Start    => [Sky.Catalog.Ra_J2000_Of(Id), Sky.Catalog.Dec_J2000_Of(Id)]);
     for Unused in 1 .. 10 loop
-      delay 1.0;
+      Time.Wait (1.0);
       if Astap.Solved (CRVAL, CD, Size) then
         IO.Put_Line ("Solved RA =" & CRVAL(Ra)'image & " - DEC =" & CRVAL(Dec)'image);
         IO.Put_Line ("  Size RA =" & Size(Ra)'image & " - DEC =" & Size(Dec)'image);

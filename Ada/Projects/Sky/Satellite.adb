@@ -13,7 +13,7 @@
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with Ada.Calendar;
 with Ada.Text_IO;
@@ -24,6 +24,7 @@ with Error;
 with GNATCOLL.JSON;
 with Gui;
 with Stellarium;
+with Time;
 with Traces;
 
 package body Satellite is
@@ -144,14 +145,14 @@ package body Satellite is
       Log.Write ("Age of data:" & Age_Of_Data'image & " hours");
     else
       Gui.Beep;
-      delay Duration(Startup_Delay);
+      Time.Wait (Duration(Startup_Delay));
       if Gui.Is_Confirmed ("Update Satellite Data ?") then
         loop
           if Age_Of_Data < Age_Limit then
             Log.Write ("Data update after" & Seconds'image & " seconds");
             exit;
           end if;
-          delay 1.0;
+          Time.Wait (1.0);
           Seconds := @ + 1;
           if Seconds > Timeout then
             Log.Warning ("Data too old");

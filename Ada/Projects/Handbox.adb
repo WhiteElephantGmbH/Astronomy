@@ -13,10 +13,11 @@
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with Exceptions;
 with Serial_Io;
+with Time;
 with Traces;
 
 package body Handbox is
@@ -138,7 +139,7 @@ package body Handbox is
         accept Close;
         exit;
       or
-        delay 1.0;
+        delay until Time.In_Future (1.0);
       end select;
     end loop Main;
     The_Device.Close;

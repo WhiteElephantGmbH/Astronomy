@@ -1,8 +1,8 @@
 -- *********************************************************************************************************************
--- *                       (c) 2021 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerlan                           *
+-- *                       (c) 2021 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerlan                           *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with Angle;
 with Refraction;

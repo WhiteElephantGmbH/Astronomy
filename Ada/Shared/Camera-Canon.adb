@@ -13,13 +13,14 @@
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with Ada.Real_Time;
 with C.Helper;
 with Camera.Canon.C_Interface;
 with Camera.Raw;
 with System;
+with Time;
 
 package body Camera.Canon is
 
@@ -31,11 +32,11 @@ package body Camera.Canon is
     entry Get (Is_Ready : out Boolean);
 
     entry Capture_Picture (Filename : String;
-                           Time     : Exposure.Item;
+                           Tv       : Exposure.Item;
                            Iso      : Sensitivity.Item);
 
     entry Capture_Grid (Size : Square_Size;
-                        Time : Exposure.Item;
+                        Tv   : Exposure.Item;
                         Iso  : Sensitivity.Item);
 
     entry Await_Stop;
@@ -103,18 +104,18 @@ package body Camera.Canon is
 
 
   procedure Capture_Picture (Filename  : String;
-                             Time      : Exposure.Item;
+                             Tv        : Exposure.Item;
                              Parameter : Sensitivity.Item) is
   begin
-    The_Control.Capture_Picture (Filename, Time, Parameter);
+    The_Control.Capture_Picture (Filename, Tv, Parameter);
   end Capture_Picture;
 
 
   procedure Capture_Grid (Size      : Square_Size;
-                          Time      : Exposure.Item;
+                          Tv        : Exposure.Item;
                           Parameter : Sensitivity.Item) is
   begin
-    The_Control.Capture_Grid (Size, Time, Parameter);
+    The_Control.Capture_Grid (Size, Tv, Parameter);
   end Capture_Grid;
 
 
@@ -394,7 +395,7 @@ package body Camera.Canon is
         begin
           Get (CI.Prop_Id_Evf_Output_Device, Value);
           exit when Value = CI.Evf_Output_None'enum_rep;
-          delay 0.1;
+          Time.Wait (0.1);
         end;
       end loop;
     end Disable_Electronic_View_Finder;
@@ -594,7 +595,7 @@ package body Camera.Canon is
           Set (Property    => CI.Prop_Id_AE_Mode_Select,
                Value       => CI.K_AE_Mode_Manual'enum_rep,
                Where_Label => "Set AE Mode Select to Manual");
-          delay AE_Mode_Set_Time;
+          Time.Wait (AE_Mode_Set_Time);
         end case;
         Set (Property    => CI.Prop_Id_Tv,
              Value       => To_K_Tv (The_Exposure)'enum_rep,
@@ -620,7 +621,7 @@ package body Camera.Canon is
           Set (Property    => CI.Prop_Id_AE_Mode_Select,
                Value       => CI.K_AE_Mode_Manual'enum_rep,
                Where_Label => "Set AE Mode Select to Manual");
-          delay AE_Mode_Set_Time;
+          Time.Wait (AE_Mode_Set_Time);
         end case;
       end case;
 
@@ -754,22 +755,22 @@ package body Camera.Canon is
         end Get;
       or
         accept Capture_Picture (Filename : String;
-                                Time     : Exposure.Item;
+                                Tv       : Exposure.Item;
                                 Iso      : Sensitivity.Item)
         do
           The_Filename := [Filename];
-          The_Exposure := Time;
+          The_Exposure := Tv;
           The_Iso := Iso;
           Is_Cropping := False;
         end;
         Start_Capture;
       or
         accept Capture_Grid (Size : Square_Size;
-                             Time : Exposure.Item;
+                             Tv   : Exposure.Item;
                              Iso  : Sensitivity.Item)
         do
           The_Grid_Size := Size;
-          The_Exposure := Time;
+          The_Exposure := Tv;
           The_Iso := Iso;
           Is_Cropping := True;
           The_Filename := [Default_Filename];

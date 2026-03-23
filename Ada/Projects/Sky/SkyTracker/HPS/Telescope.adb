@@ -13,7 +13,7 @@
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with Ada.Real_Time;
 with Astro;
@@ -660,7 +660,8 @@ package body Telescope is
             The_Data.Alignment_Info := Alignment.Info;
             Set_Server_Information (The_Data);
           end Get;
-        or delay until Time.In_Future (0.5);
+        or
+          delay until Time.In_Future (0.5);
           Update_Handling;
         end select;
         Remote.Define (Is_On_Target => The_Information.Status in Tracking | Following);

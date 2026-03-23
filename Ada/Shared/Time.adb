@@ -13,7 +13,7 @@
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with Ada.Calendar.Time_Zones;
 with Site;
@@ -26,6 +26,12 @@ package body Time is
   begin
     return Ada.Real_Time.Clock + Ada.Real_Time.To_Time_Span (Time_Offset);
   end In_Future;
+
+
+  procedure Wait (Time_Spawn : Duration := For_Termination) is
+  begin
+    delay until Time.In_Future (Time_Offset => Time_Spawn);
+  end Wait;
 
 
   function "+" (Left  : Ut;

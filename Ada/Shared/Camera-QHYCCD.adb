@@ -13,7 +13,7 @@
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with Ada.Streams;
 with Ada.Streams.Stream_IO;
@@ -38,11 +38,11 @@ package body Camera.QHYCCD is
     entry Get (Is_Ready : out Boolean);
 
     entry Capture_Picture (Filename  : String;
-                           The_Time  : Exposure.Item;
+                           Tv        : Exposure.Item;
                            Parameter : Sensitivity.Item); -- Gain and Offset
 
     entry Capture_Grid (Size      : Square_Size;
-                        The_Time  : Exposure.Item;
+                        Tv        : Exposure.Item;
                         Parameter : Sensitivity.Item); -- Gain and Offset
 
     entry Await_Stop;
@@ -84,18 +84,18 @@ package body Camera.QHYCCD is
 
 
   procedure Capture_Picture (Filename  : String;
-                             The_Time  : Exposure.Item;
+                             Tv        : Exposure.Item;
                              Parameter : Sensitivity.Item) is
   begin
-    The_Control.Capture_Picture (Filename, The_Time, Parameter);
+    The_Control.Capture_Picture (Filename, Tv, Parameter);
   end Capture_Picture;
 
 
   procedure Capture_Grid (Size      : Square_Size;
-                          The_Time  : Exposure.Item;
+                          Tv        : Exposure.Item;
                           Parameter : Sensitivity.Item) is
   begin
-    The_Control.Capture_Grid (Size, The_Time, Parameter);
+    The_Control.Capture_Grid (Size, Tv, Parameter);
   end Capture_Grid;
 
 
@@ -656,21 +656,21 @@ package body Camera.QHYCCD is
         end Get;
       or
         accept Capture_Picture (Filename  : String;
-                                The_Time  : Exposure.Item;
+                                Tv        : Exposure.Item;
                                 Parameter : Sensitivity.Item)
         do
           The_Filename := [Filename];
-          The_Exposure := The_Time;
+          The_Exposure := Tv;
           The_Parameter := Parameter;
         end Capture_Picture;
         Capture_Picture;
       or
         accept Capture_Grid (Size      : Square_Size;
-                             The_Time  : Exposure.Item;
+                             Tv        : Exposure.Item;
                              Parameter : Sensitivity.Item)
         do
           The_Grid_Size := Size;
-          The_Exposure  := The_Time;
+          The_Exposure  := Tv;
           The_Parameter := Parameter;
         end Capture_Grid;
         Capture_Grid;

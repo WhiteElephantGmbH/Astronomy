@@ -13,12 +13,13 @@
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with Ada.Real_Time;
 with Ada.Unchecked_Conversion;
 with Log;
 with System;
+with Time;
 with Text;
 
 package body Network.Tcp is
@@ -57,7 +58,7 @@ package body Network.Tcp is
   exception
   when Net.Socket_Error =>
     Log.Write ("Network.Tcp.Socket_For: Socket_Error");
-    delay The_Timeout; -- Same behaviour as when network if active
+    Time.Wait (The_Timeout); -- Same behaviour as when network if active
     raise Not_Found;
   end Socket_For;
 

@@ -2,7 +2,7 @@
 -- *                       (c) 2025 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with Ada.Command_Line;
 with Ada.IO_Exceptions;
@@ -15,6 +15,7 @@ with File;
 with Gui;
 with Log;
 with Text;
+with Time;
 
 package body Picture is
 
@@ -93,13 +94,13 @@ package body Picture is
           exit;
         exception
         when Ada.Text_IO.Use_Error =>
-          delay 0.5;
+          Time.Wait (0.5);
         end;
       end loop;
       Ada.Text_IO.Close (The_File);
       Log.Write ("Await stable filesize for " & The_Filename);
       loop
-        delay Size_Check_Delay;
+        Time.Wait (Size_Check_Delay);
         New_Filesize := File.Size_Of (The_Filename);
         Log.Write ("New file size:" & New_Filesize'image);
         if New_Filesize = 0 then
@@ -107,7 +108,7 @@ package body Picture is
         end if;
         exit when New_Filesize = The_Filesize;
         The_Filesize := New_Filesize;
-        delay 0.2;
+        Time.Wait (0.2);
       end loop;
       Log.Write ("Filesize is stable");
     end Await_Stable;
@@ -171,7 +172,7 @@ package body Picture is
           Error ("No picture file found in " & Picture_Directory);
         end if;
         The_Detection_Time := @ + Detection_Delay;
-        delay Detection_Delay;
+        Time.Wait (Detection_Delay);
       end loop;
       Copy_Completed (The_Filename.S, Destination_Filename);
     end;

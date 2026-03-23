@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2022 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2022 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -13,11 +13,12 @@
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with M_Zero;
 with Picture;
 with Space;
+with Time;
 with Traces;
 with Pole_Axis;
 
@@ -32,7 +33,7 @@ package body Pole is
     if Picture.Solve (Search_From => Space.Pole_Search_Direction) then
       M_Zero.Start_Solving;
       while not Picture.Solved loop
-        delay 0.5;
+        Time.Wait (0.5);
         The_Count := The_Count + 1;
         if The_Count = 40 then
           Picture.Stop_Solving;

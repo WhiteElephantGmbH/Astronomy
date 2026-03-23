@@ -13,11 +13,12 @@
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with Celestron.Focuser;
 with Handbox.Client;
 with Server;
+with Time;
 with Traces;
 
 package body Control is
@@ -72,7 +73,7 @@ package body Control is
         accept Shutdown;
         exit;
       or
-        delay 0.2;
+        delay until Time.In_Future (0.2);
       end select;
     end loop;
     Log.Write ("Manager terminating");

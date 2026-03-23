@@ -13,7 +13,7 @@
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with Ada.Calendar;
 with Ada.Text_IO;
@@ -318,7 +318,7 @@ package body Canon is
       --Set_Uint32_Property (Prop        => CI.Prop_Id_Mirror_Up_Setting,
       --                     Value       => CI.K_Eds_Mirror_Up_Setting_On,
       --                     Where_Label => "Mirror up");
-      --delay 1.0
+      --Time.Wait (1.0)
 
         Event_State.Reset;
         Start_Time := Ada.Calendar.Clock;
@@ -341,7 +341,7 @@ package body Canon is
                                   CI.Camera_Command_Press_Shutter_Button,
                                   CI.Camera_Command_Shutter_Button_Completely_Non_AF));
 
-          delay Duration (Exposure);
+          Time.Wait (Duration (Exposure));
 
           Check ("Press shutter button off",
                  CI.Send_Command (Camera,

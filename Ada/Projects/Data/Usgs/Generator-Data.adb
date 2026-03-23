@@ -13,7 +13,7 @@
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with Ada.Containers.Doubly_Linked_Lists;
 with Ada.Text_IO;
@@ -281,13 +281,13 @@ package body Generator.Data is
     begin
       pragma Style_Checks ("M138");
       Output ("-- *********************************************************************************************************************");
-      Output ("-- *                           (c) 2024 by White Elephant GmbH, Schaffhausen, Switzerland                              *");
+      Output ("-- *                       (c) 2024 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *");
       Output ("-- *                                               www.white-elephant.ch                                               *");
       Output ("-- *********************************************************************************************************************");
       pragma Style_Checks ("M120");
       Output ("-- Generated Moon feature information, obtained from the web page https://planetarynames.wr.usgs.gov");
       Output;
-      Output ("pragma Style_White_Elephant;");
+      Output ("pragma Style_Astronomy;");
       Output;
       Output ("pragma Restrictions (No_Elaboration_Code);");
       Output;

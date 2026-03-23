@@ -13,7 +13,7 @@
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with Earth;
 with Lexicon;
@@ -465,7 +465,8 @@ package body Targets is
       or
         accept Stop;
         exit;
-      or delay until Time.In_Future (20.0);
+      or
+        delay until Time.In_Future (20.0);
         if Site.Is_Defined then
           Define_Targets;
         end if;

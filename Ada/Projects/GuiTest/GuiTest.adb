@@ -1,8 +1,8 @@
 -- *********************************************************************************************************************
--- *                           (c) 2015 .. 2022 by Soudronic AG, Bergdietikon, Switzerland                             *
+-- *                           (c) 2015 .. 2026 by Soudronic AG, Bergdietikon, Switzerland                             *
 -- *                      Developed by White Elephant GmbH, Switzerland (www.white-elephant.ch)                        *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 pragma Build (Description => "GUI test",
               Version     => (1, 1, 0, 3),

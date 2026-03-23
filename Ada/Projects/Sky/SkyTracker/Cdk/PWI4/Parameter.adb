@@ -13,7 +13,7 @@
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with Ada.Text_IO;
 with Application;
@@ -41,6 +41,7 @@ with Stellarium.Parameter;
 with Sun.Parameter;
 with Telescope;
 with Text;
+with Time;
 with Traces;
 
 package body Parameter is
@@ -207,7 +208,7 @@ package body Parameter is
                   if The_Number_Of_Retries = 0 then
                     Error.Raise_With ("PlaneWave interface server not enabled");
                   end if;
-                  delay 1.0;
+                  Time.Wait (1.0);
                   The_Number_Of_Retries := The_Number_Of_Retries - 1;
                   Log.Write ("retry to connect to PWI server");
                 end;

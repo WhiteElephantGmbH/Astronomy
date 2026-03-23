@@ -1,10 +1,10 @@
 -- *********************************************************************************************************************
--- *                           (c) 2024 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2024 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
 -- Generated Moon feature information, obtained from the web page https://planetarynames.wr.usgs.gov
 
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 pragma Restrictions (No_Elaboration_Code);
 
@@ -2016,7 +2016,7 @@ package Database.Moon is
     (Crater,         0.1926770, 352.4737290,   27.965),  -- Sömmering
     (Crater,        -8.3319020,  64.9610760,   17.083),  -- Somerville
     (Crater,         8.7000260,  17.5955360,   16.987),  -- Sosigenes
-    (Crater,        57.5807380, 309.0585090,  119.036),  -- South_Crater
+    (Crater,        57.5807380, 309.0585090,  119.036),  -- South Crater
     (Crater,       -46.3834970,  24.7276510,   30.860),  -- Spallanzani
     (Crater,        -4.3025430, 358.2254580,   25.572),  -- Spörer
     (Crater,        27.9111540, 358.7304550,   13.206),  -- Spurr

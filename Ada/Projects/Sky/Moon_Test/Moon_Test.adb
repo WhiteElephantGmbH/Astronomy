@@ -1,8 +1,8 @@
 -- *********************************************************************************************************************
--- *                           (c) 2024 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2024 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 pragma Build (Description => "Test for the package Moon",
               Version     => (1, 0, 0, 0),

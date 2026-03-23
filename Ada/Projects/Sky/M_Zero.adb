@@ -2,7 +2,7 @@
 -- *                       (c) 2021 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with Angle;
 with Earth;
@@ -433,7 +433,7 @@ package body M_Zero is
         if The_Alignment = Not_Aligned then
           if not Status_Ok then
             Execute (Lx200.Set_Polar_Alignment);
-            delay 1.0; -- give avalon time to initialize
+            Time.Wait (1.0); -- give avalon time to initialize
             if not Status_Ok then
               Set_Error ("alignment not polar");
               return;
@@ -443,7 +443,7 @@ package body M_Zero is
           Execute (Lx200.Set_Longitude, Lx200.Signed_Degrees_Of (Site.Longitude, Front_Digits => 3), Expected => "0");
           Set_Status (Initialized);
           Synchronize_To (Home);
-          delay 0.5; -- give avalon time to settle.
+          Time.Wait (0.5); -- give avalon time to settle.
         else
           Set_Status;
         end if;
