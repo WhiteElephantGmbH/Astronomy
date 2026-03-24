@@ -49,7 +49,7 @@ package Name is
 
   procedure Read_Favorites (Enable_Axis_Positions : Boolean;
                             Enable_Land_Marks     : Boolean;
-                            Neo_Existing          : Neo_Exists_Handler := null);
+                            Enable_Neos           : Boolean);
 
   procedure Define (Catalog : Sky.Catalog_Id);
 
@@ -106,6 +106,9 @@ package Name is
   function Direction_Of (Item : Id) return Earth.Direction;
 
   function Magnitude_Of (Item : Id) return Sky.Magnitude;
+  
+  procedure Define_Neo (Item           : Id;
+                        Favorit_Object : Sky.Object);
 
 private
 

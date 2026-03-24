@@ -52,7 +52,7 @@ package body Test is
           Network.Tcp.Send (The_String  => "" & Ascii.Ack,
                             Used_Socket => The_Socket);
         elsif Command = "l" then
-          Satellite.Read_Stellarium_Data;
+          Satellite.Read_Data;
           Put_Line (Satellite.Names'image);
           loop
             Ada.Text_IO.Put ("Satellite>");

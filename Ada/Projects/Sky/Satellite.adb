@@ -20,11 +20,8 @@ with Ada.Text_IO;
 with Ada.Directories;
 with Ada.Containers.Indefinite_Ordered_Maps;
 with Ada.Strings.Unbounded;
-with Error;
 with GNATCOLL.JSON;
-with Gui;
 with Stellarium;
-with Time;
 with Traces;
 
 package body Satellite is
@@ -62,8 +59,34 @@ package body Satellite is
                                                                   Element_Type => Tle);
   Tle_Map : Tle_Data.Map;
 
+  Age_Limit : constant Stellarium.Hours := Stellarium.Satellites_Update_Frequency;
 
-  procedure Build_Satellite_Data is
+
+  function Data_Ready return Boolean is
+
+    function Age_Of_Data return Stellarium.Hours is
+      use type Ada.Calendar.Time;
+      Modification_Time : constant Ada.Calendar.Time := Ada.Directories.Modification_Time (Json_Filename);
+    begin
+      return Stellarium.Hours((Ada.Calendar.Clock - Modification_Time) / 3600.0);
+    end Age_Of_Data;
+
+    use type Stellarium.Hours;
+
+  begin -- Data_Ready
+    if Json_Filename = "" then
+      Log.Error ("No data");
+      return False;
+    end if;
+    if Age_Of_Data < Age_Limit then
+      Log.Write ("Age of data:" & Age_Of_Data'image & " hours");
+      return True;
+    end if;
+    return False;
+  end Data_Ready;
+
+
+  procedure Read_Data is
   begin
     declare
       package JS renames GNATCOLL.JSON;
@@ -114,55 +137,9 @@ package body Satellite is
       Log.Write ("Number of visible satellites:" & Tle_Map.Length'image);
     end;
   exception
-  when others =>
-    Error.Raise_With ("No satelite data");
-  end Build_Satellite_Data;
-
-
-  procedure Read_Stellarium_Data is
-
-    subtype Hours is Duration delta 0.1;
-
-    function Age_Of_Data return Hours is
-      use type Ada.Calendar.Time;
-      Modification_Time : constant Ada.Calendar.Time := Ada.Directories.Modification_Time (Json_Filename);
-    begin
-      return (Ada.Calendar.Clock - Modification_Time) / 3600.0;
-    end Age_Of_Data;
-
-    Age_Limit : constant Hours := 12.0;
-
-    Timeout       : constant := 60; -- seconds
-    Startup_Delay : constant := 3;  -- seconds;
-
-    Seconds : Natural := Startup_Delay;
-
-  begin -- Read_Stellarium_Data
-    if Json_Filename = "" then
-      return;
-    end if;
-    if Age_Of_Data < Age_Limit then
-      Log.Write ("Age of data:" & Age_Of_Data'image & " hours");
-    else
-      Gui.Beep;
-      Time.Wait (Duration(Startup_Delay));
-      if Gui.Is_Confirmed ("Update Satellite Data ?") then
-        loop
-          if Age_Of_Data < Age_Limit then
-            Log.Write ("Data update after" & Seconds'image & " seconds");
-            exit;
-          end if;
-          Time.Wait (1.0);
-          Seconds := @ + 1;
-          if Seconds > Timeout then
-            Log.Warning ("Data too old");
-            return;
-          end if;
-        end loop;
-      end if;
-    end if;
-    Build_Satellite_Data;
-  end Read_Stellarium_Data;
+  when Item: others =>
+    Log.Termination (Item);
+  end Read_Data;
 
 
   function Names return Text.List is

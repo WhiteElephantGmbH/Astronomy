@@ -425,7 +425,8 @@ package body Control is
     end if;
     Sky_Line.Read;
     Name.Read_Favorites (Enable_Axis_Positions => False,
-                         Enable_Land_Marks     => True);
+                         Enable_Land_Marks     => True,
+                         Enable_Neos           => False);
   end Read_Data;
 
 

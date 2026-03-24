@@ -50,7 +50,7 @@ package body Stellarium is
 
   procedure Set_Satellite_Group (Name : String) is
   begin
-    Log.Write ("Satellite Group: " & Name);
+    Log.Write ("Satellite group: " & Name);
     The_Set_Satellite_Group := [Name];
   end Set_Satellite_Group;
 
@@ -73,10 +73,10 @@ package body Stellarium is
         Data_Directory : constant String := Ada.Environment_Variables.Value (Path_Variable);
       begin
         if not Directory.Exists (Data_Directory) then
-          Log.Error ("Data Directory " & Data_Directory & " not found");
+          Log.Error ("data directory " & Data_Directory & " not found");
           return "";
         end if;
-        Log.Write ("Data Directory " & Data_Directory & " used from " & Path_Variable);
+        Log.Write ("data directory " & Data_Directory & " used from " & Path_Variable);
         return Data_Directory;
       end;
     else
@@ -94,12 +94,15 @@ package body Stellarium is
   Config_Handle : constant Configuration.File_Handle    := Configuration.Handle_For (Configuration_Filename);
   Init_Location : constant Configuration.Section_Handle := Configuration.Handle_For (Config_Handle, "init_location");
   Localization  : constant Configuration.Section_Handle := Configuration.Handle_For (Config_Handle, "localization");
+  Satellites    : constant Configuration.Section_Handle := Configuration.Handle_For (Config_Handle, "Satellites");
 
   Landscape_Name : constant String := Configuration.Value_Of (Init_Location, "landscape_name");
   Location       : constant String := Configuration.Value_Of (Init_Location, "location");
   Last_Location  : constant String := Configuration.Value_Of (Init_Location, "last_location");
 
   Sky_Locale : constant String := Configuration.Value_Of (Localization, "sky_locale");
+
+  Update_Frequency_Hours : constant String := Configuration.Value_Of (Satellites, "update_frequency_hours");
 
   use type File.Folder;
 
@@ -142,16 +145,16 @@ package body Stellarium is
       Config_Name : constant String := File.Composure (Landscape_Directory, "landscape", "ini");
     begin
       if File.Exists (Config_Name) then
-        Log.Write ("Landscape configuration: " & Config_Name);
+        Log.Write ("landscape configuration: " & Config_Name);
         return Config_Name;
       else
-        Log.Warning ("Landscape configuration " & Config_Name & " not defined by user");
+        Log.Warning ("landscape configuration " & Config_Name & " not defined by user");
         return "";
       end if;
     end;
   exception
   when others =>
-    Log.Warning ("No landsape defined by user in " & Landscapes_Directory);
+    Log.Warning ("No landscape defined by user in " & Landscapes_Directory);
     return "";
   end Landscape_Config_Name;
 
@@ -170,6 +173,13 @@ package body Stellarium is
       return "";
     end if;
   end Satellites_Filename;
+
+
+  function Satellites_Update_Frequency return Hours is
+  begin
+    Log.Write ("update frequency hours: " & Update_Frequency_Hours);
+    return Hours'value (Update_Frequency_Hours);
+  end Satellites_Update_Frequency;
 
 
   function Search_Tolerance return Angle.Degrees is

@@ -450,10 +450,9 @@ package body Control is
       Horizon.Generate;
     end if;
     Sky_Line.Read;
-    Neo.Add_Objects;
     Name.Read_Favorites (Enable_Axis_Positions => False,
                          Enable_Land_Marks     => True,
-                         Neo_Existing          => Neo.Exists'access);
+                         Enable_Neos           => True);
   end Read_Data;
 
 
@@ -502,8 +501,10 @@ package body Control is
     Os.Process.Set_Priority_Class (Os.Process.Realtime);
     Parameter.Read;
     begin
+      Neo.Start_Reader;
       Start_Stellarium_Server;
       Read_Data;
+
       Telescope.Start (Information_Update_Handler'access);
       Targets.Start (Clear    => User.Clear_Targets'access,
                      Define   => User.Define'access,
@@ -513,10 +514,12 @@ package body Control is
                     User_Action_Handler'access,
                     Termination'access);
       Stellarium.Close;
+      Neo.Finalize_Reader;
       Parameter.Shutdown;
     exception
     when others =>
       Stellarium.Close;
+      Neo.Finalize_Reader;
       Parameter.Shutdown;
       raise;
     end;

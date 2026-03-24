@@ -48,6 +48,10 @@ package Stellarium is
 
   function Satellites_Filename return String;
 
+  type Hours is delta 0.1 range 0.0 .. 999.9;
+
+  function Satellites_Update_Frequency return Hours;
+
   function Search_Tolerance return Angle.Degrees;
 
   procedure Start;

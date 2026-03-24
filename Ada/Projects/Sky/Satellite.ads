@@ -22,7 +22,9 @@ package Satellite is
 
   subtype Tle is Norad.Two_Line;
 
-  procedure Read_Stellarium_Data;
+  function Data_Ready return Boolean;
+
+  procedure Read_Data;
 
   function Names return Text.List;
 

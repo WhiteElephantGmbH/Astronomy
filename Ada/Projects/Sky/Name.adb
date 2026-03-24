@@ -37,7 +37,7 @@ package body Name is
 
   Support_Axis_Positions : Boolean := False;
   Support_Land_Marks     : Boolean := False;
-  Neo_Exists             : access function (Id : String) return Boolean;
+  Support_Neos           : Boolean := False;
 
   type Element_Data (Item : Data_Kind) is record
     Kind      : Object_Kind;
@@ -190,6 +190,23 @@ package body Name is
       return Sky.Unknown_Magnitude;
     end if;
   end Magnitude_Of;
+
+
+  procedure Define_Neo (Item           : Id;
+                        Favorit_Object : Sky.Object) is
+    use type Sky.Object;
+  begin
+    case Item.Data_Id is
+    when Sky.Favorites =>
+      if Kind_Of (Item) = Near_Earth_Object and then Item.Element.Object = Sky.Undefined then
+        Item.Element.Object := Favorit_Object;
+        return;
+      end if;
+    when others =>
+      null;
+    end case;
+    raise Program_Error;
+  end Define_Neo;
 
 
   function Visibility_Changed_For (Item    : in out Id;
@@ -351,11 +368,11 @@ package body Name is
 
   procedure Read_Favorites (Enable_Axis_Positions : Boolean;
                             Enable_Land_Marks     : Boolean;
-                            Neo_Existing          : Neo_Exists_Handler := null) is
+                            Enable_Neos           : Boolean) is
   begin
     Support_Axis_Positions := Enable_Axis_Positions;
     Support_Land_Marks := Enable_Land_Marks;
-    Neo_Exists := Neo_Existing;
+    Support_Neos := Enable_Neos;
     Actual_Catalog.Read_Favorite_Catalog;
   end Read_Favorites;
 
@@ -524,8 +541,8 @@ package body Name is
             Error.Raise_With ("Incorrect Location - " & Line);
           end Add_Landmark;
 
-
           procedure Add_Sky_Object is
+            Satellite_Mark : constant String := "SAT";
           begin
             The_Element := new Element_Data(Sky_Object);
             The_Element.Number := Number;
@@ -549,16 +566,12 @@ package body Name is
               end;
             else
               declare
-                Object_Name : constant String := Part_For (Text.First_Index);
+                Object_Name : constant String := Part_1;
                 use type Sky.Object;
               begin
                 The_Element.Name := [Part_For (Parts.Count)];
                 if Sssb.Exists (Object_Name) then
                   The_Element.Kind := Small_Solar_System_Body;
-                  return;
-                elsif Neo_Exists /= null and then Neo_Exists (Object_Name) then
-                  The_Element.Kind := Near_Earth_Object;
-                  The_Element.Object := Sky.Data.Neo_Object_Of (Object_Name);
                   return;
                 end if;
                 declare
@@ -615,12 +628,17 @@ package body Name is
                 when Lexicon.Not_Found =>
                   null;
                 end;
-                The_Element.Kind := Sky_Object;
-                The_Element.Object := Sky.Catalog.Object_Of (Object_Name);
-                if The_Element.Object = Sky.Undefined then
-                  Error.Raise_With ("Unknown Name - " & Line);
+                if Support_Neos and then Parts_1.Count > 1 and then Parts_1(Text.First_Index) = Satellite_Mark then
+                  The_Element.Kind := Near_Earth_Object;
+                  The_Element.Name := [Text.Trimmed (Part_1(Part_1'first + Satellite_Mark'length .. Part_1'last))];
+                else
+                  The_Element.Kind := Sky_Object;
+                  The_Element.Object := Sky.Catalog.Object_Of (Object_Name);
+                  if The_Element.Object = Sky.Undefined then
+                    Error.Raise_With ("Unknown Name - " & Line);
+                  end if;
+                  The_Element.Name := [Sky.Catalog.Object_Image_Of (The_Element.Object, The_Element.Name.S)];
                 end if;
-                The_Element.Name := [Sky.Catalog.Object_Image_Of (The_Element.Object, The_Element.Name.S)];
               end;
             end if;
           end Add_Sky_Object;
@@ -750,6 +768,8 @@ package body Name is
         Put (Image_Of (Lexicon.Neptune));
         Put (Image_Of (Lexicon.Pluto));
         Put_Moon;
+        Put ("");
+        Put ("SAT ISS");
         Put ("");
         Put (Image_Of (Lexicon.Albereo));
         Put (Image_Of (Lexicon.Aldebaran));

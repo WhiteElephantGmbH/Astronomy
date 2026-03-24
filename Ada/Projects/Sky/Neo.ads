@@ -22,14 +22,14 @@ with Time;
 
 package Neo is
 
-  procedure Add_Objects;
+  procedure Start_Reader;
 
-  function Exists (Item : String) return Boolean;
+  procedure Finalize_Reader;
+
+  function Is_Arriving (Item : Name.Id) return Boolean;
 
   function Direction_Of (Item : Name.Id;
                          Ut   : Time.Ut) return Space.Direction;
-
-  function Is_Arriving (Item : Name.Id) return Boolean;
 
   function Tracking_Period_Of (Item : Name.Id) return Time.Period;
 

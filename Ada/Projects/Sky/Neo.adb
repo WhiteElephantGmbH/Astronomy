@@ -34,10 +34,25 @@ package body Neo is
 
   use type Time.Ut;
 
-  function Exists (Item : String) return Boolean is
+  task type Reader is
+
+    entry Finalize;
+
+  end Reader;
+
+  The_Reader : access Reader;
+
+
+  procedure Start_Reader is
   begin
-    return Satellite.Exists (Item);
-  end Exists;
+    The_Reader := new Reader;
+  end Start_Reader;
+
+
+  procedure Finalize_Reader is
+  begin
+    The_Reader.Finalize;
+  end Finalize_Reader;
 
 
   type Element is record
@@ -250,11 +265,94 @@ package body Neo is
     end Process;
 
   begin -- Add_Objects
-    Satellite.Read_Stellarium_Data;
     for Target of Satellite.Names loop
       Process (Target);
     end loop;
   end Add_Objects;
+
+
+  Satellite_Data_Ready : Boolean := False;
+
+  task body Reader is
+  begin
+    Log.Write ("Reader started");
+    loop
+      select
+        accept Finalize;
+        exit;
+      or
+        when not Satellite_Data_Ready => delay until Time.In_Future (3.0);
+        if Satellite.Data_Ready then
+          Satellite.Read_Data;
+          Add_Objects;
+          Satellite_Data_Ready := True;
+        end if;
+      end select;
+    end loop;
+    Log.Write ("Reader finalized");
+  exception
+  when Error.Occurred =>
+    Log.Error (Error.Message);
+    accept Finalize;
+  when Occurrance: others =>
+    Log.Termination (Occurrance);
+    accept Finalize;
+  end Reader;
+
+
+  procedure Dispose is new Ada.Unchecked_Deallocation (Trajectory, Trajectory_Access);
+
+  function Object_Of (Item : Name.Id) return Sky.Object is
+    The_Name_Object : Sky.Object := Name.Object_Of (Item);
+    use type Sky.Object;
+  begin
+    if The_Name_Object = Sky.Undefined then
+      declare
+        Object_Name : constant String := Name.Image_Of (Item);
+      begin
+        The_Name_Object := Sky.Data.Neo_Object_Of (Object_Name);
+      exception
+      when others =>
+        Log.Warning ("Satellite <" & Object_Name & "> not found");
+      end;
+      Name.Define_Neo (Item, The_Name_Object);
+    end if;
+    return The_Name_Object;
+  end Object_Of;
+
+
+  function Is_Arriving (Item : Name.Id) return Boolean is
+  begin
+    if not Satellite_Data_Ready then
+      return False;
+    end if;
+    declare
+      Object : constant Sky.Object := Object_Of (Item);
+      use type Sky.Object;
+    begin
+      if Object = Sky.Undefined then
+        return False;
+      end if;
+      declare
+        Index    : constant Positive := Sky.Data.Neo_Index_Of (Object_Of (Item));
+        The_Data : Data renames The_Trajectories(Index);
+      begin
+        if The_Data.List = null then
+          return False;
+        elsif The_Data.List(The_Data.List'last).Ut < Time.Universal then
+          Dispose (The_Data.List);
+          Read (Name.Image_Of (Item));
+          if The_Last = 0 then
+            The_Data.List := null;
+            return False;
+          end if;
+          The_Data.List := new Trajectory'(The_Trajectory(1..The_Last));
+          The_Data.Wrap := The_Wrap_Location;
+        end if;
+        return The_Data.List(The_Data.List'first).Ut < Time.Universal + Time.One_Minute * 15;
+      end;
+    end;
+  end Is_Arriving;
 
 
   function Direction_Of (Item : Name.Id;
@@ -265,6 +363,9 @@ package body Neo is
     The_Data : Trajectory_Access renames The_Trajectories(Index).List;
 
   begin
+    if not Satellite_Data_Ready then
+      raise Program_Error;
+    end if;
     if The_Data /= null then
       for The_Index in The_Data.all'range loop
         if The_Index < The_Data.all'last and then The_Data(The_Index + 1).Ut >= Ut then
@@ -285,32 +386,13 @@ package body Neo is
   end Direction_Of;
 
 
-  procedure Dispose is new Ada.Unchecked_Deallocation (Trajectory, Trajectory_Access);
-
-  function Is_Arriving (Item : Name.Id) return Boolean is
-    Index    : constant Positive := Sky.Data.Neo_Index_Of (Name.Object_Of (Item));
-    The_Data : Data renames The_Trajectories(Index);
-  begin
-    if The_Data.List = null then
-      return False;
-    elsif The_Data.List(The_Data.List'last).Ut < Time.Universal then
-      Dispose (The_Data.List);
-      Read (Name.Image_Of (Item));
-      if The_Last = 0 then
-        The_Data.List := null;
-        return False;
-      end if;
-      The_Data.List := new Trajectory'(The_Trajectory(1..The_Last));
-      The_Data.Wrap := The_Wrap_Location;
-    end if;
-    return The_Data.List(The_Data.List'first).Ut < Time.Universal + Time.One_Minute * 15;
-  end Is_Arriving;
-
-
   function Tracking_Period_Of (Item : Name.Id) return Time.Period is
     Index    : constant Positive := Sky.Data.Neo_Index_Of (Name.Object_Of (Item));
     The_Data : Data renames The_Trajectories(Index);
   begin
+    if not Satellite_Data_Ready then
+      raise Program_Error;
+    end if;
     if The_Data.List = null then
       return Time.Undefined;
     else
@@ -324,6 +406,9 @@ package body Neo is
     Index    : constant Positive := Sky.Data.Neo_Index_Of (Name.Object_Of (Item));
     The_Data : Data renames The_Trajectories(Index);
   begin
+    if not Satellite_Data_Ready then
+      raise Program_Error;
+    end if;
     return The_Data.Wrap;
   end Wrap_Location_Of;
 
