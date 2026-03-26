@@ -179,23 +179,30 @@ package body Stellarium is
 
 
   function Satellites_Update_Age return Hours is
-    --yyyy-mm-ddThh:mm:ssZ
-    --f123456789012345678l
-    Date  : constant String := Last_Update;
-    Year  : constant String := Date(Date'first .. Date'first + 3);
-    Month : constant String := Date(Date'first + 5 .. Date'first + 6);
-    Day   : constant String := Date(Date'first + 8 .. Date'first + 9);
-    Clock : constant String := Date(Date'first + 11 .. Date'first + 18);
-    Age   : Hours;
-    use type Time.Calendar_Value;
+    Date : constant String := Last_Update;
   begin
-    Age := Hours(Time.Calendar_Now - Time.Calendar_Value_Of (Day & '.' & Month & '.' & Year & ' ' & Clock));
-    Age := (@ - Hours(Time.Local_Shift)) / 3600;
-    Log.Write ("Satellites update age:" & Age'image & " hours");
-    return Age;
+    if Date = "" then
+      Log.Warning ("Satellites have no updates");
+      return 0.0;
+    end if;
+    declare
+      --yyyy-mm-ddThh:mm:ssZ
+      --f123456789012345678l
+      Year  : constant String := Date(Date'first .. Date'first + 3);
+      Month : constant String := Date(Date'first + 5 .. Date'first + 6);
+      Day   : constant String := Date(Date'first + 8 .. Date'first + 9);
+      Clock : constant String := Date(Date'first + 11 .. Date'first + 18);
+      Age   : Hours;
+      use type Time.Calendar_Value;
+    begin
+      Age := Hours(Time.Calendar_Now - Time.Calendar_Value_Of (Day & '.' & Month & '.' & Year & ' ' & Clock));
+      Age := (@ - Hours(Time.Local_Shift)) / 3600;
+      Log.Write ("Satellites update age:" & Age'image & " hours");
+      return Age;
+    end;
   exception
   when others =>
-    Log.Error ("Satellites last update " & Last_Update & " is unknown");
+    Log.Error ("Satellites last update " & Date & " is unknown");
     return Hours'last;
   end Satellites_Update_Age;
 

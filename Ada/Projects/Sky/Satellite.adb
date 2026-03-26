@@ -81,11 +81,12 @@ package body Satellite is
       Log.Error ("No data");
       return False;
     end if;
-    if Up_To_Date then
-      Log.Write ("Age of update" & Update_Age'image & " hours");
-      return True;
-    elsif Age_Of_Data < Age_Limit then
+    if Age_Of_Data < Age_Limit then
       Log.Write ("Age of data:" & Age_Of_Data'image & " hours");
+      if not Up_To_Date then
+        Log.Write ("Age of update" & Update_Age'image & " hours");
+        return False;
+      end if;
       return True;
     end if;
     return False;
