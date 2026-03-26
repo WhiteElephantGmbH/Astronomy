@@ -48,7 +48,9 @@ package Stellarium is
 
   function Satellites_Filename return String;
 
-  type Hours is delta 0.1 range 0.0 .. 999.9;
+  type Hours is new Duration delta 0.1 range 0.0 .. Duration'last;
+
+  function Satellites_Update_Age return Hours;
 
   function Satellites_Update_Frequency return Hours;
 

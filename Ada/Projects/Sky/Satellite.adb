@@ -59,7 +59,12 @@ package body Satellite is
                                                                   Element_Type => Tle);
   Tle_Map : Tle_Data.Map;
 
-  Age_Limit : constant Stellarium.Hours := Stellarium.Satellites_Update_Frequency;
+  Age_Limit  : constant Stellarium.Hours := Stellarium.Satellites_Update_Frequency;
+  Update_Age : constant Stellarium.Hours := Stellarium.Satellites_Update_Age;
+
+  use type Stellarium.Hours;
+
+  Up_To_Date : constant Boolean := Age_Limit > Update_Age;
 
 
   function Data_Ready return Boolean is
@@ -71,14 +76,15 @@ package body Satellite is
       return Stellarium.Hours((Ada.Calendar.Clock - Modification_Time) / 3600.0);
     end Age_Of_Data;
 
-    use type Stellarium.Hours;
-
   begin -- Data_Ready
     if Json_Filename = "" then
       Log.Error ("No data");
       return False;
     end if;
-    if Age_Of_Data < Age_Limit then
+    if Up_To_Date then
+      Log.Write ("Age of update" & Update_Age'image & " hours");
+      return True;
+    elsif Age_Of_Data < Age_Limit then
       Log.Write ("Age of data:" & Age_Of_Data'image & " hours");
       return True;
     end if;

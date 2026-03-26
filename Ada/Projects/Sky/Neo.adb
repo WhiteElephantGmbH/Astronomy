@@ -286,6 +286,7 @@ package body Neo is
           Satellite.Read_Data;
           Add_Objects;
           Satellite_Data_Ready := True;
+          Name.Redefine_Neos;
         end if;
       end select;
     end loop;

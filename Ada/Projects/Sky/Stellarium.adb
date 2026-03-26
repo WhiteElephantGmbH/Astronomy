@@ -25,6 +25,7 @@ with Network.Tcp.Servers;
 with Os.Process;
 with Site;
 with Text;
+with Time;
 with Unsigned;
 
 package body Stellarium is
@@ -104,6 +105,8 @@ package body Stellarium is
 
   Update_Frequency_Hours : constant String := Configuration.Value_Of (Satellites, "update_frequency_hours");
 
+  Last_Update : constant String := Configuration.Value_Of (Satellites, "last_update");
+
   use type File.Folder;
 
   Data_Directory : constant File.Folder := Application_Data_Directory + "data";
@@ -175,10 +178,38 @@ package body Stellarium is
   end Satellites_Filename;
 
 
-  function Satellites_Update_Frequency return Hours is
+  function Satellites_Update_Age return Hours is
+    --yyyy-mm-ddThh:mm:ssZ
+    --f123456789012345678l
+    Date  : constant String := Last_Update;
+    Year  : constant String := Date(Date'first .. Date'first + 3);
+    Month : constant String := Date(Date'first + 5 .. Date'first + 6);
+    Day   : constant String := Date(Date'first + 8 .. Date'first + 9);
+    Clock : constant String := Date(Date'first + 11 .. Date'first + 18);
+    Age   : Hours;
+    use type Time.Calendar_Value;
   begin
-    Log.Write ("update frequency hours: " & Update_Frequency_Hours);
-    return Hours'value (Update_Frequency_Hours);
+    Age := Hours(Time.Calendar_Now - Time.Calendar_Value_Of (Day & '.' & Month & '.' & Year & ' ' & Clock));
+    Age := (@ - Hours(Time.Local_Shift)) / 3600;
+    Log.Write ("Satellites update age:" & Age'image & " hours");
+    return Age;
+  exception
+  when others =>
+    Log.Error ("Satellites last update " & Last_Update & " is unknown");
+    return Hours'last;
+  end Satellites_Update_Age;
+
+
+  function Satellites_Update_Frequency return Hours is
+    The_Hours : Hours;
+  begin
+    The_Hours := Hours'value (Update_Frequency_Hours);
+    Log.Write ("Satellites update frequency hours:" & The_Hours'image & " hours");
+    return The_Hours;
+  exception
+  when others =>
+    Log.Error ("Satellites update frequency hours " & Update_Frequency_Hours & " is unknown");
+    return Hours'last;
   end Satellites_Update_Frequency;
 
 

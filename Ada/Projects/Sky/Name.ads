@@ -53,6 +53,8 @@ package Name is
 
   procedure Define (Catalog : Sky.Catalog_Id);
 
+  procedure Redefine_Neos;
+
   type Sorting is (No_Sort, North, North_East, East, South_East, South, South_West, West, North_West, Zenith);
 
   subtype Sort_Direction is Sorting range Sorting'succ(Sorting'first) .. Sorting'last;

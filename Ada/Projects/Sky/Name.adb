@@ -343,9 +343,12 @@ package body Name is
 
     procedure Define_Catalog (Data_Id : Sky.Catalog_Id);
 
+    procedure Redefine_Neos (Was_Redefined : out Boolean);
+
     function List return Id_List;
 
   private
+    The_Catalog      : Sky.Catalog_Id;
     The_Element_List : Element_Access;
     The_Id_List      : Id_List;
   end Actual_Catalog;
@@ -381,6 +384,16 @@ package body Name is
   begin
     Actual_Catalog.Define_Catalog (Catalog);
   end Define;
+
+
+  procedure Redefine_Neos is
+    Was_Redefined : Boolean;
+  begin
+    Actual_Catalog.Redefine_Neos (Was_Redefined);
+    if Was_Redefined then
+      Targets.Define_Catalog;
+    end if;
+  end Redefine_Neos;
 
 
   type Distances is array (Sky.Catalog.Index) of Angle.Degrees;
@@ -930,6 +943,7 @@ package body Name is
       package Name_Tool is new Names.Generic_Sorting (Compare_Names);
 
     begin -- Define
+      The_Catalog := Data_Id;
       The_Id_List.Ids.Clear;
       The_Id_List := Id_List'(Kind => Data_Id, Ids => <>);
       while Next loop
@@ -942,6 +956,18 @@ package body Name is
         null;
       end case;
     end Define_Catalog;
+
+
+    procedure Redefine_Neos (Was_Redefined : out Boolean) is
+      use type Sky.Catalog_Id;
+    begin
+      if The_Catalog = Sky.Neo then
+        Define_Catalog (Sky.Neo);
+        Was_Redefined := True;
+      else
+        Was_Redefined := False;
+      end if;
+    end Redefine_Neos;
 
 
     function List return Id_List is
