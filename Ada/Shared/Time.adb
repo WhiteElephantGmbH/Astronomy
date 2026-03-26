@@ -78,7 +78,7 @@ package body Time is
 
 
   function Local_Time return Value is
-    Now         : constant Ada.Calendar.Time := Ada.Calendar.Clock;
+    Now         : constant Ada.Calendar.Time := Calendar_Now;
     The_Seconds : Ada.Calendar.Day_Duration;
     use all type Angle.Value;
     use type Angle.Hours;
@@ -88,15 +88,8 @@ package body Time is
                         Month   => Actual_Month,
                         Day     => Actual_Day,
                         Seconds => The_Seconds);
-    The_Time_Shift := Time_Shift (Now);
     return +(Angle.Hours(The_Seconds) / 3600.0);
   end Local_Time;
-
-
-  function Local_Shift return Duration is
-  begin
-    return The_Time_Shift;
-  end Local_Shift;
 
 
   function Local_Day return Day is
@@ -115,6 +108,12 @@ package body Time is
   begin
     return Actual_Year;
   end Local_Year;
+
+
+  function Local_Shift return Duration is
+  begin
+    return The_Time_Shift;
+  end Local_Shift;
 
 
   function Calendar_Value_Of (Image : String) return Calendar_Value is
@@ -152,6 +151,14 @@ package body Time is
   when others =>
     raise Illegal;
   end Calendar_Value_Of;
+
+
+  function Calendar_Now return Calendar_Value is
+    Now : constant Calendar_Value := Ada.Calendar.Clock;
+  begin
+    The_Time_Shift := Time_Shift (Now);
+    return Now;
+  end Calendar_Now;
 
 
   --------------------------

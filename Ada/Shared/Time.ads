@@ -59,8 +59,10 @@ package Time is
   Illegal      : exception;
   Out_Of_Range : exception;
 
-  function Calendar_Now return Calendar_Value is (Ada.Calendar.Clock);
+  function Calendar_Now return Calendar_Value;
 
+  function Local_Shift return Duration;
+  -- Precondition: Calendar_Now or Local_Time
 
   -------------------------
   -- Local Date and Time --
@@ -68,11 +70,10 @@ package Time is
 
   function Local_Time return Value;
 
-  -- Precondition: Local_Time read
-  function Local_Shift return Duration;
   function Local_Day   return Day;
   function Local_Month return Month;
   function Local_Year  return Year;
+  -- Precondition: Local_Time read
 
 
   --------------------
