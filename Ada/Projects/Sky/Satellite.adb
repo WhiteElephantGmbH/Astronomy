@@ -15,7 +15,6 @@
 -- *********************************************************************************************************************
 pragma Style_Astronomy;
 
-with Ada.Calendar;
 with Ada.Text_IO;
 with Ada.Directories;
 with Ada.Containers.Indefinite_Ordered_Maps;
@@ -68,33 +67,16 @@ package body Satellite is
 
 
   function Data_Ready return Boolean is
-
-    function Age_Of_Data return Stellarium.Hours is
-      use type Ada.Calendar.Time;
-      Modification_Time : constant Ada.Calendar.Time := Ada.Directories.Modification_Time (Json_Filename);
-    begin
-      return Stellarium.Hours((Ada.Calendar.Clock - Modification_Time) / 3600.0);
-    end Age_Of_Data;
-
-  begin -- Data_Ready
-    if Json_Filename = "" then
-      Log.Error ("No data");
-      return False;
-    end if;
-    if Age_Of_Data < Age_Limit then
-      Log.Write ("Age of data:" & Age_Of_Data'image & " hours");
-      if not Up_To_Date then
-        Log.Write ("Age of update" & Update_Age'image & " hours");
-        return False;
-      end if;
-      return True;
-    end if;
-    return False;
+  begin
+    return Up_To_Date;
   end Data_Ready;
 
 
   procedure Read_Data is
   begin
+    if Json_Filename = "" then
+      Log.Error ("No data");
+    end if;
     declare
       package JS renames GNATCOLL.JSON;
 
@@ -104,37 +86,24 @@ package body Satellite is
 
       procedure Handle_Satellite (Unused : JS.UTF8_String;
                                   Value  : JS.JSON_Value) is
-        Is_Visible    : constant Boolean := Value.Get ("visible");
-        Groups        : constant JS.JSON_Array := Value.Get ("groups");
-        Std_Mag       : constant JS.JSON_Value := Value.Get ("stdMag");
-        The_Magnitude : Stellarium.Magnitude;
-        use type Stellarium.Magnitude;
+        Is_Visible : constant Boolean := Value.Get ("visible");
+        Groups     : constant JS.JSON_Array := Value.Get ("groups");
       begin
         if Is_Visible then
-          case Std_Mag.Kind is
-          when JS.JSON_Int_Type =>
-            The_Magnitude := Stellarium.Magnitude(Integer'(Std_Mag.Get));
-          when JS.JSON_Float_Type =>
-            The_Magnitude := Stellarium.Magnitude(Float'(Std_Mag.Get));
-          when others =>
-            null;
-          end case;
-          if The_Magnitude <= Stellarium.Magnitude_Maximum then
-            for Group of Groups loop
-              if Group.Get in Stellarium.Satellite_Group then
-                declare
-                  Name   : constant String := Value.Get ("name");
-                  Values : constant Tle    := [1 => Value.Get ("tle1"),
-                                               2 => Value.Get ("tle2")];
-                begin
-                  if not Tle_Map.Contains (Name) and then not Norad.Is_In_Deep_Space (Values) then
-                    Tle_Map.Insert (Name, Values);
-                  end if;
-                end;
-                return;
-              end if;
-            end loop;
-          end if;
+          for Group of Groups loop
+            if Group.Get in Stellarium.Satellite_Group then
+              declare
+                Name   : constant String := Value.Get ("name");
+                Values : constant Tle    := [1 => Value.Get ("tle1"),
+                                             2 => Value.Get ("tle2")];
+              begin
+                if not Tle_Map.Contains (Name) and then not Norad.Is_In_Deep_Space (Values) then
+                  Tle_Map.Insert (Name, Values);
+                end if;
+              end;
+              return;
+            end if;
+          end loop;
         end if;
       end Handle_Satellite;
 

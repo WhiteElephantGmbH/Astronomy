@@ -23,13 +23,7 @@ with Traces;
 
 package Stellarium is
 
-  type Magnitude is delta 0.1 range -30.0 .. 30.0;
-
   type Goto_Handler is access procedure (Direction : Space.Direction);
-
-  procedure Set_Maximum (Item : Magnitude);
-
-  function Magnitude_Maximum return Magnitude;
 
   procedure Set_Satellite_Group (Name : String);
 

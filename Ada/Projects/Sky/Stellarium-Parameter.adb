@@ -23,7 +23,6 @@ with Targets;
 
 package body Stellarium.Parameter is
 
-  Magnitude_Key        : constant String := "Magnitude";
   Port_Key             : constant String := "Port";
   Program_Key          : constant String := "Program";
   Satellite_Group_Key  : constant String := "Satellite Group";
@@ -54,17 +53,6 @@ package body Stellarium.Parameter is
     The_Search_Tolerance := Section.Degrees_Of (Search_Tolerance_Key, Targets.Maximum_Search_Tolerance);
     Has_Satellites := With_Satellites;
     if Has_Satellites then
-      declare
-        Image         : constant String := Section.String_Of (Magnitude_Key, Id);
-        The_Magnitude : Stellarium.Magnitude;
-      begin
-        The_Magnitude := Stellarium.Magnitude'value(Image);
-        Log.Write ("Magnitude Maximum:" & The_Magnitude'image);
-        Stellarium.Set_Maximum (The_Magnitude);
-      exception
-      when others =>
-        Error.Raise_With ("Magnitude out of range");
-      end;
       Stellarium.Set_Satellite_Group (Section.String_Of (Satellite_Group_Key, Id));
     end if;
     Startup_Stellarium;
@@ -79,7 +67,6 @@ package body Stellarium.Parameter is
     Put (Program_Key & "          = " & Os.System.Program_Files_Folder & "Stellarium\Stellarium.exe");
     Put (Search_Tolerance_Key & " = 10""");
     if Satellites /= "" then
-      Put (Magnitude_Key & "        = 8.0");
       Put (Satellite_Group_Key & "  = " & Satellites);
     end if;
   end Defaults;

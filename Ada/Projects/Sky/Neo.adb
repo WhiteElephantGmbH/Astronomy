@@ -274,20 +274,29 @@ package body Neo is
   Satellite_Data_Ready : Boolean := False;
 
   task body Reader is
+
+    Stellarium_Startup_Time : constant Duration := 60.0;
+
+    procedure Define_Objects is
+    begin
+      Satellite.Read_Data;
+      Add_Objects;
+      Satellite_Data_Ready := True;
+    end Define_Objects;
+
   begin
     Log.Write ("Reader started");
+    if Satellite.Data_Ready then
+      Define_Objects;
+    end if;
     loop
       select
         accept Finalize;
         exit;
       or
-        when not Satellite_Data_Ready => delay until Time.In_Future (3.0);
-        if Satellite.Data_Ready then
-          Satellite.Read_Data;
-          Add_Objects;
-          Satellite_Data_Ready := True;
-          Name.Redefine_Neos;
-        end if;
+        when not Satellite_Data_Ready => delay until Time.In_Future (Stellarium_Startup_Time);
+        Define_Objects;
+        Name.Redefine_Neos;
       end select;
     end loop;
     Log.Write ("Reader finalized");
