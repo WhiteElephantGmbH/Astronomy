@@ -456,7 +456,7 @@ package body Control is
     Sky_Line.Read;
     Name.Read_Favorites (Enable_Axis_Positions => False,
                          Enable_Land_Marks     => True,
-                         Enable_Neos           => True);
+                         Neo_Name_Unknown      => Neo.Name_Unknown'access);
   end Read_Data;
 
 

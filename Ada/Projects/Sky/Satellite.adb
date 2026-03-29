@@ -72,6 +72,8 @@ package body Satellite is
   end Data_Ready;
 
 
+  Data_Read : Boolean := False;
+
   procedure Read_Data is
   begin
     if Json_Filename = "" then
@@ -112,6 +114,7 @@ package body Satellite is
       JS.Map_JSON_Object (Satellites, Handle_Satellite'access);
       Log.Write ("Number of visible satellites:" & Tle_Map.Length'image);
     end;
+    Data_Read := True;
   exception
   when Item: others =>
     Log.Termination (Item);
@@ -133,10 +136,10 @@ package body Satellite is
   end Names;
 
 
-  function Exists (Name : String) return Boolean is
+  function Name_Check_Failed (Name : String) return Boolean is
   begin
-    return Tle_Map.Contains (Name);
-  end Exists;
+    return Data_Read and then not Tle_Map.Contains (Name);
+  end Name_Check_Failed;
 
 
   function Tle_Of (Name : String) return Tle is

@@ -39,6 +39,9 @@ package body Name is
   Support_Land_Marks     : Boolean := False;
   Support_Neos           : Boolean := False;
 
+  Neo_Name_Is_Unknown : Neo_Name_Handler;
+
+
   type Element_Data (Item : Data_Kind) is record
     Kind      : Object_Kind;
     Number    : Natural;
@@ -343,7 +346,7 @@ package body Name is
 
     procedure Define_Catalog (Data_Id : Sky.Catalog_Id);
 
-    procedure Redefine_Neos (Was_Redefined : out Boolean);
+    procedure Redefine;
 
     function List return Id_List;
 
@@ -371,11 +374,12 @@ package body Name is
 
   procedure Read_Favorites (Enable_Axis_Positions : Boolean;
                             Enable_Land_Marks     : Boolean;
-                            Enable_Neos           : Boolean) is
+                            Neo_Name_Unknown      : Neo_Name_Handler := null) is
   begin
     Support_Axis_Positions := Enable_Axis_Positions;
     Support_Land_Marks := Enable_Land_Marks;
-    Support_Neos := Enable_Neos;
+    Support_Neos := Neo_Name_Unknown /= null;
+    Neo_Name_Is_Unknown := Neo_Name_Unknown;
     Actual_Catalog.Read_Favorite_Catalog;
   end Read_Favorites;
 
@@ -386,14 +390,11 @@ package body Name is
   end Define;
 
 
-  procedure Redefine_Neos is
-    Was_Redefined : Boolean;
+  procedure Redefine_Catalog is
   begin
-    Actual_Catalog.Redefine_Neos (Was_Redefined);
-    if Was_Redefined then
-      Targets.Define_Catalog;
-    end if;
-  end Redefine_Neos;
+    Actual_Catalog.Redefine;
+    Targets.Define_Catalog;
+  end Redefine_Catalog;
 
 
   type Distances is array (Sky.Catalog.Index) of Angle.Degrees;
@@ -458,6 +459,8 @@ package body Name is
     return Actual_Catalog.List;
   end Actual_List;
 
+
+  Neo_Mark : constant String := "NEO";
 
   protected body Actual_Catalog is
 
@@ -555,7 +558,6 @@ package body Name is
           end Add_Landmark;
 
           procedure Add_Sky_Object is
-            Satellite_Mark : constant String := "SAT";
           begin
             The_Element := new Element_Data(Sky_Object);
             The_Element.Number := Number;
@@ -641,9 +643,16 @@ package body Name is
                 when Lexicon.Not_Found =>
                   null;
                 end;
-                if Support_Neos and then Parts_1.Count > 1 and then Parts_1(Text.First_Index) = Satellite_Mark then
+                if Support_Neos and then Parts_1.Count > 1 and then Parts_1(Text.First_Index) = Neo_Mark then
                   The_Element.Kind := Near_Earth_Object;
-                  The_Element.Name := [Text.Trimmed (Part_1(Part_1'first + Satellite_Mark'length .. Part_1'last))];
+                  declare
+                    Neo_Name : constant String := Text.Trimmed (Part_1(Part_1'first + Neo_Mark'length .. Part_1'last));
+                  begin
+                    The_Element.Name := [Neo_Name];
+                    if Neo_Name_Is_Unknown (Neo_Name) then
+                      Error.Raise_With ("Unknown Satellite - " & Neo_Name);
+                    end if;
+                  end;
                 else
                   The_Element.Kind := Sky_Object;
                   The_Element.Object := Sky.Catalog.Object_Of (Object_Name);
@@ -782,7 +791,7 @@ package body Name is
         Put (Image_Of (Lexicon.Pluto));
         Put_Moon;
         Put ("");
-        Put ("SAT ISS");
+        Put (Neo_Mark & " ISS (ZARYA)");
         Put ("");
         Put (Image_Of (Lexicon.Albereo));
         Put (Image_Of (Lexicon.Aldebaran));
@@ -958,16 +967,10 @@ package body Name is
     end Define_Catalog;
 
 
-    procedure Redefine_Neos (Was_Redefined : out Boolean) is
-      use type Sky.Catalog_Id;
+    procedure Redefine is
     begin
-      if The_Catalog = Sky.Neo then
-        Define_Catalog (Sky.Neo);
-        Was_Redefined := True;
-      else
-        Was_Redefined := False;
-      end if;
-    end Redefine_Neos;
+      Define_Catalog (The_Catalog);
+    end Redefine;
 
 
     function List return Id_List is

@@ -281,6 +281,7 @@ package body Neo is
     begin
       Satellite.Read_Data;
       Add_Objects;
+      Name.Redefine_Catalog;
       Satellite_Data_Ready := True;
     end Define_Objects;
 
@@ -296,7 +297,6 @@ package body Neo is
       or
         when not Satellite_Data_Ready => delay until Time.In_Future (Stellarium_Startup_Time);
         Define_Objects;
-        Name.Redefine_Neos;
       end select;
     end loop;
     Log.Write ("Reader finalized");
@@ -421,5 +421,8 @@ package body Neo is
     end if;
     return The_Data.Wrap;
   end Wrap_Location_Of;
+
+
+  function Name_Unknown (Item : String) return Boolean renames Satellite.Name_Check_Failed;
 
 end Neo;

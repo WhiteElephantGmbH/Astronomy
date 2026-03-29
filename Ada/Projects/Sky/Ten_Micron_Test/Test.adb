@@ -62,7 +62,9 @@ package body Test is
             begin
               if Name = "" then
                 exit Main;
-              elsif Satellite.Exists (Name) then
+              elsif Satellite.Name_Check_Failed (Name) then
+                Put_Line ("!!! satellite unknown");
+              else
                 declare
                   Tle : constant Satellite.Tle := Satellite.Tle_Of (Name);
                 begin
@@ -70,8 +72,6 @@ package body Test is
                                     Used_Socket => The_Socket);
                 end;
                 exit;
-              else
-                Put_Line ("!!! satellite unknown");
               end if;
             end;
           end loop;

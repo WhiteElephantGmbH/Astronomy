@@ -45,15 +45,15 @@ package Name is
 
   function "=" (Left, Right : Id_List) return Boolean;
 
-  type Neo_Exists_Handler is access function (Item : String) return Boolean;
+  type Neo_Name_Handler is access function (Item : String) return Boolean;
 
   procedure Read_Favorites (Enable_Axis_Positions : Boolean;
                             Enable_Land_Marks     : Boolean;
-                            Enable_Neos           : Boolean);
+                            Neo_Name_Unknown      : Neo_Name_Handler := null);
 
   procedure Define (Catalog : Sky.Catalog_Id);
 
-  procedure Redefine_Neos;
+  procedure Redefine_Catalog;
 
   type Sorting is (No_Sort, North, North_East, East, South_East, South, South_West, West, North_West, Zenith);
 
@@ -108,7 +108,7 @@ package Name is
   function Direction_Of (Item : Id) return Earth.Direction;
 
   function Magnitude_Of (Item : Id) return Sky.Magnitude;
-  
+
   procedure Define_Neo (Item           : Id;
                         Favorit_Object : Sky.Object);
 

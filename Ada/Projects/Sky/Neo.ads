@@ -34,5 +34,7 @@ package Neo is
   function Tracking_Period_Of (Item : Name.Id) return Time.Period;
 
   function Wrap_Location_Of (Item : Name.Id) return Earth.Direction;
+  
+  function Name_Unknown (Item : String) return Boolean;
 
 end Neo;

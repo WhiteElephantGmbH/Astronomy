@@ -28,7 +28,7 @@ package Satellite is
 
   function Names return Text.List;
 
-  function Exists (Name : String) return Boolean;
+  function Name_Check_Failed (Name : String) return Boolean;
 
   function Tle_Of (Name : String) return Tle;
 
