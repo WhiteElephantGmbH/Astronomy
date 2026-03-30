@@ -650,7 +650,7 @@ package body Name is
                   begin
                     The_Element.Name := [Neo_Name];
                     if Neo_Name_Is_Unknown (Neo_Name) then
-                      Error.Raise_With ("Unknown Satellite - " & Neo_Name);
+                      Log.Error ("Unknown Satellite - " & Neo_Name);
                     end if;
                   end;
                 else

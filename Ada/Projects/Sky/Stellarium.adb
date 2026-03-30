@@ -172,19 +172,23 @@ package body Stellarium is
       return 0.0;
     end if;
     declare
-      --yyyy-mm-ddThh:mm:ssZ
-      --f123456789012345678l
+      --yyyy-mm-ddThh:mm:ss[Z]
+      --f123456789012345678 l
       Year  : constant String := Date(Date'first .. Date'first + 3);
       Month : constant String := Date(Date'first + 5 .. Date'first + 6);
       Day   : constant String := Date(Date'first + 8 .. Date'first + 9);
       Clock : constant String := Date(Date'first + 11 .. Date'first + 18);
-      Age   : Hours;
+      Is_UT : constant Boolean := Date(Date'last) = 'Z';
+      Age   : Duration;
       use type Time.Calendar_Value;
     begin
-      Age := Hours(Time.Calendar_Now - Time.Calendar_Value_Of (Day & '.' & Month & '.' & Year & ' ' & Clock));
-      Age := (@ - Hours(Time.Local_Shift)) / 3600;
-      Log.Write ("Satellites update age:" & Age'image & " hours");
-      return Age;
+      Age := Time.Calendar_Now - Time.Calendar_Value_Of (Day & '.' & Month & '.' & Year & ' ' & Clock);
+      if Is_UT then
+        Age := @ - Time.Local_Shift;
+      end if;
+      return Result : constant Hours := Hours(Age / 3600) do
+        Log.Write ("Satellites update age:" & Result'image & " hours");
+      end return;
     end;
   exception
   when others =>
