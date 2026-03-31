@@ -8,7 +8,7 @@ pragma Build (Description => "Request test program",
               Version     => (1, 0, 0, 6),
               Kind        => Console,
               Icon        => False,
-              Libraries   => ("AWSS64"),
+              Libraries   => ("AWSS64", "COLL64"),
               Compiler    => "GNATPRO\23.0");
 with Request;
 
