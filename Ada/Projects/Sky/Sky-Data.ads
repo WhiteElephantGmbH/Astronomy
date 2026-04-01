@@ -66,12 +66,14 @@ package Sky.Data is
                            Object_Kind : Object_Type := Unknown;
                            Direction   : Space.Direction := Space.Unknown_Direction) return Index;
 
-  function Neo_Object_Of (Item : String) return Index;
+  function Neo_Object_Of (Number : Natural) return Index;
 
-  function New_Neo_Object_For (Item        : String;
-                               Description : String) return Positive;
+  function New_Neo_Object_For (Item   : String;
+                               Number : Natural) return Positive;
 
   function Neo_Index_Of (Id : Index) return Positive;
+
+  function Neo_Number_Of (Id : Index) return Natural;
 
   procedure Apparent (Ra  : in out Astro.REAL;
                       Dec : in out Astro.REAL);

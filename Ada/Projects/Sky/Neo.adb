@@ -32,29 +32,6 @@ package body Neo is
 
   package Log is new Traces ("Neo");
 
-  use type Time.Ut;
-
-  task type Reader is
-
-    entry Finalize;
-
-  end Reader;
-
-  The_Reader : access Reader;
-
-
-  procedure Start_Reader is
-  begin
-    The_Reader := new Reader;
-  end Start_Reader;
-
-
-  procedure Finalize_Reader is
-  begin
-    The_Reader.Finalize;
-  end Finalize_Reader;
-
-
   type Element is record
     Ut  : Time.Ut     := Time.In_The_Past;
     Ra  : Angle.Value := Angle.Zero;
@@ -69,7 +46,7 @@ package body Neo is
   The_Wrap_Location : Earth.Direction;
 
 
-  procedure Read (Target : String) is
+  procedure Read (Target : Satellite.Number) is
 
     Start_Time : constant Time.Ut := Time.Synchronized_Universal (Base => 1.0);
     The_Entry  : Natural := 0;
@@ -151,6 +128,8 @@ package body Neo is
 
       The_Max_Alt : Angle.Degrees;
 
+      use type Time.Ut;
+
     begin -- Find_Norad_Entries
       if Log.Is_Enabled then
         Log.Write ("NORAD: " & Norad_Lines(1));
@@ -231,7 +210,7 @@ package body Neo is
   begin -- read
     The_Last := 0;
     The_Entry := 0;
-    Log.Write ("NEO READ - " & Target);
+    Log.Write ("NEO READ - " & Target'image);
     Norad_Lines := Satellite.Tle_Of (Target);
     Find_Norad_Entries;
   end Read;
@@ -249,13 +228,13 @@ package body Neo is
 
   procedure Add_Objects is
 
-    procedure Process (Target : String) is
+    procedure Process (Target : Satellite.Number) is
       The_Index : Positive;
     begin
       Read (Target);
       if The_Last > 0 then
-        The_Index := Sky.Data.New_Neo_Object_For (Item        => Target,
-                                                  Description => "");
+        The_Index := Sky.Data.New_Neo_Object_For (Item   => Satellite.Name_Of (Target),
+                                                  Number => Natural(Target));
         if The_Index > The_Trajectories'last then
           Error.Raise_With ("Too many near earth objects");
         end if;
@@ -265,77 +244,30 @@ package body Neo is
     end Process;
 
   begin -- Add_Objects
-    for Target of Satellite.Names loop
+    for Target of Satellite.Targets loop
       Process (Target);
     end loop;
   end Add_Objects;
 
 
-  Satellite_Data_Ready : Boolean := False;
-
-  task body Reader is
-
-    Stellarium_Startup_Time : constant Duration := 60.0;
-
-    procedure Define_Objects is
-    begin
-      Satellite.Read_Data;
-      Add_Objects;
-      Name.Redefine_Catalog;
-      Satellite_Data_Ready := True;
-    end Define_Objects;
-
+  procedure Read_Data is
   begin
-    Log.Write ("Reader started");
-    if Satellite.Data_Ready then
-      Define_Objects;
-    end if;
-    loop
-      select
-        accept Finalize;
-        exit;
-      or
-        when not Satellite_Data_Ready => delay until Time.In_Future (Stellarium_Startup_Time);
-        Define_Objects;
-      end select;
-    end loop;
-    Log.Write ("Reader finalized");
-  exception
-  when Error.Occurred =>
-    Log.Error (Error.Message);
-    accept Finalize;
-  when Occurrance: others =>
-    Log.Termination (Occurrance);
-    accept Finalize;
-  end Reader;
+    Satellite.Read_Data;
+    Add_Objects;
+  end Read_Data;
 
 
   procedure Dispose is new Ada.Unchecked_Deallocation (Trajectory, Trajectory_Access);
 
   function Object_Of (Item : Name.Id) return Sky.Object is
-    The_Name_Object : Sky.Object := Name.Object_Of (Item);
-    use type Sky.Object;
   begin
-    if The_Name_Object = Sky.Undefined then
-      declare
-        Object_Name : constant String := Name.Image_Of (Item);
-      begin
-        The_Name_Object := Sky.Data.Neo_Object_Of (Object_Name);
-      exception
-      when others =>
-        Log.Warning ("Satellite <" & Object_Name & "> not found");
-      end;
-      Name.Define_Neo (Item, The_Name_Object);
-    end if;
-    return The_Name_Object;
+    return Name.Object_Of (Item);
   end Object_Of;
 
 
   function Is_Arriving (Item : Name.Id) return Boolean is
+    use type Time.Ut;
   begin
-    if not Satellite_Data_Ready then
-      return False;
-    end if;
     declare
       Object : constant Sky.Object := Object_Of (Item);
       use type Sky.Object;
@@ -344,14 +276,14 @@ package body Neo is
         return False;
       end if;
       declare
-        Index    : constant Positive := Sky.Data.Neo_Index_Of (Object_Of (Item));
+        Index    : constant Positive := Sky.Data.Neo_Index_Of (Object);
         The_Data : Data renames The_Trajectories(Index);
       begin
         if The_Data.List = null then
           return False;
         elsif The_Data.List(The_Data.List'last).Ut < Time.Universal then
           Dispose (The_Data.List);
-          Read (Name.Image_Of (Item));
+          Read (Satellite.Number(Sky.Data.Neo_Number_Of (Object)));
           if The_Last = 0 then
             The_Data.List := null;
             return False;
@@ -372,10 +304,9 @@ package body Neo is
 
     The_Data : Trajectory_Access renames The_Trajectories(Index).List;
 
+    use type Time.Ut;
+
   begin
-    if not Satellite_Data_Ready then
-      raise Program_Error;
-    end if;
     if The_Data /= null then
       for The_Index in The_Data.all'range loop
         if The_Index < The_Data.all'last and then The_Data(The_Index + 1).Ut >= Ut then
@@ -400,9 +331,6 @@ package body Neo is
     Index    : constant Positive := Sky.Data.Neo_Index_Of (Name.Object_Of (Item));
     The_Data : Data renames The_Trajectories(Index);
   begin
-    if not Satellite_Data_Ready then
-      raise Program_Error;
-    end if;
     if The_Data.List = null then
       return Time.Undefined;
     else
@@ -416,13 +344,13 @@ package body Neo is
     Index    : constant Positive := Sky.Data.Neo_Index_Of (Name.Object_Of (Item));
     The_Data : Data renames The_Trajectories(Index);
   begin
-    if not Satellite_Data_Ready then
-      raise Program_Error;
-    end if;
     return The_Data.Wrap;
   end Wrap_Location_Of;
 
 
-  function Name_Unknown (Item : String) return Boolean renames Satellite.Name_Check_Failed;
+  function Name_Of (Number : Natural) return String is
+  begin
+    return Satellite.Name_Of (Satellite.Number(Number));
+  end Name_Of;
 
 end Neo;

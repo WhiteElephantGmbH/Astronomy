@@ -25,6 +25,7 @@ with PWI4.M3;
 with PWI4.Rotator;
 with PWI4.Site;
 with Satellite;
+with Sky.Data;
 with System;
 with Traces;
 
@@ -458,10 +459,11 @@ package body Device is
     use type Microns;
     use type Degrees;
 
-    procedure Follow_Tle (Tle_Name : String) is
-      Tle : constant Satellite.Tle := Satellite.Tle_Of (Tle_Name);
+    procedure Follow_Tle (Id : Name.Id) is
+      Number : constant Satellite.Number := Satellite.Number(Sky.Data.Neo_Number_Of (Name.Object_Of (Id)));
+      Tle    : constant Satellite.Tle := Satellite.Tle_Of ((Number));
     begin
-      PWI4.Mount.Follow_Tle (Line_1 => Tle_Name,
+      PWI4.Mount.Follow_Tle (Line_1 => Satellite.Tle_Name_Of (Number),
                              Line_2 => Tle(1),
                              Line_3 => Tle(2));
     end Follow_Tle;
@@ -600,7 +602,7 @@ package body Device is
           PWI4.Mount.Find_Home;
           The_Mount_State := Mount.Homing;
         when Follow_Tle =>
-          Follow_Tle (Name.Image_Of (The_Parameter.Name_Id));
+          Follow_Tle (The_Parameter.Name_Id);
         when Goto_Target =>
           PWI4.Mount.Goto_Ra_Dec (With_Ra    => The_Parameter.Ra,
                                   With_Dec   => The_Parameter.Dec,

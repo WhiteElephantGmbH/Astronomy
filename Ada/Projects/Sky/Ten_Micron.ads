@@ -9,6 +9,7 @@ with Earth;
 with Lx200;
 with Network;
 with Refraction;
+with Sky;
 with Space;
 with Time;
 
@@ -133,7 +134,7 @@ package Ten_Micron is
 
   procedure End_Focusing;
 
-  procedure Load_Tle (Name : String);
+  procedure Load_Tle (Object : Sky.Object);
 
   procedure Park;
 

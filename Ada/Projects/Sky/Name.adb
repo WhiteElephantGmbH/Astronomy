@@ -39,7 +39,7 @@ package body Name is
   Support_Land_Marks     : Boolean := False;
   Support_Neos           : Boolean := False;
 
-  Neo_Name_Is_Unknown : Neo_Name_Handler;
+  Neo_Name_Of : Neo_Name_Handler;
 
 
   type Element_Data (Item : Data_Kind) is record
@@ -195,23 +195,6 @@ package body Name is
   end Magnitude_Of;
 
 
-  procedure Define_Neo (Item           : Id;
-                        Favorit_Object : Sky.Object) is
-    use type Sky.Object;
-  begin
-    case Item.Data_Id is
-    when Sky.Favorites =>
-      if Kind_Of (Item) = Near_Earth_Object and then Item.Element.Object = Sky.Undefined then
-        Item.Element.Object := Favorit_Object;
-        return;
-      end if;
-    when others =>
-      null;
-    end case;
-    raise Program_Error;
-  end Define_Neo;
-
-
   function Visibility_Changed_For (Item    : in out Id;
                                    Visible :        Boolean) return Boolean is
   begin
@@ -346,8 +329,6 @@ package body Name is
 
     procedure Define_Catalog (Data_Id : Sky.Catalog_Id);
 
-    procedure Redefine;
-
     function List return Id_List;
 
   private
@@ -374,12 +355,12 @@ package body Name is
 
   procedure Read_Favorites (Enable_Axis_Positions : Boolean;
                             Enable_Land_Marks     : Boolean;
-                            Neo_Name_Unknown      : Neo_Name_Handler := null) is
+                            Neo_Name_Of_Number    : Neo_Name_Handler := null) is
   begin
     Support_Axis_Positions := Enable_Axis_Positions;
     Support_Land_Marks := Enable_Land_Marks;
-    Support_Neos := Neo_Name_Unknown /= null;
-    Neo_Name_Is_Unknown := Neo_Name_Unknown;
+    Support_Neos := Neo_Name_Of_Number /= null;
+    Neo_Name_Of := Neo_Name_Of_Number;
     Actual_Catalog.Read_Favorite_Catalog;
   end Read_Favorites;
 
@@ -388,13 +369,6 @@ package body Name is
   begin
     Actual_Catalog.Define_Catalog (Catalog);
   end Define;
-
-
-  procedure Redefine_Catalog is
-  begin
-    Actual_Catalog.Redefine;
-    Targets.Define_Catalog;
-  end Redefine_Catalog;
 
 
   type Distances is array (Sky.Catalog.Index) of Angle.Degrees;
@@ -460,7 +434,7 @@ package body Name is
   end Actual_List;
 
 
-  Neo_Mark : constant String := "NEO";
+  Sat_Mark : constant String := "SAT";
 
   protected body Actual_Catalog is
 
@@ -643,15 +617,20 @@ package body Name is
                 when Lexicon.Not_Found =>
                   null;
                 end;
-                if Support_Neos and then Parts_1.Count > 1 and then Parts_1(Text.First_Index) = Neo_Mark then
+                if Support_Neos and then Parts_1.Count = 2 and then Parts_1(Text.First_Index) = Sat_Mark then
                   The_Element.Kind := Near_Earth_Object;
                   declare
-                    Neo_Name : constant String := Text.Trimmed (Part_1(Part_1'first + Neo_Mark'length .. Part_1'last));
+                    Satellite_Id : constant String := Parts_1(Text.First_Index + 1);
                   begin
-                    The_Element.Name := [Neo_Name];
-                    if Neo_Name_Is_Unknown (Neo_Name) then
-                      Log.Error ("Unknown Satellite - " & Neo_Name);
-                    end if;
+                    declare
+                      Neo_Number   : constant Natural := Natural'value(Satellite_Id);
+                    begin
+                      The_Element.Name := [Neo_Name_Of (Neo_Number)];
+                      The_Element.Object := Sky.Data.Neo_Object_Of (Neo_Number);
+                    end;
+                  exception
+                  when others =>
+                    Error.Raise_With ("Unknown Satellite - " & Satellite_Id);
                   end;
                 else
                   The_Element.Kind := Sky_Object;
@@ -791,7 +770,7 @@ package body Name is
         Put (Image_Of (Lexicon.Pluto));
         Put_Moon;
         Put ("");
-        Put (Neo_Mark & " ISS (ZARYA)");
+        Put ("SAT 25544");
         Put ("");
         Put (Image_Of (Lexicon.Albereo));
         Put (Image_Of (Lexicon.Aldebaran));
@@ -965,12 +944,6 @@ package body Name is
         null;
       end case;
     end Define_Catalog;
-
-
-    procedure Redefine is
-    begin
-      Define_Catalog (The_Catalog);
-    end Redefine;
 
 
     function List return Id_List is

@@ -17,11 +17,12 @@ pragma Style_Astronomy;
 
 with Ada.Text_IO;
 with Ada.Directories;
-with Ada.Containers.Indefinite_Ordered_Maps;
+with Ada.Containers.Ordered_Maps;
 with Ada.Strings.Unbounded;
 with GNATCOLL.JSON;
 with Stellarium;
 with Traces;
+with Text;
 
 package body Satellite is
 
@@ -48,31 +49,19 @@ package body Satellite is
   end Json_Data;
 
 
-  function "=" (Unused_Left, Unused_Right : Tle) return Boolean is
-  begin
-    return False;
-  end "=";
+  type Data is record
+    Name    : Text.String;
+    Element : Tle;
+  end record;
 
+  use type Number;
 
-  package Tle_Data is new Ada.Containers.Indefinite_Ordered_Maps (Key_Type     => String,
-                                                                  Element_Type => Tle);
+  package Tle_Data is new Ada.Containers.Ordered_Maps (Key_Type     => Number,
+                                                       Element_Type => Data);
   Tle_Map : Tle_Data.Map;
 
-  Age_Limit  : constant Stellarium.Hours := Stellarium.Satellites_Update_Frequency;
-  Update_Age : constant Stellarium.Hours := Stellarium.Satellites_Update_Age;
+  The_Numbers : Numbers.Set := [];
 
-  use type Stellarium.Hours;
-
-  Up_To_Date : constant Boolean := Age_Limit > Update_Age;
-
-
-  function Data_Ready return Boolean is
-  begin
-    return Up_To_Date;
-  end Data_Ready;
-
-
-  Data_Read : Boolean := False;
 
   procedure Read_Data is
   begin
@@ -82,25 +71,28 @@ package body Satellite is
     declare
       package JS renames GNATCOLL.JSON;
 
-      Data       : constant JS.JSON_Value := JS.Read (Json_Data);
-      Creator    : constant JS.JSON_Value := Data.Get ("creator");
-      Satellites : constant JS.JSON_Value := Data.Get ("satellites");
+      Js_Data    : constant JS.JSON_Value := JS.Read (Json_Data);
+      Creator    : constant JS.JSON_Value := Js_Data.Get ("creator");
+      Satellites : constant JS.JSON_Value := Js_Data.Get ("satellites");
 
       procedure Handle_Satellite (Unused : JS.UTF8_String;
                                   Value  : JS.JSON_Value) is
         Is_Visible : constant Boolean := Value.Get ("visible");
         Groups     : constant JS.JSON_Array := Value.Get ("groups");
+        use type Numbers.Set;
       begin
         if Is_Visible then
           for Group of Groups loop
             if Group.Get in Stellarium.Satellite_Group then
               declare
-                Name   : constant String := Value.Get ("name");
-                Values : constant Tle    := [1 => Value.Get ("tle1"),
-                                             2 => Value.Get ("tle2")];
+                Item : constant Data := (Name    => [Value.Get ("name")],
+                                         Element => [1 => Value.Get ("tle1"),
+                                                     2 => Value.Get ("tle2")]);
+                Key : constant Number := Norad.Number_Of (Item.Element);
               begin
-                if not Tle_Map.Contains (Name) and then not Norad.Is_In_Deep_Space (Values) then
-                  Tle_Map.Insert (Name, Values);
+                if not Tle_Map.Contains (Key) and then not Norad.Is_In_Deep_Space (Item.Element) then
+                  Tle_Map.Insert (Key, Item);
+                  The_Numbers := @ + Key;
                 end if;
               end;
               return;
@@ -114,37 +106,33 @@ package body Satellite is
       JS.Map_JSON_Object (Satellites, Handle_Satellite'access);
       Log.Write ("Number of visible satellites:" & Tle_Map.Length'image);
     end;
-    Data_Read := True;
   exception
   when Item: others =>
     Log.Termination (Item);
   end Read_Data;
 
 
-  function Names return Text.List is
-
-    The_Names : Text.List;
-
-    procedure Add (Position : Tle_Data.Cursor) is
-    begin
-      The_Names.Append (Tle_Data.Key (Position));
-    end Add;
-
-  begin -- Names
-    Tle_Map.Iterate (Add'access);
-    return The_Names;
-  end Names;
-
-
-  function Name_Check_Failed (Name : String) return Boolean is
+  function Targets return Numbers.Set is
   begin
-    return Data_Read and then not Tle_Map.Contains (Name);
-  end Name_Check_Failed;
+    return The_Numbers;
+  end Targets;
 
 
-  function Tle_Of (Name : String) return Tle is
+  function Tle_Of (Object : Number) return Tle is
   begin
-    return Tle_Map.Element (Name);
+    return Tle_Map.Element (Object).Element;
   end Tle_Of;
+
+
+  function Tle_Name_Of (Object : Number) return String is
+  begin
+    return Tle_Map.Element(Object).Name.S;
+  end Tle_Name_Of;
+
+
+  function Name_Of (Object : Number) return String is
+  begin
+    return Tle_Name_Of (Object) & " #" & Text.Trimmed (Object'image);
+  end Name_Of;
 
 end Satellite;

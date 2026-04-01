@@ -24,9 +24,13 @@ package Norad is
 
   type Two_Line is array (1 .. 2) of Line_Data;
 
+  type Number is range 0 .. 99_999;
+
   subtype Vector is Astro.VECTOR;
 
   function Is_In_Deep_Space (Data : Two_Line) return Boolean;
+
+  function Number_Of (Data : Two_Line) return Number;
 
   procedure SGP (Data         :     Two_Line;
                  Ut           :     Time.Ut;

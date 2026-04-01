@@ -55,8 +55,6 @@ package body Sky.Data is
     Dec_J2000   : Angle.Degrees;
   end record;
 
-  use type Text.String;
-
   type Extension_Objects is array (Extension_Object) of Information;
 
   The_Extension_Table : Extension_Objects;
@@ -382,10 +380,10 @@ package body Sky.Data is
   end New_Object_For;
 
 
-  function Neo_Object_Of (Item : String) return Index is
+  function Neo_Object_Of (Number : Natural) return Index is
   begin
     for The_Index in The_First_Neo .. The_Last_Neo loop
-      if The_Extension_Table(The_Index).Name = Item then
+      if Neo_Number_Of (The_Index) = Number then
         return The_Index;
       end if;
     end loop;
@@ -393,14 +391,14 @@ package body Sky.Data is
   end Neo_Object_Of;
 
 
-  function New_Neo_Object_For (Item        : String;
-                               Description : String) return Positive is
+  function New_Neo_Object_For (Item   : String;
+                               Number : Natural) return Positive is
   begin
     if The_Last_Neo = Undefined then
       The_First_Neo := The_Last_Extension + 1;
     end if;
     The_Last_Neo := New_Object_For (Item        => Item,
-                                    Description => Description,
+                                    Description => Number'image,
                                     Object_Kind => Satellite);
     return Neo_Index_Of (The_Last_Neo);
   end New_Neo_Object_For;
@@ -410,6 +408,12 @@ package body Sky.Data is
   begin
     return Positive(Id + 1 - The_First_Neo);
   end Neo_Index_Of;
+
+
+  function Neo_Number_Of (Id : Index) return Natural is
+  begin
+    return Natural'value(The_Extension_Table(Id).Descriptor.S);
+  end Neo_Number_Of;
 
 
   procedure Apparent (Ra  : in out REAL;

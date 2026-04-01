@@ -578,7 +578,7 @@ package body Telescope is
           end Go_To_Next;
         or
           accept Prepare_Tle do
-            Ten_Micron.Load_Tle (Name.Image_Of (Next_Id));
+            Ten_Micron.Load_Tle (Name.Object_Of (Next_Id));
           end Prepare_Tle;
         or
           accept Park do

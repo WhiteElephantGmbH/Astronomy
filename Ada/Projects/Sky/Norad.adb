@@ -179,6 +179,12 @@ package body Norad is
   end Is_In_Deep_Space;
 
 
+  function Number_Of (Data : Two_Line) return Number is
+  begin
+    return Number'value(Data(1)(3..7));
+  end Number_Of;
+
+
   procedure SGP (Data         :     Two_Line;
                  Ut           :     Time.Ut;
                  The_Position : out Vector;
@@ -197,7 +203,6 @@ package body Norad is
 
     procedure Convert_Satellite_Data (The_Data : Two_Line) is
 
-    --Cat_Nr     : Natural;
       Epoch_Year : Natural;
       Epoch_Day  : Double;
 
@@ -220,7 +225,6 @@ package body Norad is
 
     begin -- Convert_Satellite_Data
       -- Decode Line 1
-    --Cat_Nr := Natural'value(The_Data(1)(3..7));
       Epoch_Year := Natural'value(The_Data(1)(19..20));
       Epoch_Day := Double'value(The_Data(1)(21..32));
       Julian_Epoch := Julian_Date_Of_Epoch;

@@ -16,20 +16,24 @@
 pragma Style_Astronomy;
 
 with Norad;
-with Text;
+with Discrete_Set;
 
 package Satellite is
 
-  subtype Tle is Norad.Two_Line;
+  subtype Number is Norad.Number;
 
-  function Data_Ready return Boolean;
+  package Numbers is new Discrete_Set (Number);
+
+  subtype Tle is Norad.Two_Line;
 
   procedure Read_Data;
 
-  function Names return Text.List;
+  function Targets return Numbers.Set;
 
-  function Name_Check_Failed (Name : String) return Boolean;
+  function Tle_Of (Object : Number) return Tle;
 
-  function Tle_Of (Name : String) return Tle;
+  function Tle_Name_Of (Object : Number) return String;
 
+  function Name_Of (Object : Number) return String;
+  
 end Satellite;

@@ -24,8 +24,8 @@ package body Request is
       Status   : constant AWS.Messages.Status_Code := AWS.Response.Status_Code (Response);
       use type AWS.Messages.Status_Code;
     begin
-      if Status < AWS.Messages.S300 then
-        Ada.Text_IO.Put_Line ("=> " & Status'image);
+      Ada.Text_IO.Put_Line ("=> " & Status'image);
+      if Status = AWS.Messages.S200 then
         declare
           Result : constant String := AWS.Response.Message_Body (Response);
 

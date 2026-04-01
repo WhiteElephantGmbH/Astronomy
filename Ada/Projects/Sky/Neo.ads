@@ -22,9 +22,7 @@ with Time;
 
 package Neo is
 
-  procedure Start_Reader;
-
-  procedure Finalize_Reader;
+  procedure Read_Data;
 
   function Is_Arriving (Item : Name.Id) return Boolean;
 
@@ -34,7 +32,7 @@ package Neo is
   function Tracking_Period_Of (Item : Name.Id) return Time.Period;
 
   function Wrap_Location_Of (Item : Name.Id) return Earth.Direction;
-  
-  function Name_Unknown (Item : String) return Boolean;
+
+  function Name_Of (Number : Natural) return String;
 
 end Neo;
