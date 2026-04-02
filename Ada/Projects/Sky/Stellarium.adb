@@ -25,27 +25,11 @@ with Network.Tcp.Servers;
 with Os.Process;
 with Site;
 with Text;
-with Time;
 with Unsigned;
 
 package body Stellarium is
 
   package IO renames Ada.Text_IO;
-
-  The_Set_Satellite_Group : Text.String;
-
-
-  procedure Set_Satellite_Group (Name : String) is
-  begin
-    Log.Write ("Satellite group: " & Name);
-    The_Set_Satellite_Group := [Name];
-  end Set_Satellite_Group;
-
-
-  function Satellite_Group return String is
-  begin
-    return The_Set_Satellite_Group.S;
-  end Satellite_Group;
 
 
   function Actual_Data_Directory return String is
@@ -81,17 +65,12 @@ package body Stellarium is
   Config_Handle : constant Configuration.File_Handle    := Configuration.Handle_For (Configuration_Filename);
   Init_Location : constant Configuration.Section_Handle := Configuration.Handle_For (Config_Handle, "init_location");
   Localization  : constant Configuration.Section_Handle := Configuration.Handle_For (Config_Handle, "localization");
-  Satellites    : constant Configuration.Section_Handle := Configuration.Handle_For (Config_Handle, "Satellites");
 
   Landscape_Name : constant String := Configuration.Value_Of (Init_Location, "landscape_name");
   Location       : constant String := Configuration.Value_Of (Init_Location, "location");
   Last_Location  : constant String := Configuration.Value_Of (Init_Location, "last_location");
 
   Sky_Locale : constant String := Configuration.Value_Of (Localization, "sky_locale");
-
-  Update_Frequency_Hours : constant String := Configuration.Value_Of (Satellites, "update_frequency_hours");
-
-  Last_Update : constant String := Configuration.Value_Of (Satellites, "last_update");
 
   use type File.Folder;
 
@@ -100,12 +79,6 @@ package body Stellarium is
   User_Locations_Filename : constant String := File.Composure (Directory => Data_Directory,
                                                                Filename  => "user_locations",
                                                                Extension => "txt");
-
-  Satellites_Directory : constant File.Folder := Application_Data_Directory + "modules" + "Satellites";
-
-  Satellites_Json : constant String := File.Composure (Directory => Satellites_Directory,
-                                                       Filename  => "satellites",
-                                                       Extension => "json");
 
   Landscapes_Directory : constant String := Application_Data_Directory & File.Folder_Separator & "landscapes";
   Landscape_Directory  : constant File.Folder := Landscapes_Directory + Landscape_Name;
@@ -150,64 +123,6 @@ package body Stellarium is
   Landscape_Config  : constant Configuration.File_Handle := Configuration.Handle_For (Landscape_Config_Name);
   Landscape_Section : constant Configuration.Section_Handle := Configuration.Handle_For (Landscape_Config, "landscape");
   Location_Section  : constant Configuration.Section_Handle := Configuration.Handle_For (Landscape_Config, "location");
-
-
-  function Satellites_Filename return String is
-  begin
-    if Satellites_Json /= "" and then File.Exists (Satellites_Json) then
-      Log.Write ("Satellites filename: " & Satellites_Json);
-      return Satellites_Json;
-    else
-      Log.Warning ("No satellites defined");
-      return "";
-    end if;
-  end Satellites_Filename;
-
-
-  function Satellites_Update_Age return Hours is
-    Date : constant String := Last_Update;
-  begin
-    if Date = "" then
-      Log.Warning ("Satellites have no updates");
-      return 0.0;
-    end if;
-    declare
-      --yyyy-mm-ddThh:mm:ss[Z]
-      --f123456789012345678 l
-      Year  : constant String := Date(Date'first .. Date'first + 3);
-      Month : constant String := Date(Date'first + 5 .. Date'first + 6);
-      Day   : constant String := Date(Date'first + 8 .. Date'first + 9);
-      Clock : constant String := Date(Date'first + 11 .. Date'first + 18);
-      Is_UT : constant Boolean := Date(Date'last) = 'Z';
-      Age   : Duration;
-      use type Time.Calendar_Value;
-    begin
-      Age := Time.Calendar_Now - Time.Calendar_Value_Of (Day & '.' & Month & '.' & Year & ' ' & Clock);
-      if Is_UT then
-        Age := @ - Time.Local_Shift;
-      end if;
-      return Result : constant Hours := Hours(Age / 3600) do
-        Log.Write ("Satellites update age:" & Result'image & " hours");
-      end return;
-    end;
-  exception
-  when others =>
-    Log.Error ("Satellites last update " & Date & " is unknown");
-    return Hours'last;
-  end Satellites_Update_Age;
-
-
-  function Satellites_Update_Frequency return Hours is
-    The_Hours : Hours;
-  begin
-    The_Hours := Hours'value (Update_Frequency_Hours);
-    Log.Write ("Satellites update frequency hours:" & The_Hours'image & " hours");
-    return The_Hours;
-  exception
-  when others =>
-    Log.Error ("Satellites update frequency hours " & Update_Frequency_Hours & " is unknown");
-    return Hours'last;
-  end Satellites_Update_Frequency;
 
 
   function Search_Tolerance return Angle.Degrees is

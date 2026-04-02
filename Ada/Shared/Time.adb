@@ -161,6 +161,13 @@ package body Time is
   end Calendar_Now;
 
 
+  function Duration_Since (Date : Calendar_Value) return Duration is
+    use type Calendar_Value;
+  begin
+    return Calendar_Now - Date;
+  end Duration_Since;
+
+
   --------------------------
   -- Modified Julian Date --
   --------------------------

@@ -146,7 +146,7 @@ package body Parameter is
                                   Height => (if Site.Location = Cdk_West then "0.311" else "0.44"),
                                   Width  => (if Site.Location = Cdk_West then "0.448" else "0.66"));
       Put ("");
-      Stellarium.Parameter.Defaults (Put'access, "CDK");
+      Stellarium.Parameter.Defaults (Put'access);
       Ada.Text_IO.Close (The_File);
     exception
     when Error.Occurred =>

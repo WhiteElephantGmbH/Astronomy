@@ -25,12 +25,10 @@ package body Stellarium.Parameter is
 
   Port_Key             : constant String := "Port";
   Program_Key          : constant String := "Program";
-  Satellite_Group_Key  : constant String := "Satellite Group";
   Search_Tolerance_Key : constant String := "Search Tolerance";
 
 
-  procedure Define (Handle          : Configuration.File_Handle;
-                    With_Satellites : Boolean := True) is
+  procedure Define (Handle : Configuration.File_Handle) is
 
     procedure Startup_Stellarium is
       Stellarium_Filename : constant String := Section.String_Value_Of (Program_Key);
@@ -51,24 +49,16 @@ package body Stellarium.Parameter is
     Section.Set (Configuration.Handle_For (Handle, Id));
     The_Port_Number := Section.Port_For (Id);
     The_Search_Tolerance := Section.Degrees_Of (Search_Tolerance_Key, Targets.Maximum_Search_Tolerance);
-    Has_Satellites := With_Satellites;
-    if Has_Satellites then
-      Stellarium.Set_Satellite_Group (Section.String_Of (Satellite_Group_Key, Id));
-    end if;
     Startup_Stellarium;
   end Define;
 
 
-  procedure Defaults (Put        : access procedure (Item : String);
-                      Satellites : String := "") is
+  procedure Defaults (Put : access procedure (Item : String)) is
   begin
     Put ("[" & Id & "]");
     Put (Port_Key & "             = 10001");
     Put (Program_Key & "          = " & Os.System.Program_Files_Folder & "Stellarium\Stellarium.exe");
     Put (Search_Tolerance_Key & " = 10""");
-    if Satellites /= "" then
-      Put (Satellite_Group_Key & "  = " & Satellites);
-    end if;
   end Defaults;
 
 end Stellarium.Parameter;

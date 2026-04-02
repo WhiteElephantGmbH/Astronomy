@@ -61,6 +61,8 @@ package Time is
 
   function Calendar_Now return Calendar_Value;
 
+  function Duration_Since (Date : Calendar_Value) return Duration;
+
   function Local_Shift return Duration;
   -- Precondition: Calendar_Now or Local_Time
 

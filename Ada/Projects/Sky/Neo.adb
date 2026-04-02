@@ -210,7 +210,7 @@ package body Neo is
   begin -- read
     The_Last := 0;
     The_Entry := 0;
-    Log.Write ("NEO READ - " & Target'image);
+    Log.Write (Satellite.Tle_Name_Of (Target));
     Norad_Lines := Satellite.Tle_Of (Target);
     Find_Norad_Entries;
   end Read;
@@ -226,35 +226,35 @@ package body Neo is
   The_Trajectories : array (1..500) of Data;
 
 
-  procedure Add_Objects is
-
-    procedure Process (Target : Satellite.Number) is
-      The_Index : Positive;
-    begin
-      Read (Target);
-      if The_Last > 0 then
-        The_Index := Sky.Data.New_Neo_Object_For (Item   => Satellite.Name_Of (Target),
-                                                  Number => Natural(Target));
-        if The_Index > The_Trajectories'last then
-          Error.Raise_With ("Too many near earth objects");
-        end if;
-        The_Trajectories(The_Index).List := new Trajectory'(The_Trajectory(1..The_Last));
-        The_Trajectories(The_Index).Wrap := The_Wrap_Location;
+  procedure Add_Object (Object : Satellite.Number) is
+    The_Index : Positive;
+  begin
+    Read (Object);
+    if The_Last > 0 then
+      The_Index := Sky.Data.New_Neo_Object_For (Item   => Satellite.Name_Of (Object),
+                                                Number => Natural(Object));
+      if The_Index > The_Trajectories'last then
+        Error.Raise_With ("Too many near earth objects");
       end if;
-    end Process;
+      The_Trajectories(The_Index).List := new Trajectory'(The_Trajectory(1..The_Last));
+      The_Trajectories(The_Index).Wrap := The_Wrap_Location;
+    end if;
+  end Add_Object;
 
-  begin -- Add_Objects
-    for Target of Satellite.Targets loop
-      Process (Target);
+
+  procedure Add_Objects is
+  begin
+    for Object of Satellite.Objects loop
+      Add_Object (Object);
     end loop;
   end Add_Objects;
 
 
-  procedure Read_Data is
+  procedure Read is
   begin
-    Satellite.Read_Data;
+    Satellite.Read;
     Add_Objects;
-  end Read_Data;
+  end Read;
 
 
   procedure Dispose is new Ada.Unchecked_Deallocation (Trajectory, Trajectory_Access);
@@ -349,7 +349,11 @@ package body Neo is
 
 
   function Name_Of (Number : Natural) return String is
+    Object : constant Satellite.Number := Satellite.Number(Number);
   begin
+    if Satellite.Read (Object) then
+      Add_Object (Object);
+    end if;
     return Satellite.Name_Of (Satellite.Number(Number));
   end Name_Of;
 

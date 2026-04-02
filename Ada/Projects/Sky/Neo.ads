@@ -22,7 +22,7 @@ with Time;
 
 package Neo is
 
-  procedure Read_Data;
+  procedure Read;
 
   function Is_Arriving (Item : Name.Id) return Boolean;
 

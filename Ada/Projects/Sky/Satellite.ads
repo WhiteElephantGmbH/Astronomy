@@ -26,14 +26,25 @@ package Satellite is
 
   subtype Tle is Norad.Two_Line;
 
-  procedure Read_Data;
+  procedure Read;
 
-  function Targets return Numbers.Set;
+  function Read (Object : Number) return Boolean;
+
+  function Objects return Numbers.Set;
 
   function Tle_Of (Object : Number) return Tle;
 
   function Tle_Name_Of (Object : Number) return String;
 
   function Name_Of (Object : Number) return String;
-  
+
+private
+  Id : constant String := "Satellite";
+
+  type Group is (Amateur, Iridium, Iridium_Next, Noaa, Orbcomm, Stations, Visual);
+
+  package Groups is new Discrete_Set (Group);
+
+  The_Groups : constant Groups.Set := [Stations, Visual];
+
 end Satellite;

@@ -15,107 +15,194 @@
 -- *********************************************************************************************************************
 pragma Style_Astronomy;
 
-with Ada.Text_IO;
-with Ada.Directories;
 with Ada.Containers.Ordered_Maps;
-with Ada.Strings.Unbounded;
-with GNATCOLL.JSON;
-with Stellarium;
+with AWS.Client;
+with AWS.Messages;
+with AWS.Response;
+with Persistent;
 with Traces;
 with Text;
+with Time;
 
 package body Satellite is
 
-  package Log is new Traces ("Satellite");
+  package Log is new Traces (Id);
 
-  Json_Filename : constant String := Stellarium.Satellites_Filename;
-
-  function Json_Data return Ada.Strings.Unbounded.Unbounded_String is
-
-    Json_Filesize : constant Natural := Natural(Ada.Directories.Size(Json_Filename));
-
-    The_Data : Ada.Strings.Unbounded.Unbounded_String;
-
-    File : Ada.Text_IO.File_Type;
-
-  begin
-    Log.Write ("Filesize:" & Json_Filesize'image);
-    Ada.Text_IO.Open (File, Ada.Text_IO.In_File, Json_Filename);
-    while not Ada.Text_IO.End_Of_File (File) loop
-      Ada.Strings.Unbounded.Append (The_Data, Ada.Text_IO.Get_Line (File) & Ascii.Cr);
-    end loop;
-    Ada.Text_IO.Close (File);
-    return The_Data;
-  end Json_Data;
-
+  use type Number;
 
   type Data is record
     Name    : Text.String;
     Element : Tle;
   end record;
 
-  use type Number;
-
   package Tle_Data is new Ada.Containers.Ordered_Maps (Key_Type     => Number,
                                                        Element_Type => Data);
-  Tle_Map : Tle_Data.Map;
 
-  The_Numbers : Numbers.Set := [];
+  type Items is record
+    Last_Update   : Time.Calendar_Value;
+    Actual_Groups : Groups.Set;
+    Tle_Map       : Tle_Data.Map;
+  end record;
+
+  package Persistent_Storage is new Persistent (Items, Name => Id);
+
+  Persistent_Items : Persistent_Storage.Data;
+
+  Tle_Map       : Tle_Data.Map renames Persistent_Items.Storage.Tle_Map;
+  Actual_Groups : Groups.Set renames  Persistent_Items.Storage.Actual_Groups;
+  Last_Update   : Time.Calendar_Value renames Persistent_Items.Storage.Last_Update;
 
 
-  procedure Read_Data is
+  procedure Read (Selection : String;
+                  Target    : String) is
+
+    Url : constant String := "https://celestrak.org/NORAD/elements/gp.php?" & Selection & "=" & Target & "&FORMAT=TLE";
+
   begin
-    if Json_Filename = "" then
-      Log.Error ("No data");
-    end if;
+    Log.Write ("URL: " & Url);
     declare
-      package JS renames GNATCOLL.JSON;
+      Response : constant AWS.Response.Data := AWS.Client.Get (Url);
+      Status   : constant AWS.Messages.Status_Code := AWS.Response.Status_Code (Response);
+      use type AWS.Messages.Status_Code;
+    begin
+      if Status = AWS.Messages.S200 then
+        declare
+          Result : constant String := AWS.Response.Message_Body (Response);
+          Last   : Natural := Result'first;
 
-      Js_Data    : constant JS.JSON_Value := JS.Read (Json_Data);
-      Creator    : constant JS.JSON_Value := Js_Data.Get ("creator");
-      Satellites : constant JS.JSON_Value := Js_Data.Get ("satellites");
+          function Next_Line return String is
+            First : constant Natural := Last;
+          begin
+            while Last <= Result'last and then not (Result(Last) in Ascii.Cr | Ascii.Lf) loop
+              Last := @ + 1;
+            end loop;
+            return Dummy : constant String := Result(First .. Last - 1) do
+              Last := @ + 1;
+              if Last <= Result'last and then Result(Last) in Ascii.Cr | Ascii.Lf then
+                Last := @ + 1;
+              end if;
+            end return;
+          end Next_Line;
 
-      procedure Handle_Satellite (Unused : JS.UTF8_String;
-                                  Value  : JS.JSON_Value) is
-        Is_Visible : constant Boolean := Value.Get ("visible");
-        Groups     : constant JS.JSON_Array := Value.Get ("groups");
-        use type Numbers.Set;
-      begin
-        if Is_Visible then
-          for Group of Groups loop
-            if Group.Get in Stellarium.Satellite_Group then
+        begin
+          while Last <= Result'last loop
+            declare
+              Name : constant String := Text.Trimmed (Next_Line);
+              Tle1 : constant String := Next_Line;
+              Tle2 : constant String := Next_Line;
+            begin
               declare
-                Item : constant Data := (Name    => [Value.Get ("name")],
-                                         Element => [1 => Value.Get ("tle1"),
-                                                     2 => Value.Get ("tle2")]);
+                Item : constant Data := (Name    => [Name],
+                                         Element => [1 => Tle1,
+                                                     2 => Tle2]);
                 Key : constant Number := Norad.Number_Of (Item.Element);
               begin
-                if not Tle_Map.Contains (Key) and then not Norad.Is_In_Deep_Space (Item.Element) then
-                  Tle_Map.Insert (Key, Item);
-                  The_Numbers := @ + Key;
+                if not Tle_Map.Contains (Key) then
+                  if Norad.Is_In_Deep_Space (Item.Element) then
+                    Log.Warning ("<" & Name & "> is in deep space");
+                  else
+                    Log.Write ("Name: " & Name);
+                    Log.Write ("Tle1: " & Tle1);
+                    Log.Write ("Tle2: " & Tle2);
+                    Tle_Map.Insert (Key, Item);
+                  end if;
                 end if;
               end;
-              return;
-            end if;
+            end;
           end loop;
-        end if;
-      end Handle_Satellite;
-
-    begin
-      Log.Write (Creator.Get);
-      JS.Map_JSON_Object (Satellites, Handle_Satellite'access);
-      Log.Write ("Number of visible satellites:" & Tle_Map.Length'image);
+        end;
+      else
+        Log.Warning ("Data update failed");
+      end if;
     end;
+  end Read;
+
+
+  function Image_Of (Item : Group) return String is
+    Image : String := Item'image;
+  begin
+    for The_Character of Image loop
+      if The_Character = '_' then
+        The_Character := '-';
+      else
+        The_Character := Text.Lowercase_Of (@);
+      end if;
+    end loop;
+    return Image;
+  end Image_Of;
+
+
+  procedure Read_Group (From : Group) is
+    Group_Name : constant String := Image_Of (From);
+  begin
+    Read ("GROUP", Group_Name);
+  end Read_Group;
+
+
+  The_Objects : Numbers.Set := [];
+
+  procedure Add_Object (Item : Number) is
+    use type Numbers.Set;
+  begin
+    The_Objects := @ + Item;
+  end Add_Object;
+
+
+  procedure Initialize_Objects is
+  begin
+    The_Objects := [];
+    for Item of Tle_Map loop
+      Add_Object (Norad.Number_Of (Item.Element));
+    end loop;
+  end Initialize_Objects;
+
+
+  procedure Read is
+  begin
+    if not Tle_Map.Is_Empty then
+      declare
+        subtype Hours is Duration delta 0.1;
+        Maximum_Data_Age : constant Hours := 6.0;
+        Age_Of_Data      : constant Hours := Time.Duration_Since (Last_Update) / Time.One_Hour;
+        use type Groups.Set;
+      begin
+        Log.Write ("Age of data =" & Age_Of_Data'image & " hours");
+        if Age_Of_Data < Maximum_Data_Age and then Actual_Groups = The_Groups then
+          Initialize_Objects;
+          return;
+        end if;
+      end;
+      Tle_Map.Clear;
+    end if;
+    for The_Group of The_Groups loop
+      Read_Group (The_Group);
+    end loop;
+    Log.Write ("Number of visible satellites:" & Tle_Map.Length'image);
+    Actual_Groups := The_Groups;
+    Last_Update := Time.Calendar_Now;
+    Initialize_Objects;
   exception
   when Item: others =>
     Log.Termination (Item);
-  end Read_Data;
+  end Read;
 
 
-  function Targets return Numbers.Set is
+  function Read (Object : Number) return Boolean is
+    use type Numbers.Set;
   begin
-    return The_Numbers;
-  end Targets;
+    if not (Object < The_Objects) then
+      Read ("CATNR", Text.Trimmed(Object'image));
+      Add_Object (Object);
+      return True;
+    end if;
+    return False;
+  end Read;
+
+
+  function Objects return Numbers.Set is
+  begin
+    return The_Objects;
+  end Objects;
 
 
   function Tle_Of (Object : Number) return Tle is
@@ -131,8 +218,9 @@ package body Satellite is
 
 
   function Name_Of (Object : Number) return String is
+    Id : constant String := "0000" & Object'image;
   begin
-    return Tle_Name_Of (Object) & " #" & Text.Trimmed (Object'image);
+    return Id(Id'last - 4 .. Id'last) & " " & (Tle_Name_Of (Object));
   end Name_Of;
 
 end Satellite;

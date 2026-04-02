@@ -450,7 +450,7 @@ package body Control is
       Horizon.Generate;
     end if;
     Sky_Line.Read;
-    Neo.Read_Data;
+    Neo.Read;
     Name.Read_Favorites (Enable_Axis_Positions => False,
                          Enable_Land_Marks     => True,
                          Neo_Name_Of_Number    => Neo.Name_Of'access);

@@ -25,10 +25,6 @@ package Stellarium is
 
   type Goto_Handler is access procedure (Direction : Space.Direction);
 
-  procedure Set_Satellite_Group (Name : String);
-
-  function Satellite_Group return String;
-
   function Startup (Filename : String;
                     The_Port : Network.Port_Number) return Boolean;
 
@@ -39,14 +35,6 @@ package Stellarium is
   function Landscape_Rotation return Angle.Degrees;
 
   function Language return Language.Kind;
-
-  function Satellites_Filename return String;
-
-  type Hours is new Duration delta 0.1 range 0.0 .. Duration'last;
-
-  function Satellites_Update_Age return Hours;
-
-  function Satellites_Update_Frequency return Hours;
 
   function Search_Tolerance return Angle.Degrees;
 
@@ -70,7 +58,5 @@ private
   The_Port_Number : Network.Port_Number;
 
   The_Search_Tolerance : Angle.Degrees;
-
-  Has_Satellites : Boolean := False;
 
 end Stellarium;

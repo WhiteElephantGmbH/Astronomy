@@ -106,7 +106,7 @@ package body Parameter is
       end;
       Moon.Parameter.Define (Handle);
       Picture.Parameter.Define (Handle);
-      Stellarium.Parameter.Define (Handle, With_Satellites => False);
+      Stellarium.Parameter.Define (Handle);
     end Read_Values;
 
   begin -- Read

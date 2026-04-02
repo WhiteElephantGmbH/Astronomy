@@ -144,7 +144,7 @@ package body Parameter is
       Put ("");
       Remote.Parameter.Defaults (Put'access, "cdk_west");
       Put ("");
-      Stellarium.Parameter.Defaults (Put'access, "CDK");
+      Stellarium.Parameter.Defaults (Put'access);
       Ada.Text_IO.Close (The_File);
     exception
     when Error.Occurred =>

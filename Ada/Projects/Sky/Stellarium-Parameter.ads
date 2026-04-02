@@ -19,10 +19,8 @@ with Configuration;
 
 package Stellarium.Parameter is
 
-  procedure Define (Handle : Configuration.File_Handle;
-                    With_Satellites : Boolean := True);
+  procedure Define (Handle : Configuration.File_Handle);
 
-  procedure Defaults (Put        : access procedure (Item : String);
-                      Satellites : String := "");
+  procedure Defaults (Put : access procedure (Item : String));
 
 end Stellarium.Parameter;

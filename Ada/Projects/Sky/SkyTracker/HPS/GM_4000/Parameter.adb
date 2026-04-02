@@ -76,7 +76,7 @@ package body Parameter is
       Put ("");
       Alignment.Parameter.Defaults (Put'access);
       Put ("");
-      Stellarium.Parameter.Defaults (Put'access, "APO");
+      Stellarium.Parameter.Defaults (Put'access);
       Ada.Text_IO.Close (The_File);
     exception
     when Error.Occurred =>
