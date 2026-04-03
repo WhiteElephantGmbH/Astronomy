@@ -21,7 +21,7 @@ package Targets.Filter is
 
   procedure Create_Menu (Signal_Update : Update_Signal);
 
-  type Selection_Group is (Default, Moon, Neo);
+  type Selection_Group is (Default, Moon, Satellite);
 
   procedure Set (Group : Selection_Group);
 

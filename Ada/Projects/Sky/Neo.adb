@@ -355,7 +355,7 @@ package body Neo is
     if Satellite.Read (Object) then
       Add_Object (Object);
     end if;
-    return Satellite.Name_Of (Satellite.Number(Number));
+    return Satellite.Name_Of (Object);
   end Name_Of;
 
 end Neo;

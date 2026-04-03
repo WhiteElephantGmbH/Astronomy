@@ -37,8 +37,8 @@ package body Name.Catalog is
     case The_Catalog is
     when Sky.Moon =>
       Targets.Filter.Set (Targets.Filter.Moon);
-    when Sky.Neo =>
-      Targets.Filter.Set (Targets.Filter.Neo);
+    when Sky.Satellite =>
+      Targets.Filter.Set (Targets.Filter.Satellite);
     when others =>
       Targets.Filter.Set (Targets.Filter.Default);
     end case;

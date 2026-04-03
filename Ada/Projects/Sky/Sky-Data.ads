@@ -66,7 +66,7 @@ package Sky.Data is
                            Object_Kind : Object_Type := Unknown;
                            Direction   : Space.Direction := Space.Unknown_Direction) return Index;
 
-  function Neo_Object_Of (Number : Natural) return Index;
+  function Neo_Object_Of (Number : Natural) return Object; -- returns Unknown if not found
 
   function New_Neo_Object_For (Item   : String;
                                Number : Natural) return Positive;

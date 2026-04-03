@@ -19,13 +19,13 @@ with Database.Moon;
 
 package Sky is
 
-  type Catalog_Id is (Favorites, Moon, Caldwell, Name, Star, Hd, Hip, Hr, Messier, Ngc, Ic, Ocl, Quasars, Neo);
+  type Catalog_Id is (Favorites, Moon, Caldwell, Name, Star, Hd, Hip, Hr, Messier, Ngc, Ic, Ocl, Quasars, Satellite);
 
   subtype Catalogs is Catalog_Id range Caldwell .. Quasars;
 
   subtype Constellation is Database.Constellation;
 
-  subtype Extended_Catalogs is Catalog_Id range Moon .. Neo;
+  subtype Extended_Catalogs is Catalog_Id range Moon .. Satellite;
 
   subtype Moon_Feature is Database.Moon.Feature_Name;
 

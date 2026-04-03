@@ -258,7 +258,13 @@ package body Satellite is
     use type Numbers.Set;
   begin
     if not (Object < The_Objects) then
-      Read ("CATNR", Text.Trimmed(Object'image));
+      begin
+        Read ("CATNR", Text.Trimmed(Object'image));
+      exception
+      when Update_Failed =>
+        Log.Warning ("update failed - no data");
+        return False;
+      end;
       Add_Object (Object);
       return True;
     end if;

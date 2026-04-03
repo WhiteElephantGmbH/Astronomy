@@ -188,7 +188,7 @@ package body Sky.Data is
 
   begin -- Name_Of
     case The_Kind is
-    when Neo =>
+    when Satellite =>
       return The_Extension_Table(Number).Name.S;
     when Moon =>
       return Moon_Feature_Name_Of (Number);
@@ -298,7 +298,7 @@ package body Sky.Data is
       if The_Object > Last_Moon_Feature then
         The_Object := Undefined;
       end if;
-    when Neo =>
+    when Satellite =>
       The_Object := The_First_Neo + Object(Item) - 1;
       if The_Object > The_Last_Neo then
         The_Object := Undefined;
@@ -317,7 +317,7 @@ package body Sky.Data is
       loop
         The_Item := @ + 1;
         The_Object := Object_Of (The_Item, The_Kind);
-        if The_Kind in Neo | Moon then
+        if The_Kind in Satellite | Moon then
           if The_Object = Undefined then
             return No_More;
           end if;
@@ -380,14 +380,14 @@ package body Sky.Data is
   end New_Object_For;
 
 
-  function Neo_Object_Of (Number : Natural) return Index is
+  function Neo_Object_Of (Number : Natural) return Object is
   begin
     for The_Index in The_First_Neo .. The_Last_Neo loop
       if Neo_Number_Of (The_Index) = Number then
         return The_Index;
       end if;
     end loop;
-    raise Program_Error;
+    return Sky.Undefined;
   end Neo_Object_Of;
 
 

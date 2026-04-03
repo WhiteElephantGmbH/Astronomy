@@ -1825,6 +1825,7 @@ package Lexicon is
     Quasars,
     Rilles,
     Road_Sign,
+    Satellites,
     Saturn,
     Seas,
     Selection,

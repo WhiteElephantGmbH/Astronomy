@@ -51,7 +51,7 @@ package body Targets.Filter is
         Set (The_Feature => Filter);
         User_Signal_Update.all;
       end;
-    when Neo =>
+    when Satellite =>
       null;
     end case;
   exception
@@ -110,7 +110,7 @@ package body Targets.Filter is
       Set (The_Selection => All_Objects);
     when Moon =>
       Set (The_Feature => All_Features);
-    when Neo =>
+    when Satellite =>
       null;
     end case;
   end Set;
@@ -120,9 +120,9 @@ package body Targets.Filter is
 
     All_Objects : constant String := Lexicon.Image_Of(Lexicon.All_Objects);
 
-    Default_Selection_Images : Text.List;
-    Moon_Selection_Images    : Text.List;
-    Neo_Selection_Images     : constant Text.Vector := [All_Objects];
+    Default_Selection_Images   : Text.List;
+    Moon_Selection_Images      : Text.List;
+    Satellite_Selection_Images : constant Text.Vector := [All_Objects];
 
   begin
     for Element in Selection loop
@@ -131,9 +131,9 @@ package body Targets.Filter is
     for Element in Moon_Feature_Selection loop
       Moon_Selection_Images.Append (Image_Of (Element));
     end loop;
-    return [Default  => Default_Selection_Images.Sorted.To_Vector,
-            Moon     => Moon_Selection_Images.Sorted.To_Vector,
-            Neo      => Neo_Selection_Images];
+    return [Default   => Default_Selection_Images.Sorted.To_Vector,
+            Moon      => Moon_Selection_Images.Sorted.To_Vector,
+            Satellite => Satellite_Selection_Images];
   end Selection_Images;
 
 

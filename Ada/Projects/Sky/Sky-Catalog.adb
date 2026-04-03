@@ -223,8 +223,8 @@ package body Sky.Catalog is
       return "HR";
     when Messier =>
       null;
-    when Neo =>
-      return "NEO";
+    when Satellite =>
+      return Lexicon.Image_Of (Lexicon.Satellites);
     when Ngc =>
       return "NGC";
     when Ic =>

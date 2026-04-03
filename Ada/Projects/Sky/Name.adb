@@ -133,7 +133,7 @@ package body Name is
       return Item.Element.Kind;
     when Sky.Moon =>
       return Moon;
-    when Sky.Neo =>
+    when Sky.Satellite =>
       return Near_Earth_Object;
     when others =>
       return Sky_Object;
@@ -422,7 +422,7 @@ package body Name is
     when Sky.Favorites | Sky.Catalogs =>
       Calculate_Distances;
       Tool.Sort (The_List.Ids);
-    when Sky.Moon | Sky.Neo =>
+    when Sky.Moon | Sky.Satellite =>
       null;
     end case;
   end Sort;
@@ -623,10 +623,13 @@ package body Name is
                     Satellite_Id : constant String := Parts_1(Text.First_Index + 1);
                   begin
                     declare
-                      Neo_Number   : constant Natural := Natural'value(Satellite_Id);
+                      Neo_Number : constant Natural := Natural'value(Satellite_Id);
                     begin
                       The_Element.Name := [Neo_Name_Of (Neo_Number)];
                       The_Element.Object := Sky.Data.Neo_Object_Of (Neo_Number);
+                      if The_Element.Object = Sky.Undefined then
+                        Log.Write (The_Element.Name.S & " not visible");
+                      end if;
                     end;
                   exception
                   when others =>
