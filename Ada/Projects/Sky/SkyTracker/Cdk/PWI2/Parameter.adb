@@ -31,6 +31,7 @@ with Os.User;
 with PWI2.Settings;
 with Remote.Parameter;
 with Section;
+with Satellite.Parameter;
 with Stellarium.Parameter;
 with Sun.Parameter;
 with Telescope;
@@ -143,6 +144,8 @@ package body Parameter is
       Put (Port_Key & " = 4030");
       Put ("");
       Remote.Parameter.Defaults (Put'access, "cdk_west");
+      Put ("");
+      Satellite.Parameter.Defaults (Put'access);
       Put ("");
       Stellarium.Parameter.Defaults (Put'access);
       Ada.Text_IO.Close (The_File);
@@ -328,6 +331,7 @@ package body Parameter is
       The_Lx200_Port := Section.Port_For (Lx200_Id);
 
       Remote.Parameter.Define (Handle);
+      Satellite.Parameter.Define (Handle);
       Stellarium.Parameter.Define (Handle);
     exception
     when Cdk_700.Startup_Failed =>

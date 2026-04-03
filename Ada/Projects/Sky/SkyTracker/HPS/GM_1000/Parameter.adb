@@ -31,6 +31,7 @@ with Language.Parameter;
 with Moon.Parameter;
 with Picture.Parameter;
 with Sensitivity;
+with Satellite.Parameter;
 with Stellarium.Parameter;
 with Sun.Parameter;
 with Ten_Micron.Parameter;
@@ -80,6 +81,8 @@ package body Parameter is
       Put ("");
       Alignment.Parameter.Defaults (Put'access);
       Put ("");
+      Satellite.Parameter.Defaults (Put'access);
+      Put ("");
       Stellarium.Parameter.Defaults (Put'access);
       Ada.Text_IO.Close (The_File);
     exception
@@ -105,6 +108,7 @@ package body Parameter is
       Clock.Parameter.Define (Handle);
       Picture.Parameter.Define (Handle);
       Alignment.Parameter.Define (Handle);
+      Satellite.Parameter.Define (Handle);
       Stellarium.Parameter.Define (Handle);
     end Read_Values;
 

@@ -36,6 +36,7 @@ with Picture.Parameter;
 with Remote.Parameter;
 with Section;
 with Sensitivity;
+with Satellite.Parameter;
 with Site;
 with Stellarium.Parameter;
 with Sun.Parameter;
@@ -145,6 +146,8 @@ package body Parameter is
       Picture.Parameter.Defaults (Put'access,
                                   Height => (if Site.Location = Cdk_West then "0.311" else "0.44"),
                                   Width  => (if Site.Location = Cdk_West then "0.448" else "0.66"));
+      Put ("");
+      Satellite.Parameter.Defaults (Put'access);
       Put ("");
       Stellarium.Parameter.Defaults (Put'access);
       Ada.Text_IO.Close (The_File);
@@ -277,6 +280,7 @@ package body Parameter is
       Camera.Parameter.Define (Handle);
       Focus.Parameter.Define (Handle);
       Picture.Parameter.Define (Handle);
+      Satellite.Parameter.Define (Handle);
       Stellarium.Parameter.Define (Handle);
     exception
     when Cdk_700.Startup_Failed =>

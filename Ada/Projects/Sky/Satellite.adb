@@ -19,6 +19,7 @@ with Ada.Containers.Ordered_Maps;
 with AWS.Client;
 with AWS.Messages;
 with AWS.Response;
+with Error;
 with Persistent;
 with Traces;
 with Text;
@@ -51,6 +52,10 @@ package body Satellite is
   Tle_Map       : Tle_Data.Map renames Persistent_Items.Storage.Tle_Map;
   Actual_Groups : Groups.Set renames  Persistent_Items.Storage.Actual_Groups;
   Last_Update   : Time.Calendar_Value renames Persistent_Items.Storage.Last_Update;
+
+  Tle_Map_Save : Tle_Data.Map;
+
+  Update_Failed : exception;
 
 
   procedure Read (Selection : String;
@@ -99,7 +104,7 @@ package body Satellite is
               begin
                 if not Tle_Map.Contains (Key) then
                   if Norad.Is_In_Deep_Space (Item.Element) then
-                    Log.Warning ("<" & Name & "> is in deep space");
+                    Log.Warning (Name & " is in deep space");
                   else
                     Log.Write ("Name: " & Name);
                     Log.Write ("Tle1: " & Tle1);
@@ -112,24 +117,72 @@ package body Satellite is
           end loop;
         end;
       else
-        Log.Warning ("Data update failed");
+        Log.Warning ("Data update failed for " & Target);
+        raise Update_Failed;
       end if;
     end;
   end Read;
 
 
-  function Image_Of (Item : Group) return String is
-    Image : String := Item'image;
+  function Enum_Style_Of (Image : String) return String is
+    The_Image : String := Image;
   begin
-    for The_Character of Image loop
+    for The_Character of The_Image loop
+      if The_Character in ' ' | '-' then
+        The_Character := '_';
+      end if;
+    end loop;
+    return The_Image;
+  end Enum_Style_Of;
+
+
+  function Group_Style_Of (Image : String) return String is
+    The_Image : String := Image;
+  begin
+    for The_Character of The_Image loop
       if The_Character = '_' then
         The_Character := '-';
       else
         The_Character := Text.Lowercase_Of (@);
       end if;
     end loop;
-    return Image;
+    return The_Image;
+  end Group_Style_Of;
+
+
+  function Image_Of (Item : Group) return String is
+  begin
+    return Group_Style_Of (Item'image);
   end Image_Of;
+
+
+  function Image_Of (Value : Groups.Set) return String is
+    Image : constant String := Group_Style_Of (Value'image);
+  begin
+    return Image(Image'first + 1 .. Image'last - 1);
+  end Image_Of;
+
+
+  procedure Set_Groups (Image : String) is
+    Images    : constant Text.Strings := Text.Strings_Of (Image, Separator => ',');
+    The_Group : Group;
+    use type Groups.Set;
+  begin
+    The_Groups := [];
+    for Group_Image of Images loop
+      begin
+        The_Group := Group'value(Enum_Style_Of (Group_Image));
+      exception
+      when others =>
+        Error.Raise_With (Id & " group " & Group_Image & " unknown");
+      end;
+      if The_Group < The_Groups then
+        Error.Raise_With (Id & " group " & Group_Image & " already defined");
+      end if;
+      The_Groups := @ + The_Group;
+    end loop;
+    Log.Write ("Groups: " & Image_Of (The_Groups));
+  end Set_Groups;
 
 
   procedure Read_Group (From : Group) is
@@ -157,7 +210,7 @@ package body Satellite is
   end Initialize_Objects;
 
 
-  procedure Read is
+  function Read return Boolean is
   begin
     if not Tle_Map.Is_Empty then
       declare
@@ -169,9 +222,10 @@ package body Satellite is
         Log.Write ("Age of data =" & Age_Of_Data'image & " hours");
         if Age_Of_Data < Maximum_Data_Age and then Actual_Groups = The_Groups then
           Initialize_Objects;
-          return;
+          return True;
         end if;
       end;
+      Tle_Map_Save := Tle_Map;
       Tle_Map.Clear;
     end if;
     for The_Group of The_Groups loop
@@ -181,9 +235,22 @@ package body Satellite is
     Actual_Groups := The_Groups;
     Last_Update := Time.Calendar_Now;
     Initialize_Objects;
+    return True;
   exception
+  when Update_Failed =>
+    Tle_Map := Tle_Map_Save;
+    Initialize_Objects;
+    if Tle_Map.Is_Empty then
+      Actual_Groups := [];
+      Log.Warning ("update failed - no data");
+      return False;
+    else
+      Log.Warning ("update failed - old data in use");
+      return True;
+    end if;
   when Item: others =>
     Log.Termination (Item);
+    return False;
   end Read;
 
 
@@ -218,7 +285,7 @@ package body Satellite is
 
 
   function Name_Of (Object : Number) return String is
-    Id : constant String := "0000" & Object'image;
+    Id : constant String := "   " & Object'image;
   begin
     return Id(Id'last - 4 .. Id'last) & " " & (Tle_Name_Of (Object));
   end Name_Of;

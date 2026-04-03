@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2013 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                               (c) 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,40 +15,23 @@
 -- *********************************************************************************************************************
 pragma Style_Astronomy;
 
-with Norad;
-with Discrete_Set;
+with Section;
 
-package Satellite is
+package body Satellite.Parameter is
 
-  subtype Number is Norad.Number;
+  Groups_Key : constant String := "Groups";
 
-  package Numbers is new Discrete_Set (Number);
+  procedure Define (Handle : Configuration.File_Handle) is
+  begin
+    Section.Set (Configuration.Handle_For (Handle, Id));
+    Set_Groups (Section.String_Of (Groups_Key, Id));
+  end Define;
 
-  subtype Tle is Norad.Two_Line;
 
-  function Read return Boolean;
+  procedure Defaults (Put : access procedure (Item : String)) is
+  begin
+    Put ("[" & Id & "]");
+    Put (Groups_Key & " = " & Image_Of (Groups.Full));
+  end Defaults;
 
-  function Read (Object : Number) return Boolean;
-
-  function Objects return Numbers.Set;
-
-  function Tle_Of (Object : Number) return Tle;
-
-  function Tle_Name_Of (Object : Number) return String;
-
-  function Name_Of (Object : Number) return String;
-
-private
-  Id : constant String := "Satellite";
-
-  type Group is (Amateur, Iridium, Iridium_Next, Noaa, Orbcomm, Stations, Visual);
-
-  package Groups is new Discrete_Set (Group);
-
-  The_Groups : Groups.Set;
-
-  procedure Set_Groups (Image : String);
-
-  function Image_Of (Value : Groups.Set) return String;
-
-end Satellite;
+end Satellite.Parameter;

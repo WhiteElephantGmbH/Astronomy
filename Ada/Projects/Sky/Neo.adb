@@ -223,7 +223,7 @@ package body Neo is
     Wrap : Earth.Direction;
   end record;
 
-  The_Trajectories : array (1..500) of Data;
+  The_Trajectories : array (1..999) of Data;
 
 
   procedure Add_Object (Object : Satellite.Number) is
@@ -252,8 +252,9 @@ package body Neo is
 
   procedure Read is
   begin
-    Satellite.Read;
-    Add_Objects;
+    if Satellite.Read then
+      Add_Objects;
+    end if;
   end Read;
 
 
