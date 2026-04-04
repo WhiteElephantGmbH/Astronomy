@@ -17,18 +17,14 @@ pragma Style_Astronomy;
 
 with Angle;
 with Language;
-with Network.Tcp;
+with Network;
 with Space;
+with Text;
 with Traces;
 
 package Stellarium is
 
   type Goto_Handler is access procedure (Direction : Space.Direction);
-
-  function Startup (Filename : String;
-                    The_Port : Network.Port_Number) return Boolean;
-
-  procedure Shutdown;
 
   function Landscape_Filename return String;
 
@@ -38,22 +34,21 @@ package Stellarium is
 
   function Search_Tolerance return Angle.Degrees;
 
-  procedure Start;
-  Port_In_Use : exception renames Network.Tcp.Port_In_Use;
+  procedure Startup;
 
-  function Port_Number return Network.Port_Number;
+  procedure Shutdown;
 
   procedure Define_Handler (The_Handler : Goto_Handler);
 
   procedure Set (Direction : Space.Direction);
-
-  procedure Close;
 
 private
 
   Id : constant String := "Stellarium";
 
   package Log is new Traces (Id);
+
+  The_Filename : Text.String;
 
   The_Port_Number : Network.Port_Number;
 

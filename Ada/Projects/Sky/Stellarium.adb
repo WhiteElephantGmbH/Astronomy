@@ -20,11 +20,12 @@ with Ada.Text_IO;
 with Applications;
 with Configuration;
 with Directory;
+with Error;
 with File;
 with Network.Tcp.Servers;
 with Os.Process;
 with Site;
-with Text;
+with Time;
 with Unsigned;
 
 package body Stellarium is
@@ -251,52 +252,6 @@ package body Stellarium is
   end Read_Location;
 
 
-  The_Process_Id : Os.Process.Id;
-
-  function Startup (Filename : String;
-                    The_Port : Network.Port_Number) return Boolean is
-
-    The_Listener : Network.Tcp.Listener_Socket;
-    The_Client   : Network.Tcp.Socket;
-    The_Address  : Network.Ip_Address;
-
-  begin
-    begin
-      Network.Tcp.Create_Socket_For (The_Port, Network.Tcp.Raw, The_Listener);
-      begin
-        Network.Tcp.Accept_Client_From (The_Listener   => The_Listener,
-                                        The_Client     => The_Client,
-                                        Client_Address => The_Address,
-                                        The_Timeout    => 1.0);
-      exception
-      when others =>
-        Network.Tcp.Close (The_Listener);
-        raise; -- not started
-      end;
-      Network.Tcp.Close (The_Client);
-      Network.Tcp.Close (The_Listener);
-      return True; -- already started
-    exception
-    when others =>
-      null; -- not started
-    end;
-    The_Process_Id := Os.Process.Created (Filename);
-    return True;
-  exception
-  when others =>
-    return False;
-  end Startup;
-
-
-  procedure Shutdown is
-  begin
-    Os.Process.Terminate_With (The_Process_Id);
-  exception
-  when others =>
-    Log.Write ("already terminated");
-  end Shutdown;
-
-
   function Landscape_Filename return String is
     Name : constant String := Configuration.Value_Of (Landscape_Section, "maptex");
   begin
@@ -336,6 +291,12 @@ package body Stellarium is
     end if;
     return Standard.Language.English;
   end Language;
+
+
+  function Port_Number return Network.Port_Number is
+  begin
+    return The_Port_Number;
+  end Port_Number;
 
 
   use type Angle.Signed;
@@ -387,17 +348,79 @@ package body Stellarium is
   end Message_Handler;
 
 
-  procedure Start is
+  The_Process_Id : Os.Process.Id;
+
+  function Is_Started return Boolean is
+
+    The_Listener : Network.Tcp.Listener_Socket;
+    The_Client   : Network.Tcp.Socket;
+    The_Address  : Network.Ip_Address;
+
   begin
-    Log.Write ("start - port:" & The_Port_Number'img);
-    Server.Start (Message_Handler'access, The_Port_Number);
-  end Start;
+    begin
+      Network.Tcp.Create_Socket_For (The_Port_Number, Network.Tcp.Raw, The_Listener);
+      begin
+        Network.Tcp.Accept_Client_From (The_Listener   => The_Listener,
+                                        The_Client     => The_Client,
+                                        Client_Address => The_Address,
+                                        The_Timeout    => 1.0);
+      exception
+      when others =>
+        Network.Tcp.Close (The_Listener);
+        raise; -- not started
+      end;
+      Network.Tcp.Close (The_Client);
+      Network.Tcp.Close (The_Listener);
+      Log.Write ("already started");
+      return True;
+    exception
+    when others =>
+      null;
+    end;
+    Log.Write ("start");
+    The_Process_Id := Os.Process.Created (The_Filename.S);
+    Time.Wait (1.0); -- wait for creation
+    return True;
+  exception
+  when others =>
+    return False;
+  end Is_Started;
 
 
-  function Port_Number return Network.Port_Number is
+  procedure Startup is
+    Filename : constant String := The_Filename.S;
   begin
-    return The_Port_Number;
-  end Port_Number;
+    if Filename = "" then
+      return;
+    end if;
+    Log.Write ("program file: """ & Filename & """");
+    if not File.Exists (Filename) then
+      Error.Raise_With ("Stellarium program file """ & Filename & """ not found");
+    end if;
+    if not Is_Started then
+      Error.Raise_With ("Stellarium not started");
+    end if;
+    begin
+      Server.Start (Message_Handler'access, The_Port_Number);
+      Log.Write ("start server - port:" & The_Port_Number'img);
+    exception
+    when Network.Tcp.Port_In_Use =>
+      Error.Raise_With ("Stellarion - TCP port" & Stellarium.Port_Number'img & " in use");
+    when others =>
+      Error.Raise_With ("Stellarion - could not start server");
+    end;
+  end Startup;
+
+
+  procedure Shutdown is
+  begin
+    Log.Write ("shutdown");
+    Server.Close; -- noop if never started
+    Os.Process.Terminate_With (The_Process_Id);
+  exception
+  when others =>
+    Log.Write ("already terminated");
+  end Shutdown;
 
 
   procedure Set (Direction : Space.Direction) is
@@ -417,13 +440,6 @@ package body Stellarium is
   when others =>
     null;
   end Set;
-
-
-  procedure Close is
-  begin
-    Server.Close;
-    Log.Write ("end");
-  end Close;
 
 begin
   Read_Location;

@@ -482,16 +482,6 @@ package body Control is
       Action_Handler.Wait_For_Termination;
     end Termination;
 
-    procedure Start_Stellarium_Server is
-    begin
-      Stellarium.Start;
-    exception
-    when Network.Tcp.Port_In_Use =>
-      Error.Raise_With (Application.Name & " - TCP port" & Stellarium.Port_Number'img & " for Stellarium in use");
-    when others =>
-      Error.Raise_With (Application.Name & " - could not start stellarium server");
-    end Start_Stellarium_Server;
-
     procedure Start_Lx200_Server is
       Used_Port : constant Network.Port_Number := Parameter.Lx200_Port;
     begin
@@ -512,13 +502,14 @@ package body Control is
       --       In this case it is better not to attempt detecting first instance because if the application
       --       is terminated by force quit the mutex is not released but remains until the host is rebooted.
       --
-      Error.Raise_With (Application.Name & " already running");
+      User.Show_Error (Application.Name & " already running");
+      return;
     end if;
     Os.Process.Set_Priority_Class (Os.Process.Realtime);
     Parameter.Read;
+    Read_Data;
     begin
-      Start_Stellarium_Server;
-      Read_Data;
+      Stellarium.Startup;
       Start_Lx200_Server;
       Telescope.Start (Information_Update_Handler'access);
       Targets.Start (Clear    => User.Clear_Targets'access,
@@ -528,16 +519,16 @@ package body Control is
       User.Execute (Startup'access,
                     User_Action_Handler'access,
                     Termination'access);
-      Stellarium.Close;
-      Parameter.Shutdown;
+      Stellarium.Shutdown;
     exception
     when others =>
-      Stellarium.Close;
-      Parameter.Shutdown;
+      Stellarium.Shutdown;
       raise;
     end;
+    Parameter.Shutdown;
   exception
   when Error.Occurred =>
+    Parameter.Shutdown;
     User.Show_Error;
   when Occurrence: others =>
     Log.Termination (Occurrence);

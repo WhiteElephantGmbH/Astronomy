@@ -358,7 +358,6 @@ package body Parameter is
     if Is_In_Shutdown_Mode then
       PWI2.Shutdown;
     end if;
-    Stellarium.Shutdown;
   end Shutdown;
 
 

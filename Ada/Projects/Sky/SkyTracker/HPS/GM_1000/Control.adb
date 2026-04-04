@@ -445,16 +445,6 @@ package body Control is
       Action_Handler.Wait_For_Termination;
     end Termination;
 
-    procedure Start_Stellarium_Server is
-    begin
-      Stellarium.Start;
-    exception
-    when Stellarium.Port_In_Use =>
-      Error.Raise_With (Application.Name & " - TCP port" & Stellarium.Port_Number'img & " for Stellarium in use");
-    when others =>
-      Error.Raise_With (Application.Name & " - could not start stellarium server");
-    end Start_Stellarium_Server;
-
   begin -- Start
     if (not Os.Is_Osx) and then (not Os.Application.Is_First_Instance) then
       --
@@ -468,9 +458,9 @@ package body Control is
     end if;
     Os.Process.Set_Priority_Class (Os.Process.Realtime);
     Parameter.Read;
+    Read_Data;
     begin
-      Start_Stellarium_Server;
-      Read_Data;
+      Stellarium.Startup;
       begin
         Clock.Start;
         Telescope.Start (Information_Update_Handler'access);
@@ -487,11 +477,9 @@ package body Control is
         Clock.Finish;
         raise;
       end;
-      Stellarium.Close;
       Stellarium.Shutdown;
     exception
     when others =>
-      Stellarium.Close;
       Stellarium.Shutdown;
       raise;
     end;

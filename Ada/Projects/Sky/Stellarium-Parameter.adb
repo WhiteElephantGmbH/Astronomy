@@ -15,8 +15,6 @@
 -- *********************************************************************************************************************
 pragma Style_Astronomy;
 
-with Error;
-with File;
 with Os.System;
 with Section;
 with Targets;
@@ -29,27 +27,11 @@ package body Stellarium.Parameter is
 
 
   procedure Define (Handle : Configuration.File_Handle) is
-
-    procedure Startup_Stellarium is
-      Stellarium_Filename : constant String := Section.String_Value_Of (Program_Key);
-    begin
-      if Stellarium_Filename = "" then
-        return;
-      end if;
-      Log.Write ("Stellarium program file: """ & Stellarium_Filename & """");
-      if not File.Exists (Stellarium_Filename) then
-        Error.Raise_With ("Stellarium program file """ & Stellarium_Filename & """ not found");
-      end if;
-      if not Startup (Stellarium_Filename, Port_Number) then
-        Error.Raise_With ("Stellarium not started");
-      end if;
-    end Startup_Stellarium;
-
-  begin -- Define
+  begin
     Section.Set (Configuration.Handle_For (Handle, Id));
     The_Port_Number := Section.Port_For (Id);
     The_Search_Tolerance := Section.Degrees_Of (Search_Tolerance_Key, Targets.Maximum_Search_Tolerance);
-    Startup_Stellarium;
+    The_Filename := [Section.String_Value_Of (Program_Key)];
   end Define;
 
 
