@@ -29,10 +29,11 @@ package body Sun.Parameter is
   end Define;
 
 
-  procedure Defaults (Put : access procedure (Item : String)) is
+  procedure Defaults (Put          : access procedure (Item : String);
+                      Savety_Angle : Natural := 30) is
   begin
     Put ("[" & Id & "]");
-    Put (Safety_Angle_Key & " = 30" & Angle.Degree);
+    Put (Safety_Angle_Key & " =" & Savety_Angle'image & Angle.Degree);
   end Defaults;
 
 end Sun.Parameter;

@@ -21,6 +21,7 @@ package Sun.Parameter is
 
   procedure Define (Handle : Configuration.File_Handle);
 
-  procedure Defaults (Put : access procedure (Item : String));
+  procedure Defaults (Put          : access procedure (Item : String);
+                      Savety_Angle : Natural := 30);
 
 end Sun.Parameter;
