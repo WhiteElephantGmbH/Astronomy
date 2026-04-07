@@ -759,11 +759,15 @@ package body Name is
         Ada.Text_IO.Put (The_File, Text.Bom_8);
         case Site.Location is
         when Site.Cdk_West =>
-          Put ("LM Wegweiser | 259° 49' 13"" | 2° 56' 15""");
-          Put ("");
+          if Support_Land_Marks then
+            Put ("LM Wegweiser | 259° 49' 13"" | 2° 56' 15""");
+            Put ("");
+          end if;
         when Site.Apo =>
-          Put ("AP Deckel weg | 30° 00' 00"" | -125° 00' 00""");
-          Put ("");
+          if Support_Axis_Positions then
+            Put ("AP Deckel weg | 30° 00' 00"" | -125° 00' 00""");
+            Put ("");
+          end if;
         when others =>
           null;
         end case;
@@ -777,8 +781,10 @@ package body Name is
         Put (Image_Of (Lexicon.Pluto));
         Put_Moon;
         Put ("");
-        Put ("SAT 25544");
-        Put ("");
+        if Support_Neos then
+          Put ("SAT 25544");
+          Put ("");
+        end if;
         Put (Image_Of (Lexicon.Albereo));
         Put (Image_Of (Lexicon.Aldebaran));
         Put (Image_Of (Lexicon.Altair));
@@ -864,7 +870,7 @@ package body Name is
 
       The_Target_Number : Positive := Positive'first;
 
-    begin -- Read
+    begin -- Read_Favorite_Catalog
       if not File.Exists (Filename) then
         Create_Default_Favorites;
       end if;
