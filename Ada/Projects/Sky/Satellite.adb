@@ -53,10 +53,6 @@ package body Satellite is
   Actual_Groups : Groups.Set renames  Persistent_Items.Storage.Actual_Groups;
   Last_Update   : Time.Calendar_Value renames Persistent_Items.Storage.Last_Update;
 
-  Tle_Map_Save : Tle_Data.Map;
-
-  Update_Failed : exception;
-
 
   procedure Read (Selection : String;
                   Target    : String) is
@@ -117,8 +113,7 @@ package body Satellite is
           end loop;
         end;
       else
-        Log.Warning ("Data update failed for " & Target);
-        raise Update_Failed;
+        Error.Raise_With ("Satellite data update from Celestrak.org failed");
       end if;
     end;
   end Read;
@@ -210,7 +205,7 @@ package body Satellite is
   end Initialize_Objects;
 
 
-  function Read return Boolean is
+  procedure Read is
   begin
     if not Tle_Map.Is_Empty then
       declare
@@ -222,10 +217,9 @@ package body Satellite is
         Log.Write ("Age of data =" & Age_Of_Data'image & " hours");
         if Age_Of_Data < Maximum_Data_Age and then Actual_Groups = The_Groups then
           Initialize_Objects;
-          return True;
+          return;
         end if;
       end;
-      Tle_Map_Save := Tle_Map;
       Tle_Map.Clear;
     end if;
     for The_Group of The_Groups loop
@@ -235,40 +229,22 @@ package body Satellite is
     Actual_Groups := The_Groups;
     Last_Update := Time.Calendar_Now;
     Initialize_Objects;
-    return True;
   exception
-  when Update_Failed =>
-    Tle_Map := Tle_Map_Save;
+  when Error.Occurred =>
+    Tle_Map.Clear;
     Initialize_Objects;
-    if Tle_Map.Is_Empty then
-      Actual_Groups := [];
-      Log.Warning ("update failed - no data");
-      return False;
-    else
-      Log.Warning ("update failed - old data in use");
-      return True;
-    end if;
-  when Item: others =>
-    Log.Termination (Item);
-    return False;
+    Actual_Groups := [];
+    raise;
   end Read;
 
 
-  function Read (Object : Number) return Boolean is
+  procedure Read (Object : Number) is
     use type Numbers.Set;
   begin
-    if not (Object < The_Objects) then
-      begin
-        Read ("CATNR", Text.Trimmed(Object'image));
-      exception
-      when Update_Failed =>
-        Log.Warning ("update failed - no data");
-        return False;
-      end;
+    if not Tle_Map.Is_Empty and then not (Object < The_Objects) then
+      Read ("CATNR", Text.Trimmed(Object'image));
       Add_Object (Object);
-      return True;
     end if;
-    return False;
   end Read;
 
 

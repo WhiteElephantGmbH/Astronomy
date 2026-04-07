@@ -22,7 +22,7 @@ with Time;
 
 package Neo is
 
-  procedure Read;
+  function Read return Boolean; -- if false show Error.Message
 
   function Is_Arriving (Item : Name.Id) return Boolean;
 
@@ -33,6 +33,6 @@ package Neo is
 
   function Wrap_Location_Of (Item : Name.Id) return Earth.Direction;
 
-  function Name_Of (Number : Natural) return String;
+  function Name_Of (Number : Natural) return String; -- empty if Read returnd false
 
 end Neo;

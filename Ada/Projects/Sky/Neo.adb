@@ -250,11 +250,17 @@ package body Neo is
   end Add_Objects;
 
 
-  procedure Read is
+  Neo_Read : Boolean := False;
+
+  function Read return Boolean is
   begin
-    if Satellite.Read then
-      Add_Objects;
-    end if;
+    Satellite.Read;
+    Add_Objects;
+    Neo_Read := True;
+    return True;
+  exception
+  when Error.Occurred =>
+    return False;
   end Read;
 
 
@@ -350,12 +356,17 @@ package body Neo is
 
 
   function Name_Of (Number : Natural) return String is
-    Object : constant Satellite.Number := Satellite.Number(Number);
   begin
-    if Satellite.Read (Object) then
-      Add_Object (Object);
+    if Neo_Read then
+      declare
+        Object : constant Satellite.Number := Satellite.Number(Number);
+      begin
+        Satellite.Read (Object);
+        Add_Object (Object);
+        return Satellite.Name_Of (Object);
+      end;
     end if;
-    return Satellite.Name_Of (Object);
+    return "";
   end Name_Of;
 
 end Neo;

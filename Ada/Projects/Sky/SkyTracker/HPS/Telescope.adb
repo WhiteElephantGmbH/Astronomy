@@ -95,9 +95,6 @@ package body Telescope is
     if Focuser_Client.Server_Exists then
       Server.Set (Focuser_Client.Actual_Data);
     end if;
-  exception
-  when Focuser_Client.Server_Not_Available =>
-    Log.Warning ("Focuser server not available");
   end Set_Server_Information;
 
 

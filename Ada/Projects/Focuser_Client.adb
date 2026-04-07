@@ -54,8 +54,7 @@ package body Focuser_Client is
 
   begin
     if Status /= AWS.Messages.S200 then
-      Log.Error ("Get Status: " & Status'image);
-      raise Server_Not_Available;
+      return Focuser.No_Data;
     end if;
     declare
       Result : constant String := AWS.Response.Message_Body (Response);
@@ -114,7 +113,7 @@ package body Focuser_Client is
     use type AWS.Messages.Status_Code;
   begin
     if Status /= AWS.Messages.S200 then
-      Log.Error (Command & ": " & Status'image);
+      Log.Warning (Command & ": " & Status'image);
     end if;
   end Execute;
 

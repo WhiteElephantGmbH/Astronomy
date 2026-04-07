@@ -34,7 +34,7 @@ package body Clock.Parameter is
       The_Udp_Socket := Network.Udp.Socket_For (Name_Or_Address => Name_Or_Address,
                                                 Port            => Section.Port_For (Id),
                                                 Receive_Timeout => Datagram_Timeout);
-      Log.Write ("Clock connected to " & Name_Or_Address);
+      Log.Write ("connected to " & Name_Or_Address);
     end if;
   exception
   when Network.Not_Found =>

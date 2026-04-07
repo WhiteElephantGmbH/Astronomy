@@ -626,14 +626,18 @@ package body Name is
                       Neo_Number : constant Natural := Natural'value(Satellite_Id);
                     begin
                       The_Element.Name := [Neo_Name_Of (Neo_Number)];
-                      The_Element.Object := Sky.Data.Neo_Object_Of (Neo_Number);
-                      if The_Element.Object = Sky.Undefined then
-                        Log.Write (The_Element.Name.S & " not visible");
+                      if The_Element.Name.Is_Empty then
+                        The_Element.Object := Sky.Undefined;
+                      else
+                        The_Element.Object := Sky.Data.Neo_Object_Of (Neo_Number);
+                        if The_Element.Object = Sky.Undefined then
+                          Log.Write (The_Element.Name.S & " not visible");
+                        end if;
                       end if;
                     end;
                   exception
                   when others =>
-                    Error.Raise_With ("Unknown Satellite - " & Satellite_Id);
+                    Error.Raise_With ("Unknown Satellite - " & Satellite_Id, Clear_Rest => True);
                   end;
                 else
                   The_Element.Kind := Sky_Object;

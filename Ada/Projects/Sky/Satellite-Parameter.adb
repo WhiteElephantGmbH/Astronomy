@@ -29,9 +29,10 @@ package body Satellite.Parameter is
 
 
   procedure Defaults (Put : access procedure (Item : String)) is
+    use type Groups.Set;
   begin
     Put ("[" & Id & "]");
-    Put (Groups_Key & " = " & Image_Of (Groups.Full));
+    Put (Groups_Key & " = " & Image_Of (Groups.Full - Amateur - Orbcomm));
   end Defaults;
 
 end Satellite.Parameter;

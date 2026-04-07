@@ -26,9 +26,9 @@ package Satellite is
 
   subtype Tle is Norad.Two_Line;
 
-  function Read return Boolean;
+  procedure Read;
 
-  function Read (Object : Number) return Boolean;
+  procedure Read (Object : Number);
 
   function Objects return Numbers.Set;
 

@@ -35,6 +35,7 @@ with Satellite.Parameter;
 with Stellarium.Parameter;
 with Sun.Parameter;
 with Ten_Micron.Parameter;
+with User;
 
 package body Parameter is
 
@@ -105,7 +106,12 @@ package body Parameter is
       Http_Server.Parameter.Define (Handle);
       Sun.Parameter.Define (Handle);
       Moon.Parameter.Define (Handle);
-      Clock.Parameter.Define (Handle);
+      begin
+        Clock.Parameter.Define (Handle);
+      exception
+      when Error.Occurred =>
+        User.Show_Error;
+      end;
       Picture.Parameter.Define (Handle);
       Alignment.Parameter.Define (Handle);
       Satellite.Parameter.Define (Handle);

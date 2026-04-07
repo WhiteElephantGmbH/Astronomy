@@ -36,9 +36,6 @@ package body Http_Server.HPS is
     if Focuser_Client.Server_Exists then
       Set (Focuser_Client.Execute (The_Command));
     end if;
-  exception
-  when Focuser_Client.Server_Not_Available =>
-    Log.Warning ("Focuser server not available");
   end Execute;
 
 
