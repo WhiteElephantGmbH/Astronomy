@@ -104,12 +104,11 @@ package body Focus is
   -- Control --
   -------------
 
-  The_Index : Positive; -- used in simulation;
+  The_Index : Positive; -- global for simulation
 
   task body Control is
 
     HFD_Samples   : constant HFD_Sample_Count := The_HFD_Samples;
-    HFD_Spread    : constant Positive := HFD_Samples / 2;
     Trigger_Level : constant Diameter := The_Trigger_Level;
     Minimum_Delta : constant Diameter := The_Minimum_Delta;
 
@@ -131,8 +130,7 @@ package body Focus is
     function Found_Minimum return Boolean is
       The_Minimum   : Diameter := Diameter'last;
       First_Maximum : Diameter := Diameter'first;
-      Last_Maximum  : Diameter := Diameter'first;
-      Last_Index    : Natural;
+      The_Maximum   : Diameter := Diameter'first;
     begin
       for Index in First_Index .. The_Index loop
         if First_Maximum < The_HFD(Index) then
@@ -156,37 +154,28 @@ package body Focus is
       Log.Write ("Minimum:" & The_Minimum'image);
       Log.Write ("Minimum index:" & Minimum_Index'image);
       for Index in Minimum_Index .. The_Index loop
-        if Last_Maximum < The_HFD(Index) then
-          Last_Maximum := The_HFD(Index);
-          Last_Index := Index;
+        if The_Maximum < The_HFD(Index) then
+          The_Maximum := The_HFD(Index);
         end if;
       end loop;
-      Log.Write ("Last maximum:" & Last_Maximum'image);
-      Log.Write ("Last maximum index:" & Last_Index'image);
-      if Last_Index - Minimum_Index >= HFD_Spread then
+      Log.Write ("Maximum:" & The_Maximum'image);
+      if The_Index - First_Index > HFD_Samples then
         declare
-          First_Spread : constant Natural := Minimum_Index - First_Index;
+          The_Delta : constant Diameter := The_Maximum - The_Minimum;
         begin
-          if First_Spread >= HFD_Spread then
-            declare
-              First_Delta : constant Diameter := First_Maximum - The_Minimum;
-            begin
-              if First_Delta >= Minimum_Delta then
-                return Last_Maximum - The_Minimum >= Minimum_Delta;
-              end if;
-              Raise_Error ("Focus: Delta too small:" & First_Delta'image);
-            end;
+          if The_Delta < Minimum_Delta then
+            Raise_Error ("Focus: Delta too small:" & The_Delta'image);
           end if;
-          Raise_Error ("Focus: Not enough samples between first maximum and minimum:" & First_Spread'image);
         end;
+        return True;
       end if;
       return False;
     end Found_Minimum;
 
 
     function Focus_Position return Distance is
-      First         : constant Positive := Minimum_Index - HFD_Spread;
-      Last          : constant Positive := Minimum_Index + HFD_Spread;
+      First         : constant Positive := First_Index;
+      Last          : constant Positive := The_Index;
       From_Position : constant Distance := Start_Position + (First - The_HFD'first) * Position_Step;
     begin
       return Evaluation.Best_For (Start_Position => From_Position,
@@ -205,6 +194,8 @@ package body Focus is
 
     The_Wakeup_Time : RT.Time := RT.Clock + Delta_Time;
 
+    The_Warning_Count : Natural;
+
     The_Position : Distance;
 
     procedure Start_Evaluation is
@@ -215,6 +206,7 @@ package body Focus is
       if The_Position = Start_From_Actual then
         The_Position := The_Focuser.Actual_Position;
       end if;
+      The_Warning_Count := 0;
       The_Focuser.Move_To (The_Position - Max_Backlash);
       The_Wakeup_Time := RT.Clock + Delta_Time;
       Focus_Data.Set (Starting);
@@ -226,10 +218,15 @@ package body Focus is
       Actual_HFD      : constant Diameter := Focus_Data.Evaluation.HFD;
     begin
       if Actual_HFD = Focus.HFD_Not_Found then
+        The_Warning_Count := @ + 1;
+        if The_Warning_Count = 3 then
+          Raise_Error ("Focus: No Star not found");
+        end if;
         Log.Warning ("HFD not found at" & Actual_Position'image);
         Focus_Data.Set (Positioning);
         return;
       end if;
+      The_Warning_Count := 0;
       Log.Write ("Evaluate at position:" & Actual_Position'image);
       The_HFD(The_Index) := Actual_HFD;
       if The_Index >= HFD_Samples and then Found_Minimum then

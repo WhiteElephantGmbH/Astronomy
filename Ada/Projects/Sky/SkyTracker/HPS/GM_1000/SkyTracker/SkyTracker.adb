@@ -16,7 +16,7 @@
 pragma Style_Astronomy;
 
 pragma Build (Description => "SkyTracker control program for GM 1000 HPS",
-              Version     => (2, 4, 7, 9),
+              Version     => (2, 4, 8, 0),
               Kind        => Windows,
               Libraries   => ("AWSS64", "COLL64"),
               Compiler    => "GNATPRO\23.0");

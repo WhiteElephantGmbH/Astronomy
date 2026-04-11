@@ -136,7 +136,7 @@ package body Focus.Parameter is
     Put (Grid_Size_Key & "     = 1000");
     Put (HF_Threshold_Key & "  = 50");
     Put (Trigger_Level_Key & " = 80");
-    Put (Minimum_Delta_Key & " = 20");
+    Put (Minimum_Delta_Key & " = 15");
   end Defaults;
 
 end Focus.Parameter;
