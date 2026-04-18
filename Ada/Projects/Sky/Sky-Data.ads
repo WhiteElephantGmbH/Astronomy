@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2024 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2024 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -13,7 +13,7 @@
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with Astro;
 with Space;
@@ -66,12 +66,14 @@ package Sky.Data is
                            Object_Kind : Object_Type := Unknown;
                            Direction   : Space.Direction := Space.Unknown_Direction) return Index;
 
-  function Neo_Object_Of (Item : String) return Index;
+  function Neo_Object_Of (Number : Natural) return Object; -- returns Unknown if not found
 
-  function New_Neo_Object_For (Item        : String;
-                               Description : String) return Positive;
+  function New_Neo_Object_For (Item   : String;
+                               Number : Natural) return Positive;
 
   function Neo_Index_Of (Id : Index) return Positive;
+
+  function Neo_Number_Of (Id : Index) return Natural;
 
   procedure Apparent (Ra  : in out Astro.REAL;
                       Dec : in out Astro.REAL);

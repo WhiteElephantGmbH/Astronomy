@@ -13,7 +13,7 @@
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with Ada.Text_IO;
 with Application;
@@ -31,10 +31,12 @@ with Os.User;
 with PWI2.Settings;
 with Remote.Parameter;
 with Section;
+with Satellite.Parameter;
 with Stellarium.Parameter;
 with Sun.Parameter;
 with Telescope;
 with Text;
+with Time;
 with Traces;
 
 package body Parameter is
@@ -143,7 +145,9 @@ package body Parameter is
       Put ("");
       Remote.Parameter.Defaults (Put'access, "cdk_west");
       Put ("");
-      Stellarium.Parameter.Defaults (Put'access, "CDK");
+      Satellite.Parameter.Defaults (Put'access);
+      Put ("");
+      Stellarium.Parameter.Defaults (Put'access);
       Ada.Text_IO.Close (The_File);
     exception
     when Error.Occurred =>
@@ -224,7 +228,7 @@ package body Parameter is
                   if The_Number_Of_Retries = 0 then
                     Error.Raise_With ("PlaneWave interface server not enabled");
                   end if;
-                  delay 1.0;
+                  Time.Wait (1.0);
                   The_Number_Of_Retries := The_Number_Of_Retries - 1;
                   Log.Write ("retry to connect to PWI server");
                 end;
@@ -327,6 +331,7 @@ package body Parameter is
       The_Lx200_Port := Section.Port_For (Lx200_Id);
 
       Remote.Parameter.Define (Handle);
+      Satellite.Parameter.Define (Handle);
       Stellarium.Parameter.Define (Handle);
     exception
     when Cdk_700.Startup_Failed =>
@@ -353,7 +358,6 @@ package body Parameter is
     if Is_In_Shutdown_Mode then
       PWI2.Shutdown;
     end if;
-    Stellarium.Shutdown;
   end Shutdown;
 
 

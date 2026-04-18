@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                               (c) 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                           (c) 2024 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                      *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -13,7 +13,7 @@
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with Section;
 
@@ -29,10 +29,11 @@ package body Sun.Parameter is
   end Define;
 
 
-  procedure Defaults (Put : access procedure (Item : String)) is
+  procedure Defaults (Put          : access procedure (Item : String);
+                      Savety_Angle : Natural := 30) is
   begin
     Put ("[" & Id & "]");
-    Put (Safety_Angle_Key & " = 30" & Angle.Degree);
+    Put (Safety_Angle_Key & " =" & Savety_Angle'image & Angle.Degree);
   end Defaults;
 
 end Sun.Parameter;

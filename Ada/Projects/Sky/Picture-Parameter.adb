@@ -13,7 +13,7 @@
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with Directory;
 with Error;
@@ -52,14 +52,14 @@ package body Picture.Parameter is
   end Default_Astap_Executable;
 
 
-  procedure Defaults (Put       : access procedure (Item : String);
-                      Extension : String := Default_Picture;
-                      Height    : String := Default_Height;
-                      Width     : String := Default_Width) is
+  procedure Defaults (Put    : access procedure (Item : String);
+                      Name   : String := Default_Name;
+                      Height : String := Default_Height;
+                      Width  : String := Default_Width) is
   begin
     Put ("[" & Id & "]");
     Put (Astap_Key & "    = " & Default_Astap_Executable);
-    Put (Filename_Key & " = " & Extension);
+    Put (Filename_Key & " = " & Name);
     Put (Height_Key & "   = " & Height & Angle.Degree);
     Put (Width_Key & "    = " & Width & Angle.Degree);
   end Defaults;

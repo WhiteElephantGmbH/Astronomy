@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2024 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                      *
+-- *                           (c) 2024 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                      *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -13,7 +13,7 @@
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with Section;
 with Text;
@@ -25,11 +25,14 @@ package body Ten_Micron.Parameter is
   Port_Key        : constant String := Section.Port_Key;
 
   procedure Define (Handle : Configuration.File_Handle) is
+    use type Network.Ip_Address;
   begin
     Section.Set (Configuration.Handle_For (Handle, Id));
     Is_In_Expert_Mode := Text.Matches (Section.String_Value_Of (Expert_Mode_Key), "True");
     Log.Write ("Expert Mode: " & Is_In_Expert_Mode'image);
     The_Server_Address := Section.Ip_Address_For (Id);
+    Is_In_Simulation_Mode := The_Server_Address = Network.Loopback_Address;
+    Log.Write ("Simulation Mode: " & Is_In_Simulation_Mode'image);
     The_Server_Port := Section.Port_For (Id);
   end Define;
 

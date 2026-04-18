@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2013 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2013 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -13,21 +13,42 @@
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with Norad;
-with Text;
+with Discrete_Set;
 
 package Satellite is
 
+  subtype Number is Norad.Number;
+
+  package Numbers is new Discrete_Set (Number);
+
   subtype Tle is Norad.Two_Line;
 
-  procedure Read_Stellarium_Data;
+  procedure Read;
 
-  function Names return Text.List;
+  procedure Read (Object : Number);
 
-  function Exists (Name : String) return Boolean;
+  function Objects return Numbers.Set;
 
-  function Tle_Of (Name : String) return Tle;
+  function Tle_Of (Object : Number) return Tle;
+
+  function Tle_Name_Of (Object : Number) return String;
+
+  function Name_Of (Object : Number) return String;
+
+private
+  Id : constant String := "Satellite";
+
+  type Group is (Amateur, Iridium_Next, Orbcomm, Stations, Visual);
+
+  package Groups is new Discrete_Set (Group);
+
+  The_Groups : Groups.Set;
+
+  procedure Set_Groups (Image : String);
+
+  function Image_Of (Value : Groups.Set) return String;
 
 end Satellite;

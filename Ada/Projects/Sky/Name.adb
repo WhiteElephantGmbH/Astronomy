@@ -13,7 +13,7 @@
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with Ada.IO_Exceptions;
 with Ada.Text_IO;
@@ -23,6 +23,7 @@ with Error;
 with File;
 with Lexicon;
 with Objects;
+with Site;
 with Sky.Catalog;
 with Sky.Data;
 with Sssb;
@@ -36,7 +37,10 @@ package body Name is
 
   Support_Axis_Positions : Boolean := False;
   Support_Land_Marks     : Boolean := False;
-  Neo_Exists             : access function (Id : String) return Boolean;
+  Support_Neos           : Boolean := False;
+
+  Neo_Name_Of : Neo_Name_Handler;
+
 
   type Element_Data (Item : Data_Kind) is record
     Kind      : Object_Kind;
@@ -129,7 +133,7 @@ package body Name is
       return Item.Element.Kind;
     when Sky.Moon =>
       return Moon;
-    when Sky.Neo =>
+    when Sky.Satellite =>
       return Near_Earth_Object;
     when others =>
       return Sky_Object;
@@ -328,6 +332,7 @@ package body Name is
     function List return Id_List;
 
   private
+    The_Catalog      : Sky.Catalog_Id;
     The_Element_List : Element_Access;
     The_Id_List      : Id_List;
   end Actual_Catalog;
@@ -350,11 +355,12 @@ package body Name is
 
   procedure Read_Favorites (Enable_Axis_Positions : Boolean;
                             Enable_Land_Marks     : Boolean;
-                            Neo_Existing          : Neo_Exists_Handler := null) is
+                            Neo_Name_Of_Number    : Neo_Name_Handler := null) is
   begin
     Support_Axis_Positions := Enable_Axis_Positions;
     Support_Land_Marks := Enable_Land_Marks;
-    Neo_Exists := Neo_Existing;
+    Support_Neos := Neo_Name_Of_Number /= null;
+    Neo_Name_Of := Neo_Name_Of_Number;
     Actual_Catalog.Read_Favorite_Catalog;
   end Read_Favorites;
 
@@ -365,32 +371,58 @@ package body Name is
   end Define;
 
 
-  procedure Sort (The_List : in out Id_List) is
+  type Distances is array (Sky.Catalog.Index) of Angle.Degrees;
 
-    function Altitude_Of (Object : Id) return Angle.Signed is
-      Space_Direction : constant Space.Direction := Direction_Of (Object, Time.Universal);
-      Earth_Direction : constant Earth.Direction := Objects.Direction_Of (Space_Direction, Time.Lmst);
-      use type Angle.Signed;
+  The_Distances : Distances;
+
+  procedure Sort (The_List     : in out Id_List;
+                  In_Direction :        Sort_Direction) is
+
+    Now : constant Time.Ut := Time.Universal;
+
+    type Sort_Directions is array (Sort_Direction) of Earth.Direction;
+
+    Directions : constant Sort_Directions := [North      => Earth.North,
+                                              North_East => Earth.North_East,
+                                              East       => Earth.East,
+                                              South_East => Earth.South_East,
+                                              South      => Earth.South,
+                                              South_West => Earth.South_West,
+                                              West       => Earth.West,
+                                              North_West => Earth.North_West,
+                                              Zenith     => Earth.Zenith];
+    procedure Calculate_Distances is
+      Direction : constant Space.Direction := Objects.Direction_Of (Directions(In_Direction), Now);
     begin
-      return Angle.Signed'(+Earth.Alt_Of (Earth_Direction));
-    end Altitude_Of;
+      for The_Id of The_List.Ids loop
+        if Kind_Of (The_Id) = Sky_Object then
+          The_Distances (Object_Of (The_Id)) := Space.Angle_Between (Direction_Of (The_Id, Now), Direction);
+        end if;
+      end loop;
+    end Calculate_Distances;
 
-    function Compare_Altitude (Left, Right : Id) return Boolean is
-      use type Angle.Signed;
+    function Distance_Of (Item : Id) return Angle.Degrees is
+    begin
+      return The_Distances (Object_Of (Item));
+    end Distance_Of;
+
+    function Compare (Left, Right : Id) return Boolean is
+      use type Angle.Degrees;
     begin
       if Kind_Of (Left) = Sky_Object and Kind_Of (Right) = Sky_Object then
-        return Altitude_Of (Left) > Altitude_Of (Right);
+        return Distance_Of (Left) < Distance_Of (Right);
       end if;
       return False; -- don't sort others than sky objects
-    end Compare_Altitude;
+    end Compare;
 
-    package Tool is new Names.Generic_Sorting (Compare_Altitude);
+    package Tool is new Names.Generic_Sorting (Compare);
 
   begin -- Sort
     case The_List.Kind is
-    when Sky.Favorites | Sky.Catalogs=>
+    when Sky.Favorites | Sky.Catalogs =>
+      Calculate_Distances;
       Tool.Sort (The_List.Ids);
-    when Sky.Moon | Sky.Neo =>
+    when Sky.Moon | Sky.Satellite =>
       null;
     end case;
   end Sort;
@@ -401,6 +433,8 @@ package body Name is
     return Actual_Catalog.List;
   end Actual_List;
 
+
+  Sat_Mark : constant String := "SAT";
 
   protected body Actual_Catalog is
 
@@ -497,7 +531,6 @@ package body Name is
             Error.Raise_With ("Incorrect Location - " & Line);
           end Add_Landmark;
 
-
           procedure Add_Sky_Object is
           begin
             The_Element := new Element_Data(Sky_Object);
@@ -522,16 +555,12 @@ package body Name is
               end;
             else
               declare
-                Object_Name : constant String := Part_For (Text.First_Index);
+                Object_Name : constant String := Part_1;
                 use type Sky.Object;
               begin
                 The_Element.Name := [Part_For (Parts.Count)];
                 if Sssb.Exists (Object_Name) then
                   The_Element.Kind := Small_Solar_System_Body;
-                  return;
-                elsif Neo_Exists /= null and then Neo_Exists (Object_Name) then
-                  The_Element.Kind := Near_Earth_Object;
-                  The_Element.Object := Sky.Data.Neo_Object_Of (Object_Name);
                   return;
                 end if;
                 declare
@@ -588,12 +617,38 @@ package body Name is
                 when Lexicon.Not_Found =>
                   null;
                 end;
-                The_Element.Kind := Sky_Object;
-                The_Element.Object := Sky.Catalog.Object_Of (Object_Name);
-                if The_Element.Object = Sky.Undefined then
-                  Error.Raise_With ("Unknown Name - " & Line);
+                if Support_Neos and then Parts_1.Count = 2 and then Parts_1(Text.First_Index) = Sat_Mark then
+                  The_Element.Kind := Near_Earth_Object;
+                  declare
+                    Satellite_Id : constant String := Parts_1(Text.First_Index + 1);
+                  begin
+                    declare
+                      Neo_Number : constant Natural := Natural'value(Satellite_Id);
+                    begin
+                      The_Element.Name := [Neo_Name_Of (Neo_Number)];
+                      if The_Element.Name.Is_Empty then
+                        The_Element.Object := Sky.Undefined;
+                      else
+                        The_Element.Object := Sky.Data.Neo_Object_Of (Neo_Number);
+                        if The_Element.Object = Sky.Undefined then
+                          Log.Write ("Satellite " & The_Element.Name.S & " not visible");
+                        else
+                          Log.Write ("Added Satellite " & The_Element.Name.S);
+                        end if;
+                      end if;
+                    end;
+                  exception
+                  when others =>
+                    Error.Raise_With ("Unknown Satellite - " & Satellite_Id, Clear_Rest => True);
+                  end;
+                else
+                  The_Element.Kind := Sky_Object;
+                  The_Element.Object := Sky.Catalog.Object_Of (Object_Name);
+                  if The_Element.Object = Sky.Undefined then
+                    Error.Raise_With ("Unknown Name - " & Line);
+                  end if;
+                  The_Element.Name := [Sky.Catalog.Object_Image_Of (The_Element.Object, The_Element.Name.S)];
                 end if;
-                The_Element.Name := [Sky.Catalog.Object_Image_Of (The_Element.Object, The_Element.Name.S)];
               end;
             end if;
           end Add_Sky_Object;
@@ -704,10 +759,20 @@ package body Name is
       begin -- Create_Default_Favorites
         Ada.Text_IO.Create (The_File, Name => Filename);
         Ada.Text_IO.Put (The_File, Text.Bom_8);
-        if Support_Axis_Positions then
-          Put ("AP Home | 30° 00' 00"" | -125° 00' 00""");
-          Put ("");
-        end if;
+        case Site.Location is
+        when Site.Cdk_West =>
+          if Support_Land_Marks then
+            Put ("LM Wegweiser | 259° 49' 13"" | 2° 56' 15""");
+            Put ("");
+          end if;
+        when Site.Apo =>
+          if Support_Axis_Positions then
+            Put ("AP Deckel weg | 30° 00' 00"" | -125° 00' 00""");
+            Put ("");
+          end if;
+        when others =>
+          null;
+        end case;
         Put (Image_Of (Lexicon.Mercury));
         Put (Image_Of (Lexicon.Venus));
         Put (Image_Of (Lexicon.Mars));
@@ -718,9 +783,17 @@ package body Name is
         Put (Image_Of (Lexicon.Pluto));
         Put_Moon;
         Put ("");
-        if Support_Land_Marks then
-          -- example for observatorium Schaffhausen
-          Put ("LM " & Image_Of (Lexicon.Road_Sign) & " | 259° 49' 13"" | 2° 56' 15""");
+        if Support_Neos then
+          Put ("SAT 20580");
+          Put ("SAT 25544");
+          Put ("SAT 31598");
+          Put ("SAT 31698");
+          Put ("SAT 32376");
+          Put ("SAT 36605");
+          Put ("SAT 37216");
+          Put ("SAT 38771");
+          Put ("SAT 43689");
+          Put ("SAT 48274");
           Put ("");
         end if;
         Put (Image_Of (Lexicon.Albereo));
@@ -745,7 +818,7 @@ package body Name is
         Put ("");
         Put ("C14 | " & Image_Of (Lexicon.Persei_Clusters));
         Put ("C33 | " & Image_Of (Lexicon.East_Veil_Nebula));
-        Put ("C34 | " & Image_Of (Lexicon.Veil_Nebula));
+        Put ("C34 | " & Image_Of (Lexicon.Cirrus_Nebula));
         Put ("C39 | " & Image_Of (Lexicon.Eskimo_Nebula));
         Put ("C46 | " & Image_Of (Lexicon.Hubbles_Nebula));
         Put ("C55 | " & Image_Of (Lexicon.Saturn_Nebula));
@@ -808,7 +881,7 @@ package body Name is
 
       The_Target_Number : Positive := Positive'first;
 
-    begin -- Read
+    begin -- Read_Favorite_Catalog
       if not File.Exists (Filename) then
         Create_Default_Favorites;
       end if;
@@ -882,6 +955,7 @@ package body Name is
       package Name_Tool is new Names.Generic_Sorting (Compare_Names);
 
     begin -- Define
+      The_Catalog := Data_Id;
       The_Id_List.Ids.Clear;
       The_Id_List := Id_List'(Kind => Data_Id, Ids => <>);
       while Next loop

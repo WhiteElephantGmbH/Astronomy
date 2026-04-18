@@ -13,10 +13,11 @@
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with AWS.Client;
 with AWS.Response;
+with Time;
 with Traces;
 
 package body Remote is
@@ -219,7 +220,7 @@ package body Remote is
         accept Close;
         exit;
       or
-        delay 3.0;
+        delay until Time.In_Future (3.0);
         Send_Actual (Clear => True);
       end select;
     end loop;

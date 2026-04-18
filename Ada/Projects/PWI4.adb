@@ -13,7 +13,7 @@
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with AWS.Client;
 with AWS.Response;
@@ -98,19 +98,25 @@ package body PWI4 is
 
   The_Error_Info : Text.String;
 
+  procedure Set_Error (Message : String) is
+  begin
+    The_Error_Info := [Message];
+    Log.Error (Message);
+  end Set_Error;
+
+
   procedure Set_Error_Info (Data : AWS.Response.Data) is
   begin
-    The_Error_Info := [Text.Trimmed (AWS.Response.Message_Body (Data))];
-    Log.Error (Error_Info);
+    Set_Error (Text.Trimmed (AWS.Response.Message_Body (Data)));
   end Set_Error_Info;
+
 
   function Error_Info return String is (The_Error_Info.S);
 
 
-  procedure Execute (Item : String) is
+  function Executed (Item : String) return Boolean is
     Url : constant String := "http://" & The_Ip_Address_And_Port;
   begin
-    Log.Write ("Execute " & Item);
     declare
       Data   : constant AWS.Response.Data := AWS.Client.Get (Url & '/' & Item);
       Status : constant AWS.Messages.Status_Code := AWS.Response.Status_Code (Data);
@@ -124,27 +130,36 @@ package body PWI4 is
         Log.Error ("Client error: " & Status'image);
         Set_Error_Info (Data);
         Protocol.Set_Error (Status);
-        return;
+        return False;
       when AWS.Messages.Server_Error =>
         Log.Error ("Server error: " & Status'image);
         Set_Error_Info (Data);
         Protocol.Set_Error (Status);
-        return;
+        return False;
       when others =>
         Log.Error ("Unexpected response: " & Status'image);
         Set_Error_Info (Data);
         Protocol.Set_Error (Status);
-        return;
+        return False;
       end case;
-      Protocol.Parse (AWS.Response.Message_Body (Data));
+      return Protocol.Parsed (AWS.Response.Message_Body (Data));
     end;
-  end Execute;
+  end Executed;
 
 
-  procedure Get_System is
+  function Got_System_Status return Boolean is
   begin
-    Execute ("status");
-  end Get_System;
+    return Executed ("status");
+  end Got_System_Status;
+
+
+  procedure Execute (Command : String) is
+  begin
+    Log.Write ("Execute " & Command);
+    if not Executed (Command) then
+      Log.Error (Command & "not Executed");
+    end if;
+  end Execute;
 
 
   procedure Test_Crash is

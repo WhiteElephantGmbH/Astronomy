@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2023 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2023 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,7 +15,7 @@
 -- *********************************************************************************************************************
 -- *    Supports Planewave Interface version PWI_4.1.6
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 private package PWI4.Protocol is
 
@@ -51,14 +51,15 @@ private package PWI4.Protocol is
   end record;
 
   type Rotator_Info is record
-    Exists        : Boolean;
-    Index         : Device_Index;
-    Is_Connected  : Boolean;
-    Is_Enabled    : Boolean;
-    Is_Moving     : Boolean;
-    Is_Slewing    : Boolean;
-    Field_Angle   : Degrees;
-    Mech_Position : Degrees;
+    Exists              : Boolean;
+    Index               : Device_Index;
+    Is_Connected        : Boolean;
+    Is_Enabled          : Boolean;
+    Is_Moving           : Boolean;
+    Is_Slewing          : Boolean;
+    Is_Tracking_Enabled : Boolean;
+    Field_Angle         : Degrees;
+    Mech_Position       : Degrees;
   end record;
 
   function Arc_Second_Of (Image : String) return Arc_Second;
@@ -71,12 +72,15 @@ private package PWI4.Protocol is
 
   type Axis_Enabled is array (Natural range 0 .. 1) of Boolean;
 
+  type Axis_Initialized is array (Natural range 0 .. 1) of Boolean;
+
   type Mount_Flag is record
-    Has_Error       : Boolean := False;
-    Is_Connected    : Boolean;
-    Is_Slewing      : Boolean;
-    Is_Tracking     : Boolean;
-    Axis_Is_Enabled : Axis_Enabled;
+    Has_Error           : Boolean := False;
+    Is_Connected        : Boolean;
+    Is_Slewing          : Boolean;
+    Is_Tracking         : Boolean;
+    Axis_Is_Enabled     : Axis_Enabled;
+    Axis_Is_Initialized : Axis_Enabled;
   end record with Pack;
 
   type Spiral_Data is record
@@ -123,7 +127,7 @@ private package PWI4.Protocol is
     M3      : M3_Info;
   end record;
 
-  procedure Parse (Data : String);
+  function Parsed (Data : String) return Boolean;
 
   procedure Set_Error (Status : Status_Code);
 

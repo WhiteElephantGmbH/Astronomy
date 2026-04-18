@@ -13,7 +13,7 @@
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 pragma Build (Description => "Half Flux Diameter Test",
               Version     => (1, 0, 0, 0),
@@ -28,6 +28,7 @@ with Exposure;
 with HFD;
 with Sensitivity;
 with Text;
+with Time;
 
 procedure HFD_Test is
 
@@ -61,13 +62,13 @@ begin -- Camera_Test
             raise Constraint_Error;
           end if;
           declare
-            Time      : constant Exposure.Item := Exposure.Value(Parameters(2));
+            Tv        : constant Exposure.Item := Exposure.Value(Parameters(2));
             Parameter : constant Sensitivity.Item := (if Parameters.Count = 2 then Sensitivity.Default
                                                                               else Sensitivity.Value (Parameters(3)));
           begin
             case Text.Uppercase_Of (Parameters(1)(1)) is
             when 'G' =>
-              Camera.Capture (1000, Time, Parameter);
+              Camera.Capture (1000, Tv, Parameter);
             when others =>
               raise Constraint_Error;
             end case;
@@ -99,7 +100,7 @@ begin -- Camera_Test
         IO.Put_Line ("### " & Camera.Error_Message & " ###");
       end case;
     end;
-    delay Delay_Time;
+    Time.Wait (Delay_Time);
     The_Count := @ - 1;
     if The_Count = 0 then
       IO.Put ("a");

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2012 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2012 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -13,13 +13,29 @@
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with Ada.Calendar;
+with Ada.Real_Time;
 with Angle;
 with Astro;
 
 package Time is
+
+  -------------------
+  -- Ada Real Time --
+  -------------------
+
+  For_Termination : constant Duration := 0.01;
+
+  function In_Future (Time_Offset : Duration) return Ada.Real_Time.Time;
+
+  procedure Wait (Time_Spawn : Duration := For_Termination);
+
+
+  ------------------
+  -- Ada Calendar --
+  ------------------
 
   Epsilon : constant := 1.0E-4;
 
@@ -43,24 +59,27 @@ package Time is
   Illegal      : exception;
   Out_Of_Range : exception;
 
-  function Calendar_Now return Calendar_Value is (Ada.Calendar.Clock);
+  function Calendar_Now return Calendar_Value;
 
+  function Duration_Since (Date : Calendar_Value) return Duration;
+
+  function Local_Shift return Duration;
+  -- Precondition: Calendar_Now or Local_Time
 
   -------------------------
-  -- local date and time --
+  -- Local Date and Time --
   -------------------------
 
   function Local_Time return Value;
 
-  -- Precondition: Local_Time read
-  function Local_Shift return Duration;
   function Local_Day   return Day;
   function Local_Month return Month;
   function Local_Year  return Year;
+  -- Precondition: Local_Time read
 
 
   --------------------
-  -- universal time --
+  -- Universal Time --
   --------------------
 
   Ut_Range_Error : exception;
@@ -113,7 +132,7 @@ package Time is
 
 
   -----------------------------
-  -- local mean sideral time --
+  -- Local Mean Sideral Time --
   -----------------------------
 
   function Lmst return Value;
@@ -122,7 +141,7 @@ package Time is
 
 
   ----------------
-  -- standard T --
+  -- Standard T --
   ----------------
 
   subtype T is Astro.REAL; -- in 100 years since year 2000

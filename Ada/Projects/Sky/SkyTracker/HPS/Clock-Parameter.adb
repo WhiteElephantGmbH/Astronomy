@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                               (c) 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                           (c) 2024 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                      *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -13,7 +13,7 @@
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with Error;
 with Section;
@@ -34,7 +34,7 @@ package body Clock.Parameter is
       The_Udp_Socket := Network.Udp.Socket_For (Name_Or_Address => Name_Or_Address,
                                                 Port            => Section.Port_For (Id),
                                                 Receive_Timeout => Datagram_Timeout);
-      Log.Write ("Clock connected to " & Name_Or_Address);
+      Log.Write ("connected to " & Name_Or_Address);
     end if;
   exception
   when Network.Not_Found =>

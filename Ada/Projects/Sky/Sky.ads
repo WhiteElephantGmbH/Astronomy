@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2024 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2024 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -13,19 +13,19 @@
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with Database.Moon;
 
 package Sky is
 
-  type Catalog_Id is (Favorites, Moon, Caldwell, Name, Star, Hd, Hip, Hr, Messier, Ngc, Ic, Ocl, Quasars, Neo);
+  type Catalog_Id is (Favorites, Moon, Caldwell, Name, Star, Hd, Hip, Hr, Messier, Ngc, Ic, Ocl, Quasars, Satellite);
 
   subtype Catalogs is Catalog_Id range Caldwell .. Quasars;
 
   subtype Constellation is Database.Constellation;
 
-  subtype Extended_Catalogs is Catalog_Id range Moon .. Neo;
+  subtype Extended_Catalogs is Catalog_Id range Moon .. Satellite;
 
   subtype Moon_Feature is Database.Moon.Feature_Name;
 

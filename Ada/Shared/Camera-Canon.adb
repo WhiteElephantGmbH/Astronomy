@@ -13,13 +13,14 @@
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with Ada.Real_Time;
 with C.Helper;
 with Camera.Canon.C_Interface;
 with Camera.Raw;
 with System;
+with Time;
 
 package body Camera.Canon is
 
@@ -31,11 +32,11 @@ package body Camera.Canon is
     entry Get (Is_Ready : out Boolean);
 
     entry Capture_Picture (Filename : String;
-                           Time     : Exposure.Item;
+                           Tv       : Exposure.Item;
                            Iso      : Sensitivity.Item);
 
     entry Capture_Grid (Size : Square_Size;
-                        Time : Exposure.Item;
+                        Tv   : Exposure.Item;
                         Iso  : Sensitivity.Item);
 
     entry Await_Stop;
@@ -103,18 +104,18 @@ package body Camera.Canon is
 
 
   procedure Capture_Picture (Filename  : String;
-                             Time      : Exposure.Item;
+                             Tv        : Exposure.Item;
                              Parameter : Sensitivity.Item) is
   begin
-    The_Control.Capture_Picture (Filename, Time, Parameter);
+    The_Control.Capture_Picture (Filename, Tv, Parameter);
   end Capture_Picture;
 
 
   procedure Capture_Grid (Size      : Square_Size;
-                          Time      : Exposure.Item;
+                          Tv        : Exposure.Item;
                           Parameter : Sensitivity.Item) is
   begin
-    The_Control.Capture_Grid (Size, Time, Parameter);
+    The_Control.Capture_Grid (Size, Tv, Parameter);
   end Capture_Grid;
 
 
@@ -225,7 +226,11 @@ package body Camera.Canon is
       case The_Camera is
       when Canon_Eos_6D =>
         case Iso is
+          when 8000   => return CI.K_ISO_8000;
+          when 10000  => return CI.K_ISO_10000;
           when 12800  => return CI.K_ISO_12800;
+          when 16000  => return CI.K_ISO_16000;
+          when 20000  => return CI.K_ISO_20000;
           when 25600  => return CI.K_ISO_25600;
           when others => null;
         end case;
@@ -234,7 +239,7 @@ package body Camera.Canon is
           when others => null;
         end case;
       end case;
-      Raise_Error ("Iso value " & Iso'image & " not valid for " & The_Camera'image);
+      Raise_Error ("Iso value" & Iso'image & " not valid for " & The_Camera'image);
     end To_K_Iso;
 
     -----------------------------------------------
@@ -244,6 +249,22 @@ package body Camera.Canon is
       Tv : constant Exposure.Tv := Item.Time_Value;
     begin
       case Tv is
+        when Exposure.Tv_30_S     => return CI.K_TV_30;
+        when Exposure.Tv_25_S     => return CI.K_TV_25;
+        when Exposure.Tv_20_S     => return CI.K_TV_20_S;
+        when Exposure.Tv_15_S     => return CI.K_TV_15;
+        when Exposure.Tv_13_S     => return CI.K_TV_13;
+        when Exposure.Tv_10_S     => return CI.K_TV_10_S;
+        when Exposure.Tv_8_S      => return CI.K_TV_8;
+        when Exposure.Tv_6_S      => return CI.K_TV_6_S;
+        when Exposure.Tv_5_S      => return CI.K_TV_5;
+        when Exposure.Tv_4_S      => return CI.K_TV_4;
+        when Exposure.Tv_3_2_S    => return CI.K_TV_3_2;
+        when Exposure.Tv_2_5_S    => return CI.K_TV_2_5;
+        when Exposure.Tv_2_S      => return CI.K_TV_2;
+        when Exposure.Tv_1_6_S    => return CI.K_TV_1_6;
+        when Exposure.Tv_1_3_S    => return CI.K_TV_1_3;
+        when Exposure.Tv_1_S      => return CI.K_TV_1;
         when Exposure.Tv_0_8_S    => return CI.K_TV_0_8;
         when Exposure.Tv_0_6_S    => return CI.K_TV_0_6;
         when Exposure.Tv_0_5_S    => return CI.K_TV_0_5;
@@ -339,9 +360,9 @@ package body Camera.Canon is
     end Set;
 
 
-    procedure Get (Property    :     CI.Property_Id;
-                   Value       : out CI.Uint32;
-                   Param       :     CI.Int32 := 0)
+    procedure Get (Property :     CI.Property_Id;
+                   Value    : out CI.Uint32;
+                   Param    :     CI.Int32 := 0)
     is
       Val : aliased CI.Uint32;
       use type CI.Uint32;
@@ -378,7 +399,7 @@ package body Camera.Canon is
         begin
           Get (CI.Prop_Id_Evf_Output_Device, Value);
           exit when Value = CI.Evf_Output_None'enum_rep;
-          delay 0.1;
+          Time.Wait (0.1);
         end;
       end loop;
     end Disable_Electronic_View_Finder;
@@ -578,7 +599,7 @@ package body Camera.Canon is
           Set (Property    => CI.Prop_Id_AE_Mode_Select,
                Value       => CI.K_AE_Mode_Manual'enum_rep,
                Where_Label => "Set AE Mode Select to Manual");
-          delay AE_Mode_Set_Time;
+          Time.Wait (AE_Mode_Set_Time);
         end case;
         Set (Property    => CI.Prop_Id_Tv,
              Value       => To_K_Tv (The_Exposure)'enum_rep,
@@ -604,7 +625,7 @@ package body Camera.Canon is
           Set (Property    => CI.Prop_Id_AE_Mode_Select,
                Value       => CI.K_AE_Mode_Manual'enum_rep,
                Where_Label => "Set AE Mode Select to Manual");
-          delay AE_Mode_Set_Time;
+          Time.Wait (AE_Mode_Set_Time);
         end case;
       end case;
 
@@ -665,7 +686,7 @@ package body Camera.Canon is
         begin
           Check ("Get directory item info",
                  CI.Get_Directory_Item_Info (Item     => The_Item,
-                                              The_Info => The_Info'access),
+                                             The_Info => The_Info'access),
                  Logging => False);
 
           if The_Info.Is_Folder /= 0 then
@@ -738,22 +759,22 @@ package body Camera.Canon is
         end Get;
       or
         accept Capture_Picture (Filename : String;
-                                Time     : Exposure.Item;
+                                Tv       : Exposure.Item;
                                 Iso      : Sensitivity.Item)
         do
           The_Filename := [Filename];
-          The_Exposure := Time;
+          The_Exposure := Tv;
           The_Iso := Iso;
           Is_Cropping := False;
         end;
         Start_Capture;
       or
         accept Capture_Grid (Size : Square_Size;
-                             Time : Exposure.Item;
+                             Tv   : Exposure.Item;
                              Iso  : Sensitivity.Item)
         do
           The_Grid_Size := Size;
-          The_Exposure := Time;
+          The_Exposure := Tv;
           The_Iso := Iso;
           Is_Cropping := True;
           The_Filename := [Default_Filename];

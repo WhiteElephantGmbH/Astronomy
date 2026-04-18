@@ -2,7 +2,7 @@
 -- *                       (c) 2022 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with Astro;
 with Ada.Command_Line;
@@ -746,7 +746,7 @@ package body Simulator is
             if Is_Available and The_Character in '1' .. '9' then
               End_Hiding;
               Put_Line ("@ delay " & The_Character & 's');
-              delay Duration(Character'pos(The_Character) - Character'pos('0'));
+              Time.Wait (Duration(Character'pos(The_Character) - Character'pos('0')));
             end if;
           end;
         end loop;

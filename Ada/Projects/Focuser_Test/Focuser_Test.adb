@@ -13,7 +13,7 @@
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 pragma Build (Description => "Focuser test",
               Version     => (1, 1, 0, 0),
@@ -27,6 +27,7 @@ with Celestron.Focuser;
 with Focuser_Client;
 with Exceptions;
 with Handbox;
+with Time;
 
 procedure Focuser_Test is
 
@@ -36,7 +37,7 @@ procedure Focuser_Test is
 
   The_Data : Focuser.Data;
 
-  Is_Executing : Boolean := True;
+  Is_Executing : Boolean := True with Volatile;
 
   procedure Execute (The_Command: Handbox.Command) is
     use all type Focuser.Command;
@@ -71,7 +72,7 @@ begin
   IO.Put_Line ("============");
   Handbox.Start (Execute'access);
   while Is_Executing loop
-    delay 1.0;
+    Time.Wait (1.0);
     The_Data := Focuser_Client.Actual_Data;
     IO.Put_Line ("Rate:" & The_Data.Speed'image &
                  " - Backlash:" & The_Data.Backlash'image &
@@ -99,7 +100,7 @@ begin
       Was_Disconnected := True;
       IO.Put_Line ("Focuser Disconnected");
     end if;
-    delay 1.0;
+    Time.Wait (1.0);
     The_Data := Focuser_Client.Actual_Data;
   end loop;
   IO.Put_Line ("Close Handbox");

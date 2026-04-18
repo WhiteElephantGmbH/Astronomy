@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                               (c) 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                           (c) 2024 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                      *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -13,7 +13,7 @@
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with Ada.Direct_IO;
 with Ada.IO_Exceptions;
@@ -49,11 +49,11 @@ package body Fits is
       for Unused_Count in 1 .. 3 loop
         begin
           Fits_Io.Open (The_File, Fits_Io.In_File, Filename);
-         return True;
+          return True;
         exception
         when Ada.IO_Exceptions.Use_Error =>
           Log.Write ("Retry opening " & Filename);
-          delay 0.3;
+          Time.Wait (0.3);
         when Item: others =>
           Log.Error ("Opening " & Filename & " failed with " & Exceptions.Name_Of (Item));
           return False;

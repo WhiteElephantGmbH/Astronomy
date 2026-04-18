@@ -13,7 +13,7 @@
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 pragma Build (Description => "Camera test",
               Version     => (1, 0, 0, 2),
@@ -28,6 +28,7 @@ with Exposure;
 with Os.System;
 with Sensitivity;
 with Text;
+with Time;
 
 procedure Camera_Test is
 
@@ -130,7 +131,7 @@ begin -- Camera_Test
         IO.Put_Line ("### " & Camera.Error_Message & " ###");
       end case;
     end;
-    delay Delay_Time;
+    Time.Wait (Delay_Time);
     The_Count := @ - 1;
     if The_Count = 0 then
       IO.Put ("a");

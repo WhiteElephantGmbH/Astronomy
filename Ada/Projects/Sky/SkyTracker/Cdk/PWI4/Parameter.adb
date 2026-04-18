@@ -13,7 +13,7 @@
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with Ada.Text_IO;
 with Application;
@@ -36,10 +36,13 @@ with Picture.Parameter;
 with Remote.Parameter;
 with Section;
 with Sensitivity;
+with Satellite.Parameter;
+with Site;
 with Stellarium.Parameter;
 with Sun.Parameter;
 with Telescope;
 with Text;
+with Time;
 with Traces;
 
 package body Parameter is
@@ -102,6 +105,8 @@ package body Parameter is
         Ada.Text_IO.Put_Line (The_File, Line);
       end Put;
 
+      use all type Site.Telescope_Location;
+
     begin -- Create_Default_Parameters
       begin
         Ada.Text_IO.Create (The_File, Name => Filename);
@@ -116,13 +121,13 @@ package body Parameter is
       Put ("[" & PWI_Id & "]");
       Put (Program_Key & "           = " & PWI_Program_Files & "\PlaneWave interface 4\PWI4.exe");
       Put (Shutdown_Key & "          = True");
-      Put (M3_Ocular_Port_Key & "    = 1");
+      Put (M3_Ocular_Port_Key & "    = " & (if Site.Location = Cdk_West then "2" else "1"));
       Put (Fans_Key & "              = Off");
       Put (Ip_Address_Key & "        = Localhost");
       Put (Port_Key & "              = 8220");
       Put (Moving_Speed_List_Key & " = 30""/s, 3'/s, 20'/s, 2°/s");
       Put (Cwe_Distance_Key & "      = 30'");
-      Put (Park_Position_Az_Key & "  = 75" & Angle.Degree);
+      Put (Park_Position_Az_Key & "  = " & (if Site.Location = Cdk_West then "255" else "75") & Angle.Degree);
       Put (Focuser_Maximum_Key & "   = 10000");
       Put (Focuser_Zoom_Size_Key & " = 300");
       Put ("");
@@ -132,15 +137,19 @@ package body Parameter is
       Put ("");
       Moon.Parameter.Defaults (Put'access);
       Put ("");
-      Remote.Parameter.Defaults (Put'access, "cdk_Ost");
+      Remote.Parameter.Defaults (Put'access, (if Site.Location = Cdk_West then "cdk_West" else "cdk_Ost"));
       Put ("");
-      Camera.Parameter.Defaults (Put'access, Exposure.Value (4.0), Sensitivity.Default);
+      Camera.Parameter.Defaults (Put'access, Exposure.Value ("4"), Sensitivity.Default);
       Put ("");
       Focus.Parameter.Defaults (Put'access);
       Put ("");
-      Picture.Parameter.Defaults (Put'access);
+      Picture.Parameter.Defaults (Put'access,
+                                  Height => (if Site.Location = Cdk_West then "0.311" else "0.44"),
+                                  Width  => (if Site.Location = Cdk_West then "0.448" else "0.66"));
       Put ("");
-      Stellarium.Parameter.Defaults (Put'access, "CDK");
+      Satellite.Parameter.Defaults (Put'access);
+      Put ("");
+      Stellarium.Parameter.Defaults (Put'access);
       Ada.Text_IO.Close (The_File);
     exception
     when Error.Occurred =>
@@ -202,7 +211,7 @@ package body Parameter is
                   if The_Number_Of_Retries = 0 then
                     Error.Raise_With ("PlaneWave interface server not enabled");
                   end if;
-                  delay 1.0;
+                  Time.Wait (1.0);
                   The_Number_Of_Retries := The_Number_Of_Retries - 1;
                   Log.Write ("retry to connect to PWI server");
                 end;
@@ -271,6 +280,7 @@ package body Parameter is
       Camera.Parameter.Define (Handle);
       Focus.Parameter.Define (Handle);
       Picture.Parameter.Define (Handle);
+      Satellite.Parameter.Define (Handle);
       Stellarium.Parameter.Define (Handle);
     exception
     when Cdk_700.Startup_Failed =>
@@ -297,7 +307,6 @@ package body Parameter is
     if Is_In_Shutdown_Mode then
       PWI4.Shutdown;
     end if;
-    Stellarium.Shutdown;
   end Shutdown;
 
 

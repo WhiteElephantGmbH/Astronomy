@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2024 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2024 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -13,7 +13,7 @@
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with Gui.Enumeration_Menu_Of;
 with Lexicon;
@@ -37,8 +37,8 @@ package body Name.Catalog is
     case The_Catalog is
     when Sky.Moon =>
       Targets.Filter.Set (Targets.Filter.Moon);
-    when Sky.Neo =>
-      Targets.Filter.Set (Targets.Filter.Neo);
+    when Sky.Satellite =>
+      Targets.Filter.Set (Targets.Filter.Satellite);
     when others =>
       Targets.Filter.Set (Targets.Filter.Default);
     end case;

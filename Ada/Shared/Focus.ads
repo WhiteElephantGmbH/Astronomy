@@ -13,11 +13,13 @@
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
-with Focuser;
 with Camera;
+with Focuser;
 private with Exceptions;
+private with Exposure;
+private with Sensitivity;
 private with Text;
 private with Traces;
 
@@ -25,13 +27,12 @@ package Focus is
 
   subtype Distance is Focuser.Distance;
 
-  type Lash_Correction is range -2**7 .. 2**7 - 1;
-
   type Diameter is new Natural range 0 .. Camera.Min_With_Or_Height;
 
-  type Status is (No_Focuser, Undefined, Positioning, Capturing, Evaluated, Focused, Failed);
+  type Status is (No_Focuser, Undefined, Starting, Positioning, Capturing, Evaluated, Focused, Failed);
 
-  procedure Start (Device : Focuser.Object_Access);
+  procedure Start (Device       : Focuser.Object_Access;
+                   Is_Simulated : Boolean := False);
 
   function Actual_State return Status;
 
@@ -39,9 +40,11 @@ package Focus is
 
   procedure Evaluate;
 
+  HFD_Not_Found : constant Diameter := 0;
+
   type Result is record
     Half_Flux : Camera.Pixel := 0;
-    HFD       : Diameter := 0;
+    HFD       : Diameter := HFD_Not_Found;
     Position  : Distance := 0;
   end record;
 
@@ -59,17 +62,31 @@ private
 
   package Log is new Traces (Id);
 
-  subtype HFD_Sample_Count is Natural range 5 .. 11;
+  subtype HFD_Sample_Count is Positive range 5 .. 17;
 
   subtype Step is Integer range -10000 .. 10000;
 
   Start_From_Actual : constant Distance := Distance'last;
 
+  Sample_Factor : constant := 2;
+
+  Max_Half_Flux : constant := 8000;
+
   The_HFD_Samples    : HFD_Sample_Count := HFD_Sample_Count'first;
   The_Start_Position : Distance := Start_From_Actual;
-  The_Position_Step  : Step := 100;
+  The_Position_Step  : Step := 50;
   The_Tolerance      : Distance := 0;
+  The_Exposure       : Exposure.Item;
+  The_Sensitivity    : Sensitivity.Item;
   The_Grid_Size      : Camera.Square_Size := 1000;
+  The_HF_Threshold   : Camera.Pixel := 100;
+  The_Trigger_Level  : Diameter := 80;
+  The_Minimum_Delta  : Diameter := 25;
+  Is_Simulation      : Boolean := False;
+
+  function Minimum_Start_Position return Distance;
+
+  function Simulated_HFD return Diameter;
 
   Focus_Error : exception;
 

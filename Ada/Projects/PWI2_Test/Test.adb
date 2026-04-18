@@ -1,8 +1,8 @@
 -- *********************************************************************************************************************
--- *                       (c) 2019 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2019 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with Ada.Command_Line;
 with Ada.Text_IO;
@@ -15,6 +15,7 @@ with PWI2.Rotator;
 with Serial_Io.Usb;
 with Serial_Io.Windows;
 with Text;
+with Time;
 
 package body Test is
 
@@ -166,7 +167,7 @@ package body Test is
         Connect_Timeout : constant := 5; -- seconds
       begin
         for Unused_Count in 1 .. Connect_Timeout loop
-          delay 1.0;
+          Time.Wait (1.0);
           PWI2.Get_System;
           if PWI2.Mount.Status = PWI2.Mount.Connected then
             return;
@@ -196,7 +197,7 @@ package body Test is
         Connect_Timeout : constant := 5; -- seconds
       begin
         for Unused_Count in 1 .. Connect_Timeout loop
-          delay 1.0;
+          Time.Wait (1.0);
           PWI2.Get_System;
           if PWI2.Rotator.Status /= PWI2.Rotator.Disconnected then
             return;
@@ -226,7 +227,7 @@ package body Test is
         Disconnect_Timeout : constant := 5; -- seconds
       begin
         for Unused_Count in 1 .. Disconnect_Timeout loop
-          delay 1.0;
+          Time.Wait (1.0);
           PWI2.Get_System;
           if PWI2.Rotator.Status = PWI2.Rotator.Disconnected then
             return;
@@ -257,7 +258,7 @@ package body Test is
         Enable_Timeout : constant := 45; -- seconds
       begin
         for Unused_Count in 1 .. Enable_Timeout loop
-          delay 1.0;
+          Time.Wait (1.0);
           PWI2.Get_System;
           if PWI2.Mount.Status /= PWI2.Mount.Connected then
             return;
@@ -291,7 +292,7 @@ package body Test is
       procedure Wait_For_Mount_At_Home is
       begin
         loop
-          delay 1.0;
+          Time.Wait (1.0);
           PWI2.Get_System;
           case PWI2.Mount.Status is
           when PWI2.Mount.Homing =>
@@ -326,7 +327,7 @@ package body Test is
       procedure Wait_For_Rotator_At_Home is
       begin
         loop
-          delay 1.0;
+          Time.Wait (1.0);
           PWI2.Get_System;
           case PWI2.Rotator.Status is
           when PWI2.Rotator.Homing =>
@@ -398,7 +399,7 @@ package body Test is
 
       procedure Wait_For_Ponting_Model_Set is
       begin
-        delay 1.0;
+        Time.Wait (1.0);
         PWI2.Get_System;
         if PWI2.Mount.Status /= PWI2.Mount.Stopped then
           raise Pointing_Model_Not_Set;
@@ -435,7 +436,7 @@ package body Test is
                        Dec        => Dec,
                        From_J2000 => True);
       loop
-        delay 1.0;
+        Time.Wait (1.0);
         PWI2.Get_System;
         declare
           Info : constant PWI2.Mount.Information := PWI2.Mount.Info;
@@ -463,7 +464,7 @@ package body Test is
         when others =>
           exit;
         end case;
-        delay 1.0;
+        Time.Wait (1.0);
       end loop;
     end Stop;
 

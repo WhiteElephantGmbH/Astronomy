@@ -13,7 +13,7 @@
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with Ada.Text_IO;
 with Alignment.Parameter;
@@ -31,14 +31,12 @@ with Moon.Parameter;
 with Picture.Parameter;
 with Sensitivity;
 with Remote.Parameter;
+with Satellite.Parameter;
 with Stellarium.Parameter;
 with Sun.Parameter;
 with Ten_Micron.Parameter;
-with Traces;
 
 package body Parameter is
-
-  package Log is new Traces ("Parameter");
 
   Filename : constant String := Application.Composure (Application.Name, "ini");
 
@@ -65,17 +63,13 @@ package body Parameter is
       Put ("");
       Ten_Micron.Parameter.Defaults (Put'access, Ip_Address => "192.168.26.180", Port => 3490);
       Put ("");
-      Focuser_Client.Parameter.Defaults (Put'access);
+      Http_Server.Parameter.Defaults (Put'access, "Handbox_HPS", Port => 9000);
       Put ("");
-      Http_Server.Parameter.Defaults (Put'access, "Handbox_HPS", Port => 9001);
-      Put ("");
-      Sun.Parameter.Defaults (Put'access);
+      Sun.Parameter.Defaults (Put'access, Savety_Angle => 15);
       Put ("");
       Moon.Parameter.Defaults (Put'access);
       Put ("");
-      Camera.Parameter.Defaults (Put'access, Exposure.Value (4.0), Sensitivity.Value ("6400"));
-      Put ("");
-      Focus.Parameter.Defaults (Put'access);
+      Camera.Parameter.Defaults (Put'access, Exposure.Value ("4"), Sensitivity.Default);
       Put ("");
       Picture.Parameter.Defaults (Put'access);
       Put ("");
@@ -83,13 +77,14 @@ package body Parameter is
       Put ("");
       Alignment.Parameter.Defaults (Put'access);
       Put ("");
-      Stellarium.Parameter.Defaults (Put'access, "APO");
+      Satellite.Parameter.Defaults (Put'access);
+      Put ("");
+      Stellarium.Parameter.Defaults (Put'access);
       Ada.Text_IO.Close (The_File);
     exception
     when Error.Occurred =>
       raise;
-    when Item: others =>
-      Log.Termination (Item);
+    when others =>
       Ada.Text_IO.Delete (The_File);
       Error.Raise_With ("Internal Error - creating default parameters");
     end Create_Default_Parameters;
@@ -100,6 +95,8 @@ package body Parameter is
     begin
       Language.Parameter.Define (Handle);
       Ten_Micron.Parameter.Define (Handle);
+      Camera.Parameter.Define (Handle);
+      Focus.Parameter.Define (Handle);
       Focuser_Client.Parameter.Define (Handle);
       Http_Server.Parameter.Define (Handle);
       Sun.Parameter.Define (Handle);
@@ -107,6 +104,7 @@ package body Parameter is
       Remote.Parameter.Define (Handle);
       Picture.Parameter.Define (Handle);
       Alignment.Parameter.Define (Handle);
+      Satellite.Parameter.Define (Handle);
       Stellarium.Parameter.Define (Handle);
     end Read_Values;
 

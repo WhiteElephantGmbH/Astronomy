@@ -13,7 +13,7 @@
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with Ada.Real_Time;
 with Astro;
@@ -95,9 +95,6 @@ package body Telescope is
     if Focuser_Client.Server_Exists then
       Server.Set (Focuser_Client.Actual_Data);
     end if;
-  exception
-  when Focuser_Client.Server_Not_Available =>
-    Log.Warning ("Focuser server not available");
   end Set_Server_Information;
 
 
@@ -118,7 +115,7 @@ package body Telescope is
   begin
     Camera.Start;
     if Focuser_Client.Server_Exists then
-      Focus.Start (Focuser.HPS.New_Device);
+      Focus.Start (Focuser.HPS.New_Device, Ten_Micron.Is_Simulation_Mode);
       Handbox.Start (Handbox.HPS.Handle'access);
     end if;
     Input.Open (Execute'access);
@@ -578,7 +575,7 @@ package body Telescope is
           end Go_To_Next;
         or
           accept Prepare_Tle do
-            Ten_Micron.Load_Tle (Name.Image_Of (Next_Id));
+            Ten_Micron.Load_Tle (Name.Object_Of (Next_Id));
           end Prepare_Tle;
         or
           accept Park do
@@ -660,7 +657,8 @@ package body Telescope is
             The_Data.Alignment_Info := Alignment.Info;
             Set_Server_Information (The_Data);
           end Get;
-        or delay 0.5;
+        or
+          delay until Time.In_Future (0.5);
           Update_Handling;
         end select;
         Remote.Define (Is_On_Target => The_Information.Status in Tracking | Following);

@@ -13,7 +13,7 @@
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with Angle;
 with Lexicon;
@@ -54,8 +54,6 @@ package body Sky.Data is
     Ra_J2000    : Angle.Degrees;
     Dec_J2000   : Angle.Degrees;
   end record;
-
-  use type Text.String;
 
   type Extension_Objects is array (Extension_Object) of Information;
 
@@ -190,7 +188,7 @@ package body Sky.Data is
 
   begin -- Name_Of
     case The_Kind is
-    when Neo =>
+    when Satellite =>
       return The_Extension_Table(Number).Name.S;
     when Moon =>
       return Moon_Feature_Name_Of (Number);
@@ -300,7 +298,7 @@ package body Sky.Data is
       if The_Object > Last_Moon_Feature then
         The_Object := Undefined;
       end if;
-    when Neo =>
+    when Satellite =>
       The_Object := The_First_Neo + Object(Item) - 1;
       if The_Object > The_Last_Neo then
         The_Object := Undefined;
@@ -319,7 +317,7 @@ package body Sky.Data is
       loop
         The_Item := @ + 1;
         The_Object := Object_Of (The_Item, The_Kind);
-        if The_Kind in Neo | Moon then
+        if The_Kind in Satellite | Moon then
           if The_Object = Undefined then
             return No_More;
           end if;
@@ -382,25 +380,25 @@ package body Sky.Data is
   end New_Object_For;
 
 
-  function Neo_Object_Of (Item : String) return Index is
+  function Neo_Object_Of (Number : Natural) return Object is
   begin
     for The_Index in The_First_Neo .. The_Last_Neo loop
-      if The_Extension_Table(The_Index).Name = Item then
+      if Neo_Number_Of (The_Index) = Number then
         return The_Index;
       end if;
     end loop;
-    raise Program_Error;
+    return Sky.Undefined;
   end Neo_Object_Of;
 
 
-  function New_Neo_Object_For (Item        : String;
-                               Description : String) return Positive is
+  function New_Neo_Object_For (Item   : String;
+                               Number : Natural) return Positive is
   begin
     if The_Last_Neo = Undefined then
       The_First_Neo := The_Last_Extension + 1;
     end if;
     The_Last_Neo := New_Object_For (Item        => Item,
-                                    Description => Description,
+                                    Description => Number'image,
                                     Object_Kind => Satellite);
     return Neo_Index_Of (The_Last_Neo);
   end New_Neo_Object_For;
@@ -410,6 +408,12 @@ package body Sky.Data is
   begin
     return Positive(Id + 1 - The_First_Neo);
   end Neo_Index_Of;
+
+
+  function Neo_Number_Of (Id : Index) return Natural is
+  begin
+    return Natural'value(The_Extension_Table(Id).Descriptor.S);
+  end Neo_Number_Of;
 
 
   procedure Apparent (Ra  : in out REAL;

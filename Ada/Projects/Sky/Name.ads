@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2011 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2011 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -13,7 +13,7 @@
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with Ada.Containers.Doubly_Linked_Lists;
 with Earth;
@@ -45,15 +45,20 @@ package Name is
 
   function "=" (Left, Right : Id_List) return Boolean;
 
-  type Neo_Exists_Handler is access function (Item : String) return Boolean;
+  type Neo_Name_Handler is access function (Number : Natural) return String;
 
   procedure Read_Favorites (Enable_Axis_Positions : Boolean;
                             Enable_Land_Marks     : Boolean;
-                            Neo_Existing          : Neo_Exists_Handler := null);
+                            Neo_Name_Of_Number    : Neo_Name_Handler := null);
 
   procedure Define (Catalog : Sky.Catalog_Id);
 
-  procedure Sort (The_List : in out Id_List);
+  type Sorting is (No_Sort, North, North_East, East, South_East, South, South_West, West, North_West, Zenith);
+
+  subtype Sort_Direction is Sorting range Sorting'succ(Sorting'first) .. Sorting'last;
+
+  procedure Sort (The_List     : in out Id_List;
+                  In_Direction :        Sort_Direction);
 
   function Actual_List return Id_List;
 

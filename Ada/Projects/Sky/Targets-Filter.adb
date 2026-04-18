@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2024 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2024 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -13,7 +13,7 @@
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with Gui.Enumeration_Menu_Of;
 with Gui.Radio_Menu_Of;
@@ -24,30 +24,6 @@ with Traces;
 package body Targets.Filter is
 
   package Log is new Traces ("Targets.Filter");
-
-  function Image_Of (The_Switch : Switch) return String is
-  begin
-    case The_Switch is
-    when Off =>
-      return Lexicon.Image_Of (Lexicon.Off);
-    when On =>
-      return Lexicon.Image_Of (Lexicon.On);
-    end case;
-  end Image_Of;
-
-
-  package Sort_Menu is new Gui.Enumeration_Menu_Of (Switch, Gui.Radio, Image_Of);
-
-  procedure Sort_Handler (Sorted : Switch) is
-  begin
-    Log.Write ("Sorted: " & Sorted'img);
-    Set (Sorted);
-    Define_Catalog;
-  exception
-  when others =>
-    Log.Error ("Sort_Handler");
-  end Sort_Handler;
-
 
   User_Signal_Update : Update_Signal;
 
@@ -75,7 +51,7 @@ package body Targets.Filter is
         Set (The_Feature => Filter);
         User_Signal_Update.all;
       end;
-    when Neo =>
+    when Satellite =>
       null;
     end case;
   exception
@@ -84,44 +60,44 @@ package body Targets.Filter is
   end Selection_Handler;
 
 
-  type Direction is (None, North, East, South, West);
-
-  function Image_Of (Item : Direction) return String is
+  function Image_Of (Item : Name.Sorting) return String is
   begin
     case Item is
-    when None =>
+    when Name.No_Sort =>
       return "-";
-    when North =>
+    when Name.North =>
       return Lexicon.Image_Of (Lexicon.North);
-    when East =>
+    when Name.North_East =>
+      return Lexicon.Image_Of (Lexicon.North) & " " & Lexicon.Image_Of (Lexicon.East);
+    when Name.East =>
       return Lexicon.Image_Of (Lexicon.East);
-    when South =>
+    when Name.South_East =>
+      return Lexicon.Image_Of (Lexicon.South) & " " & Lexicon.Image_Of (Lexicon.East);
+    when Name.South =>
       return Lexicon.Image_Of (Lexicon.South);
-    when West =>
+    when Name.South_West =>
+      return Lexicon.Image_Of (Lexicon.South) & " " & Lexicon.Image_Of (Lexicon.West);
+    when Name.West =>
       return Lexicon.Image_Of (Lexicon.West);
+    when Name.North_West =>
+      return Lexicon.Image_Of (Lexicon.North) & " " & Lexicon.Image_Of (Lexicon.West);
+    when Name.Zenith =>
+      return Lexicon.Image_Of (Lexicon.Zenith);
     end case;
   end Image_Of;
 
 
-  package Direction_Menu is new Gui.Enumeration_Menu_Of (Direction, Gui.Radio, Image_Of);
+  package View_Menu is new Gui.Enumeration_Menu_Of (Name.Sorting, Gui.Radio, Image_Of);
 
-  procedure Direction_Handler (The_Direction : Direction) is
-
-    type Ranges is array (Direction) of Az_Range;
-
-    Az_Ranges : constant Ranges := [None   => (Angle.North, Angle.North),
-                                    North  => (Angle.West, Angle.East),
-                                    East   => (Angle.North, Angle.South),
-                                    South  => (Angle.East, Angle.West),
-                                    West   => (Angle.South, Angle.North)];
-  begin -- Direction_Handler
-    Log.Write ("Filter: " & The_Direction'img);
-    Set (Az_Ranges(The_Direction));
-    User_Signal_Update.all;
+  procedure View_Handler (The_Direction : Name.Sorting) is
+  begin
+    Log.Write ("Sort Direction: " & The_Direction'img);
+    Set (The_Direction);
+    Define_Catalog;
   exception
   when others =>
-    Log.Error ("Direction_Handler");
-  end Direction_Handler;
+    Log.Error ("Sort_Handler");
+  end View_Handler;
 
 
   procedure Set (Group : Selection_Group) is
@@ -134,7 +110,7 @@ package body Targets.Filter is
       Set (The_Selection => All_Objects);
     when Moon =>
       Set (The_Feature => All_Features);
-    when Neo =>
+    when Satellite =>
       null;
     end case;
   end Set;
@@ -144,9 +120,9 @@ package body Targets.Filter is
 
     All_Objects : constant String := Lexicon.Image_Of(Lexicon.All_Objects);
 
-    Default_Selection_Images : Text.List;
-    Moon_Selection_Images    : Text.List;
-    Neo_Selection_Images     : constant Text.Vector := [All_Objects];
+    Default_Selection_Images   : Text.List;
+    Moon_Selection_Images      : Text.List;
+    Satellite_Selection_Images : constant Text.Vector := [All_Objects];
 
   begin
     for Element in Selection loop
@@ -155,20 +131,18 @@ package body Targets.Filter is
     for Element in Moon_Feature_Selection loop
       Moon_Selection_Images.Append (Image_Of (Element));
     end loop;
-    return [Default  => Default_Selection_Images.Sorted.To_Vector,
-            Moon     => Moon_Selection_Images.Sorted.To_Vector,
-            Neo      => Neo_Selection_Images];
+    return [Default   => Default_Selection_Images.Sorted.To_Vector,
+            Moon      => Moon_Selection_Images.Sorted.To_Vector,
+            Satellite => Satellite_Selection_Images];
   end Selection_Images;
 
 
   procedure Create_Menu (Signal_Update : Update_Signal) is
-    Sort_In_Altitude : constant String := "↑";
   begin
     User_Signal_Update := Signal_Update;
-    Sort_Menu.Create (Sort_In_Altitude, Sort_Handler'access);
     Selection_Menu.Create (Lexicon.Image_Of (Lexicon.Selection), Selection_Images, Selection_Handler'access);
     Set (The_Selection => All_Objects);
-    Direction_Menu.Create (Lexicon.Image_Of (Lexicon.Direction), Direction_Handler'access);
+    View_Menu.Create (Lexicon.Image_Of (Lexicon.Direction), View_Handler'access);
   end Create_Menu;
 
 end Targets.Filter;

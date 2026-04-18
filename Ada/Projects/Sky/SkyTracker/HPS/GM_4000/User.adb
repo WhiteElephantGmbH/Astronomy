@@ -13,7 +13,7 @@
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with Angle;
 with Ada.Real_Time;
@@ -331,7 +331,7 @@ package body User is
           Is_Focusing := False;
           Setup_Command_Is_Active := False;
         end if;
-      when Focus.Positioning | Focus.Capturing | Focus.Evaluated | Focus.Failed =>
+      when Focus.Starting | Focus.Positioning | Focus.Capturing | Focus.Evaluated | Focus.Failed =>
         null;
       end case;
     end Show_Focus_Information;
@@ -619,7 +619,9 @@ package body User is
         end if;
       end;
       Show_Camera_Information;
-      Show_Focus_Information;
+      if Focuser_Client.Server_Exists then
+        Show_Focus_Information;
+      end if;
     end case;
   end Show;
 
@@ -684,9 +686,10 @@ package body User is
   end Show_Description;
 
 
-  procedure Show_Error (Image : String) is
+  procedure Show_Error (Message : String := Error.Message) is
   begin
-    Gui.Message_Box (Image);
+    Log.Warning ("Error: " & Message);
+    Gui.Message_Box (Message);
     Gui.Beep;
   end Show_Error;
 
@@ -990,26 +993,28 @@ package body User is
                                         Is_Modifiable  => False,
                                         The_Size       => Text_Size,
                                         The_Title_Size => Title_Size);
-        Focuser_Model_Box := Gui.Create (Setup_Page, "Focuser", "",
+        if Focuser_Client.Server_Exists then
+          Focuser_Model_Box := Gui.Create (Setup_Page, "Focuser", "",
+                                           Is_Modifiable  => False,
+                                           The_Size       => Text_Size,
+                                           The_Title_Size => Title_Size);
+          Focus_State_Box := Gui.Create (Setup_Page, "Focus State", "",
                                          Is_Modifiable  => False,
                                          The_Size       => Text_Size,
                                          The_Title_Size => Title_Size);
-        Focus_State_Box := Gui.Create (Setup_Page, "Focus State", "",
+          Half_Flux_Box := Gui.Create (Setup_Page, "Half Flux", "",
                                        Is_Modifiable  => False,
                                        The_Size       => Text_Size,
                                        The_Title_Size => Title_Size);
-        Half_Flux_Box := Gui.Create (Setup_Page, "Half Flux", "",
-                                     Is_Modifiable  => False,
-                                     The_Size       => Text_Size,
-                                     The_Title_Size => Title_Size);
-        Focus_HFD_Box := Gui.Create (Setup_Page, "Focus HFD", "",
-                                     Is_Modifiable  => False,
-                                     The_Size       => Text_Size,
-                                     The_Title_Size => Title_Size);
-        Focus_Position_Box := Gui.Create (Setup_Page, "Auto Focus", "",
-                                          Is_Modifiable  => False,
-                                          The_Size       => Text_Size,
-                                          The_Title_Size => Title_Size);
+          Focus_HFD_Box := Gui.Create (Setup_Page, "Focus HFD", "",
+                                       Is_Modifiable  => False,
+                                       The_Size       => Text_Size,
+                                       The_Title_Size => Title_Size);
+          Focus_Position_Box := Gui.Create (Setup_Page, "Auto Focus", "",
+                                            Is_Modifiable  => False,
+                                            The_Size       => Text_Size,
+                                            The_Title_Size => Title_Size);
+        end if;
       end Define_Setup_Page;
 
     begin -- Create_Interface

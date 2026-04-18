@@ -13,7 +13,7 @@
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with Ada.Real_Time;
 with Camera;
@@ -219,7 +219,7 @@ package body Telescope is
   procedure Start (Update_Handler : Information_Update_Handler) is
   begin
     Camera.Start;
-    Focus.Start (Focuser.IRF90.New_Device);
+    Focus.Start (Focuser.IRF90.New_Device, Cdk_700.Is_Simulated);
     Signal_Information_Update := Update_Handler;
     Input.Open (Execute'access);
     Control := new Control_Task;

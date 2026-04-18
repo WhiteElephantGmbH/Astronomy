@@ -13,7 +13,7 @@
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with Ada.Text_IO;
 with Alignment.Parameter;
@@ -31,14 +31,13 @@ with Language.Parameter;
 with Moon.Parameter;
 with Picture.Parameter;
 with Sensitivity;
+with Satellite.Parameter;
 with Stellarium.Parameter;
 with Sun.Parameter;
 with Ten_Micron.Parameter;
-with Traces;
+with User;
 
 package body Parameter is
-
-  package Log is new Traces ("Parameter");
 
   Filename : constant String := Application.Composure (Application.Name, "ini");
 
@@ -75,7 +74,7 @@ package body Parameter is
       Put ("");
       Clock.Parameter.Defaults (Put'access);
       Put ("");
-      Camera.Parameter.Defaults (Put'access, Exposure.Value (4.0), Sensitivity.Value ("6400"));
+      Camera.Parameter.Defaults (Put'access, Exposure.Value ("4"), Sensitivity.Value ("6400"));
       Put ("");
       Focus.Parameter.Defaults (Put'access);
       Put ("");
@@ -83,13 +82,14 @@ package body Parameter is
       Put ("");
       Alignment.Parameter.Defaults (Put'access);
       Put ("");
-      Stellarium.Parameter.Defaults (Put'access, "10micron");
+      Satellite.Parameter.Defaults (Put'access);
+      Put ("");
+      Stellarium.Parameter.Defaults (Put'access);
       Ada.Text_IO.Close (The_File);
     exception
     when Error.Occurred =>
       raise;
-    when Item: others =>
-      Log.Termination (Item);
+    when others =>
       Ada.Text_IO.Delete (The_File);
       Error.Raise_With ("Internal Error - creating default parameters");
     end Create_Default_Parameters;
@@ -106,9 +106,15 @@ package body Parameter is
       Http_Server.Parameter.Define (Handle);
       Sun.Parameter.Define (Handle);
       Moon.Parameter.Define (Handle);
-      Clock.Parameter.Define (Handle);
+      begin
+        Clock.Parameter.Define (Handle);
+      exception
+      when Error.Occurred =>
+        User.Show_Error;
+      end;
       Picture.Parameter.Define (Handle);
       Alignment.Parameter.Define (Handle);
+      Satellite.Parameter.Define (Handle);
       Stellarium.Parameter.Define (Handle);
     end Read_Values;
 

@@ -13,7 +13,7 @@
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with AWS.Client;
 with AWS.Messages;
@@ -54,8 +54,7 @@ package body Focuser_Client is
 
   begin
     if Status /= AWS.Messages.S200 then
-      Log.Error ("Get Status: " & Status'image);
-      raise Server_Not_Available;
+      return Focuser.No_Data;
     end if;
     declare
       Result : constant String := AWS.Response.Message_Body (Response);
@@ -114,7 +113,7 @@ package body Focuser_Client is
     use type AWS.Messages.Status_Code;
   begin
     if Status /= AWS.Messages.S200 then
-      Log.Error (Command & ": " & Status'image);
+      Log.Warning (Command & ": " & Status'image);
     end if;
   end Execute;
 

@@ -13,7 +13,7 @@
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with Exceptions;
 with Exposure;
@@ -55,6 +55,8 @@ package Camera is
   function Actual_Information return Information;
 
   function Model_Image return String;
+  
+  function File_Extension return String;
 
   procedure Capture (Filename  : String;
                      Time      : Exposure.Item;

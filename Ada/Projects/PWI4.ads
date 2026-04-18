@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2023 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2023 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -13,7 +13,7 @@
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 private with AWS.Messages;
 
@@ -105,7 +105,7 @@ package PWI4 is
 
   procedure Shutdown;
 
-  procedure Get_System;
+  function Got_System_Status return Boolean;
 
   procedure Test_Crash;
 
@@ -130,5 +130,7 @@ private
                 Right : Parameter) return Parameter;
 
   function Image_Of (The_Port : Port) return Character;
+
+  procedure Set_Error (Message : String);
 
 end PWI4;

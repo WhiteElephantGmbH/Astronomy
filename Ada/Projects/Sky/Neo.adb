@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2013 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2013 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -13,7 +13,7 @@
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with Ada.Unchecked_Deallocation;
 with Angle;
@@ -32,14 +32,6 @@ package body Neo is
 
   package Log is new Traces ("Neo");
 
-  use type Time.Ut;
-
-  function Exists (Item : String) return Boolean is
-  begin
-    return Satellite.Exists (Item);
-  end Exists;
-
-
   type Element is record
     Ut  : Time.Ut     := Time.In_The_Past;
     Ra  : Angle.Value := Angle.Zero;
@@ -54,7 +46,7 @@ package body Neo is
   The_Wrap_Location : Earth.Direction;
 
 
-  procedure Read (Target : String) is
+  procedure Read (Target : Satellite.Number) is
 
     Start_Time : constant Time.Ut := Time.Synchronized_Universal (Base => 1.0);
     The_Entry  : Natural := 0;
@@ -136,6 +128,8 @@ package body Neo is
 
       The_Max_Alt : Angle.Degrees;
 
+      use type Time.Ut;
+
     begin -- Find_Norad_Entries
       if Log.Is_Enabled then
         Log.Write ("NORAD: " & Norad_Lines(1));
@@ -216,7 +210,7 @@ package body Neo is
   begin -- read
     The_Last := 0;
     The_Entry := 0;
-    Log.Write ("NEO READ - " & Target);
+    Log.Write (Satellite.Tle_Name_Of (Target));
     Norad_Lines := Satellite.Tle_Of (Target);
     Find_Norad_Entries;
   end Read;
@@ -229,32 +223,85 @@ package body Neo is
     Wrap : Earth.Direction;
   end record;
 
-  The_Trajectories : array (1..500) of Data;
+  The_Trajectories : array (1..999) of Data;
+
+
+  procedure Add_Object (Object : Satellite.Number) is
+    The_Index : Positive;
+  begin
+    Read (Object);
+    if The_Last > 0 then
+      The_Index := Sky.Data.New_Neo_Object_For (Item   => Satellite.Name_Of (Object),
+                                                Number => Natural(Object));
+      if The_Index > The_Trajectories'last then
+        Error.Raise_With ("Too many near earth objects");
+      end if;
+      The_Trajectories(The_Index).List := new Trajectory'(The_Trajectory(1..The_Last));
+      The_Trajectories(The_Index).Wrap := The_Wrap_Location;
+    end if;
+  end Add_Object;
 
 
   procedure Add_Objects is
-
-    procedure Process (Target : String) is
-      The_Index : Positive;
-    begin
-      Read (Target);
-      if The_Last > 0 then
-        The_Index := Sky.Data.New_Neo_Object_For (Item        => Target,
-                                                  Description => "");
-        if The_Index > The_Trajectories'last then
-          Error.Raise_With ("Too many near earth objects");
-        end if;
-        The_Trajectories(The_Index).List := new Trajectory'(The_Trajectory(1..The_Last));
-        The_Trajectories(The_Index).Wrap := The_Wrap_Location;
-      end if;
-    end Process;
-
-  begin -- Add_Objects
-    Satellite.Read_Stellarium_Data;
-    for Target of Satellite.Names loop
-      Process (Target);
+  begin
+    for Object of Satellite.Objects loop
+      Add_Object (Object);
     end loop;
   end Add_Objects;
+
+
+  Neo_Read : Boolean := False;
+
+  function Read return Boolean is
+  begin
+    Satellite.Read;
+    Add_Objects;
+    Neo_Read := True;
+    return True;
+  exception
+  when Error.Occurred =>
+    return False;
+  end Read;
+
+
+  procedure Dispose is new Ada.Unchecked_Deallocation (Trajectory, Trajectory_Access);
+
+  function Object_Of (Item : Name.Id) return Sky.Object is
+  begin
+    return Name.Object_Of (Item);
+  end Object_Of;
+
+
+  function Is_Arriving (Item : Name.Id) return Boolean is
+    use type Time.Ut;
+  begin
+    declare
+      Object : constant Sky.Object := Object_Of (Item);
+      use type Sky.Object;
+    begin
+      if Object = Sky.Undefined then
+        return False;
+      end if;
+      declare
+        Index    : constant Positive := Sky.Data.Neo_Index_Of (Object);
+        The_Data : Data renames The_Trajectories(Index);
+      begin
+        if The_Data.List = null then
+          return False;
+        elsif The_Data.List(The_Data.List'last).Ut < Time.Universal then
+          Dispose (The_Data.List);
+          Read (Satellite.Number(Sky.Data.Neo_Number_Of (Object)));
+          if The_Last = 0 then
+            The_Data.List := null;
+            return False;
+          end if;
+          The_Data.List := new Trajectory'(The_Trajectory(1..The_Last));
+          The_Data.Wrap := The_Wrap_Location;
+        end if;
+        return The_Data.List(The_Data.List'first).Ut < Time.Universal + Time.One_Minute * 15;
+      end;
+    end;
+  end Is_Arriving;
 
 
   function Direction_Of (Item : Name.Id;
@@ -263,6 +310,8 @@ package body Neo is
     Index : constant Positive := Sky.Data.Neo_Index_Of (Name.Object_Of (Item));
 
     The_Data : Trajectory_Access renames The_Trajectories(Index).List;
+
+    use type Time.Ut;
 
   begin
     if The_Data /= null then
@@ -285,28 +334,6 @@ package body Neo is
   end Direction_Of;
 
 
-  procedure Dispose is new Ada.Unchecked_Deallocation (Trajectory, Trajectory_Access);
-
-  function Is_Arriving (Item : Name.Id) return Boolean is
-    Index    : constant Positive := Sky.Data.Neo_Index_Of (Name.Object_Of (Item));
-    The_Data : Data renames The_Trajectories(Index);
-  begin
-    if The_Data.List = null then
-      return False;
-    elsif The_Data.List(The_Data.List'last).Ut < Time.Universal then
-      Dispose (The_Data.List);
-      Read (Name.Image_Of (Item));
-      if The_Last = 0 then
-        The_Data.List := null;
-        return False;
-      end if;
-      The_Data.List := new Trajectory'(The_Trajectory(1..The_Last));
-      The_Data.Wrap := The_Wrap_Location;
-    end if;
-    return The_Data.List(The_Data.List'first).Ut < Time.Universal + Time.One_Minute * 15;
-  end Is_Arriving;
-
-
   function Tracking_Period_Of (Item : Name.Id) return Time.Period is
     Index    : constant Positive := Sky.Data.Neo_Index_Of (Name.Object_Of (Item));
     The_Data : Data renames The_Trajectories(Index);
@@ -326,5 +353,20 @@ package body Neo is
   begin
     return The_Data.Wrap;
   end Wrap_Location_Of;
+
+
+  function Name_Of (Number : Natural) return String is
+  begin
+    if Neo_Read then
+      declare
+        Object : constant Satellite.Number := Satellite.Number(Number);
+      begin
+        Satellite.Read (Object);
+        Add_Object (Object);
+        return Satellite.Name_Of (Object);
+      end;
+    end if;
+    return "";
+  end Name_Of;
 
 end Neo;

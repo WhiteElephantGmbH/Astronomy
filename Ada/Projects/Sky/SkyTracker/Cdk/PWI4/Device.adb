@@ -13,7 +13,7 @@
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with Angle;
 with Cdk_700;
@@ -25,6 +25,7 @@ with PWI4.M3;
 with PWI4.Rotator;
 with PWI4.Site;
 with Satellite;
+with Sky.Data;
 with System;
 with Traces;
 
@@ -458,10 +459,11 @@ package body Device is
     use type Microns;
     use type Degrees;
 
-    procedure Follow_Tle (Tle_Name : String) is
-      Tle : constant Satellite.Tle := Satellite.Tle_Of (Tle_Name);
+    procedure Follow_Tle (Id : Name.Id) is
+      Number : constant Satellite.Number := Satellite.Number(Sky.Data.Neo_Number_Of (Name.Object_Of (Id)));
+      Tle    : constant Satellite.Tle := Satellite.Tle_Of ((Number));
     begin
-      PWI4.Mount.Follow_Tle (Line_1 => Tle_Name,
+      PWI4.Mount.Follow_Tle (Line_1 => Satellite.Tle_Name_Of (Number),
                              Line_2 => Tle(1),
                              Line_3 => Tle(2));
     end Follow_Tle;
@@ -600,7 +602,7 @@ package body Device is
           PWI4.Mount.Find_Home;
           The_Mount_State := Mount.Homing;
         when Follow_Tle =>
-          Follow_Tle (Name.Image_Of (The_Parameter.Name_Id));
+          Follow_Tle (The_Parameter.Name_Id);
         when Goto_Target =>
           PWI4.Mount.Goto_Ra_Dec (With_Ra    => The_Parameter.Ra,
                                   With_Dec   => The_Parameter.Dec,
@@ -755,9 +757,8 @@ package body Device is
           end case;
         end if;
       or
-        delay 1.0 / PWI4.Request_Rate;
-        if The_Mount_State /= Mount.Error then
-          PWI4.Get_System;
+        delay until Time.In_Future (1.0 / PWI4.Request_Rate);
+        if The_Mount_State /= Mount.Error and then PWI4.Got_System_Status then
           if Is_Simulation then
             if Focuser.Actual_State = Focuser.Moving then
               if abs(The_Simulated_Focuser_Position - The_Simulated_Focuser_Goto_Position) > 4.0 then
@@ -931,7 +932,8 @@ package body Device is
     Data : constant PWI4.Site_Info := PWI4.Site.Info;
     use type Angle.Value;
   begin
-    return (Latitude  => +Angle.Degrees(Data.Latitude),
+    return (Location  => Site.Unknown,
+            Latitude  => +Angle.Degrees(Data.Latitude),
             Longitude => +Angle.Degrees(Data.Longitude),
             Elevation => Integer(Data.Height));
   end Site_Info;

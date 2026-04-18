@@ -13,8 +13,9 @@
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
+with Exceptions;
 with Traces;
 with Text;
 
@@ -195,6 +196,8 @@ package body PWI4.Protocol is
 
   protected System is
 
+    procedure Set_Error;
+
     procedure Set (Status : Status_Code);
 
     procedure Set (Data : Protocol.Response);
@@ -214,7 +217,7 @@ package body PWI4.Protocol is
   end System;
 
 
-  procedure Parse (Data : String) is
+  function Parsed (Data : String) return Boolean is
 
     The_Index : Integer := Data'first - 1;
 
@@ -243,12 +246,16 @@ package body PWI4.Protocol is
                         I_Azm_Encoder_Degs,
                         I_Azm_Rms_Error_Arcsec,
                         I_Best_Position,
+                        I_Controllers,
                         I_Dec_Arcsec,
                         I_Dec_Apparent_Degs,
                         I_Dec_J2000_Degs,
                         I_Dist_To_Target_Arcsec,
                         I_Distance_To_Sun_Degs,
+                        I_Dome,
                         I_Exists,
+                        I_Error_Description,
+                        I_Fan,
                         I_Field_Angle_Degs,
                         I_Field_Angle_Here_Degs,
                         I_Field_Angle_At_Target_Degs,
@@ -257,6 +264,16 @@ package body PWI4.Protocol is
                         I_Focuser,
                         I_Geometry,
                         I_Gradual_Offset_Progress,
+                        I_Has_Dome_Shutter,
+                        I_Has_Dome_Rotation,
+                        I_Has_Dome_Window,
+                        I_Has_Error,
+                        I_Has_Mount_Axis0,
+                        I_Has_Mount_Axis1,
+                        I_Has_Rotator1,
+                        I_Has_Rotator2,
+                        I_Has_Focuser1,
+                        I_Has_Focuser2,
                         I_Heater,
                         I_Heater1,
                         I_Heater2,
@@ -267,9 +284,11 @@ package body PWI4.Protocol is
                         I_Is_Connected,
                         I_Is_Moving,
                         I_Is_On,
+                        I_Is_Position_Initialized,
                         I_Is_Running,
                         I_Is_Slewing,
                         I_Is_Tracking,
+                        I_Is_Tracking_Enabled,
                         I_Latitude_Degs,
                         I_Lmst_Hours,
                         I_Julian_Date,
@@ -283,9 +302,11 @@ package body PWI4.Protocol is
                         I_Model,
                         I_Mount,
                         I_M3,
+                        I_Num_Fans,
                         I_Num_Heaters,
                         I_Num_Points_Enabled,
                         I_Num_Points_Total,
+                        I_Num_Sensors,
                         I_Offsets,
                         I_Path_Angle_At_Target_Degs,
                         I_Path_Angle_Rate_At_Target_Degs_Per_Sec,
@@ -296,6 +317,7 @@ package body PWI4.Protocol is
                         I_Position_Rotate,
                         I_Position_Timestamp,
                         I_Power_Pct,
+                        I_Pwecat,
                         I_Pwi4,
                         I_Ra_Apparent_Hours,
                         I_Ra_Arcsec,
@@ -314,6 +336,7 @@ package body PWI4.Protocol is
                         I_Target_Dec_Apparent_Degs,
                         I_Target_Mech_Position_Degs,
                         I_Target_Ra_Apparent_Hours,
+                        I_Temperature,
                         I_Timestamp_Utc,
                         I_Tolerance,
                         I_Total,
@@ -420,6 +443,9 @@ package body PWI4.Protocol is
         when I_Is_Enabled =>
           Log_Write (Axis & ".is_enabled=" & Next_Value);
           The_Response.Mount.Flags.Axis_Is_Enabled(N) := Boolean_Of (Value);
+        when I_Is_Position_Initialized =>
+          Log_Write (Axis & ".is_position_initialized=" & Next_Value);
+          The_Response.Mount.Flags.Axis_Is_Initialized(N) := Boolean_Of (Value);
         when I_Rms_Error_Arcsec =>
           Log_Write (Axis & ".rms_error_arcsec=" & Next_Value);
         when I_Dist_To_Target_Arcsec =>
@@ -449,6 +475,10 @@ package body PWI4.Protocol is
           Log_Write (Axis & ".acceleration_degs_per_sec_sqr=" & Next_Value);
         when I_Measured_Current_Amps =>
           Log_Write (Axis & ".measured_current_amp=" & Next_Value);
+        when I_Has_Error =>
+          Log_Write (Axis & ".has_error=" & Next_Value);
+        when I_Error_Description =>
+          Log_Write (Axis & ".error_description=" & Next_Value);
         when others =>
           raise Parsing_Error;
         end case;
@@ -649,6 +679,10 @@ package body PWI4.Protocol is
       when I_Is_Moving =>
         Log_Write ("focuser.is_moving=" & Next_Value);
         The_Response.Focuser.Is_Moving := Boolean_Of (Value);
+      when I_Has_Error =>
+        Log_Write ("focuser.has_error=" & Next_Value);
+      when I_Error_Description =>
+        Log_Write ("focuser.error_description=" & Next_Value);
       when others =>
         raise Parsing_Error;
       end case;
@@ -682,10 +716,30 @@ package body PWI4.Protocol is
       when I_Is_Slewing =>
         Log_Write ("rotator.is_slewing=" & Next_Value);
         The_Response.Rotator.Is_Slewing := Boolean_Of (Value);
+      when I_Is_Tracking_Enabled =>
+        Log_Write ("rotator.is_tracking_enabled=" & Next_Value);
+        The_Response.Rotator.Is_Tracking_Enabled := Boolean_Of (Value);
+      when I_Has_Error =>
+        Log_Write ("rotator.has_error=" & Next_Value);
+      when I_Error_Description =>
+        Log_Write ("rotator.error_description=" & Next_Value);
       when others =>
         raise Parsing_Error;
       end case;
     end Parse_Rotator;
+
+
+    procedure Parse_Dome is
+    begin
+      case Next_Identifier is
+      when I_Exists =>
+        Log_Write ("dome.exists=" & Next_Value);
+      when I_Is_Connected =>
+        Log_Write ("dome.is_connected=" & Next_Value);
+      when others =>
+        raise Parsing_Error;
+      end case;
+    end Parse_Dome;
 
 
     procedure Parse_M3 is
@@ -694,6 +748,8 @@ package body PWI4.Protocol is
       when I_Exists =>
         Log_Write ("m3.exists=" & Next_Value);
         The_Response.M3.Exists := Value /= "0";
+      when I_Is_Connected =>
+        Log_Write ("m3.is_connected=" & Next_Value);
       when I_Port =>
         Log_Write ("m3.port=" & Next_Value);
         The_Response.M3.Port := Port_Number'value(Value);
@@ -718,6 +774,73 @@ package body PWI4.Protocol is
         raise Parsing_Error;
       end case;
     end Parse_Autofocus;
+
+
+    procedure Parse_Fan is
+    begin
+      case Next_Identifier is
+      when I_Is_Connected =>
+        Log_Write ("fan.is_connected=" & Next_Value);
+      when I_Num_Fans =>
+        Log_Write ("fan.num_fans=" & Next_Value);
+      when others =>
+        raise Parsing_Error;
+      end case;
+    end Parse_Fan;
+
+
+    procedure Parse_Temperature is
+    begin
+      case Next_Identifier is
+      when I_Num_Sensors =>
+        Log_Write ("temperatur.num_sensors=" & Next_Value);
+      when others =>
+        raise Parsing_Error;
+      end case;
+    end Parse_Temperature;
+
+
+    procedure Parse_Controllers is
+
+      procedure Parse_Pwecat is
+        Pwecat : constant String := "controller.pwecat.";
+      begin
+        case Next_Identifier is
+        when I_Is_Connected =>
+          Log_Write (Pwecat & "is_connected=" & Next_Value);
+        when I_Has_Mount_Axis0 =>
+          Log_Write (Pwecat & "has_mount_axis0=" & Next_Value);
+        when I_Has_Mount_Axis1 =>
+          Log_Write (Pwecat & "has_mount_axis1=" & Next_Value);
+        when I_Has_Rotator1 =>
+          Log_Write (Pwecat & "has_rotator1=" & Next_Value);
+        when I_Has_Rotator2 =>
+          Log_Write (Pwecat & "has_rotator2=" & Next_Value);
+        when I_Has_Focuser1 =>
+          Log_Write (Pwecat & "has_focuser1=" & Next_Value);
+        when I_Has_Focuser2 =>
+          Log_Write (Pwecat & "has_focuser2=" & Next_Value);
+        when I_Has_Dome_Shutter =>
+          Log_Write (Pwecat & "has_dome_shutter=" & Next_Value);
+        when I_Has_Dome_Rotation =>
+          Log_Write (Pwecat & "has_dome_rotation=" & Next_Value);
+        when I_Has_Dome_Window =>
+          Log_Write (Pwecat & "has_dome_window=" & Next_Value);
+        when others =>
+          raise Parsing_Error;
+        end case;
+      end Parse_Pwecat;
+
+    begin
+      case Next_Identifier is
+      when I_Pwecat =>
+        Parse_Pwecat;
+      when others =>
+        raise Parsing_Error;
+      end case;
+
+    end Parse_Controllers;
+
 
     procedure Parse_Heater is
 
@@ -753,7 +876,7 @@ package body PWI4.Protocol is
       end case;
     end Parse_Heater;
 
-  begin -- Parse
+  begin -- Parsed
     if Data'length = 0 or else Data(Data'last) /= Ascii.Lf then
       raise Parsing_Error;
     end if;
@@ -771,10 +894,18 @@ package body PWI4.Protocol is
         Parse_Focuser;
       when I_Rotator =>
         Parse_Rotator;
+      when I_Dome =>
+        Parse_Dome;
       when I_M3 =>
         Parse_M3;
       when I_Autofocus =>
         Parse_Autofocus;
+      when I_Fan =>
+        Parse_Fan;
+      when I_Temperature =>
+        Parse_Temperature;
+      when I_Controllers =>
+        Parse_Controllers;
       when I_Heater =>
         Parse_Heater;
       when others =>
@@ -783,11 +914,14 @@ package body PWI4.Protocol is
     end loop;
     System.Set (The_Response);
     Log_Response.Normal;
+    return True;
   exception
-  when others =>
-    Log_Error (Data);
-    raise;
-  end Parse;
+  when Item: others =>
+    Log_Error (Data & Exceptions.Name_Of (Item));
+    System.Set_Error;
+    Set_Error ("PWI4 Protocol Error");
+    return False;
+  end Parsed;
 
 
   procedure Set_Error (Status : Status_Code) is
@@ -850,11 +984,17 @@ package body PWI4.Protocol is
 
   protected body System is
 
+    procedure Set_Error is
+    begin
+      The_Data.Mount.Flags.Has_Error := True;
+      The_Data.Mount.Flags.Is_Connected := False;
+    end Set_Error;
+
+
     procedure Set (Status : Status_Code) is
     begin
       Log.Write ("Set Error : " & Status'image);
-      The_Data.Mount.Flags.Has_Error := True;
-      The_Data.Mount.Flags.Is_Connected := False;
+      Set_Error;
     end Set;
 
 

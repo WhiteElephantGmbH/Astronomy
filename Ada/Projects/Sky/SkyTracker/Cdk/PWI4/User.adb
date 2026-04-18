@@ -13,7 +13,7 @@
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with Ada.Real_Time;
 with Ada.Unchecked_Conversion;
@@ -182,11 +182,11 @@ package body User is
   end Demo_21_Handler;
 
 
-  procedure Show_Error (The_Text : String := Error.Message) is
+  procedure Show_Error (Message : String := Error.Message) is
   begin
+    Log.Warning ("Show Error: " & Message);
     Gui.Beep;
-    Gui.Message_Box (The_Text);
-    Log.Warning ("Show Error: " & The_Text);
+    Gui.Message_Box (Message);
   end Show_Error;
 
 
@@ -600,7 +600,7 @@ package body User is
     begin -- Create_Interface
       Name.Catalog.Create_Menu (Define_Signal'access);
       Targets.Filter.Create_Menu (Update_Signal'access);
-      Option_Menu.Create ("Option", Option_Images, Option_Handler'access);
+      Option_Menu.Create (Lexicon.Image_Of (Lexicon.Option), Option_Images, Option_Handler'access);
       if Remote.Configured then
         Demo_21_Menu.Create ("Demo 21", Demo_21_Handler'access);
       end if;

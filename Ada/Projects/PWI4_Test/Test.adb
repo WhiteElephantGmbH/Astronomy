@@ -1,8 +1,8 @@
 -- *********************************************************************************************************************
--- *                       (c) 2019 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2019 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with Ada.Command_Line;
 with Ada.Text_IO;
@@ -15,6 +15,7 @@ with PWI4.M3;
 with Serial_Io.Usb;
 with Serial_Io.Windows;
 with Text;
+with Time;
 
 package body Test is
 
@@ -170,6 +171,16 @@ package body Test is
 
     Mount_Not_Connected : exception;
 
+    procedure Get_Status is
+    begin
+      if not PWI4.Got_System_Status then
+        Put ("State: " & PWI4.Mount.Info.Status'image);
+        Error (PWI4.Error_Info);
+        raise Mount_Not_Connected;
+      end if;
+    end Get_Status;
+
+
     procedure Connect_Mount is
 
       use type PWI4.Mount.State;
@@ -178,8 +189,8 @@ package body Test is
         Connect_Timeout : constant := 5; -- seconds
       begin
         for Unused_Count in 1 .. Connect_Timeout loop
-          delay 1.0;
-          PWI4.Get_System;
+          Time.Wait (1.0);
+          Get_Status;
           Put ("State: " & PWI4.Mount.Info.Status'image);
           if PWI4.Mount.Info.Status >= PWI4.Mount.Connected then
             return;
@@ -189,7 +200,7 @@ package body Test is
       end Wait_For_Mount_Connected;
 
     begin -- Connect_Mount
-      PWI4.Get_System;
+      Get_Status;
       if PWI4.Mount.Info.Status = PWI4.Mount.Disconnected then
         PWI4.Mount.Connect;
         Put ("connecting mount");
@@ -210,8 +221,8 @@ package body Test is
         Enable_Timeout : constant := 45; -- seconds
       begin
         for Unused_Count in 1 .. Enable_Timeout loop
-          delay 1.0;
-          PWI4.Get_System;
+          Time.Wait (1.0);
+          Get_Status;
           if PWI4.Mount.Info.Status /= PWI4.Mount.Connected then
             return;
           end if;
@@ -220,11 +231,11 @@ package body Test is
       end Wait_For_Mount_Enabled;
 
     begin -- Enable_Mount
-      PWI4.Get_System;
+      Get_Status;
       if PWI4.Mount.Info.Status < PWI4.Mount.Connected then
         raise Mount_Must_Be_Connected;
       end if;
-      PWI4.Get_System;
+      Get_Status;
       if PWI4.Mount.Info.Status = PWI4.Mount.Connected then
         PWI4.Mount.Enable;
         Put ("enabling mount motors");
@@ -244,8 +255,8 @@ package body Test is
       procedure Wait_For_Mount_At_Home is
       begin
         loop
-          delay 1.0;
-          PWI4.Get_System;
+          Time.Wait (1.0);
+          Get_Status;
           case PWI4.Mount.Info.Status is
           when PWI4.Mount.Enabled =>
             null;
@@ -258,7 +269,7 @@ package body Test is
       end Wait_For_Mount_At_Home;
 
     begin -- Home_Mount
-      PWI4.Get_System;
+      Get_Status;
       declare
         State : constant PWI4.Mount.State := PWI4.Mount.Info.Status;
       begin
@@ -428,8 +439,8 @@ package body Test is
                               With_Dec   => Dec,
                               From_J2000 => True);
       loop
-        delay 1.0;
-        PWI4.Get_System;
+        Time.Wait (1.0);
+        Get_Status;
         declare
           Info : constant PWI4.Mount.Information := PWI4.Mount.Info;
         begin
@@ -449,14 +460,14 @@ package body Test is
     procedure Stop is
     begin
       loop
-        PWI4.Get_System;
+        Get_Status;
         case PWI4.Mount.Info.Status is
         when PWI4.Mount.Approaching | PWI4.Mount.Tracking =>
           PWI4.Mount.Stop;
         when others =>
           exit;
         end case;
-        delay 1.0;
+        Time.Wait (1.0);
       end loop;
     end Stop;
 

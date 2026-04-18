@@ -13,7 +13,7 @@
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with Camera.Canon;
 with Camera.QHYCCD;
@@ -52,29 +52,39 @@ package body Camera is
   end Model_Image;
 
 
+  The_File_Extension : Text.String;
+
+  function File_Extension return String is
+  begin
+    return The_File_Extension.S;
+  end File_Extension;
+
+
   procedure Capture (Filename  : String;
                      Time      : Exposure.Item;
                      Parameter : Sensitivity.Item) is
 
-    function Filename_With_Extension (Default : String) return String is
+    function Filename_With_Extension (Extension : String) return String is
       Folder : constant String := File.Containing_Directory_Of (Filename);
     begin
+      The_File_Extension := [Extension];
       if not Directory.Exists (Folder) then
         Raise_Error ("Unknown picture directory " & Folder);
       elsif File.Extension_Of (Filename) = "" then
-        return Filename & '.' & Default;
+        return Filename & '.' & File_Extension;
       else
         return Filename;
       end if;
     end Filename_With_Extension;
 
   begin -- Capture
-    Log.Write ("Capture " & Filename & " - Time: " & Time'image & " - Parameter: " & Parameter'image);
     Camera_Data.Set (Unknown);
+    The_File_Extension.Clear;
+    Log.Write ("Capture " & Filename & " - Time: " & Time'image & " - Parameter: " & Parameter'image);
     if Canon.Is_Available then
-      Canon.Capture_Picture (Filename_With_Extension (Default => "CR2"), Time, Parameter);
+      Canon.Capture_Picture (Filename_With_Extension ("CR2"), Time, Parameter);
     elsif QHYCCD.Is_Available then
-      QHYCCD.Capture_Picture (Filename_With_Extension (Default => "FITS"), Time, Parameter);
+      QHYCCD.Capture_Picture (Filename_With_Extension ("FITS"), Time, Parameter);
     else
       Camera_Data.Set_Error ("No Camera Available");
     end if;
@@ -167,7 +177,6 @@ package body Camera is
 
   procedure Raise_Error (Message : String) is
   begin
-    Log.Error (Message);
     Camera_Data.Set_Error (Message);
     raise Camera_Error;
   end Raise_Error;
@@ -243,7 +252,8 @@ package body Camera is
 
     procedure Set_Fatal (Item : Exceptions.Occurrence) is
     begin
-      Set_Error ("Internal_Error - " & Exceptions.Name_Of (Item));
+      Log.Error (Exceptions.Information_Of (Item));
+      Set_Error ("Internal_Error - " & Exceptions.Information_Of (Item));
     end Set_Fatal;
 
 

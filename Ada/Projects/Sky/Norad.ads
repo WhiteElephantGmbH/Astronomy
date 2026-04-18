@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2013 .. 2019 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2013 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -13,7 +13,7 @@
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with Astro;
 with Time;
@@ -24,9 +24,13 @@ package Norad is
 
   type Two_Line is array (1 .. 2) of Line_Data;
 
+  type Number is range 0 .. 99_999;
+
   subtype Vector is Astro.VECTOR;
 
   function Is_In_Deep_Space (Data : Two_Line) return Boolean;
+
+  function Number_Of (Data : Two_Line) return Number;
 
   procedure SGP (Data         :     Two_Line;
                  Ut           :     Time.Ut;

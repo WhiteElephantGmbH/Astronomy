@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2021 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2021 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -13,7 +13,7 @@
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with Parameter;
 with Picture;
@@ -406,7 +406,8 @@ package body Telescope is
             The_Data.Pole_Offsets := Pole_Axis.Offsets;
             The_Data.Actual_Moving_Rate := The_Moving_Rate;
           end Get;
-        or delay Update_Delay;
+        or
+          delay until Time.In_Future (Update_Delay);
           Signal_Information_Update.all;
           Update_Handling;
         end select;

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2021 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                      *
+-- *                           (c) 2021 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                      *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -13,14 +13,13 @@
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with Application;
 with Error;
 with Gui;
 with Horizon;
 with Name;
-with Network.Tcp;
 with Objects;
 with Os.Application;
 with Os.Process;
@@ -401,7 +400,6 @@ package body Control is
       when Close =>
         Targets.Stop;
         Telescope.Close;
-        Stellarium.Close;
         exit;
       end case;
     end loop;
@@ -413,7 +411,6 @@ package body Control is
     Targets.Stop;
     Gui.Close;
     Telescope.Close;
-    Stellarium.Close;
     Action_Handler.Enable_Termination;
   end Manager;
 
@@ -449,45 +446,38 @@ package body Control is
       Action_Handler.Wait_For_Termination;
     end Termination;
 
-    procedure Start_Stellarium_Server is
-    begin
-      Stellarium.Start;
-    exception
-    when Network.Tcp.Port_In_Use =>
-      Error.Raise_With (Application.Name & " - TCP port" & Stellarium.Port_Number'img & " for Stellarium in use");
-    when others =>
-      Error.Raise_With (Application.Name & " - could not start stellarium server");
-    end Start_Stellarium_Server;
-
   begin -- Start
+    if (not Os.Is_Osx) and then (not Os.Application.Is_First_Instance) then
+    --
+    -- Note: This test is to prevent this application from being run more than once concurrently.
+    --       If we mandate that this application is always run from within an OSX .app bundle then
+    --       OSX will enforce this and therefore this test is not required.
+    --       In this case it is better not to attempt detecting first instance because if the application
+    --       is terminated by force quit the mutex is not released but remains until the host is rebooted.
+    --
+      Error.Raise_With (Application.Name & " already running");
+    end if;
+    Os.Process.Set_Priority_Class (Os.Process.Realtime);
+    Parameter.Read;
+    Read_Data;
     begin
-      if (not Os.Is_Osx) and then (not Os.Application.Is_First_Instance) then
-      --
-      -- Note: This test is to prevent this application from being run more than once concurrently.
-      --       If we mandate that this application is always run from within an OSX .app bundle then
-      --       OSX will enforce this and therefore this test is not required.
-      --       In this case it is better not to attempt detecting first instance because if the application
-      --       is terminated by force quit the mutex is not released but remains until the host is rebooted.
-      --
-        Error.Raise_With (Application.Name & " already running");
-      end if;
-      Os.Process.Set_Priority_Class (Os.Process.Realtime);
-      Parameter.Read;
-      Read_Data;
-      Start_Stellarium_Server;
+      Stellarium.Startup;
+      Telescope.Start (Information_Update_Handler'access);
+      Targets.Start (Clear  => User.Clear_Targets'access,
+                     Define => User.Define'access,
+                     Update => User.Update_Targets'access);
+      User.Execute (Startup'access,
+                    User_Action_Handler'access,
+                    Termination'access);
+      Stellarium.Shutdown;
     exception
-    when Error.Occurred =>
-      User.Show_Error;
+    when others =>
+      Stellarium.Shutdown;
+      raise;
     end;
-    Telescope.Start (Information_Update_Handler'access);
-    Targets.Start (Clear  => User.Clear_Targets'access,
-                   Define => User.Define'access,
-                   Update => User.Update_Targets'access);
-    User.Execute (Startup'access,
-                  User_Action_Handler'access,
-                  Termination'access);
-    Stellarium.Shutdown;
   exception
+  when Error.Occurred =>
+    User.Show_Error;
   when Occurrence: others =>
     Log.Termination (Occurrence);
   end Start;

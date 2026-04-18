@@ -1,14 +1,13 @@
 -- *********************************************************************************************************************
--- *                       (c) 2022 .. 2023 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2022 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with Ada.Command_Line;
 with Ada.Text_IO;
 with Exceptions;
 with Network.Tcp;
-with Satellite;
 
 package body Test is
 
@@ -51,30 +50,6 @@ package body Test is
           The_Kind := Single;
           Network.Tcp.Send (The_String  => "" & Ascii.Ack,
                             Used_Socket => The_Socket);
-        elsif Command = "l" then
-          Satellite.Read_Stellarium_Data;
-          Put_Line (Satellite.Names'image);
-          loop
-            Ada.Text_IO.Put ("Satellite>");
-            declare
-              Name : constant String := Ada.Text_IO.Get_Line;
-              Eol  : constant String := "$0A";
-            begin
-              if Name = "" then
-                exit Main;
-              elsif Satellite.Exists (Name) then
-                declare
-                  Tle : constant Satellite.Tle := Satellite.Tle_Of (Name);
-                begin
-                  Network.Tcp.Send (The_String  => ":TLEL0" & Name & Eol & Tle(1) & Eol & Tle(2) & Eol & '#',
-                                    Used_Socket => The_Socket);
-                end;
-                exit;
-              else
-                Put_Line ("!!! satellite unknown");
-              end if;
-            end;
-          end loop;
         else
           begin
             case Command (Command'first) is

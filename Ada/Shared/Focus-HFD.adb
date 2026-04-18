@@ -13,7 +13,7 @@
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with Ada.Numerics.Generic_Elementary_Functions;
 
@@ -25,23 +25,22 @@ package body Focus.HFD is
 
   use type Camera.Pixel;
 
-
   procedure Evaluate (Grid : Camera.Raw_Grid) is
     use type Camera.Raw_Grid;
     use type Camera.Rows;
     use type Camera.Columns;
   begin
     if Grid = [] then
-      Set_Error ("No Grid - " & Camera.Error_Message);
-      return;
+      Raise_Error ("No Grid - " & Camera.Error_Message);
     end if;
     declare
       subtype Huge_Natural is Long_Long_Integer range 0 .. Long_Long_Integer'last;
 
       function Evaluated_Half_Flux return Camera.Pixel is
-        Black_Level : constant := 0;
-        The_Sum     : Huge_Natural := 0;
-        The_Count   : Natural := 0;
+        Black_Level   : constant := 0;
+        The_Sum       : Huge_Natural := 0;
+        The_Count     : Natural := 0;
+        The_Half_Flux : Camera.Pixel;
       begin
         for Value of Grid loop
           if Value > Black_Level then
@@ -50,9 +49,13 @@ package body Focus.HFD is
           end if;
         end loop;
         if The_Count = 0 then
-          return 0;
+          return The_HF_Threshold;
         end if;
-        return Camera.Pixel (The_Sum / Huge_Natural(The_Count));
+        The_Half_Flux := Camera.Pixel(The_Sum / Huge_Natural(The_Count));
+        if The_Half_Flux > Max_Half_Flux - The_HF_Threshold then
+          Raise_Error ("Half flux is too bright:" & The_Half_Flux'image);
+        end if;
+        return The_Half_Flux + The_HF_Threshold;
       end Evaluated_Half_Flux;
 
       Half_Flux : constant Camera.Pixel := Evaluated_Half_Flux;
@@ -63,9 +66,10 @@ package body Focus.HFD is
       end record;
 
       type Right_Angle is record
-        Edge : Position;
-        Ends : Position;
-        Size : Natural := 0;
+        Edge        : Position;
+        Ends        : Position;
+        Column_Size : Natural := 0;
+        Row_Size    : Natural := 0;
       end record;
 
       function Right_Angle_At (Row    : Camera.Rows;
@@ -77,7 +81,7 @@ package body Focus.HFD is
         for The_Column in Column .. Grid'last(2) loop
           if Grid(Row, The_Column) > Half_Flux then
             The_Right_Angle.Ends.Column := The_Column;
-            The_Right_Angle.Size := @ + 1;
+            The_Right_Angle.Column_Size := @ + 1;
           else
             exit;
           end if;
@@ -85,7 +89,7 @@ package body Focus.HFD is
         for The_Row in Row .. Grid'last(1) loop
           if Grid(The_Row, Column) > Half_Flux then
             The_Right_Angle.Ends.Row := The_Row;
-            The_Right_Angle.Size := @ + 1;
+            The_Right_Angle.Row_Size := @ + 1;
           else
             exit;
           end if;
@@ -100,16 +104,33 @@ package body Focus.HFD is
         for Column in Grid'range(2) loop
           for Row in Grid'range(1) loop
             The_Right_Angle := Right_Angle_At (Row, Column);
-            if The_Right_Angle.Size > Max_Right_Angle.Size then
+            if The_Right_Angle.Column_Size + The_Right_Angle.Row_Size >
+               Max_Right_Angle.Column_Size + Max_Right_Angle.Row_Size
+            then
               Max_Right_Angle := The_Right_Angle;
             end if;
           end loop;
         end loop;
-        Log.Write ("Max Right Angle Size:" & Max_Right_Angle.Size'image);
+        Log.Write ("Maximum right angle - Column size:" & Max_Right_Angle.Column_Size'image &
+                                      " - Row size:" & Max_Right_Angle.Row_Size'image);
         return Max_Right_Angle;
       end Evaluated_Max_Rigth_Angle;
 
       RA : constant Right_Angle := Evaluated_Max_Rigth_Angle;
+
+      function Is_Square return Boolean is
+        Squareness : Natural;
+      begin
+        if RA.Column_Size > RA.Row_Size then
+          Squareness := RA.Column_Size / RA.Row_Size;
+        else
+          Squareness := RA.Row_Size / RA.Column_Size;
+        end if;
+        return Squareness <= 2;
+      exception
+      when others =>
+        return False;
+      end Is_Square;
 
       function Evaluated_Offset return Position is
       begin
@@ -127,7 +148,15 @@ package body Focus.HFD is
       begin
         return Row    > RA.Edge.Row    and Row    < RA.Ends.Row and
                Column > RA.Edge.Column and Column < RA.Ends.Column;
-       end Is_In_RA;
+      end Is_In_RA;
+
+      function Is_In_Grid (HF_Diameter : Diameter;
+                           Center      : Natural) return Boolean is
+        Radius    : constant Natural := Natural(HF_Diameter) / 2;
+        Grid_Size : constant Natural := Natural(The_Grid_Size);
+      begin
+        return Radius < Center and (Radius + Center) < Grid_Size;
+      end Is_In_Grid;
 
       function Evaluated_Half_Flux_Diameter (Center : out Position) return Diameter is
         First_Column : Camera.Columns := RA.Edge.Column;
@@ -138,6 +167,14 @@ package body Focus.HFD is
         Row_Sum      : Huge_Natural := 0;
         The_Count    : Huge_Natural := 0;
       begin
+        if Is_Simulation then
+          Center := (Column => Camera.Columns'first,
+                     Row    => Camera.Rows'first);
+          return Simulated_HFD;
+        end if;
+        if not Is_Square then
+          return HFD_Not_Found;
+        end if;
         if First_Column > Offset.Column then
           First_Column := (@ - Offset.Column);
         else
@@ -169,7 +206,14 @@ package body Focus.HFD is
         end loop;
         Center := (Column => Camera.Columns (Column_Sum / The_Count),
                    Row    => Camera.Rows (Row_Sum / The_Count));
-        return Diameter (2.0 * NF.Sqrt (Float(The_Count) / Pi));
+        declare
+          HF_Diameter : constant Diameter := Diameter (2.0 * NF.Sqrt (Float(The_Count) / Pi));
+        begin
+          if Is_In_Grid (HF_Diameter, Natural(Center.Column)) and Is_In_Grid (HF_Diameter, Natural(Center.Row)) then
+            return HF_Diameter;
+          end if;
+          return HFD_Not_Found;
+        end;
       end Evaluated_Half_Flux_Diameter;
 
       The_Center : Position;
@@ -177,13 +221,15 @@ package body Focus.HFD is
       Half_Flux_Diameter : constant Diameter := Evaluated_Half_Flux_Diameter (The_Center);
 
     begin
-      Log.Write ("Half Flux:" & Half_Flux'image);
+      Log.Write ("Half flux:" & Half_Flux'image);
       Focus_Data.Set (Half_Flux);
-      Log.Write ("Half Flux Diameter:" & Half_Flux_Diameter'image);
+      Log.Write ("Half flux diameter:" & Half_Flux_Diameter'image);
       Log.Write ("Center - Row:" & The_Center.Row'image & " - Column:" & The_Center.Column'image);
       Focus_Data.Set (Half_Flux_Diameter);
     end;
   exception
+  when Focus_Error =>
+    null;
   when Occurrence: others =>
     Focus_Data.Set_Fatal (Occurrence);
   end Evaluate;

@@ -13,9 +13,8 @@
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
-with Error;
 with Section;
 
 package body Camera.Parameter is
@@ -24,34 +23,14 @@ package body Camera.Parameter is
   Sensitivity_Key   : constant String := "Sensitivity";
 
 
-  function Exposure_For (Key : String) return Exposure.Item is
-    Image : constant String := Section.String_Value_Of (Key);
-  begin
-    return Exposure.Value (Image);
-  exception
-  when others =>
-    Error.Raise_With ("Incorrect Exposure Time: " & Image);
-  end Exposure_For;
-
-
-  function Sensitivity_For (Key : String) return Sensitivity.Item is
-    Image : constant String := Section.String_Value_Of (Key);
-  begin
-    return Sensitivity.Value (Image);
-  exception
-  when others =>
-    Error.Raise_With ("Incorrect Sensitivity: " & Image);
-  end Sensitivity_For;
-
-
   procedure Define (Handle : Configuration.File_Handle) is
   begin
     Section.Set (Configuration.Handle_For (Handle, Camera_Id));
     if Section.Exists then
-      The_Exposure_Parameter := Exposure_For (Exposure_Time_Key);
-      Log.Write ("Exposure: " & The_Exposure_Parameter'image);
-      The_Sensitivity_Parameter := Sensitivity_For (Sensitivity_Key);
-      Log.Write ("Sensitivity: " & The_Sensitivity_Parameter'image);
+      The_Exposure_Parameter := Section.Exposure_Of (Exposure_Time_Key, Camera_Id);
+      Log.Write (Exposure_Time_Key & ": " & The_Exposure_Parameter'image);
+      The_Sensitivity_Parameter := Section.Sensitivity_Of (Sensitivity_Key, Camera_Id);
+      Log.Write (Sensitivity_Key & ": " & The_Sensitivity_Parameter'image);
     end if;
   end Define;
 

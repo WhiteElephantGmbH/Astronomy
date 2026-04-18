@@ -13,7 +13,7 @@
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with Ada.Real_Time;
 with Focal;
@@ -37,9 +37,11 @@ package body Focus is
   The_Control : access Control;
   The_Focuser : Focuser.Object_Access;
 
-  procedure Start (Device : Focuser.Object_Access) is
+  procedure Start (Device       : Focuser.Object_Access;
+                   Is_Simulated : Boolean := False) is
   begin
     The_Focuser := Device;
+    Is_Simulation := Is_Simulated;
     The_Control := new Control;
   end Start;
 
@@ -102,21 +104,24 @@ package body Focus is
   -- Control --
   -------------
 
+  The_Index : Positive; -- global for simulation
+
   task body Control is
 
-    HFD_Samples : constant HFD_Sample_Count := The_HFD_Samples;
-    HFD_Delta   : constant Diameter := 100;
-    HFD_Spread  : constant Natural := HFD_Samples / 2;
+    HFD_Samples   : constant HFD_Sample_Count := The_HFD_Samples;
+    Trigger_Level : constant Diameter := The_Trigger_Level;
+    Minimum_Delta : constant Diameter := The_Minimum_Delta;
 
-    The_HFD   : Evaluation.Vektor(1 .. HFD_Samples * 2); -- stop after samples * 2
-    The_Index : Natural;
+    The_HFD   : Evaluation.Vektor(1 .. HFD_Samples * Sample_Factor); -- stop after samples * 2
 
     Start_Position : constant Distance := The_Start_Position;
     Tolerance      : constant Distance := The_Tolerance;
     Position_Step  : constant Step := The_Position_Step;
     Max_Backlash   : constant Step := (Position_Step / abs Position_Step) * Step(Focal.Backlash'last);
 
-    Grid_Size : constant Camera.Square_Size := The_Grid_Size;
+    Camera_Grid_Size   : constant Camera.Square_Size := The_Grid_Size;
+    Camera_Exposure    : constant Exposure.Item := The_Exposure;
+    Camera_Sensitivity : constant Sensitivity.Item := The_Sensitivity;
 
     First_Index   : Positive;
     Minimum_Index : Positive;
@@ -125,22 +130,19 @@ package body Focus is
     function Found_Minimum return Boolean is
       The_Minimum   : Diameter := Diameter'last;
       First_Maximum : Diameter := Diameter'first;
-      Last_Maximum  : Diameter := Diameter'first;
-      Last_Index    : Natural;
+      The_Maximum   : Diameter := Diameter'first;
     begin
-      Log.Write ("First_Index:" & First_Index'image);
-      Log.Write ("The_Index:" & The_Index'image);
       for Index in First_Index .. The_Index loop
         if First_Maximum < The_HFD(Index) then
           First_Maximum := The_HFD(Index);
           First_Index := Index;
-        elsif First_Maximum > HFD_Delta then
+        elsif First_Maximum > Trigger_Level then
           exit;
         end if;
       end loop;
-      Log.Write ("First_Maximum:" & First_Maximum'image);
-      Log.Write ("First_Index:" & First_Index'image);
-      if First_Maximum <= HFD_Delta then
+      Log.Write ("First maximum:" & First_Maximum'image);
+      Log.Write ("First maximum index:" & First_Index'image);
+      if First_Maximum <= Trigger_Level then
         return False;
       end if;
       for Index in First_Index .. The_Index loop
@@ -149,24 +151,31 @@ package body Focus is
           Minimum_Index := Index;
         end if;
       end loop;
-      Log.Write ("The_Minimum:" & The_Minimum'image);
-      Log.Write ("Minimum_Index:" & Minimum_Index'image);
+      Log.Write ("Minimum:" & The_Minimum'image);
+      Log.Write ("Minimum index:" & Minimum_Index'image);
       for Index in Minimum_Index .. The_Index loop
-        if Last_Maximum < The_HFD(Index) then
-          Last_Maximum := The_HFD(Index);
-          Last_Index := Index;
+        if The_Maximum < The_HFD(Index) then
+          The_Maximum := The_HFD(Index);
         end if;
       end loop;
-      Log.Write ("Last_Maximum:" & Last_Maximum'image);
-      Log.Write ("Last_Index:" & Last_Index'image);
-      return (Minimum_Index - First_Index) >= HFD_Spread and (Last_Index - Minimum_Index) >= HFD_Spread and
-             (First_Maximum - The_Minimum) > HFD_Delta and (Last_Maximum - The_Minimum) > HFD_Delta;
+      Log.Write ("Maximum:" & The_Maximum'image);
+      if The_Index - First_Index > HFD_Samples then
+        declare
+          The_Delta : constant Diameter := The_Maximum - The_Minimum;
+        begin
+          if The_Delta < Minimum_Delta then
+            Raise_Error ("Focus: Delta too small:" & The_Delta'image);
+          end if;
+        end;
+        return True;
+      end if;
+      return False;
     end Found_Minimum;
 
 
     function Focus_Position return Distance is
-      First         : constant Positive := Minimum_Index - HFD_Spread;
-      Last          : constant Positive := Minimum_Index + HFD_Spread;
+      First         : constant Positive := First_Index;
+      Last          : constant Positive := The_Index;
       From_Position : constant Distance := Start_Position + (First - The_HFD'first) * Position_Step;
     begin
       return Evaluation.Best_For (Start_Position => From_Position,
@@ -174,7 +183,7 @@ package body Focus is
                                   HFD_Array      => The_HFD(First .. Last));
     exception
     when others =>
-      Raise_Error ("Focus calculation failed");
+      Raise_Error ("Focus: Calculation failed");
     end Focus_Position;
 
 
@@ -185,41 +194,50 @@ package body Focus is
 
     The_Wakeup_Time : RT.Time := RT.Clock + Delta_Time;
 
+    The_Warning_Count : Natural;
+
     The_Position : Distance;
 
     procedure Start_Evaluation is
     begin
-      The_Index := 0;
+      The_Index := The_HFD'first;
       First_Index := The_HFD'first;
       The_Position := Start_Position;
       if The_Position = Start_From_Actual then
         The_Position := The_Focuser.Actual_Position;
-      else
-        The_Focuser.Move_To (The_Position);
-        The_Wakeup_Time := RT.Clock + Delta_Time;
       end if;
-      Focus_Data.Set (Positioning);
+      The_Warning_Count := 0;
+      The_Focuser.Move_To (The_Position - Max_Backlash);
+      The_Wakeup_Time := RT.Clock + Delta_Time;
+      Focus_Data.Set (Starting);
     end Start_Evaluation;
 
 
-    --Simulated_HFD : constant Evaluation.Vektor := [500, 300, 200, 100, 200, 300, 400];
-
     procedure Evaluate_Position is
-    --Actual_HFD      : constant Diameter := Simulated_HFD(The_Index + 1);
-      Actual_HFD      : constant Diameter := Focus_Data.Evaluation.HFD;
       Actual_Position : constant Distance := The_Position;
+      Actual_HFD      : constant Diameter := Focus_Data.Evaluation.HFD;
     begin
-      if The_Index = The_HFD'last then
-        Raise_Error ("Focus position not found");
+      if Actual_HFD = Focus.HFD_Not_Found then
+        The_Warning_Count := @ + 1;
+        if The_Warning_Count = 3 then
+          Raise_Error ("Focus: No Star found");
+        end if;
+        Log.Warning ("HFD not found at" & Actual_Position'image);
+        Focus_Data.Set (Positioning);
+        return;
       end if;
-      Log.Write ("Evaluate_Position:" & Actual_Position'image);
-      The_Index := @ + 1;
+      The_Warning_Count := 0;
+      Log.Write ("Evaluate at position:" & Actual_Position'image);
       The_HFD(The_Index) := Actual_HFD;
       if The_Index >= HFD_Samples and then Found_Minimum then
         The_Position := Focus_Position - Max_Backlash;
         The_Focuser.Move_To (The_Position);
         Focus_Data.Set (Evaluated);
       else
+        if The_Index = The_HFD'last then
+          Raise_Error ("Focus: Position not found");
+        end if;
+        The_Index := @ + 1;
         The_Position := Actual_Position + Position_Step;
         The_Focuser.Move_To (The_Position);
         Focus_Data.Set (Positioning);
@@ -236,7 +254,7 @@ package body Focus is
     end At_Position;
 
   begin -- Control
-    Log.Write ("start");
+    Log.Write ("Start");
     loop
       select
         accept Start_Autofocus;
@@ -274,6 +292,16 @@ package body Focus is
             when Focuser.Disconnected =>
               null;
             end case;
+          when Starting =>
+            case The_Focuser.State is
+            when Focuser.Stopped =>
+              The_Focuser.Move_To (The_Position);
+              Focus_Data.Set (Positioning);
+            when Focuser.Moving =>
+              null;
+            when Focuser.Disconnected =>
+              Set_Error ("Focuser Disconnected");
+            end case;
           when Positioning =>
             case The_Focuser.State is
             when Focuser.Stopped =>
@@ -281,31 +309,38 @@ package body Focus is
                 Actual_Position : constant Distance := The_Focuser.Actual_Position;
               begin
                 if At_Position (Actual_Position) then
-                  Camera.Capture (Grid_Size);
+                  Camera.Capture (Camera_Grid_Size,
+                                  Camera_Exposure,
+                                  Camera_Sensitivity);
                   if Camera.Has_Error then
                     Set_Error (Camera.Error_Message);
                   else
                     Focus_Data.Set (Capturing);
                   end if;
                 else
-                  Set_Error ("Focuser positioning inaccurate - expected:" & The_Position'image &
-                                                           " - actual:" & Actual_Position'image);
+                  Set_Error ("Focuser: Position inaccurate - expected:" & The_Position'image &
+                                                         " - actual:" & Actual_Position'image);
                 end if;
               end;
             when Focuser.Moving =>
               null;
             when Focuser.Disconnected =>
-              Set_Error ("Focuser lost connection");
+              Set_Error ("Focuser Disconnected");
             end case;
           when Capturing =>
             case Camera.Actual_Information.State is
             when Camera.Cropped =>
               HFD.Evaluate (Camera.Captured);
-              if The_Position /= The_Focuser.Actual_Position then
-                Set_Error ("Focuser position moved");
-              else
-                Evaluate_Position;
-              end if;
+              declare
+                Actual_Position : constant Distance := The_Focuser.Actual_Position;
+              begin
+                if At_Position (Actual_Position) then
+                  Evaluate_Position;
+                else
+                  Set_Error ("Focuser: Position moved - expected:" & The_Position'image &
+                                                    " - actual:" & Actual_Position'image);
+                end if;
+              end;
             when Camera.Failed =>
               Set_Error (Camera.Error_Message);
             when others =>
@@ -358,7 +393,7 @@ package body Focus is
         The_Wakeup_Time := RT.Clock + Delta_Time;
       end select;
     end loop;
-    Log.Write ("finish");
+    Log.Write ("Finish");
   exception
   when Occurrance: others =>
     Log.Termination (Occurrance);
@@ -389,6 +424,31 @@ package body Focus is
   ----------
   -- Data --
   ----------
+
+  function Minimum_Start_Position return Distance is
+    Minimum_Position : constant Distance := 500;
+  begin
+    pragma Assert (Minimum_Position > Distance(Focal.Backlash'last));
+    if The_Position_Step < 0 then
+      return Minimum_Position + (abs The_Position_Step * The_HFD_Samples * Sample_Factor);
+    else
+      return Minimum_Position;
+    end if;
+  end Minimum_Start_Position;
+
+
+  function Simulated_HFD return Diameter is
+    Data : constant Evaluation.Vektor
+         := [130, 122, 121, 116, 114, 111, 107, 105, 104, 118, 109, 108, 107, 108, 105, 115, 125, 128, 130, 138, 143];
+  begin
+    if not Is_Simulation then
+      raise Program_Error;
+    elsif The_Index <= Data'last then
+      return Data(The_Index);
+    end if;
+    return Data(Data'last);
+  end Simulated_HFD;
+
 
   protected body Focus_Data is
 
@@ -450,8 +510,8 @@ package body Focus is
     procedure Set_Fatal (Item : Exceptions.Occurrence) is
       Message : constant String := Exceptions.Name_Of (Item);
     begin
-      Log.Error (Message);
-      Set_Error ("Internal_Error - " & Message);
+      Log.Error (Exceptions.Information_Of (Item));
+      Set_Error ("Internal Error - " & Message);
     end Set_Fatal;
 
 

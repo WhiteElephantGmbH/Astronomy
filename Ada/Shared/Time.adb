@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2012 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2012 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -13,13 +13,26 @@
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with Ada.Calendar.Time_Zones;
 with Site;
 with Text;
 
 package body Time is
+
+  function In_Future (Time_Offset : Duration) return Ada.Real_Time.Time is
+    use type Ada.Real_Time.Time;
+  begin
+    return Ada.Real_Time.Clock + Ada.Real_Time.To_Time_Span (Time_Offset);
+  end In_Future;
+
+
+  procedure Wait (Time_Spawn : Duration := For_Termination) is
+  begin
+    delay until Time.In_Future (Time_Offset => Time_Spawn);
+  end Wait;
+
 
   function "+" (Left  : Ut;
                 Right : Duration) return Ut is
@@ -65,7 +78,7 @@ package body Time is
 
 
   function Local_Time return Value is
-    Now         : constant Ada.Calendar.Time := Ada.Calendar.Clock;
+    Now         : constant Ada.Calendar.Time := Calendar_Now;
     The_Seconds : Ada.Calendar.Day_Duration;
     use all type Angle.Value;
     use type Angle.Hours;
@@ -75,15 +88,8 @@ package body Time is
                         Month   => Actual_Month,
                         Day     => Actual_Day,
                         Seconds => The_Seconds);
-    The_Time_Shift := Time_Shift (Now);
     return +(Angle.Hours(The_Seconds) / 3600.0);
   end Local_Time;
-
-
-  function Local_Shift return Duration is
-  begin
-    return The_Time_Shift;
-  end Local_Shift;
 
 
   function Local_Day return Day is
@@ -102,6 +108,12 @@ package body Time is
   begin
     return Actual_Year;
   end Local_Year;
+
+
+  function Local_Shift return Duration is
+  begin
+    return The_Time_Shift;
+  end Local_Shift;
 
 
   function Calendar_Value_Of (Image : String) return Calendar_Value is
@@ -139,6 +151,21 @@ package body Time is
   when others =>
     raise Illegal;
   end Calendar_Value_Of;
+
+
+  function Calendar_Now return Calendar_Value is
+    Now : constant Calendar_Value := Ada.Calendar.Clock;
+  begin
+    The_Time_Shift := Time_Shift (Now);
+    return Now;
+  end Calendar_Now;
+
+
+  function Duration_Since (Date : Calendar_Value) return Duration is
+    use type Calendar_Value;
+  begin
+    return Calendar_Now - Date;
+  end Duration_Since;
 
 
   --------------------------

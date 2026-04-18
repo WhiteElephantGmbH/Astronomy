@@ -13,52 +13,24 @@
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with Ada.Environment_Variables;
 with Ada.Text_IO;
 with Applications;
 with Configuration;
 with Directory;
+with Error;
 with File;
 with Network.Tcp.Servers;
 with Os.Process;
 with Site;
-with Text;
+with Time;
 with Unsigned;
 
 package body Stellarium is
 
   package IO renames Ada.Text_IO;
-
-  The_Magnitude_Maximum : Magnitude := 8.0; -- Default
-
-  procedure Set_Maximum (Item : Magnitude) is
-  begin
-    The_Magnitude_Maximum := Item;
-  end Set_Maximum;
-
-
-  function Magnitude_Maximum return Magnitude is
-  begin
-    return The_Magnitude_Maximum;
-  end Magnitude_Maximum;
-
-
-  The_Set_Satellite_Group : Text.String;
-
-
-  procedure Set_Satellite_Group (Name : String) is
-  begin
-    Log.Write ("Satellite Group: " & Name);
-    The_Set_Satellite_Group := [Name];
-  end Set_Satellite_Group;
-
-
-  function Satellite_Group return String is
-  begin
-    return The_Set_Satellite_Group.S;
-  end Satellite_Group;
 
 
   function Actual_Data_Directory return String is
@@ -73,10 +45,10 @@ package body Stellarium is
         Data_Directory : constant String := Ada.Environment_Variables.Value (Path_Variable);
       begin
         if not Directory.Exists (Data_Directory) then
-          Log.Error ("Data Directory " & Data_Directory & " not found");
+          Log.Error ("data directory " & Data_Directory & " not found");
           return "";
         end if;
-        Log.Write ("Data Directory " & Data_Directory & " used from " & Path_Variable);
+        Log.Write ("data directory " & Data_Directory & " used from " & Path_Variable);
         return Data_Directory;
       end;
     else
@@ -109,14 +81,26 @@ package body Stellarium is
                                                                Filename  => "user_locations",
                                                                Extension => "txt");
 
-  Satellites_Directory : constant File.Folder := Application_Data_Directory + "modules" + "Satellites";
-
-  Satellites_Json : constant String := File.Composure (Directory => Satellites_Directory,
-                                                       Filename  => "satellites",
-                                                       Extension => "json");
-
   Landscapes_Directory : constant String := Application_Data_Directory & File.Folder_Separator & "landscapes";
   Landscape_Directory  : constant File.Folder := Landscapes_Directory + Landscape_Name;
+
+
+  function Telescope_Location return Site.Telescope_Location is
+    Name : constant String := Text.Uppercase_Of (Landscape_Name);
+  begin
+    if Name in "CDK 1" | "CDK OST" then
+      return Site.Cdk_East;
+    elsif Name in "CDK 2" | "CDK WEST" then
+      return Site.Cdk_West;
+    elsif Name in "APO" then
+      return Site.Apo;
+    elsif Name in "HOME" | "BASADINGEN" then
+      return Site.Home;
+    else
+      return Site.Unknown;
+    end if;
+  end Telescope_Location;
+
 
   function Landscape_Config_Name return String is
   begin
@@ -124,34 +108,22 @@ package body Stellarium is
       Config_Name : constant String := File.Composure (Landscape_Directory, "landscape", "ini");
     begin
       if File.Exists (Config_Name) then
-        Log.Write ("Landscape configuration: " & Config_Name);
+        Log.Write ("landscape configuration: " & Config_Name);
         return Config_Name;
       else
-        Log.Warning ("Landscape configuration " & Config_Name & " not defined by user");
+        Log.Warning ("landscape configuration " & Config_Name & " not defined by user");
         return "";
       end if;
     end;
   exception
   when others =>
-    Log.Warning ("No landsape defined by user in " & Landscapes_Directory);
+    Log.Warning ("No landscape defined by user in " & Landscapes_Directory);
     return "";
   end Landscape_Config_Name;
 
   Landscape_Config  : constant Configuration.File_Handle := Configuration.Handle_For (Landscape_Config_Name);
   Landscape_Section : constant Configuration.Section_Handle := Configuration.Handle_For (Landscape_Config, "landscape");
   Location_Section  : constant Configuration.Section_Handle := Configuration.Handle_For (Landscape_Config, "location");
-
-
-  function Satellites_Filename return String is
-  begin
-    if Satellites_Json /= "" and then File.Exists (Satellites_Json) then
-      Log.Write ("Satellites filename: " & Satellites_Json);
-      return Satellites_Json;
-    else
-      Log.Warning ("No satellites defined");
-      return "";
-    end if;
-  end Satellites_Filename;
 
 
   function Search_Tolerance return Angle.Degrees is
@@ -186,7 +158,8 @@ package body Stellarium is
           Latitude_Image  : constant String       := Items(Text.First_Index);
           Longitude_Image : constant String       := Items(Text.First_Index + 1);
         begin
-          Site.Define (Site.Data'(Latitude  => Value_Of (Latitude_Image),
+          Site.Define (Site.Data'(Location  => Site.Unknown,
+                                  Latitude  => Value_Of (Latitude_Image),
                                   Longitude => Value_Of (Longitude_Image),
                                   Elevation => 0));
         end;
@@ -207,7 +180,8 @@ package body Stellarium is
       Altitude  : constant String := Configuration.Value_Of (Location_Section, "altitude");
     begin
       if Latitude /= "" and then Longitude /= "" and then Altitude /= "" then
-        Site.Define (Site.Data'(Latitude  => Angle.Value_Of (Latitude),
+        Site.Define (Site.Data'(Location  => Telescope_Location,
+                                Latitude  => Angle.Value_Of (Latitude),
                                 Longitude => Angle.Value_Of (Longitude),
                                 Elevation => Integer'value(Altitude)));
         return True;
@@ -238,7 +212,8 @@ package body Stellarium is
               Lon_Image : constant String := Items(Text.First_Index + 6);
               Alt_Image : constant String := Items(Text.First_Index + 7);
             begin
-              Site.Define (Site.Data'(Latitude  => Value_Of (Lat_Image(Lat_Image'first .. Lat_Image'last - 1),
+              Site.Define (Site.Data'(Location  => Telescope_Location,
+                                      Latitude  => Value_Of (Lat_Image(Lat_Image'first .. Lat_Image'last - 1),
                                                              Is_Positive => Lat_Image(Lat_Image'last) = 'N'),
                                       Longitude => Value_Of (Lon_Image(Lon_Image'first .. Lon_Image'last - 1),
                                                              Is_Positive => Lon_Image(Lon_Image'last) = 'E'),
@@ -275,52 +250,6 @@ package body Stellarium is
       Log.Write ("Location undefined");
     end if;
   end Read_Location;
-
-
-  The_Process_Id : Os.Process.Id;
-
-  function Startup (Filename : String;
-                    The_Port : Network.Port_Number) return Boolean is
-
-    The_Listener : Network.Tcp.Listener_Socket;
-    The_Client   : Network.Tcp.Socket;
-    The_Address  : Network.Ip_Address;
-
-  begin
-    begin
-      Network.Tcp.Create_Socket_For (The_Port, Network.Tcp.Raw, The_Listener);
-      begin
-        Network.Tcp.Accept_Client_From (The_Listener   => The_Listener,
-                                        The_Client     => The_Client,
-                                        Client_Address => The_Address,
-                                        The_Timeout    => 1.0);
-      exception
-      when others =>
-        Network.Tcp.Close (The_Listener);
-        raise; -- not started
-      end;
-      Network.Tcp.Close (The_Client);
-      Network.Tcp.Close (The_Listener);
-      return True; -- already started
-    exception
-    when others =>
-      null; -- not started
-    end;
-    The_Process_Id := Os.Process.Created (Filename);
-    return True;
-  exception
-  when others =>
-    return False;
-  end Startup;
-
-
-  procedure Shutdown is
-  begin
-    Os.Process.Terminate_With (The_Process_Id);
-  exception
-  when others =>
-    Log.Write ("already terminated");
-  end Shutdown;
 
 
   function Landscape_Filename return String is
@@ -362,6 +291,12 @@ package body Stellarium is
     end if;
     return Standard.Language.English;
   end Language;
+
+
+  function Port_Number return Network.Port_Number is
+  begin
+    return The_Port_Number;
+  end Port_Number;
 
 
   use type Angle.Signed;
@@ -413,17 +348,79 @@ package body Stellarium is
   end Message_Handler;
 
 
-  procedure Start is
+  The_Process_Id : Os.Process.Id;
+
+  function Is_Started return Boolean is
+
+    The_Listener : Network.Tcp.Listener_Socket;
+    The_Client   : Network.Tcp.Socket;
+    The_Address  : Network.Ip_Address;
+
   begin
-    Log.Write ("start - port:" & The_Port_Number'img);
-    Server.Start (Message_Handler'access, The_Port_Number);
-  end Start;
+    begin
+      Network.Tcp.Create_Socket_For (The_Port_Number, Network.Tcp.Raw, The_Listener);
+      begin
+        Network.Tcp.Accept_Client_From (The_Listener   => The_Listener,
+                                        The_Client     => The_Client,
+                                        Client_Address => The_Address,
+                                        The_Timeout    => 1.0);
+      exception
+      when others =>
+        Network.Tcp.Close (The_Listener);
+        raise; -- not started
+      end;
+      Network.Tcp.Close (The_Client);
+      Network.Tcp.Close (The_Listener);
+      Log.Write ("already started");
+      return True;
+    exception
+    when others =>
+      null;
+    end;
+    Log.Write ("start");
+    The_Process_Id := Os.Process.Created (The_Filename.S);
+    Time.Wait (1.0); -- wait for creation
+    return True;
+  exception
+  when others =>
+    return False;
+  end Is_Started;
 
 
-  function Port_Number return Network.Port_Number is
+  procedure Startup is
+    Filename : constant String := The_Filename.S;
   begin
-    return The_Port_Number;
-  end Port_Number;
+    if Filename = "" then
+      return;
+    end if;
+    Log.Write ("program file: """ & Filename & """");
+    if not File.Exists (Filename) then
+      Error.Raise_With ("Stellarium program file """ & Filename & """ not found");
+    end if;
+    if not Is_Started then
+      Error.Raise_With ("Stellarium not started");
+    end if;
+    begin
+      Server.Start (Message_Handler'access, The_Port_Number);
+      Log.Write ("start server - port:" & The_Port_Number'img);
+    exception
+    when Network.Tcp.Port_In_Use =>
+      Error.Raise_With ("Stellarion - TCP port" & Stellarium.Port_Number'img & " in use");
+    when others =>
+      Error.Raise_With ("Stellarion - could not start server");
+    end;
+  end Startup;
+
+
+  procedure Shutdown is
+  begin
+    Log.Write ("shutdown");
+    Server.Close; -- noop if never started
+    Os.Process.Terminate_With (The_Process_Id);
+  exception
+  when others =>
+    Log.Write ("already terminated");
+  end Shutdown;
 
 
   procedure Set (Direction : Space.Direction) is
@@ -443,13 +440,6 @@ package body Stellarium is
   when others =>
     null;
   end Set;
-
-
-  procedure Close is
-  begin
-    Server.Close;
-    Log.Write ("end");
-  end Close;
 
 begin
   Read_Location;

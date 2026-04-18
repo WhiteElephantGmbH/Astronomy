@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2014 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2014 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -13,7 +13,7 @@
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with Astro;
 
@@ -33,14 +33,19 @@ package Angle is
 
   Zero : constant Value;
 
+  Octant   : constant Value; -- 45 degrees
   Quadrant : constant Value; -- 90 degrees
 
   Semi_Circle : constant Value; -- 180 degrees
 
-  North : constant Value; -- 0 degrees
-  East  : constant Value; -- 90 degrees
-  South : constant Value; -- 180 degrees
-  West  : constant Value; -- 270 degrees
+  North      : constant Value; -- 0 degrees
+  North_East : constant Value; -- 45 degrees
+  East       : constant Value; -- 90 degrees
+  South_East : constant Value; -- 135 degrees
+  South      : constant Value; -- 180 degrees
+  South_West : constant Value; -- 225 degrees
+  West       : constant Value; -- 270 degrees
+  North_West : constant Value; -- 315 degrees
 
   One_Minute : constant Value;
 
@@ -146,13 +151,18 @@ private
 
   Epsilon : constant Value := 1;
 
+  Octant      : constant Value := 16#2000_0000#; -- 45 degrees
   Quadrant    : constant Value := 16#4000_0000#; -- 90 degrees
   Semi_Circle : constant Value := 16#8000_0000#; -- 180 degrees
   One_Minute  : constant Value := Quadrant / (90 * 60);
 
-  North : constant Value := Zero;
-  East  : constant Value := Quadrant;
-  South : constant Value := Semi_Circle;
-  West  : constant Value := 3 * Quadrant;
+  North      : constant Value := Zero;
+  North_East : constant Value := Octant;     -- 45 degrees
+  East       : constant Value := Quadrant;
+  South_East : constant Value := Octant * 3; -- 135 degrees
+  South      : constant Value := Semi_Circle;
+  South_West : constant Value := Octant * 5; -- 225 degrees
+  West       : constant Value := 3 * Quadrant;
+  North_West : constant Value := Octant * 7; -- 315 degrees
 
 end Angle;

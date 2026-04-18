@@ -13,7 +13,7 @@
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 private package Camera.Canon is
 
@@ -22,11 +22,11 @@ private package Camera.Canon is
   function Is_Available return Boolean;
 
   procedure Capture_Picture (Filename  : String;
-                             Time      : Exposure.Item;
+                             Tv        : Exposure.Item;
                              Parameter : Sensitivity.Item); -- ISO value
 
   procedure Capture_Grid (Size      : Square_Size;
-                          Time      : Exposure.Item;
+                          Tv        : Exposure.Item;
                           Parameter : Sensitivity.Item); -- ISO value
 
   procedure Stop_Capture;

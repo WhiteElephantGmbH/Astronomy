@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2025 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                               (c) 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -13,26 +13,14 @@
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
-pragma Build (Description => "GID test",
-              Version     => (1, 0, 0, 0),
-              Kind        => Console,
-              Icon        => False,
-              Compiler    => "GNATPRO\23.0");
+with Configuration;
 
-with Ada.Text_IO;
-with Canon;
-with Exceptions;
+package Satellite.Parameter is
 
-procedure Canon_Test is
-begin
-  Ada.Text_IO.Put_Line ("Canon Test");
-  Ada.Text_IO.Put_Line ("==========");
-  Canon.Capture (Filename => "D:\Temp\Picture.CR2",
-                 Exposure => 0.1,
-                 Iso      => 3200);
-exception
-when Item: others =>
-  Ada.Text_IO.Put_Line (Exceptions.Information_Of (Item));
-end Canon_Test;
+  procedure Define (Handle : Configuration.File_Handle);
+
+  procedure Defaults (Put : access procedure (Item : String));
+
+end Satellite.Parameter;

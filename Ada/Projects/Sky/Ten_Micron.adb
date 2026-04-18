@@ -2,11 +2,12 @@
 -- *                       (c) 2022 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with Error;
 with Network.Tcp;
 with Satellite;
+with Sky.Data;
 with Text;
 
 package body Ten_Micron is
@@ -37,6 +38,13 @@ package body Ten_Micron is
   begin
     return Is_In_Expert_Mode;
   end Is_Expert_Mode;
+
+
+  function Is_Simulation_Mode return Boolean is
+  begin
+    return Is_In_Simulation_Mode;
+  end Is_Simulation_Mode;
+
 
 
   procedure Set_Status (Item : State) is
@@ -703,17 +711,19 @@ package body Ten_Micron is
   end End_Focusing;
 
 
-  procedure Load_Tle (Name : String) is
+  procedure Load_Tle (Object : Sky.Object) is
+
+    Number : constant Satellite.Number := Satellite.Number(Sky.Data.Neo_Number_Of (Object));
 
     function Two_Line_Element return String is
       Eol  : constant String := "$0A";
-      Tle : constant Satellite.Tle := Satellite.Tle_Of (Name);
+      Tle : constant Satellite.Tle := Satellite.Tle_Of (Number);
     begin
-      return Name & Eol & Tle(1) & Eol & Tle(2) & Eol;
+      return Satellite.Tle_Name_Of (Number) & Eol & Tle(1) & Eol & Tle(2) & Eol;
     end Two_Line_Element;
 
   begin
-    Log.Write ("load TLE of satellite " & Name);
+    Log.Write ("load TLE of satellite " & Satellite.Name_Of (Number));
     Execute (Lx200.Tle_Load_Satellite, Two_Line_Element, Expected => "V");
   exception
   when Error.Occurred =>

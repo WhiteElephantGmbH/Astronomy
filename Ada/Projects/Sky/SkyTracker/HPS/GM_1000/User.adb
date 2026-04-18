@@ -13,7 +13,7 @@
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with Angle;
 with Ada.Real_Time;
@@ -306,7 +306,7 @@ package body User is
           Is_Focusing := False;
           Setup_Command_Is_Active := False;
         end if;
-      when Focus.Positioning | Focus.Capturing | Focus.Evaluated | Focus.Failed =>
+      when Focus.Starting | Focus.Positioning | Focus.Capturing | Focus.Evaluated | Focus.Failed =>
         null;
       end case;
     end Show_Focus_Information;
@@ -659,10 +659,10 @@ package body User is
   end Show_Description;
 
 
-  procedure Show_Error (Image : String) is
+  procedure Show_Error (Message : String := Error.Message) is
   begin
-    Log.Warning ("Error: " & Image);
-    Gui.Message_Box (Image);
+    Log.Warning ("Error: " & Message);
+    Gui.Message_Box (Message);
     Gui.Beep;
   end Show_Error;
 

@@ -13,10 +13,11 @@
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with Ada.Calendar;
 with Astro;
+with Camera;
 with File;
 with Fits;
 with Site;
@@ -36,6 +37,7 @@ package body Picture is
                     Height : Angle.Degrees;
                     Width  : Angle.Degrees) is
   begin
+    Log.Write ("Define Filename: " & Name);
     The_Filename := [Name];
     The_Height := Height;
     The_Width := Width;
@@ -43,8 +45,14 @@ package body Picture is
 
 
   function Filename return String is
+    Name             : constant String := The_Filename.S;
+    Extension        : constant String := File.Extension_Of (Name);
+    Camera_Extension : constant String := Camera.File_Extension;
   begin
-    return The_Filename.S;
+    if Extension = "" and Camera_Extension /= "" then
+      return Name & '.' & Camera.File_Extension;
+    end if;
+    return Name;
   end Filename;
 
 

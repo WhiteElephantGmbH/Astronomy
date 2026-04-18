@@ -13,7 +13,7 @@
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with Astro;
 
@@ -66,7 +66,7 @@ package body Focus.Evaluation is
     Best_E : REAL := Error (Start_Position, Position_Step, HFD_Array, X0, A, B);
 
   begin
-    Log.Write ("Best_Of: " & HFD_Array'image);
+    Log.Write ("Samples: " & HFD_Array'image);
     for Unused in 1 .. 200 loop
       declare
         Try_X0 : constant REAL := X0 + Inc;

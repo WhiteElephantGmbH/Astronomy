@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2025 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2025 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -20,122 +20,167 @@ with Text;
 package body Exposure is
 
   function Value (Image : String) return Item is
+    Is_Exact     : constant Boolean := not Text.Found ('.', Image);
     Parts        : constant Text.Strings := Text.Strings_Of (Image, Separator => '/');
     The_Duration : Duration;
+    Force_Timer  : Boolean := False;
   begin
     The_Duration := Duration'value(Parts(1));
     if Parts.Count = 2 then
       The_Duration := @ / Duration'value(Parts(2));
+    else
+      Force_Timer := Text.Found ('.', Image);
     end if;
     return The_Item : Item do
-      The_Item := Value (The_Duration);
+      The_Item := Value (The_Duration, Is_Exact, Force_Timer);
     end return;
   end Value;
 
 
-  function Value (The_Time : Duration) return Item is
+  function Value (The_Time    : Duration;
+                  Is_Exact    : Boolean;
+                  Force_Timer : Boolean := False) return Item is
     Tus      : constant Natural := Natural(The_Time * 1_000_000.0); -- in Microseconds
     The_Tv   : Tv;
     The_Item : Item;
   begin
     The_Item.Time_Value := The_Time;
     case Tus is
-    when  0_800_000 =>
+    when 30_000_000 =>
+      The_Tv := Tv_30_S;
+    when 25_000_000 =>
+      The_Tv := Tv_25_S;
+    when 20_000_000 =>
+      The_Tv := Tv_20_S;
+    when 15_000_000 =>
+      The_Tv := Tv_15_S;
+    when 13_000_000 =>
+      The_Tv := Tv_13_S;
+    when 10_000_000 =>
+      The_Tv := Tv_10_S;
+    when 8_000_000 =>
+      The_Tv := Tv_8_S;
+    when 6_000_000 =>
+      The_Tv := Tv_6_S;
+    when 5_000_000 =>
+      The_Tv := Tv_5_S;
+    when 4_000_000 =>
+      The_Tv := Tv_4_S;
+    when 3_200_000 =>
+      The_Tv := Tv_3_2_S;
+    when 2_500_000 =>
+      The_Tv := Tv_2_5_S;
+    when 2_000_000 =>
+      The_Tv := Tv_2_S;
+    when 1_600_000 =>
+      The_Tv := Tv_1_6_S;
+    when 1_300_000 =>
+      The_Tv := Tv_1_3_S;
+    when 1_000_000 =>
+      The_Tv := Tv_1_S;
+    when 0_800_000 =>
       The_Tv := Tv_0_8_S;
-    when  0_600_000 =>
+    when 0_600_000 =>
       The_Tv := Tv_0_6_S;
-    when  0_500_000 =>
+    when 0_500_000 =>
       The_Tv := Tv_0_5_S;
-    when  0_400_000 =>
+    when 0_400_000 =>
       The_Tv := Tv_0_4_S;
-    when  0_300_000 =>
+    when 0_300_000 =>
       The_Tv := Tv_0_3_S;
-    when  0_250_000 =>
+    when 0_250_000 =>
       The_Tv := Tv_D_4_S;
-    when  0_200_000 =>
+    when 0_200_000 =>
       The_Tv := Tv_D_5_S;
-    when  0_166_666 =>
+    when 0_166_666 =>
       The_Tv := Tv_D_6_S;
-    when  0_125_000 =>
+    when 0_125_000 =>
       The_Tv := Tv_D_8_S;
-    when  0_100_000 =>
+    when 0_100_000 =>
       The_Tv := Tv_D_10_S;
-    when  0_076_923 =>
+    when 0_076_923 =>
       The_Tv := Tv_D_13_S;
-    when  0_066_666 =>
+    when 0_066_666 =>
       The_Tv := Tv_D_15_S;
-    when  0_050_000 =>
+    when 0_050_000 =>
       The_Tv := Tv_D_20_S;
-    when  0_040_000 =>
+    when 0_040_000 =>
       The_Tv := Tv_D_25_S;
-    when  0_033_333 =>
+    when 0_033_333 =>
       The_Tv := Tv_D_30_S;
-    when  0_025_000 =>
+    when 0_025_000 =>
       The_Tv := Tv_D_40_S;
-    when  0_020_000 =>
+    when 0_020_000 =>
       The_Tv := Tv_D_50_S;
-    when  0_016_666 =>
+    when 0_016_666 =>
       The_Tv := Tv_D_60_S;
-    when  0_012_500 =>
+    when 0_012_500 =>
       The_Tv := Tv_D_80_S;
-    when  0_010_000 =>
+    when 0_010_000 =>
       The_Tv := Tv_D_100_S;
-    when  0_008_000 =>
+    when 0_008_000 =>
       The_Tv := Tv_D_125_S;
-    when  0_006_250 =>
+    when 0_006_250 =>
       The_Tv := Tv_D_160_S;
-    when  0_005_000 =>
+    when 0_005_000 =>
       The_Tv := Tv_D_200_S;
-    when  0_004_000 =>
+    when 0_004_000 =>
       The_Tv := Tv_D_250_S;
-    when  0_003_125 =>
+    when 0_003_125 =>
       The_Tv := Tv_D_320_S;
-    when  0_002_500 =>
+    when 0_002_500 =>
       The_Tv := Tv_D_400_S;
-    when  0_002_000 =>
+    when 0_002_000 =>
       The_Tv := Tv_D_500_S;
-    when  0_001_562 =>
+    when 0_001_562 =>
       The_Tv := Tv_D_640_S;
-    when  0_001_250 =>
+    when 0_001_250 =>
       The_Tv := Tv_D_800_S;
-    when  0_001_000 =>
+    when 0_001_000 =>
       The_Tv := Tv_D_1000_S;
-    when  0_000_800 =>
+    when 0_000_800 =>
       The_Tv := Tv_D_1250_S;
-    when  0_000_625 =>
+    when 0_000_625 =>
       The_Tv := Tv_D_1600_S;
-    when  0_000_500 =>
+    when 0_000_500 =>
       The_Tv := Tv_D_2000_S;
-    when  0_000_400 =>
+    when 0_000_400 =>
       The_Tv := Tv_D_2500_S;
-    when  0_000_312 =>
+    when 0_000_312 =>
       The_Tv := Tv_D_3200_S;
-    when  0_000_250 =>
+    when 0_000_250 =>
       The_Tv := Tv_D_4000_S;
-    when  0_000_200 =>
+    when 0_000_200 =>
       The_Tv := Tv_D_5000_S;
-    when  0_000_156 =>
+    when 0_000_156 =>
       The_Tv := Tv_D_6400_S;
-    when  0_000_125 =>
+    when 0_000_125 =>
       The_Tv := Tv_D_8000_S;
-    when  0_000_100 =>
+    when 0_000_100 =>
       The_Tv := TV_D_10000_S;
-    when  0_000_078 =>
+    when 0_000_078 =>
       The_Tv := TV_D_12800_S;
-    when  0_000_062 =>
+    when 0_000_062 =>
       The_Tv := TV_D_16000_S;
-    when  0_000_050 =>
+    when 0_000_050 =>
       The_Tv := TV_D_20000_S;
-    when  0_000_039 =>
+    when 0_000_039 =>
       The_Tv := TV_D_25600_S;
-    when  0_000_031 =>
+    when 0_000_031 =>
       The_Tv := TV_D_32000_S;
     when others =>
+      if Is_Exact then
+        raise Constraint_Error;
+      end if;
       The_Item.Mode := Timer_Mode;
       return The_Item;
     end case;
-    The_Item.T_Value := The_Tv;
-    The_Item.Mode := Tv_Mode;
+    if Force_Timer then
+      The_Item.Mode := Timer_Mode;
+    else
+      The_Item.T_Value := The_Tv;
+      The_Item.Mode := Tv_Mode;
+    end if;
     return The_Item;
   end Value;
 
@@ -176,7 +221,9 @@ package body Exposure is
         Image : constant String := V.T_Value'image;
       begin
         case V.T_Value is
-        when Tv_0_8_S .. Tv_0_3_S =>
+        when Tv_30_S .. Tv_4_S | Tv_2_S | Tv_1_S =>
+          S.Put (Image(Image'first + 3 .. Image'last - 2));
+        when Tv_3_2_S | Tv_2_5_S | Tv_1_6_S | Tv_1_3_S | Tv_0_8_S .. Tv_0_3_S =>
           S.Put ([Image(Image'first + 3), '.', Image(Image'last - 2)]);
         when Tv_D_4_S .. TV_D_32000_S =>
           S.Put ("1/" & Image(Image'first + 5 .. Image'last - 2));

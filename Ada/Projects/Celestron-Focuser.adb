@@ -13,10 +13,11 @@
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with Exceptions;
 with Serial_Io;
+with Time;
 with Traces;
 with Unsigned;
 
@@ -468,7 +469,7 @@ package body Celestron.Focuser is
           accept Stop;
           exit;
         or
-          delay 1.0;
+          delay until Time.In_Future (1.0);
           Get_Available_State;
         end select;
       exception

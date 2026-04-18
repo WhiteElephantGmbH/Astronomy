@@ -13,12 +13,12 @@
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 pragma Build (Description => "SkyTracker control program for CDK700 (PWI4 1.6)",
-              Version     => (4, 1, 5, 9),
+              Version     => (4, 1, 6, 0),
               Kind        => Windows,
-              Libraries   => ("AWS64", "COLL64"),
+              Libraries   => ("AWSS64", "COLL64"),
               Compiler    => "GNATPRO\23.0");
 
 with Control;

@@ -1,14 +1,11 @@
 -- *********************************************************************************************************************
--- *                       (c) 2016 .. 2022 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2021 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
-package Monitor is
+package Request is
 
-   procedure Start;
+  procedure Work;
 
-   procedure Stop;
-
-end Monitor;
-
+end Request;

@@ -13,7 +13,7 @@
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with Error;
 with Name;
@@ -32,7 +32,7 @@ package User is
 
   subtype Percent is Progress.Percent;
 
-  procedure Show_Error (The_Text : String := Error.Message);
+  procedure Show_Error (Message : String := Error.Message);
 
   procedure Show (The_Progress : Percent);
 
