@@ -254,9 +254,11 @@ package body Neo is
 
   function Read return Boolean is
   begin
-    Satellite.Read;
-    Add_Objects;
-    Neo_Read := True;
+    if Satellite.Tracking_Enabled then
+      Satellite.Read;
+      Add_Objects;
+      Neo_Read := True;
+    end if;
     return True;
   exception
   when Error.Occurred =>
