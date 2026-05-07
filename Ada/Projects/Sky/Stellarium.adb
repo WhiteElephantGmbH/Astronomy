@@ -390,15 +390,14 @@ package body Stellarium is
   procedure Startup is
     Filename : constant String := The_Filename.S;
   begin
-    if Filename = "" then
-      return;
-    end if;
-    Log.Write ("program file: """ & Filename & """");
-    if not File.Exists (Filename) then
-      Error.Raise_With ("Stellarium program file """ & Filename & """ not found");
-    end if;
-    if not Is_Started then
-      Error.Raise_With ("Stellarium not started");
+    if Filename /= "" then
+      Log.Write ("program file: """ & Filename & """");
+      if not File.Exists (Filename) then
+        Error.Raise_With ("Stellarium program file """ & Filename & """ not found");
+      end if;
+      if not Is_Started then
+        Error.Raise_With ("Stellarium not started");
+      end if;
     end if;
     begin
       Server.Start (Message_Handler'access, The_Port_Number);
