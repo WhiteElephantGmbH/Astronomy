@@ -19,6 +19,10 @@ private with AWS.Messages;
 
 package PWI4 is
 
+  Minimum_Version : constant String := "4.1.9.10";
+
+  function Version_Number_Of (Image : String) return Natural;
+
   Request_Rate : constant := 2; -- per second
 
   Arc_Second_Delta : constant := 0.000_1;

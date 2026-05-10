@@ -80,7 +80,7 @@ private package PWI4.Protocol is
     Is_Slewing          : Boolean;
     Is_Tracking         : Boolean;
     Axis_Is_Enabled     : Axis_Enabled;
-    Axis_Is_Initialized : Axis_Enabled;
+    Axis_Is_Initialized : Axis_Initialized;
   end record with Pack;
 
   type Spiral_Data is record
