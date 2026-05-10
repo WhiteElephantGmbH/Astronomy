@@ -20,7 +20,7 @@ with Traces;
 with Text;
 
 package body PWI4.Protocol is
-  
+
   package Log_Response is new Traces ("PWI.Response");
 
   procedure Log_Write (Message : String) is
@@ -414,12 +414,11 @@ package body PWI4.Protocol is
         Log_Write ("pwi4.version=" & Next_Value);
       when I_Version_Field =>
         declare
-          Index  : constant Natural := Next_Index;
-          Factor : constant Natural := (case Index is when 0 => 10000, when 1 => 1000, when 2 => 100, when others => 1);
-          Field  : constant String := Next_Value;
+          Index : constant Natural := Next_Index;
+          Field : constant String := Next_Value;
         begin
           Log_Write ("pwi4.version_field[" & Image_Of (Index) & "]=" & Field);
-          The_Version := @ + Factor * Natural'value(Field);
+          The_Version := @ + Version_Factor_Of (Index) * Natural'value(Field);
         exception
         when others =>
           raise Parsing_Error;
@@ -943,8 +942,9 @@ package body PWI4.Protocol is
     System.Set (The_Response);
     Log_Response.Normal;
     if The_Version < Version_Number_Of (Minimum_Version) then
+      Log_Error (Data);
       System.Set_Error;
-      Set_Error ("PWI4 version at least " & Minimum_Version);
+      Set_Error ("PWI4 Version < " & Minimum_Version);
       return False;
     end if;
     return True;

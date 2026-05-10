@@ -26,19 +26,6 @@ package body PWI4 is
 
   package Log is new Traces ("PWI");
 
-
-  function Version_Number_Of (Image : String) return Natural is
-    The_Image : String := Image;
-  begin
-    for Character of The_Image loop
-      if Character = '.' then
-        Character := '_';
-      end if;
-    end loop;
-    return Natural'value(The_Image);
-  end Version_Number_Of;
-
-
   use type Text.String;
 
   The_Ip_Address_And_Port : Text.String := ["127.0.0.1:8220"]; -- Default
@@ -224,5 +211,17 @@ package body PWI4 is
       return '2';
     end case;
   end Image_Of;
+
+
+  function Version_Number_Of (Image : String) return Natural is
+    The_Image : String := Image;
+  begin
+    for Character of The_Image loop
+      if Character = '.' then
+        Character := '_';
+      end if;
+    end loop;
+    return Natural'value(The_Image);
+  end Version_Number_Of;
 
 end PWI4;
