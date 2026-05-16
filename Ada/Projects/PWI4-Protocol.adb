@@ -373,6 +373,23 @@ package body PWI4.Protocol is
     end Next_Identifier;
 
 
+    function Next_Index return Natural is
+    begin
+      if The_Character /= '[' then
+        raise Parsing_Error;
+      end if;
+      return Unused : Natural := Natural'value([Next_Character]) do
+        if not (Next_Character = ']' and then Next_Character = '=') then
+          raise Parsing_Error;
+        end if;
+      end return;
+    exception
+    when others =>
+      Log_Error ("incorrect index");
+      raise Parsing_Error;
+    end Next_Index;
+
+
     The_Value : Text.String;
 
     function Value return String is
@@ -396,6 +413,7 @@ package body PWI4.Protocol is
 
 
     The_Response : Response;
+    The_Version  : Natural := 0;
 
     procedure Parse_Pwi4 is
     begin
@@ -403,7 +421,16 @@ package body PWI4.Protocol is
       when I_Version =>
         Log_Write ("pwi4.version=" & Next_Value);
       when I_Version_Field =>
-        Log_Write ("pwi4.version_field=" & Next_Value);
+        declare
+          Index : constant Natural := Next_Index;
+          Field : constant String := Next_Value;
+        begin
+          Log_Write ("pwi4.version_field[" & Image_Of (Index) & "]=" & Field);
+          The_Version := @ + Version_Factor_Of (Index) * Natural'value(Field);
+        exception
+        when others =>
+          raise Parsing_Error;
+        end;
       when others =>
         raise Parsing_Error;
       end case;
@@ -963,6 +990,12 @@ package body PWI4.Protocol is
     end loop;
     System.Set (The_Response);
     Log_Response.Normal;
+    if The_Version < Version_Number_Of (Minimum_Version) then
+      Log_Error (Data);
+      System.Set_Error;
+      Set_Error ("PWI4 Version < " & Minimum_Version);
+      return False;
+    end if;
     return True;
   exception
   when Item: others =>
@@ -1057,24 +1090,26 @@ package body PWI4.Protocol is
         Log.Write ("  Height    : " & Image_Of (Data.Site.Height));
         Log.Write ("  Lmst      : " & Image_Of (Data.Site.Lmst));
         Log.Write ("Mount");
-        Log.Write ("  Update_Count     : " & Image_Of (Data.Mount.Count));
-        Log.Write ("  Is_Connected     : " & Image_Of (Data.Mount.Flags.Is_Connected));
-        Log.Write ("  Is_Slewing       : " & Image_Of (Data.Mount.Flags.Is_Slewing));
-        Log.Write ("  Is_Tracking      : " & Image_Of (Data.Mount.Flags.Is_Tracking));
-        Log.Write ("  Ra               : " & Image_Of (Data.Mount.Ra));
-        Log.Write ("  Dec              : " & Image_Of (Data.Mount.Dec));
-        Log.Write ("  Ra_Target        : " & Image_Of (Data.Mount.Ra_Target));
-        Log.Write ("  Dec_Target       : " & Image_Of (Data.Mount.Dec_Target));
-        Log.Write ("  Ra_J2000         : " & Image_Of (Data.Mount.Ra_J2000));
-        Log.Write ("  Dec_J2000        : " & Image_Of (Data.Mount.Dec_J2000));
-        Log.Write ("  Azmimuth         : " & Image_Of (Data.Mount.Azimuth));
-        Log.Write ("  Altitude         : " & Image_Of (Data.Mount.Altitude));
-        Log.Write ("  Axis_0_Enabled   : " & Image_Of (Data.Mount.Flags.Axis_Is_Enabled(0)));
-        Log.Write ("  Axis_0_Position  : " & Image_Of (Data.Mount.Axis(0).Position));
-        Log.Write ("  Axis_1_Enabled   : " & Image_Of (Data.Mount.Flags.Axis_Is_Enabled(1)));
-        Log.Write ("  Axis_1_Position  : " & Image_Of (Data.Mount.Axis(1).Position));
-        Log.Write ("  Field_Angle      : " & Image_Of (Data.Mount.Field_Angle_At_Target));
-        Log.Write ("  Field_Angle_Rate : " & Image_Of (Data.Mount.Field_Angle_Rate_At_Target));
+        Log.Write ("  Update_Count       : " & Image_Of (Data.Mount.Count));
+        Log.Write ("  Is_Connected       : " & Image_Of (Data.Mount.Flags.Is_Connected));
+        Log.Write ("  Is_Slewing         : " & Image_Of (Data.Mount.Flags.Is_Slewing));
+        Log.Write ("  Is_Tracking        : " & Image_Of (Data.Mount.Flags.Is_Tracking));
+        Log.Write ("  Ra                 : " & Image_Of (Data.Mount.Ra));
+        Log.Write ("  Dec                : " & Image_Of (Data.Mount.Dec));
+        Log.Write ("  Ra_Target          : " & Image_Of (Data.Mount.Ra_Target));
+        Log.Write ("  Dec_Target         : " & Image_Of (Data.Mount.Dec_Target));
+        Log.Write ("  Ra_J2000           : " & Image_Of (Data.Mount.Ra_J2000));
+        Log.Write ("  Dec_J2000          : " & Image_Of (Data.Mount.Dec_J2000));
+        Log.Write ("  Azmimuth           : " & Image_Of (Data.Mount.Azimuth));
+        Log.Write ("  Altitude           : " & Image_Of (Data.Mount.Altitude));
+        Log.Write ("  Axis_0_Enabled     : " & Image_Of (Data.Mount.Flags.Axis_Is_Enabled(0)));
+        Log.Write ("  Axis_0_Initialized : " & Image_Of (Data.Mount.Flags.Axis_Is_Initialized(0)));
+        Log.Write ("  Axis_0_Position    : " & Image_Of (Data.Mount.Axis(0).Position));
+        Log.Write ("  Axis_1_Enabled     : " & Image_Of (Data.Mount.Flags.Axis_Is_Enabled(1)));
+        Log.Write ("  Axis_1_Initialized : " & Image_Of (Data.Mount.Flags.Axis_Is_Initialized(1)));
+        Log.Write ("  Axis_1_Position    : " & Image_Of (Data.Mount.Axis(1).Position));
+        Log.Write ("  Field_Angle        : " & Image_Of (Data.Mount.Field_Angle_At_Target));
+        Log.Write ("  Field_Angle_Rate   : " & Image_Of (Data.Mount.Field_Angle_Rate_At_Target));
         Log.Write ("Focuser");
         Log.Write ("  Exists       : " & Image_Of (Data.Focuser.Exists));
         Log.Write ("  Is_Connected : " & Image_Of (Data.Focuser.Is_Connected));

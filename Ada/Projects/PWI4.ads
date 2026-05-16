@@ -19,6 +19,8 @@ private with AWS.Messages;
 
 package PWI4 is
 
+  Minimum_Version : constant String := "4.1.6.99"; -- must match Version_Factor_Of
+
   Request_Rate : constant := 2; -- per second
 
   Arc_Second_Delta : constant := 0.000_1;
@@ -132,5 +134,15 @@ private
   function Image_Of (The_Port : Port) return Character;
 
   procedure Set_Error (Message : String);
+
+  function Version_Number_Of (Image : String) return Natural;
+
+  subtype Version_Index is Natural range 0 .. 3;
+
+  function Version_Factor_Of (Index : Version_Index) return Natural is (case Index is
+    when 0 => 10000,
+    when 1 => 1000,
+    when 2 => 100,
+    when 3 => 1);
 
 end PWI4;
