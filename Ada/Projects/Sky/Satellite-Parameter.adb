@@ -24,7 +24,7 @@ package body Satellite.Parameter is
   procedure Define (Handle : Configuration.File_Handle) is
   begin
     Section.Set (Configuration.Handle_For (Handle, Id));
-    Set_Groups (Section.String_Of (Groups_Key, Id));
+    Set_Groups (Section.String_Value_Of (Groups_Key));
   end Define;
 
 

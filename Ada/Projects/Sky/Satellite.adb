@@ -182,8 +182,19 @@ package body Satellite is
       end if;
       The_Groups := @ + The_Group;
     end loop;
-    Log.Write ("Groups: " & Image_Of (The_Groups));
+    if Tracking_Enabled then
+      Log.Write ("groups: " & Image_Of (The_Groups));
+    else
+      Log.Warning ("tracking disabled");
+    end if;
   end Set_Groups;
+
+
+  function Tracking_Enabled return Boolean is
+    use type Groups.Set;
+  begin
+    return The_Groups /= Groups.Empty;
+  end Tracking_Enabled;
 
 
   procedure Read_Group (From : Group) is
@@ -220,7 +231,7 @@ package body Satellite is
         Age_Of_Data      : constant Hours := Time.Duration_Since (Last_Update) / Time.One_Hour;
         use type Groups.Set;
       begin
-        Log.Write ("Age of data =" & Age_Of_Data'image & " hours");
+        Log.Write ("age of data =" & Age_Of_Data'image & " hours");
         if Age_Of_Data < Maximum_Data_Age and then Actual_Groups = The_Groups then
           Initialize_Objects;
           return;
@@ -231,7 +242,7 @@ package body Satellite is
     for The_Group of The_Groups loop
       Read_Group (The_Group);
     end loop;
-    Log.Write ("Number of visible satellites:" & Tle_Map.Length'image);
+    Log.Write ("number of visible:" & Tle_Map.Length'image);
     Actual_Groups := The_Groups;
     Last_Update := Time.Calendar_Now;
     Initialize_Objects;
@@ -249,7 +260,7 @@ package body Satellite is
   begin
     if not Tle_Map.Is_Empty and then not (Object < The_Objects) then
       Read ("CATNR", Text.Trimmed(Object'image));
-      Log.Write ("Add" & Object'image);
+      Log.Write ("add" & Object'image);
       Add_Object (Object);
     end if;
   end Read;
@@ -276,6 +287,9 @@ package body Satellite is
   function Name_Of (Object : Number) return String is
     Id : constant String := "   " & Object'image;
   begin
+    if Tle_Map.Is_Empty then
+      return "";
+    end if;
     return Id(Id'last - 4 .. Id'last) & " " & (Tle_Name_Of (Object));
   end Name_Of;
 

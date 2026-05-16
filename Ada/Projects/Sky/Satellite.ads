@@ -38,6 +38,8 @@ package Satellite is
 
   function Name_Of (Object : Number) return String;
 
+  function Tracking_Enabled return Boolean;
+
 private
   Id : constant String := "Satellite";
 

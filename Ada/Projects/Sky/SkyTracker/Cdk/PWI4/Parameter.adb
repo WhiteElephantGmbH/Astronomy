@@ -66,6 +66,7 @@ package body Parameter is
 
   Is_In_Shutdown_Mode : Boolean := False;
   The_M3_Ocular_Port  : PWI4.Port;
+  Use_Fans            : Boolean;
   Fans_On             : Boolean;
 
   The_Moving_Speeds : Section.Angles.List;
@@ -241,6 +242,10 @@ package body Parameter is
       procedure Define_Fans_State is
         Fans_State : constant String := Section.String_Value_Of (Fans_Key);
       begin
+        if Fans_State = "" then
+          Use_Fans := False;
+          return;
+        end if;
         Log.Write ("Fans: " & Fans_State);
         if Text.Matches (Fans_State, "On") then
           Fans_On := True;
@@ -249,6 +254,7 @@ package body Parameter is
         else
           Error.Raise_With ("Fans must be either On or Off");
         end if;
+        Use_Fans := True;
       end Define_Fans_State;
 
       Maximum_Speed : constant := 5; -- degrees per second
@@ -330,6 +336,11 @@ package body Parameter is
     end case;
   end M3_Camera_Port;
 
+
+  function Handle_Fans return Boolean is
+  begin
+    return Use_Fans;
+  end Handle_Fans;
 
   function Turn_Fans_On return Boolean is
   begin
