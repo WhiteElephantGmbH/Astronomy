@@ -651,7 +651,9 @@ package body Telescope is
 
     procedure Do_Disable is
     begin
-      Fans.Turn_On_Or_Off;
+      if Parameter.Handle_Fans then
+        Fans.Turn_On_Or_Off;
+      end if;
       Mount.Disable;
     end Do_Disable;
 
@@ -807,7 +809,9 @@ package body Telescope is
 
     procedure Find_Home_And_Set_Defaults is
     begin
-      Fans.Turn (To => Fans.Off);
+      if Parameter.Handle_Fans then
+        Fans.Turn (To => Fans.Off);
+      end if;
       M3.Turn_To_Occular;
       Mount.Find_Home (The_Completion_Time);
       PWI4_Focuser.Go_To (PWI4_Focuser.Stored_Position);

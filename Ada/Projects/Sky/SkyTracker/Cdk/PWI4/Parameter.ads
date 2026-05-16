@@ -34,6 +34,8 @@ package Parameter is
 
   function M3_Camera_Port return PWI4.Port;
 
+  function Handle_Fans return Boolean;
+
   function Turn_Fans_On return Boolean;
 
   function Moving_Speeds return Angle.Values; -- in angle / s
