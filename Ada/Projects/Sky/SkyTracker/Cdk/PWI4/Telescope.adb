@@ -147,12 +147,14 @@ package body Telescope is
        else
          (others => <>));
 
+    use type Device.Microns;
+
     function Focuser_Data return Server.Focuser_Data is
       ((Exists       => The_Data.Focuser.Exists,
         Moving       => The_Data.Focuser.Moving,
         Max_Position => Natural(The_Data.Focuser.Max_Position),
         Zoom_Size    => Natural(The_Data.Focuser.Zoom_Size),
-        Position     => Natural(The_Data.Focuser.Position),
+        Position     => (if The_Data.Focuser.Position > 0.0 then Natural(The_Data.Focuser.Position) else 0),
         Set_Position => Focuser_Goto'access));
 
     function Rotator_Data return Server.Rotator_Data is
