@@ -35,6 +35,8 @@ package body Name is
 
   package Log is new Traces ("Name");
 
+  use type Text.String;
+
   Support_Axis_Positions : Boolean := False;
   Support_Land_Marks     : Boolean := False;
   Support_Neos           : Boolean := False;
@@ -482,7 +484,7 @@ package body Name is
                 The_Element := new Element_Data (Axis_Position);
                 The_Element.Kind := Axis_Position;
                 The_Element.Number := Number;
-                The_Element.Name := [Position_Name];
+                The_Element.Name := +Position_Name;
                 declare
                   Ra  : constant Angle.Value := Angle.Value_Of (Ra_Image);
                   Dec : constant Angle.Value := Angle.Value_Of (Dec_Image);
@@ -511,7 +513,7 @@ package body Name is
                 The_Element := new Element_Data (Landmark);
                 The_Element.Kind := Landmark;
                 The_Element.Number := Number;
-                The_Element.Name := [Mark_Name];
+                The_Element.Name := +Mark_Name;
                 declare
                   Az  : constant Angle.Value := Angle.Value_Of (Az_Image);
                   Alt : constant Angle.Value := Angle.Value_Of (Alt_Image);
@@ -543,7 +545,7 @@ package body Name is
                 Dec_Image   : constant String := Part_For (Text.First_Index + 3);
               begin
                 The_Element.Kind := Sky_Object;
-                The_Element.Name := [Object];
+                The_Element.Name := +Object;
                 The_Element.Object
                   := Sky.Data.New_Object_For (Item        => Object,
                                               Description => Description,
@@ -558,7 +560,7 @@ package body Name is
                 Object_Name : constant String := Part_1;
                 use type Sky.Object;
               begin
-                The_Element.Name := [Part_For (Parts.Count)];
+                The_Element.Name := +Part_For (Parts.Count);
                 if Sssb.Exists (Object_Name) then
                   The_Element.Kind := Small_Solar_System_Body;
                   return;
@@ -625,7 +627,7 @@ package body Name is
                     declare
                       Neo_Number : constant Natural := Natural'value(Satellite_Id);
                     begin
-                      The_Element.Name := [Neo_Name_Of (Neo_Number)];
+                      The_Element.Name := +Neo_Name_Of (Neo_Number);
                       if The_Element.Name.Is_Empty then
                         The_Element.Object := Sky.Undefined;
                       else
@@ -647,7 +649,7 @@ package body Name is
                   if The_Element.Object = Sky.Undefined then
                     Error.Raise_With ("Unknown Name - " & Line);
                   end if;
-                  The_Element.Name := [Sky.Catalog.Object_Image_Of (The_Element.Object, The_Element.Name.S)];
+                  The_Element.Name := +Sky.Catalog.Object_Image_Of (The_Element.Object, The_Element.Name.S);
                 end if;
               end;
             end if;

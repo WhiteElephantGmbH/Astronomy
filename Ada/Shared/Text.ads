@@ -176,6 +176,8 @@ package Text is
 
   function String_Of (Item : Standard.String) return String with Inline;
 
+  function "+" (Item : Standard.String) return String renames String_Of;
+
   function S (Item : String) return Standard.String with Inline;
 
   function First (Item : String) return Character with Inline;

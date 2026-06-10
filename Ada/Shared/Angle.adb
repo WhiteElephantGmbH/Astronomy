@@ -283,13 +283,13 @@ package body Angle is
     end if;
     case Decimals is
     when 0 =>
-      The_Text.Append (String'(Text.Trimmed(Natural(The_Seconds)'img)));
+      The_Text.Append (Text.Trimmed(Natural(The_Seconds)'img));
     when 1 =>
-      The_Text.Append (String'(Text.Trimmed(Decimals_1'image(The_Seconds))));
+      The_Text.Append (Text.Trimmed(Decimals_1'image(The_Seconds)));
     when 2 =>
-      The_Text.Append (String'(Text.Trimmed(Decimals_2'image(The_Seconds))));
+      The_Text.Append (Text.Trimmed(Decimals_2'image(The_Seconds)));
     when 3 =>
-      The_Text.Append (String'(Text.Trimmed(Decimals_3'image(The_Seconds))));
+      The_Text.Append (Text.Trimmed(Decimals_3'image(The_Seconds)));
     end case;
     The_Text.Append (Actual_Units(Second));
     return Text.Utf8_Of (The_Text.S);

@@ -25,6 +25,8 @@ with Os.Application;
 
 package body Camera.QHYCCD is
 
+  use type Text.String;
+
   package AS renames Ada.Streams;
   package IO renames AS.Stream_IO;
   package CI renames C_Interface;
@@ -253,7 +255,7 @@ package body Camera.QHYCCD is
 
     The_Camera : Model;
 
-    The_Filename   : Text.String := [Default_Filename];
+    The_Filename   : Text.String := +Default_Filename;
     The_Exposure   : Exposure.Item;
     The_Parameter  : Sensitivity.Item;
     Mid_Exposure   : Time.JD;
@@ -659,7 +661,7 @@ package body Camera.QHYCCD is
                                 Tv        : Exposure.Item;
                                 Parameter : Sensitivity.Item)
         do
-          The_Filename := [Filename];
+          The_Filename := +Filename;
           The_Exposure := Tv;
           The_Parameter := Parameter;
         end Capture_Picture;

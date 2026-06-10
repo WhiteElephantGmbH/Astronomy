@@ -22,6 +22,8 @@ with Section;
 
 package body Http_Server.Parameter is
 
+  use type Text.String;
+
   Gui_Client_Key : constant String := "GUI Client";
   Port_Key       : constant String := Section.Port_Key;
 
@@ -39,7 +41,7 @@ package body Http_Server.Parameter is
           Error.Raise_With ("GUI client program file """ & Client_Filename & """ not found");
         end if;
       end if;
-      The_Client_Filename := [Client_Filename];
+      The_Client_Filename := +Client_Filename;
     end;
   end Define;
 

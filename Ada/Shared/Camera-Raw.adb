@@ -23,6 +23,8 @@ with System.Storage_Elements;
 
 package body Camera.Raw is
 
+  use type Text.String;
+
   package RI renames Raw_Interface;
   package SE renames System.Storage_Elements;
 
@@ -37,7 +39,7 @@ package body Camera.Raw is
                           Size      : Square_Size)is
   begin
     if File.Exists (File_Name) then
-      The_Filename := [File_Name];
+      The_Filename := +File_Name;
       The_Grid_Size := Size;
       Camera_Data.Set (Cropped);
     else

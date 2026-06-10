@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2022 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2022 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -16,6 +16,11 @@
 pragma Style_White_Elephant;
 
 package body Discrete_Set is
+
+  function Empty return Set is ((Data => [others => False]));
+
+  function Full return Set is ((Data => [others => True]));
+
 
   procedure Include (In_Set : in out Set;
                      Item   :        Element) is

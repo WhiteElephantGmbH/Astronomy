@@ -58,6 +58,8 @@ package Focus is
 
 private
 
+  use type Text.String;
+
   Id : constant String := "Focus";
 
   package Log is new Traces (Id);

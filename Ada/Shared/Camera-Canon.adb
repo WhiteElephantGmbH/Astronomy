@@ -24,6 +24,8 @@ with Time;
 
 package body Camera.Canon is
 
+  use type Text.String;
+
   package CI renames Camera.Canon.C_Interface;
   package RT renames Ada.Real_Time;
 
@@ -318,7 +320,7 @@ package body Camera.Canon is
       return CI.Tv_Value'last; --!!!WE!!! GNAT Bug
     end To_K_Tv;
 
-    The_Filename : Text.String := [Default_Filename];
+    The_Filename : Text.String := +Default_Filename;
     The_Exposure : Exposure.Item;
     The_Iso      : Sensitivity.Item;
 
@@ -762,7 +764,7 @@ package body Camera.Canon is
                                 Tv       : Exposure.Item;
                                 Iso      : Sensitivity.Item)
         do
-          The_Filename := [Filename];
+          The_Filename := +Filename;
           The_Exposure := Tv;
           The_Iso := Iso;
           Is_Cropping := False;
@@ -777,7 +779,7 @@ package body Camera.Canon is
           The_Exposure := Tv;
           The_Iso := Iso;
           Is_Cropping := True;
-          The_Filename := [Default_Filename];
+          The_Filename := +Default_Filename;
         end;
         Start_Capture;
       or

@@ -26,6 +26,8 @@ package body Sky.Data is
 
   package Log is new Traces ("Sky.Data");
 
+  use type Text.String;
+
   use Astro;
   use Astro.PNULIB;
   use Astro.SPHLIB;
@@ -363,15 +365,15 @@ package body Sky.Data is
     The_Last_Extension := The_Last_Extension + 1;
     if Space.Direction_Is_Known (Direction) then
       The_Extension_Table (The_Last_Extension) :=
-       (Name        => [Item],
-        Descriptor  => [Description],
+       (Name        => +Item,
+        Descriptor  => +Description,
         Ra_J2000    => Angle.Degrees'(+Space.Ra_Of (Direction)),
         Dec_J2000   => Angle.Degrees'(+Space.Dec_Of (Direction)),
         Object_Kind => Object_Kind);
     else
       The_Extension_Table (The_Last_Extension) :=
-       (Name        => [Item],
-        Descriptor  => [Description],
+       (Name        => +Item,
+        Descriptor  => +Description,
         Ra_J2000    => 0.0,
         Dec_J2000   => 0.0,
         Object_Kind => Object_Kind);

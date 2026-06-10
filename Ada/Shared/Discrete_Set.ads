@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2022 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2022 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -36,9 +36,9 @@ package Discrete_Set with Pure is
                       Element     => Get_Element),
          Preelaborable_Initialization;
 
-  Empty : constant Set;
+  function Empty return Set with Inline;
 
-  Full : constant Set;
+  function Full return Set with Inline;
 
   procedure Include (In_Set : in out Set;
                      Item   :        Element) with Inline;
@@ -97,9 +97,5 @@ private
 
   procedure Put_Image (S : in out Ada.Strings.Text_Buffers.Root_Buffer_Type'class;
                        V : Set);
-
-  Empty : constant Set := (Data => [others => False]);
-
-  Full : constant Set := (Data => [others => True]);
 
 end Discrete_Set;

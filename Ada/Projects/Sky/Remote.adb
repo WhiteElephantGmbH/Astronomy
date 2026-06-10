@@ -24,6 +24,8 @@ package body Remote is
 
   package Log is new Traces (Id);
 
+  use type Text.String;
+
   type Telescope_State is (Unknown, On_Target, Not_On_Target);
 
 
@@ -41,8 +43,6 @@ package body Remote is
   end Handler;
 
   The_Handler : access Handler;
-
-  use type Text.String;
 
 
   function Telescope_Name return String is
@@ -214,7 +214,7 @@ package body Remote is
         Send_Actual;
       or
         accept Define (Target : String) do
-          The_Actual_Target := [Target];
+          The_Actual_Target := +Target;
         end Define;
       or
         accept Close;

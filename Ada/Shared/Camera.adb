@@ -23,6 +23,9 @@ with File;
 
 package body Camera is
 
+  use type Text.String;
+
+
   procedure Start is
   begin
     Log.Write ("Start");
@@ -67,7 +70,7 @@ package body Camera is
     function Filename_With_Extension (Extension : String) return String is
       Folder : constant String := File.Containing_Directory_Of (Filename);
     begin
-      The_File_Extension := [Extension];
+      The_File_Extension := +Extension;
       if not Directory.Exists (Folder) then
         Raise_Error ("Unknown picture directory " & Folder);
       elsif File.Extension_Of (Filename) = "" then
@@ -236,7 +239,7 @@ package body Camera is
     procedure Check (Item : Status) is
     begin
       if The_Information.State /= Item then
-        The_Last_Error := ["Sequence Error - State must be " & Item'image];
+        The_Last_Error := +("Sequence Error - State must be " & Item'image);
         The_Information.State := Failed;
         raise Camera_Error;
       end if;
@@ -245,7 +248,7 @@ package body Camera is
 
     procedure Set_Error (Message : String) is
     begin
-      The_Last_Error := [Message];
+      The_Last_Error := +Message;
       The_Information.State := Failed;
     end Set_Error;
 

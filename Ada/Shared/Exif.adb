@@ -24,6 +24,8 @@ package body Exif is
 
   package Log is new Traces ("Exif");
 
+  use type Text.String;
+
   The_Orientation : Image_Orientation := Undefined;
 
   The_Date_Time_Digitized : Text.String;
@@ -421,7 +423,7 @@ package body Exif is
             declare
               Date_Time : constant String := String_Of (Sub_Entry);
             begin
-              The_Date_Time_Digitized := [Date_Time];
+              The_Date_Time_Digitized := +Date_Time;
               Log.Write ("Date Time    : " & Date_Time);
             end;
           when Exif_Image_Width_Tag =>

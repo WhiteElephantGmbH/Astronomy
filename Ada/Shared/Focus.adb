@@ -493,7 +493,7 @@ package body Focus is
     procedure Set_Failed (Message : String) is
     begin
       The_Result := (others => <>);
-      The_Last_Error := [Message];
+      The_Last_Error := +Message;
       The_State := Failed;
     end Set_Failed;
 

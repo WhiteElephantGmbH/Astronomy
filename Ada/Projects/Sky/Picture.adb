@@ -26,6 +26,8 @@ with Traces;
 
 package body Picture is
 
+  use type Text.String;
+
   package Log is new Traces (Id);
 
   The_Filename : Text.String;
@@ -38,7 +40,7 @@ package body Picture is
                     Width  : Angle.Degrees) is
   begin
     Log.Write ("Define Filename: " & Name);
-    The_Filename := [Name];
+    The_Filename := +Name;
     The_Height := Height;
     The_Width := Width;
   end Define;

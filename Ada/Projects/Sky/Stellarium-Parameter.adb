@@ -21,6 +21,8 @@ with Targets;
 
 package body Stellarium.Parameter is
 
+  use type Text.String;
+
   Port_Key             : constant String := "Port";
   Program_Key          : constant String := "Program";
   Search_Tolerance_Key : constant String := "Search Tolerance";
@@ -31,7 +33,7 @@ package body Stellarium.Parameter is
     Section.Set (Configuration.Handle_For (Handle, Id));
     The_Port_Number := Section.Port_For (Id);
     The_Search_Tolerance := Section.Degrees_Of (Search_Tolerance_Key, Targets.Maximum_Search_Tolerance);
-    The_Filename := [Section.String_Value_Of (Program_Key)];
+    The_Filename := +Section.String_Value_Of (Program_Key);
   end Define;
 
 

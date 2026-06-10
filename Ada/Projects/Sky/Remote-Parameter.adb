@@ -21,6 +21,8 @@ with Section;
 
 package body Remote.Parameter is
 
+  use type Text.String;
+
   package Remote_Key is new Key (Id);
 
   package Persistent_Key is new Persistent_String (Remote_Key.Name);
@@ -42,9 +44,9 @@ package body Remote.Parameter is
 
   procedure Define (Handle : Configuration.File_Handle) is
   begin
-    The_Key := [Actual_Key];
+    The_Key := +Actual_Key;
     Section.Set (Configuration.Handle_For (Handle, Id));
-    The_Telescope_Name := [Section.String_Value_Of (Telescope_Key)];
+    The_Telescope_Name := +Section.String_Value_Of (Telescope_Key);
     if Configured then
       The_Remote_Address := Section.Ip_Address_For (Id);
       The_Remote_Port := Section.Port_For (Id);

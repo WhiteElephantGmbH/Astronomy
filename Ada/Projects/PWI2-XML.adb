@@ -11,6 +11,8 @@ package body PWI2.XML is
 
   package Log is new Traces ("Xml");
 
+  use type Text.String;
+
   function Zero_And (Item : String) return String is
   begin
     return '0' & Text.Trimmed (Item);
@@ -885,7 +887,7 @@ package body PWI2.XML is
 
     procedure Define_Pointing_Model (Filename : String) is
     begin
-      The_Pointing_Model := [Filename];
+      The_Pointing_Model := +Filename;
     end Define_Pointing_Model;
 
 

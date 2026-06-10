@@ -28,7 +28,7 @@ package body PWI4 is
 
   use type Text.String;
 
-  The_Ip_Address_And_Port : Text.String := ["127.0.0.1:8220"]; -- Default
+  The_Ip_Address_And_Port : Text.String := +"127.0.0.1:8220"; -- Default
 
   The_Process_Id : Os.Process.Id;
 
@@ -79,7 +79,7 @@ package body PWI4 is
                     Ip_Address : String) return Boolean is
   begin
     The_Process_Id := Os.Process.Created (Filename);
-    The_Ip_Address_And_Port := [Ip_Address];
+    The_Ip_Address_And_Port := +Ip_Address;
     return True;
   exception
   when others =>
@@ -100,7 +100,7 @@ package body PWI4 is
 
   procedure Set_Error (Message : String) is
   begin
-    The_Error_Info := [Message];
+    The_Error_Info := +Message;
     Log.Error (Message);
   end Set_Error;
 

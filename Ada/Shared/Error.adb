@@ -19,20 +19,21 @@ with Text;
 
 package body Error is
 
+  use type Text.String;
+
   The_Message : Text.String;
 
   procedure Set (Item : String) is
   begin
-    The_Message := [Item];
+    The_Message := +Item;
   end Set;
 
 
   procedure Raise_With (Item       : String;
                         Clear_Rest : Boolean := False) is
-    use type Text.String;
   begin
     if Text.Is_Null (The_Message) or Clear_Rest then
-      The_Message := [Item];
+      The_Message := +Item;
     else
       The_Message := Item & " (" & The_Message & ")";
     end if;

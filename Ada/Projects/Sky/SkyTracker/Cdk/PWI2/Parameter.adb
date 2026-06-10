@@ -43,6 +43,8 @@ package body Parameter is
 
   package Log is new Traces ("Parameter");
 
+  use type Text.String;
+
   Filename : constant String := Application.Composure (Application.Name, "ini");
 
   PWI_Id                : constant String := "PWI";
@@ -290,7 +292,7 @@ package body Parameter is
         if not File.Exists (Model_File) then
           Error.Raise_With ("Pointing Model """ & Model_File & """ not found");
         end if;
-        The_Pointing_Model := [Model_Name];
+        The_Pointing_Model := +Model_Name;
         Log.Write ("Pointing_Model: " & Model_Name);
       end Define_Pointing_Model;
 

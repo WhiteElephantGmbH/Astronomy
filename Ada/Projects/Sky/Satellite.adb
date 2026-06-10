@@ -31,6 +31,8 @@ package body Satellite is
 
   use type Number;
 
+  use type Text.String;
+
   type Data is record
     Name    : Text.String;
     Element : Tle;
@@ -96,7 +98,7 @@ package body Satellite is
                 Error.Raise_With (Name);
               end if;
               declare
-                Item : constant Data := (Name    => [Name],
+                Item : constant Data := (Name    => +Name,
                                          Element => [1 => Tle1,
                                                      2 => Tle2]);
                 Key : constant Number := Norad.Number_Of (Item.Element);

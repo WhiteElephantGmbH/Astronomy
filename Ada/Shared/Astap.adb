@@ -74,7 +74,7 @@ package body Astap is
   procedure Define (Executable : String) is
   begin
     Log.Write ("Executable: " & Executable);
-    The_Executable := [Executable];
+    The_Executable := +Executable;
   end Define;
 
 
@@ -117,7 +117,7 @@ package body Astap is
       raise Not_Solved;
     end if;
     Log.Write ("Parameters: " & Parameters);
-    The_Filename := [Name];
+    The_Filename := +Name;
     Cleanup;
     The_Process_Id := Os.Process.Created (Executable     => Executable,
                                           Parameters     => Parameters,

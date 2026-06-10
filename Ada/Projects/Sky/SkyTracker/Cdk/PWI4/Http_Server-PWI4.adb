@@ -24,6 +24,8 @@ with Protected_Storage;
 
 package body Http_Server.PWI4 is
 
+  use type Text.String;
+
   package Protected_Mount is new Protected_Storage (Mount_Data);
 
   package Protected_Mount_State is new Protected_Storage (Text.String);
@@ -269,7 +271,7 @@ package body Http_Server.PWI4 is
 
   procedure Set_State (Image : String) is
   begin
-    Protected_Mount_State.Set ([Image]);
+    Protected_Mount_State.Set (+Image);
   end Set_State;
 
 

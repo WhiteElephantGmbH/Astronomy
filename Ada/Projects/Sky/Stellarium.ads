@@ -17,10 +17,11 @@ pragma Style_Astronomy;
 
 with Angle;
 with Language;
-with Network;
 with Space;
-with Text;
-with Traces;
+
+private with Network;
+private with Text;
+private with Traces;
 
 package Stellarium is
 

@@ -23,6 +23,9 @@ package body PWI4.Protocol is
 
   package Log_Response is new Traces ("PWI.Response");
 
+  use type Text.String;
+
+
   procedure Log_Write (Message : String) is
   begin
     Log_Response.Write (Message);
@@ -404,7 +407,7 @@ package body PWI4.Protocol is
       while Next_Character /= Ascii.Lf loop
         null;
       end loop;
-      The_Value := [Data(First .. The_Index - 1)];
+      The_Value := +Data(First .. The_Index - 1);
       return Value;
     exception
     when others =>
