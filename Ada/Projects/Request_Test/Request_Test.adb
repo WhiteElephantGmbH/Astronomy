@@ -8,8 +8,8 @@ pragma Build (Description => "Request test program",
               Version     => (1, 0, 0, 6),
               Kind        => Console,
               Icon        => False,
-              Libraries   => ("AWS64"),
-              Compiler    => "GNATPRO\23.0");
+              Libraries   => ("AWS"),
+              Compiler    => "GNAT\14.2");
 with Request;
 
 procedure Request_Test is

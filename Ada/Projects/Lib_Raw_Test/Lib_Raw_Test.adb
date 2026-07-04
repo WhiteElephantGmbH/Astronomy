@@ -19,7 +19,7 @@ pragma Build (Description => "Lib Raw Test",
               Version     => (1, 0, 0, 0),
               Kind        => Console,
               Icon        => False,
-              Compiler    => "GNATPRO\23.0");
+              Compiler    => "GNAT\14.2");
 
 with Ada.Text_IO;
 with Exceptions;

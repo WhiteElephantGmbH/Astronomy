@@ -16,9 +16,9 @@
 pragma Style_Astronomy;
 
 pragma Build (Description => "Sky Guiding control program",
-              Version     => (1, 4, 0, 6),
+              Version     => (1, 4, 0, 7),
               Kind        => Windows,
-              Compiler    => "GNATPRO\23.0");
+              Compiler    => "GNAT\14.2");
 
 with Control;
 

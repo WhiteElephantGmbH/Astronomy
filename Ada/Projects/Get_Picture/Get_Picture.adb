@@ -5,9 +5,9 @@
 pragma Style_Astronomy;
 
 pragma Build (Description => "Get newest picture from a directory",
-              Version     => (1, 3, 0, 0),
+              Version     => (1, 3, 0, 1),
               Kind        => Windows,
-              Compiler    => "GNATPRO\23.0");
+              Compiler    => "GNAT\14.2");
 with Picture;
 
 procedure Get_Picture is

@@ -5,11 +5,11 @@
 pragma Style_Astronomy;
 
 pragma Build (Description => "Request test program",
-              Version     => (1, 0, 0, 6),
+              Version     => (1, 0, 0, 7),
               Kind        => Console,
               Icon        => False,
-              Libraries   => ("AWSS64", "COLL64"),
-              Compiler    => "GNATPRO\23.0");
+              Libraries   => ("AWS", "COLL"),
+              Compiler    => "GNAT\14.2");
 with Request;
 
 procedure Tle_Test is

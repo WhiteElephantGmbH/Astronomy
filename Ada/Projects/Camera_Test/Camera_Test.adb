@@ -16,10 +16,10 @@
 pragma Style_Astronomy;
 
 pragma Build (Description => "Camera test",
-              Version     => (1, 0, 0, 2),
+              Version     => (1, 0, 0, 3),
               Kind        => Console,
               Icon        => False,
-              Compiler    => "GNATPRO\23.0");
+              Compiler    => "GNAT\14.2");
 
 with Ada.Text_IO;
 with Camera;

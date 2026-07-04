@@ -5,10 +5,10 @@
 pragma Style_Astronomy;
 
 pragma Build (Description => "ENC 2302 Simulator",
-              Version     => (1, 0, 0, 2),
+              Version     => (1, 0, 0, 3),
               Kind        => Console,
-              Libraries   => ("AWS64", "COLL64"),
-              Compiler    => "GNATPRO\23.0");
+              Libraries   => ("AWS", "COLL"),
+              Compiler    => "GNAT\14.2");
 with Simulator;
 
 procedure ENC_2302 is

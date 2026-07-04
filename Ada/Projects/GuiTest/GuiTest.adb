@@ -8,7 +8,7 @@ pragma Build (Description => "GUI test",
               Version     => (1, 1, 0, 3),
               Kind        => Console,
               Icon        => False,
-              Compiler    => "GNATPRO\23.0");
+              Compiler    => "GNAT\14.2");
 with Test;
 
 procedure GuiTest is

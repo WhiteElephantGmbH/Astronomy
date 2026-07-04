@@ -8,8 +8,8 @@ pragma Build (Description => "Telnet Server",
               Version     => (1, 0, 0, 0),
               Kind        => Console,
               Icon        => False,
-              Libraries   => ("AWS64"),
-              Compiler    => "GNATPRO\23.0");
+              Libraries   => ("AWS"),
+              Compiler    => "GNAT\14.2");
 with Work;
 
 procedure Http_Client is

@@ -16,11 +16,11 @@
 pragma Style_Astronomy;
 
 pragma Build (Description => "Focuser test",
-              Version     => (1, 1, 0, 0),
+              Version     => (1, 1, 0, 1),
               Kind        => Console,
               Icon        => False,
-              Libraries   => ("AWS64", "COLL64"),
-              Compiler    => "GNATPRO\23.0");
+              Libraries   => ("AWS", "COLL"),
+              Compiler    => "GNAT\14.2");
 
 with Ada.Text_IO;
 with Celestron.Focuser;

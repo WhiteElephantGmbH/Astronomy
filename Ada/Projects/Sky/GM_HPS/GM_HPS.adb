@@ -5,9 +5,9 @@
 pragma Style_Astronomy;
 
 pragma Build (Description => "GM HPS Simulator",
-              Version     => (3, 1, 10, 4),
+              Version     => (3, 1, 10, 5),
               Kind        => Console,
-              Compiler    => "GNATPRO\23.0");
+              Compiler    => "GNAT\14.2");
 with Simulator;
 
 procedure GM_HPS is

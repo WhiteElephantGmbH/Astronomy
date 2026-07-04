@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2025 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                           (c) 2026 by White Elephant GmbH, Schaffhausen, Switzerland                              *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,50 +15,34 @@
 -- *********************************************************************************************************************
 pragma Style_Astronomy;
 
-pragma Build (Description => "Test Raw Data",
-              Version     => (1, 0, 0, 0),
+pragma Build (Description => "Test AWS",
+              Version     => (1, 0, 0, 1),
               Kind        => Console,
               Icon        => False,
+              Libraries   => ("AWS"),
               Compiler    => "GNAT\14.2");
-
 with Ada.Text_IO;
-with Raw_Data;
+with Ada.Exceptions;
+with AWS.Client;
+with AWS.Default;
+with AWS.Response;
 
-procedure Test_Raw_Data is
-
-  package IO renames Ada.Text_IO;
+procedure Aws_Test is
+pragma Linker_Options ("-lssl");
+pragma Linker_Options ("-lcrypto");
+  Result : AWS.Response.Data;
 
 begin
-  declare
-    Grid : constant Raw_Data.Raw_Grid := Raw_Data.Grid ("Sample.CR2", 2000);
-  begin
-    IO.Put_Line ("Test Raw Data");
-    IO.Put_Line ("=============");
-
-    for Row in Grid'range(1) loop
-      for Column in Grid'range(2) loop
-        declare
-          Pixel : constant Raw_Data.Pixel := Grid(Row, Column);
-          use type Raw_Data.Pixel;
-        begin
-          if Pixel > 10000 then
-            IO.Put_Line ("Pixel at row:" & Row'image & ", Column:" & Column'image & " =" & Pixel'image);
-          end if;
-        end;
-      end loop;
-    end loop;
-  end;
-  IO.Put_Line ("End");
-
+  Ada.Text_IO.Put_Line ("Before Get");
+  Ada.Text_IO.Put_Line ("Client_Certificate = " & AWS.Default.Client_Certificate);
+  Ada.Text_IO.Put_Line ("Trusted_CA = " & AWS.Default.Trusted_CA);
+  Result := AWS.Client.Get ("https://www.google.com");
+  Ada.Text_IO.Put_Line ("After Get:" & AWS.Response.Status_Code (Result)'image);
+  Ada.Text_IO.Put_Line ("Content-Type = " & AWS.Response.Content_Type (Result));
 exception
-  when Raw_Data.File_Not_Found =>
-    IO.Put_Line ("File not found.");
-  when Raw_Data.Invalid_File =>
-    IO.Put_Line ("Invalid CR2 file.");
-  when Raw_Data.Not_Found =>
-    IO.Put_Line ("RAW data not found.");
-  when Raw_Data.Size_Error =>
-    IO.Put_Line ("Size Error.");
-  when Raw_Data.Unsupported =>
-    IO.Put_Line ("Unsupported.");
-end Test_Raw_Data;
+when E : others =>
+  Ada.Text_IO.Put_Line ("Exception:");
+  Ada.Text_IO.Put_Line (Ada.Exceptions.Exception_Name (E));
+  Ada.Text_IO.Put_Line (Ada.Exceptions.Exception_Message (E));
+  Ada.Text_IO.Put_Line (Ada.Exceptions.Exception_Information (E));
+end Aws_Test;

@@ -8,7 +8,7 @@ pragma Build (Description => "Test for the generic package Discrete_Sets",
               Version     => (1, 0, 0, 0),
               Kind        => Console,
               Icon        => False,
-              Compiler    => "GNATPRO\23.0");
+              Compiler    => "GNAT\14.2");
 with Test;
 
 procedure Set_Test is

@@ -5,11 +5,11 @@
 pragma Style_Astronomy;
 
 pragma Build (Description => "10micron test",
-              Version     => (1, 0, 0, 2),
+              Version     => (1, 0, 0, 3),
               Kind        => Console,
               Icon        => False,
-              Libraries   => ("COLL64"),
-              Compiler    => "GNATPRO\23.0");
+              Libraries   => ("COLL"),
+              Compiler    => "GNAT\14.2");
 with Test;
 
 procedure Ten_Micron_Test is

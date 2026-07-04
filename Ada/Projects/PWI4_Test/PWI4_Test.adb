@@ -8,8 +8,8 @@ pragma Build (Description => "PWI4 test program",
               Version     => (4, 0, 0, 3),
               Kind        => Console,
               Icon        => False,
-              Libraries   => ("AWS64"),
-              Compiler    => "GNATPRO\23.0");
+              Libraries   => ("AWS"),
+              Compiler    => "GNAT\14.2");
 with Test;
 
 procedure PWI4_Test is

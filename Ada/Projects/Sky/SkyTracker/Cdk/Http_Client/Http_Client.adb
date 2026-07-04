@@ -8,8 +8,8 @@ pragma Build (Description => "ENC 2302 Simulator",
               Version     => (1, 0, 0, 0),
               Kind        => Console,
               Icon        => False,
-              Libraries   => ("AWS64", "COLL64"),
-              Compiler    => "GNATPRO\23.0");
+              Libraries   => ("AWS", "COLL"),
+              Compiler    => "GNAT\14.2");
 with Client;
 
 procedure Http_Client is

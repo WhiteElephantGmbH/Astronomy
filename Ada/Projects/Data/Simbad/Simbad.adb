@@ -18,9 +18,9 @@ pragma Style_Astronomy;
 with Generator;
 
 pragma Build (Description => "Generate Simbad Objects",
-              Version     => (1, 0, 0, 4),
+              Version     => (1, 0, 0, 5),
               Kind        => Console,
-              Compiler    => "GNATPRO\23.0");
+              Compiler    => "GNAT\14.2");
 
 procedure Simbad is
 begin

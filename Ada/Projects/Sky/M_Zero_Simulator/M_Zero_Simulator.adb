@@ -5,9 +5,9 @@
 pragma Style_Astronomy;
 
 pragma Build (Description => "M-Zero Simulator",
-              Version     => (1, 3, 0, 3),
+              Version     => (1, 3, 0, 4),
               Kind        => Console,
-              Compiler    => "GNATPRO\23.0");
+              Compiler    => "GNAT\14.2");
 with Test;
 
 procedure M_Zero_Simulator is
