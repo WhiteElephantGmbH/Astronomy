@@ -19,7 +19,7 @@ pragma Build (Description => "Focus test",
               Version     => (1, 0, 0, 1),
               Kind        => Console,
               Icon        => False,
-              Libraries   => ("AWS", "COLL"),
+              Libraries   => ("AWS", "GNATCOLL"),
               Compiler    => "GNAT\14.2");
 
 with Ada.Text_IO;

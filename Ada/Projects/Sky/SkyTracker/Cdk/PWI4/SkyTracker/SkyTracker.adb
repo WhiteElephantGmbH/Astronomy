@@ -18,7 +18,7 @@ pragma Style_Astronomy;
 pragma Build (Description => "SkyTracker control program for CDK700 (PWI4 1.6)",
               Version     => (4, 1, 6, 2),
               Kind        => Windows,
-              Libraries   => ("AWS", "COLL"),
+              Libraries   => ("AWS", "GNATCOLL"),
               Compiler    => "GNAT\14.2");
 
 with Control;

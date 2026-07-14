@@ -8,7 +8,7 @@ pragma Build (Description => "Request test program",
               Version     => (1, 0, 0, 7),
               Kind        => Console,
               Icon        => False,
-              Libraries   => ("AWS", "COLL"),
+              Libraries   => ("AWS", "GNATCOLL"),
               Compiler    => "GNAT\14.2");
 with Request;
 

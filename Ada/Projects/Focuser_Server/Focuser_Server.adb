@@ -18,7 +18,7 @@ pragma Style_Astronomy;
 pragma Build (Description => "Celestron Focuser Server",
               Version     => (1, 2, 0, 2),
               Kind        => Console,
-              Libraries   => ("AWS", "COLL"),
+              Libraries   => ("AWS", "GNATCOLL"),
               Compiler    => "GNAT\14.2");
 
 with Control;

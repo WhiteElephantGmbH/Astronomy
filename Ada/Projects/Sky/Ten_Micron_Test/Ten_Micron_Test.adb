@@ -8,7 +8,7 @@ pragma Build (Description => "10micron test",
               Version     => (1, 0, 0, 3),
               Kind        => Console,
               Icon        => False,
-              Libraries   => ("COLL"),
+              Libraries   => ("GNATCOLL"),
               Compiler    => "GNAT\14.2");
 with Test;
 

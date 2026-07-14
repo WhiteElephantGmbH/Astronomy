@@ -7,7 +7,7 @@ pragma Style_Astronomy;
 pragma Build (Description => "Get ephimerides from NASA horizon",
               Version     => (1, 1, 0, 5),
               Kind        => Console,
-              Libraries   => ("AWS", "COLL"),
+              Libraries   => ("AWS", "GNATCOLL"),
               Compiler    => "GNAT\14.2");
 with Request;
 
