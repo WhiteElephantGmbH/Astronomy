@@ -15,6 +15,7 @@
 -- *********************************************************************************************************************
 pragma Style_Astronomy;
 
+with AWS.Config.Set;
 with AWS.Messages;
 with AWS.Parameters;
 with AWS.Response;
@@ -141,15 +142,20 @@ package body Server is
   end Callback;
 
 
-  The_Server : AWS.Server.HTTP;
+  The_Server : AWS.Server.HTTP; -- uses AWS.Config.Get_Current
 
   procedure Start is
+    The_Config : AWS.Config.Object := AWS.Config.Get_Current;
   begin
     Log.Write ("Start");
-    AWS.Server.Start (Web_Server => The_Server,
-                      Name       => "Focuser_Server",
-                      Callback   => Callback'access,
-                      Port       => Celestron.Focuser.Default_Port_Number);
+    AWS.Config.Set.Server_Name (The_Config, "Focuser_Server");
+    AWS.Config.Set.Server_Host (The_Config, "");
+    AWS.Config.Set.Server_Port (The_Config, Celestron.Focuser.Default_Port_Number);
+    AWS.Config.Set.Security (The_Config, False);
+    AWS.Config.Set.Session (The_Config, False);
+    AWS.Config.Set.Reuse_Address (The_Config, True);
+    AWS.Config.Set.Case_Sensitive_Parameters (The_Config, True);
+    AWS.Server.Start (The_Server, Callback'access, The_Config);
   end Start;
 
 
