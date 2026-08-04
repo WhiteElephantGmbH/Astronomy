@@ -2,7 +2,7 @@
 -- *                           (c) 2022 by White Elephant GmbH, Schaffhausen, Switzerland                              *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with AWS.Client;
 with AWS.Response;

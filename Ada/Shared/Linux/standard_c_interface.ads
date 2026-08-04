@@ -16,7 +16,7 @@
 -- *                        Interface to the Standard C library  (items are implemented by need)                       *
 -- *        Detailed descriptions can be found in man7.org>Linux>man-pages;  --> example: syscalls(2) > read(2)        *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with Interfaces.C.Strings;
 with System;
@@ -54,13 +54,15 @@ package Standard_C_Interface is
   Cloexec    : constant Open_Flags := 16#80000#;
 
 
-
   type Return_Code is new C.int;
 
   Success : constant Return_Code := 0;
-  Failed  : constant Return_Code := -1;
+  function Failed return Return_Code is (-1);
 
-  subtype Return_Count is Return_Code;
+  type Return_Count is new C.int;
+
+  Timed_Out : constant Return_Count := 0;
+  function Failed  return Return_Count is (-1);
 
 
   type Timeval is record
@@ -133,7 +135,7 @@ package Standard_C_Interface is
                         Read_Fds   : access Fd_Set;
                         Write_Fds  : access Fd_Set := null;
                         Except_Fds : access Fd_Set := null;
-                        Timeout    : access Timeval) return Return_Count
+                        Timeout    : access Timeval := null) return Return_Count
   with
     Import        => True,
     Convention    => C,

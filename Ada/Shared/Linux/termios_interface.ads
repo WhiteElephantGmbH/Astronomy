@@ -16,7 +16,7 @@
 -- *                         Interface to the Termios Library  (items are implemented by need)                         *
 -- *         Detailed descriptions can be found in man7.org>Linux>man-pages;  --> example: termios(3) > Tcgetattr      *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with Interfaces.C;
 with Standard_C_Interface;
