@@ -43,6 +43,30 @@ package Standard_C_Interface is
 
   type Return_Count is new C.int;
 
+  subtype Tv is C.long;
+
+  type Timespec is record
+    Sec  : Tv;
+    Nsec : Tv;
+  end record
+  with
+    Convention => C;
+
+  type Clock_Id is (Realtime, Monotonic) with Convention => C;
+  for Clock_Id use (
+    Realtime  => 0,
+    Monotonic => 1);
+
+  function Clock_Getres (Clock : Clock_Id;
+                         Res   : access Timespec) return Return_Code;
+
+  function Clock_Gettime (Clock : Clock_Id;
+                          Tp    : access Timespec) return Return_Code;
+
+  function Clock_Settime (Clock : Clock_Id;
+                          Tp    : access constant Timespec) return Return_Code;
+
+
   Timed_Out : constant Return_Count := 0;
   function Failed  return Return_Count is (-1);
 

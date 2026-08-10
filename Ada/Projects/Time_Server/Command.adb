@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2026 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2025 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -13,44 +13,34 @@
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
--- *                              Interface to the Standard C library  (Linux simulation)                              *
--- *********************************************************************************************************************
 pragma Style_Astronomy;
 
-package body Standard_C_Interface is
+with Traces;
 
-  function Clock_Getres (Clock : Clock_Id;
-                         Res   : access Timespec) return Return_Code is
-    pragma Unreferenced (Clock, Res);
+package body Command is
+
+  package Log is new Traces ("Command");
+
+  procedure Execute (Item : Focuser.Command) is
   begin
-    return Failed;
-  end Clock_Getres;
+    Log.Write ("Execute:" & Item'image);
+    Focuser.Execute (Item);
+  end Execute;
 
 
-  function Clock_Gettime (Clock : Clock_Id;
-                          Tp    : access Timespec) return Return_Code is
-    pragma Unreferenced (Clock, Tp);
+  procedure Move_To (Position : Focuser.Distance) is
   begin
-    return Failed;
-  end Clock_Gettime;
+    Log.Write ("Move to" & Position'image);
+    Focuser.Move_To (Position);
+  end Move_To;
 
 
-  function Clock_Settime (Clock : Clock_Id;
-                          Tp    : access constant Timespec) return Return_Code is
-    pragma Unreferenced (Clock, Tp);
+  procedure Set (Backlash : Focuser.Lash) is
   begin
-    return Failed;
-  end Clock_Settime;
+    Log.Write ("Set backlash" & Backlash'image);
+    Focuser.Set (Backlash);
+  end Set;
 
-
-  function Wait_Select (Nfds       : Fd_Number;
-                        Read_Fds   : access Fd_Set;
-                        Write_Fds  : access Fd_Set := null;
-                        Except_Fds : access Fd_Set := null;
-                        Timeout    : access Timeval := null) return Return_Count is
-    pragma Unreferenced (Nfds, Read_Fds, Write_Fds, Except_Fds, Timeout);
-  begin
-    return Failed;
-  end Wait_Select;
-
-end Standard_C_Interface;
+begin
+  Focuser.Start;
+end Command;

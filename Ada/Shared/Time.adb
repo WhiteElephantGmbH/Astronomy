@@ -17,9 +17,13 @@ pragma Style_Astronomy;
 
 with Ada.Calendar.Time_Zones;
 with Site;
+with Standard_C_Interface;
 with Text;
 
 package body Time is
+
+  package CI renames Standard_C_Interface;
+
 
   function In_Future (Time_Offset : Duration) return Ada.Real_Time.Time is
     use type Ada.Real_Time.Time;
@@ -386,6 +390,19 @@ package body Time is
 
   JD_Offset : constant JD := 2451545.0;
 
+  procedure Set (Item : JD) is
+    Tu   : constant Ut := Ut_Of (Item);
+    Sec  : constant CI.Tv := CI.Tv(Tu);
+    Nsec : constant CI.Tv := CI.Tv((Tu - Ut(Sec)) / Delta_Time);
+    Ts   : aliased constant CI.Timespec := (Sec => Sec, Nsec => Nsec);
+    use type CI.Return_Code;
+  begin
+    if CI.Clock_Settime (CI.Realtime, Ts'access) /= CI.Success then
+      raise Program_Error;
+    end if;
+  end Set;
+
+
   function Julian_Date return JD is
   begin
     return Julian_Date_Of (Universal);
@@ -402,5 +419,12 @@ package body Time is
   begin
     return Ut(Item - JD_Offset) * One_Day;
   end Ut_Of;
+
+
+  function Rounded (Item       : JD;
+                    To_Nearest : JD) return JD is
+  begin
+    return JD_Offset + JD(Long_Long_Integer(((Item - JD_Offset) / To_Nearest) + JD(0.5))) * To_Nearest;
+  end Rounded;
 
 end Time;

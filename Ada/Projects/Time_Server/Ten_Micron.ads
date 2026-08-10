@@ -13,44 +13,16 @@
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
--- *                              Interface to the Standard C library  (Linux simulation)                              *
--- *********************************************************************************************************************
 pragma Style_Astronomy;
 
-package body Standard_C_Interface is
+with Time;
 
-  function Clock_Getres (Clock : Clock_Id;
-                         Res   : access Timespec) return Return_Code is
-    pragma Unreferenced (Clock, Res);
-  begin
-    return Failed;
-  end Clock_Getres;
+package Ten_Micron is
 
+  function Has_New (The_Time : out Time.JD) return Boolean;
 
-  function Clock_Gettime (Clock : Clock_Id;
-                          Tp    : access Timespec) return Return_Code is
-    pragma Unreferenced (Clock, Tp);
-  begin
-    return Failed;
-  end Clock_Gettime;
+  function Set (Item : Time.JD) return Boolean; -- set is unprotected for speed reasons
 
+  procedure Shutdown;
 
-  function Clock_Settime (Clock : Clock_Id;
-                          Tp    : access constant Timespec) return Return_Code is
-    pragma Unreferenced (Clock, Tp);
-  begin
-    return Failed;
-  end Clock_Settime;
-
-
-  function Wait_Select (Nfds       : Fd_Number;
-                        Read_Fds   : access Fd_Set;
-                        Write_Fds  : access Fd_Set := null;
-                        Except_Fds : access Fd_Set := null;
-                        Timeout    : access Timeval := null) return Return_Count is
-    pragma Unreferenced (Nfds, Read_Fds, Write_Fds, Except_Fds, Timeout);
-  begin
-    return Failed;
-  end Wait_Select;
-
-end Standard_C_Interface;
+end Ten_Micron;

@@ -173,10 +173,15 @@ package Time is
     Small => JD_Delta,
     Size  => 64;
 
+  procedure Set (Item : JD);
+
   function Julian_Date return JD;
 
   function Julian_Date_Of (Utime : Ut) return JD;
 
   function Ut_Of (Item : JD) return Ut;
+
+  function Rounded (Item       : JD;
+                    To_Nearest : JD) return JD;
 
 end Time;

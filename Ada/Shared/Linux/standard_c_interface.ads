@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2025 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2025 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -64,21 +64,58 @@ package Standard_C_Interface is
   Timed_Out : constant Return_Count := 0;
   function Failed  return Return_Count is (-1);
 
-
-  type Timeval is record
-    Sec  : C.long;
-    Usec : C.long;
-  end record
-  with
-    Convention => C;
-
-
   type Pipe_Fds is record
     Read_Fd  : File_Descriptor;
     Write_Fd : File_Descriptor;
   end record
   with
+      Convention => C;
+
+  subtype Tv is C.long;
+
+  type Timeval is record
+    Sec  : Tv;
+    Usec : Tv;
+  end record
+  with
     Convention => C;
+
+  ---------------------
+  -- clock_getres(2) --
+  ---------------------
+  type Timespec is record
+    Sec  : Tv;
+    Nsec : Tv;
+  end record
+  with
+    Convention => C;
+
+  type Clock_Id is (Realtime, Monotonic) with Convention => C;
+  for Clock_Id use (
+    Realtime  => 0,
+    Monotonic => 1);
+
+
+  function Clock_Getres (Clock : Clock_Id;
+                         Res   : access Timespec) return Return_Code
+  with
+    Import        => True,
+    Convention    => C,
+    External_Name => "clock_getres";
+
+  function Clock_Gettime (Clock : Clock_Id;
+                          Tp    : access Timespec) return Return_Code
+  with
+    Import        => True,
+    Convention    => C,
+    External_Name => "clock_gettime";
+
+  function Clock_Settime (Clock : Clock_Id;
+                          Tp    : access constant Timespec) return Return_Code
+  with
+    Import        => True,
+    Convention    => C,
+    External_Name => "clock_settime";
 
 
   ---------------------------

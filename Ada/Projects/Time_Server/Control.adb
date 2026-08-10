@@ -13,44 +13,52 @@
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
--- *                              Interface to the Standard C library  (Linux simulation)                              *
--- *********************************************************************************************************************
 pragma Style_Astronomy;
 
-package body Standard_C_Interface is
+with Ada.Text_IO;
+with Clock;
+with Server;
+with Ten_Micron;
+with Traces;
 
-  function Clock_Getres (Clock : Clock_Id;
-                         Res   : access Timespec) return Return_Code is
-    pragma Unreferenced (Clock, Res);
+package body Control is
+
+  package Log is new Traces ("Control");
+
+  task Manager is
+    entry Start;
+    entry Shutdown;
+  end Manager;
+
+
+  procedure Start is
   begin
-    return Failed;
-  end Clock_Getres;
+    Manager.Start;
+  end Start;
 
 
-  function Clock_Gettime (Clock : Clock_Id;
-                          Tp    : access Timespec) return Return_Code is
-    pragma Unreferenced (Clock, Tp);
+  procedure Shutdown is
   begin
-    return Failed;
-  end Clock_Gettime;
+    Manager.Shutdown;
+  end Shutdown;
 
 
-  function Clock_Settime (Clock : Clock_Id;
-                          Tp    : access constant Timespec) return Return_Code is
-    pragma Unreferenced (Clock, Tp);
+  task body Manager is
   begin
-    return Failed;
-  end Clock_Settime;
+    accept Start;
+    Log.Write ("Manager started");
+    Server.Start;
+    accept Shutdown;
+    Log.Write ("Manager terminating");
+    Ada.Text_IO.Put_Line ("Manager terminating");
+    Server.Shutdown;
+    Clock.Shutdown;
+    Ten_Micron.Shutdown;
+    Log.Write ("Manager end");
+    Ada.Text_IO.Put_Line ("Manager end");
+  exception
+  when Item: others =>
+    Log.Termination (Item);
+  end Manager;
 
-
-  function Wait_Select (Nfds       : Fd_Number;
-                        Read_Fds   : access Fd_Set;
-                        Write_Fds  : access Fd_Set := null;
-                        Except_Fds : access Fd_Set := null;
-                        Timeout    : access Timeval := null) return Return_Count is
-    pragma Unreferenced (Nfds, Read_Fds, Write_Fds, Except_Fds, Timeout);
-  begin
-    return Failed;
-  end Wait_Select;
-
-end Standard_C_Interface;
+end Control;

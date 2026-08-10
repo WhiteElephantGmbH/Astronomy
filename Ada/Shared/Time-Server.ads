@@ -13,44 +13,26 @@
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
--- *                              Interface to the Standard C library  (Linux simulation)                              *
--- *********************************************************************************************************************
 pragma Style_Astronomy;
 
-package body Standard_C_Interface is
+package Time.Server is
 
-  function Clock_Getres (Clock : Clock_Id;
-                         Res   : access Timespec) return Return_Code is
-    pragma Unreferenced (Clock, Res);
-  begin
-    return Failed;
-  end Clock_Getres;
+  Port : constant := 10000;
 
+  --Commands
+  Shutdown          : constant String := "shutdown";
+  Synchronize_Mount : constant String := "synchronize_mount";
+  Get_Information   : constant String := "get_information";
 
-  function Clock_Gettime (Clock : Clock_Id;
-                          Tp    : access Timespec) return Return_Code is
-    pragma Unreferenced (Clock, Tp);
-  begin
-    return Failed;
-  end Clock_Gettime;
+  --Respose
+  Response_Ok     : constant String := "Ok";
+  Response_Failed : constant String := "Failed";
 
+  --Information Fields
+  Clock_Exists          : constant String := "clock_exists";
+  Clock_Synchronized    : constant String := "clock_synchronized";
+  Date_Time             : constant String := "date_time";
+  Mount_Connected       : constant String := "mount_connected";
+  Mount_Synchronized    : constant String := "mount_synchronized";
 
-  function Clock_Settime (Clock : Clock_Id;
-                          Tp    : access constant Timespec) return Return_Code is
-    pragma Unreferenced (Clock, Tp);
-  begin
-    return Failed;
-  end Clock_Settime;
-
-
-  function Wait_Select (Nfds       : Fd_Number;
-                        Read_Fds   : access Fd_Set;
-                        Write_Fds  : access Fd_Set := null;
-                        Except_Fds : access Fd_Set := null;
-                        Timeout    : access Timeval := null) return Return_Count is
-    pragma Unreferenced (Nfds, Read_Fds, Write_Fds, Except_Fds, Timeout);
-  begin
-    return Failed;
-  end Wait_Select;
-
-end Standard_C_Interface;
+end Time.Server;
