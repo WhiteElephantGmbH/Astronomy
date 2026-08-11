@@ -16,6 +16,7 @@
 pragma Style_Astronomy;
 
 with Ada.Calendar.Time_Zones;
+with Ada.Unchecked_Conversion;
 with Site;
 with Standard_C_Interface;
 with Text;
@@ -390,13 +391,23 @@ package body Time is
 
   JD_Offset : constant JD := 2451545.0;
 
-  procedure Set (Item : JD) is
-    Tu   : constant Ut := Ut_Of (Item);
-    Sec  : constant CI.Tv := CI.Tv(Tu);
-    Nsec : constant CI.Tv := CI.Tv((Tu - Ut(Sec)) / Delta_Time);
-    Ts   : aliased constant CI.Timespec := (Sec => Sec, Nsec => Nsec);
+
+  procedure Set (Item : Unix_JD) is
+
+    type Unsigned_64 is range 0 .. 2**64 - 1 with Size => 64;
+
+    function Convert is new Ada.Unchecked_Conversion (JD, Unsigned_64);
+
     use type CI.Return_Code;
-  begin
+
+    Factor  : constant Unsigned_64 := Unsigned_64(JD_Second / JD_Delta);
+    One_Sec : constant Unsigned_64 := 10**9; -- Nanoseconds
+    T_Unix  : constant Unsigned_64 := Convert (Item - Unix_JD'first);
+    Sec     : constant CI.Tv := CI.Tv(T_Unix / Factor);
+    Nsec    : constant CI.Tv := CI.Tv((T_Unix mod Factor) * (One_Sec / Factor));
+    Ts      : aliased constant CI.Timespec := (Sec => Sec, Nsec => Nsec);
+
+  begin -- Set
     if CI.Clock_Settime (CI.Realtime, Ts'access) /= CI.Success then
       raise Program_Error;
     end if;
@@ -424,7 +435,7 @@ package body Time is
   function Rounded (Item       : JD;
                     To_Nearest : JD) return JD is
   begin
-    return JD_Offset + JD(Long_Long_Integer(((Item - JD_Offset) / To_Nearest) + JD(0.5))) * To_Nearest;
+    return JD_Offset + JD(Long_Long_Integer((Item - JD_Offset) / To_Nearest)) * To_Nearest;
   end Rounded;
 
 end Time;

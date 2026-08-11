@@ -15,7 +15,6 @@
 -- *********************************************************************************************************************
 pragma Style_Astronomy;
 
-with Ada.Text_IO;
 with Clock;
 with Server;
 with Ten_Micron;
@@ -50,12 +49,10 @@ package body Control is
     Server.Start;
     accept Shutdown;
     Log.Write ("Manager terminating");
-    Ada.Text_IO.Put_Line ("Manager terminating");
     Server.Shutdown;
     Clock.Shutdown;
     Ten_Micron.Shutdown;
     Log.Write ("Manager end");
-    Ada.Text_IO.Put_Line ("Manager end");
   exception
   when Item: others =>
     Log.Termination (Item);

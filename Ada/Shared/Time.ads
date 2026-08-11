@@ -173,7 +173,9 @@ package Time is
     Small => JD_Delta,
     Size  => 64;
 
-  procedure Set (Item : JD);
+  subtype Unix_JD is JD range 2440587.5 .. JD'last;
+
+  procedure Set (Item : Unix_JD);
 
   function Julian_Date return JD;
 
