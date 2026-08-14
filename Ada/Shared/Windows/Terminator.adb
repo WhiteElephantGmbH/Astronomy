@@ -19,15 +19,16 @@ pragma Style_Astronomy;
 
 package body Terminator is
 
-  function Read_Fd (Handle : Trigger) return SI.File_Descriptor is
+  function Read_Fd (Handle : Trigger) return CI.File_Descriptor is
     pragma Unreferenced (Handle);
   begin
-    return 0;
+    return CI.GPIO_Aborter;
   end Read_Fd;
 
   procedure Signal (Handle : Trigger) is
   begin
-    null;
+    pragma Unreferenced (Handle);
+    CI.Signal_Abort;
   end Signal;
 
   procedure Clear (Handle : Trigger) is

@@ -176,7 +176,7 @@ package body GPIO is
 
   procedure Initialize (The_Chip : in out Chip) is
   begin
-    Log.Write ("Initialize " & Device);
+    Log.Write ("Initialize " & Device(Device'first .. Device'last - 1));
     The_Chip.Device := GI.Open (Device'address);
     Check (The_Chip.Device /= null,
            Error_Message => "Unable to open chip");

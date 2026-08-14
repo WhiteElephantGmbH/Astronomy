@@ -25,6 +25,22 @@ package body Time is
 
   package CI renames Standard_C_Interface;
 
+  function Image_Of (Number : Natural) return String is
+    Image : constant String := Number'img;
+  begin
+    return Image(Image'first + 1 .. Image'last);
+  end Image_Of;
+
+
+  subtype Field_Size is Positive range 1 .. 4;
+
+  function Filled_Image_Of (Number : Natural;
+                            Size   : Field_Size := 2) return String is
+    Image : constant String := "000" & Image_Of(Number);
+  begin
+    return Image(Image'last - Size + 1 .. Image'last);
+  end Filled_Image_Of;
+
 
   function In_Future (Time_Offset : Duration) return Ada.Real_Time.Time is
     use type Ada.Real_Time.Time;
@@ -166,6 +182,12 @@ package body Time is
   end Calendar_Now;
 
 
+  function Day_Seconds return Duration is
+  begin
+    return Ada.Calendar.Seconds (Ada.Calendar.Clock);
+  end Day_Seconds;
+
+
   function Duration_Since (Date : Calendar_Value) return Duration is
     use type Calendar_Value;
   begin
@@ -304,18 +326,6 @@ package body Time is
 
       Modjd : constant Astro.REAL :=  Astro.REAL((Item + TS) / One_Day) + MJD_OFFSET;
 
-      function Image_Of (Number : Natural) return String is
-        Image : constant String := Number'img;
-      begin
-        return Image(Image'first + 1 .. Image'last);
-      end Image_Of;
-
-      function Filed_Image_Of (Number : Natural) return String is
-        Image : constant String := "0" & Image_Of(Number);
-      begin
-        return Image(Image'last - 1 .. Image'last);
-      end Filed_Image_Of;
-
       The_Day          : Natural;
       The_Month        : Natural;
       The_Year         : Natural;
@@ -335,8 +345,8 @@ package body Time is
       The_Seconds := The_Deci_Seconds / 10;
       The_Deci_Seconds := The_Deci_Seconds - The_Seconds * 10;
       declare
-        Time_Image : constant String := Filed_Image_Of (The_Hour) & ":" & Filed_Image_Of (The_Minutes) & ":" &
-                                        Filed_Image_Of (The_Seconds) & '.' & Image_Of (The_Deci_Seconds);
+        Time_Image : constant String := Filled_Image_Of (The_Hour) & ":" & Filled_Image_Of (The_Minutes) & ":" &
+                                        Filled_Image_Of (The_Seconds) & '.' & Image_Of (The_Deci_Seconds);
       begin
         if Time_Only then
           return Time_Image;
@@ -391,27 +401,58 @@ package body Time is
 
   JD_Offset : constant JD := 2451545.0;
 
-
-  procedure Set (Item : Unix_JD) is
+  function Timespec_Of (Item : Unix_JD) return CI.Timespec is
 
     type Unsigned_64 is range 0 .. 2**64 - 1 with Size => 64;
 
+    One_Sec : constant Unsigned_64 := 10**9; -- Nanoseconds
+
     function Convert is new Ada.Unchecked_Conversion (JD, Unsigned_64);
 
-    use type CI.Return_Code;
-
     Factor  : constant Unsigned_64 := Unsigned_64(JD_Second / JD_Delta);
-    One_Sec : constant Unsigned_64 := 10**9; -- Nanoseconds
     T_Unix  : constant Unsigned_64 := Convert (Item - Unix_JD'first);
     Sec     : constant CI.Tv := CI.Tv(T_Unix / Factor);
     Nsec    : constant CI.Tv := CI.Tv((T_Unix mod Factor) * (One_Sec / Factor));
-    Ts      : aliased constant CI.Timespec := (Sec => Sec, Nsec => Nsec);
 
-  begin -- Set
+  begin -- Timespec_Of
+    return (Sec => Sec, Nsec => Nsec);
+  end Timespec_Of;
+
+
+  procedure Set (Item : Unix_JD) is
+
+    Ts : aliased constant CI.Timespec := Timespec_Of (Item);
+
+    use type CI.Return_Code;
+
+  begin
     if CI.Clock_Settime (CI.Realtime, Ts'access) /= CI.Success then
       raise Program_Error;
     end if;
   end Set;
+
+
+  function Image_Of (Item : Unix_JD) return String is
+
+    Ts : constant CI.Timespec := Timespec_Of (Item);
+
+    use type CI.Tv;
+
+    The_Rest : Natural := Natural(Ts.Sec mod CI.Tv(1.0 / JD_Second));
+
+    The_Seconds : constant Natural := The_Rest mod 60;
+    The_Minutes : Natural;
+
+  begin -- Image_Of
+    The_Rest := @ / 60;
+    The_Minutes := Natural(The_Rest mod 60);
+    The_Rest := @ / 60;
+    return Filled_Image_Of (The_Rest) & ":" & Filled_Image_Of (The_Minutes) & ":" & Filled_Image_Of (The_Seconds) &
+           '.' & Filled_Image_Of (Natural(Ts.Nsec / 10**5), 4);
+  exception
+  when others =>
+    return "<undefined>";
+  end Image_Of;
 
 
   function Julian_Date return JD is

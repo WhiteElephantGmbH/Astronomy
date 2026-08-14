@@ -61,6 +61,8 @@ package Time is
 
   function Calendar_Now return Calendar_Value;
 
+  function Day_Seconds return Duration;
+
   function Duration_Since (Date : Calendar_Value) return Duration;
 
   function Local_Shift return Duration;
@@ -177,6 +179,8 @@ package Time is
 
   procedure Set (Item : Unix_JD);
 
+  function Image_Of (Item : Unix_JD) return String;
+
   function Julian_Date return JD;
 
   function Julian_Date_Of (Utime : Ut) return JD;
@@ -185,5 +189,4 @@ package Time is
 
   function Rounded (Item       : JD;
                     To_Nearest : JD) return JD;
-
 end Time;

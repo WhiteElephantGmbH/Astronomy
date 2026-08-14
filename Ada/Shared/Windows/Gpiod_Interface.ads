@@ -92,10 +92,14 @@ package Gpiod_Interface is
     Realtime  => 2,
     Hte       => 3);
 
-  type Edge_Event_Type is (Rising_Edge, Falling_Edge) with Convention => C;
+  type Edge_Event_Type is (Rising_Edge_Value, Falling_Edge_Value) with Convention => C;
   for Edge_Event_Type use (
-    Rising_Edge  => 1,
-    Falling_Edge => 2);
+    Rising_Edge_Value  => 1,
+    Falling_Edge_Value => 2);
+
+  function Rising_Edge return Edge_Event_Type;
+
+  function Falling_Edge return Edge_Event_Type;
 
   ----------
   -- Chip --

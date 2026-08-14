@@ -25,6 +25,9 @@ package Standard_C_Interface is
 
   type File_Descriptor is new C.int;
 
+  GPIO_Edge    : constant := 0; -- simulation
+  GPIO_Aborter : constant := 1; -- simulation
+
   Fd_Set_Size : constant File_Descriptor := 1024;
 
   subtype Fd_Number is File_Descriptor range 0 .. Fd_Set_Size;
@@ -82,5 +85,11 @@ package Standard_C_Interface is
                         Write_Fds  : access Fd_Set := null;
                         Except_Fds : access Fd_Set := null;
                         Timeout    : access Timeval := null) return Return_Count;
+                        
+  type Edge is (Rising, Falling);
+  
+  procedure Set (Expected : Edge);
+  
+  procedure Signal_Abort;
 
 end Standard_C_Interface;

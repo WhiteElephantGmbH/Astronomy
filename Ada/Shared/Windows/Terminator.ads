@@ -21,11 +21,11 @@ with Standard_C_Interface;
 
 package Terminator is
 
-  package SI renames Standard_C_Interface;
+  package CI renames Standard_C_Interface;
 
   type Trigger is tagged limited private;
 
-  function Read_Fd (Handle : Trigger) return SI.File_Descriptor;
+  function Read_Fd (Handle : Trigger) return CI.File_Descriptor;
 
   procedure Signal (Handle : Trigger);
 

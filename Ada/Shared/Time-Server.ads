@@ -20,19 +20,21 @@ package Time.Server is
   Port : constant := 10000;
 
   --Commands
-  Shutdown          : constant String := "shutdown";
-  Synchronize_Mount : constant String := "synchronize_mount";
   Get_Information   : constant String := "get_information";
+  Set_Date_Time     : constant String := "set_date_time";
+  Synchronize_Mount : constant String := "synchronize_mount";
+  Shutdown          : constant String := "shutdown";
 
   --Respose
   Response_Ok     : constant String := "Ok";
   Response_Failed : constant String := "Failed";
 
   --Information Fields
-  Clock_Exists          : constant String := "clock_exists";
-  Clock_Synchronized    : constant String := "clock_synchronized";
-  Date_Time             : constant String := "date_time";
-  Mount_Connected       : constant String := "mount_connected";
-  Mount_Synchronized    : constant String := "mount_synchronized";
+  Clock_Set          : constant String := "clock_set";
+  Clock_Set_From_Pc  : constant String := "clock_set_from_pc";
+  Clock_Synchronized : constant String := "clock_synchronized";
+  Clock_Time         : constant String := "clock_time";
+  Mount_Connected    : constant String := "mount_connected";
+  Mount_Synchronized : constant String := "mount_synchronized";
 
 end Time.Server;

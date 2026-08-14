@@ -15,9 +15,6 @@
 -- *********************************************************************************************************************
 pragma Style_Astronomy;
 
-with Ada.Real_Time;
-with Ada.Text_IO;
-with Exceptions;
 with GPIO;
 with Ten_Micron;
 with Time;
@@ -27,7 +24,7 @@ package body Clock is
 
   package Log is new Traces ("Clock");
 
-  package RT renames Ada.Real_Time;
+  Clock_Accuracy : constant Duration := Time.One_Second / 1000.0;
 
   Pulse_Input : constant GPIO.Line := GPIO.Line27;
 
@@ -43,98 +40,110 @@ package body Clock is
   end Shutdown;
 
 
-  The_Data : Data;
+  Time_Set          : Boolean := False;
+  Time_Set_From_Pc  : Boolean := False;
+  Time_Synchronized : Boolean := False;
 
-  Do_Synchronize : Boolean := False;
+  function Is_Set return Boolean is (Time_Set);
+
+  function Is_Set_From_Pc return Boolean is (Time_Set_From_Pc);
+
+  function Is_Synchronized return Boolean is (Time_Synchronized);
 
 
-  function Synchronize_Mount_Started return Boolean is
-  begin
-    if The_Data.Is_Synchronized and The_Data.Mount_Connected then
-      The_Data.Mount_Synchronized := False;
-      Do_Synchronize := True;
-      Ada.Text_IO.Put_Line ("<<< Synchronize Mount Started >>>");
-      return True;
+  function Synchronized_Mount return Boolean is
+    The_Time   : Time.JD;
+    Mount_Time : Time.JD;
+   begin
+    if Time_Synchronized then
+      The_Time := Time.Julian_Date;
+      Ten_Micron.Set (The_Time);
+      if Ten_Micron.Has_New (Mount_Time) then
+        Log.Write ("Mount Set at " & Time.Image_Of (The_Time));
+        Log.Write ("Mount Get at " & Time.Image_Of (Mount_Time));
+        return True;
+      end if;
+      Log.Warning ("Mount not synchronized");
     else
-      Ada.Text_IO.Put_Line ("<<< Synchronize Mount NOT Started >>>");
-      return False;
+      Log.Warning ("Time not synchronized");
     end if;
-  end Synchronize_Mount_Started;
+    return False;
+  end Synchronized_Mount;
 
 
-  function Information return Data is
+  procedure Set (Pc_Time : String) is
   begin
-    return The_Data;
-  end Information;
+    declare
+      Julian_Date : constant Time.Unix_JD := Time.Unix_JD'value(Pc_Time);
+    begin
+      Time.Set (Julian_Date);
+      Time_Set := True;
+      Time_Set_From_Pc := True;
+      Time_Synchronized := False;
+      Ten_Micron.Clear_Synchronized;
+      Log.Write ("Calendar set to Pc time " & Time.Image_Of (Julian_Date));
+    exception
+    when others =>
+      Log.Error ("Set to Pc time " & Time.Image_Of (Julian_Date) & " failed");
+      raise;
+    end;
+  exception
+  when others =>
+    Time_Set := False;
+    Time_Set_From_Pc := False;
+    Time_Synchronized := False;
+    Ten_Micron.Clear_Synchronized;
+  end Set;
 
 
   task body Handler is
-
-    procedure Round_To_Nearest_Second (The_Time : in out Time.JD) is
-    begin
-      The_Time := Time.Rounded (The_Time, To_Nearest => Time.JD_Second);
-    end Round_To_Nearest_Second;
 
     procedure Round_To_Nearest_Minute (The_Time : in out Time.JD) is
     begin
       The_Time := Time.Rounded (The_Time, To_Nearest => Time.JD_Minute);
     end Round_To_Nearest_Minute;
 
-    The_Time               : Time.JD;
-    Falling_Edge_Time      : RT.Time;
-    Last_Falling_Edge_Time : RT.Time := RT.Time_First;
-    Pulse_Duration         : Duration;
-    Is_Minute_Change       : Boolean := False;
+    The_Time       : Time.JD;
+    Last_Time      : Time.JD := Time.Julian_Date;
+    The_Inaccuracy : Duration;
 
-    use type RT.Time;
+    use type Time.JD;
 
   begin -- Handler
     Log.Write ("Handler started");
     GPIO.Request_Dynamic_Input (Pulse_Input);
     loop
       GPIO.Await_Change_To_Low (Pulse_Input);
-      Falling_Edge_Time := RT.Clock;
-      if Ten_Micron.Has_New (The_Time) then
-        if not The_Data.Mount_Connected then
-          The_Data.Mount_Connected := True;
+      if not Time_Set and then Ten_Micron.Has_New (The_Time) then
+        begin
           Time.Set (The_Time);
-          Ada.Text_IO.Put_Line ("Mount Time : " & Time.Image_Of (Time.Ut_Of (The_Time)) & " - " & The_Time'image);
-          Ada.Text_IO.Put_Line ("Actual Time: " & Time.Image_Of (Time.Universal)  & " - " & Time.Julian_Date'image);
-        end if;
-      else
-        The_Data.Mount_Connected := False;
-        The_Data.Mount_Synchronized := False;
+          Last_Time := The_Time;
+          Time_Set := True;
+          Log.Write ("Calendar set to mount time " & Time.Image_Of (The_Time));
+        exception
+        when others =>
+          Log.Error ("Set to mount time " & Time.Image_Of (The_Time) & " failed");
+        end;
       end if;
-      if The_Data.Exists then
-        Pulse_Duration := RT.To_Duration (Falling_Edge_Time - Last_Falling_Edge_Time);
-        Is_Minute_Change := Pulse_Duration > 1.5;
-      end if;
-      Last_Falling_Edge_Time := Falling_Edge_Time;
       GPIO.Await_Change_To_High (Pulse_Input);
-      The_Time := Time.Julian_Date;
-      if Is_Minute_Change and The_Data.Mount_Connected then
-        Round_To_Nearest_Minute (The_Time);
-        Time.Set (The_Time);
-        Ada.Text_IO.Put_Line ("Synchronized Time : " & Time.Image_Of (Time.Ut_Of (The_Time)) & " - " & The_Time'image);
-        The_Data.Is_Synchronized := True;
-      elsif The_Data.Exists then
-        Round_To_Nearest_Second (The_Time);
-        if Do_Synchronize and The_Data.Is_Synchronized then
-          if Ten_Micron.Set (The_Time) then
-            The_Data.Mount_Synchronized := True;
-            Ada.Text_IO.Put_Line ("Mount Time Set : " & Time.Image_Of (Time.Ut_Of (The_Time)) & " - " & The_Time'image);
-            Do_Synchronize := False;
-          end if;
+      if Time_Set then
+        The_Time := Time.Julian_Date;
+        The_Inaccuracy := abs Duration((The_Time - Last_Time) / Time.JD_Second) - Time.One_Minute;
+        Last_Time := The_Time;
+        if not Is_Synchronized or else The_Inaccuracy > Clock_Accuracy then
+          Round_To_Nearest_Minute (The_Time);
+          Time.Set (The_Time);
+          Time_Synchronized := True;
+          Log.Write ("Time synchronized at " & Time.Image_Of (The_Time));
         end if;
+        Log.Write ("Time inaccuracy is" & The_Inaccuracy'image);
       end if;
-      The_Data.Exists := True;
     end loop;
   exception
   when GPIO.Released =>
     accept Shutdown;
     Log.Write ("Handler terminated");
   when Item: others =>
-    Ada.Text_IO.Put_Line ("Clock.Handler.Exception: " & Exceptions.Information_Of (Item));
     Log.Termination (Item);
     accept Shutdown;
   end Handler;

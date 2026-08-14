@@ -17,16 +17,15 @@ pragma Style_Astronomy;
 
 package Clock is
 
-  type Data is record
-    Exists             : Boolean := False;
-    Is_Synchronized    : Boolean := False;
-    Mount_Connected    : Boolean := False;
-    Mount_Synchronized : Boolean := False;
-  end record;
+  function Is_Set return Boolean;
 
-  function Information return Data;
+  function Is_Set_From_Pc return Boolean;
 
-  function Synchronize_Mount_Started return Boolean;
+  function Is_Synchronized return Boolean;
+
+  function Synchronized_Mount return Boolean;
+
+  procedure Set (Pc_Time : String);
 
   procedure Shutdown;
 

@@ -31,6 +31,7 @@ package body Ten_Micron is
 
   task Handler is
     entry Get (The_Time : out Time.JD);
+    entry Get (Has_Connection : out Boolean);
     entry Shutdown;
   end Handler;
 
@@ -49,18 +50,37 @@ package body Ten_Micron is
 
   The_Socket : Network.Tcp.Socket;
 
-  function Set (Item : Time.JD) return Boolean is
+  function Connected return Boolean is
+    Is_Connected : Boolean;
+  begin
+    select
+      Handler.Get (Is_Connected);
+      return Is_Connected;
+    else
+      return False;
+    end select;
+  end Connected;
+
+
+  Time_Synchronized : Boolean := False;
+
+  function Is_Synchronized return Boolean is (Time_Synchronized);
+
+  procedure Clear_Synchronized is
+  begin
+    Time_Synchronized := False;
+  end Clear_Synchronized;
+
+
+  procedure Set (Item : Time.JD) is
     Command : constant String := Lx200.String_Of (Lx200.Set_Julian_Date, Lx200.Julian_Date_Of (Item));
   begin
     Network.Tcp.Send (The_String  => Command,
                       Used_Socket => The_Socket);
-    if Network.Tcp.Raw_Character_From (The_Socket) = '1' then
-      return True;
-    end if;
-    return False;
+    Time_Synchronized := Network.Tcp.Raw_Character_From (The_Socket) = '1';
   exception
   when others =>
-    return False;
+    Time_Synchronized := False;
   end Set;
 
 
@@ -119,6 +139,8 @@ package body Ten_Micron is
       return Unknown_Time;
     end Julian_Date;
 
+    use type Time.JD;
+
   begin -- Handler
     Log.Write ("Handler started");
     loop
@@ -129,6 +151,14 @@ package body Ten_Micron is
       or
         when Is_Connected => accept Get (The_Time : out Time.JD) do
           The_Time := Julian_Date;
+        end Get;
+      or
+        accept Get (Has_Connection : out Boolean) do
+          Is_Connected := Julian_Date /= Unknown_Time;
+          Has_Connection := Is_Connected;
+          if not Is_Connected then
+            Time_Synchronized := False;
+          end if;
         end Get;
       or
         when not Is_Connected => delay until Time.In_Future (Loop_Time);

@@ -24,6 +24,7 @@ with AWS.Status;
 with Clock;
 with Control;
 with GNATCOLL.JSON;
+with Ten_Micron;
 with Time.Server;
 with Traces;
 
@@ -32,6 +33,7 @@ package body Server is
   package Log is new Traces ("Server");
 
   package JS renames GNATCOLL.JSON;
+  package TS renames Time.Server;
 
 
   function Response return String is
@@ -39,19 +41,25 @@ package body Server is
     Information : constant JS.JSON_Value := JS.Create_Object;
 
     procedure Set_Information is
-      Data      : constant Clock.Data := Clock.Information;
-      Date_Time : constant String := Time.Image_Of (Time.Universal);
+      Time_Image         : constant String  := Time.Image_Of (Time.Julian_Date);
+      Clock_Set          : constant Boolean := Clock.Is_Set;
+      Clock_Set_From_Pc  : constant Boolean := Clock.Is_Set_From_Pc;
+      Clock_Synchronized : constant Boolean := Clock.Is_Synchronized;
+      Mount_Connected    : constant Boolean := Ten_Micron.Connected;
+      Mount_Synchronized : constant Boolean := Ten_Micron.Is_Synchronized;
     begin
-      JS.Set_Field (Information, Time.Server.Clock_Exists, JS.Create (Data.Exists));
-      JS.Set_Field (Information, Time.Server.Clock_Synchronized, JS.Create (Data.Is_Synchronized));
-      JS.Set_Field (Information, Time.Server.Date_Time, JS.Create (Date_Time));
-      JS.Set_Field (Information, Time.Server.Mount_Connected, JS.Create (Data.Mount_Connected));
-      JS.Set_Field (Information, Time.Server.Mount_Synchronized, JS.Create (Data.Mount_Synchronized));
-      Log.Write ("Clock Exists       : " & Data.Exists'image);
-      Log.Write ("Clock Synchronized : " & Data.Is_Synchronized'image);
-      Log.Write ("Date Time          : " & Date_Time);
-      Log.Write ("Mount Connected    :"  & Data.Mount_Connected'image);
-      Log.Write ("Mount Synchronized :"  & Data.Mount_Synchronized'image);
+      JS.Set_Field (Information, TS.Clock_Time, JS.Create (Time_Image));
+      JS.Set_Field (Information, TS.Clock_Set, JS.Create (Clock_Set));
+      JS.Set_Field (Information, TS.Clock_Set_From_Pc, JS.Create (Clock_Set_From_Pc));
+      JS.Set_Field (Information, TS.Clock_Synchronized, JS.Create (Clock_Synchronized));
+      JS.Set_Field (Information, TS.Mount_Connected, JS.Create (Mount_Connected));
+      JS.Set_Field (Information, TS.Mount_Synchronized, JS.Create (Mount_Synchronized));
+      Log.Write ("Clock Time         : " & Time_Image);
+      Log.Write ("Clock Set          : " & Clock_Set'image);
+      Log.Write ("Clock Set from PC  : " & Clock_Set_From_Pc'image);
+      Log.Write ("Clock Synchronized : " & Clock_Synchronized'image);
+      Log.Write ("Mount Connected    : " & Mount_Connected'image);
+      Log.Write ("Mount Synchronized : " & Mount_Synchronized'image);
     end Set_Information;
 
   begin -- Information
@@ -61,25 +69,38 @@ package body Server is
 
 
   function Callback (Data : AWS.Status.Data) return AWS.Response.Data is
-     The_Parameters : AWS.Parameters.List;
+
+    Ok     : constant String := TS.Response_Ok;
+    Failed : constant String := TS.Response_Failed;
+
+    The_Parameters : AWS.Parameters.List;
+
   begin
     The_Parameters := AWS.Status.Parameters (Data);
     declare
       Action : constant String := The_Parameters.Get_Name;
     begin
       Log.Write ("Callback - Action: " & Action);
-      if Action = Time.Server.Shutdown then
+      if Action = TS.Shutdown then
         Control.Shutdown;
-        return AWS.Response.Acknowledge (AWS.Messages.S200, Time.Server.Response_Ok);
-      elsif Action = Time.Server.Synchronize_Mount then
-        if Clock.Synchronize_Mount_Started then
-          return AWS.Response.Acknowledge (AWS.Messages.S200, Time.Server.Response_Ok);
+        return AWS.Response.Acknowledge (AWS.Messages.S200, Ok);
+      elsif Action = TS.Synchronize_Mount then
+        if Clock.Synchronized_Mount then
+          return AWS.Response.Acknowledge (AWS.Messages.S200, Ok);
         else
-          return AWS.Response.Acknowledge (AWS.Messages.S200, Time.Server.Response_Failed);
+          return AWS.Response.Acknowledge (AWS.Messages.S200, Failed);
         end if;
-      elsif Action = Time.Server.Get_Information then
-        return  AWS.Response.Acknowledge (AWS.Messages.S200, Response);
+      elsif Action = TS.Set_Date_Time then
+        declare
+          Value : constant String := The_Parameters.Get_Value;
+        begin
+          Clock.Set (Pc_Time => Value);
+          return AWS.Response.Acknowledge (AWS.Messages.S200, (if Clock.Is_Set_From_Pc then Ok else Failed));
+        end;
+      elsif Action = TS.Get_Information then
+        return AWS.Response.Acknowledge (AWS.Messages.S200, Response);
       else
+        Log.Error ("Unknown Action: """ & Action & '"');
         return AWS.Response.Acknowledge (AWS.Messages.S400, "unknown command");
       end if;
     end;
@@ -98,7 +119,7 @@ package body Server is
     Log.Write ("Start");
     AWS.Config.Set.Server_Name (The_Config, "Time Server");
     AWS.Config.Set.Server_Host (The_Config, "");
-    AWS.Config.Set.Server_Port (The_Config, Time.Server.Port);
+    AWS.Config.Set.Server_Port (The_Config, TS.Port);
     AWS.Config.Set.Security (The_Config, False);
     AWS.Config.Set.Session (The_Config, False);
     AWS.Config.Set.Reuse_Address (The_Config, True);
