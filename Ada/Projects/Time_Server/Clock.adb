@@ -17,7 +17,6 @@ pragma Style_Astronomy;
 
 with GPIO;
 with Ten_Micron;
-with Time;
 with Traces;
 
 package body Clock is
@@ -40,11 +39,8 @@ package body Clock is
   end Shutdown;
 
 
-  Time_Set          : Boolean := False;
   Time_Set_From_Pc  : Boolean := False;
   Time_Synchronized : Boolean := False;
-
-  function Is_Set return Boolean is (Time_Set);
 
   function Is_Set_From_Pc return Boolean is (Time_Set_From_Pc);
 
@@ -71,28 +67,33 @@ package body Clock is
   end Synchronized_Mount;
 
 
+  function Set (Item : Time.JD) return Boolean is
+  begin
+    return True;
+  exception
+  when others =>
+    Log.Error ("Set to time " & Time.Image_Of (Item) & " failed");
+    return False;
+  end Set;
+
+
   procedure Set (Pc_Time : String) is
   begin
+    Time_Set_From_Pc := False;
     declare
       Julian_Date : constant Time.Unix_JD := Time.Unix_JD'value(Pc_Time);
     begin
-      Time.Set (Julian_Date);
-      Time_Set := True;
-      Time_Set_From_Pc := True;
       Time_Synchronized := False;
       Ten_Micron.Clear_Synchronized;
-      Log.Write ("Calendar set to Pc time " & Time.Image_Of (Julian_Date));
-    exception
-    when others =>
-      Log.Error ("Set to Pc time " & Time.Image_Of (Julian_Date) & " failed");
-      raise;
+      Time.Set (Julian_Date);
+      if Time.Is_Set then
+        Time_Set_From_Pc := True;
+        Log.Write ("Calendar set to Pc time " & Time.Image_Of (Julian_Date));
+      end if;
     end;
   exception
   when others =>
-    Time_Set := False;
-    Time_Set_From_Pc := False;
-    Time_Synchronized := False;
-    Ten_Micron.Clear_Synchronized;
+    null;
   end Set;
 
 
@@ -104,7 +105,7 @@ package body Clock is
     end Round_To_Nearest_Minute;
 
     The_Time       : Time.JD;
-    Last_Time      : Time.JD := Time.Julian_Date;
+    Last_Time      : Time.JD := Time.JD_Undefined;
     The_Inaccuracy : Duration;
 
     use type Time.JD;
@@ -113,30 +114,22 @@ package body Clock is
     Log.Write ("Handler started");
     GPIO.Request_Dynamic_Input (Pulse_Input);
     loop
-      GPIO.Await_Change_To_Low (Pulse_Input);
-      if not Time_Set and then Ten_Micron.Has_New (The_Time) then
-        begin
-          Time.Set (The_Time);
-          Last_Time := The_Time;
-          Time_Set := True;
-          Log.Write ("Calendar set to mount time " & Time.Image_Of (The_Time));
-        exception
-        when others =>
-          Log.Error ("Set to mount time " & Time.Image_Of (The_Time) & " failed");
-        end;
-      end if;
       GPIO.Await_Change_To_High (Pulse_Input);
-      if Time_Set then
+      if Time.Is_Set then
         The_Time := Time.Julian_Date;
-        The_Inaccuracy := abs Duration((The_Time - Last_Time) / Time.JD_Second) - Time.One_Minute;
-        Last_Time := The_Time;
-        if not Is_Synchronized or else The_Inaccuracy > Clock_Accuracy then
+        if not Time_Synchronized then
           Round_To_Nearest_Minute (The_Time);
           Time.Set (The_Time);
           Time_Synchronized := True;
           Log.Write ("Time synchronized at " & Time.Image_Of (The_Time));
+        else
+          The_Inaccuracy := abs (Duration((The_Time - Last_Time) / Time.JD_Second) - Time.One_Minute);
+          if The_Inaccuracy > Clock_Accuracy then
+            Time_Synchronized := False;
+            Log.Write ("Time inaccuracy is" & The_Inaccuracy'image);
+          end if;
         end if;
-        Log.Write ("Time inaccuracy is" & The_Inaccuracy'image);
+        Last_Time := The_Time;
       end if;
     end loop;
   exception

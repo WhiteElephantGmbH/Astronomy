@@ -42,7 +42,7 @@ package body Server is
 
     procedure Set_Information is
       Time_Image         : constant String  := Time.Image_Of (Time.Julian_Date);
-      Clock_Set          : constant Boolean := Clock.Is_Set;
+      Clock_Set          : constant Boolean := Time.Is_Set;
       Clock_Set_From_Pc  : constant Boolean := Clock.Is_Set_From_Pc;
       Clock_Synchronized : constant Boolean := Clock.Is_Synchronized;
       Mount_Connected    : constant Boolean := Ten_Micron.Connected;

@@ -175,11 +175,9 @@ package Time is
     Small => JD_Delta,
     Size  => 64;
 
-  subtype Unix_JD is JD range 2440587.5 .. JD'last;
+  JD_Undefined : constant JD := JD'last;
 
-  procedure Set (Item : Unix_JD);
-
-  function Image_Of (Item : Unix_JD) return String;
+  function Is_Defined (Item : JD) return Boolean is (Item /= JD_Undefined);
 
   function Julian_Date return JD;
 
@@ -189,4 +187,15 @@ package Time is
 
   function Rounded (Item       : JD;
                     To_Nearest : JD) return JD;
+
+  -- Linux
+
+  subtype Unix_JD is JD range 2440587.5 .. JD'last;
+
+  procedure Set (Item : Unix_JD);
+
+  function Is_Set return Boolean;
+
+  function Image_Of (Item : Unix_JD) return String;
+
 end Time;

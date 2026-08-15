@@ -25,8 +25,7 @@ package body Ten_Micron is
 
   package Log is new Traces (Id);
 
-  Loop_Time    : constant Duration := 0.5;
-  Unknown_Time : constant Time.JD := 0.0;
+  Loop_Time : constant Duration := 0.5;
 
 
   task Handler is
@@ -37,11 +36,10 @@ package body Ten_Micron is
 
 
   function Has_New (The_Time : out Time.JD) return Boolean is
-    use type Time.JD;
   begin
     select
       Handler.Get (The_Time);
-      return The_Time /= Unknown_Time;
+      return Time.Is_Defined (The_Time);
     else
       return False;
     end select;
@@ -94,22 +92,6 @@ package body Ten_Micron is
 
     Is_Connected : Boolean := False;
 
-    procedure Connect is
-      Socket_Protocol : constant Network.Tcp.Protocol := Network.Tcp.Raw;
-      Receive_Timeout : constant Duration := Loop_Time;
-    begin
-      The_Socket := Network.Tcp.Socket_For (The_Address     => Network.Ip_Address_Of ("169.254.42.42"),
-                                            The_Port        => Network.Port_Number (3490),
-                                            The_Protocol    => Socket_Protocol,
-                                            Receive_Timeout => Receive_Timeout);
-      Is_Connected := True;
-      Log.Write ("Connected");
-    exception
-    when others =>
-      Is_Connected := False;
-    end Connect;
-
-
     procedure Disconnect is
     begin
       begin
@@ -136,10 +118,30 @@ package body Ten_Micron is
     exception
     when others =>
       Disconnect;
-      return Unknown_Time;
+      return Time.JD_Undefined;
     end Julian_Date;
 
-    use type Time.JD;
+
+    procedure Connect is
+      Socket_Protocol  : constant Network.Tcp.Protocol := Network.Tcp.Raw;
+      Receive_Timeout  : constant Duration := Loop_Time;
+    begin
+      The_Socket := Network.Tcp.Socket_For (The_Address     => Network.Ip_Address_Of ("169.254.42.42"),
+                                            The_Port        => Network.Port_Number (3490),
+                                            The_Protocol    => Socket_Protocol,
+                                            Receive_Timeout => Receive_Timeout);
+      Is_Connected := True;
+      Log.Write ("Connected");
+      if not Time.Is_Set then
+        Time.Set (Julian_Date);
+        if Time.Is_Set then
+          Log.Write ("Calendar set to mount time " & Time.Image_Of (Julian_Date));
+        end if;
+      end if;
+    exception
+    when others =>
+      Is_Connected := False;
+    end Connect;
 
   begin -- Handler
     Log.Write ("Handler started");
@@ -154,7 +156,7 @@ package body Ten_Micron is
         end Get;
       or
         accept Get (Has_Connection : out Boolean) do
-          Is_Connected := Julian_Date /= Unknown_Time;
+          Is_Connected := Time.Is_Defined (Julian_Date);
           Has_Connection := Is_Connected;
           if not Is_Connected then
             Time_Synchronized := False;

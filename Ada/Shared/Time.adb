@@ -401,59 +401,6 @@ package body Time is
 
   JD_Offset : constant JD := 2451545.0;
 
-  function Timespec_Of (Item : Unix_JD) return CI.Timespec is
-
-    type Unsigned_64 is range 0 .. 2**64 - 1 with Size => 64;
-
-    One_Sec : constant Unsigned_64 := 10**9; -- Nanoseconds
-
-    function Convert is new Ada.Unchecked_Conversion (JD, Unsigned_64);
-
-    Factor  : constant Unsigned_64 := Unsigned_64(JD_Second / JD_Delta);
-    T_Unix  : constant Unsigned_64 := Convert (Item - Unix_JD'first);
-    Sec     : constant CI.Tv := CI.Tv(T_Unix / Factor);
-    Nsec    : constant CI.Tv := CI.Tv((T_Unix mod Factor) * (One_Sec / Factor));
-
-  begin -- Timespec_Of
-    return (Sec => Sec, Nsec => Nsec);
-  end Timespec_Of;
-
-
-  procedure Set (Item : Unix_JD) is
-
-    Ts : aliased constant CI.Timespec := Timespec_Of (Item);
-
-    use type CI.Return_Code;
-
-  begin
-    if CI.Clock_Settime (CI.Realtime, Ts'access) /= CI.Success then
-      raise Program_Error;
-    end if;
-  end Set;
-
-
-  function Image_Of (Item : Unix_JD) return String is
-
-    Ts : constant CI.Timespec := Timespec_Of (Item);
-
-    use type CI.Tv;
-
-    The_Rest : Natural := Natural(Ts.Sec mod CI.Tv(1.0 / JD_Second));
-
-    The_Seconds : constant Natural := The_Rest mod 60;
-    The_Minutes : Natural;
-
-  begin -- Image_Of
-    The_Rest := @ / 60;
-    The_Minutes := Natural(The_Rest mod 60);
-    The_Rest := @ / 60;
-    return Filled_Image_Of (The_Rest) & ":" & Filled_Image_Of (The_Minutes) & ":" & Filled_Image_Of (The_Seconds) &
-           '.' & Filled_Image_Of (Natural(Ts.Nsec / 10**5), 4);
-  exception
-  when others =>
-    return "<undefined>";
-  end Image_Of;
-
 
   function Julian_Date return JD is
   begin
@@ -478,5 +425,63 @@ package body Time is
   begin
     return JD_Offset + JD(Long_Long_Integer((Item - JD_Offset) / To_Nearest)) * To_Nearest;
   end Rounded;
+
+
+  -- Linux
+
+  Rtc_Is_Set : Boolean := False;
+
+  function Timespec_Of (Item : Unix_JD) return CI.Timespec is
+
+    type Unsigned_64 is range 0 .. 2**64 - 1 with Size => 64;
+
+    One_Sec : constant Unsigned_64 := 10**9; -- Nanoseconds
+
+    function Convert is new Ada.Unchecked_Conversion (JD, Unsigned_64);
+
+    Factor  : constant Unsigned_64 := Unsigned_64(JD_Second / JD_Delta);
+    T_Unix  : constant Unsigned_64 := Convert (Item - Unix_JD'first);
+    Sec     : constant CI.Tv := CI.Tv(T_Unix / Factor);
+    Nsec    : constant CI.Tv := CI.Tv((T_Unix mod Factor) * (One_Sec / Factor));
+
+  begin -- Timespec_Of
+    return (Sec => Sec, Nsec => Nsec);
+  end Timespec_Of;
+
+
+  procedure Set (Item : Unix_JD) is
+    use type CI.Return_Code;
+  begin
+    Rtc_Is_Set := False;
+    declare
+      Ts : aliased constant CI.Timespec := Timespec_Of (Item);
+    begin
+      Rtc_Is_Set := CI.Clock_Settime (CI.Realtime, Ts'access) = CI.Success;
+    end;
+  end Set;
+
+
+  function Is_Set return Boolean is (Rtc_Is_Set);
+
+
+  function Image_Of (Item : Unix_JD) return String is
+    use type CI.Tv;
+  begin
+    declare
+      Ts          : constant CI.Timespec := Timespec_Of (Item);
+      The_Rest    : Natural := Natural(Ts.Sec mod CI.Tv(1.0 / JD_Second));
+      The_Seconds : constant Natural := The_Rest mod 60;
+      The_Minutes : Natural;
+    begin
+      The_Rest := @ / 60;
+      The_Minutes := Natural(The_Rest mod 60);
+      The_Rest := @ / 60;
+      return Filled_Image_Of (The_Rest) & ":" & Filled_Image_Of (The_Minutes) & ":" & Filled_Image_Of (The_Seconds) &
+             '.' & Filled_Image_Of (Natural(Ts.Nsec / 10**5), 4);
+    end;
+  exception
+  when others =>
+    return "<undefined>";
+  end Image_Of;
 
 end Time;
