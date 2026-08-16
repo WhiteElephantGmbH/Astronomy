@@ -60,17 +60,9 @@ package body Ten_Micron is
   end Connected;
 
 
-  Time_Synchronized : Boolean := False;
+  Time_Synchronized : Boolean := False; -- Atomic -> No protection necessary
 
-  function Is_Synchronized return Boolean is (Time_Synchronized);
-
-  procedure Clear_Synchronized is
-  begin
-    Time_Synchronized := False;
-  end Clear_Synchronized;
-
-
-  procedure Set (Item : Time.JD) is
+  procedure Synchronize (Item : Time.JD) is
     Command : constant String := Lx200.String_Of (Lx200.Set_Julian_Date, Lx200.Julian_Date_Of (Item));
   begin
     Network.Tcp.Send (The_String  => Command,
@@ -79,7 +71,17 @@ package body Ten_Micron is
   exception
   when others =>
     Time_Synchronized := False;
-  end Set;
+  end Synchronize;
+
+
+  procedure Clear_Synchronized is
+  begin
+    Time_Synchronized := False;
+  end Clear_Synchronized;
+
+
+  function Is_Synchronized return Boolean is (Time_Synchronized);
+
 
 
   procedure Shutdown is

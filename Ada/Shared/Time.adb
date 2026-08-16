@@ -20,8 +20,11 @@ with Ada.Unchecked_Conversion;
 with Site;
 with Standard_C_Interface;
 with Text;
+with Traces;
 
 package body Time is
+
+  package Log is new Traces ("Time");
 
   package CI renames Standard_C_Interface;
 
@@ -49,9 +52,9 @@ package body Time is
   end In_Future;
 
 
-  procedure Wait (Time_Spawn : Duration := For_Termination) is
+  procedure Wait (Time_Span : Duration := For_Termination) is
   begin
-    delay until Time.In_Future (Time_Offset => Time_Spawn);
+    delay until Time.In_Future (Time_Offset => Time_Span);
   end Wait;
 
 
@@ -223,9 +226,9 @@ package body Time is
   end Mod_Jd;
 
 
-  -----------------------------
-  -- local mean sideral time --
-  -----------------------------
+  ------------------------------
+  -- local mean sidereal time --
+  ------------------------------
 
   function Lmst return Value is
     use all type Angle.Value;
@@ -401,7 +404,6 @@ package body Time is
 
   JD_Offset : constant JD := 2451545.0;
 
-
   function Julian_Date return JD is
   begin
     return Julian_Date_Of (Universal);
@@ -458,6 +460,10 @@ package body Time is
     begin
       Rtc_Is_Set := CI.Clock_Settime (CI.Realtime, Ts'access) = CI.Success;
     end;
+  exception
+  when Occurrence: others =>
+    Log.Termination (Occurrence);
+    Rtc_Is_Set := False;
   end Set;
 
 

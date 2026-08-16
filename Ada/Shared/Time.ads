@@ -30,7 +30,7 @@ package Time is
 
   function In_Future (Time_Offset : Duration) return Ada.Real_Time.Time;
 
-  procedure Wait (Time_Spawn : Duration := For_Termination);
+  procedure Wait (Time_Span : Duration := For_Termination);
 
 
   ------------------
@@ -133,9 +133,9 @@ package Time is
   -- returns the local time image
 
 
-  -----------------------------
-  -- Local Mean Sideral Time --
-  -----------------------------
+  ------------------------------
+  -- Local Mean Sidereal Time --
+  ------------------------------
 
   function Lmst return Value;
 
@@ -165,15 +165,23 @@ package Time is
   -- Julian Date --
   -----------------
 
+  JD_Second_Delta : constant := 0.0001; -- seconds
+
   JD_Second : constant := 1.0 / 86_400.0;
-
   JD_Minute : constant := 60.0 * JD_Second;
-
-  JD_Delta : constant := JD_Second / 10_000.0 ;
+  JD_Delta  : constant := JD_Second * JD_Second_Delta;
 
   type JD is delta JD_Delta range -2 ** 63 * JD_Delta .. (2 ** 63 - 1) * JD_Delta with
     Small => JD_Delta,
     Size  => 64;
+
+  type JD_Seconds is delta JD_Second_Delta range -2 ** 63 * JD_Second_Delta .. (2 ** 63 - 1) * JD_Second_Delta with
+    Small => JD_Second_Delta,
+    Size  => 64;
+
+  function JD_Of (Item : JD_Seconds) return JD is (JD(Item * JD_Second));
+
+  function JD_Seconds_Of (Item : JD) return JD_Seconds is (JD_Seconds(Item / JD_Second));
 
   JD_Undefined : constant JD := JD'last;
 

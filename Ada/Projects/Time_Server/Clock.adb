@@ -17,13 +17,14 @@ pragma Style_Astronomy;
 
 with GPIO;
 with Ten_Micron;
+with Time;
 with Traces;
 
 package body Clock is
 
   package Log is new Traces ("Clock");
 
-  Clock_Accuracy : constant Duration := Time.One_Second / 1000.0;
+  Clock_Accuracy : constant Time.JD_Seconds := 0.001;
 
   Pulse_Input : constant GPIO.Line := GPIO.Line27;
 
@@ -38,7 +39,7 @@ package body Clock is
     Handler.Shutdown;
   end Shutdown;
 
-
+  -- no protection necessary
   Time_Set_From_Pc  : Boolean := False;
   Time_Synchronized : Boolean := False;
 
@@ -48,15 +49,13 @@ package body Clock is
 
 
   function Synchronized_Mount return Boolean is
-    The_Time   : Time.JD;
-    Mount_Time : Time.JD;
+    The_Time : Time.JD;
    begin
     if Time_Synchronized then
       The_Time := Time.Julian_Date;
-      Ten_Micron.Set (The_Time);
-      if Ten_Micron.Has_New (Mount_Time) then
-        Log.Write ("Mount Set at " & Time.Image_Of (The_Time));
-        Log.Write ("Mount Get at " & Time.Image_Of (Mount_Time));
+      Ten_Micron.Synchronize (The_Time);
+      if Ten_Micron.Is_Synchronized then
+        Log.Write ("Mount synchronized at " & Time.Image_Of (The_Time));
         return True;
       end if;
       Log.Warning ("Mount not synchronized");
@@ -65,16 +64,6 @@ package body Clock is
     end if;
     return False;
   end Synchronized_Mount;
-
-
-  function Set (Item : Time.JD) return Boolean is
-  begin
-    return True;
-  exception
-  when others =>
-    Log.Error ("Set to time " & Time.Image_Of (Item) & " failed");
-    return False;
-  end Set;
 
 
   procedure Set (Pc_Time : String) is
@@ -99,16 +88,12 @@ package body Clock is
 
   task body Handler is
 
-    procedure Round_To_Nearest_Minute (The_Time : in out Time.JD) is
-    begin
-      The_Time := Time.Rounded (The_Time, To_Nearest => Time.JD_Minute);
-    end Round_To_Nearest_Minute;
-
     The_Time       : Time.JD;
-    Last_Time      : Time.JD := Time.JD_Undefined;
-    The_Inaccuracy : Duration;
+    The_Synch_Time : Time.JD;
+    The_Inaccuracy : Time.JD_Seconds;
 
     use type Time.JD;
+    use type Time.JD_Seconds;
 
   begin -- Handler
     Log.Write ("Handler started");
@@ -117,19 +102,19 @@ package body Clock is
       GPIO.Await_Change_To_High (Pulse_Input);
       if Time.Is_Set then
         The_Time := Time.Julian_Date;
-        if not Time_Synchronized then
-          Round_To_Nearest_Minute (The_Time);
-          Time.Set (The_Time);
-          Time_Synchronized := True;
-          Log.Write ("Time synchronized at " & Time.Image_Of (The_Time));
-        else
-          The_Inaccuracy := abs (Duration((The_Time - Last_Time) / Time.JD_Second) - Time.One_Minute);
+        if Time_Synchronized then
+          The_Synch_Time := @ + Time.JD_Minute;
+          The_Inaccuracy := abs Time.JD_Seconds_Of (The_Time - The_Synch_Time);
           if The_Inaccuracy > Clock_Accuracy then
             Time_Synchronized := False;
-            Log.Write ("Time inaccuracy is" & The_Inaccuracy'image);
+            Log.Write ("Time inaccuracy is" & The_Inaccuracy'image & " seconds");
           end if;
+        else
+          The_Synch_Time := Time.Rounded (The_Time, To_Nearest => Time.JD_Minute);
+          Time.Set (The_Synch_Time);
+          Time_Synchronized := True;
+          Log.Write ("Time synchronized at " & Time.Image_Of (The_Synch_Time));
         end if;
-        Last_Time := The_Time;
       end if;
     end loop;
   exception

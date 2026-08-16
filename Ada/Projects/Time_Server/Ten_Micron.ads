@@ -19,15 +19,15 @@ with Time;
 
 package Ten_Micron is
 
-  procedure Clear_Synchronized;
-
-  function Is_Synchronized return Boolean;
-
   function Connected return Boolean;
 
   function Has_New (The_Time : out Time.JD) return Boolean;
 
-  procedure Set (Item : Time.JD) ; -- set is unprotected for speed reasons
+  procedure Synchronize (Item : Time.JD) ; -- set is unprotected for speed reasons
+
+  procedure Clear_Synchronized;
+
+  function Is_Synchronized return Boolean;
 
   procedure Shutdown;
 

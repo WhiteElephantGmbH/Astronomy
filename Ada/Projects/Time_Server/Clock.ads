@@ -15,8 +15,6 @@
 -- *********************************************************************************************************************
 pragma Style_Astronomy;
 
-with Time;
-
 package Clock is
 
   function Is_Set_From_Pc return Boolean;
@@ -24,8 +22,6 @@ package Clock is
   function Is_Synchronized return Boolean;
 
   function Synchronized_Mount return Boolean;
-
-  function Set (Item : Time.JD) return Boolean;
 
   procedure Set (Pc_Time : String);
 

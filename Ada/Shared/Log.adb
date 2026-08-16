@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2002 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2002 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,20 +15,20 @@
 -- *********************************************************************************************************************
 pragma Style_Astronomy;
 
-with Ada.Calendar;
+with Ada.Real_Time;
 with Ada.Text_IO;
 with Application;
 with Configuration;
 with Date_Time;
 with Exceptions;
 with File;
-with Os;
 with System;
 with Text;
 
 package body Log is
 
-  package Io renames Ada.Text_IO;
+  package IO renames Ada.Text_IO;
+  package RT renames Ada.Real_Time;
 
   subtype List is  Text.List;
 
@@ -62,15 +62,15 @@ package body Log is
 
       Default_Log_Filename : constant String := Application.Composure (Application.Name, "log");
 
-      The_File : Io.File_Type;
+      The_File : IO.File_Type;
 
       procedure Put (Line : String) is
       begin
-        Io.Put_Line (The_File, Line);
+        IO.Put_Line (The_File, Line);
       end Put;
 
     begin -- Create_Default_Configuration
-      Io.Create (The_File, Name => Filename);
+      IO.Create (The_File, Name => Filename);
       Put ( Text.Bom_8 & "[" & File_Section_Name & "]");
       Put (";" & Name_Item & "        = " & Default_Log_Filename);
       Put (Multiple_Item & "     = " &  Text.Legible_Of (Default_Multiple_Files'img));
@@ -79,7 +79,7 @@ package body Log is
       Put ("");
       Put ("[" & Filter_Section_Name & "]");
       Put (Categories_Item & " = Data");
-      Io.Close (The_File);
+      IO.Close (The_File);
     exception
     when others =>
       null;
@@ -107,12 +107,7 @@ package body Log is
     null;
   end Rename_File;
 
-
-  Log_Time_Delta : constant := 0.0001;
-
-  type Log_Time is delta Log_Time_Delta range -131072.0 .. +131072.0 - Log_Time_Delta;
-
-  The_File         : Io.File_Type;
+  The_File         : IO.File_Type;
   The_Maximum_Size : Natural; -- Maximum number of lines
   The_Current_Size : Natural := 0;
 
@@ -219,9 +214,9 @@ package body Log is
       Flush_After_Write := Configuration.Value_Of (File_Section, Flush_Item);
       Primary_Filename := new String'(Filename);
       if Multiple_Files then
-        Io.Create (The_File, Name => Primary_Filename.all);
+        IO.Create (The_File, Name => Primary_Filename.all);
       else
-        Io.Open (The_File, Io.Out_File, Primary_Filename.all);
+        IO.Open (The_File, IO.Out_File, Primary_Filename.all);
       end if;
       begin
         The_Current_Size := 0;
@@ -244,14 +239,14 @@ package body Log is
           Categories := 2 ** Enabled_Categories - 1;
         end if;
       end;
-      Io.Put_Line (The_File,  Text.Bom_8 & Address_Size & Application.Name &" version " & Application.Version);
-      Io.Put_Line (The_File, "Log created " & Date_And_Time);
+      IO.Put_Line (The_File,  Text.Bom_8 & Address_Size & Application.Name &" version " & Application.Version);
+      IO.Put_Line (The_File, "Log created " & Date_And_Time);
       if Categories = All_Categories then
-        Io.Put_Line (The_File, "Logging all categories");
+        IO.Put_Line (The_File, "Logging all categories");
       elsif Categories = No_Categories then
-        Io.Put_Line (The_File, "Logging disabled");
+        IO.Put_Line (The_File, "Logging disabled");
       else
-        Io.Put_Line (The_File, "Logging categories = " & Category_Names'image);
+        IO.Put_Line (The_File, "Logging categories = " & Category_Names'image);
       end if;
       Is_Started := True;
     exception
@@ -260,25 +255,48 @@ package body Log is
     end Open;
 
 
+    function Time_Stamp return String is
+      N        : constant := 6;
+      Accuracy : constant := 10**N;
+      Seconds  : RT.Seconds_Count;
+      Fraction : RT.Time_Span;
+    begin
+      RT.Split (RT.Clock, Seconds, Fraction);
+      declare
+        F     : constant Natural := Natural(RT.To_Duration (Fraction) * Duration(Accuracy));
+        F_Img : constant String := Natural'(F + Accuracy)'image;
+        use type RT.Seconds_Count;
+      begin
+        if F = Accuracy then
+          Seconds := @ + 1;
+        end if;
+        declare
+          Time_Img : constant String := "    " & Seconds'image & '.' & F_Img(F_Img'last - N + 1 .. F_Img'last);
+        begin
+          return Time_Img(Time_Img'last - 5 - N .. Time_Img'last);
+        end;
+      end;
+    exception
+    when others =>
+      return "*****.******";
+    end Time_Stamp;
+
+
     procedure Write_Line (The_String : String) is
     begin
       if (The_Maximum_Size /= Unlimited) and then (The_Current_Size >= The_Maximum_Size) then
-        Io.Close (The_File);
+        IO.Close (The_File);
         Rename_File (Primary_Filename.all, New_Name => Secondary_Filename.all);
-        Io.Create (The_File, Name => Primary_Filename.all);
-        Io.Put_Line (The_File,  Text.Bom_8 &
+        IO.Create (The_File, Name => Primary_Filename.all);
+        IO.Put_Line (The_File,  Text.Bom_8 &
                                "The log file reached it's maximum size of" & The_Maximum_Size'img & " records");
-        Io.Put_Line (The_File, "These records are now stored in the file " & Secondary_Filename.all);
+        IO.Put_Line (The_File, "These records are now stored in the file " & Secondary_Filename.all);
         The_Current_Size := 2;
       end if;
-      declare
-        Time : constant String := Log_Time'image(Log_Time(Ada.Calendar.Seconds(Ada.Calendar.Clock)));
-      begin
-        Io.Put_Line (The_File, Time & " (" & Os.Thread_Id & ") => " & The_String);
-        if Flush_After_Write then
-          Io.Flush (The_File);
-        end if;
-      end;
+      IO.Put_Line (The_File, Time_Stamp & " => " & The_String);
+      if Flush_After_Write then
+        IO.Flush (The_File);
+      end if;
       The_Current_Size := The_Current_Size + 1;
     exception
     when others =>
@@ -301,7 +319,7 @@ package body Log is
 
     procedure Flush is
     begin
-      Io.Flush (The_File);
+      IO.Flush (The_File);
     end Flush;
 
   end Guarded;
@@ -337,8 +355,8 @@ package body Log is
       if Logging_Is_Active then
         Write ("LAST CHANCE HANDLER", Occurrence);
       else
-        Io.Put_Line ("Last chance handler called before logging was elaborated");
-        Io.Put_Line (Exceptions.Information_Of (Occurrence));
+        IO.Put_Line ("Last chance handler called before logging was elaborated");
+        IO.Put_Line (Exceptions.Information_Of (Occurrence));
       end if;
     exception
     when others =>

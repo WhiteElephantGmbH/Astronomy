@@ -78,7 +78,7 @@ package body Standard_C_Interface is
           when Rising =>
             Time.Wait (Time_To_Next_Minute);
           end case;
-          Ada.Text_IO.Put_Line (Expected_Edge'image & " edge at day time" & Time.Day_Seconds'image);
+          Ada.Text_IO.Put_Line (Expected_Edge'image & " edge at day time in seconds " & Time.Day_Seconds'image);
           exit;
         end if;
       end;
