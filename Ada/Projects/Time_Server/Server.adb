@@ -25,6 +25,7 @@ with Clock;
 with Control;
 with GNATCOLL.JSON;
 with Ten_Micron;
+with Text;
 with Time.Server;
 with Traces;
 
@@ -41,7 +42,7 @@ package body Server is
     Information : constant JS.JSON_Value := JS.Create_Object;
 
     procedure Set_Information is
-      Time_Image         : constant String  := Time.Image_Of (Time.Julian_Date);
+      Time_Image         : constant String  := Text.Trimmed (Time.Julian_Date'image);
       Clock_Set          : constant Boolean := Time.Is_Set;
       Clock_Set_From_Pc  : constant Boolean := Clock.Is_Set_From_Pc;
       Clock_Synchronized : constant Boolean := Clock.Is_Synchronized;

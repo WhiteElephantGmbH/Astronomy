@@ -37,4 +37,13 @@ package Time.Server is
   Mount_Connected    : constant String := "mount_connected";
   Mount_Synchronized : constant String := "mount_synchronized";
 
+  type Information is record
+    Clock_Set          : Boolean;
+    Clock_Set_From_Pc  : Boolean;
+    Clock_Synchronized : Boolean;
+    Clock_Time         : Time.JD;
+    Mount_Connected    : Boolean;
+    Mount_Synchronized : Boolean;
+  end record;
+
 end Time.Server;

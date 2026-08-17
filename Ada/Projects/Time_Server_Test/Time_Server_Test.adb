@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2023 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                           (c) 2026 by White Elephant GmbH, Schaffhausen, Switzerland                              *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,72 +15,36 @@
 -- *********************************************************************************************************************
 pragma Style_Astronomy;
 
-with Ten_Micron;
-with Time;
-with System;
+pragma Build (Description => "Time Server Test",
+              Version     => (1, 0, 0, 0),
+              Kind        => Console,
+              Icon        => False,
+              Libraries   => ("AWS", "GNATCOLL"),
+              Compiler    => "GNAT\14.2");
 
-package body Clock is
+with Ada.Text_IO;
+with Exceptions;
+with Time_Client;
+with Time.Server;
 
-  task type Control with Priority => System.Max_Priority is
+procedure Time_Server_Test is
 
-    entry Start;
+  package IO renames Ada.Text_IO;
 
-    entry Define_Time;
+  The_Information : Time.Server.Information;
 
-    entry Finalize;
-
-  end Control;
-
-  The_Control : access Control;
-
-
-  task body Control is
-
-    Pc_Time_Offset : Time.JD_Seconds;
-
-    use type Time.JD;
-
-  begin -- Control
-    accept Start;
-    loop
-      select
-        accept Finalize;
-        exit;
-      or
-        accept Define_Time do
-          if Ten_Micron.Gps_Is_Synchronized then
-            Pc_Time_Offset := Time.JD_Seconds_Of (Time.Julian_Date - Ten_Micron.Julian_Date);
-            Log.Write ("GPS is synchronized - PC time offset =" & Pc_Time_Offset'image);
-          end if;
-        end Define_Time;
-      end select;
-    end loop;
-  exception
-  when Occurrence: others =>
-    Log.Termination (Occurrence);
-  end Control;
-
-
-  procedure Start is
-  begin
-    Log.Write ("start");
-    The_Control := new Control;
-    The_Control.Start;
-  end Start;
-
-
-  procedure Define_Time is
-  begin
-    if The_Control /= null then
-      The_Control.Define_Time;
-    end if;
-  end Define_Time;
-
-
-  procedure Finish is
-  begin
-    Log.Write ("finish");
-    The_Control.Finalize;
-  end Finish;
-
-end Clock;
+begin
+  IO.Put_Line ("Time Server Test");
+  IO.Put_Line ("================");
+  loop
+    The_Information := Time_Client.Actual_Information;
+    IO.Put_Line ("Information:" & The_Information'image);
+    IO.Put_Line ("Date Time " & Time.Image_Of (Time.Ut_Of (The_Information.Clock_Time)));
+    Time.Wait (1.0);
+  end loop;
+exception
+when Time_Client.Server_Not_Available =>
+  IO.Put_Line ("Time Server not avalable");
+when Item: others =>
+  IO.Put_Line ("Exception: " & Exceptions.Information_Of (Item));
+end Time_Server_Test;
