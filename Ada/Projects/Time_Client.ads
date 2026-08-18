@@ -24,6 +24,10 @@ package Time_Client is
 
   function Synchronize_Mount return Boolean;
 
+  function Set (Item : Time.Unix_JD) return Boolean;
+
+  procedure Shutdown;
+
   Server_Not_Available : exception;
 
 private

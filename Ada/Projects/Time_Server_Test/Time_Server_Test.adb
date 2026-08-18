@@ -40,8 +40,20 @@ begin
     The_Information := Time_Client.Actual_Information;
     IO.Put_Line ("Information:" & The_Information'image);
     IO.Put_Line ("Date Time " & Time.Image_Of (Time.Ut_Of (The_Information.Clock_Time)));
-    Time.Wait (1.0);
+    if The_Information.Clock_Synchronized then
+      if not Time_Client.Synchronize_Mount then
+        IO.Put_Line ("Synchronize Mount Failed!!!");
+      end if;
+    end if;
+    if The_Information.Mount_Synchronized then
+      if not Time_Client.Set (Time.Julian_Date) then
+        IO.Put_Line ("Set Date Time Failed!!!");
+      end if;
+    end if;
+    exit when The_Information.Clock_Set_From_Pc and The_Information.Mount_Synchronized;
+    Time.Wait (3.0);
   end loop;
+  Time_Client.Shutdown;
 exception
 when Time_Client.Server_Not_Available =>
   IO.Put_Line ("Time Server not avalable");
