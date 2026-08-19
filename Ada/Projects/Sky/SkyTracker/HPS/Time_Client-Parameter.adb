@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2024 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                      *
+-- *                           (c) 2026 by White Elephant GmbH, Schaffhausen, Switzerland                              *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,12 +15,29 @@
 -- *********************************************************************************************************************
 pragma Style_Astronomy;
 
-with Configuration;
+with Section;
 
-package Clock.Parameter is
+package body Time_Client.Parameter is
 
-  procedure Define (Handle : Configuration.File_Handle);
+  Ip_Address_Key    : constant String := Section.Ip_Address_Key;
+  Port_Key          : constant String := Section.Port_Key;
 
-  procedure Defaults (Put : access procedure (Item : String));
+  procedure Define (Handle : Configuration.File_Handle) is
+  begin
+    Section.Set (Configuration.Handle_For (Handle, Id));
+    if Section.Exists then
+      The_Server_Exists := True;
+      The_Client_Address := Section.Ip_Address_For (Id);
+      The_Client_Port := Section.Port_For (Id);
+    end if;
+  end Define;
 
-end Clock.Parameter;
+
+  procedure Defaults (Put : access procedure (Item : String)) is
+  begin
+    Put ("[" & Id & "]");
+    Put (Ip_Address_Key & " = 169.254.42.46");
+    Put (Port_Key & "       =" & Time.Server.Port'image);
+  end Defaults;
+
+end Time_Client.Parameter;

@@ -20,6 +20,8 @@ private with Network;
 
 package Time_Client is
 
+  function Exists return Boolean;
+
   function Actual_Information return Time.Server.Information;
 
   function Synchronize_Mount return Boolean;
@@ -33,6 +35,8 @@ package Time_Client is
 private
 
   Id : constant String := "Time_Client";
+
+  The_Server_Exists : Boolean := False;
 
   The_Client_Address : Network.Ip_Address := Network.Ip_Address_Of_Host ("localhost");
   The_Client_Port    : Network.Port_Number := Time.Server.Port;

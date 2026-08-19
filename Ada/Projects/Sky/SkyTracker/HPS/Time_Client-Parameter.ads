@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2024 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                      *
+-- *                           (c) 2026 by White Elephant GmbH, Schaffhausen, Switzerland                              *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,45 +15,12 @@
 -- *********************************************************************************************************************
 pragma Style_Astronomy;
 
-with Error;
-with Section;
+with Configuration;
 
-package body Clock.Parameter is
+package Time_Client.Parameter is
 
-  Ip_Address_Key : constant String := Section.Ip_Address_Key;
-  Port_Key       : constant String := Section.Port_Key;
+  procedure Define (Handle : Configuration.File_Handle);
 
+  procedure Defaults (Put : access procedure (Item : String));
 
-  procedure Connect_Clock is
-
-    Name_Or_Address  : constant String := Section.String_Value_Of (Ip_Address_Key);
-    Datagram_Timeout : constant Duration := 0.3;
-
-  begin
-    if Name_Or_Address /= "" then
-      The_Udp_Socket := Network.Udp.Socket_For (Name_Or_Address => Name_Or_Address,
-                                                Port            => Section.Port_For (Id),
-                                                Receive_Timeout => Datagram_Timeout);
-      Log.Write ("connected to " & Name_Or_Address);
-    end if;
-  exception
-  when Network.Not_Found =>
-    Error.Raise_With ("Clock not connected to " & Name_Or_Address);
-  end Connect_Clock;
-
-
-  procedure Define (Handle : Configuration.File_Handle) is
-  begin
-    Section.Set (Configuration.Handle_For (Handle, Id));
-    Connect_Clock;
-  end Define;
-
-
-  procedure Defaults (Put : access procedure (Item : String)) is
-  begin
-    Put ("[" & Id & "]");
-    Put (Ip_Address_Key & " = 169.254.42.43");
-    Put (Port_Key & "       = 44422");
-  end Defaults;
-
-end Clock.Parameter;
+end Time_Client.Parameter;

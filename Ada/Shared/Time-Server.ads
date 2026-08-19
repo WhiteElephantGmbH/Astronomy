@@ -38,12 +38,14 @@ package Time.Server is
   Mount_Synchronized : constant String := "mount_synchronized";
 
   type Information is record
-    Clock_Set          : Boolean;
-    Clock_Set_From_Pc  : Boolean;
-    Clock_Synchronized : Boolean;
-    Clock_Time         : Time.JD;
-    Mount_Connected    : Boolean;
-    Mount_Synchronized : Boolean;
+    Clock_Set          : Boolean := False;
+    Clock_Set_From_Pc  : Boolean := False;
+    Clock_Synchronized : Boolean := False;
+    Clock_Time         : Time.JD := Time.JD_Undefined;
+    Mount_Connected    : Boolean := False;
+    Mount_Synchronized : Boolean := False;
   end record;
+
+  No_Information : constant Information := (others => <>);
 
 end Time.Server;

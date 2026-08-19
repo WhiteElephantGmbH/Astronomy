@@ -29,6 +29,9 @@ package body Time_Client is
   package JS renames GNATCOLL.JSON;
 
 
+  function Exists return Boolean is (The_Server_Exists);
+
+
   function Get (Command   : String;
                 Parameter : String := "") return AWS.Response.Data is
 
