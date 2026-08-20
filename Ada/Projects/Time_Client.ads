@@ -15,47 +15,30 @@
 -- *********************************************************************************************************************
 pragma Style_Astronomy;
 
-package Time.Server is
+with Time.Server;
+private with Network;
 
-  Port : constant := 10000;
+package Time_Client is
 
-  --Commands
-  Get_Information   : constant String := "get_information";
-  Set_Date_Time     : constant String := "set_date_time";
-  Synchronize_Mount : constant String := "synchronize_mount";
-  Shutdown          : constant String := "shutdown";
+  function Exists return Boolean;
 
-  --Respose
-  Response_Ok     : constant String := "Ok";
-  Response_Failed : constant String := "Failed";
+  function Actual_Information return Time.Server.Information;
 
-  --Information Fields
-  Clock_Set          : constant String := "clock_set";
-  Clock_Set_From_Pc  : constant String := "clock_set_from_pc";
-  Clock_Synchronized : constant String := "clock_synchronized";
-  Clock_Time         : constant String := "clock_time";
-  Mount_Connected    : constant String := "mount_connected";
-  Mount_Synchronized : constant String := "mount_synchronized";
+  function Synchronize_Mount return Boolean;
 
-  type Clock_Flags is record
-    Is_Set          : Boolean := False;
-    Is_Set_From_Pc  : Boolean := False;
-    Is_Synchronized : Boolean := False;
-  end record;
+  function Set (Item : Time.Unix_JD) return Boolean;
 
-  type Mount_Flags is record
-    Is_Connected    : Boolean := False;
-    Is_Synchronized : Boolean := False;
-  end record;
+  procedure Shutdown;
 
-  type Information is record
-    Clock_Time : Time.JD := Time.JD_Undefined;
-    Clock      : Clock_Flags;
-    Mount      : Mount_Flags;
-  end record;
+  Server_Not_Available : exception;
 
-  function "=" (Left, Right : Information) return Boolean is (Left.Clock = Right.Clock and Left.Mount = Right.Mount);
+private
 
-  No_Information : constant Information := (others => <>);
+  Id : constant String := "Time_Client";
 
-end Time.Server;
+  The_Server_Exists : Boolean := False;
+
+  The_Client_Address : Network.Ip_Address := Network.Ip_Address_Of_Host ("localhost");
+  The_Client_Port    : Network.Port_Number := Time.Server.Port;
+
+end Time_Client;

@@ -21,6 +21,7 @@ with Ada.Unchecked_Conversion;
 with Alignment;
 with Application;
 with Camera;
+with Clock;
 with Earth;
 with Focus;
 with Focuser_Client;
@@ -38,7 +39,7 @@ with Space;
 with Targets.Filter;
 with Ten_Micron;
 with Text;
-with Time;
+with Time.Server;
 with Traces;
 
 package body User is
@@ -69,6 +70,10 @@ package body User is
   Time_Offset  : Gui.Plain_Edit_Box;
   Air_Pressure : Gui.Plain_Edit_Box;
   Temperature  : Gui.Plain_Edit_Box;
+  Server_Time  : Gui.Plain_Edit_Box;
+  Clock_Set    : Gui.Plain_Edit_Box;
+  Clock_State  : Gui.Plain_Edit_Box;
+  Mount_State  : Gui.Plain_Edit_Box;
 
   Setup_Page           : Gui.Page;
   Setup_Action_Button  : Gui.Button;
@@ -310,6 +315,40 @@ package body User is
         null;
       end case;
     end Show_Focus_Information;
+
+    procedure Show_Time_Information is
+      Information : constant Time.Server.Information := Clock.Actual_Information;
+    begin
+      if Time.Is_Defined (Information.Clock_Time) then
+        Gui.Set_Text (Server_Time, Time.Image_Of (Information.Clock_Time));
+        if Information.Clock.Is_Set then
+          if Information.Clock.Is_Synchronized then
+            Gui.Set_Text (Clock_State, "synchronized");
+          else
+            Gui.Set_Text (Clock_State, "inaccurate");
+          end if;
+          if Information.Clock.Is_Set_From_Pc then
+            Gui.Set_Text (Clock_Set, "from PC");
+          else
+            Gui.Set_Text (Clock_Set, "from Mount");
+          end if;
+        else
+          Gui.Set_Text (Clock_State, "undefined");
+          Gui.Set_Text (Clock_Set, "");
+        end if;
+      else
+        Gui.Set_Text (Server_Time, "");
+      end if;
+      if Information.Mount.Is_Connected then
+        if Information.Mount.Is_Synchronized then
+          Gui.Set_Text (Mount_State, "synchronized");
+        else
+          Gui.Set_Text (Mount_State, "connected");
+        end if;
+      else
+        Gui.Set_Text (Mount_State, "disconnected");
+      end if;
+    end Show_Time_Information;
 
     procedure Disable (The_Button : Gui.Button) is
     begin
@@ -556,6 +595,7 @@ package body User is
       if Refraction.New_Temperature then
         Gui.Set_Text (Temperature, Image_Of (Refraction.Temperature));
       end if;
+      Show_Time_Information;
     when Is_Setup =>
       if Space.Direction_Is_Known (Information.Picture_Direction) then
         Gui.Set_Text (Picture_Dec, Space.Dec_Image_Of (Information.Picture_Direction));
@@ -869,6 +909,22 @@ package body User is
                                     The_Size       => Text_Size,
                                     The_Title_Size => Title_Size);
         Temperature := Gui.Create (Display_Page, "Temperature", "",
+                                   Is_Modifiable  => False,
+                                   The_Size       => Text_Size,
+                                   The_Title_Size => Title_Size);
+        Server_Time := Gui.Create (Display_Page, "Server UTC", "",
+                                   Is_Modifiable  => False,
+                                   The_Size       => Text_Size,
+                                   The_Title_Size => Title_Size);
+        Clock_State := Gui.Create (Display_Page, "Clock State", "",
+                                   Is_Modifiable  => False,
+                                   The_Size       => Text_Size,
+                                   The_Title_Size => Title_Size);
+        Clock_Set := Gui.Create (Display_Page, "Clock set", "",
+                                 Is_Modifiable  => False,
+                                 The_Size       => Text_Size,
+                                 The_Title_Size => Title_Size);
+        Mount_State := Gui.Create (Display_Page, "Mount State", "",
                                    Is_Modifiable  => False,
                                    The_Size       => Text_Size,
                                    The_Title_Size => Title_Size);

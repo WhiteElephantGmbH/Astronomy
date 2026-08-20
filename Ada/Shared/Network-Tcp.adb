@@ -164,7 +164,7 @@ package body Network.Tcp is
     when Net.Software_Caused_Connection_Abort
       |  Net.Socket_Operation_On_Non_Socket =>
       raise Transmission_Error;
-    when Net.Connection_Reset_By_Peer =>
+    when Net.Connection_Reset_By_Peer | Net.Transport_Endpoint_Not_Connected =>
       raise No_Client;
     when others =>
       Log.Write ("Network.Tcp.Handle_Send_Error: " & Error'img);

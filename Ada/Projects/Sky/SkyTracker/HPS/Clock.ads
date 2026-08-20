@@ -15,6 +15,8 @@
 -- *********************************************************************************************************************
 pragma Style_Astronomy;
 
+with Time.Server;
+
 private with Network.Udp;
 private with Traces;
 
@@ -23,6 +25,8 @@ package Clock is
   procedure Start;
 
   procedure Define_Time;
+  
+  function Actual_Information return Time.Server.Information;
 
   procedure Finish;
 

@@ -19,9 +19,9 @@ with Time;
 
 package Ten_Micron is
 
-  function Connected return Boolean;
+  function Startup return Boolean;
 
-  function Has_New (The_Time : out Time.JD) return Boolean;
+  function Connected return Boolean;
 
   procedure Synchronize (Item : Time.JD) ; -- set is unprotected for speed reasons
 

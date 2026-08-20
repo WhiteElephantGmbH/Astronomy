@@ -57,7 +57,7 @@ package body Focuser_Client.Parameter is
   procedure Defaults (Put : access procedure (Item : String)) is
   begin
     Put ("[" & Id & "]");
-    Put (Ip_Address_Key & "    = 169.254.42.44");
+    Put (Ip_Address_Key & "    = 169.254.42.46");
     Put (Port_Key & "          =" & Celestron.Focuser.Default_Port_Number'image);
     Put (Home_Position_Key & " =" & Celestron.Focuser.Default_Home_Position'image);
     Put (Backlash_Key & "      =" & Celestron.Focuser.Default_Backlash'image);

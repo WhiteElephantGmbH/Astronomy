@@ -29,24 +29,21 @@ package body Ten_Micron is
 
 
   task Handler is
-    entry Get (The_Time : out Time.JD);
     entry Get (Has_Connection : out Boolean);
     entry Shutdown;
   end Handler;
 
 
-  function Has_New (The_Time : out Time.JD) return Boolean is
-  begin
-    select
-      Handler.Get (The_Time);
-      return Time.Is_Defined (The_Time);
-    else
-      return False;
-    end select;
-  end Has_New;
-
-
   The_Socket : Network.Tcp.Socket;
+
+  Is_Startup : Boolean := True;
+
+
+  function Startup return Boolean is
+  begin
+    return Is_Startup;
+  end Startup;
+
 
   function Connected return Boolean is
     Is_Connected : Boolean;
@@ -64,13 +61,21 @@ package body Ten_Micron is
 
   procedure Synchronize (Item : Time.JD) is
     Command : constant String := Lx200.String_Of (Lx200.Set_Julian_Date, Lx200.Julian_Date_Of (Item));
+    Reply   : Character;
   begin
+    Time_Synchronized := True;
     Network.Tcp.Send (The_String  => Command,
                       Used_Socket => The_Socket);
-    Time_Synchronized := Network.Tcp.Raw_Character_From (The_Socket) = '1';
+    Reply := Network.Tcp.Raw_Character_From (The_Socket);
+    if Reply = '1' then
+      Time_Synchronized := True;
+      Is_Startup := False;
+    else
+      Log.Warning ("Set Julian Date failed - Reply: " & Reply);
+    end if;
   exception
   when others =>
-    Time_Synchronized := False;
+    Log.Error ("Set Julian Date failed");
   end Synchronize;
 
 
@@ -96,12 +101,14 @@ package body Ten_Micron is
 
     procedure Disconnect is
     begin
+      Is_Startup := True;
       begin
         Network.Tcp.Close (The_Socket);
       exception
       when others =>
         null;
       end;
+      Time_Synchronized := False;
       Is_Connected := False;
       Log.Write ("Disconnected");
     end Disconnect;
@@ -152,10 +159,6 @@ package body Ten_Micron is
         accept Shutdown;
         Disconnect;
         exit;
-      or
-        when Is_Connected => accept Get (The_Time : out Time.JD) do
-          The_Time := Julian_Date;
-        end Get;
       or
         accept Get (Has_Connection : out Boolean) do
           Is_Connected := Time.Is_Defined (Julian_Date);

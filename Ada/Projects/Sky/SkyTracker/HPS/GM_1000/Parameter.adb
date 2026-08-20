@@ -19,7 +19,6 @@ with Ada.Text_IO;
 with Alignment.Parameter;
 with Application;
 with Camera.Parameter;
-with Clock.Parameter;
 with Configuration;
 with Error;
 with Exposure;
@@ -35,6 +34,7 @@ with Satellite.Parameter;
 with Stellarium.Parameter;
 with Sun.Parameter;
 with Ten_Micron.Parameter;
+with Time_Client.Parameter;
 with User;
 
 package body Parameter is
@@ -72,7 +72,7 @@ package body Parameter is
       Put ("");
       Moon.Parameter.Defaults (Put'access);
       Put ("");
-      Clock.Parameter.Defaults (Put'access);
+      Time_Client.Parameter.Defaults (Put'access);
       Put ("");
       Camera.Parameter.Defaults (Put'access, Exposure.Value ("4"), Sensitivity.Value ("6400"));
       Put ("");
@@ -107,7 +107,7 @@ package body Parameter is
       Sun.Parameter.Define (Handle);
       Moon.Parameter.Define (Handle);
       begin
-        Clock.Parameter.Define (Handle);
+        Time_Client.Parameter.Define (Handle);
       exception
       when Error.Occurred =>
         User.Show_Error;

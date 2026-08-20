@@ -113,7 +113,14 @@ package body Clock is
           The_Synch_Time := Time.Rounded (The_Time, To_Nearest => Time.JD_Minute);
           Time.Set (The_Synch_Time);
           Time_Synchronized := True;
-          Log.Write ("Time synchronized at " & Time.Image_Of (The_Synch_Time));
+        end if;
+        if Time_Synchronized then
+          if Ten_Micron.Startup then
+            Ten_Micron.Synchronize (The_Synch_Time);
+            Log.Write ("First Time synchronized at " & Time.Image_Of (The_Synch_Time));
+          else
+            Log.Write ("Time synchronized at " & Time.Image_Of (The_Synch_Time));
+          end if;
         end if;
       end if;
     end loop;

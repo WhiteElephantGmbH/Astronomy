@@ -25,6 +25,7 @@ with Clock;
 with Control;
 with GNATCOLL.JSON;
 with Ten_Micron;
+with Text;
 with Time.Server;
 with Traces;
 
@@ -35,31 +36,32 @@ package body Server is
   package JS renames GNATCOLL.JSON;
   package TS renames Time.Server;
 
+  Last_Data : Time.Server.Information := TS.No_Information;
+
 
   function Response return String is
 
     Information : constant JS.JSON_Value := JS.Create_Object;
 
     procedure Set_Information is
-      Time_Image         : constant String  := Time.Image_Of (Time.Julian_Date);
-      Clock_Set          : constant Boolean := Time.Is_Set;
-      Clock_Set_From_Pc  : constant Boolean := Clock.Is_Set_From_Pc;
-      Clock_Synchronized : constant Boolean := Clock.Is_Synchronized;
-      Mount_Connected    : constant Boolean := Ten_Micron.Connected;
-      Mount_Synchronized : constant Boolean := Ten_Micron.Is_Synchronized;
+      Data : constant TS.Information := (Clock_Time => Time.Julian_Date,
+                                         Clock      => (Is_Set          => Time.Is_Set,
+                                                        Is_Set_From_Pc  => Clock.Is_Set_From_Pc,
+                                                        Is_Synchronized => Clock.Is_Synchronized),
+                                         Mount      => (Is_Connected    => Ten_Micron.Connected,
+                                                        Is_Synchronized => Ten_Micron.Is_Synchronized));
+      use type TS.Information;
     begin
-      JS.Set_Field (Information, TS.Clock_Time, JS.Create (Time_Image));
-      JS.Set_Field (Information, TS.Clock_Set, JS.Create (Clock_Set));
-      JS.Set_Field (Information, TS.Clock_Set_From_Pc, JS.Create (Clock_Set_From_Pc));
-      JS.Set_Field (Information, TS.Clock_Synchronized, JS.Create (Clock_Synchronized));
-      JS.Set_Field (Information, TS.Mount_Connected, JS.Create (Mount_Connected));
-      JS.Set_Field (Information, TS.Mount_Synchronized, JS.Create (Mount_Synchronized));
-      Log.Write ("Clock Time         : " & Time_Image);
-      Log.Write ("Clock Set          : " & Clock_Set'image);
-      Log.Write ("Clock Set from PC  : " & Clock_Set_From_Pc'image);
-      Log.Write ("Clock Synchronized : " & Clock_Synchronized'image);
-      Log.Write ("Mount Connected    : " & Mount_Connected'image);
-      Log.Write ("Mount Synchronized : " & Mount_Synchronized'image);
+      JS.Set_Field (Information, TS.Clock_Time, JS.Create (Text.Trimmed (Data.Clock_Time'image)));
+      JS.Set_Field (Information, TS.Clock_Set, JS.Create (Data.Clock.Is_Set));
+      JS.Set_Field (Information, TS.Clock_Set_From_Pc, JS.Create (Data.Clock.Is_Set_From_Pc));
+      JS.Set_Field (Information, TS.Clock_Synchronized, JS.Create (Data.Clock.Is_Synchronized));
+      JS.Set_Field (Information, TS.Mount_Connected, JS.Create (Data.Mount.Is_Connected));
+      JS.Set_Field (Information, TS.Mount_Synchronized, JS.Create (Data.Mount.Is_Synchronized));
+      if Data /= Last_Data then
+        Log.Write (Data'image);
+        Last_Data := Data;
+      end if;
     end Set_Information;
 
   begin -- Information
@@ -80,7 +82,6 @@ package body Server is
     declare
       Action : constant String := The_Parameters.Get_Name;
     begin
-      Log.Write ("Callback - Action: " & Action);
       if Action = TS.Shutdown then
         Control.Shutdown;
         return AWS.Response.Acknowledge (AWS.Messages.S200, Ok);
