@@ -16,7 +16,7 @@
 pragma Style_Astronomy;
 
 pragma Build (Description => "Time Server Test",
-              Version     => (1, 0, 0, 0),
+              Version     => (1, 0, 0, 1),
               Kind        => Console,
               Icon        => False,
               Libraries   => ("AWS", "GNATCOLL"),
@@ -40,17 +40,17 @@ begin
     The_Information := Time_Client.Actual_Information;
     IO.Put_Line ("Information:" & The_Information'image);
     IO.Put_Line ("Date Time " & Time.Image_Of (Time.Ut_Of (The_Information.Clock_Time)));
-    if The_Information.Clock_Synchronized then
+    if The_Information.Clock.Is_Synchronized then
       if not Time_Client.Synchronize_Mount then
         IO.Put_Line ("Synchronize Mount Failed!!!");
       end if;
     end if;
-    if The_Information.Mount_Synchronized then
+    if The_Information.Mount.Is_Synchronized then
       if not Time_Client.Set (Time.Julian_Date) then
         IO.Put_Line ("Set Date Time Failed!!!");
       end if;
     end if;
-    exit when The_Information.Clock_Set_From_Pc and The_Information.Mount_Synchronized;
+    exit when The_Information.Clock.Is_Set_From_Pc and The_Information.Mount.Is_Synchronized;
     Time.Wait (3.0);
   end loop;
   Time_Client.Shutdown;

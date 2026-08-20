@@ -80,19 +80,24 @@ package body Time_Client is
 
   function Execute (Command   : String;
                     Parameter : String := "") return Boolean is
-
-    Response : constant AWS.Response.Data := Get (Command, Parameter);
-    Result   : constant String := AWS.Response.Message_Body (Response);
-
   begin
-    if Result = Time.Server.Response_Ok then
-      return True;
-    elsif Result = Time.Server.Response_Failed then
-      return False;
-    else
-      Log.Error (Command & ": " & Result);
-      return False;
-    end if;
+    declare
+      Response : constant AWS.Response.Data := Get (Command, Parameter);
+      Result   : constant String := AWS.Response.Message_Body (Response);
+    begin
+      if Result = Time.Server.Response_Ok then
+        return True;
+      elsif Result = Time.Server.Response_Failed then
+        return False;
+      else
+        Log.Error (Command & ": " & Result);
+        return False;
+      end if;
+    end;
+  exception
+  when Item: others =>
+    Log.Termination (Item);
+    return False;
   end Execute;
 
 
