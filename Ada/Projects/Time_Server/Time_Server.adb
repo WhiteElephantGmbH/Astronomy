@@ -16,7 +16,7 @@
 pragma Style_Astronomy;
 
 pragma Build (Description => "Meinberg Time Server",
-              Version     => (1, 1, 0, 0),
+              Version     => (1, 2, 0, 0),
               Kind        => Console,
               Libraries   => ("AWS", "GNATCOLL"),
               Compiler    => "GNAT\14.2");

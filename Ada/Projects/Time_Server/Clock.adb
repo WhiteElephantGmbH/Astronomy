@@ -99,7 +99,7 @@ package body Clock is
     Log.Write ("Handler started");
     GPIO.Request_Dynamic_Input (Pulse_Input);
     loop
-      GPIO.Await_Change_To_High (Pulse_Input);
+      GPIO.Await_Change_To_Low (Pulse_Input);
       if Time.Is_Set then
         The_Time := Time.Julian_Date;
         if Time_Synchronized then
