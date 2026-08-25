@@ -292,7 +292,7 @@ package body Telescope is
       use type Time_Offset;
     begin
       The_Start_Time := Now;
-      Offset := Time_Offset(Time_Change / 50.0);
+      Offset := Time_Offset(Time_Change / 200.0);
       if Ten_Micron.Updated (Offset) then
         The_Delta_Time := @ + Offset;
         The_Start_Time := Now;

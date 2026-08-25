@@ -2,7 +2,7 @@
 ************************************************************************************************************************
 *                                            Handbox Simulator for 10micron                                            *
 ************************************************************************************************************************
-*                           (c) 2024 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                         *
+*                           (c) 2024 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                         *
 *                                                www.white-elephant.ch                                                 *
 *                                                                                                                      *
 *      This program is free software; you can redistribute it and/or modify it under the terms of the GNU General      *
@@ -32,19 +32,22 @@ def main():
     client = cc.Client(host=ip_address)
 
     #events
-    go_back        = client.go_back
-    move_left      = client.move_left
-    move_right     = client.move_right
-    move_up        = client.move_up
-    move_down      = client.move_down
-    end_command    = client.end_command
-    next_speed     = client.next_speed
-    previous_speed = client.previous_speed
-    decrease_rate  = client.decrease_rate
-    increase_rate  = client.increase_rate
-    move_in        = client.move_in
-    move_out       = client.move_out
-    stop           = client.stop
+    go_back             = client.go_back
+    move_left           = client.move_left
+    move_right          = client.move_right
+    move_up             = client.move_up
+    move_down           = client.move_down
+    end_command         = client.end_command
+    next_speed          = client.next_speed
+    previous_speed      = client.previous_speed
+    decrease_rate       = client.decrease_rate
+    increase_rate       = client.increase_rate
+    start_time_decrease = client.start_time_decrease
+    start_time_increase = client.start_time_increase
+    end_time_change     = client.end_time_change
+    move_in             = client.move_in
+    move_out            = client.move_out
+    stop                = client.stop
 
     color0 = sg.theme_button_color()[0]
     color1 = sg.theme_button_color()[1]
@@ -60,8 +63,12 @@ def main():
              sg.RealtimeButton(sg.SYMBOL_RIGHT, key=move_right)],
             [sg.RealtimeButton(sg.SYMBOL_DOWN, key=move_down)]]
 
+    time = [[sg.RealtimeButton(sg.SYMBOL_LEFT, key=start_time_decrease),
+             sg.RealtimeButton(sg.SYMBOL_RIGHT, key=start_time_increase)]]
+
     handbox = [[sg.Frame('Speed', font='Ani 8', layout=speed, element_justification='c')],
-               [sg.Frame('', layout=move, element_justification='c')]]
+               [sg.Frame('', layout=move, element_justification='c')],
+               [sg.Frame('Time', font='Ani 8', layout=time, element_justification='c')]]
 
     rate = [[sg.RealtimeButton(sg.SYMBOL_LEFT, key=decrease_rate),
              sg.Text(size=(1,1), key='-RATE-', pad=(0,0), font='Ani 12',
@@ -85,7 +92,7 @@ def main():
                        finalize=True,
                        element_justification='c',
                        location=(0,0),
-                       size=(255,265))
+                       size=(255,320))
     count = 0
     pressed = False
     minimized = False
@@ -97,6 +104,7 @@ def main():
                 if not pressed:
                     pressed = True
                     mount_release_action = event in (move_up, move_down, move_left, move_right)
+                    end_change_time_action = event in (start_time_increase, start_time_decrease)
                     focuser_release_action = event in (move_in,  move_out)
                     if event in (decrease_rate, increase_rate, move_in, move_out):
                         response = client.focuser_command (command = event)
@@ -108,6 +116,8 @@ def main():
                     pressed = False
                     if mount_release_action:
                         response = client.mount_command (command = end_command)
+                    if end_change_time_action:
+                        response = client.mount_command (command = end_time_change)
                     if focuser_release_action:
                         response = client.focuser_command (command = stop)
             count += 1

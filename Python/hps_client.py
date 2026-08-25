@@ -2,7 +2,7 @@
 ************************************************************************************************************************
 *                      HTTP API exposed by HPS (SkyTracker) implemented using the json protocoll                       *
 ************************************************************************************************************************
-*                              (c) 2025 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+*                          (c) 2025 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 *                                                www.white-elephant.ch                                                 *
 *                                                                                                                      *
 *      This program is free software; you can redistribute it and/or modify it under the terms of the GNU General      *
@@ -105,6 +105,10 @@ class Client:
     go_back        = 'go_back'
     next_speed     = 'next_speed'
     previous_speed = 'previous_speed'
+
+    start_time_decrease = 'start_time_decrease'
+    start_time_increase = 'start_time_increase'
+    end_time_change     = 'end_time_change'
 
     def mount_command(self, command):
         return self.request_with_status("/mount/" + command)
