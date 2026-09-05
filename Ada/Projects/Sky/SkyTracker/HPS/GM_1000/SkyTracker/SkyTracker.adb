@@ -16,7 +16,7 @@
 pragma Style_Astronomy;
 
 pragma Build (Description => "SkyTracker control program for GM 1000 HPS",
-              Version     => (2, 4, 8, 2),
+              Version     => (2, 4, 8, 3),
               Kind        => Windows,
               Libraries   => ("AWS", "GNATCOLL"),
               Compiler    => "GNAT\14.2");

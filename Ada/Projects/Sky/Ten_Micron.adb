@@ -380,7 +380,10 @@ package body Ten_Micron is
         begin
           Log.Write ("Product " & Product);
           begin
-            The_Firmware_Version := Value(Versions(1)) + Value(Versions(2)) * 0.01 + Value (Versions(3)) * 0.0001;
+            The_Firmware_Version := Value(Versions(1)) + Value(Versions(2)) * 0.01;
+            if Versions.Count = 3 then
+              The_Firmware_Version := @ + Value (Versions(3)) * 0.0001;
+            end if;
             Log.Write ("Firmware " & Version);
           exception
           when others =>
