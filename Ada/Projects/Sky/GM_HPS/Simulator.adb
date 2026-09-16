@@ -9,10 +9,14 @@ with Ada.Command_Line;
 with Ada.Real_Time;
 with Ada.Text_IO;
 with Angle;
+with Earth;
 with Exceptions;
 with Log;
 with Lx200;
 with Network.Tcp;
+with Objects;
+with Space;
+with Site;
 with Text;
 with Time;
 
@@ -35,10 +39,15 @@ package body Simulator is
 
   procedure Put_Line (Item : String) is
   begin
-    Log.Write (Item);
-    if not Hiding then
-      Ada.Text_IO.Put_Line (Item);
-    end if;
+    pragma Assert (Item'length > 0);
+    declare
+      Image : constant String := (if Item'length = 1 then Item(Item'first)'image else Item);
+    begin
+      Log.Write (Image);
+      if not Hiding then
+        Ada.Text_IO.Put_Line (Image);
+      end if;
+    end;
   end Put_Line;
 
 
@@ -57,7 +66,7 @@ package body Simulator is
   begin
     if Hiding then
       Hiding := False;
-      Put_Line ("");
+      Put_Line (".>");
     end if;
     Start_Hiding := False;
   end End_Hiding;
@@ -94,6 +103,8 @@ package body Simulator is
 
     RA_Axis_Image  : String := RA_Park_Axis_Image;
     Dec_Axis_Image : String := Dec_Park_Axis_Image;
+
+    The_Speed_Correction : Character := '0';
 
     Air_Pressure_Image : String := "1013.0#";
     Temperature_Image  : String := "+010.0#";
@@ -151,15 +162,39 @@ package body Simulator is
     function Ra_Image return String is
       use type Angle.Value;
     begin
-      return Lx200.Hours_Of (Angle.Value'(+The_Ra)) & "#";
+      return Lx200.Hours_Of (Angle.Value'(+The_Ra));
     end Ra_Image;
 
 
     function Dec_Image return String is
       use type Angle.Value;
     begin
-      return Lx200.Signed_Degrees_Of (Angle.Value'(+The_Dec)) & "#";
+      return Lx200.Signed_Degrees_Of (Angle.Value'(+The_Dec));
     end Dec_Image;
+
+
+    function Sideral_Time return String is
+    begin
+      return Lx200.Hours_Of (Time.Lmst);
+    end Sideral_Time;
+
+
+    function Traget_Direction return Earth.Direction is
+    begin
+      return Objects.Direction_Of (Space.Direction_Of (Ra => The_Ra, Dec => The_Dec), Time.Lmst);
+    end Traget_Direction;
+
+
+    function Az_Image return String is
+    begin
+      return Lx200.Hours_Of (Earth.Az_Of (Traget_Direction));
+    end Az_Image;
+
+
+    function Alt_Image return String is
+    begin
+      return Lx200.Signed_Degrees_Of (Earth.Alt_Of (Traget_Direction));
+    end Alt_Image;
 
 
     procedure Increment_Dec is
@@ -222,7 +257,7 @@ package body Simulator is
 
     function Julian_Date_Image return String is
     begin
-      return Text.Trimmed (Time.Julian_Date'image) & '#';
+      return Text.Trimmed (Time.Julian_Date'image);
     end Julian_Date_Image;
 
 
@@ -243,25 +278,10 @@ package body Simulator is
         if Hiding then
           Ada.Text_IO.Put ('.');
         else
-          Put_Line ("->" & Item);
+          Put_Line ("->" & Item'image);
         end if;
         Network.Tcp.Send (Item, The_Client_Socket);
       end Send;
-
-      procedure Flush_Input is
-      begin
-        Put_Line ("Flush Input");
-        declare
-          Flushed : constant String := Network.Tcp.Raw_String_From (Used_Socket     => The_Client_Socket,
-                                                                    Terminator      => Terminator,
-                                                                    Receive_Timeout => 0.1);
-        begin
-          Log.Write ("  - Flushed: " & Flushed);
-        end;
-      exception
-      when others =>
-        null;
-      end Flush_Input;
 
 
       The_Offset : Offset;
@@ -293,8 +313,309 @@ package body Simulator is
         end if;
       end Get_Offset;
 
+
+      function Actual_State return String is
+      begin
+        case The_State is
+        when Parked =>
+          return "5";
+        when Stopped =>
+          return "1";
+        when Slewing =>
+          Send_Delay := Send_Delay - 1;
+          if Send_Delay = 0 then
+            The_State := Tracking;
+          end if;
+          return "6";
+        when Positioning =>
+          Send_Delay := Send_Delay - 1;
+          if Send_Delay = 0 then
+            The_State := Positioned;
+          end if;
+          return "6";
+        when Positioned =>
+          return "7";
+        when Tracking =>
+          return "0";
+        when Following =>
+          if The_Satellite_State = Ended then
+            The_State := Stopped;
+          end if;
+          return "10";
+        end case;
+      end Actual_State;
+
+
+      function Side_Image return String is
+        use type Angle.Degrees;
+      begin
+        if The_Ra > 180.0 then
+          return "West";
+        else
+          return "East";
+        end if;
+      end Side_Image;
+
+
+      function Side_Character return Character is
+        Image : constant String := Side_Image;
+      begin
+        return Image(Image'first);
+      end Side_Character;
+
     begin -- Message_Handler
-      if Data'length > 3  and then Data(Data'last) = Terminator then
+      if Data = ":Gg#" then
+        Put_Line ("Get Longitude");
+        Send ("-008*37:32.0#");
+      elsif Data = ":Gt#" then
+        Put_Line ("Get Latitude");
+        Send ("+47*42:22.0#");
+      elsif Data = ":Gev#" then
+        Put_Line ("Get Site Elevation");
+        Send ("+0428.0#");
+      elsif Data = ":GS#" then
+        Put_Line ("Get Sideral Time");
+        Send (Sideral_Time & "#");
+      elsif Data = ":GA#" then
+        Put_Line ("Get Telescope Altitude");
+        Send (Alt_Image & "#");
+      elsif Data = ":GD#" then
+        Put_Line ("Get Telescope DEC");
+        case The_State is
+        when Parked =>
+          The_Dec := Dec_Park_Position;
+        when others =>
+          Increment_Dec;
+        end case;
+        Send (Dec_Image & "#");
+      elsif Data = ":GR#" then
+        Put_Line ("Get Telescope RA");
+        case The_State is
+        when Parked =>
+          The_Ra := Ra_Park_Position;
+        when others =>
+          Increment_Ra;
+        end case;
+        Send (Ra_Image & "#");
+      elsif Data = ":GZ#" then
+        Put_Line ("Get Telescope Azimuth");
+        Send (Az_Image & "#");
+      elsif Data = ":pS#" then
+        Put_Line ("Get_Pointing_State");
+        Send (Side_Image & "#");
+      elsif Data = ":GVP#" then
+        Put_Line ("Get Product Name");
+        case Mount_Type is
+        when GM_1000 =>
+          Send ("10micron GM1000HPS#");
+        when GM_4000 =>
+          Send ("10micron GM4000HPS#");
+        end case;
+      elsif Data = ":GVN#" then
+        Put_Line ("Get Firmware Number");
+        case Mount_Type is
+        when GM_1000 =>
+          Send ("3.4#");
+          Firmware := 3.4;
+        when GM_4000 =>
+          Send ("2.15.1#");
+          Firmware := 2.15;
+        end case;
+      elsif Data = ":GCFG#" then
+        Put_Line ("Get Mount Information");
+        if Minimum_Version (3.4) then
+          Send ("E,G,N,h#");
+        end if;
+      elsif Data = ":GETID#" then
+        Put_Line ("Get Mount Information");
+        if Minimum_Version (3.0) then
+          Send ("07206073609258177599#");
+        end if;
+      elsif Data = ":Ginfo#" then
+        Put_Line ("Get Multiple Information");
+        Send (Ra_Image & "," & Dec_Image & "," & Side_Character & "," & Az_Image & "," & Alt_Image & "," &
+              Julian_Date_Image & "," & Actual_State & ",0#");
+      elsif Data = ":Gstat#" then
+        Put_Line ("Get Status");
+        Send (Actual_State & "#");
+      elsif Data = ":D#" then
+        Put_Line ("Get Slewing State");
+        if The_State = Slewing then
+          Send (Ascii.Del & "#");
+        else
+          Send ("#");
+        end if;
+      elsif Data = ":Gpgc#" then
+        Put_Line ("Get Guiding Status");
+        Send ("0#");
+      elsif Data = ":h?#" then
+        Put_Line ("Query Home Status");
+        Send ("0");
+      elsif Data = ":GSC#" then
+        Put_Line ("Get Speed Correction Flag");
+        Send ([The_Speed_Correction]);
+      elsif Data = ":SSC0#" then
+        Put_Line ("Deactivate Speed Correction");
+        The_Speed_Correction := '0';
+        Send ("1");
+      elsif Data = ":SSC1#" then
+        Put_Line ("Activate Speed Correction");
+        The_Speed_Correction := '1';
+        Send ("1");
+      elsif Data = ":STOP#" then
+        Put_Line ("Stop");
+        The_State := Stopped;
+        The_Satellite_State := Undefined;
+        The_Time_Offset := 0.0;
+      elsif Data = ":GaXa#" then
+        Put_Line ("Get RA Axis Angle");
+        case The_State is
+        when Parked =>
+          RA_Axis_Image := RA_Park_Axis_Image;
+        when others =>
+          null;
+        end case;
+        Send (RA_Axis_Image);
+      elsif Data = ":GaXb#" then
+        Put_Line ("Get Dec Axis Angle");
+        case The_State is
+        when Parked =>
+          Dec_Axis_Image := Dec_Park_Axis_Image;
+        when others =>
+          null;
+        end case;
+        Send (Dec_Axis_Image);
+      elsif Data = ":GRPRS#" then
+        Put_Line ("Get Air Pressure");
+        Send (Air_Pressure_Image);
+      elsif Data = ":GRTMP#" then
+        Put_Line ("Get Temperature");
+        Send (Temperature_Image);
+      elsif Data = ":GJD1#" then
+        Put_Line ("Get Julian Date");
+        Send (Julian_Date_Image & "#");
+      elsif Data = ":GJD2#" then
+        Put_Line ("Get Julian Date [LeapSecond]");
+        Send (Julian_Date_Image & "#");
+      elsif Data = ":Ggui#" then
+        Put_Line ("Get Guide Rate");
+        Send ("7.50#");
+      elsif Data = ":gtg#" then
+        Put_Line ("Gps Test Synchronized");
+        case Mount_Type is
+        when GM_1000 =>
+          Send ("0#");
+        when GM_4000 =>
+          Send ("1#");
+        end case;
+      elsif Data = ":newalig#" then
+        The_Points_Count := 0;
+        Put_Line ("Start Alignment");
+        Send ("V#");
+      elsif Data = ":endalig#" then
+        Put_Line ("End Alignment");
+        Last_Points_Count := The_Points_Count;
+        if The_Points_Count > 1 then
+          The_Points_Count := 0;
+          Send ("V#");
+        else
+          Send ("E#");
+        end if;
+      elsif Data = ":getain#" then
+        Put_Line ("Get Alignment Information");
+        case Last_Points_Count is
+        when 0 | 1 =>
+          Send ("E#");
+        when 2 =>
+          Send (Alignment_Information_2);
+        when 3 =>
+          Send (Alignment_Information_3);
+        when others =>
+          Send (Alignment_Information);
+        end case;
+      elsif Data = ":GMs#" then
+        Put_Line ("Get Current Slewing Rate");
+        Send ("08#");
+      elsif Data = ":GMsb#" then
+        Put_Line ("Get Maximum Slewing Rate");
+        Send ("15#");
+      elsif Data = ":MaX#" then
+        The_State := Positioning;
+        Put_Line ("Slew to Axis Position");
+        Send ("0"); -- OK
+        Send_Delay := Delay_Counter;
+      elsif Data = ":TLEG#" then
+        if Text.Is_Null (Loaded_TLE_Data) then
+          Put_Line ("TLE not loaded");
+          Send ("E#");
+        else
+          Put_Line ("Get loaded TLE");
+          Send (Loaded_TLE_Data.S & "#");
+        end if;
+      elsif Data = ":TLES#" then
+        if Tle_Is_Precalculated then
+          case The_State is
+          when Parked =>
+            Put_Line ("Telecope is parked");
+            Send ("F#");
+          when others =>
+            The_State := Following;
+            if Jd_End < Time.Julian_Date then
+              Send ("Q#");
+              The_Satellite_State := Undefined;
+              The_Time_Offset := 0.0;
+            elsif Jd_Start < Time.Julian_Date then
+              Send ("S#");
+              The_Satellite_State := Catching;
+            else
+              Send ("V#");
+              The_Satellite_State := Preparing;
+            end if;
+          end case;
+        else
+          Put_Line ("TLE not precalculated");
+          Send ("E#");
+        end if;
+      elsif Data = ":TLESCK#" then
+        Put_Line ("Satellite State: " & The_Satellite_State'image);
+        case The_Satellite_State is
+        when Undefined =>
+          Send ("E#");
+        when others =>
+          if Jd_End < Time.Julian_Date then
+            Send ("Q#");
+            The_Satellite_State := Ended;
+          elsif Jd_Start < Time.Julian_Date then
+            Send ("T#");
+            The_Satellite_State := Tracking;
+            The_State := Following;
+          else
+            Send ("P#");
+            The_Satellite_State := Waiting;
+            The_State := Following;
+          end if;
+        end case;
+      elsif Data = ":PsX#" then
+        Put_Line ("Slew to saved Parking Position (cannot be performed)");
+        Send ("3#");
+      elsif Data = ":PyX#" then
+        Put_Line ("Save Parking Position");
+        Send ("0#");
+      elsif Data = ":hP#" then
+        Put_Line ("Slew to Park Position");
+        The_Satellite_State := Undefined;
+        The_State := Parked;
+        The_Time_Offset := 0.0;
+      elsif Data = [Ascii.Ack] then
+        Put_Line ("Query Alignment Mounting Mode");
+        if The_State = Tracking then
+          Send ("P");
+        else
+          Send ("L");
+        end if;
+      elsif Data = "#" then
+        Put_Line ("Flush Input");
+      elsif Data'length > 3  and then Data(Data'last) = Terminator then
         declare
           Command   : constant String := Data(Data'first .. Data'first + 2);
           Image     : constant String := Data(Data'first + 3 .. Data'last);
@@ -308,160 +629,7 @@ package body Simulator is
           Command_8 : constant String := (if Data'length > 9 then Data(Data'first .. Data'first + 8) else None);
           Image_8   : constant String := (if Data'length > 9 then Data(Data'first + 9 .. Data'last) else "");
         begin
-          if Data = ":Gstat#" then
-            Put_Line ("Get Status");
-            case The_State is
-            when Parked =>
-              Send ("5#");
-            when Stopped =>
-              Send ("1#");
-            when Slewing =>
-              Send ("6#");
-              Send_Delay := Send_Delay - 1;
-              if Send_Delay = 0 then
-                The_State := Tracking;
-              end if;
-            when Positioning =>
-              Send ("6#");
-              Send_Delay := Send_Delay - 1;
-              if Send_Delay = 0 then
-                The_State := Positioned;
-              end if;
-            when Positioned =>
-              Send ("7#");
-            when Tracking =>
-              Send ("0#");
-            when Following =>
-              Send ("10#");
-              if The_Satellite_State = Ended then
-                The_State := Stopped;
-              end if;
-            end case;
-          elsif Data = ":STOP#" then
-            Put_Line ("Stop");
-            The_State := Stopped;
-            The_Satellite_State := Undefined;
-            The_Time_Offset := 0.0;
-          elsif Data = ":GaXa#" then
-            Put_Line ("Get RA Axis Angle");
-            case The_State is
-            when Parked =>
-              RA_Axis_Image := RA_Park_Axis_Image;
-            when others =>
-              null;
-            end case;
-            Send (RA_Axis_Image);
-          elsif Data = ":GaXb#" then
-            Put_Line ("Get Dec Axis Angle");
-            case The_State is
-            when Parked =>
-              Dec_Axis_Image := Dec_Park_Axis_Image;
-            when others =>
-              null;
-            end case;
-            Send (Dec_Axis_Image);
-          elsif Data = ":GRPRS#" then
-            Put_Line ("Get Air Pressure");
-            Send (Air_Pressure_Image);
-          elsif Data = ":GRTMP#" then
-            Put_Line ("Get Temperature");
-            Send (Temperature_Image);
-          elsif Data = ":GJD1#" then
-            Put_Line ("Get Julian Date");
-            Send (Julian_Date_Image);
-          elsif Data = ":gtg#" then
-            Put_Line ("Gps Test Synchronized");
-            case Mount_Type is
-            when GM_1000 =>
-              Send ("0#");
-            when GM_4000 =>
-              Send ("1#");
-            end case;
-          elsif Data = ":newalig#" then
-            The_Points_Count := 0;
-            Put_Line ("Start Alignment");
-            Send ("V#");
-          elsif Data = ":endalig#" then
-            Put_Line ("End Alignment");
-            Last_Points_Count := The_Points_Count;
-            if The_Points_Count > 1 then
-              The_Points_Count := 0;
-              Send ("V#");
-            else
-              Send ("E#");
-            end if;
-          elsif Data = ":getain#" then
-            Put_Line ("Get Alignment Information");
-            case Last_Points_Count is
-            when 0 | 1 =>
-              Send ("E#");
-            when 2 =>
-              Send (Alignment_Information_2);
-            when 3 =>
-              Send (Alignment_Information_3);
-            when others =>
-              Send (Alignment_Information);
-            end case;
-          elsif Data = ":GMs#" then
-            Put_Line ("Get Maximum Slewing Speed");
-            Send ("8#");
-          elsif Data = ":MaX#" then
-            The_State := Positioning;
-            Put_Line ("Slew to Axis Position");
-            Send ("0"); -- OK
-            Send_Delay := Delay_Counter;
-          elsif Data = ":TLEG#" then
-            if Text.Is_Null (Loaded_TLE_Data) then
-              Put_Line ("TLE not loaded");
-              Send ("E#");
-            else
-              Put_Line ("Get loaded TLE");
-              Send (Loaded_TLE_Data.S & "#");
-            end if;
-          elsif Data = ":TLES#" then
-            if Tle_Is_Precalculated then
-              case The_State is
-              when Parked =>
-                Put_Line ("Telecope is parked");
-                Send ("F#");
-              when others =>
-                The_State := Following;
-                if Jd_End < Time.Julian_Date then
-                  Send ("Q#");
-                  The_Satellite_State := Undefined;
-                  The_Time_Offset := 0.0;
-                elsif Jd_Start < Time.Julian_Date then
-                  Send ("S#");
-                  The_Satellite_State := Catching;
-                else
-                  Send ("V#");
-                  The_Satellite_State := Preparing;
-                end if;
-              end case;
-            else
-              Put_Line ("TLE not precalculated");
-              Send ("E#");
-            end if;
-          elsif Data = ":TLESCK#" then
-            Put_Line ("Satellite State: " & The_Satellite_State'image);
-            case The_Satellite_State is
-            when Undefined =>
-              Send ("E#");
-            when others =>
-              if Jd_End < Time.Julian_Date then
-                Send ("Q#");
-                The_Satellite_State := Ended;
-              elsif Jd_Start < Time.Julian_Date then
-                Send ("T#");
-                The_Satellite_State := Tracking;
-                The_State := Following;
-              else
-                Send ("P#");
-                The_Satellite_State := Waiting;
-                The_State := Following;
-              end if;
-            end case;
-          elsif Command_4 = ":SaXa" then
+          if Command_4 = ":SaXa" then
             Put_Line ("Set RA Axis Angle");
             RA_Axis_Image := Image_4;
             Send ("1");
@@ -469,6 +637,14 @@ package body Simulator is
             Put_Line ("Set Dec Axis Angle");
             Dec_Axis_Image := Image_4;
             Send ("1");
+          elsif Command_4 = ":Suaf" then
+            if Image_4 = "0#" then
+              Put_Line ("Disables Unattented Flip");
+            elsif Image_4 = "1#" then
+              Put_Line ("Enables Unattented Flip");
+            else
+              Put_Line ("Invalid Command " & Data);
+            end if;
           elsif Command_4 = ":TLEP" then
             Tle_Is_Precalculated := False;
             if Text.Is_Null (Loaded_TLE_Data) then
@@ -548,29 +724,6 @@ package body Simulator is
           elsif Command_3 = ":SJD" then -- :SJD1234567.12345678#
             Put_Line ("Set Julian Date " & Time.Image_Of (Time.Ut_Of (Time.JD'value(Image_3))));
             Send ("1");
-          elsif Command = ":GV" then
-            case Data(Data'first + 3) is
-            when 'P' => -- GVP
-              Put_Line ("Get Product Name");
-              case Mount_Type is
-              when GM_1000 =>
-                Send ("10micron GM1000HPS#");
-              when GM_4000 =>
-                Send ("10micron GM4000HPS#");
-              end case;
-            when 'N' => -- GVN
-              Put_Line ("Get Firmware Number");
-              case Mount_Type is
-              when GM_1000 =>
-                Send ("3.1.10#");
-                Firmware := 3.1;
-              when GM_4000 =>
-                Send ("2.15.1#");
-                Firmware := 2.15;
-              end case;
-            when others =>
-              Put_Line ("Unknown GV Command");
-            end case;
           elsif Command = ":U2" then
             Put_Line ("Set Ultra Precesion Mode");
           elsif Command = ":PO" then
@@ -582,47 +735,10 @@ package body Simulator is
             The_Satellite_State := Undefined;
             The_State := Parked;
             The_Time_Offset := 0.0;
-          elsif Command = ":Gg" then
-            Put_Line ("Get Longitude");
-            Send ("-008*37:32.0#");
-          elsif Command = ":Gt" then
-            Put_Line ("Get Latitude");
-            Send ("+47*42:22.0");
-          elsif Command = ":GS" then
-            Put_Line ("Get Sideral Time");
-            Send ("07:34:56.42");
-          elsif Command = ":GA" then
-            Put_Line ("Get Telescope Altitude");
-            Send ("+47:42:22.0");
-          elsif Command = ":GD" then
-            Put_Line ("Get Telescope DEC");
-            case The_State is
-            when Parked =>
-              The_Dec := Dec_Park_Position;
-            when others =>
-              Increment_Dec;
-            end case;
-            Send (Dec_Image);
-          elsif Command = ":GR" then
-            Put_Line ("Get Telescope RA");
-            case The_State is
-            when Parked =>
-              The_Ra := Ra_Park_Position;
-            when others =>
-              Increment_Ra;
-            end case;
-            Send (Ra_Image);
-          elsif Command = ":GZ" then
-            Put_Line ("Get Azimuth");
-            Send ("179:59:59.00#");
-          elsif Command = ":pS" then
-            declare
-              use type Angle.Degrees;
-              Side : constant String := (if The_Ra > 180.0 then "West#" else "East#");
-            begin
-              Put_Line ("Get_Pointing_State");
-              Send (Side);
-            end;
+          elsif Command = ":AP" then
+            Put_Line ("Start Tracking");
+          elsif Command = ":AL" then
+            Put_Line ("Stop Tracking");
           elsif Command = ":Sr" then
             Put_Line ("Set Object RA " & Image);
             The_Ra := Ra_Value_Of (Image);
@@ -696,6 +812,8 @@ package body Simulator is
             The_Ra_Increment := Increment_Of (Image);
             Put_Line ("Set Tracking Rate RA Factor " & Image);
             Send ("1");
+          elsif Command = ":RA" then
+            Put_Line ("Set Slew Rate Factor " & Image);
           elsif Command = ":RD" then
             The_Dec_Increment := Increment_Of (Image);
             Put_Line ("Set Tracking Rate Dec Factor " & Image);
@@ -704,8 +822,6 @@ package body Simulator is
             Put_Line ("Unknown Command " & Data);
           end if;
         end;
-      elsif Data = "#" then
-        Flush_Input;
       else
         Put_Line ("Unknown " & Data);
       end if;
@@ -723,13 +839,16 @@ package body Simulator is
       begin
         loop
           declare
-            Command : constant String := Network.Tcp.Raw_String_From (The_Client_Socket, Terminator => Terminator);
+            Command : constant String := Network.Tcp.Raw_String_From (Used_Socket      => The_Client_Socket,
+                                                                      Single_Character => Ascii.Ack,
+                                                                      Terminator       => Terminator);
             The_Character : Character;
             Is_Available  : Boolean;
           begin
             exit Main when Command = "";
-            if Command in ":Gstat#" | ":TLESCK#"
-              | ":GD#" | ":GR#" | ":GaXa#" | ":GaXb#" | ":GRPRS#" | ":GRTMP#" | ":GJD1#" | ":pS#"
+            if Command in ":Gstat#"   | ":TLESCK#" | ":Ginfo#" | ":GS#" | ":Ggui#" | ":h?#"  | ":Gt#"   | ":Gg#"
+              | ":Gev#"   | ":GA#"    | ":GZ#"     | ":GD#"    | ":D#"  | ":GR#"   | ":Gpgc#"| ":GJD2#" | ":GaXa#"
+              | ":GaXb#"  | ":GRPRS#" | ":GRTMP#"  | ":GJD1#"  | ":pS#" | [Ascii.Ack]
             then
               if not Hiding then
                 Start_Hiding := True;
@@ -798,4 +917,8 @@ package body Simulator is
 
 begin
   Lx200.Set_Ultra_Precision;
+  Site.Define ((Location  => Site.Home,
+                Latitude  => Angle.Value_Of ("47°42'22"""),
+                Longitude => Angle.Value_Of ("8°37'32"""),
+                Elevation => 428)); -- in meters
 end Simulator;

@@ -602,9 +602,10 @@ package body Network.Tcp is
   end Raw_Character_From;
 
 
-  function Raw_String_From (Used_Socket     : Socket;
-                            Terminator      : Character;
-                            Receive_Timeout : Duration := Use_Socket_Timeout) return String is
+  function Raw_String_From (Used_Socket      : Socket;
+                            Terminator       : Character;
+                            Single_Character : Character := Ascii.Nul; -- no single charater
+                            Receive_Timeout  : Duration := Use_Socket_Timeout) return String is
     use type Ada.Real_Time.Time;
     The_Timeout  : Duration;
     The_Deadline : Ada.Real_Time.Time;
@@ -644,7 +645,11 @@ package body Network.Tcp is
           end;
         end if;
         The_Character := Convert(The_Data(The_Data'first));
-        The_String.Append (The_Character);
+        if Single_Character /= Ascii.Nul and then The_Character = Single_Character and then The_String.Is_Empty then
+          return [The_Character];
+        else
+          The_String.Append (The_Character);
+        end if;
         exit when The_Character = Terminator;
       end loop;
       return The_String.S;

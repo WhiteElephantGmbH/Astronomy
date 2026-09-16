@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2016 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2016 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -117,9 +117,10 @@ package Network.Tcp is
   function Raw_Character_From (Used_Socket     : Socket;
                                Receive_Timeout : Duration := Use_Socket_Timeout) return Character;
 
-  function Raw_String_From (Used_Socket     : Socket;
-                            Terminator      : Character;
-                            Receive_Timeout : Duration := Use_Socket_Timeout) return String;
+  function Raw_String_From (Used_Socket      : Socket;
+                            Terminator       : Character;
+                            Single_Character : Character := Ascii.Nul; -- no single charater
+                            Receive_Timeout  : Duration := Use_Socket_Timeout) return String;
 
   procedure Send (The_String  : Unsigned.Byte_String;
                   Used_Socket : Socket);
