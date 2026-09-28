@@ -15,7 +15,7 @@
 --
 --  Copyright (C) 2000-2010, AdaCore
 --
---  Modified 2016 by White Elephant GmbH, Schaffhausen, Switzerland
+--  Modified by White Elephant GmbH, Schaffhausen, Switzerland
 -------------------------------------------------------------------------------
 
 with Ada.Unchecked_Conversion;
@@ -98,6 +98,7 @@ package Win32.Winbase is
    FILE_FLAG_DELETE_ON_CLOSE          : constant := 16#4000000#;
    FILE_FLAG_BACKUP_SEMANTICS         : constant := 16#2000000#;
    FILE_FLAG_POSIX_SEMANTICS          : constant := 16#1000000#;
+   FILE_FLAG_FIRST_PIPE_INSTANCE      : constant := 16#80000#;
    CREATE_NEW                         : constant := 1;
    CREATE_ALWAYS                      : constant := 2;
    OPEN_EXISTING                      : constant := 3;
@@ -114,6 +115,7 @@ package Win32.Winbase is
    PIPE_READMODE_MESSAGE              : constant := 16#2#;
    PIPE_TYPE_BYTE                     : constant := 16#0#;
    PIPE_TYPE_MESSAGE                  : constant := 16#4#;
+   PIPE_REJECT_REMOTE_CLIENTS         : constant := 16#8#;
    PIPE_UNLIMITED_INSTANCES           : constant := 255;
    SECURITY_ANONYMOUS                 : constant :=
      Win32.Winnt.SECURITY_IMPERSONATION_LEVEL'pos

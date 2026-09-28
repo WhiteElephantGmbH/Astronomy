@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2002 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2002 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -17,14 +17,22 @@ pragma Style_Astronomy;
 
 with Ada.Unchecked_Deallocation;
 with Log;
-with Win32.Winerror;
 with Win32.Winbase;
+with Win32.Winerror;
 with Win32.Winnt;
 with Semaphore;
 
 package body Os.Pipe is
 
   type Item_Access is access String;
+
+  type Security_Descriptor is array (1 .. Win32.Winnt.SECURITY_DESCRIPTOR_MIN_LENGTH) of Character;
+  type ACL_Buffer is array (1 .. 1018) of Character;
+
+  type Access_Control_List is record
+    Header        : aliased Win32.Winnt.ACL;
+    Unused_Buffer : ACL_Buffer;
+  end record;
 
   type Named_Pipe (Name_Length : Positive;
                    Kind        : Role) is
@@ -40,6 +48,10 @@ package body Os.Pipe is
       Connect_Overlapped : aliased Win32.Winbase.OVERLAPPED;
       Write_Overlapped   : aliased Win32.Winbase.OVERLAPPED;
       Read_Overlapped    : aliased Win32.Winbase.OVERLAPPED;
+      Descriptor         : aliased Security_Descriptor;
+      Identifier         : aliased Win32.Winnt.PSID;
+      ACL                : aliased Access_Control_List;
+      Attributes         : aliased Win32.Winbase.SECURITY_ATTRIBUTES;
       Item_Event         : aliased Win32.Winnt.HANDLE;
       Item_Taken         : Semaphore.Binary;
       Get_Call           : Get_Callback;
@@ -48,6 +60,8 @@ package body Os.Pipe is
     end case;
   end record;
 
+  The_SIA : aliased Win32.Winnt.SID_IDENTIFIER_AUTHORITY := Win32.Winnt.SECURITY_NT_AUTHORITY;
+
 
   procedure Dispose is new Ada.Unchecked_Deallocation (String, Item_Access);
 
@@ -55,7 +69,8 @@ package body Os.Pipe is
   begin
     case Error is
     when Win32.Winerror.NO_ERROR =>
-      null;
+      Log.Write ("Os.Pipe - GetLastError has returned NO_ERROR");
+      raise Unknown_Error;
     when Win32.Winerror.ERROR_ACCESS_DENIED =>
       raise Access_Denied;
     when Win32.Winerror.ERROR_BROKEN_PIPE =>
@@ -70,6 +85,7 @@ package body Os.Pipe is
       Log.Write ("Os.Pipe - No_Data");
       raise No_Data;
     when Win32.Winerror.ERROR_PIPE_BUSY =>
+      Log.Write ("Os.Pipe - Busy");
       raise Name_In_Use;
     when Win32.Winerror.ERROR_BAD_PIPE =>
       raise Bad_Pipe;
@@ -95,15 +111,14 @@ package body Os.Pipe is
     use type Win32.BOOL;
   begin
     if Result /= Win32.TRUE then
-      if The_Pipe.Kind = Server then
-        begin
+      declare
+        Error : constant Win32.DWORD := Win32.Winbase.GetLastError;
+      begin
+        if The_Pipe.Kind = Server then
           The_Pipe.Item_Taken.Signal;
-        exception
-        when others =>
-          null; -- in case of termination
-        end;
-      end if;
-      Handle_Error (Win32.Winbase.GetLastError);
+        end if;
+        Handle_Error (Error);
+      end;
     end if;
   end Check;
 
@@ -114,63 +129,23 @@ package body Os.Pipe is
   end Pipe_Name_Of;
 
 
-  procedure Create_Client_Connection (The_Pipe : Handle) is
+  procedure Create_Client_Connection (The_Pipe  : Handle;
+                                      Wait_Time : Timer) is
 
     function Desired_Access return Win32.DWORD is
     begin
       case The_Pipe.Mode is
       when Duplex =>
-        return Win32.DWORD(Win32.Winnt.GENERIC_READ + Win32.Winnt.GENERIC_WRITE);
+        return Win32.DWORD (Win32.Winnt.GENERIC_READ + Win32.Winnt.GENERIC_WRITE);
       when Inbound =>
-        return Win32.DWORD(Win32.Winnt.GENERIC_WRITE);
+        return Win32.DWORD (Win32.Winnt.GENERIC_WRITE);
       when Outbound =>
-        return Win32.DWORD(Win32.Winnt.GENERIC_READ + Win32.Winnt.FILE_WRITE_ATTRIBUTES);
+        return Win32.DWORD (Win32.Winnt.GENERIC_READ + Win32.Winnt.FILE_WRITE_ATTRIBUTES);
       end case;
     end Desired_Access;
 
-    Share_Mode : constant Win32.DWORD := Win32.DWORD(Win32.Winnt.FILE_SHARE_READ +
-                                                     Win32.Winnt.FILE_SHARE_WRITE);
-    Pipe_Mode  : aliased Win32.DWORD;
-
-    use type System.Address;
-
-    Pipe_Name : aliased constant String := Pipe_Name_Of (The_Pipe) & Ascii.Nul;
-
-  begin
-    The_Pipe.Connection := Win32.Winbase.CreateFile
-                             (lpFileName            => Win32.Addr (Pipe_Name),
-                              dwDesiredAccess       => Desired_Access,
-                              dwShareMode           => Share_Mode,
-                              lpSecurityAttributes  => null,
-                              dwCreationDisposition => Win32.Winbase.OPEN_EXISTING,
-                              dwFlagsAndAttributes  => 0,
-                              hTemplateFile         => System.Null_Address);
-    if The_Pipe.Connection = Win32.Winbase.INVALID_HANDLE_VALUE then
-      Handle_Error (Win32.Winbase.GetLastError);
-    end if;
-
-    Pipe_Mode := Win32.DWORD(Win32.Winbase.PIPE_READMODE_MESSAGE + Win32.Winbase.PIPE_WAIT);
-    Check (Win32.Winbase.SetNamedPipeHandleState
-             (hNamedPipe           => The_Pipe.Connection,
-              lpMode               => Pipe_Mode'unchecked_access,
-              lpMaxCollectionCount => null,
-              lpCollectDataTimeout => null), The_Pipe);
-  end Create_Client_Connection;
-
-
-  procedure Create_Server_Connection (The_Pipe : Handle) is
-
-    function Pipe_Access_Mode return Win32.DWORD is
-    begin
-      case The_Pipe.Mode is
-      when Duplex =>
-        return Win32.DWORD(Win32.Winbase.PIPE_ACCESS_DUPLEX + Win32.Winbase.FILE_FLAG_OVERLAPPED);
-      when Inbound =>
-        return Win32.DWORD(Win32.Winbase.PIPE_ACCESS_INBOUND + Win32.Winbase.FILE_FLAG_OVERLAPPED);
-      when Outbound =>
-        return Win32.DWORD(Win32.Winbase.PIPE_ACCESS_OUTBOUND + Win32.Winbase.FILE_FLAG_OVERLAPPED);
-      end case;
-    end Pipe_Access_Mode;
+    Share_Mode : constant Win32.DWORD :=
+      Win32.DWORD (Win32.Winnt.FILE_SHARE_READ + Win32.Winnt.FILE_SHARE_WRITE);
 
     Pipe_Mode : aliased Win32.DWORD;
 
@@ -178,25 +153,168 @@ package body Os.Pipe is
 
     Pipe_Name : aliased constant String := Pipe_Name_Of (The_Pipe) & Ascii.Nul;
 
-  begin
-    Pipe_Mode := Win32.DWORD(Win32.Winbase.PIPE_TYPE_MESSAGE +
-                             Win32.Winbase.PIPE_READMODE_MESSAGE +
-                             Win32.Winbase.PIPE_WAIT);
+    Retry_Count : Natural := 0;
+    Retry_Delay : constant Duration := 0.3;
+    Max_Retries : constant Natural := Natural(Wait_Time / Retry_Delay);
 
-    The_Pipe.Connection := Win32.Winbase.CreateNamedPipe
-                             (lpName               => Win32.Addr (Pipe_Name),
-                              dwOpenMode           => Pipe_Access_Mode,
-                              dwPipeMode           => Pipe_Mode,
-                              nMaxInstances        => Win32.DWORD(1),
-                              nOutBufferSize       => The_Pipe.Size,
-                              nInBufferSize        => The_Pipe.Size,
-                              nDefaultTimeOut      => 0,
-                              lpSecurityAttributes => null);
+  begin -- Create_Client_Connection
+    loop
+      The_Pipe.Connection := Win32.Winbase.CreateFile
+                               (lpFileName            => Win32.Addr (Pipe_Name),
+                                dwDesiredAccess       => Desired_Access,
+                                dwShareMode           => Share_Mode,
+                                lpSecurityAttributes  => null,
+                                dwCreationDisposition => Win32.Winbase.OPEN_EXISTING,
+                                dwFlagsAndAttributes  => 0,
+                                hTemplateFile         => System.Null_Address);
 
-    if The_Pipe.Connection = Win32.Winbase.INVALID_HANDLE_VALUE then
-      The_Pipe.Item_Taken.Signal;
-      Handle_Error (Win32.Winbase.GetLastError);
+      exit when The_Pipe.Connection /= Win32.Winbase.INVALID_HANDLE_VALUE;
+
+      declare
+        Error : constant Win32.DWORD := Win32.Winbase.GetLastError;
+      begin
+        case Error is
+        when Win32.Winerror.ERROR_FILE_NOT_FOUND |
+             Win32.Winerror.ERROR_PIPE_BUSY |
+             Win32.Winerror.ERROR_PIPE_NOT_CONNECTED
+        => --server not yet ready or pipe busy -> retry CreateFile
+          if Wait_Time /= Forever then
+            if Retry_Count >= Max_Retries then
+              raise No_Server;
+            end if;
+            Retry_Count := @ + 1;
+          end if;
+          delay Retry_Delay;
+        when others =>
+          Handle_Error (Error);
+        end case;
+      end;
+    end loop;
+
+    Pipe_Mode := Win32.DWORD (Win32.Winbase.PIPE_READMODE_MESSAGE + Win32.Winbase.PIPE_WAIT);
+    Check (Win32.Winbase.SetNamedPipeHandleState
+             (hNamedPipe           => The_Pipe.Connection,
+              lpMode               => Pipe_Mode'unchecked_access,
+              lpMaxCollectionCount => null,
+              lpCollectDataTimeout => null),
+           The_Pipe);
+  end Create_Client_Connection;
+
+
+  procedure Create_Server_Connection (The_Pipe                 : Handle;
+                                      Allow_Remote_Connections : Boolean) is
+
+    function Pipe_Access_Mode return Win32.DWORD is
+      Standard : constant := Win32.Winbase.FILE_FLAG_OVERLAPPED + Win32.Winbase.FILE_FLAG_FIRST_PIPE_INSTANCE;
+    begin
+      case The_Pipe.Mode is
+      when Duplex =>
+        return Win32.DWORD(Win32.Winbase.PIPE_ACCESS_DUPLEX + Standard);
+      when Inbound =>
+        return Win32.DWORD(Win32.Winbase.PIPE_ACCESS_INBOUND + Standard);
+      when Outbound =>
+        return Win32.DWORD(Win32.Winbase.PIPE_ACCESS_OUTBOUND + Standard);
+      end case;
+    end Pipe_Access_Mode;
+
+    Pipe_Mode : Natural := Win32.Winbase.PIPE_TYPE_MESSAGE +
+                           Win32.Winbase.PIPE_READMODE_MESSAGE +
+                           Win32.Winbase.PIPE_WAIT;
+
+    procedure Create_Security_Attributes is
+      use type Win32.BOOL;
+      use type Win32.ULONG;
+    begin
+      if Win32.Winbase.InitializeSecurityDescriptor (The_Pipe.Descriptor'address,
+                                                     Win32.Winnt.SECURITY_DESCRIPTOR_REVISION) = Win32.FALSE
+      then
+        Handle_Error (Win32.Winbase.GetLastError);
+      end if;
+      if Win32.Winbase.InitializeAcl (The_Pipe.ACL.Header'access,
+                                      The_Pipe.ACL'size / 8,
+                                      Win32.Winnt.ACL_REVISION) = Win32.FALSE
+      then
+        Handle_Error (Win32.Winbase.GetLastError);
+      end if;
+      if Win32.Winbase.AllocateAndInitializeSid (The_SIA'access,
+                                                 1,
+                                                 Win32.Winnt.SECURITY_INTERACTIVE_RID,
+                                                 0,
+                                                 0,
+                                                 0,
+                                                 0,
+                                                 0,
+                                                 0,
+                                                 0,
+                                                 The_Pipe.Identifier'access) = Win32.FALSE
+      then
+        Handle_Error (Win32.Winbase.GetLastError);
+      end if;
+      if Win32.Winbase.AddAccessAllowedAce (The_Pipe.ACL.Header'access,
+                                            Win32.Winnt.ACL_REVISION,
+                                            Win32.Winnt.FILE_ALL_ACCESS,
+                                            The_Pipe.Identifier) = Win32.FALSE
+      then
+        Handle_Error (Win32.Winbase.GetLastError);
+      end if;
+      if Win32.Winbase.SetSecurityDescriptorDacl (The_Pipe.Descriptor'address,
+                                                  Win32.TRUE,
+                                                  The_Pipe.ACL.Header'access,
+                                                  Win32.TRUE) = Win32.FALSE
+      then
+        Handle_Error (Win32.Winbase.GetLastError);
+      end if;
+      The_Pipe.Attributes.nLength := The_Pipe.Attributes'size / 8;  -- size in bytes.
+      The_Pipe.Attributes.lpSecurityDescriptor := The_Pipe.Descriptor'address;
+      The_Pipe.Attributes.bInheritHandle := Win32.FALSE;
+    end Create_Security_Attributes;
+
+    Pipe_Name : aliased constant String := Pipe_Name_Of (The_Pipe) & Ascii.Nul;
+
+    use type System.Address;
+
+    Retry_Count : Natural := 0;
+    Max_Retries : constant Natural := 3;
+
+  begin -- Create_Server_Connection
+    if not Allow_Remote_Connections then
+      Pipe_Mode := Pipe_Mode + Win32.Winbase.PIPE_REJECT_REMOTE_CLIENTS;
     end if;
+    Create_Security_Attributes;
+    loop
+      The_Pipe.Connection := Win32.Winbase.CreateNamedPipe (lpName               => Win32.Addr (Pipe_Name),
+                                                            dwOpenMode           => Pipe_Access_Mode,
+                                                            dwPipeMode           => Win32.DWORD(Pipe_Mode),
+                                                            nMaxInstances        => Win32.DWORD(1),
+                                                            nOutBufferSize       => The_Pipe.Size,
+                                                            nInBufferSize        => The_Pipe.Size,
+                                                            nDefaultTimeOut      => 0,
+                                                            lpSecurityAttributes => (if System.Address'size = 64 then
+                                                                                       null -- not yet working!!!
+                                                                                     else
+                                                                                       The_Pipe.Attributes'access));
+      if The_Pipe.Connection /= Win32.Winbase.INVALID_HANDLE_VALUE then
+        exit;
+      else
+        declare
+          Error : constant Win32.DWORD := Win32.Winbase.GetLastError;
+          use type Win32.DWORD;
+          use type Win32.BOOL;
+        begin
+          if Error = Win32.Winerror.ERROR_PIPE_BUSY and then Retry_Count < Max_Retries then
+            if Win32.Winbase.WaitNamedPipe(Win32.Addr(Pipe_Name), 1000) = Win32.FALSE then
+              Log.Write("Os.Pipe - WaitNamedPipe failed, continuing retry");
+              delay 0.1; -- minimum wait time if WaitNamedPipe failed
+            end if;
+            Retry_Count := Retry_Count + 1;
+            Log.Write ("Os.Pipe - Pipe busy -> retry CreateNamedPipe");
+          else
+            The_Pipe.Item_Taken.Signal;
+            Handle_Error (Error);
+          end if;
+        end;
+      end if;
+    end loop;
   end Create_Server_Connection;
 
 
@@ -233,7 +351,7 @@ package body Os.Pipe is
 
 
   procedure Set_Timeout_For (The_Pipe  : Handle;
-                             Wait_Time : Duration) is
+                             Wait_Time : Timer) is
   begin
     if Wait_Time = Forever then
       The_Pipe.Timeout := Win32.Winbase.NMPWAIT_WAIT_FOREVER;
@@ -247,18 +365,17 @@ package body Os.Pipe is
   -- Specification
   ------------------
 
-  procedure Open (The_Pipe  : in out Handle;
-                  Name      :        String;
-                  Kind      :        Role;
-                  Mode      :        Access_Mode;
-                  Size      :        Natural;
-                  Wait_Time :        Duration := Forever;
-                  Get_Call  :        Get_Callback := null) is
+  procedure Open (The_Pipe                 : in out Handle;
+                  Name                     :        String;
+                  Kind                     :        Role;
+                  Mode                     :        Access_Mode;
+                  Size                     :        Natural;
+                  Wait_Time                :        Timer := Forever;
+                  Get_Call                 :        Get_Callback := null;
+                  Allow_Remote_Connections :        Boolean := False) is
   begin
-    if Kind = Client then
-      if (Wait_Time /= Forever) or (Get_Call /= null) then
-        raise Not_Server;
-      end if;
+    if Kind = Client and then Get_Call /= null then
+      raise Not_Server;
     end if;
     Close (The_Pipe);
     The_Pipe := new Named_Pipe (Name'length, Kind);
@@ -288,10 +405,10 @@ package body Os.Pipe is
                                 bManualReset      => Win32.FALSE,
                                 bInitialState     => Win32.FALSE,
                                 lpName            => null);
-      Create_Server_Connection (The_Pipe);
+      Create_Server_Connection (The_Pipe, Allow_Remote_Connections);
       Connect (The_Pipe);
     else
-      Create_Client_Connection (The_Pipe);
+      Create_Client_Connection (The_Pipe, Wait_Time);
     end if;
   exception
   when others =>
@@ -303,26 +420,28 @@ package body Os.Pipe is
   procedure Close (The_Pipe : in out Handle) is
     use type System.Address;
     procedure Dispose is new Ada.Unchecked_Deallocation (Named_Pipe, Handle);
-    Dummy : Win32.BOOL;
+    Dummy  : Win32.BOOL;
+    Unused : System.Address;
   begin
     if The_Pipe /= null then
       begin
         if The_Pipe.Item /= null then
           Dispose (The_Pipe.Item);
         end if;
-        Dummy := Win32.Winbase.DisconnectNamedPipe (The_Pipe.Connection);
         if The_Pipe.Kind = Server then
+          Dummy := Win32.Winbase.DisconnectNamedPipe (The_Pipe.Connection);
           Dummy := Win32.Winbase.CloseHandle(hObject => The_Pipe.Connect_Overlapped.hEvent);
           Dummy := Win32.Winbase.CloseHandle(hObject => The_Pipe.Read_Overlapped.hEvent);
           Dummy := Win32.Winbase.CloseHandle(hObject => The_Pipe.Write_Overlapped.hEvent);
           Dummy := Win32.Winbase.CloseHandle(hObject => The_Pipe.Item_Event);
+          Unused := Win32.Winbase.FreeSid (The_Pipe.Identifier);
         end if;
         if The_Pipe.Connection /= Win32.Winbase.INVALID_HANDLE_VALUE then
           Dummy := Win32.Winbase.CloseHandle(hObject => The_Pipe.Connection);
         end if;
       exception
-      when others =>
-        null;
+      when Item: others =>
+        Log.Write ("Os.Pipe.Close", Item);
       end;
       Dispose (The_Pipe);
     end if;
@@ -332,7 +451,7 @@ package body Os.Pipe is
   procedure Read (From_Pipe :     Handle;
                   Data      :     System.Address;
                   Length    : out Natural;
-                  Wait_Time :     Duration := Forever) is
+                  Wait_Time :     Timer := Forever) is
 
     Count : aliased Win32.DWORD;
 
@@ -360,7 +479,7 @@ package body Os.Pipe is
 
         type Handles is array (0..1) of aliased Win32.Winnt.HANDLE;
 
-        Event_Handles : Handles := (From_Pipe.Read_Overlapped.hEvent, From_Pipe.Item_Event);
+        Event_Handles : Handles := [From_Pipe.Read_Overlapped.hEvent, From_Pipe.Item_Event];
       begin
         Set_Timeout_For (From_Pipe, Wait_Time);
         if Win32.Winbase.ReadFile
@@ -482,4 +601,6 @@ package body Os.Pipe is
     To_Pipe.Item_Taken.Wait;
   end Put;
 
+begin
+  pragma Assert (Minimum_Timeout >= Timer'delta);
 end Os.Pipe;

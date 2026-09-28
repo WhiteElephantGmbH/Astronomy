@@ -257,9 +257,9 @@ package body Lx200 is
     Decimals : constant Angle.Decimal_Places := (if Has_Ultra_Precision then 2 else 0);
 
     The_Image : String := Text.Ansi_Of_Utf8 (Angle.Image_Of (The_Value   => Item,
-                                                           Unit        => Angle.In_Hours,
-                                                           Decimals    => Decimals,
-                                                           Show_Signed => False));
+                                                             Unit        => Angle.In_Hours,
+                                                             Decimals    => Decimals,
+                                                             Show_Signed => False));
 
     Image_Template : constant String := (if Has_Ultra_Precision then "DDhDDmDD.DDs" else "DDhDDmDDs");
 
