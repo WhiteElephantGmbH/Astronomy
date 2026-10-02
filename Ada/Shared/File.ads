@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2015 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2015 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -49,6 +49,8 @@ package File is
   function Base_Name_Of (Name : String) return String renames Ada.Directories.Base_Name;
 
   function Extension_Of (Name : String) return String renames Ada.Directories.Extension;
+
+  function Full_Name_Of (Name : String) return String renames Ada.Directories.Full_Name;
 
   function Containing_Directory_Of (Name : String) return String renames Ada.Directories.Containing_Directory;
 

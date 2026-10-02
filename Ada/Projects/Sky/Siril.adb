@@ -15,6 +15,8 @@
 -- *********************************************************************************************************************
 pragma Style_Astronomy;
 
+with Directory;
+with File;
 with Text;
 
 package body Siril is
@@ -26,14 +28,32 @@ package body Siril is
   end Open;
 
 
+  procedure Check_Directory (Name : String) is
+  begin
+    if not Directory.Exists (Name) then
+      raise Name_Error with Name & " not found";
+    end if;
+  end Check_Directory;
+
+
+  procedure Check_File (Name : String) is
+  begin
+    if not File.Exists (Name) then
+      raise Name_Error with Name & " not found";
+    end if;
+  end Check_File;
+
+
   procedure Change_Directory (Name : String) is
   begin
+    Check_Directory (Name);
     SI.Execute ("cd " & Name);
   end Change_Directory;
 
 
   procedure Convert_Light (Destination : String) is
   begin
+    Check_Directory (File.Containing_Directory_Of (Destination));
     SI.Execute ("convert light -out=" & Destination);
   end Convert_Light;
 
@@ -41,6 +61,8 @@ package body Siril is
   procedure Calibrate_Light (Dark : String;
                              Flat : String) is
   begin
+    Check_File (Dark);
+    Check_File (Flat);
     SI.Execute ("calibrate light -dark=" & Dark & " -flat=" & Flat
               & " -cc=dark 3 3 -equalize_cfa -debayer -prefix=pp_");
   end Calibrate_Light;
@@ -52,16 +74,18 @@ package body Siril is
   end Register_Light;
 
 
-  procedure Stack_Light (Output : String) is
+  Stacked_Light_Filename : constant String := "stacked_light.fit";
+
+  procedure Stack_Light is
   begin
-    SI.Execute ("stack r_pp_light_ mean winsorized 3 3 -norm=addscale -out=" & Output);
+    SI.Execute ("stack r_pp_light_ mean winsorized 3 3 -norm=addscale -out=" & Stacked_Light_Filename);
   end Stack_Light;
 
 
-  procedure Load (File_Name : String) is
+  procedure Load_Stacked_Light is
   begin
-    SI.Execute ("load " & File_Name);
-  end Load;
+    SI.Execute ("load " & Stacked_Light_Filename);
+  end Load_Stacked_Light;
 
 
   function Ra_Image_Of (Direction : Space.Direction) return String is

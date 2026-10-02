@@ -15,7 +15,7 @@
 -- *********************************************************************************************************************
 pragma Style_Astronomy;
 
-pragma Build (Description => "Focus test",
+pragma Build (Description => "Siril test",
               Version     => (1, 0, 0, 1),
               Kind        => Console,
               Icon        => False,
@@ -32,6 +32,10 @@ procedure Siril_Test is
 
   package IO renames Ada.Text_IO;
 
+  Source_Directory : constant String := "T:\Pictures\M13";
+  Work_Directory   : constant String := "D:\SkyTracker\Picture\Siril";
+  Lights_Directory : constant String := Work_Directory & "\lights";
+
   Celestron_Focal_Length : constant Units.Focal_Length := 2669.6;
 
   EOS6D_Pixel_Size : constant Units.Pixel_Size := 6.55;
@@ -44,9 +48,6 @@ procedure Siril_Test is
 
   M13_Saturation : constant Units.Saturation := (Amount     => 0.9,
                                                  Multiplier => 1.0);
-
-  Stacked_Filename : constant String := "Stacked.fit";
-
   procedure Progress (Command  : String;
                       Progress : Siril.Percent) is
     use type Siril.Percent;
@@ -63,15 +64,16 @@ procedure Siril_Test is
 begin
   IO.Put_Line ("Siril Test");
   Siril.Open (Progress'unrestricted_access);
-  Siril.Change_Directory ("D:\SkyTracker\Picture\Siril\LIGHT");
-  Siril.Convert_Light (Destination => "../lights");
-  Siril.Change_Directory ("../lights");
+  Siril.Change_Directory (Source_Directory);
 
-  Siril.Calibrate_Light (Dark => "../darks_stacked.fit",
-                         Flat => "../flats_stacked.fit");
+  Siril.Convert_Light (Destination => Lights_Directory);
+  Siril.Change_Directory (Lights_Directory);
+
+  Siril.Calibrate_Light (Dark => Work_Directory & "\darks_stacked.fit",
+                         Flat => Work_Directory & "\flats_stacked.fit");
   Siril.Register_Light;
-  Siril.Stack_Light (Output => Stacked_Filename);
-  Siril.Load (Stacked_Filename);
+  Siril.Stack_Light;
+  Siril.Load_Stacked_Light;
 
   Siril.Plate_Solve (M13_Direction, Celestron_Focal_Length, EOS6D_Pixel_Size);
 

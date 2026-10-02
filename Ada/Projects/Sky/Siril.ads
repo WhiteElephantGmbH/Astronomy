@@ -31,48 +31,53 @@ package Siril is
   subtype Progress_Handler is SI.Progress_Handler;
 
   procedure Open (Progress : Progress_Handler := null);
-  --  Starts Siril and establishes the command interface.
+  -- Starts Siril and establishes the command interface.
 
   procedure Change_Directory (Name : String);
-  --  Changes Siril's current working directory.
+  -- Changes Siril's current working directory.
+  -- raises Name_Error if the source directory does not exist
 
   procedure Convert_Light (Destination : String);
-  --  Converts the light images to FITS files.
+  -- Converts the light images to FITS files.
+  -- raises Name_Error if the destination directory does not exist
 
   procedure Calibrate_Light (Dark : String;
                              Flat : String);
-  --  Calibrates the light images using the specified dark and flat masters.
+  -- Calibrates the light images using the specified dark and flat masters.
+  -- raises Name_Error Dark or Flat files do not exist
 
   procedure Register_Light;
-  --  Registers the calibrated light images.
+  -- Registers the calibrated light images.
 
-  procedure Stack_Light (Output : String);
-  --  Stacks the registered light images.
+  procedure Stack_Light;
+  -- Stacks the registered light images.
 
-  procedure Load (File_Name : String);
-  --  Loads the specified stacked image for further processing.
+  procedure Load_Stacked_Light;
+  -- Loads the stacked light image for further processing.
 
   procedure Plate_Solve (Direction    : Space.Direction;
                          Focal_Length : Units.Focal_Length;
                          Pixel_Size   : Units.Pixel_Size);
-  --  Determines the image position and scale by plate solving the loaded image.
+  -- Determines the image position and scale by plate solving the loaded image.
 
   procedure Remove_Background;
-  --  Removes the background gradient from the image.
+  -- Removes the background gradient from the image.
 
   procedure Calibrate_Color;
-  --  Performs spectrophotometric color calibration.
+  -- Performs spectrophotometric color calibration.
 
   procedure Transfer (Tones : Units.Tones);
-  --  Applies the specified tone transfer to the image.
+  -- Applies the specified tone transfer to the image.
 
   procedure Set (Saturation : Units.Saturation);
-  --  Applies the specified saturation settings to the image.
+  -- Applies the specified saturation settings to the image.
 
   procedure Save_Jpeg (File_Name : String);
-  --  Saves the processed image as a JPEG file.
+  -- Saves the processed image as a JPEG file.
 
   procedure Close;
-  --  Closes Siril and terminates the Siril session.
+  -- Closes Siril and terminates the Siril session.
+
+  Name_Error : exception;
 
 end Siril;
