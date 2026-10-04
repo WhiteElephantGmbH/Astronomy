@@ -50,7 +50,17 @@ package File is
 
   function Extension_Of (Name : String) return String renames Ada.Directories.Extension;
 
+  function Name_Of (Name      : String;
+                    Extension : String) return String;
+  -- add extension if Name has no extension
+  -- no exception
+
   function Full_Name_Of (Name : String) return String renames Ada.Directories.Full_Name;
+
+  function Full_Name_Of (Name_Or_Directory : String;
+                         Current_Directory : String) return String;
+
+  function Is_Legal (Name_Or_Directory : String) return Boolean;
 
   function Containing_Directory_Of (Name : String) return String renames Ada.Directories.Containing_Directory;
 
