@@ -15,55 +15,55 @@
 -- *********************************************************************************************************************
 pragma Style_Astronomy;
 
-pragma Build (Description => "Jpec test",
-              Version     => (1, 0, 0, 1),
-              Kind        => Console,
-              Icon        => False,
-              Libraries   => ("AWS", "GNATCOLL"),
-              Compiler    => "GNAT\14.2");
+with Directory;
+with File;
+with Text;
 
-with Ada.Streams.Stream_IO;
-with Ada.Text_IO;
-with Ada.Streams;
-with AWS.Client;
-with AWS.Response;
-with Exceptions;
+package body Image is
 
-procedure Jpec_Test is
+  Raw_File_Extension : constant String := ".cr2";
 
-  package IO  renames Ada.Text_IO;
-  package SIO renames Ada.Streams.Stream_IO;
+  Processor_Directory : constant String := "D:\Pictures\Processor";
+  Collector_Directory : constant String := Processor_Directory & "\Collector";
+  Work_Directory      : constant String := Processor_Directory & "\Siril";
+  LIGHT_Directory     : constant String := Work_Directory & "\LIGHT";
+  Lights_Directory    : constant String := Work_Directory & "\Lights";
 
-  function Read_File (Filename : String) return Ada.Streams.Stream_Element_Array is
-    File : SIO.File_Type;
+
+  function Name_Of (Filename : String;
+                    Index    : Number) return String is
+    Index_Image : constant String := "00" & Text.Trimmed (Index'image);
   begin
-    SIO.Open (File, SIO.In_File, Filename);
-    declare
-      Size : constant Ada.Streams.Stream_Element_Offset := Ada.Streams.Stream_Element_Offset (SIO.Size (File));
-      Data : Ada.Streams.Stream_Element_Array (1 .. Size);
-      Last : Ada.Streams.Stream_Element_Offset;
-    begin
-      SIO.Read (File, Data, Last);
-      SIO.Close (File);
-      return Data;
-    end;
-  end Read_File;
+    return Filename & '_' & Index_Image(Index_Image'last - 2 .. Index_Image'last) & Raw_File_Extension;
+  end Name_Of;
 
-  Result : AWS.Response.Data;
 
-begin
-  IO.Put_Line ("Jpec Test");
-  declare
-    Data : constant Ada.Streams.Stream_Element_Array := Read_File ("test.jpg");
+  function Collector_Filename (Index : Number) return String is (Name_Of (Collector_Directory & "\Image", Index));
+
+  function LIGHT_Filename (Index : Number) return String is (Name_Of (LIGHT_Directory & "\Image", Index));
+
+
+  procedure Clear is
   begin
-    IO.Put_Line ("JPEG size:" & Data'length'image);
-    Result := AWS.Client.Post (URL          => "http://192.168.178.20:8000/image",
-                               Data         => Data,
-                               Content_Type => "image/jpeg");
-    IO.Put_Line ("Status:" & AWS.Response.Status_Code (Result)'image);
-    IO.Put_Line ("Response:" & AWS.Response.Message_Body (Result));
-  end;
-exception
-when Item : others =>
-  IO.Put_Line ("Exception: " & Exceptions.Information_Of (Item));
-end Jpec_Test;
+    Directory.Delete (Collector_Directory);
+    Directory.Create (Collector_Directory);
+    Directory.Delete (LIGHT_Directory);
+    Directory.Create (LIGHT_Directory);
+    Directory.Delete (Lights_Directory);
+  end Clear;
+
+
+  procedure Move (From : Number;
+                  To   : Number) is
+  begin
+    for The_Index in From .. To loop
+      File.Rename (Old_Name => Collector_Filename (The_Index),
+                   New_Name => LIGHT_Filename (The_Index));
+    end loop;
+  end Move;
+
+  function Siril_Work_Directory return String is (Work_Directory);
+
+  function Siril_LIGHT_Directory return String is (LIGHT_Directory);
+
+end Image;

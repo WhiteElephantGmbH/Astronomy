@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2022 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                           (c) 2026 by White Elephant GmbH, Schaffhausen, Switzerland                              *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,8 +15,16 @@
 -- *********************************************************************************************************************
 pragma Style_Astronomy;
 
-package Control is
+pragma Build (Description => "Sky Processor",
+              Version     => (0, 0, 0, 1),
+              Kind        => Console,
+              Icon        => False,
+              Libraries   => ("AWS", "GNATCOLL"),
+              Compiler    => "GNAT\14.2");
 
-  procedure Start;
+with Collector;
 
-end Control;
+procedure SkyProcessor is
+begin
+  Collector.Start;
+end SkyProcessor;

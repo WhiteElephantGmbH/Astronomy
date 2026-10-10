@@ -32,8 +32,8 @@ procedure Siril_Test is
 
   package IO renames Ada.Text_IO;
 
-  Source_Directory : constant String := "T:\Pictures\M13";
-  Work_Directory   : constant String := "D:\SkyTracker\Picture\Siril";
+  Source_Directory : constant String := "D:\Pictures\M13";
+  Work_Directory   : constant String := "D:\Siril\Work";
   Lights_Directory : constant String := Work_Directory & "\lights";
 
   Celestron_Focal_Length : constant Units.Focal_Length := 2669.6;

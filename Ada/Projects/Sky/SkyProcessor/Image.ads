@@ -15,55 +15,23 @@
 -- *********************************************************************************************************************
 pragma Style_Astronomy;
 
-pragma Build (Description => "Jpec test",
-              Version     => (1, 0, 0, 1),
-              Kind        => Console,
-              Icon        => False,
-              Libraries   => ("AWS", "GNATCOLL"),
-              Compiler    => "GNAT\14.2");
+package Image is
 
-with Ada.Streams.Stream_IO;
-with Ada.Text_IO;
-with Ada.Streams;
-with AWS.Client;
-with AWS.Response;
-with Exceptions;
+  type Count is range 0 .. 999;
 
-procedure Jpec_Test is
+  subtype Number is Count range 1 .. Count'last;
 
-  package IO  renames Ada.Text_IO;
-  package SIO renames Ada.Streams.Stream_IO;
+  function Collector_Filename (Index : Number) return String;
 
-  function Read_File (Filename : String) return Ada.Streams.Stream_Element_Array is
-    File : SIO.File_Type;
-  begin
-    SIO.Open (File, SIO.In_File, Filename);
-    declare
-      Size : constant Ada.Streams.Stream_Element_Offset := Ada.Streams.Stream_Element_Offset (SIO.Size (File));
-      Data : Ada.Streams.Stream_Element_Array (1 .. Size);
-      Last : Ada.Streams.Stream_Element_Offset;
-    begin
-      SIO.Read (File, Data, Last);
-      SIO.Close (File);
-      return Data;
-    end;
-  end Read_File;
+  function LIGHT_Filename (Index : Number) return String;
 
-  Result : AWS.Response.Data;
+  procedure Clear;
 
-begin
-  IO.Put_Line ("Jpec Test");
-  declare
-    Data : constant Ada.Streams.Stream_Element_Array := Read_File ("test.jpg");
-  begin
-    IO.Put_Line ("JPEG size:" & Data'length'image);
-    Result := AWS.Client.Post (URL          => "http://192.168.178.20:8000/image",
-                               Data         => Data,
-                               Content_Type => "image/jpeg");
-    IO.Put_Line ("Status:" & AWS.Response.Status_Code (Result)'image);
-    IO.Put_Line ("Response:" & AWS.Response.Message_Body (Result));
-  end;
-exception
-when Item : others =>
-  IO.Put_Line ("Exception: " & Exceptions.Information_Of (Item));
-end Jpec_Test;
+  procedure Move (From : Number;
+                  To   : Number);
+
+  function Siril_Work_Directory return String;
+
+  function Siril_LIGHT_Directory return String;
+  
+end Image;
