@@ -56,16 +56,20 @@ package body Siril_Interface is
   end Send;
 
 
+  The_Id      : Os.Process.Id;
+  Is_Aborting : Boolean := False;
+
   procedure Open (Progress: Progress_Handler := null) is
   begin
+    Is_Aborting := False;
     if Is_Open then
       raise Fatal_Error with "Already open";
     end if;
     begin
       The_Progress_Handler := Progress;
-      Os.Process.Create (Executable => Cli_Application,
-                         Parameters => "-p",
-                         Console    => Os.Process.Invisible);
+      The_Id := Os.Process.Created (Executable => Cli_Application,
+                                    Parameters => "-p",
+                                    Console    => Os.Process.Invisible);
       Os.Pipe.Open (The_Pipe  => Response_Pipe,
                     Name      => Response_Pipe_Name,
                     Kind      => Os.Pipe.Client,
@@ -94,6 +98,15 @@ package body Siril_Interface is
       Log.Error (Message);
       raise Protocol_Error with Message;
     end Raise_Protocol_Error;
+
+
+    procedure Check_Aborting is
+    begin
+      if Is_Aborting then
+        Is_Aborting := False;
+        raise Aborted;
+      end if;
+    end Check_Aborting;
 
 
     procedure Wait_For_Status is
@@ -191,21 +204,35 @@ package body Siril_Interface is
 
     begin -- Wait_For_Status
       loop
-        Os.Pipe.Read (From_Pipe => Response_Pipe,
-                      Data      => Pipe_Buffer'address,
-                      Length    => The_Length);
-        exit when Handle_Response_Complete;
+        Check_Aborting;
+        begin
+          Os.Pipe.Read (From_Pipe => Response_Pipe,
+                        Data      => Pipe_Buffer'address,
+                        Length    => The_Length);
+          exit when Handle_Response_Complete;
+        exception
+        when Os.Pipe.Broken =>
+          raise Fatal_Error with "no response for command: " & Command;
+        end;
       end loop;
     end Wait_For_Status;
 
   begin -- Execute
+    Check_Aborting;
     if not Is_Open then
       raise Fatal_Error with "not open";
     end if;
     Send (Command);
     Wait_For_Status;
+    Check_Aborting;
   exception
+  when Aborted =>
+    raise;
   when Fatal_Error | Protocol_Error =>
+    if Is_Aborting then
+      Is_Aborting := False;
+      raise Aborted;
+    end if;
     raise;
   when Occurrence: others =>
     Log.Termination (Occurrence);
@@ -213,16 +240,29 @@ package body Siril_Interface is
   end Execute;
 
 
-  procedure Close is
+  procedure Abort_And_Close is
   begin
-    if not Is_Open then
-      raise Fatal_Error with "not open";
-    end if;
-    Send ("close");
-    Send ("exit");
+    Is_Aborting := True;
+    Os.Process.Terminate_With (The_Id);
     Os.Pipe.Close (Command_Pipe);
     Os.Pipe.Close (Response_Pipe);
     Is_Open := False;
+  exception
+  when Item: others =>
+    Log.Write ("XXX Aborted");
+    Log.Termination (Item);
+  end Abort_And_Close;
+
+
+  procedure Close is
+  begin
+    if Is_Open then
+      Send ("close");
+      Send ("exit");
+      Os.Pipe.Close (Command_Pipe);
+      Os.Pipe.Close (Response_Pipe);
+      Is_Open := False;
+    end if;
   exception
   when Fatal_Error =>
     raise;

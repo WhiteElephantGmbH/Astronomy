@@ -78,6 +78,10 @@ package Siril is
   procedure Close;
   -- Closes Siril and terminates the Siril session.
 
+  procedure Close_Immediate;
+  -- Aborts the current Siril session and closes Siril.
+
   Name_Error : exception;
+  Aborted    : exception renames Siril_Interface.Aborted;
 
 end Siril;

@@ -23,6 +23,7 @@ with AWS.Server;
 with AWS.Status;
 with Image;
 with Processor;
+with Space;
 with Traces;
 with Url_Names;
 
@@ -54,64 +55,82 @@ package body Collector is
   The_Index : Image.Count := 0;
 
   function Callback (Request : AWS.Status.Data) return AWS.Response.Data is
+
+    The_Light_Parameters : Processor.Light_Parameters;
+
+    procedure Get_Light_Parameters is
+      Ra  : constant String := Url_Names.Ra;
+      Dec : constant String := Url_Names.Dec;
+      P   : constant AWS.Parameters.List := AWS.Status.Parameters (Request);
+    begin
+      The_Light_Parameters := (Target => Space.Direction_Of (Ra_Image  => P.Get (Ra),
+                                                             Dec_Image => P.Get (Dec)));
+      Log.Write ("Target Direction: " & Space.Image_Of (The_Light_Parameters.Target));
+      Image.Clear;
+      The_Index := 0;
+    end Get_Light_Parameters;
+
+    procedure Get_Picture is
+    begin
+      AWS.Server.Get_Message_Body;
+      declare
+        Buffer   : Data_Array (1 .. Buffer_Size);
+        Last     : Data_Offset;
+        File     : SIO.File_Type;
+        Filename : constant String := Image.Collector_Filename (The_Index);
+      begin
+        SIO.Create (File => File,
+                    Mode => SIO.Out_File,
+                    Name => Filename);
+        while not AWS.Status.End_Of_Body (Request) loop
+          AWS.Status.Read_Body (Request, Buffer, Last);
+          if Last >= Buffer'first then
+            SIO.Write (File, Buffer(Buffer'first .. Last));
+          end if;
+        end loop;
+        SIO.Close (File);
+        Log.Write ("Received " & Filename);
+      exception
+      when others =>
+        if SIO.Is_Open (File) then
+          SIO.Close (File);
+        end if;
+        raise;
+      end;
+    end Get_Picture;
+
     URI : constant String := AWS.Status.URI (Request);
-  begin
+
+    use type Image.Count;
+
+  begin -- Callback
     Log.Write ("Request " & URI);
     if URI = Url_Names.Light_Parameters then
-      declare
-        Ra  : constant String := Url_Names.Ra;
-        Dec : constant String := Url_Names.Dec;
-        P   : constant AWS.Parameters.List := AWS.Status.Parameters (Request);
-      begin
-        Log.Write ("Ra  = " & P.Get (Ra));
-        Log.Write ("Dec = " & P.Get (Dec));
-        Image.Clear;
-        The_Index := Image.Number'first;
-        return AWS.Response.Acknowledge (AWS.Messages.S200, "OK");
-      end;
-    end if;
-    AWS.Server.Get_Message_Body;
-    declare
-      Buffer   : Data_Array (1 .. Buffer_Size);
-      Last     : Data_Offset;
-      File     : SIO.File_Type;
-      Filename : constant String := Image.Collector_Filename (The_Index);
-      use type Image.Number;
-    begin
-      SIO.Create (File => File,
-                  Mode => SIO.Out_File,
-                  Name => Filename);
-      while not AWS.Status.End_Of_Body (Request) loop
-        AWS.Status.Read_Body (Request, Buffer, Last);
-        if Last >= Buffer'first then
-          SIO.Write (File, Buffer(Buffer'first .. Last));
-        end if;
-      end loop;
-      SIO.Close (File);
-      Log.Write ("Received " & Filename);
-      Processor.Set (The_Index);
+      Get_Light_Parameters;
+      Processor.New_Sequence (The_Light_Parameters);
+      return AWS.Response.Acknowledge (AWS.Messages.S200, "OK");
+    elsif URI = Url_Names.Picture then
       The_Index := @ + 1;
-    exception
-    when others =>
-      if SIO.Is_Open (File) then
-        SIO.Close (File);
-      end if;
-      raise;
-    end;
-    return AWS.Response.Build (Content_Type => "text/plain",
-                               Message_Body => "OK");
+      Get_Picture;
+      Processor.Set (The_Index);
+      return AWS.Response.Build (Content_Type => "text/plain",
+                                 Message_Body => "OK");
+    elsif URI = Url_Names.Stop then
+      return AWS.Response.Acknowledge (AWS.Messages.S200, "OK");
+    else
+      raise Constraint_Error;
+    end if;
   exception
   when Item: others =>
     Log.Termination (Item);
-    return AWS.Response.Build (Content_Type => "text/plain",
-                               Message_Body => "ERROR");
+    return AWS.Response.Acknowledge (AWS.Messages.S400, "ERROR");
   end Callback;
 
 
   task body Controller is
   begin
     accept Start;
-    Log.Write ("Start");
+    Log.Write ("started");
     Processor.Start;
     AWS.Server.Start (WS,
                       Name     => "Sky_Processor",
@@ -120,10 +139,11 @@ package body Collector is
     AWS.Server.Wait (AWS.Server.Q_Key_Pressed);
     AWS.Server.Shutdown (WS);
     Processor.Shutdown;
-    Log.Write ("Shutdown");
+    Log.Write ("finalized");
   exception
   when Item: others =>
     Log.Termination (Item);
+    AWS.Server.Shutdown (WS);
     Processor.Shutdown;
   end Controller;
 

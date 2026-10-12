@@ -22,77 +22,25 @@ pragma Build (Description => "Processor test",
               Libraries   => ("AWS", "GNATCOLL"),
               Compiler    => "GNAT\14.2");
 
-with Ada.Streams.Stream_IO;
+with Feeder;
 with Ada.Text_IO;
-with AWS.Client;
-with AWS.Messages;
-with AWS.Parameters;
-with AWS.Response;
 with File;
 with Exceptions;
 with Time;
-with Url_Names;
+with Space;
 
 procedure Processor_Test is
 
-  package IO  renames Ada.Text_IO;
-  package SIO renames Ada.Streams.Stream_IO;
+  package IO renames Ada.Text_IO;
 
-  function Read_File (Filename : String) return Ada.Streams.Stream_Element_Array is
-    The_File : SIO.File_Type;
-  begin
-    SIO.Open (The_File, SIO.In_File, Filename);
-    declare
-      Size : constant Ada.Streams.Stream_Element_Offset := Ada.Streams.Stream_Element_Offset (SIO.Size (The_File));
-      Data : Ada.Streams.Stream_Element_Array (1 .. Size);
-      Last : Ada.Streams.Stream_Element_Offset;
-    begin
-      SIO.Read (The_File, Data, Last);
-      SIO.Close (The_File);
-      return Data;
-    end;
-  end Read_File;
-
-  Result : AWS.Response.Data;
-
-  Ra  : constant String := Url_Names.Ra;
-  Dec : constant String := Url_Names.Dec;
-  P   : AWS.Parameters.List;
-
+  M13 : constant Space.Direction := Space.Direction_Of (Ra_Image  => "16h41m41s",
+                                                        Dec_Image => "+36d27'");
 begin
   IO.Put_Line ("Processor Test");
-  P.Add (Ra, "16.6");
-  P.Add (Dec, "36.5");
-  IO.Put_Line ("URL -> http://localhost:12000" & Url_Names.Light_Parameters & P.URI_Format);
-  Result := AWS.Client.Get ("http://localhost:12000" & Url_Names.Light_Parameters & P.URI_Format);
-  declare
-    Status : constant AWS.Messages.Status_Code := AWS.Response.Status_Code (Result);
-  begin
-    if not (Status in  AWS.Messages.Success) then
-      IO.Put_Line ("Status:" & AWS.Response.Status_Code (Result)'image);
-      IO.Put_Line ("Response:" & AWS.Response.Message_Body (Result));
-      return;
-    end if;
-  end;
-  for The_Filename of File.Iterator_For ("D:\Pictures\M13") loop
-    IO.Put_Line ("File: " & The_Filename);
-    declare
-      Data : constant Ada.Streams.Stream_Element_Array := Read_File (The_Filename);
-    begin
-      IO.Put_Line ("RAW size:" & Data'length'image);
-      Result := AWS.Client.Post (URL          => "http://localhost:12000/picture",
-                                 Data         => Data,
-                                 Content_Type => "application/octet-stream");
-      declare
-        Status : constant AWS.Messages.Status_Code := AWS.Response.Status_Code (Result);
-      begin
-        if not (Status in  AWS.Messages.Success) then
-          IO.Put_Line ("Status:" & AWS.Response.Status_Code (Result)'image);
-          IO.Put_Line ("Response:" & AWS.Response.Message_Body (Result));
-          exit;
-        end if;
-      end;
-    end;
+  Feeder.New_Sequence (Target => M13);
+  for Filename of File.Iterator_For ("D:\Pictures\M13") loop
+    IO.Put_Line ("File: " & Filename);
+    Feeder.Next_Picture (Filename);
     Time.Wait (10.0);
   end loop;
 exception

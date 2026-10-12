@@ -22,4 +22,8 @@ package Url_Names is
   Ra  : constant String := "ra";
   Dec : constant String := "dec";
 
+  Picture : constant String := "/picture";
+
+  Stop : constant String := "/stop";
+
 end Url_Names;

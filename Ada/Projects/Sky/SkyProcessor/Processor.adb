@@ -18,11 +18,10 @@ pragma Style_Astronomy;
 with Ada.Streams.Stream_IO;
 with Ada.Text_IO;
 with AWS.Client;
+with AWS.Messages;
 with AWS.Response;
-with Directory;
 with File;
 with Siril;
-with Space;
 with Traces;
 with Units;
 
@@ -33,10 +32,12 @@ package body Processor is
   package IO  renames Ada.Text_IO;
   package SIO renames Ada.Streams.Stream_IO;
 
-  type Action is (Processing, Shutdown);
+  type Action is (Start_Light_Sequence, Processing, Shutdown);
 
 
   protected Action_Handler is
+
+    procedure New_Light_Sequence;
 
     procedure Set_Collected (The_Index : Image.Count);
 
@@ -61,21 +62,39 @@ package body Processor is
 
   procedure Start is
   begin
-    IO.Put_Line ("Processor Start");
+    IO.Put_Line ("Start");
     Control.Start;
   end Start;
 
 
+  The_Light_Parameters : Light_Parameters;
+
+  procedure New_Sequence (Parameters : Light_Parameters) is
+  begin
+    Log.Write ("New Light Sequence");
+    The_Light_Parameters := Parameters;
+    Action_Handler.New_Light_Sequence;
+  end New_Sequence;
+
+
   procedure Set (Index : Image.Number) is
   begin
-    IO.Put_Line ("Add Image" & Index'image);
+    Log.Write ("Set Collected" & Index'image);
     Action_Handler.Set_Collected (Index);
   end Set;
 
 
+  procedure Stop is
+  begin
+    Log.Write ("Processor Stop");
+    Siril.Close_Immediate;
+  end Stop;
+
+
   procedure Shutdown is
   begin
-    IO.Put_Line ("Processor Shutdown");
+    Log.Write ("Shutdown");
+    Siril.Close_Immediate;
     Action_Handler.Set_Shutdown;
   end Shutdown;
 
@@ -86,7 +105,7 @@ package body Processor is
   Picture_Filename : constant String := Work_Directory & '\' & Picture_Name & ".jpg";
 
 
-  procedure Generate_Jpec is
+  function Generated_Jpec return Boolean is
 
     Source_Directory : constant String := Image.Siril_LIGHT_Directory;
     Lights_Directory : constant String := Work_Directory & "\lights";
@@ -95,8 +114,6 @@ package body Processor is
 
     EOS6D_Pixel_Size : constant Units.Pixel_Size := 6.55;
 
-    M13_Direction : constant Space.Direction := Space.Direction_Of (Ra_Image  => "16h41m41s",
-                                                                    Dec_Image => "+36d27'");
     M13_Tones : constant Units.Tones := (Shadows    => 0.00016,
                                          Midtones   => 0.00018,
                                          Highlights => 1.0);
@@ -130,7 +147,7 @@ package body Processor is
     Siril.Stack_Light;
     Siril.Load_Stacked_Light;
 
-    Siril.Plate_Solve (M13_Direction, Celestron_Focal_Length, EOS6D_Pixel_Size);
+    Siril.Plate_Solve (The_Light_Parameters.Target, Celestron_Focal_Length, EOS6D_Pixel_Size);
 
     Siril.Remove_Background;
     Siril.Calibrate_Color;
@@ -140,11 +157,25 @@ package body Processor is
     Siril.Change_Directory ("..");
     Siril.Save_Jpeg (Picture_Name);
     Siril.Close;
-    Directory.Delete (Lights_Directory);
-  end Generate_Jpec;
+    IO.Put_Line ("New Jpec");
+    return True;
+  exception
+  when Siril.Aborted =>
+    IO.Put_Line ("Stopped");
+    return False;
+  end Generated_Jpec;
 
 
   procedure Send_Jpec is
+
+    procedure Check (Result : AWS.Response.Data) is
+      Status : constant AWS.Messages.Status_Code := AWS.Response.Status_Code (Result);
+    begin
+      if not (Status in  AWS.Messages.Success) then
+        Log.Error ("Status:" & AWS.Response.Status_Code (Result)'image);
+      end if;
+    end Check;
+
 
     function Read_File return Ada.Streams.Stream_Element_Array is
       The_File : SIO.File_Type;
@@ -161,44 +192,40 @@ package body Processor is
       end;
     end Read_File;
 
-    Data : constant Ada.Streams.Stream_Element_Array := Read_File;
-
-    Result : AWS.Response.Data;
-
   begin -- Send_Jpec
-    IO.Put_Line ("JPEG size:" & Data'length'image);
-    Result := AWS.Client.Post (URL          => "http://192.168.178.20:8000/image",
-                               Data         => Data,
-                               Content_Type => "image/jpeg");
-    IO.Put_Line ("Status:" & AWS.Response.Status_Code (Result)'image);
-    IO.Put_Line ("Response:" & AWS.Response.Message_Body (Result));
+    Check (AWS.Client.Post (URL          => "http://192.168.178.20:8000/image",
+                            Data         => Read_File,
+                            Content_Type => "image/jpeg"));
   end Send_Jpec;
 
 
-
   task body Control is
-    The_Action : Action;
+    The_Action      : Action;
     Collected_Count : Image.Count := 0;
     Processed_Count : Image.Count;
     use type Image.Number;
   begin
     accept Start;
-    Log.Write ("Start");
+    Log.Write ("started");
     loop
       Action_Handler.Get (The_Action);
       case The_Action is
-      when Shutdown =>
-        exit;
+      when Start_Light_Sequence =>
+        IO.Put_Line ("new light sequence");
+        Collected_Count := 0;
       when Processing =>
         Processed_Count := Collected_Count + 1;
         Action_Handler.Get_Collected (Collected_Count);
         Image.Move (Processed_Count, Collected_Count);
-        IO.Put_Line ("Process 1 .." & Collected_Count'image);
-        Generate_Jpec;
-        Send_Jpec;
+        IO.Put_Line ("process 1 .." & Collected_Count'image);
+        if Generated_Jpec then
+          Send_Jpec;
+        end if;
+      when Shutdown =>
+        exit;
       end case;
     end loop;
-    Log.Write ("Shutdown");
+    Log.Write ("finalized");
   exception
   when Item: others =>
     Log.Termination (Item);
@@ -207,10 +234,20 @@ package body Processor is
 
   protected body Action_Handler is
 
+    procedure New_Light_Sequence is
+    begin
+      if The_Action /= Shutdown then
+        The_Action := Start_Light_Sequence;
+        Is_Waiting := False;
+      end if;
+    end New_Light_Sequence;
+
+
     procedure Set_Collected (The_Index : Image.Count) is
       use type Image.Count;
     begin
       if The_Action /= Shutdown then
+        The_Action := Processing;
         The_Collected_Count := The_Index;
         Is_Waiting := The_Collected_Count < 2 or else The_Collected_Count <= The_Processed_Count;
       end if;

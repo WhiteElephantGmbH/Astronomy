@@ -28,6 +28,9 @@ package Siril_Interface is
 
   procedure Close;
 
+  procedure Abort_And_Close;
+
+  Aborted        : exception;
   Fatal_Error    : exception;
   Resource_Error : exception;
   Protocol_Error : exception;

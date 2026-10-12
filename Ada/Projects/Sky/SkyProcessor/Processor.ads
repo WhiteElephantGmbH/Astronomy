@@ -16,12 +16,21 @@
 pragma Style_Astronomy;
 
 with Image;
+with Space;
 
 package Processor is
 
+  type Light_Parameters is record
+    Target : Space.Direction;
+  end record;
+
   procedure Start;
+  
+  procedure New_Sequence (Parameters : Light_Parameters);
 
   procedure Set (Index : Image.Number);
+
+  procedure Stop;
 
   procedure Shutdown;
 

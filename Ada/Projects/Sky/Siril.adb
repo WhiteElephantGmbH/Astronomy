@@ -156,4 +156,6 @@ package body Siril is
 
   procedure Close renames Siril_Interface.Close;
 
+  procedure Close_Immediate renames Siril_Interface.Abort_And_Close;
+
 end Siril;
