@@ -27,6 +27,7 @@ with AWS.Client;
 with AWS.Messages;
 with AWS.Parameters;
 with AWS.Response;
+with Text;
 with Traces;
 with Url_Names;
 
@@ -37,9 +38,6 @@ package body Feeder is
   package SIO renames Ada.Streams.Stream_IO;
 
   Base_URL : constant String := "http://localhost:12000";
-
-  Ra  : constant String := Url_Names.Ra;
-  Dec : constant String := Url_Names.Dec;
 
 
   procedure Set (Focal_Length : Units.Focal_Length) is
@@ -64,11 +62,23 @@ package body Feeder is
   end Check;
 
 
-  procedure New_Sequence (Target : Space.Direction) is
+  procedure New_Darks (Id    : Units.Darks_Id;
+                       Count : Units.Picture_Number) is
     P : AWS.Parameters.List;
   begin
-    P.Add (Ra, Space.Ra_Image_Of (Target));
-    P.Add (Dec, Space.Dec_Image_Of (Target));
+    P.Add (Url_Names.Id, Id);
+    P.Add (Url_Names.Count, Text.Trimmed (Count'image));
+    Check (AWS.Client.Get (Base_URL & Url_Names.Dark_Parameters & P.URI_Format));
+  end New_Darks;
+
+
+  procedure New_Sequence (Target   : Space.Direction;
+                          Darks_Id : Units.Darks_Id) is
+    P : AWS.Parameters.List;
+  begin
+    P.Add (Url_Names.Ra, Space.Ra_Image_Of (Target));
+    P.Add (Url_Names.Dec, Space.Dec_Image_Of (Target));
+    P.Add (Url_Names.Id, Darks_Id);
     Check (AWS.Client.Get (Base_URL & Url_Names.Light_Parameters & P.URI_Format));
   end New_Sequence;
 
@@ -99,7 +109,7 @@ package body Feeder is
 
   procedure Stop is
   begin
-    null; --!!! not implemented
+    Check (AWS.Client.Get (Base_URL & Url_Names.Stop));
   end Stop;
 
 end Feeder;

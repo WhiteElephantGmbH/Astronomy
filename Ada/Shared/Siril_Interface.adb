@@ -212,6 +212,7 @@ package body Siril_Interface is
           exit when Handle_Response_Complete;
         exception
         when Os.Pipe.Broken =>
+          Check_Aborting;
           raise Fatal_Error with "no response for command: " & Command;
         end;
       end loop;
@@ -248,16 +249,15 @@ package body Siril_Interface is
     Os.Pipe.Close (Response_Pipe);
     Is_Open := False;
   exception
-  when Item: others =>
-    Log.Write ("XXX Aborted");
-    Log.Termination (Item);
+  when Occurrence: others =>
+    Log.Termination (Occurrence);
   end Abort_And_Close;
 
 
   procedure Close is
   begin
     if Is_Open then
-      Send ("close");
+      Execute ("close");
       Send ("exit");
       Os.Pipe.Close (Command_Pipe);
       Os.Pipe.Close (Response_Pipe);

@@ -18,38 +18,57 @@ pragma Style_Astronomy;
 with Directory;
 with File;
 with Text;
+with Time;
 
 package body Image is
 
   Raw_File_Extension : constant String := ".cr2";
 
   Processor_Directory : constant String := "D:\Pictures\Processor";
-  Collector_Directory : constant String := Processor_Directory & "\Collector";
   Work_Directory      : constant String := Processor_Directory & "\Siril";
   LIGHT_Directory     : constant String := Work_Directory & "\LIGHT";
-  Lights_Directory    : constant String := Work_Directory & "\Lights";
 
 
   function Name_Of (Filename : String;
                     Index    : Number) return String is
-    Index_Image : constant String := "00" & Text.Trimmed (Index'image);
+    pragma Assert (Number'last < 10000);
+    Leeding_Zeros : constant String := "000";
+    Name_Index    : constant String := Leeding_Zeros & Text.Trimmed (Index'image);
   begin
-    return Filename & '_' & Index_Image(Index_Image'last - 2 .. Index_Image'last) & Raw_File_Extension;
+    return Filename & '_' & Name_Index(Name_Index'last - Leeding_Zeros'length .. Name_Index'last) & Raw_File_Extension;
   end Name_Of;
 
+
+  function Collector_Directory return String is (Processor_Directory & "\Collector");
 
   function Collector_Filename (Index : Number) return String is (Name_Of (Collector_Directory & "\Image", Index));
 
   function LIGHT_Filename (Index : Number) return String is (Name_Of (LIGHT_Directory & "\Image", Index));
 
 
+  function Darks_Work_Directory return String is
+    Work_Directory_For_Darks : constant String := Collector_Directory & "/darks";
+  begin
+    Directory.Create (Work_Directory_For_Darks);
+    return Work_Directory_For_Darks;
+  end Darks_Work_Directory;
+
+
   procedure Clear is
   begin
-    Directory.Delete (Collector_Directory);
-    Directory.Create (Collector_Directory);
-    Directory.Delete (LIGHT_Directory);
-    Directory.Create (LIGHT_Directory);
-    Directory.Delete (Lights_Directory);
+    for Unused in 1 .. 5 loop
+      begin
+        Directory.Delete (Collector_Directory);
+        Directory.Create (Collector_Directory);
+        Directory.Delete (Work_Directory);
+        Directory.Create (LIGHT_Directory);
+        return;
+      exception
+      when File.In_Use =>
+        Time.Wait (0.2);
+      end;
+    end loop;
+    raise File.In_Use;
   end Clear;
 
 
@@ -61,6 +80,10 @@ package body Image is
                    New_Name => LIGHT_Filename (The_Index));
     end loop;
   end Move;
+
+  function Darks_Directory return String is (Processor_Directory & "\Darks");
+
+  function Flats_Directory return String is (Processor_Directory & "\Flats");
 
   function Siril_Work_Directory return String is (Work_Directory);
 

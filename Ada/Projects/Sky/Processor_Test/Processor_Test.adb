@@ -33,16 +33,24 @@ procedure Processor_Test is
 
   package IO renames Ada.Text_IO;
 
+  Darks_Id : constant String := "83016";
+
   M13 : constant Space.Direction := Space.Direction_Of (Ra_Image  => "16h41m41s",
                                                         Dec_Image => "+36d27'");
 begin
   IO.Put_Line ("Processor Test");
-  Feeder.New_Sequence (Target => M13);
+  Feeder.New_Darks (Darks_Id, 20);
+  for Filename of File.Iterator_For ("D:\Pictures\Darks_" & Darks_Id) loop
+    IO.Put_Line ("Dark: " & Filename);
+    Feeder.Next_Picture (Filename);
+  end loop;
+  Feeder.New_Sequence (M13, Darks_Id);
   for Filename of File.Iterator_For ("D:\Pictures\M13") loop
-    IO.Put_Line ("File: " & Filename);
+    IO.Put_Line ("Light: " & Filename);
     Feeder.Next_Picture (Filename);
     Time.Wait (10.0);
   end loop;
+  Feeder.Stop;
 exception
 when Item : others =>
   IO.Put_Line ("Exception: " & Exceptions.Information_Of (Item));

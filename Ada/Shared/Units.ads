@@ -16,7 +16,23 @@
 pragma Style_Astronomy;
 
 with Text;
+
 package Units is
+
+  subtype Darks_Id is String(1..5); -- "83016" => temperature range 8, 30s, ISO 1600
+  -- Temperature Range
+  --     .. <-15 -> 0
+  -- -15 .. <-10 -> 1
+  -- -10 .. <- 5 -> 2
+  -- - 5 .. <  0 -> 3
+  --   0 .. < 25 -> 4
+  --   5 .. < 10 -> 5
+  --  10 .. < 15 -> 6
+  --  15 .. < 20 -> 7
+  --  20 .. < 25 -> 8
+  --  25 ..      -> 9
+
+  type Picture_Number is range 1 .. 9999; -- don't change
 
   Focal_Length_Delta : constant := 0.1;
   type Focal_Length is delta Focal_Length_Delta range Focal_Length_Delta .. 9999.9 with Small => Focal_Length_Delta;

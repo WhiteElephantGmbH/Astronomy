@@ -37,6 +37,12 @@ package Siril is
   -- Changes Siril's current working directory.
   -- raises Name_Error if the source directory does not exist
 
+  procedure Convert_Dark (Destination : String);
+  -- Converts the dark images to FITS files.
+
+  procedure Stack_Dark (Output : String);
+  --  Stacks the dark images without normalization.
+
   procedure Convert_Light (Destination : String);
   -- Converts the light images to FITS files.
   -- raises Name_Error if the destination directory does not exist

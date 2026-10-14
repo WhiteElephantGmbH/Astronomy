@@ -18,6 +18,7 @@ pragma Style_Astronomy;
 with Ada.Calendar;
 with Ada.Directories;
 with Ada.Iterator_Interfaces;
+with Ada.IO_Exceptions;
 
 package File is
 
@@ -90,6 +91,7 @@ package File is
 
   Name_Error : exception renames Ada.Directories.Name_Error;
   Use_Error  : exception renames Ada.Directories.Use_Error;
+  In_Use     : exception renames Ada.IO_Exceptions.Use_Error;
 
 
   ------------------------
@@ -118,6 +120,7 @@ package File is
 
   function Constant_Reference (The_Item     : aliased Item;
                                Unused_Index : Cursor) return String with Inline;
+
 private
 
   type Cursor_Data is record

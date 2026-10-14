@@ -20,11 +20,15 @@ with Units;
 
 package Feeder is
 
+  procedure New_Darks (Id    : Units.Darks_Id;
+                       Count : Units.Picture_Number);
+
   procedure Set (Focal_Length : Units.Focal_Length);
 
   procedure Set (Pixel_Size : Units.Pixel_Size);
 
-  procedure New_Sequence (Target : Space.Direction);
+  procedure New_Sequence (Target   : Space.Direction;
+                          Darks_Id : Units.Darks_Id);
 
   procedure Next_Picture (Filename : String) with Inline;
 

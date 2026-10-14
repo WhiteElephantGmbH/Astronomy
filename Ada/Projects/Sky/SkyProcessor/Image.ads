@@ -15,23 +15,33 @@
 -- *********************************************************************************************************************
 pragma Style_Astronomy;
 
+with Units;
+
 package Image is
 
-  type Count is range 0 .. 999;
+  type Count is range 0 .. Units.Picture_Number'last;
 
   subtype Number is Count range 1 .. Count'last;
+
+  function Collector_Directory return String;
 
   function Collector_Filename (Index : Number) return String;
 
   function LIGHT_Filename (Index : Number) return String;
+
+  function Darks_Work_Directory return String;
 
   procedure Clear;
 
   procedure Move (From : Number;
                   To   : Number);
 
+  function Darks_Directory return String;
+
+  function Flats_Directory return String;
+
   function Siril_Work_Directory return String;
 
   function Siril_LIGHT_Directory return String;
-  
+
 end Image;

@@ -17,6 +17,11 @@ pragma Style_Astronomy;
 
 package Url_Names is
 
+  Dark_Parameters : constant String := "/dark_parameters";
+
+  Id    : constant String := "id";
+  Count : constant String := "count";
+
   Light_Parameters : constant String := "/ligth_parameters";
 
   Ra  : constant String := "ra";

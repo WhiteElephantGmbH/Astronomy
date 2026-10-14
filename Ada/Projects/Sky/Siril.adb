@@ -51,6 +51,19 @@ package body Siril is
   end Change_Directory;
 
 
+  procedure Convert_Dark (Destination : String) is
+  begin
+    Check_Directory (File.Containing_Directory_Of (Destination));
+    SI.Execute ("convert dark -out=" & Destination);
+  end Convert_Dark;
+
+
+  procedure Stack_Dark (Output : String) is
+  begin
+    SI.Execute ("stack dark median -nonorm -out=" & Output);
+  end Stack_Dark;
+
+
   procedure Convert_Light (Destination : String) is
   begin
     Check_Directory (File.Containing_Directory_Of (Destination));

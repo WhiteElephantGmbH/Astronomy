@@ -17,15 +17,24 @@ pragma Style_Astronomy;
 
 with Image;
 with Space;
+with Units;
 
 package Processor is
 
+  type Dark_Parameters is record
+    Id    : Units.Darks_Id;
+    Count : Image.Number;
+  end record;
+
   type Light_Parameters is record
-    Target : Space.Direction;
+    Target   : Space.Direction;
+    Darks_Id : Units.Darks_Id;
   end record;
 
   procedure Start;
-  
+
+  procedure Evaluate_Darks (Parameter : Dark_Parameters);
+
   procedure New_Sequence (Parameters : Light_Parameters);
 
   procedure Set (Index : Image.Number);

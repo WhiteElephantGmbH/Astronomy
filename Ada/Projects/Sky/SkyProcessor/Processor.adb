@@ -23,7 +23,6 @@ with AWS.Response;
 with File;
 with Siril;
 with Traces;
-with Units;
 
 package body Processor is
 
@@ -32,10 +31,12 @@ package body Processor is
   package IO  renames Ada.Text_IO;
   package SIO renames Ada.Streams.Stream_IO;
 
-  type Action is (Start_Light_Sequence, Processing, Shutdown);
+  type Action is (Process_Darks, Start_Light_Sequence, Processing, Shutdown);
 
 
   protected Action_Handler is
+
+    procedure Evaluate_Darks;
 
     procedure New_Light_Sequence;
 
@@ -47,8 +48,13 @@ package body Processor is
 
     entry Get (Item : out Action);
 
+    procedure Set_Complete;
+
+    entry Await_Completion;
+
   private
     Is_Waiting          : Boolean := True;
+    Is_Complete         : Boolean := False;
     The_Action          : Action  := Processing;
     The_Collected_Count : Image.Count := 0;
     The_Processed_Count : Image.Count := 0;
@@ -65,6 +71,19 @@ package body Processor is
     IO.Put_Line ("Start");
     Control.Start;
   end Start;
+
+
+  The_Dark_Parameters : Dark_Parameters;
+
+  procedure Evaluate_Darks (Parameter : Dark_Parameters) is
+  begin
+    Log.Write ("Evaluate Darks");
+    The_Dark_Parameters := Parameter;
+    Action_Handler.Evaluate_Darks;
+    Log.Write ("Await Completion");
+    Action_Handler.Await_Completion;
+    Log.Write ("Darks Evaluated");
+  end Evaluate_Darks;
 
 
   The_Light_Parameters : Light_Parameters;
@@ -99,7 +118,42 @@ package body Processor is
   end Shutdown;
 
 
-  Work_Directory   : constant String := Image.Siril_Work_Directory;
+  procedure Progress (Command  : String;
+                      Progress : Siril.Percent) is
+    use type Siril.Percent;
+  begin
+    if Progress = Siril.Start then
+      IO.Put (Command & " started");
+    elsif Progress = Siril.Complete then
+      IO.Put_Line (Ascii.Cr & Command & " Complete");
+    else
+      IO.Put (Ascii.Cr & Command & Progress'image & "%       ");
+    end if;
+  end Progress;
+
+
+  Stacked_Fit : constant String := "stacked.fit";
+
+  Darks_Directory : constant String := Image.Darks_Directory;
+  Flats_Directory : constant String := Image.Flats_Directory;
+  Work_Directory  : constant String := Image.Siril_Work_Directory;
+
+
+  procedure Generate_Darks is
+    Darks_Work_Directory : constant String := Image.Darks_Work_Directory;
+    Darks_Fit_Filename   : constant String := Darks_Directory & "\" & The_Dark_Parameters.Id & "_" & Stacked_Fit;
+  begin
+    IO.Put_Line ("Generate " & Darks_Fit_Filename);
+    Siril.Open (Progress'unrestricted_access);
+    Siril.Change_Directory (Image.Collector_Directory);
+    Siril.Convert_Dark (Destination => Darks_Work_Directory);
+    Siril.Change_Directory (Darks_Work_Directory);
+    Siril.Stack_Dark (Darks_Fit_Filename);
+    Siril.Close;
+    Action_Handler.Set_Complete;
+    Log.Write ("Generated " & Darks_Fit_Filename);
+  end Generate_Darks;
+
 
   Picture_Name     : constant String := "Picture";
   Picture_Filename : constant String := Work_Directory & '\' & Picture_Name & ".jpg";
@@ -109,6 +163,9 @@ package body Processor is
 
     Source_Directory : constant String := Image.Siril_LIGHT_Directory;
     Lights_Directory : constant String := Work_Directory & "\lights";
+
+    Flats_Stacked_Fit : constant String := Flats_Directory & "\" & Stacked_Fit;
+    Darks_Stacked_Fit : constant String := Darks_Directory & "\" & The_Light_Parameters.Darks_Id & "_" & Stacked_Fit;
 
     Celestron_Focal_Length : constant Units.Focal_Length := 2669.6;
 
@@ -120,19 +177,6 @@ package body Processor is
 
     M13_Saturation : constant Units.Saturation := (Amount     => 0.9,
                                                    Multiplier => 1.0);
-    procedure Progress (Command  : String;
-                        Progress : Siril.Percent) is
-      use type Siril.Percent;
-    begin
-      if Progress = Siril.Start then
-        IO.Put (Command & " started");
-      elsif Progress = Siril.Complete then
-        IO.Put_Line (Ascii.Cr & Command & " Complete");
-      else
-        IO.Put (Ascii.Cr & Command & Progress'image & "%       ");
-      end if;
-    end Progress;
-
   begin
     File.Delete (Picture_Filename);
     Siril.Open (Progress'unrestricted_access);
@@ -141,8 +185,8 @@ package body Processor is
     Siril.Convert_Light (Destination => Lights_Directory);
     Siril.Change_Directory (Lights_Directory);
 
-    Siril.Calibrate_Light (Dark => Work_Directory & "\darks_stacked.fit",
-                           Flat => Work_Directory & "\flats_stacked.fit");
+    Siril.Calibrate_Light (Dark => Darks_Stacked_Fit,
+                           Flat => Flats_Stacked_Fit);
     Siril.Register_Light;
     Siril.Stack_Light;
     Siril.Load_Stacked_Light;
@@ -210,6 +254,9 @@ package body Processor is
     loop
       Action_Handler.Get (The_Action);
       case The_Action is
+      when Process_Darks =>
+        IO.Put_Line ("process darks");
+        Generate_Darks;
       when Start_Light_Sequence =>
         IO.Put_Line ("new light sequence");
         Collected_Count := 0;
@@ -228,16 +275,29 @@ package body Processor is
     Log.Write ("finalized");
   exception
   when Item: others =>
+    IO.Put_Line ("!!! unexpected termination !!!");
     Log.Termination (Item);
   end Control;
 
 
   protected body Action_Handler is
 
+    procedure Evaluate_Darks is
+    begin
+      if The_Action /= Shutdown then
+        The_Action := Process_Darks;
+        Is_Waiting := False;
+        Is_Complete := False;
+      end if;
+    end Evaluate_Darks;
+
+
     procedure New_Light_Sequence is
     begin
       if The_Action /= Shutdown then
         The_Action := Start_Light_Sequence;
+        The_Collected_Count := 0;
+        The_Processed_Count := 0;
         Is_Waiting := False;
       end if;
     end New_Light_Sequence;
@@ -263,6 +323,7 @@ package body Processor is
 
     procedure Set_Shutdown is
     begin
+      Is_Complete := True;
       Is_Waiting := False;
       The_Action := Shutdown;
     end Set_Shutdown;
@@ -273,6 +334,18 @@ package body Processor is
       Item := The_Action;
       Is_Waiting := True;
     end Get;
+
+
+    procedure Set_Complete is
+    begin
+      Is_Complete := True;
+    end Set_Complete;
+
+
+    entry Await_Completion when Is_Complete is
+    begin
+      Is_Complete := False;
+    end Await_Completion;
 
   end Action_Handler;
 
