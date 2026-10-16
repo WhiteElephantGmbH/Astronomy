@@ -15,7 +15,7 @@
 -- *********************************************************************************************************************
 pragma Style_Astronomy;
 
-with Text;
+with Angle, Text;
 
 package Units is
 
@@ -32,17 +32,45 @@ package Units is
   --  20 .. < 25 -> 8
   --  25 ..      -> 9
 
-  type Picture_Number is range 1 .. 9999; -- don't change
+  Picture_Number_Count : constant := 4;
+  type Picture_Number is range 1 .. 10**Picture_Number_Count - 1;
 
-  Focal_Length_Delta : constant := 0.1;
-  type Focal_Length is delta Focal_Length_Delta range Focal_Length_Delta .. 9999.9 with Small => Focal_Length_Delta;
+  F_L_Delta : constant := 0.1;
+  type Focal_Length is delta F_L_Delta range F_L_Delta .. 10_000.0 - F_L_Delta with Small => F_L_Delta;
 
-  Pixel_Size_Delta : constant := 0.01;
-  type Pixel_Size is delta Pixel_Size_Delta range Pixel_Size_Delta .. 99.99 with Small => Pixel_Size_Delta;
+  P_S_Delta : constant := 0.01; -- um
+  type Pixel_Size is delta P_S_Delta range P_S_Delta .. 100.0 - P_S_Delta with Small => P_S_Delta;
 
-  Saturation_Delta : constant := 0.01;
-  type Saturation_Amount     is delta Saturation_Delta range 0.0 .. 1.0                with Small => Saturation_Delta;
-  type Saturation_Multiplier is delta Saturation_Delta range Saturation_Delta .. 99.99 with Small => Saturation_Delta;
+  type Pixel_Count is range 1 .. 10**5 - 1;
+
+  type Chip_Resolution is record
+    X : Pixel_Count;
+    Y : Pixel_Count;
+  end record;
+
+  subtype Pixel_Binning is Pixel_Count range 1 .. 16;
+
+  type Chip_Binning is record
+    X : Pixel_Binning;
+    Y : Pixel_Binning;
+  end record;
+
+  C_S_Delta : constant := 0.1; -- mm
+  type Chip_Size is delta C_S_Delta range C_S_Delta .. 100.0 - C_S_Delta with Small => C_S_Delta;
+
+  type Chip_Dimension is record
+    X : Chip_Size;
+    Y : Chip_Size;
+  end record;
+  
+  subtype Field_Of_View is Angle.Degrees range 0.1 .. 180.0;
+
+  L_M_Delta : constant := 0.01;
+  type Lens_Multiplier is delta L_M_Delta range L_M_Delta .. 10.0 - L_M_Delta with Small => L_M_Delta;
+
+  S_M_Delta : constant := 0.01;
+  type Saturation_Amount     is delta S_M_Delta range 0.0 .. 1.0 with Small => S_M_Delta;
+  type Saturation_Multiplier is delta S_M_Delta range S_M_Delta .. 100.0 - S_M_Delta with Small => S_M_Delta;
 
   type Saturation is record
     Amount     : Saturation_Amount;

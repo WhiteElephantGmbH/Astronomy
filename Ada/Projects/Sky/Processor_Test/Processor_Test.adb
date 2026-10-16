@@ -33,10 +33,15 @@ procedure Processor_Test is
 
   package IO renames Ada.Text_IO;
 
-  Darks_Id : constant String := "83016";
+--Darks_Id : constant String := "83016"; --M13
+  Darks_Id : constant String := "71016"; --M27, NGC7331
 
-  M13 : constant Space.Direction := Space.Direction_Of (Ra_Image  => "16h41m41s",
-                                                        Dec_Image => "+36d27'");
+--M13 : constant Space.Direction := Space.Direction_Of (Ra_Image  => "16h41m41s",
+--                                                      Dec_Image => "+36d27'");
+--M27 : constant Space.Direction := Space.Direction_Of (Ra_Image  => "19h59m36s",
+--                                                      Dec_Image => "+22d43'16""");
+  NGC_7331 : constant Space.Direction := Space.Direction_Of (Ra_Image  => "22h37m06s",
+                                                             Dec_Image => "+34d25'07""");
 begin
   IO.Put_Line ("Processor Test");
   Feeder.New_Darks (Darks_Id, 20);
@@ -44,8 +49,12 @@ begin
     IO.Put_Line ("Dark: " & Filename);
     Feeder.Next_Picture (Filename);
   end loop;
-  Feeder.New_Sequence (M13, Darks_Id);
-  for Filename of File.Iterator_For ("D:\Pictures\M13") loop
+--Feeder.New_Sequence (M13, Darks_Id);
+--Feeder.New_Sequence (M27, Darks_Id);
+  Feeder.New_Sequence (NGC_7331, Darks_Id);
+--for Filename of File.Iterator_For ("D:\Pictures\M13") loop
+--for Filename of File.Iterator_For ("D:\Pictures\M27") loop
+  for Filename of File.Iterator_For ("D:\Pictures\NGC_7331") loop
     IO.Put_Line ("Light: " & Filename);
     Feeder.Next_Picture (Filename);
     Time.Wait (10.0);

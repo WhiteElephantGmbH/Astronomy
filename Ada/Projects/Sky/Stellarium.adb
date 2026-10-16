@@ -25,6 +25,7 @@ with File;
 with Network.Tcp.Servers;
 with Os.Process;
 with Site;
+with Stellarium.Client;
 with Time;
 with Unsigned;
 
@@ -121,9 +122,88 @@ package body Stellarium is
     return "";
   end Landscape_Config_Name;
 
+
   Landscape_Config  : constant Configuration.File_Handle := Configuration.Handle_For (Landscape_Config_Name);
   Landscape_Section : constant Configuration.Section_Handle := Configuration.Handle_For (Landscape_Config, "landscape");
   Location_Section  : constant Configuration.Section_Handle := Configuration.Handle_For (Landscape_Config, "location");
+
+  Modules_Directory : constant String := Application_Data_Directory & File.Folder_Separator & "modules";
+  Oculars_Directory : constant File.Folder := Modules_Directory + "Oculars";
+
+  function Ocular_Config_Name return String is
+  begin
+    declare
+      Config_Name : constant String := File.Composure (Oculars_Directory, "ocular", "ini");
+    begin
+      if File.Exists (Config_Name) then
+        Log.Write ("ocular configuration: " & Config_Name);
+        return Config_Name;
+      else
+        Log.Warning ("ocular configuration " & Config_Name & " not defined");
+        return "";
+      end if;
+    end;
+  exception
+  when others =>
+    Log.Warning ("Modules Oculars not found");
+    return "";
+  end Ocular_Config_Name;
+
+
+  Ocular_Config  : constant Configuration.File_Handle := Configuration.Handle_For (Ocular_Config_Name);
+  CCD_Section    : constant Configuration.Section_Handle := Configuration.Handle_For (Ocular_Config, "ccd");
+  Lens_Section   : constant Configuration.Section_Handle := Configuration.Handle_For (Ocular_Config, "lens");
+  Ocular_Section : constant Configuration.Section_Handle := Configuration.Handle_For (Ocular_Config, "ocular");
+  Tele_Section   : constant Configuration.Section_Handle := Configuration.Handle_For (Ocular_Config, "telescope");
+
+  function Prefix (Index : Natural) return String is (Text.Trimmed (Index'image) & '\');
+
+
+  function Camera (Index : Natural) return Camera_Data is
+    function Value_Of (Item : String) return String is (Configuration.Value_Of (CCD_Section, Prefix (Index) & Item));
+    Name  : constant String := Value_Of ("name");
+    Res_X : constant String := Value_Of ("resolutionX");
+    Res_Y : constant String := Value_Of ("resolutionY");
+    Bin_X : constant String := Value_Of ("binningX");
+    Bin_Y : constant String := Value_Of ("binningY");
+    Dim_X : constant String := Value_Of ("chip_width");
+    Dim_Y : constant String := Value_Of ("chip_height");
+  begin
+    return (Name       => [Name],
+            Resolution => (X => Units.Pixel_Count'value(Res_X), Y => Units.Pixel_Count'value(Res_Y)),
+            Binning    => (X => Units.Pixel_Binning'value(Bin_X), Y => Units.Pixel_Binning'value(Bin_Y)),
+            Dimension  => (X => Units.Chip_Size'value(Dim_X), Y => Units.Chip_Size'value(Dim_Y)));
+  end Camera;
+
+
+  function Lens (Index : Natural) return Lens_Data is
+    function Value_Of (Item : String) return String is (Configuration.Value_Of (Lens_Section, Prefix (Index) & Item));
+    Name       : constant String := Value_Of ("name");
+    Multiplier : constant String := Value_Of ("multipler");
+  begin
+    return (Name       => [Name],
+            Multiplier => Units.Lens_Multiplier'value(Multiplier));
+  end Lens;
+
+
+  function Ocular (Index : Natural) return Ocular_Data is
+    function Value_Of (Item : String) return String is (Configuration.Value_Of (Ocular_Section, Prefix (Index) & Item));
+    Name         : constant String := Value_Of ("name");
+    Apparent_FOV : constant String := Value_Of ("afov");
+  begin
+    return (Name         => [Name],
+            Apparent_FOV => Units.Field_Of_View'value(Apparent_FOV));
+  end Ocular;
+
+
+  function Telescope (Index : Natural) return Telescope_Data is
+    function Value_Of (Item : String) return String is (Configuration.Value_Of (Tele_Section, Prefix (Index) & Item));
+    Name         : constant String := Value_Of ("name");
+    Focal_Length : constant String := Value_Of ("focalLength");
+  begin
+    return (Name         => [Name],
+            Focal_Length => Units.Focal_Length'value(Focal_Length));
+  end Telescope;
 
 
   function Search_Tolerance return Angle.Degrees is
@@ -439,6 +519,16 @@ package body Stellarium is
   when others =>
     null;
   end Set;
+
+
+  function Get return Target_Data renames Client.Get_Target;
+
+  function Telescope_Name return String is
+    Data : constant Client.Data := Client.Get;
+  begin
+    Log.Write (Data'image);
+    return Data.Telescope.Name.S;
+  end Telescope_Name;
 
 begin
   Read_Location;

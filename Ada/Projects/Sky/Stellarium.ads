@@ -21,6 +21,7 @@ with Network;
 with Space;
 with Text;
 with Traces;
+with Units;
 
 package Stellarium is
 
@@ -42,6 +43,19 @@ package Stellarium is
 
   procedure Set (Direction : Space.Direction);
 
+  type Target_Data is record
+    Target          : Text.String;
+    Kind            : Text.String;
+    Direction       : Space.Direction;
+    Direction_J2000 : Space.Direction;
+  end record;
+
+  function Get return Target_Data;
+
+  function Telescope_Name return String;
+
+  No_Data : exception;
+
 private
 
   Id : constant String := "Stellarium";
@@ -53,5 +67,44 @@ private
   The_Port_Number : Network.Port_Number;
 
   The_Search_Tolerance : Angle.Degrees;
+
+  The_Client_Address : Network.Ip_Address := Network.Ip_Address_Of_Host ("localhost");
+  The_Client_Port    : Network.Port_Number := 8090;
+
+  type Camera_Data is record
+    Name       : Text.String;
+    Resolution : Units.Chip_Resolution;
+    Binning    : Units.Chip_Binning;
+    Dimension  : Units.Chip_Dimension;
+  end record;
+
+  function Camera (Index : Natural) return Camera_Data;
+
+  type Lens_Data is record
+    Name       : Text.String;
+    Multiplier : Units.Lens_Multiplier;
+  end record;
+
+  No_Lens_Data : constant Lens_Data := ([], Units.Lens_Multiplier'last);
+
+  function Lens (Index : Natural) return Lens_Data;
+
+  type Ocular_Data is record
+    Name         : Text.String;
+    Apparent_FOV : Units.Field_Of_View;
+  end record;
+
+  No_Ocular_Data : constant Ocular_Data := ([], Units.Field_Of_View'last);
+
+  function Ocular (Index : Natural) return Ocular_Data;
+
+  type Telescope_Data is record
+    Name         : Text.String;
+    Focal_Length : Units.Focal_Length;
+  end record;
+
+  function Telescope (Index : Natural) return Telescope_Data;
+
+  Not_Defined : exception;
 
 end Stellarium;
