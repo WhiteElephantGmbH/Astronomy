@@ -54,7 +54,12 @@ package Stellarium is
 
   function Telescope_Name return String;
 
-  No_Data : exception;
+  function Camera_Rotation return Units.Rotation;
+
+  procedure Set_Camera_Rotation (Value : Units.Rotation);
+
+  No_Data          : exception;
+  Operation_Failed : exception;
 
 private
 

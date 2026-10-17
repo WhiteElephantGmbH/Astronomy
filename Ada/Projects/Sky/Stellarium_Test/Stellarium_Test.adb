@@ -39,8 +39,10 @@ begin
   IO.Put_Line ("Target: " & Target_Data.Target.S);
   IO.Put_Line ("Type: " & Target_Data.Kind.S);
   IO.Put_Line ("Direction: " & Space.Image_Of (Target_Data.Direction));
-  IO.Put_Line ("Direction_J2000: " & Space.Image_Of (Target_Data.Direction_J2000));
+  IO.Put_Line ("Direction J2000: " & Space.Image_Of (Target_Data.Direction_J2000));
   IO.Put_Line ("Telescope Name:" & Stellarium.Telescope_Name);
+  Stellarium.Set_Camera_Rotation (42.0);
+  IO.Put_Line ("Camera Rotation:" & Stellarium.Camera_Rotation'image);
 exception
 when Stellarium.No_Data =>
   IO.Put_Line ("No data received (no object selected)");

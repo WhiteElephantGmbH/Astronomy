@@ -18,7 +18,7 @@ pragma Style_Astronomy;
 private package Stellarium.Client is
 
   type Data is record
-    Rotation  : Angle.Degrees;
+    Rotation  : Units.Rotation;
     Camera    : Camera_Data;
     Ocular    : Ocular_Data;
     Lens      : Lens_Data;
@@ -28,5 +28,7 @@ private package Stellarium.Client is
   function Get_Target return Target_Data;
 
   function Get return Data;
+
+  procedure Set_Rotation (Value : Units.Rotation);
 
 end Stellarium.Client;

@@ -62,8 +62,11 @@ package Units is
     X : Chip_Size;
     Y : Chip_Size;
   end record;
-  
+
   subtype Field_Of_View is Angle.Degrees range 0.1 .. 180.0;
+
+  Rotation_Delta : constant := 0.000_001;
+  type Rotation is delta Rotation_Delta range -360.0 .. 360.0 with Small => Rotation_Delta;
 
   L_M_Delta : constant := 0.01;
   type Lens_Multiplier is delta L_M_Delta range L_M_Delta .. 10.0 - L_M_Delta with Small => L_M_Delta;

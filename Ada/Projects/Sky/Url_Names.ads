@@ -21,6 +21,7 @@ package Url_Names is
 
   Id    : constant String := "id";
   Count : constant String := "count";
+  Value : constant String := "value";
 
   Light_Parameters : constant String := "/ligth_parameters";
 

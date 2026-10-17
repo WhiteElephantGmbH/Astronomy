@@ -530,6 +530,18 @@ package body Stellarium is
     return Data.Telescope.Name.S;
   end Telescope_Name;
 
+
+  function Camera_Rotation return Units.Rotation is
+  begin
+    return Client.Get.Rotation;
+  end Camera_Rotation;
+
+
+  procedure Set_Camera_Rotation (Value : Units.Rotation) is
+  begin
+    Client.Set_Rotation (Value);
+  end Set_Camera_Rotation;
+
 begin
   Read_Location;
 end Stellarium;
