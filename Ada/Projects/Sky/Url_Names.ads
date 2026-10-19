@@ -19,9 +19,11 @@ package Url_Names is
 
   Dark_Parameters : constant String := "/dark_parameters";
 
-  Id    : constant String := "id";
-  Count : constant String := "count";
-  Value : constant String := "value";
+  Id     : constant String := "id";
+  Count  : constant String := "count";
+  Mode   : constant String := "mode";
+  Target : constant String := "target";
+  Value  : constant String := "value";
 
   Light_Parameters : constant String := "/ligth_parameters";
 

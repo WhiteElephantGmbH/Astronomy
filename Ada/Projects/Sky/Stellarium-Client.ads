@@ -27,8 +27,19 @@ private package Stellarium.Client is
 
   function Get_Target return Target_Data;
 
+  procedure Set_Focus_To (Target_Name : String;
+                          Mode        : Focus_Mode);
+
   function Get return Data;
 
   procedure Set_Rotation (Value : Units.Rotation);
+
+  procedure Set_CCD (Index : Property_Id);
+
+  procedure Set_Lens (Index : Property_Index);
+
+  procedure Set_Ocular (Index : Property_Id);
+
+  procedure Set_Telescope (Index : Property_Id);
 
 end Stellarium.Client;

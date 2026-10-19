@@ -19,6 +19,10 @@ with Angle, Text;
 
 package Units is
 
+  type Camera_Model is (Unknown, Canon_Eos_6D, Canon_Eos_60D, QHY600C);
+
+  type Telescope_Model is (Unknown, Celestron_C11, Celestron_C14, CDK_700);
+
   subtype Darks_Id is String(1..5); -- "83016" => temperature range 8, 30s, ISO 1600
   -- Temperature Range
   --     .. <-15 -> 0
