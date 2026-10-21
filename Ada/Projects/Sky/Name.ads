@@ -89,6 +89,8 @@ package Name is
 
   function Image_Of (Item : Id) return String;
 
+  function Image_For_Stellarium_Of (Item : Id) return String;
+
   function Matches (Item   : Id;
                     Number : Natural) return Boolean;
 

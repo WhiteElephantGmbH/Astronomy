@@ -530,6 +530,18 @@ package body Stellarium is
   end Set_Focus;
 
 
+  procedure Center_On (Target : Name.Id) is
+    Target_Name : constant String := Name.Image_For_Stellarium_Of (Target);
+  begin
+    if Target_Name /= "" then
+      Client.Set_Focus_To (Target_Name, Center);
+    end if;
+  exception
+  when others =>
+    null;
+  end Center_On;
+
+
   function Camera_Name return String is
   begin
     return Client.Get.Camera.Name.S;

@@ -346,6 +346,7 @@ package body Control is
           The_Neo_Target := Name.No_Id;
           Targets.Get_For (Target_Name, The_Item);
           if Name.Is_Known (The_Item)  then
+            Stellarium.Center_On (The_Item);
             case Name.Kind_Of (The_Item) is
             when Name.Sky_Object =>
               Telescope.Define_Space_Access (Name.Direction_Of'access, The_Item);

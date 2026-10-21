@@ -22,6 +22,7 @@ with Application;
 with Error;
 with File;
 with Lexicon;
+with Name.Ocl;
 with Objects;
 with Site;
 with Sky.Catalog;
@@ -114,6 +115,67 @@ package body Name is
       return Sky.Data.Name_Of (Item.Element_Number, Item.Data_Id);
     end case;
   end Image_Of;
+
+
+  function Image_For_Stellarium_Of (Item : Id) return String is
+    Image : constant String := Text.Strings_Of (Image_Of (Item), Separator => '[')(1);
+  begin
+    case Kind_Of (Item) is
+    when Axis_Position | Landmark =>
+      return "";
+    when Near_Earth_Object =>
+      return "NORAD " & Text.Strings_Of (Image, Separator => ' ')(1);
+    when others =>
+      case Item.Data_Id is
+      when Sky.Favorites =>
+        case Item.Element.Kind is
+        when Sky_Object =>
+          null;
+        when others =>
+          return Image;
+        end case;
+      when Sky.Ocl | Sky.Star | Sky.Quasars  =>
+        null;
+      when others =>
+        return Image;
+      end case;
+    end case;
+    if Image(Image'first) = '*' then
+      return Text.Trimmed (Image(Image'first + 1 .. Image'last));
+    end if;
+    declare
+      Parts        : constant Text.Strings := Text.Strings_Of (Image, Separator => ' ');
+      Catalog_Name : constant String := Parts(1);
+    begin
+      if Catalog_Name = "3C" then
+        return Image & ".0";
+      elsif Catalog_Name = "OCl" then
+        declare
+          Catalog_Number : constant Positive := Positive'value(Parts(2));
+        begin
+          return ("NGC" & Sky.Catalog.Position_Of (Sky.Ngc, Sky.Catalog.Ocl_Id (Catalog_Number))'image);
+        exception
+        when others =>
+          begin
+            return ("IC" & Sky.Catalog.Position_Of (Sky.Ic, Sky.Catalog.Ocl_Id (Catalog_Number))'image);
+          exception
+            when others =>
+            begin
+              return ("C" & Sky.Catalog.Position_Of (Sky.Ic, Sky.Catalog.Caldwell_Id (Catalog_Number))'image);
+            exception
+            when others =>
+              return Ocl.Target_Name_Of (Catalog_Number);
+            end;
+          end;
+        end;
+      end if;
+      return Image;
+    end;
+  exception
+  when Occurrance: others =>
+    Log.Termination (Occurrance);
+    return Image;
+  end Image_For_Stellarium_Of;
 
 
   function Matches (Item   : Id;
@@ -811,10 +873,10 @@ package body Name is
         Put (Image_Of (Lexicon.Sirius));
         Put (Image_Of (Lexicon.Vega));
         Put ("");
-        Put ("NGC 869   | h-Persei");
-        Put ("NGC 884   | χ-Persei");
-        Put ("OCl 113.0 | Cr399");
-        Put ("3C 273");
+        Put ("NGC 869 | h-Persei");
+        Put ("NGC 884 | χ-Persei");
+        Put ("OCl 113 | Cr399");
+        Put ("3C 273  | Quasar");
         Put ("");
         Put ("C14 | " & Image_Of (Lexicon.Persei_Clusters));
         Put ("C33 | " & Image_Of (Lexicon.East_Veil_Nebula));

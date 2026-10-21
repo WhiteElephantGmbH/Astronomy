@@ -17,6 +17,7 @@ pragma Style_Astronomy;
 
 with Angle;
 with Language;
+with Name;
 with Network;
 with Space;
 with Text;
@@ -58,6 +59,8 @@ package Stellarium is
 
   procedure Set_Focus (Target_Name : String;
                        Mode        : Focus_Mode := Mark);
+
+  procedure Center_On (Target : Name.Id);
 
   function Camera_Name return String;
 
