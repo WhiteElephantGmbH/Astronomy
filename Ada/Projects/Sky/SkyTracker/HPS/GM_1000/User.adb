@@ -639,12 +639,20 @@ package body User is
   end Show;
 
 
-  procedure Set (The_Target : Name.Id) is
+  procedure Show (The_Target : Name.Id) is
   begin
-    Set_Target_Name (Name.Image_Of (The_Target));
-    Signal_Action (Define_Target);
+    if Name.Exists (The_Target) then
+      Set_Target_Name (Name.Image_Of (The_Target));
+      Signal_Action (Define_Target);
+    end if;
+  end Show;
+
+
+  procedure Go_To (The_Target : Name.Id) is
+  begin
+    Show (The_Target);
     Perform_Goto;
-  end Set;
+  end Go_To;
 
 
   procedure Clear_Target is

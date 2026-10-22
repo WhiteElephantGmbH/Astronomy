@@ -97,7 +97,7 @@ package body Control is
         Action_Handler.Put_Goto (The_Direction);
       end if;
     else
-      User.Set (The_Target);
+      User.Go_To (The_Target);
     end if;
   end Goto_Handler;
 
@@ -470,6 +470,7 @@ package body Control is
         Targets.Start (Clear    => User.Clear_Targets'access,
                        Define   => User.Define'access,
                        Update   => User.Update_Targets'access,
+                       Show     => User.Show'access,
                        Arriving => Neo.Is_Arriving'access);
         User.Execute (Startup'access,
                       User_Action_Handler'access,

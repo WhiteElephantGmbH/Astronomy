@@ -59,6 +59,7 @@ package Targets is
   procedure Start (Clear    : access procedure;
                    Define   : access procedure (List : Name.Id_List_Access);
                    Update   : access procedure;
+                   Show     : access procedure (Target : Name.Id);
                    Arriving : Arriving_Handling := null);
 
   procedure Define_Catalog;

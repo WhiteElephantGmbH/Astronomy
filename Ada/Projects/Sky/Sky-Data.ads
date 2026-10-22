@@ -29,7 +29,8 @@ package Sky.Data is
   No_Element : constant Element := (others => <>);
 
   function Find_Element (From_Direction : Space.Direction;
-                         With_Tolerance : Space.Distance) return Element;
+                         With_Tolerance : Space.Distance;
+                         Is_Jear_2000   : Boolean := False) return Element;
 
   subtype Index is Object range First_Object .. Object'last;
 

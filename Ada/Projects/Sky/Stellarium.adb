@@ -421,7 +421,7 @@ package body Stellarium is
   procedure Message_Handler (The_Message : Receive_Message) is
     use type Angle.Value;
   begin
-    if Goto_Location /= null then
+    if Goto_Is_Enabled and Goto_Location /= null then
       Goto_Location (Space.Direction_Of (Ra  => Angle.Value'(+The_Message.Ra),
                                          Dec => Angle.Value'(+The_Message.Dec)));
     end if;

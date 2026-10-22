@@ -23,6 +23,7 @@ pragma Build (Description => "Stellarium test",
               Compiler    => "GNAT\14.2");
 
 with Ada.Text_IO;
+with Ada.Command_Line;
 with Exceptions;
 with Space;
 with Stellarium;
@@ -36,9 +37,9 @@ procedure Stellarium_Test is
 
 begin
   IO.Put_Line ("Stellarium_Test");
-  Stellarium.Set_Focus ("M13", Stellarium.Center);
+  Stellarium.Set_Focus (Ada.Command_Line.Argument(1), Stellarium.Center);
   Target_Data := Stellarium.Get;
-  IO.Put_Line ("Target: " & Target_Data.Target.S);
+  IO.Put_Line ("Target: " & Target_Data.Name.S);
   IO.Put_Line ("Type: " & Target_Data.Kind.S);
   IO.Put_Line ("Direction: " & Space.Image_Of (Target_Data.Direction));
   IO.Put_Line ("Direction J2000: " & Space.Image_Of (Target_Data.Direction_J2000));

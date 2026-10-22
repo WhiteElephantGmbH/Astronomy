@@ -45,7 +45,7 @@ package Stellarium is
   procedure Set (Direction : Space.Direction);
 
   type Target_Data is record
-    Target          : Text.String;
+    Name            : Text.String;
     Kind            : Text.String;
     Direction       : Space.Direction;
     Direction_J2000 : Space.Direction;
@@ -110,6 +110,8 @@ private
   The_Port_Number : Network.Port_Number;
 
   The_Search_Tolerance : Angle.Degrees;
+
+  Goto_Is_Enabled : Boolean := False;
 
   The_Client_Address : Network.Ip_Address := Network.Ip_Address_Of_Host ("localhost");
   The_Client_Port    : Network.Port_Number := 8090;

@@ -22,6 +22,7 @@ with Application;
 with Error;
 with File;
 with Lexicon;
+with Moon;
 with Name.Ocl;
 with Objects;
 with Site;
@@ -35,6 +36,8 @@ with Traces;
 package body Name is
 
   package Log is new Traces ("Name");
+
+  package Moon_Data renames Standard.Moon;
 
   Support_Axis_Positions : Boolean := False;
   Support_Land_Marks     : Boolean := False;
@@ -118,8 +121,35 @@ package body Name is
 
 
   function Image_For_Stellarium_Of (Item : Id) return String is
+
     Image : constant String := Text.Strings_Of (Image_Of (Item), Separator => '[')(1);
-  begin
+
+
+    function Moon_Image return String is
+
+      The_Feature      : Moon_Data.Feature;
+      The_Feature_Type : Moon_Data.Feature_Type;
+
+    begin -- Moon_Image
+      if Moon_Data.Has_Feature (Item, The_Feature, The_Feature_Type) then
+        declare
+          Feature : constant String := Sky.Data.Moon_Feature_Name_Of (The_Feature);
+          On_Moon : constant String := " (moon)";
+          use all type Moon_Data.Feature_Type;
+        begin
+          case The_Feature_Type is
+          when Crater =>
+            return (if Image(Image'last) in 'X' | 'V' then Image(Image'first .. Image'last - 2) else Image) &
+                   " (crater, moon)";
+          when others =>
+            return Feature & On_Moon;
+          end case;
+        end;
+      end if;
+      return Image;
+    end Moon_Image;
+
+  begin -- Image_For_Stellarium_Of
     case Kind_Of (Item) is
     when Axis_Position | Landmark =>
       return "";
@@ -129,6 +159,8 @@ package body Name is
       case Item.Data_Id is
       when Sky.Favorites =>
         case Item.Element.Kind is
+        when Moon =>
+          return Moon_Image;
         when Sky_Object =>
           null;
         when others =>
@@ -136,6 +168,8 @@ package body Name is
         end case;
       when Sky.Ocl | Sky.Star | Sky.Quasars  =>
         null;
+      when Sky.Moon =>
+        return Moon_Image;
       when others =>
         return Image;
       end case;
@@ -169,6 +203,7 @@ package body Name is
           end;
         end;
       end if;
+      Log.Write ("Others: " & Image);
       return Image;
     end;
   exception
@@ -287,10 +322,16 @@ package body Name is
 
   function Item_Of (List             : Id_List;
                     Direction        : Space.Direction;
-                    Search_Tolerance : Space.Distance) return Id is
+                    Search_Tolerance : Space.Distance;
+                    Is_Jear_2000     : Boolean := False) return Id is
+
+    use type Space.Distance;
+
+    Weeker_Tolerance : constant Space.Distance := Search_Tolerance * 3.0;
+
   begin
     declare
-      Element : constant Sky.Data.Element := Sky.Data.Find_Element (Direction, Search_Tolerance);
+      Element : constant Sky.Data.Element := Sky.Data.Find_Element (Direction, Search_Tolerance, Is_Jear_2000);
       use type Sky.Data.Element;
     begin
       if Element /= Sky.Data.No_Element then
@@ -306,13 +347,14 @@ package body Name is
 
       declare
 
-        function Found_Item (Direction_Of : Get_Space_Access) return Boolean is
+        function Found_Item (Direction_Of : Get_Space_Access;
+                             Tolerance    : Space.Distance := Search_Tolerance) return Boolean is
         begin
           if Is_Visible (Item) then
             declare
               List_Direction : constant Space.Direction := Direction_Of (Item, Time.Universal);
             begin
-              if Space.Angle_Between (Direction, List_Direction, Smaller_Than => Search_Tolerance) then
+              if Space.Angle_Between (Direction, List_Direction, Smaller_Than => Tolerance) then
                 Log.Write ("Found: in list: " & Space.Image_Of (List_Direction));
                 Log.Write ("       actual : " & Space.Image_Of (Direction));
                 return True;
@@ -329,15 +371,15 @@ package body Name is
             return Item;
           end if;
         when Moon =>
-          if Found_Item (Targets.Moon_Direction_Of'access) then
+          if Found_Item (Targets.Moon_Direction_Of'access, Weeker_Tolerance) then
             return Item;
           end if;
         when Name.Sun | Name.Planet =>
-          if Found_Item (Targets.Solar_System_Direction_Of'access) then
+          if Found_Item (Targets.Solar_System_Direction_Of'access, Weeker_Tolerance) then
             return Item;
           end if;
         when Name.Small_Solar_System_Body =>
-          if Found_Item (Sssb.Direction_Of'access) then
+          if Found_Item (Sssb.Direction_Of'access, Weeker_Tolerance) then
             return Item;
           end if;
         when others =>
@@ -345,6 +387,18 @@ package body Name is
         end case;
       end;
     end loop;
+    return No_Id;
+  end Item_Of;
+
+
+  function Item_Of (Moon_Feature : String) return Id is
+  begin
+    return (Data_Id        => Sky.Moon,
+            Was_Visible    => False,
+            Is_Visible     => False,
+            Element_Number => Sky.Data.Moon_Feature_Number_Of (Moon_Feature));
+  exception
+  when others =>
     return No_Id;
   end Item_Of;
 

@@ -36,6 +36,8 @@ package Name is
 
   function "<" (Left, Right : Id) return Boolean;
 
+  function Exists (Item : Id) return Boolean is (Item /= No_Id);
+
   type Id_List (Kind : Sky.Catalog_Id := Sky.Catalog_Id'last) is private;
 
   type Id_List_Access is access all Id_List;
@@ -81,7 +83,10 @@ package Name is
 
   function Item_Of (List             : Id_List;
                     Direction        : Space.Direction;
-                    Search_Tolerance : Space.Distance) return Id;
+                    Search_Tolerance : Space.Distance;
+                    Is_Jear_2000     : Boolean := False) return Id;
+
+  function Item_Of (Moon_Feature : String) return Id;
 
   function Is_Known (Item : Id) return Boolean;
 

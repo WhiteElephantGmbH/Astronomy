@@ -24,6 +24,11 @@ with Url_Names;
 
 package body Stellarium.Client is
 
+  package AC renames AWS.Client;
+  package AM renames AWS.Messages;
+  package AP renames AWS.Parameters;
+  package AR renames AWS.Response;
+
   package JS renames GNATCOLL.JSON;
 
 
@@ -41,36 +46,35 @@ package body Stellarium.Client is
   end Data_Of;
 
 
-  function Checked (Result : AWS.Response.Data) return AWS.Response.Data is
-    Status : constant AWS.Messages.Status_Code := AWS.Response.Status_Code (Result);
+  function Checked (Result : AR.Data) return AR.Data is
+    Status : constant AM.Status_Code := AR.Status_Code (Result);
   begin
-    if not (Status in  AWS.Messages.Success) then
-      Log.Error ("Status:" & AWS.Response.Status_Code (Result)'image);
+    if not (Status in AM.Success) then
+      Log.Error ("Status:" & AR.Status_Code (Result)'image);
       raise Operation_Failed;
     end if;
     return Result;
   end Checked;
 
 
-  procedure Check (Result : AWS.Response.Data) is
-    Dummy : constant AWS.Response.Data := Checked (Result);
+  procedure Check (Result : AR.Data) is
+    Dummy : constant AR.Data := Checked (Result);
   begin
     null;
   end Check;
 
 
-  function Get_Response (Path : String) return AWS.Response.Data is
+  function Get_Response (Path : String) return AR.Data is
 
   begin
-    return Checked (AWS.Client.Get (Url (Path)));
+    return Checked (AC.Get (Url (Path)));
   end Get_Response;
 
 
   function Get_Target return Target_Data is
-    Response : constant AWS.Response.Data := Get_Response ("/api/objects/info?format=json");
   begin
     declare
-      Result : constant String := AWS.Response.Message_Body (Response);
+      Result : constant String := AR.Message_Body (AC.Get (Url ("/api/objects/info?format=json")));
     begin
       declare
         Value : constant JS.JSON_Value := JS.Read (Result);
@@ -82,40 +86,32 @@ package body Stellarium.Client is
           Dec       : constant JS.JSON_Value := Value.Get ("dec");
           Ra_J2000  : constant JS.JSON_Value := Value.Get ("raJ2000");
           Dec_J2000 : constant JS.JSON_Value := Value.Get ("decJ2000");
-          The_Data  : Target_Data;
         begin
-          The_Data := (Target          => [Target.Get],
-                       Kind            => [Kind.Get],
-                       Direction       => Space.Direction_Of (Ra  => Angle.Degrees(Ra.Get_Long_Float),
-                                                              Dec => Angle.Degrees(Dec.Get_Long_Float)),
-                       Direction_J2000 => Space.Direction_Of (Ra  => Angle.Degrees(Ra_J2000.Get_Long_Float),
-                                                              Dec => Angle.Degrees(Dec_J2000.Get_Long_Float)));
-          return The_Data;
+          return (Name            => [Target.Get],
+                  Kind            => [Kind.Get],
+                  Direction       => Space.Direction_Of (Ra  => Angle.Degrees(Ra.Get_Long_Float),
+                                                         Dec => Angle.Degrees(Dec.Get_Long_Float)),
+                  Direction_J2000 => Space.Direction_Of (Ra  => Angle.Degrees(Ra_J2000.Get_Long_Float),
+                                                         Dec => Angle.Degrees(Dec_J2000.Get_Long_Float)));
         end;
       end;
-    exception
-    when others =>
-      return No_Target;
     end;
   exception
-  when Operation_Failed =>
-    raise;
-  when Occurrence: others =>
-    Log.Termination (Occurrence);
-    raise;
+  when others =>
+    return No_Target;
   end Get_Target;
 
 
   procedure Set_Focus_To (Target_Name : String;
                           Mode        : Focus_Mode) is
-    Parameters : AWS.Parameters.List;
+    Parameters : AP.List;
     Mode_Image : constant String := Text.Lowercase_Of (Mode'image);
   begin
-    Log.Write ("Set_Focus_To: " & Target_Name & " - Mode: " & Mode_Image);
+    Log.Write ("Focus set to " & Target_Name & " - Mode: " & Mode_Image);
     Parameters.Add (Url_Names.Target, Target_Name);
     Parameters.Add (Url_Names.Mode, Mode_Image);
-    Check (AWS.Client.Post (URL  => Url (Path => "/api/main/focus"),
-                            Data => Data_Of (Parameters.URI_Format)));
+    Check (AC.Post (URL  => Url (Path => "/api/main/focus"),
+                    Data => Data_Of (Parameters.URI_Format)));
   end Set_Focus_To;
 
 
@@ -130,7 +126,7 @@ package body Stellarium.Client is
 
   function Get_Properties return JS.JSON_Value is
   begin
-    return JS.Read (String'(AWS.Response.Message_Body (Get_Response (Api_Property & "list?format=json"))));
+    return JS.Read (String'(AR.Message_Body (Get_Response (Api_Property & "list?format=json"))));
   exception
   when others =>
     raise Operation_Failed;
@@ -201,12 +197,12 @@ package body Stellarium.Client is
 
   procedure Set_Property (Id    : String;
                           Value : String) is
-    Parameters : AWS.Parameters.List;
+    Parameters : AP.List;
   begin
     Parameters.Add (Url_Names.Id, Id);
     Parameters.Add (Url_Names.Value, Value);
-    Check (AWS.Client.Post (URL  => Url (Path => Api_Property & "set"),
-                            Data => Data_Of (Parameters.URI_Format)));
+    Check (AC.Post (URL  => Url (Path => Api_Property & "set"),
+                    Data => Data_Of (Parameters.URI_Format)));
   end Set_Property;
 
 
