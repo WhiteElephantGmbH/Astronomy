@@ -49,6 +49,7 @@ package body Control is
                    Align,
                    Go_To,
                    Go_To_Next,
+                   View,
                    Park,
                    Start_Auto_Focus,
                    Stop,
@@ -179,6 +180,8 @@ package body Control is
           The_Command := Go_To;
         when User.Go_To_Next =>
           The_Command := Go_To_Next;
+        when User.View =>
+          The_Command := View;
         when User.Park =>
           The_Command := Park;
         when User.Auto_Focus_Start =>
@@ -380,6 +383,8 @@ package body Control is
         Telescope.Go_To;
       when Go_To_Next =>
         Telescope.Go_To_Next;
+      when View =>
+        Telescope.View;
       when Park =>
         Telescope.Park;
       when Start_Auto_Focus =>

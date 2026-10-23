@@ -22,7 +22,7 @@ with Telescope;
 package User is
 
   type Action is (Define_Catalog, Define_Target, Update,
-                  Go_To, Auto_Focus_Start, Go_To_Next, Align, Park, Stop, Unpark,
+                  Go_To, View, Auto_Focus_Start, Go_To_Next, Align, Park, Stop, Unpark,
                   Close);
 
   subtype Command_Action is Action range Go_To .. Close;

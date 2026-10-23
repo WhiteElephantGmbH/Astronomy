@@ -62,6 +62,12 @@ package body Picture is
   end Exists;
 
 
+  procedure Delete is
+  begin
+    File.Delete (Filename);
+  end Delete;
+
+
   Value_Delta   : constant := 1.0 / 3600_000.0; -- millisecond
   Lowest_Value  : constant := -2**62 * Value_Delta;
   Highest_Value : constant := 2**62 * Value_Delta;

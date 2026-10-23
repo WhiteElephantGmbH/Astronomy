@@ -46,6 +46,8 @@ package Camera is
     Width  : Columns;
   end record;
 
+  No_Information : constant Information := (Idle, Unknown, Rows'last, Columns'last);
+
   Pixel_Bits : constant := 16;
 
   type Pixel is new Natural range 0 .. 2 ** Pixel_Bits - 1 with Size => Pixel_Bits;
@@ -55,6 +57,12 @@ package Camera is
   type Square_Size is new Natural range 2 .. Min_With_Or_Height with Dynamic_Predicate => Square_Size mod 2 = 0;
 
   procedure Start;
+
+  procedure Detect_Model;
+
+  function Available return Boolean;
+
+  function Actual_Model return Model;
 
   function Actual_Information return Information;
 
@@ -120,7 +128,7 @@ private
     procedure Reset_Error;
 
   private
-    The_Information : Information;
+    The_Information : Information := No_Information;
     The_Last_Error  : Text.String;
   end Camera_Data;
 

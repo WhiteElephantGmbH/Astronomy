@@ -92,7 +92,7 @@ package Stellarium is
   function Telescope_Model return Units.Telescope_Model;
 
   procedure Set_Telescope (Model : Units.Telescope_Model);
-  -- raises not found if camera not in list
+  -- raises not found if telescope not in list
 
   function Telescope_Focal_Length return Units.Focal_Length;
 

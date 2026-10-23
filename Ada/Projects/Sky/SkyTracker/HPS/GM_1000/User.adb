@@ -129,6 +129,8 @@ package body User is
 
   The_Status : State := Disconnected;
 
+  Camera_Is_Available : Boolean := False;
+
   Action_Routine   : Action_Handler;
   The_Last_Action  : Action := Action'pred (Button_Action'first);
   Last_Action_Time : Ada.Real_Time.Time := Ada.Real_Time.Time_First;
@@ -205,6 +207,12 @@ package body User is
   begin
     Signal_Action (Go_To_Next);
   end Perform_Goto_Next;
+
+
+  procedure Perform_View is
+  begin
+    Signal_Action (View);
+  end Perform_View;
 
 
   procedure Perform_Setup_Command is
@@ -422,10 +430,16 @@ package body User is
         Enable_Goto;
         Enable_Control ("Park", Perform_Park'access);
       when Tracking =>
-        if Align_On_Picture_Is_Enabled then
-          Enable_Action ("Align", Perform_Align'access);
+        if Information.Is_Acquiring then
+          Disable_Action;
         else
-          Enable_Goto;
+          if Align_On_Picture_Is_Enabled then
+            Enable_Action ("Align", Perform_Align'access);
+          elsif Camera_Is_Available then
+            Enable_Action ("View", Perform_View'access);
+          else
+            Enable_Goto;
+          end if;
         end if;
         Enable_Stop;
       when Capturing | Focusing | Solving =>
@@ -525,6 +539,7 @@ package body User is
 
   begin -- Show
     if (The_Status /= Information.Status)
+      or (Camera_Is_Available /= Camera.Available)
       or (Last_Target_Selection /= The_Target_Selection)
       or Align_Change
       or Setup_Command_Change
@@ -532,12 +547,13 @@ package body User is
       Align_Change := False;
       Setup_Command_Change := False;
       The_Status := Information.Status;
+      Camera_Is_Available := Camera.Available;
       Last_Target_Selection := The_Target_Selection;
       Define_Control_Buttons;
       if Is_Expert_Mode then
         Define_Setup_Buttons;
       end if;
-      Gui.Set_Status_Line (Information.Status'img);
+      Gui.Set_Status_Line (Information.Status'img & (if Information.Is_Acquiring then " [acquiring]" else ""));
     end if;
     if Space.Direction_Is_Known (Information.Actual_Direction) then
       if Site.Is_Defined then

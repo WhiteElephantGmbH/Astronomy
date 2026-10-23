@@ -36,6 +36,8 @@ package Picture is
 
   function Exists return Boolean;
 
+  procedure Delete;
+
   procedure Set_Site;
 
   function Solve (Search_From : Space.Direction) return Boolean;

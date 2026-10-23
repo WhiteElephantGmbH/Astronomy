@@ -27,6 +27,7 @@ with Http_Server.HPS;
 with Input;
 with Picture;
 with Remote;
+with Stellarium;
 with Traces;
 with User;
 with Weather;
@@ -50,6 +51,8 @@ package body Telescope is
     entry Go_To;
 
     entry Go_To_Next;
+
+    entry View;
 
     entry Park;
 
@@ -140,6 +143,12 @@ package body Telescope is
   begin
     Control.Go_To_Next;
   end Go_To_Next;
+
+
+  procedure View is
+  begin
+    Control.View;
+  end View;
 
 
   procedure Prepare_Tle is
@@ -261,6 +270,8 @@ package body Telescope is
     Time_Update_Interval : constant RT.Time_Span := RT.Minutes(10);
 
     Aligning_Enabled : Boolean := False;
+
+    Is_Acquiring : Boolean := False;
 
     Is_Preparing_For_Capture : Boolean := False;
 
@@ -422,6 +433,16 @@ package body Telescope is
         end if;
       end Capture_Handling;
 
+      procedure Cleanup is
+      begin
+        if Is_Acquiring and then Picture.Exists then
+          Picture.Delete;
+        end if;
+        Is_Acquiring := False;
+        Aligning_Enabled := False;
+        Is_Preparing_For_Capture := False;
+      end Cleanup;
+
       use type Camera.Status;
 
     begin -- Update_Handling
@@ -434,16 +455,31 @@ package body Telescope is
           Capture_Handling;
         end if;
       when Tracking =>
-        if User.In_Setup_Mode then
+        if Is_Acquiring then
           Capture_Handling;
-        elsif not Aligning_Enabled and then Picture.Exists and then Solve_Picture then
-          Ten_Micron.Start_Solving;
+        else
+          if User.In_Setup_Mode then
+            Capture_Handling;
+          elsif not Aligning_Enabled and then Picture.Exists and then Solve_Picture then
+            Ten_Micron.Start_Solving;
+          end if;
         end if;
       when Capturing =>
-        if Camera.Actual_Information.State = Camera.Idle and then Picture.Exists and then Solve_Picture then
-          Ten_Micron.Start_Solving;
+        if Is_Acquiring then
+          if Camera.Actual_Information.State = Camera.Idle and then Picture.Exists then
+            Ten_Micron.End_Capturing;
+            Log.Write ("XXX IMPLEMENT Feed_Picture");
+            Picture.Delete;
+            Is_Preparing_For_Capture := True;
+          else
+            Check_Camera_Error;
+          end if;
         else
-          Check_Camera_Error;
+          if Camera.Actual_Information.State = Camera.Idle and then Picture.Exists and then Solve_Picture then
+            Ten_Micron.Start_Solving;
+          else
+            Check_Camera_Error;
+          end if;
         end if;
       when Solving =>
         begin
@@ -487,13 +523,13 @@ package body Telescope is
           Ten_Micron.End_Focusing;
           Focus.Stop;
         end if;
-      when Stopped | Waiting =>
-        Aligning_Enabled := False;
-        Is_Preparing_For_Capture := False;
+      when Stopped =>
+        Cleanup;
+        Update_Time_And_Weather_Data;
+      when Waiting =>
         Update_Time_And_Weather_Data;
       when Disconnected =>
-        Aligning_Enabled := False;
-        Is_Preparing_For_Capture := False;
+        Cleanup;
         Picture.Stop_Solving;
       when others =>
         Aligning_Enabled := False;
@@ -548,6 +584,7 @@ package body Telescope is
         or
           accept Go_To do
             Alignment.Clear;
+            Camera.Detect_Model;
             Set_Tracking_Rates;
             Ten_Micron.Slew_To (Actual_Target_Direction, Target_Kind);
             if Name.Is_Known (Next_Id) then
@@ -573,6 +610,17 @@ package body Telescope is
               Ten_Micron.Stop;
             end if;
           end Go_To_Next;
+        or
+          accept View do
+            begin
+              Stellarium.Set_Camera (Camera.Actual_Model);
+              Is_Acquiring := True;
+              Is_Preparing_For_Capture := True;
+            exception
+            when Stellarium.Not_Found =>
+              Log.Error ("Camera " & Camera.Model_Image & "not defined in Stellarium");
+            end;
+          end View;
         or
           accept Prepare_Tle do
             Ten_Micron.Load_Tle (Name.Object_Of (Next_Id));
@@ -644,17 +692,18 @@ package body Telescope is
           end Execute;
         or
           accept Get (The_Data : out Data) do
-            The_Data.Status := Telescope.State(The_Information.Status);
-            The_Data.Target_Direction := Actual_Target_Direction;
-            The_Data.Actual_Direction := The_Information.Direction;
-            The_Data.Actual_Position := The_Information.Position;
-            The_Data.Picture_Direction := The_Picture_Direction;
-            The_Data.Mount_Pier_Side := The_Information.Pier_Side;
-            The_Data.Moving_Speed := The_Information.Moving_Speed;
-            The_Data.Universal_Time := The_Information.Date_Time;
-            The_Data.Time_Delta := The_Delta_Time;
-            The_Data.Align_Points := Alignment.Star_Count;
-            The_Data.Alignment_Info := Alignment.Info;
+            The_Data := (Status            => Telescope.State(The_Information.Status),
+                         Is_Acquiring      => Is_Acquiring,
+                         Target_Direction  => Actual_Target_Direction,
+                         Actual_Direction  => The_Information.Direction,
+                         Actual_Position   => The_Information.Position,
+                         Picture_Direction => The_Picture_Direction,
+                         Mount_Pier_Side   => The_Information.Pier_Side,
+                         Moving_Speed      => The_Information.Moving_Speed,
+                         Universal_Time    => The_Information.Date_Time,
+                         Time_Delta        => The_Delta_Time,
+                         Align_Points      => Alignment.Star_Count,
+                         Alignment_Info    => Alignment.Info);
             Set_Server_Information (The_Data);
           end Get;
         or
