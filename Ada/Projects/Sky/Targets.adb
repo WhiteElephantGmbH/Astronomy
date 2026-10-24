@@ -135,6 +135,8 @@ package body Targets is
                    Tolerance     :     Space.Distance;
                    Target_Id     : out Name.Id);
 
+    entry Get_From_Stellarium (The_Direction : out Space.Direction);
+
     entry Stop;
 
   end Handler;
@@ -208,6 +210,14 @@ package body Targets is
   begin
     The_Handler.Stop;
   end Stop;
+
+
+  function Stellarium_Direction return Space.Direction is
+    The_Direction : Space.Direction;
+  begin
+    The_Handler.Get_From_Stellarium (The_Direction);
+    return The_Direction;
+  end Stellarium_Direction;
 
 
   task body Handler is
@@ -411,8 +421,9 @@ package body Targets is
     end Define_Targets;
 
 
-    The_Found_Id    : Name.Id;
-    The_Target_Name : Text.String;
+    The_Found_Id         : Name.Id;
+    The_Target_Name      : Text.String;
+    The_Target_Direction : Space.Direction;
 
     procedure Handle_Target_Selection is
     begin
@@ -422,6 +433,7 @@ package body Targets is
         Target_Kind      : constant String := Target_Data.Kind.S;
         Target_Direction : constant Space.Direction := Target_Data.Direction;
       begin
+        The_Target_Direction := Target_Direction;
         if not Text.Matches (The_Target_Name, Target_Name) then
           The_Target_Name := [Target_Name];
           if Target_Name = "" then
@@ -508,6 +520,10 @@ package body Targets is
           The_Found_Id := Target_Id;
         end Get_For;
       or
+        accept Get_From_Stellarium (The_Direction : out Space.Direction) do
+          The_Direction := The_Target_Direction;
+        end Get_From_Stellarium;
+      or
         accept Stop;
         exit;
       or
@@ -519,8 +535,8 @@ package body Targets is
           end if;
         else
           The_Countdown := @ - 1;
-          Handle_Target_Selection;
         end if;
+        Handle_Target_Selection;
       end select;
     end loop;
     Log.Write ("handler end");

@@ -79,6 +79,8 @@ package Targets is
 
   procedure Stop;
 
+  function Stellarium_Direction return Space.Direction;
+
   function J2000_Direction_Of (Id : Name.Id) return Space.Direction;
 
   function Text_Of (Visible_In : Duration) return String;
