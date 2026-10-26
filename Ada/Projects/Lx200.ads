@@ -5,8 +5,8 @@
 pragma Style_Astronomy;
 
 with Angle;
-with Refraction;
 with Time;
+with Units;
 
 package Lx200 is
 
@@ -120,16 +120,16 @@ package Lx200 is
   function Position_Of (Item : String) return Angle.Value;
 
   function Rate_Of (Item : String) return Angle.Value;
-  
+
   type Rate_Factor is delta 0.0001 range -999.9999 .. 999.9999 with Small => 0.0001;
 
   function Factor_Of (Item : Rate_Factor) return String;
 
   function Factor_Of (Item : String) return Rate_Factor;
 
-  function Air_Pressure_Of (Item : Refraction.Hectopascal) return String;
+  function Air_Pressure_Of (Item : Units.Hectopascal) return String;
 
-  function Temperature_Of (Item : Refraction.Celsius) return String;
+  function Temperature_Of (Item : Units.Celsius) return String;
 
   function Julian_Date_Of (Item : Time.JD) return String;
 

@@ -23,18 +23,11 @@ package Units is
 
   type Telescope_Model is (Unknown, Celestron_C11, Celestron_C14, CDK_700);
 
-  subtype Darks_Id is String(1..5); -- "83016" => temperature range 8, 30s, ISO 1600
-  -- Temperature Range
-  --     .. <-15 -> 0
-  -- -15 .. <-10 -> 1
-  -- -10 .. <- 5 -> 2
-  -- - 5 .. <  0 -> 3
-  --   0 .. < 25 -> 4
-  --   5 .. < 10 -> 5
-  --  10 .. < 15 -> 6
-  --  15 .. < 20 -> 7
-  --  20 .. < 25 -> 8
-  --  25 ..      -> 9
+  Celsius_Delta : constant := 0.1;
+  type Celsius is delta  Celsius_Delta range -273.2 .. 999.9 with Small => Celsius_Delta;
+
+  Hectopascal_Delta : constant := 0.1;
+  type Hectopascal is delta Hectopascal_Delta range 0000.0 .. 9999.9 with Small => Hectopascal_Delta;
 
   Picture_Number_Count : constant := 4;
   type Picture_Number is range 1 .. 10**Picture_Number_Count - 1;

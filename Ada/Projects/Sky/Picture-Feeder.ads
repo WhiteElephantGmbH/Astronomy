@@ -15,25 +15,18 @@
 -- *********************************************************************************************************************
 pragma Style_Astronomy;
 
-with Space;
-with Units;
+package Picture.Feeder is
 
-package Feeder is
+  procedure New_Darks_Sequence (Target : Name.Id);
 
-  procedure New_Darks (Id    : Units.Darks_Id;
-                       Count : Units.Picture_Number);
+  function Send_Next_Dark_Was_Last return Boolean;
 
-  procedure Set (Focal_Length : Units.Focal_Length);
+  procedure New_Light_Sequence (Target : Name.Id);
 
-  procedure Set (Pixel_Size : Units.Pixel_Size);
-
-  procedure New_Sequence (Target   : Space.Direction;
-                          Darks_Id : Units.Darks_Id);
-
-  procedure Next_Picture (Filename : String) with Inline;
+  procedure Send_Next_Light;
 
   procedure Stop;
 
   Operation_Failed : exception;
 
-end Feeder;
+end Picture.Feeder;

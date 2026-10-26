@@ -530,7 +530,7 @@ package body User is
           when Build_Pointing_Model =>
             Enable_Command;
           when Take_Darks =>
-            Enable_Command;
+            Disable_Action;
           end case;
         end if;
         if Alignment.Star_Count > 0 then
@@ -539,9 +539,20 @@ package body User is
           Enable_Control ("Park", Perform_Park'access);
         end if;
       when Tracking =>
-        if not Setup_Command_Is_Active then
-          Enable_Command;
-        end if;
+        case The_Setup_Command is
+        when Auto_Focus =>
+          if not Setup_Command_Is_Active then
+            Enable_Command;
+          end if;
+        when Build_Pointing_Model =>
+          Disable_Action;
+        when Take_Darks =>
+          if Camera_At_Selection then
+            Enable_Command;
+          else
+            Disable_Action;
+          end if;
+        end case;
         Enable_Stop;
       when Capturing | Focusing | Slewing | Solving =>
         Disable_Action;

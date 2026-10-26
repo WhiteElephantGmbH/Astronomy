@@ -19,8 +19,11 @@ with Angle;
 with Astap;
 with Earth;
 with Exif;
+with Name;
 with Space;
 with Time;
+with Traces;
+with Units;
 
 package Picture is
 
@@ -61,12 +64,28 @@ package Picture is
   -- PRECONDITION: The site must be defined (persistent type in package Site) or the camera must provide the location.
   -- returns the center of the picture in alt/az coordinates.
 
+  procedure Start_Taking_Darks (Target : Name.Id);
+
+  function Taking_Next_Dark_Was_Last return Boolean;
+
+  procedure Start_Taking_Lights (Target : Name.Id);
+
+  procedure Take_Next_Light;
+
+  procedure Stop_Taking;
+
+  Processor_Not_Connected : exception;
+
 private
 
   Id : constant String := "Picture";
 
-  procedure Define (Name   : String;
-                    Height : Angle.Degrees;
-                    Width  : Angle.Degrees);
+  package Log is new Traces (Id);
+
+  The_Number_Of_Darks : Units.Picture_Number := 10;
+
+  procedure Define (Default_Name : String;
+                    Height       : Angle.Degrees;
+                    Width        : Angle.Degrees);
 
 end Picture;

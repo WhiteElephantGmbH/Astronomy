@@ -54,8 +54,6 @@ package body Collector is
 
   The_Index : Image.Count := 0;
 
-  The_Dark_Parameters : Processor.Dark_Parameters;
-
   type Processing is (Stopped, Darks, Lights);
 
   The_Processing : Processing := Stopped;
@@ -70,16 +68,13 @@ package body Collector is
 
   function Callback (Request : AWS.Status.Data) return AWS.Response.Data is
 
-    procedure Get_Dark_Parameters is
+    function Darks_Filename return String is
       P : constant AWS.Parameters.List := AWS.Status.Parameters (Request);
+      Filename : constant String := P.Get (Url_Names.Id);
     begin
-      The_Dark_Parameters := (Id    => P.Get (Url_Names.Id),
-                              Count => Image.Count'value(P.Get (Url_Names.Count)));
-      Log.Write ("Dark - Id   : " & The_Dark_Parameters.Id);
-      Log.Write ("     - Count:"  & The_Dark_Parameters.Count'image);
-      Image.Clear;
-      The_Index := 0;
-    end Get_Dark_Parameters;
+      Log.Write ("Darks - Filename : " & Filename);
+      return Filename;
+    end Darks_Filename;
 
     The_Light_Parameters : Processor.Light_Parameters;
 
@@ -88,9 +83,9 @@ package body Collector is
     begin
       The_Light_Parameters := (Target => Space.Direction_Of (Ra_Image  => P.Get (Url_Names.Ra),
                                                              Dec_Image => P.Get (Url_Names.Dec)),
-                               Darks_Id => P.Get (Url_Names.Id));
+                               Darks_Id => [P.Get (Url_Names.Id)]);
       Log.Write ("Light - Target  : " & Space.Image_Of (The_Light_Parameters.Target));
-      Log.Write ("      - Darks_Id: " & The_Light_Parameters.Darks_Id);
+      Log.Write ("      - Darks_Id: " & The_Light_Parameters.Darks_Id.S);
       Image.Clear;
       The_Index := 0;
     end Get_Light_Parameters;
@@ -130,10 +125,11 @@ package body Collector is
 
   begin -- Callback
     Log.Write ("Request " & URI);
-    if URI = Url_Names.Dark_Parameters then
+    if URI = Url_Names.New_Darks then
       Check (Stopped);
-      Get_Dark_Parameters;
       The_Processing := Darks;
+      The_Index := 0;
+      Image.Clear;
       return AWS.Response.Acknowledge (AWS.Messages.S200, "OK");
     elsif URI = Url_Names.Light_Parameters then
       Check (Stopped);
@@ -146,11 +142,7 @@ package body Collector is
       Get_Picture;
       case The_Processing is
       when Darks =>
-        if The_Index = The_Dark_Parameters.Count then
-          Processor.Evaluate_Darks (The_Dark_Parameters);
-          Image.Clear;
-          The_Processing := Stopped;
-        end if;
+        null;
       when Lights =>
         Processor.Set (The_Index);
       when Stopped =>
@@ -158,6 +150,11 @@ package body Collector is
       end case;
       return AWS.Response.Build (Content_Type => "text/plain",
                                  Message_Body => "OK");
+    elsif URI = Url_Names.Store_Darks then
+      Processor.Evaluate_Darks (Darks_Filename);
+      Image.Clear;
+      The_Processing := Stopped;
+      return AWS.Response.Acknowledge (AWS.Messages.S200, "OK");
     elsif URI = Url_Names.Stop then
       Processor.Stop;
       The_Processing := Stopped;
@@ -181,7 +178,7 @@ package body Collector is
     AWS.Server.Start (WS,
                       Name     => "Sky_Processor",
                       Callback => Callback'access,
-                      Port     => 12000);
+                      Port     => 11000);
     AWS.Server.Wait (AWS.Server.Q_Key_Pressed);
     AWS.Server.Shutdown (WS);
     Processor.Shutdown;

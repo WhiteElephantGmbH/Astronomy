@@ -350,16 +350,16 @@ package body Lx200 is
   end Factor_Of;
 
 
-  function Air_Pressure_Of (Item : Refraction.Hectopascal) return String is
+  function Air_Pressure_Of (Item : Units.Hectopascal) return String is
     Image : constant String := "000" & Text.Trimmed (Item'image);
   begin
     return Image(Image'last - 5 .. Image'last);
   end Air_Pressure_Of;
 
 
-  function Temperature_Of (Item : Refraction.Celsius) return String is
-    use type Refraction.Celsius;
-    Value : constant Refraction.Celsius := abs Item;
+  function Temperature_Of (Item : Units.Celsius) return String is
+    use type Units.Celsius;
+    Value : constant Units.Celsius := abs Item;
     Image : constant String := "00" & Text.Trimmed (Value'image);
   begin
     return (if Item < 0.0 then '-' else '+') & Image (Image'last - 4 .. Image'last);

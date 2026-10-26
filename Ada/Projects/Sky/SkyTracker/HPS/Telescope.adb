@@ -505,9 +505,11 @@ package body Telescope is
         when Taking_Darks =>
           if Camera.Actual_Information.State = Camera.Idle and then Picture.Exists then
             Ten_Micron.End_Capturing;
-            Log.Write ("XXX IMPLEMENT Feed_Picture");
-            Picture.Delete;
-            Is_Preparing_For_Capture := True;
+            if Picture.Taking_Next_Dark_Was_Last then
+              User.Perform_Stop;
+            else
+              Is_Preparing_For_Capture := True;
+            end if;
           else
             Check_Camera_Error;
           end if;
@@ -602,6 +604,19 @@ package body Telescope is
       The_Picture_Direction := Space.Unknown_Direction;
     end Synch_On_Picture;
 
+
+    procedure Error_Camera_Not_Defined is
+    begin
+      User.Show_Error ("Camera " & Camera.Model_Image & "not defined in Stellarium.");
+    end Error_Camera_Not_Defined;
+
+    procedure Error_Processor_Not_Connected is
+    begin
+      User.Show_Error ("Picture processor not connected.");
+      Picture.Stop_Taking;
+      User.Perform_Stop;
+    end Error_Processor_Not_Connected;
+
   begin -- Control_Task
     if Focuser_Client.Server_Exists then
       Focuser_Client.Initialize;
@@ -658,7 +673,7 @@ package body Telescope is
               Is_Preparing_For_Capture := True;
             exception
             when Stellarium.Not_Found =>
-              Log.Error ("Camera " & Camera.Model_Image & "not defined in Stellarium");
+              Error_Camera_Not_Defined;
             end;
           end View;
         or
@@ -666,10 +681,13 @@ package body Telescope is
             begin
               Stellarium.Set_Camera (Camera.Actual_Model);
               The_Mode := Taking_Darks;
+              Picture.Start_Taking_Darks (Next_Id);
               Is_Preparing_For_Capture := True;
             exception
+            when Picture.Processor_Not_Connected =>
+              Error_Processor_Not_Connected;
             when Stellarium.Not_Found =>
-              Log.Error ("Camera " & Camera.Model_Image & "not defined in Stellarium");
+              Error_Camera_Not_Defined;
             end;
           end Take_Darks;
         or
@@ -744,19 +762,19 @@ package body Telescope is
           end Execute;
         or
           accept Get (The_Data : out Data) do
-            The_Data := (Status                => Telescope.State(The_Information.Status),
-                         Mode                  => The_Mode,
+            The_Data := (Status              => Telescope.State(The_Information.Status),
+                         Mode                => The_Mode,
                          Camera_At_Selection => Camera_At_Selection,
-                         Target_Direction      => Actual_Target_Direction,
-                         Actual_Direction      => The_Information.Direction,
-                         Actual_Position       => The_Information.Position,
-                         Picture_Direction     => The_Picture_Direction,
-                         Mount_Pier_Side       => The_Information.Pier_Side,
-                         Moving_Speed          => The_Information.Moving_Speed,
-                         Universal_Time        => The_Information.Date_Time,
-                         Time_Delta            => The_Delta_Time,
-                         Align_Points          => Alignment.Star_Count,
-                         Alignment_Info        => Alignment.Info);
+                         Target_Direction    => Actual_Target_Direction,
+                         Actual_Direction    => The_Information.Direction,
+                         Actual_Position     => The_Information.Position,
+                         Picture_Direction   => The_Picture_Direction,
+                         Mount_Pier_Side     => The_Information.Pier_Side,
+                         Moving_Speed        => The_Information.Moving_Speed,
+                         Universal_Time      => The_Information.Date_Time,
+                         Time_Delta          => The_Delta_Time,
+                         Align_Points        => Alignment.Star_Count,
+                         Alignment_Info      => Alignment.Info);
             Set_Server_Information (The_Data);
           end Get;
         or

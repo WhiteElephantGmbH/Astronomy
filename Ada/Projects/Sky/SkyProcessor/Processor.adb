@@ -23,6 +23,7 @@ with AWS.Response;
 with File;
 with Siril;
 with Traces;
+with Units;
 
 package body Processor is
 
@@ -73,12 +74,12 @@ package body Processor is
   end Start;
 
 
-  The_Dark_Parameters : Dark_Parameters;
+  The_Darks_Filename : Text.String;
 
-  procedure Evaluate_Darks (Parameter : Dark_Parameters) is
+  procedure Evaluate_Darks (Filename : String) is
   begin
     Log.Write ("Evaluate Darks");
-    The_Dark_Parameters := Parameter;
+    The_Darks_Filename := [Filename];
     Action_Handler.Evaluate_Darks;
     Log.Write ("Await Completion");
     Action_Handler.Await_Completion;
@@ -141,7 +142,7 @@ package body Processor is
 
   procedure Generate_Darks is
     Darks_Work_Directory : constant String := Image.Darks_Work_Directory;
-    Darks_Fit_Filename   : constant String := Darks_Directory & "\" & The_Dark_Parameters.Id & "_" & Stacked_Fit;
+    Darks_Fit_Filename   : constant String := Darks_Directory & "\" & The_Darks_Filename.S & "_" & Stacked_Fit;
   begin
     IO.Put_Line ("Generate " & Darks_Fit_Filename);
     Siril.Open (Progress'unrestricted_access);
@@ -165,7 +166,7 @@ package body Processor is
     Lights_Directory : constant String := Work_Directory & "\lights";
 
     Flats_Stacked_Fit : constant String := Flats_Directory & "\" & Stacked_Fit;
-    Darks_Stacked_Fit : constant String := Darks_Directory & "\" & The_Light_Parameters.Darks_Id & "_" & Stacked_Fit;
+    Darks_Stacked_Fit : constant String := Darks_Directory & "\" & The_Light_Parameters.Darks_Id.S & "_" & Stacked_Fit;
 
     Celestron_Focal_Length : constant Units.Focal_Length := 2669.6;
 
