@@ -417,14 +417,20 @@ package body Picture is
   end Direction;
 
 
-  procedure Start_Taking_Darks (Target : Name.Id) renames Feeder.New_Darks_Sequence;
+  procedure Start_Taking_Darks (Target           : Name.Id;
+                                Target_Direction : Space.Direction) renames Feeder.New_Darks_Sequence;
 
   function Taking_Next_Dark_Was_Last return Boolean renames Feeder.Send_Next_Dark_Was_Last;
 
-  procedure Start_Taking_Lights (Target : Name.Id) renames Feeder.New_Light_Sequence;
+  procedure Start_Taking_Lights (Target           : Name.Id;
+                                 Target_Direction : Space.Direction) renames Feeder.New_Light_Sequence;
 
   procedure Take_Next_Light renames Feeder.Send_Next_Light;
 
   procedure Stop_Taking renames Feeder.Stop;
+
+  function Taking_Exposure return Exposure.Item is (The_Exposure);
+
+  function Taking_Sensitivity return Sensitivity.Item is (The_Sensitivity);
 
 end Picture;

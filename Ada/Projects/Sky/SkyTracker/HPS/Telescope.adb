@@ -435,6 +435,7 @@ package body Telescope is
         end if;
       end Update_Camera_At_Selection;
 
+
       procedure Check_Camera_Error is
         use type Camera.Status;
       begin
@@ -444,27 +445,32 @@ package body Telescope is
         end if;
       end Check_Camera_Error;
 
+
       procedure Capture_Handling is
       begin
         if Is_Preparing_For_Capture then
           Ten_Micron.Start_Capturing;
-          Camera.Capture (Picture.Filename);
+          case The_Mode is
+          when Acquiring | Taking_Darks =>
+            Camera.Capture (Picture.Filename, Picture.Taking_Exposure, Picture.Taking_Sensitivity);
+          when Building_Pointing_Model =>
+            Camera.Capture (Picture.Filename);
+          when others =>
+            raise Program_Error;
+          end case;
           Check_Camera_Error;
           Is_Preparing_For_Capture := False;
         end if;
       end Capture_Handling;
 
+
       procedure Cleanup is
       begin
-        case The_Mode is
-        when Normal =>
-          null;
-        when Acquiring | Taking_Darks | Building_Pointing_Model =>
-          if Picture.Exists then
-            Picture.Delete;
-          end if;
-          The_Mode := Normal;
-        end case;
+        Picture.Stop_Taking;
+        if Picture.Exists then
+          Picture.Delete;
+        end if;
+        The_Mode := Normal;
         Aligning_Enabled := False;
         Is_Preparing_For_Capture := False;
       end Cleanup;
@@ -496,8 +502,7 @@ package body Telescope is
         when Acquiring =>
           if Camera.Actual_Information.State = Camera.Idle and then Picture.Exists then
             Ten_Micron.End_Capturing;
-            Log.Write ("XXX IMPLEMENT Feed_Picture");
-            Picture.Delete;
+            Picture.Take_Next_Light;
             Is_Preparing_For_Capture := True;
           else
             Check_Camera_Error;
@@ -669,9 +674,12 @@ package body Telescope is
           accept View do
             begin
               Stellarium.Set_Camera (Camera.Actual_Model);
+              Picture.Start_Taking_Lights (Next_Id, Actual_Target_Direction);
               The_Mode := Acquiring;
               Is_Preparing_For_Capture := True;
             exception
+            when Picture.Processor_Not_Connected =>
+              Error_Processor_Not_Connected;
             when Stellarium.Not_Found =>
               Error_Camera_Not_Defined;
             end;
@@ -680,8 +688,8 @@ package body Telescope is
           accept Take_Darks do
             begin
               Stellarium.Set_Camera (Camera.Actual_Model);
+              Picture.Start_Taking_Darks (Next_Id, Actual_Target_Direction);
               The_Mode := Taking_Darks;
-              Picture.Start_Taking_Darks (Next_Id);
               Is_Preparing_For_Capture := True;
             exception
             when Picture.Processor_Not_Connected =>

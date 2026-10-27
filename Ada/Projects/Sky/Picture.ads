@@ -22,8 +22,10 @@ with Exif;
 with Name;
 with Space;
 with Time;
-with Traces;
 with Units;
+with Exposure;
+with Sensitivity;
+private with Traces;
 
 package Picture is
 
@@ -64,15 +66,21 @@ package Picture is
   -- PRECONDITION: The site must be defined (persistent type in package Site) or the camera must provide the location.
   -- returns the center of the picture in alt/az coordinates.
 
-  procedure Start_Taking_Darks (Target : Name.Id);
+  procedure Start_Taking_Darks (Target           : Name.Id;
+                                Target_Direction : Space.Direction);
 
   function Taking_Next_Dark_Was_Last return Boolean;
 
-  procedure Start_Taking_Lights (Target : Name.Id);
+  procedure Start_Taking_Lights (Target           : Name.Id;
+                                 Target_Direction : Space.Direction);
 
   procedure Take_Next_Light;
 
   procedure Stop_Taking;
+
+  function Taking_Exposure return Exposure.Item;
+
+  function Taking_Sensitivity return Sensitivity.Item;
 
   Processor_Not_Connected : exception;
 
@@ -83,6 +91,8 @@ private
   package Log is new Traces (Id);
 
   The_Number_Of_Darks : Units.Picture_Number := 10;
+  The_Exposure        : Exposure.Item;
+  The_Sensitivity     : Sensitivity.Item;
 
   procedure Define (Default_Name : String;
                     Height       : Angle.Degrees;

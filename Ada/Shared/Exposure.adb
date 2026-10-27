@@ -210,6 +210,38 @@ package body Exposure is
   end From_Camera;
 
 
+  function Filename_Part (The_Item : Item) return String is
+    S : constant Character := 's'; -- seconds
+  begin
+    case The_Item.Mode is
+    when From_Camera =>
+      raise Program_Error;
+    when Tv_Mode =>
+      declare
+        Image : constant String := The_Item.T_Value'image;
+      begin
+        case The_Item.T_Value is
+        when Tv_30_S .. Tv_4_S | Tv_2_S | Tv_1_S =>
+          return Image(Image'first + 3 .. Image'last - 2) & S;
+        when Tv_3_2_S | Tv_2_5_S | Tv_1_6_S | Tv_1_3_S | Tv_0_8_S .. Tv_0_3_S =>
+          return Image(Image'first + 3) & '.' & Image(Image'last - 2) & S;
+        when Tv_D_4_S .. TV_D_32000_S =>
+          return "1p" & Image(Image'first + 5 .. Image'last - 2) & S;
+        end case;
+      exception
+      when others =>
+        raise Program_Error;
+      end;
+    when Timer_Mode =>
+      declare
+        Image : constant String := The_Item.Time_Value'image;
+      begin
+        return Image(Image'first + 1 .. Image'last) & S;
+      end;
+    end case;
+  end Filename_Part;
+
+
   procedure Put_Image (S : in out Ada.Strings.Text_Buffers.Root_Buffer_Type'class;
                        V :        Item) is
   begin

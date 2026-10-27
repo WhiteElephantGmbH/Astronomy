@@ -15,13 +15,15 @@
 -- *********************************************************************************************************************
 pragma Style_Astronomy;
 
-package Picture.Feeder is
+private package Picture.Feeder is
 
-  procedure New_Darks_Sequence (Target : Name.Id);
+  procedure New_Darks_Sequence (Target           : Name.Id;
+                                Target_Direction : Space.Direction);
 
   function Send_Next_Dark_Was_Last return Boolean;
 
-  procedure New_Light_Sequence (Target : Name.Id);
+  procedure New_Light_Sequence (Target           : Name.Id;
+                                Target_Direction : Space.Direction);
 
   procedure Send_Next_Light;
 

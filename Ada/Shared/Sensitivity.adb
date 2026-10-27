@@ -79,6 +79,18 @@ package body Sensitivity is
   function Value (The_Item : Item) return Offset is (The_Item.With_Offset);
 
 
+  function Filename_Part (The_Item : Item) return String is
+    Value_Image : constant String := Text.Trimmed (The_Item.Value'image);
+  begin
+    case The_Item.Kind is
+    when Is_Iso =>
+      return Value_Image & "iso";
+    when Is_Gain_And_Offset | Is_Default=>
+      return Value_Image & 'g' & Text.Trimmed (The_Item.With_Offset'image) & 'o';
+    end case;
+  end Filename_Part;
+
+
   procedure Put_Image (S : in out Ada.Strings.Text_Buffers.Root_Buffer_Type'class;
                        V :        Item) is
   begin

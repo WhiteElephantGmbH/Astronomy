@@ -20,6 +20,7 @@ with Angle, Text;
 package Units is
 
   type Camera_Model is (Unknown, Canon_Eos_6D, Canon_Eos_60D, QHY600C);
+  subtype Known_Camera_Model is Camera_Model range Camera_Model'succ(Camera_Model'first) .. Camera_Model'last;
 
   type Telescope_Model is (Unknown, Celestron_C11, Celestron_C14, CDK_700);
 

@@ -15,21 +15,14 @@
 -- *********************************************************************************************************************
 pragma Style_Astronomy;
 
-pragma Build (Description => "Processor test",
-              Version     => (1, 0, 0, 1),
-              Kind        => Console,
-              Icon        => False,
-              Libraries   => ("AWS", "GNATCOLL"),
-              Compiler    => "GNAT\14.2");
-
 with Ada.Streams.Stream_IO;
 with AWS.Client;
 with AWS.Messages;
 with AWS.Parameters;
 with AWS.Response;
-with Exposure;
-with Sensitivity;
 with Sky;
+with Stellarium;
+with Text;
 with Url_Names;
 
 package body Picture.Feeder is
@@ -50,59 +43,51 @@ package body Picture.Feeder is
     end if;
   end Check;
 
-
   The_Target_Type      : Sky.Object_Type;
   The_Target_Direction : Space.Direction;
-  The_Exposure         : Exposure.Item;
-  The_Sensitivity      : Sensitivity.Item;
 
-  Ten_Seconds : constant Exposure.Item    := Exposure.Value("10");
-  Iso_1600    : constant Sensitivity.Item := Sensitivity.Value("1600");
+  type Exposures     is array (Units.Known_Camera_Model, Sky.Object_Type) of Exposure.Item;
+  type Sensitivities is array (Units.Known_Camera_Model, Sky.Object_Type) of Sensitivity.Item;
+
+  use all type Units.Camera_Model;
+  use all type Sky.Object_Type;
+
+  Target_Exposure : constant Exposures := [
+    Canon_Eos_6D | Canon_Eos_60D => [
+      Moon    | Satellite | Unknown        => Exposure.Value ("1/100"),
+      Cluster | Double    | Star   | Stars => Exposure.Value ("10"),
+      Galaxy  | Nebula    | Quasar         => Exposure.Value ("30")],
+    QHY600C => [
+      Moon    => Exposure.Value ("0.005"),
+      Cluster => Exposure.Value ("5"),
+      others  => Exposure.Value ("15")],
+    others => [others => Exposure.Value ("[]")]];
+
+  Target_Sensitivity : constant Sensitivities := [
+    Canon_Eos_6D | Canon_Eos_60D => [
+      Moon    | Satellite | Unknown        => Sensitivity.Value ("100"),
+      Cluster | Double    | Star   | Stars => Sensitivity.Value ("1600"),
+      Galaxy  | Nebula    | Quasar         => Sensitivity.Value ("6400")],
+    QHY600C => [
+      Moon    => Sensitivity.Value ("[]"),
+      Cluster => Sensitivity.Value ("[]"),
+      others  => Sensitivity.Value ("[]")]];
 
 
-  procedure Define_Parameters_For (Target : Name.Id) is
-    use all type Sky.Object_Type;
+  procedure Define_Parameters_For (Target           : Name.Id;
+                                   Target_Direction : Space.Direction) is
   begin
     The_Target_Type := Name.Type_Of (Target);
-    case The_Target_Type is
-    when Moon =>
-      The_Exposure := Ten_Seconds;
-      The_Sensitivity := Iso_1600;
-    when Star =>
-      The_Exposure := Ten_Seconds;
-      The_Sensitivity := Iso_1600;
-    when Double =>
-      The_Exposure := Ten_Seconds;
-      The_Sensitivity := Iso_1600;
-    when Stars =>
-      The_Exposure := Ten_Seconds;
-      The_Sensitivity := Iso_1600;
-    when Cluster =>
-      The_Exposure := Ten_Seconds;
-      The_Sensitivity := Iso_1600;
-    when Galaxy =>
-      The_Exposure := Ten_Seconds;
-      The_Sensitivity := Iso_1600;
-    when Nebula =>
-      The_Exposure := Ten_Seconds;
-      The_Sensitivity := Iso_1600;
-    when Quasar =>
-      The_Exposure := Ten_Seconds;
-      The_Sensitivity := Iso_1600;
-    when Satellite =>
-      The_Exposure := Ten_Seconds;
-      The_Sensitivity := Iso_1600;
-    when Unknown =>
-      The_Exposure := Ten_Seconds;
-      The_Sensitivity := Iso_1600;
-    end case;
-    The_Target_Direction := Name.Direction_Of (Target, Time.Universal);
+    Log.Write ("target type: " & Text.Legible_Of (The_Target_Type'image));
+    The_Exposure := Target_Exposure (Stellarium.Camera_Model, The_Target_Type);
+    The_Sensitivity := Target_Sensitivity (Stellarium.Camera_Model, The_Target_Type);
+    The_Target_Direction := Target_Direction;
   end Define_Parameters_For;
 
 
   function Darks_Filename return String is
   begin
-    return "Darks_" & The_Exposure'image & '_' & The_Sensitivity'image;
+    return Stellarium.Camera_Model'image & '_' & The_Exposure.Filename_Part & "_" & The_Sensitivity.Filename_Part;
   end Darks_Filename;
 
 
@@ -161,12 +146,13 @@ package body Picture.Feeder is
 
   The_Darks_To_Send : Units.Picture_Number;
 
-  procedure New_Darks_Sequence (Target : Name.Id) is
+  procedure New_Darks_Sequence (Target           : Name.Id;
+                                Target_Direction : Space.Direction) is
   begin
-    Log.Write ("new darks sequence");
+    Log.Write ("new darks sequence for " & Name.Image_Of (Target));
     Check (Start);
     The_Darks_To_Send := The_Number_Of_Darks;
-    Define_Parameters_For (Target);
+    Define_Parameters_For (Target, Target_Direction);
     Check (AWS.Client.Get (Base_URL & Url_Names.New_Darks));
     The_Sequence_Type := Darks;
   end New_Darks_Sequence;
@@ -196,11 +182,12 @@ package body Picture.Feeder is
 
   Is_First_Light : Boolean;
 
-  procedure New_Light_Sequence (Target : Name.Id) is
+  procedure New_Light_Sequence (Target           : Name.Id;
+                                Target_Direction : Space.Direction) is
   begin
-    Log.Write ("new light sequence");
+    Log.Write ("new light sequence for " & Name.Image_Of (Target));
     Check (Start);
-    Define_Parameters_For (Target);
+    Define_Parameters_For (Target, Target_Direction);
     Is_First_Light := True;
   end New_Light_Sequence;
 

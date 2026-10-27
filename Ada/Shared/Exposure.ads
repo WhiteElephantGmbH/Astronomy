@@ -104,6 +104,8 @@ package Exposure is
 
   function From_Camera return Item;
 
+  function Filename_Part (The_Item : Item) return String;
+
 private
 
   type Item is tagged record
