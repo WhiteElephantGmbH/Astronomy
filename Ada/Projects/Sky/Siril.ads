@@ -43,6 +43,12 @@ package Siril is
   procedure Stack_Dark (Output : String);
   --  Stacks the dark images without normalization.
 
+  procedure Load (File_Name : String);
+  -- Loads an individual image.
+
+  procedure Auto_Stretch;
+  -- Applies an automatic stretch to the loaded image.
+
   procedure Convert_Light (Destination : String);
   -- Converts the light images to FITS files.
   -- raises Name_Error if the destination directory does not exist
@@ -87,7 +93,9 @@ package Siril is
   procedure Close_Immediate;
   -- Aborts the current Siril session and closes Siril.
 
-  Name_Error : exception;
-  Aborted    : exception renames Siril_Interface.Aborted;
+  Name_Error           : exception;
+  Not_Enough_Stars     : exception renames Siril_Interface.Not_Enough_Stars;
+  Plate_Solving_Failed : exception renames Siril_Interface.Plate_Solving_Failed;
+  Aborted              : exception renames Siril_Interface.Aborted;
 
 end Siril;

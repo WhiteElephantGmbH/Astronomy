@@ -64,6 +64,19 @@ package body Siril is
   end Stack_Dark;
 
 
+  procedure Load (File_Name : String) is
+  begin
+    Check_File (File_Name);
+    SI.Execute ("load " & File_Name);
+  end Load;
+
+
+  procedure Auto_Stretch is
+  begin
+    SI.Execute ("autostretch");
+  end Auto_Stretch;
+
+
   procedure Convert_Light (Destination : String) is
   begin
     Check_Directory (File.Containing_Directory_Of (Destination));

@@ -73,10 +73,25 @@ package body Picture.Feeder is
       Cluster => Sensitivity.Value ("[]"),
       others  => Sensitivity.Value ("[]")]];
 
+  Is_M13_Simulation : Boolean := False;
+  M13_Picture_Index : Natural := 0;
+
+  function Next_M13_Picture return String is
+    Index_Image   : constant String := "000" & Text.Trimmed (M13_Picture_Index'image);
+    Picture_Index : constant String := Index_Image(Index_Image'last - 3 .. Index_Image'last);
+    Picture_Name  : constant String := "D:\Pictures\M13\Image_" & Picture_Index & ".cr2";
+  begin
+    Log.Write ("XXX Next Picture: " & Picture_Name);
+    M13_Picture_Index := @ + 1;
+    return Picture_Name;
+  end Next_M13_Picture;
+
 
   procedure Define_Parameters_For (Target           : Name.Id;
                                    Target_Direction : Space.Direction) is
   begin
+    Is_M13_Simulation := Text.Location_Of ("M13", Name.Image_Of (Target)) /= Text.Not_Found;
+    Log.Write ("XXX Simulate M13: " & Is_M13_Simulation'image);
     The_Target_Type := Name.Type_Of (Target);
     Log.Write ("target type: " & Text.Legible_Of (The_Target_Type'image));
     The_Exposure := Target_Exposure (Stellarium.Camera_Model, The_Target_Type);
@@ -106,7 +121,7 @@ package body Picture.Feeder is
     function Read_File return Ada.Streams.Stream_Element_Array is
       The_File : SIO.File_Type;
     begin
-      SIO.Open (The_File, SIO.In_File, Filename);
+      SIO.Open (The_File, SIO.In_File, (if Is_M13_Simulation then Next_M13_Picture else Filename));
       declare
         Size : constant Ada.Streams.Stream_Element_Offset := Ada.Streams.Stream_Element_Offset (SIO.Size (The_File));
         Data : Ada.Streams.Stream_Element_Array (1 .. Size);
@@ -163,6 +178,7 @@ package body Picture.Feeder is
   begin
     Log.Write ("send next dark");
     Check (Darks);
+    Is_M13_Simulation := False;
     Send_Next;
     case The_Sequence_Type is
     when Darks =>
@@ -188,6 +204,7 @@ package body Picture.Feeder is
     Log.Write ("new light sequence for " & Name.Image_Of (Target));
     Check (Start);
     Define_Parameters_For (Target, Target_Direction);
+    The_Sequence_Type := Lights;
     Is_First_Light := True;
   end New_Light_Sequence;
 
@@ -198,7 +215,6 @@ package body Picture.Feeder is
     Check (Lights);
     if Is_First_Light then
       Send_Light_Parameters;
-      The_Sequence_Type := Lights;
       Is_First_Light := False;
     end if;
     Send_Next;

@@ -16,7 +16,7 @@
 pragma Style_Astronomy;
 
 pragma Build (Description => "Sky Processor",
-              Version     => (0, 0, 0, 1),
+              Version     => (1, 0, 0, 0),
               Kind        => Console,
               Icon        => False,
               Libraries   => ("AWS", "GNATCOLL"),

@@ -29,9 +29,11 @@ package Image is
 
   function LIGHT_Filename (Index : Number) return String;
 
+  function First_LIGHT_Filename return String;
+
   function Darks_Work_Directory return String;
 
-  procedure Clear;
+  function Cleared return Boolean;
 
   procedure Move (From : Number;
                   To   : Number);

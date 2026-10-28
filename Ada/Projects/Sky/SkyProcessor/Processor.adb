@@ -32,7 +32,7 @@ package body Processor is
   package IO  renames Ada.Text_IO;
   package SIO renames Ada.Streams.Stream_IO;
 
-  type Action is (Process_Darks, Start_Light_Sequence, Processing, Shutdown);
+  type Action is (Process_Darks, Start_Light_Sequence, Show_First, Processing, Shutdown);
 
 
   protected Action_Handler is
@@ -67,9 +67,28 @@ package body Processor is
   end Control;
 
 
+  type Log_Kind is (Normal, Warning, Error);
+
+  procedure Show (Message : String;
+                  Kind    : Log_Kind := Normal) is
+  begin
+    case Kind is
+    when Normal =>
+      Log.Write (Message);
+      IO.Put_Line (Message);
+    when Warning =>
+      Log.Warning (Message);
+      IO.Put_Line ("Warning: " & Message);
+    when Error =>
+      Log.Error (Message);
+      IO.Put_Line ("Error: " & Message & '!');
+    end case;
+  end Show;
+
+
   procedure Start is
   begin
-    IO.Put_Line ("Start");
+    Show ("Start");
     Control.Start;
   end Start;
 
@@ -78,12 +97,15 @@ package body Processor is
 
   procedure Evaluate_Darks (Filename : String) is
   begin
-    Log.Write ("Evaluate Darks");
+    Show ("Evaluate Darks");
     The_Darks_Filename := [Filename];
     Action_Handler.Evaluate_Darks;
     Log.Write ("Await Completion");
     Action_Handler.Await_Completion;
-    Log.Write ("Darks Evaluated");
+    Show ("Darks Evaluated");
+    if not Image.Cleared then
+      Show ("Image area not cleared !", Warning);
+    end if;
   end Evaluate_Darks;
 
 
@@ -91,7 +113,7 @@ package body Processor is
 
   procedure New_Sequence (Parameters : Light_Parameters) is
   begin
-    Log.Write ("New Light Sequence");
+    Show ("New light sequence");
     The_Light_Parameters := Parameters;
     Action_Handler.New_Light_Sequence;
   end New_Sequence;
@@ -99,21 +121,21 @@ package body Processor is
 
   procedure Set (Index : Image.Number) is
   begin
-    Log.Write ("Set Collected" & Index'image);
+    Show ("Set Collected" & Index'image);
     Action_Handler.Set_Collected (Index);
   end Set;
 
 
   procedure Stop is
   begin
-    Log.Write ("Processor Stop");
+    Show ("Stop");
     Siril.Close_Immediate;
   end Stop;
 
 
   procedure Shutdown is
   begin
-    Log.Write ("Shutdown");
+    Show ("Shutdown");
     Siril.Close_Immediate;
     Action_Handler.Set_Shutdown;
   end Shutdown;
@@ -124,9 +146,9 @@ package body Processor is
     use type Siril.Percent;
   begin
     if Progress = Siril.Start then
-      IO.Put (Command & " started");
+      IO.Put (Command & " Started");
     elsif Progress = Siril.Complete then
-      IO.Put_Line (Ascii.Cr & Command & " Complete");
+      IO.Put_Line (Ascii.Cr & Command & " complete                        ");
     else
       IO.Put (Ascii.Cr & Command & Progress'image & "%       ");
     end if;
@@ -160,7 +182,24 @@ package body Processor is
   Picture_Filename : constant String := Work_Directory & '\' & Picture_Name & ".jpg";
 
 
-  function Generated_Jpec return Boolean is
+  procedure Generate_First_Jpec is
+  begin
+    File.Delete (Picture_Filename);
+    Siril.Open;
+    Siril.Load (Image.First_LIGHT_Filename);
+    Siril.Auto_Stretch;
+    Siril.Change_Directory (Work_Directory);
+    Siril.Save_Jpeg (Picture_Name);
+    Siril.Close;
+    IO.Put_Line ("Generated first picture");
+  exception
+  when others =>
+    Siril.Close;
+    raise;
+  end Generate_First_Jpec;
+
+
+  procedure Generate_Jpec is
 
     Source_Directory : constant String := Image.Siril_LIGHT_Directory;
     Lights_Directory : constant String := Work_Directory & "\lights";
@@ -202,13 +241,12 @@ package body Processor is
     Siril.Change_Directory ("..");
     Siril.Save_Jpeg (Picture_Name);
     Siril.Close;
-    IO.Put_Line ("New Jpec");
-    return True;
+    IO.Put_Line ("Generated new picture");
   exception
-  when Siril.Aborted =>
-    IO.Put_Line ("Stopped");
-    return False;
-  end Generated_Jpec;
+  when others =>
+    Siril.Close;
+    raise;
+  end Generate_Jpec;
 
 
   procedure Send_Jpec is
@@ -253,30 +291,39 @@ package body Processor is
     accept Start;
     Log.Write ("started");
     loop
-      Action_Handler.Get (The_Action);
-      case The_Action is
-      when Process_Darks =>
-        IO.Put_Line ("process darks");
-        Generate_Darks;
-      when Start_Light_Sequence =>
-        IO.Put_Line ("new light sequence");
-        Collected_Count := 0;
-      when Processing =>
-        Processed_Count := Collected_Count + 1;
-        Action_Handler.Get_Collected (Collected_Count);
-        Image.Move (Processed_Count, Collected_Count);
-        IO.Put_Line ("process 1 .." & Collected_Count'image);
-        if Generated_Jpec then
+      begin
+        Action_Handler.Get (The_Action);
+        case The_Action is
+        when Process_Darks =>
+          Generate_Darks;
+        when Start_Light_Sequence =>
+          Collected_Count := 0;
+        when Show_First =>
+          Generate_First_Jpec;
           Send_Jpec;
-        end if;
-      when Shutdown =>
-        exit;
-      end case;
+        when Processing =>
+          Processed_Count := Collected_Count + 1;
+          Action_Handler.Get_Collected (Collected_Count);
+          Image.Move (Processed_Count, Collected_Count);
+          IO.Put_Line ("Process 1 .." & Collected_Count'image);
+          Generate_Jpec;
+          Send_Jpec;
+        when Shutdown =>
+          exit;
+        end case;
+      exception
+      when Siril.Aborted =>
+        IO.Put_Line ("Stopped");
+      when Siril.Not_Enough_Stars =>
+        Show ("Not enough stars detected!", Warning);
+      when Siril.Plate_Solving_Failed =>
+        Show ("Plate solving failed!", Warning);
+      end;
     end loop;
     Log.Write ("finalized");
   exception
   when Item: others =>
-    IO.Put_Line ("!!! unexpected termination !!!");
+    IO.Put_Line ("Error: Unexpected Termination!");
     Log.Termination (Item);
   end Control;
 
@@ -308,9 +355,13 @@ package body Processor is
       use type Image.Count;
     begin
       if The_Action /= Shutdown then
-        The_Action := Processing;
         The_Collected_Count := The_Index;
-        Is_Waiting := The_Collected_Count < 2 or else The_Collected_Count <= The_Processed_Count;
+        if The_Collected_Count = 1 then
+          The_Action := Show_First;
+        else
+          The_Action := Processing;
+        end if;
+        Is_Waiting := The_Collected_Count = 0 or else The_Collected_Count <= The_Processed_Count;
       end if;
     end Set_Collected;
 

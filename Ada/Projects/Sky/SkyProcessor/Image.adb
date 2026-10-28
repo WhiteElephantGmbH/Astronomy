@@ -18,7 +18,6 @@ pragma Style_Astronomy;
 with Directory;
 with File;
 with Text;
-with Time;
 
 package body Image is
 
@@ -27,6 +26,8 @@ package body Image is
   Processor_Directory : constant String := "D:\Pictures\Processor";
   Work_Directory      : constant String := Processor_Directory & "\Siril";
   LIGHT_Directory     : constant String := Work_Directory & "\LIGHT";
+
+  Source : constant String := "\Image";
 
 
   function Name_Of (Filename : String;
@@ -41,9 +42,11 @@ package body Image is
 
   function Collector_Directory return String is (Processor_Directory & "\Collector");
 
-  function Collector_Filename (Index : Number) return String is (Name_Of (Collector_Directory & "\Image", Index));
+  function Collector_Filename (Index : Number) return String is (Name_Of (Collector_Directory & Source, Index));
 
-  function LIGHT_Filename (Index : Number) return String is (Name_Of (LIGHT_Directory & "\Image", Index));
+  function LIGHT_Filename (Index : Number) return String is (Name_Of (LIGHT_Directory & Source, Index));
+
+  function First_LIGHT_Filename return String is (Collector_Filename (Number'first));
 
 
   function Darks_Work_Directory return String is
@@ -54,22 +57,17 @@ package body Image is
   end Darks_Work_Directory;
 
 
-  procedure Clear is
+  function Cleared return Boolean is
   begin
-    for Unused in 1 .. 5 loop
-      begin
-        Directory.Delete (Collector_Directory);
-        Directory.Create (Collector_Directory);
-        Directory.Delete (Work_Directory);
-        Directory.Create (LIGHT_Directory);
-        return;
-      exception
-      when File.In_Use =>
-        Time.Wait (0.2);
-      end;
-    end loop;
-    raise File.In_Use;
-  end Clear;
+    Directory.Delete (Collector_Directory);
+    Directory.Create (Collector_Directory);
+    Directory.Delete (Work_Directory);
+    Directory.Create (LIGHT_Directory);
+    return True;
+  exception
+  when others =>
+    return False;
+  end Cleared;
 
 
   procedure Move (From : Number;
@@ -80,6 +78,7 @@ package body Image is
                    New_Name => LIGHT_Filename (The_Index));
     end loop;
   end Move;
+
 
   function Darks_Directory return String is (Processor_Directory & "\Darks");
 

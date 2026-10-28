@@ -86,7 +86,6 @@ package body Collector is
                                Darks_Id => [P.Get (Url_Names.Id)]);
       Log.Write ("Light - Target  : " & Space.Image_Of (The_Light_Parameters.Target));
       Log.Write ("      - Darks_Id: " & The_Light_Parameters.Darks_Id.S);
-      Image.Clear;
       The_Index := 0;
     end Get_Light_Parameters;
 
@@ -127,16 +126,25 @@ package body Collector is
     Log.Write ("Request " & URI);
     if URI = Url_Names.New_Darks then
       Check (Stopped);
-      The_Processing := Darks;
-      The_Index := 0;
-      Image.Clear;
-      return AWS.Response.Acknowledge (AWS.Messages.S200, "OK");
+      if Image.Cleared then
+        The_Processing := Darks;
+        The_Index := 0;
+        return AWS.Response.Acknowledge (AWS.Messages.S200, "OK");
+      else
+        Log.Warning ("Dark work area not cleared.");
+        return AWS.Response.Acknowledge (AWS.Messages.S300, "WARNING");
+      end if;
     elsif URI = Url_Names.Light_Parameters then
       Check (Stopped);
-      Get_Light_Parameters;
-      Processor.New_Sequence (The_Light_Parameters);
-      The_Processing := Lights;
-      return AWS.Response.Acknowledge (AWS.Messages.S200, "OK");
+      if Image.Cleared then
+        Get_Light_Parameters;
+        Processor.New_Sequence (The_Light_Parameters);
+        The_Processing := Lights;
+        return AWS.Response.Acknowledge (AWS.Messages.S200, "OK");
+      else
+        Log.Warning ("Light images not cleared.");
+        return AWS.Response.Acknowledge (AWS.Messages.S300, "WARNING");
+      end if;
     elsif URI = Url_Names.Picture then
       The_Index := @ + 1;
       Get_Picture;
@@ -152,7 +160,6 @@ package body Collector is
                                  Message_Body => "OK");
     elsif URI = Url_Names.Store_Darks then
       Processor.Evaluate_Darks (Darks_Filename);
-      Image.Clear;
       The_Processing := Stopped;
       return AWS.Response.Acknowledge (AWS.Messages.S200, "OK");
     elsif URI = Url_Names.Stop then

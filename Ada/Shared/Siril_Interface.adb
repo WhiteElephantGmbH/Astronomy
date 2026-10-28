@@ -93,11 +93,29 @@ package body Siril_Interface is
 
   procedure Execute (Command : String) is
 
+    Not_Enough_Stars_Detected : Boolean := False;
+    Plate_Solving_Failure     : Boolean := False;
+
     procedure Raise_Protocol_Error (Message : String) with No_Return is
     begin
-      Log.Error (Message);
+      Log.Error ("Protocol Error: " & Message);
       raise Protocol_Error with Message;
     end Raise_Protocol_Error;
+
+
+    procedure Raise_Status_Error (Message : String) with No_Return is
+    begin
+      if Not_Enough_Stars_Detected then
+        Log.Warning ("Not enough stars detected");
+        raise Not_Enough_Stars;
+      elsif Plate_Solving_Failure then
+        Log.Warning ("Plate solving failed");
+        raise Plate_Solving_Failed;
+      else
+        Log.Error ("Status Error: " & Message);
+        raise Status_Error with Message;
+      end if;
+    end Raise_Status_Error;
 
 
     procedure Check_Aborting is
@@ -172,7 +190,7 @@ package body Siril_Interface is
                     Log.Write ("< " & Response);
                     return True;
                   else
-                    Raise_Protocol_Error ("not started: " & Response);
+                    Raise_Protocol_Error ("not started - " & Response);
                   end if;
                 elsif Value in "starting" then
                   if The_State = Waiting then
@@ -180,13 +198,20 @@ package body Siril_Interface is
                     Progress_Handling (Percent'first);
                     The_State := Started;
                   else
-                    Raise_Protocol_Error ("already started: " & Response);
+                    Raise_Protocol_Error ("already started - " & Response);
                   end if;
                   Log.Write ("< " & Response);
                   return False;
+                elsif Value in "error" then
+                  Raise_Status_Error (Response);
                 end if;
               end;
             elsif Keyword = "log:" then
+              if Text.Location_Of ("not enough stars", Response) /= Text.Not_Found then
+                Not_Enough_Stars_Detected := True;
+              elsif Text.Location_Of ("Plate solving failed", Response) /= Text.Not_Found then
+                Plate_Solving_Failure := True;
+              end if;
               Log.Write ("< " & Response);
               return False;
             elsif Keyword = "progress:" then
@@ -196,8 +221,12 @@ package body Siril_Interface is
                 Log.Warning ("Command is not started: " & Response);
               end if;
               return False;
+            else
+              Log.Warning (Keyword & "not handled");
             end if;
           end;
+        else
+          Log.Warning ("Unexpected token count:" & Tokens.Count'image);
         end if;
         Raise_Protocol_Error (Response);
       end Handle_Response_Complete;
@@ -227,9 +256,9 @@ package body Siril_Interface is
     Wait_For_Status;
     Check_Aborting;
   exception
-  when Aborted =>
+  when Aborted | Not_Enough_Stars | Plate_Solving_Failed =>
     raise;
-  when Fatal_Error | Protocol_Error =>
+  when Fatal_Error | Protocol_Error | Status_Error =>
     if Is_Aborting then
       Is_Aborting := False;
       raise Aborted;
