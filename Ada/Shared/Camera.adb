@@ -31,10 +31,23 @@ package body Camera is
   end Start;
 
 
-  function Actual_Information return Information is
+  procedure Detect_Model is
   begin
-    return Camera_Data.Actual;
-  end Actual_Information;
+    if Canon.Is_Available then
+      Camera_Data.Set (Canon_Eos_6D);
+    elsif QHYCCD.Is_Available then
+      Camera_Data.Set (QHY600C);
+    else
+      Camera_Data.Set (Unknown);
+    end if;
+  end Detect_Model;
+
+
+  function Available return Boolean is (Actual_Model /= Unknown);
+
+  function Actual_Model return Model is (Actual_Information.Camera);
+
+  function Actual_Information return Information is (Camera_Data.Actual);
 
 
   function Model_Image return String is

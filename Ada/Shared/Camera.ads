@@ -18,6 +18,8 @@ pragma Style_Astronomy;
 with Exceptions;
 with Exposure;
 with Sensitivity;
+with Units;
+
 private with Traces;
 private with Text;
 
@@ -26,7 +28,9 @@ package Camera is
   Max_With_Or_Height : constant := 9600; -- maximum for Canon QHY600C
   Min_With_Or_Height : constant := 3464; -- minimum for Canon 60D
 
-  type Model is (Unknown, Canon_Eos_6D, Canon_Eos_60D, QHY600C);
+  subtype Model is Units.Camera_Model;
+
+  use all type Model;
 
   subtype Canon_Model is Model range Canon_Eos_6D .. Canon_Eos_60D;
 
@@ -42,6 +46,8 @@ package Camera is
     Width  : Columns;
   end record;
 
+  No_Information : constant Information := (Idle, Unknown, Rows'last, Columns'last);
+
   Pixel_Bits : constant := 16;
 
   type Pixel is new Natural range 0 .. 2 ** Pixel_Bits - 1 with Size => Pixel_Bits;
@@ -52,10 +58,16 @@ package Camera is
 
   procedure Start;
 
+  procedure Detect_Model;
+
+  function Available return Boolean;
+
+  function Actual_Model return Model;
+
   function Actual_Information return Information;
 
   function Model_Image return String;
-  
+
   function File_Extension return String;
 
   procedure Capture (Filename  : String;
@@ -116,7 +128,7 @@ private
     procedure Reset_Error;
 
   private
-    The_Information : Information;
+    The_Information : Information := No_Information;
     The_Last_Error  : Text.String;
   end Camera_Data;
 

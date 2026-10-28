@@ -39,9 +39,9 @@ package body Picture.Parameter is
       if not Directory.Exists (Folder) then
         Error.Raise_With ("Unknown picture directory " & Folder);
       end if;
-      Define (Name   => Picture_Filename,
-              Height => Section.Degrees_Of (Height_Key, Maximum_Heigth),
-              Width  => Section.Degrees_Of (Width_Key, Maximum_Width));
+      Define (Default_Name => Picture_Filename,
+              Height       => Section.Degrees_Of (Height_Key, Maximum_Heigth),
+              Width        => Section.Degrees_Of (Width_Key, Maximum_Width));
     end;
   end Define;
 
@@ -52,14 +52,14 @@ package body Picture.Parameter is
   end Default_Astap_Executable;
 
 
-  procedure Defaults (Put    : access procedure (Item : String);
-                      Name   : String := Default_Name;
-                      Height : String := Default_Height;
-                      Width  : String := Default_Width) is
+  procedure Defaults (Put          : access procedure (Item : String);
+                      Default_Name : String := Temp_Filename;
+                      Height       : String := Default_Height;
+                      Width        : String := Default_Width) is
   begin
     Put ("[" & Id & "]");
     Put (Astap_Key & "    = " & Default_Astap_Executable);
-    Put (Filename_Key & " = " & Name);
+    Put (Filename_Key & " = " & Default_Name);
     Put (Height_Key & "   = " & Height & Angle.Degree);
     Put (Width_Key & "    = " & Width & Angle.Degree);
   end Defaults;

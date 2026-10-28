@@ -22,7 +22,7 @@ with Telescope;
 package User is
 
   type Action is (Define_Catalog, Define_Target, Update,
-                  Go_To, Auto_Focus_Start, Go_To_Next, Align, Park, Stop, Unpark,
+                  Go_To, View, Auto_Focus_Start, Go_To_Next, Align, Take_Darks, Park, Stop, Unpark,
                   Close);
 
   subtype Command_Action is Action range Go_To .. Close;
@@ -31,15 +31,17 @@ package User is
 
   type Action_Handler is access procedure (The_Action : Action);
 
-  type Setup_Command is (Auto_Focus, Align_Stars);
+  type Setup_Command is (Auto_Focus, Build_Pointing_Model, Take_Darks);
 
-  subtype Setup_Command_No_Fucuser is Setup_Command range Align_Stars .. Setup_Command'last;
+  subtype Setup_Command_No_Fucuser is Setup_Command range Build_Pointing_Model .. Setup_Command'last;
 
   procedure Show (Visible_In : Duration);
 
   procedure Show (Information : Telescope.Data);
 
-  procedure Set (The_Target : Name.Id);
+  procedure Show (The_Target : Name.Id);
+
+  procedure Go_To (The_Target : Name.Id);
 
   procedure Clear_Target;
 

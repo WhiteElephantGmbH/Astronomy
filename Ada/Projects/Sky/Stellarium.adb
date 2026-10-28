@@ -25,6 +25,7 @@ with File;
 with Network.Tcp.Servers;
 with Os.Process;
 with Site;
+with Stellarium.Client;
 with Time;
 with Unsigned;
 
@@ -121,9 +122,88 @@ package body Stellarium is
     return "";
   end Landscape_Config_Name;
 
+
   Landscape_Config  : constant Configuration.File_Handle := Configuration.Handle_For (Landscape_Config_Name);
   Landscape_Section : constant Configuration.Section_Handle := Configuration.Handle_For (Landscape_Config, "landscape");
   Location_Section  : constant Configuration.Section_Handle := Configuration.Handle_For (Landscape_Config, "location");
+
+  Modules_Directory : constant String := Application_Data_Directory & File.Folder_Separator & "modules";
+  Oculars_Directory : constant File.Folder := Modules_Directory + "Oculars";
+
+  function Ocular_Config_Name return String is
+  begin
+    declare
+      Config_Name : constant String := File.Composure (Oculars_Directory, "ocular", "ini");
+    begin
+      if File.Exists (Config_Name) then
+        Log.Write ("ocular configuration: " & Config_Name);
+        return Config_Name;
+      else
+        Log.Warning ("ocular configuration " & Config_Name & " not defined");
+        return "";
+      end if;
+    end;
+  exception
+  when others =>
+    Log.Warning ("Modules Oculars not found");
+    return "";
+  end Ocular_Config_Name;
+
+
+  Ocular_Config  : constant Configuration.File_Handle := Configuration.Handle_For (Ocular_Config_Name);
+  CCD_Section    : constant Configuration.Section_Handle := Configuration.Handle_For (Ocular_Config, "ccd");
+  Lens_Section   : constant Configuration.Section_Handle := Configuration.Handle_For (Ocular_Config, "lens");
+  Ocular_Section : constant Configuration.Section_Handle := Configuration.Handle_For (Ocular_Config, "ocular");
+  Tele_Section   : constant Configuration.Section_Handle := Configuration.Handle_For (Ocular_Config, "telescope");
+
+  function Prefix (Index : Property_Id) return String is (Text.Trimmed (Index'image) & '\');
+
+
+  function Camera (Index : Property_Id) return Camera_Data is
+    function Value_Of (Item : String) return String is (Configuration.Value_Of (CCD_Section, Prefix (Index) & Item));
+    Name  : constant String := Value_Of ("name");
+    Res_X : constant String := Value_Of ("resolutionX");
+    Res_Y : constant String := Value_Of ("resolutionY");
+    Bin_X : constant String := Value_Of ("binningX");
+    Bin_Y : constant String := Value_Of ("binningY");
+    Dim_X : constant String := Value_Of ("chip_width");
+    Dim_Y : constant String := Value_Of ("chip_height");
+  begin
+    return (Name       => [Name],
+            Resolution => (X => Units.Pixel_Count'value(Res_X), Y => Units.Pixel_Count'value(Res_Y)),
+            Binning    => (X => Units.Pixel_Binning'value(Bin_X), Y => Units.Pixel_Binning'value(Bin_Y)),
+            Dimension  => (X => Units.Chip_Size'value(Dim_X), Y => Units.Chip_Size'value(Dim_Y)));
+  end Camera;
+
+
+  function Lens (Index : Property_Id) return Lens_Data is
+    function Value_Of (Item : String) return String is (Configuration.Value_Of (Lens_Section, Prefix (Index) & Item));
+    Name       : constant String := Value_Of ("name");
+    Multiplier : constant String := Value_Of ("multipler");
+  begin
+    return (Name       => [Name],
+            Multiplier => Units.Lens_Multiplier'value(Multiplier));
+  end Lens;
+
+
+  function Ocular (Index : Property_Id) return Ocular_Data is
+    function Value_Of (Item : String) return String is (Configuration.Value_Of (Ocular_Section, Prefix (Index) & Item));
+    Name         : constant String := Value_Of ("name");
+    Apparent_FOV : constant String := Value_Of ("afov");
+  begin
+    return (Name         => [Name],
+            Apparent_FOV => Units.Field_Of_View'value(Apparent_FOV));
+  end Ocular;
+
+
+  function Telescope (Index : Property_Id) return Telescope_Data is
+    function Value_Of (Item : String) return String is (Configuration.Value_Of (Tele_Section, Prefix (Index) & Item));
+    Name         : constant String := Value_Of ("name");
+    Focal_Length : constant String := Value_Of ("focalLength");
+  begin
+    return (Name         => [Name],
+            Focal_Length => Units.Focal_Length'value(Focal_Length));
+  end Telescope;
 
 
   function Search_Tolerance return Angle.Degrees is
@@ -341,7 +421,7 @@ package body Stellarium is
   procedure Message_Handler (The_Message : Receive_Message) is
     use type Angle.Value;
   begin
-    if Goto_Location /= null then
+    if Goto_Is_Enabled and Goto_Location /= null then
       Goto_Location (Space.Direction_Of (Ra  => Angle.Value'(+The_Message.Ra),
                                          Dec => Angle.Value'(+The_Message.Dec)));
     end if;
@@ -439,6 +519,178 @@ package body Stellarium is
   when others =>
     null;
   end Set;
+
+
+  function Get return Target_Data renames Client.Get_Target;
+
+  procedure Set_Focus (Target_Name : String;
+                       Mode        : Focus_Mode := Mark) is
+  begin
+    Client.Set_Focus_To (Target_Name, Mode);
+  end Set_Focus;
+
+
+  procedure Center_On (Target : Name.Id) is
+    Target_Name : constant String := Name.Image_For_Stellarium_Of (Target);
+  begin
+    if Target_Name /= "" then
+      Client.Set_Focus_To (Target_Name, Center);
+    end if;
+  exception
+  when others =>
+    null;
+  end Center_On;
+
+
+  function Camera_Name return String is
+  begin
+    return Client.Get.Camera.Name.S;
+  end Camera_Name;
+
+
+  function Camera_Model return Units.Camera_Model is
+    Name : constant String := Camera_Name;
+  begin
+    if Text.Location_Of ("EOS 6D (", Name) /= Text.Not_Found then -- not EOS 6D II
+      return Units.Canon_Eos_6D;
+    elsif Text.Location_Of ("EOS 60D", Name) /= Text.Not_Found then
+      return Units.Canon_Eos_60D;
+    elsif Text.Location_Of ("QHY600C", Name) /= Text.Not_Found then
+      return Units.QHY600C;
+    end if;
+    return Units.Unknown;
+  end Camera_Model;
+
+
+  procedure Set_Camera (Model : Units.Camera_Model) is
+    use type Units.Camera_Model;
+  begin
+   Log.Write ("Set Camera: " & Model'image);
+   for Id in Property_Id loop
+      Client.Set_CCD (Id);
+      if Model = Camera_Model then
+        return;
+      end if;
+    end loop;
+    Log.Warning ("Camera " & Model'image & " not found");
+    raise Not_Found;
+  exception
+  when Not_Found =>
+    raise;
+  when others =>
+    raise Operation_Failed;
+  end Set_Camera;
+
+
+  function Chip_Resolution return Units.Chip_Resolution is
+  begin
+    return Client.Get.Camera.Resolution;
+  end Chip_Resolution;
+
+
+  function Chip_Size return Units.Chip_Dimension is
+  begin
+    return Client.Get.Camera.Dimension;
+  end Chip_Size;
+
+
+  function Chip_Binning return Units.Chip_Binning is
+  begin
+    return Client.Get.Camera.Binning;
+  end Chip_Binning;
+
+
+  function Pixel_Size return Units.Pixel_Size is
+    Data   : constant Camera_Data := Client.Get.Camera;
+    Factor : constant Float := 10.0**3; -- mm / um
+    X_Size : constant Float := Factor * Float(Data.Dimension.X) / Float(Data.Resolution.X);
+    Y_Size : constant Float := Factor * Float(Data.Dimension.Y) / Float(Data.Resolution.Y);
+    Mean   : constant Float := (X_Size + Y_Size) / 2.0;
+    Offset : constant Float := Float(Units.Pixel_Size'small) / 2.0;
+  begin
+    if abs (X_Size - Y_Size) > Float(Units.Pixel_Size'small) then
+      Log.Write ("X_Size:" & X_Size'image);
+      Log.Write ("Y_Size:" & Y_Size'image);
+      Log.Warning ("Pixel not square");
+    end if;
+    return Units.Pixel_Size(Mean + Offset);
+  end Pixel_Size;
+
+
+  function Camera_Rotation return Units.Rotation is
+  begin
+    return Client.Get.Rotation;
+  end Camera_Rotation;
+
+
+  procedure Set_Camera_Rotation (Value : Units.Rotation) is
+  begin
+    Client.Set_Rotation (Value);
+  end Set_Camera_Rotation;
+
+
+  function Lens_Name return String is
+  begin
+    return Client.Get.Lens.Name.S;
+  end Lens_Name;
+
+
+  procedure Set_No_Lens is
+  begin
+    Client.Set_Lens (Not_Available);
+  end Set_No_Lens;
+
+
+  function Lens_Multiplier return Units.Lens_Multiplier is
+  begin
+    return Client.Get.Lens.Multiplier;
+  end Lens_Multiplier;
+
+
+  function Telescope_Name return String is
+  begin
+    return Client.Get.Telescope.Name.S;
+  end Telescope_Name;
+
+
+  function Telescope_Model return Units.Telescope_Model is
+    Name : constant String := Telescope_Name;
+  begin
+    if Text.Location_Of ("Celestron C11", Name) /= Text.Not_Found then
+      return Units.Celestron_C11;
+    elsif Text.Location_Of ("Celestron C14", Name) /= Text.Not_Found then
+      return Units.Celestron_C14;
+    elsif Text.Location_Of ("CDK_700", Name) /= Text.Not_Found then
+      return Units.CDK_700;
+    end if;
+    return Units.Unknown;
+  end Telescope_Model;
+
+
+  procedure Set_Telescope (Model : Units.Telescope_Model) is
+    use type Units.Telescope_Model;
+  begin
+   Log.Write ("Set Telescope: " & Model'image);
+   for Id in Property_Id loop
+      Client.Set_Telescope (Id);
+      if Model = Telescope_Model then
+        return;
+      end if;
+    end loop;
+    raise Not_Found;
+  exception
+  when Not_Found =>
+    Log.Warning ("Telescope " & Model'image & " not found");
+    raise;
+  when others =>
+    raise Operation_Failed;
+  end Set_Telescope;
+
+
+  function Telescope_Focal_Length return Units.Focal_Length is
+  begin
+    return Client.Get.Telescope.Focal_Length;
+  end Telescope_Focal_Length;
 
 begin
   Read_Location;

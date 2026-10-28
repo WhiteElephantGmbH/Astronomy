@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2015 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2015 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -18,6 +18,7 @@ pragma Style_Astronomy;
 with Ada.Calendar;
 with Ada.Directories;
 with Ada.Iterator_Interfaces;
+with Ada.IO_Exceptions;
 
 package File is
 
@@ -50,6 +51,18 @@ package File is
 
   function Extension_Of (Name : String) return String renames Ada.Directories.Extension;
 
+  function Name_Of (Name      : String;
+                    Extension : String) return String;
+  -- add extension if Name has no extension
+  -- no exception
+
+  function Full_Name_Of (Name : String) return String renames Ada.Directories.Full_Name;
+
+  function Full_Name_Of (Name_Or_Directory : String;
+                         Current_Directory : String) return String;
+
+  function Is_Legal (Name_Or_Directory : String) return Boolean;
+
   function Containing_Directory_Of (Name : String) return String renames Ada.Directories.Containing_Directory;
 
   function Exists (Name : String) return Boolean;
@@ -78,6 +91,7 @@ package File is
 
   Name_Error : exception renames Ada.Directories.Name_Error;
   Use_Error  : exception renames Ada.Directories.Use_Error;
+  In_Use     : exception renames Ada.IO_Exceptions.Use_Error;
 
 
   ------------------------
@@ -106,6 +120,7 @@ package File is
 
   function Constant_Reference (The_Item     : aliased Item;
                                Unused_Index : Cursor) return String with Inline;
+
 private
 
   type Cursor_Data is record

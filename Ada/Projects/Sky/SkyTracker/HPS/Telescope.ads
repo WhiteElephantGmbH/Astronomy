@@ -24,6 +24,8 @@ with Time;
 
 package Telescope is
 
+  type Operation_Mode is (Normal, Building_Pointing_Model, Taking_Darks, Acquiring);
+
   subtype State is Ten_Micron.State;
 
   subtype Error_State is Ten_Micron.Error_State;
@@ -37,17 +39,19 @@ package Telescope is
   function Image_Of (Time_Delta : Time_Offset) return String renames Ten_Micron.Image_Of;
 
   type Data is record
-    Status             : State := Disconnected;
-    Target_Direction   : Space.Direction;
-    Actual_Direction   : Space.Direction;
-    Actual_Position    : Space.Direction;
-    Picture_Direction  : Space.Direction;
-    Mount_Pier_Side    : Character := Ten_Micron.Undefined_Pier;
-    Moving_Speed       : Angle.Value := Angle.Zero;
-    Align_Points       : Natural := 0;
-    Alignment_Info     : Alignment.Information;
-    Universal_Time     : Time.Ut := Time.Unknown;
-    Time_Delta         : Time_Offset;
+    Status              : State := Disconnected;
+    Mode                : Operation_Mode := Normal;
+    Camera_At_Selection : Boolean;
+    Target_Direction    : Space.Direction;
+    Actual_Direction    : Space.Direction;
+    Actual_Position     : Space.Direction;
+    Picture_Direction   : Space.Direction;
+    Mount_Pier_Side     : Character := Ten_Micron.Undefined_Pier;
+    Moving_Speed        : Angle.Value := Angle.Zero;
+    Align_Points        : Natural := 0;
+    Alignment_Info      : Alignment.Information;
+    Universal_Time      : Time.Ut := Time.Unknown;
+    Time_Delta          : Time_Offset;
   end record;
 
   type Information_Update_Handler is access procedure;
@@ -64,6 +68,10 @@ package Telescope is
   procedure Go_To;
 
   procedure Go_To_Next;
+
+  procedure View;
+
+  procedure Take_Darks;
 
   procedure Prepare_Tle;
 

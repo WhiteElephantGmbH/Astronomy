@@ -20,39 +20,37 @@ with Astro;
 with Camera;
 with File;
 with Fits;
+with Picture.Feeder;
 with Site;
 with Text;
-with Traces;
 
 package body Picture is
-
-  package Log is new Traces (Id);
 
   The_Filename : Text.String;
   The_Height   : Angle.Degrees;
   The_Width    : Angle.Degrees;
 
 
-  procedure Define (Name   : String;
-                    Height : Angle.Degrees;
-                    Width  : Angle.Degrees) is
+  procedure Define (Default_Name : String;
+                    Height       : Angle.Degrees;
+                    Width        : Angle.Degrees) is
   begin
-    Log.Write ("Define Filename: " & Name);
-    The_Filename := [Name];
+    Log.Write ("Define Filename: " & Default_Name);
+    The_Filename := [Default_Name];
     The_Height := Height;
     The_Width := Width;
   end Define;
 
 
   function Filename return String is
-    Name             : constant String := The_Filename.S;
-    Extension        : constant String := File.Extension_Of (Name);
+    Picture_Name     : constant String := The_Filename.S;
+    Extension        : constant String := File.Extension_Of (Picture_Name);
     Camera_Extension : constant String := Camera.File_Extension;
   begin
     if Extension = "" and Camera_Extension /= "" then
-      return Name & '.' & Camera.File_Extension;
+      return Picture_Name & '.' & Camera.File_Extension;
     end if;
-    return Name;
+    return Picture_Name;
   end Filename;
 
 
@@ -60,6 +58,12 @@ package body Picture is
   begin
     return File.Exists (Filename);
   end Exists;
+
+
+  procedure Delete is
+  begin
+    File.Delete (Filename);
+  end Delete;
 
 
   Value_Delta   : constant := 1.0 / 3600_000.0; -- millisecond
@@ -411,5 +415,22 @@ package body Picture is
     return Earth.Direction_Of (Alt => +Alt,
                                Az  => Angle.Semi_Circle + Az);
   end Direction;
+
+
+  procedure Start_Taking_Darks (Target           : Name.Id;
+                                Target_Direction : Space.Direction) renames Feeder.New_Darks_Sequence;
+
+  function Taking_Next_Dark_Was_Last return Boolean renames Feeder.Send_Next_Dark_Was_Last;
+
+  procedure Start_Taking_Lights (Target           : Name.Id;
+                                 Target_Direction : Space.Direction) renames Feeder.New_Light_Sequence;
+
+  procedure Take_Next_Light renames Feeder.Send_Next_Light;
+
+  procedure Stop_Taking renames Feeder.Stop;
+
+  function Taking_Exposure return Exposure.Item is (The_Exposure);
+
+  function Taking_Sensitivity return Sensitivity.Item is (The_Sensitivity);
 
 end Picture;

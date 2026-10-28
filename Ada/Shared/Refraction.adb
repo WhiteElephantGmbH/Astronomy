@@ -27,6 +27,7 @@ package body Refraction is
 
 
   procedure Set (The_Air_Pressure : Hectopascal) is
+    use type Hectopascal;
   begin
     if The_Air_Pressure /= P then
       New_P := True;
@@ -49,6 +50,7 @@ package body Refraction is
 
 
   procedure Set (The_Temperature : Celsius) is
+    use type Celsius;
   begin
     if The_Temperature /= T then
       New_T := True;

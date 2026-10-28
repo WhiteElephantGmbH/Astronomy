@@ -24,7 +24,9 @@ with Sky.Data;
 with Sky_Line;
 with Solar_System;
 with Sssb;
+with Stellarium;
 with Sun;
+with Text;
 with Traces;
 
 package body Targets is
@@ -113,7 +115,8 @@ package body Targets is
 
   task type Handler (Clear  : access procedure;
                      Define : access procedure (List : Name.Id_List_Access);
-                     Update : access procedure) is
+                     Update : access procedure;
+                     Show   : access procedure (Target : Name.Id)) is
 
     entry Define_Catalog;
 
@@ -132,6 +135,8 @@ package body Targets is
                    Tolerance     :     Space.Distance;
                    Target_Id     : out Name.Id);
 
+    entry Get_From_Stellarium (The_Direction : out Space.Direction);
+
     entry Stop;
 
   end Handler;
@@ -145,11 +150,13 @@ package body Targets is
   procedure Start (Clear    : access procedure;
                    Define   : access procedure (List : Name.Id_List_Access);
                    Update   : access procedure;
+                   Show     : access procedure (Target : Name.Id);
                    Arriving : Arriving_Handling := null) is
   begin
     The_Handler := new Handler (Clear  => Clear,
                                 Define => Define,
-                                Update => Update);
+                                Update => Update,
+                                Show   => Show);
     Is_Arriving := Arriving;
   end Start;
 
@@ -203,6 +210,14 @@ package body Targets is
   begin
     The_Handler.Stop;
   end Stop;
+
+
+  function Stellarium_Direction return Space.Direction is
+    The_Direction : Space.Direction;
+  begin
+    The_Handler.Get_From_Stellarium (The_Direction);
+    return The_Direction;
+  end Stellarium_Direction;
 
 
   task body Handler is
@@ -405,9 +420,51 @@ package body Targets is
       end if;
     end Define_Targets;
 
-    The_Found_Id : Name.Id;
 
-    use type Name.Id;
+    The_Found_Id         : Name.Id;
+    The_Target_Name      : Text.String;
+    The_Target_Direction : Space.Direction;
+
+    procedure Handle_Target_Selection is
+    begin
+      declare
+        Target_Data      : constant Stellarium.Target_Data := Stellarium.Get;
+        Target_Name      : constant String := Target_Data.Name.S;
+        Target_Kind      : constant String := Target_Data.Kind.S;
+        Target_Direction : constant Space.Direction := Target_Data.Direction;
+      begin
+        The_Target_Direction := Target_Direction;
+        if not Text.Matches (The_Target_Name, Target_Name) then
+          The_Target_Name := [Target_Name];
+          if Target_Name = "" then
+            The_Found_Id := Name.No_Id;
+          else
+            if Target_Kind = "NomenclatureItem" then
+              declare
+                Parts   : constant Text.Strings := Text.Strings_Of (Target_Name, Separator => '(');
+                Feature : constant String := Parts(1);
+              begin
+                The_Found_Id := Name.Item_Of (Feature);
+              end;
+            else
+              Log.Write ("Selected Name: " & Target_Name);
+              The_Found_Id := Name.Item_Of (The_Targets, Target_Direction, Stellarium.Search_Tolerance);
+            end if;
+          end if;
+          Show (The_Found_Id);
+        end if;
+      end;
+    exception
+    when Occurrance: others =>
+      Log.Termination (Occurrance);
+    end Handle_Target_Selection;
+
+
+    List_Update_Intervall    : constant Duration := 20.0;
+    Target_Polling_Intervall : constant Duration := 0.5;
+    Update_Countdown         : constant Positive := Natural(List_Update_Intervall / Target_Polling_Intervall);
+
+    The_Countdown : Positive := Update_Countdown;
 
   begin -- Handler
     Log.Write ("handler start");
@@ -449,7 +506,7 @@ package body Targets is
                         Target_Id   : out Name.Id)
         do
           Target_Id := Name.Item_Of (The_Targets, Target_Name);
-          if Target_Id = Name.No_Id then
+          if not Name.Exists (Target_Id) then
             Target_Id := The_Found_Id;
           end if;
           The_Found_Id := Name.No_Id;
@@ -463,13 +520,23 @@ package body Targets is
           The_Found_Id := Target_Id;
         end Get_For;
       or
+        accept Get_From_Stellarium (The_Direction : out Space.Direction) do
+          The_Direction := The_Target_Direction;
+        end Get_From_Stellarium;
+      or
         accept Stop;
         exit;
       or
-        delay until Time.In_Future (20.0);
-        if Site.Is_Defined then
-          Define_Targets;
+        delay until Time.In_Future (Target_Polling_Intervall);
+        if The_Countdown = 1 then
+          The_Countdown := Update_Countdown;
+          if Site.Is_Defined then
+            Define_Targets;
+          end if;
+        else
+          The_Countdown := @ - 1;
         end if;
+        Handle_Target_Selection;
       end select;
     end loop;
     Log.Write ("handler end");
@@ -480,11 +547,8 @@ package body Targets is
 
 
   function J2000_Direction_Of (Id : Name.Id) return Space.Direction is
-    use type Name.Id;
   begin
-    if Id = Name.No_Id then
-      return Space.Unknown_Direction;
-    else
+    if Name.Exists (Id) then
       declare
         Ut : constant Time.Ut := Time.Universal;
       begin
@@ -499,6 +563,8 @@ package body Targets is
           return Space.Unknown_Direction;
         end case;
       end;
+    else
+      return Space.Unknown_Direction;
     end if;
   end J2000_Direction_Of;
 
@@ -565,9 +631,8 @@ package body Targets is
 
 
   function Description_Of (Id : Name.Id) return String is
-    use type Name.Id;
   begin
-    if Id /= Name.No_Id then
+    if Name.Exists (Id) then
       case Name.Kind_Of (Id) is
       when Name.Sky_Object =>
         return Sky.Data.Descriptor_Of (Name.Object_Of (Id));

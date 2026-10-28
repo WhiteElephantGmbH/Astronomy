@@ -16,24 +16,25 @@
 pragma Style_Astronomy;
 
 with Log;
+with Text;
 with Win32.Winbase;
 with Win32.Winerror;
 with Win32.Winnt;
-with Text;
 
 package body Os.Process is
 
   package Base renames Win32.Winbase;
   package Nt   renames Win32.Winnt;
 
-  procedure Create (Executable     : String;
-                    Parameters     : String := "";
-                    Environment    : String := "";
-                    Current_Folder : String := "";
-                    Std_Input      : Handle := No_Handle;
-                    Std_Output     : Handle := No_Handle;
-                    Std_Error      : Handle := No_Handle;
-                    Console        : Console_Type := Normal) is
+  procedure Create (Executable     :     String;
+                    Parameters     :     String;
+                    Environment    :     String;
+                    Current_Folder :     String;
+                    Std_Input      :     Handle;
+                    Std_Output     :     Handle;
+                    Std_Error      :     Handle;
+                    Console        :     Console_Type;
+                    Process_Id     : out Id) is
 
     Startup_Info        : aliased Win32.Winbase.STARTUPINFOA;
     Process_Information : aliased Win32.Winbase.PROCESS_INFORMATION;
@@ -52,6 +53,7 @@ package body Os.Process is
     use type Win32.BOOL;
     use type Win32.DWORD;
   begin
+    Process_Id := (0, False);
     Startup_Info.cb             := Win32.DWORD (Win32.Winbase.STARTUPINFOA'size / 8);
     Startup_Info.lpReserved     := null;
     Startup_Info.lpDesktop      := null;
@@ -140,9 +142,73 @@ package body Os.Process is
         end if;
       end;
     end if;
+    Process_Id := (Id_Value(Process_Information.dwProcessId), True);
     Unused := Base.CloseHandle (Process_Information.hProcess);
     Unused := Base.CloseHandle (Process_Information.hThread);
   end Create;
+
+
+  procedure Create (Executable     : String;
+                    Parameters     : String := "";
+                    Environment    : String := "";
+                    Current_Folder : String := "";
+                    Std_Input      : Handle := No_Handle;
+                    Std_Output     : Handle := No_Handle;
+                    Std_Error      : Handle := No_Handle;
+                    Console        : Console_Type := Normal) is
+    Unused_Process_Id : Id;
+  begin
+    Create (Executable     => Executable,
+            Parameters     => Parameters,
+            Environment    => Environment,
+            Current_Folder => Current_Folder,
+            Std_Input      => Std_Input,
+            Std_Output     => Std_Output,
+            Std_Error      => Std_Error,
+            Console        => Console,
+            Process_Id     => Unused_Process_Id);
+  end Create;
+
+
+  function Created (Executable     : String;
+                    Current_Folder : String := "";
+                    Parameters     : String := "";
+                    Console        : Console_Type := Normal) return Id is
+    The_Process_Id : Id;
+  begin
+    Create (Executable     => Executable,
+            Parameters     => Parameters,
+            Environment    => "",
+            Current_Folder => Current_Folder,
+            Std_Input      => No_Handle,
+            Std_Output     => No_Handle,
+            Std_Error      => No_Handle,
+            Console        => Console,
+            Process_Id     => The_Process_Id);
+    return The_Process_Id;
+  end Created;
+
+
+  procedure Terminate_With (Process_Id : Id) is
+    SYNCHRONIZE       : constant := 16#00100000#;
+    PROCESS_TERMINATE : constant := 1;
+    The_Handle        : Win32.Winnt.HANDLE;
+    use type Win32.DWORD;
+  begin
+    if Process_Id.Is_Defined then
+      declare
+        Dummy : Win32.BOOL;
+      begin
+        The_Handle := Win32.Winbase.OpenProcess (dwDesiredAccess => SYNCHRONIZE + PROCESS_TERMINATE,
+                                                 bInheritHandle  => Win32.TRUE,
+                                                 dwProcessId     => Win32.DWORD(Process_Id.Value));
+        Dummy := Win32.Winbase.TerminateProcess (The_Handle, 0);
+      exception
+      when others =>
+        null;
+      end;
+    end if;
+  end Terminate_With;
 
 
   function Execution_Of (Executable     : String;
@@ -228,14 +294,12 @@ package body Os.Process is
         Log.Write ("!!! Process.Readfile Error =" & Win32.DWORD'image(Base.GetLastError));
         raise Execution_Failed;
       else
-        Text.Append (The_Result, The_Data (The_Data'first .. The_Data'first + Natural(The_Length) - 1));
+        The_Result.Append (The_Data (The_Data'first .. The_Data'first + Natural(The_Length) - 1));
       end if;
     end loop;
     Unused := Base.CloseHandle (Inbound); -- No longer used
-    if The_Result.Count > Max_Result_Length then
-      return The_Result.Slice (Text.First_Index, Max_Result_Length);
-    end if;
     return The_Result.S;
+
   exception
   when Execution_Failed =>
     raise;

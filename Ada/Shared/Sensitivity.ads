@@ -52,6 +52,8 @@ package Sensitivity is
   function Value (The_Item : Item) return Gain;
 
   function Value (The_Item : Item) return Offset;
+  
+  function Filename_Part (The_Item : Item) return String;
 
 private
 

@@ -20,15 +20,15 @@ with Os.System;
 
 package Picture.Parameter is
 
-  Default_Name   : constant String := Os.System.Temp_Path & "SkyTracker_Capture";
+  Temp_Filename : constant String := Os.System.Temp_Path & "SkyTracker_Capture";
   Default_Height : constant String := "0.51";
   Default_Width  : constant String := "0.74";
 
   procedure Define (Handle : Configuration.File_Handle);
 
-  procedure Defaults (Put    : access procedure (Item : String);
-                      Name   : String := Default_Name;
-                      Height : String := Default_Height;
-                      Width  : String := Default_Width);
+  procedure Defaults (Put          : access procedure (Item : String);
+                      Default_Name : String := Temp_Filename;
+                      Height       : String := Default_Height;
+                      Width        : String := Default_Width);
 
 end Picture.Parameter;

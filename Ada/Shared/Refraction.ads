@@ -16,12 +16,13 @@
 pragma Style_Astronomy;
 
 with Angle;
+with Units;
 
 package Refraction is
 
-  type Celsius is delta  10.0**(-1) range -999.9 .. +999.9;
+  subtype Celsius is Units.Celsius;
 
-  type Hectopascal is delta 10.0**(-1) range 0000.0 .. 9999.9;
+  subtype Hectopascal is Units.Hectopascal;
 
   Undefined_Temperature  : constant Celsius := Celsius'last;
   Undefined_Air_Pressure : constant Hectopascal := Hectopascal'last;
@@ -31,7 +32,7 @@ package Refraction is
   function New_Air_Pressure return Boolean;
 
   function Air_Pressure return Hectopascal;
-  
+
   procedure Set (The_Temperature : Celsius);
 
   function New_Temperature return Boolean;

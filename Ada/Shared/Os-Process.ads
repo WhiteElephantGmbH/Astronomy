@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2002 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2002 .. 2021 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -23,6 +23,8 @@ package Os.Process is
 
   No_Handle : constant Handle;
 
+  type Id is private;
+
   type Console_Type is (None, Normal, Invisible);
 
   procedure Create (Executable     : String;
@@ -34,6 +36,11 @@ package Os.Process is
                     Std_Error      : Handle := No_Handle;
                     Console        : Console_Type := Normal);
 
+  function Created (Executable     : String;
+                    Current_Folder : String := "";
+                    Parameters     : String := "";
+                    Console        : Console_Type := Normal) return Id;
+
   Creation_Failure : exception;
   --
   -- Procedure to create a detached process.
@@ -44,8 +51,14 @@ package Os.Process is
   --
   -- Note: If the current folder is set to the null string then the current folder of new process
   --       is set to equal the current folder of the parent (creating process)
+
+
+  procedure Terminate_With (Process_Id : Id);
   --
-  Max_Result_Length : constant := 10000; -- bigger returns are limited
+  -- Procedure to terminate a detached process.
+  --
+  -- Note: If the process was not created or is ended the Termination is a no operation.
+
 
   function Execution_Of (Executable     : String;
                          Parameters     : String;
@@ -66,5 +79,12 @@ private
   type Handle is new System.Address;
 
   No_Handle : constant Handle := Handle(System.Null_Address);
+
+  type Id_Value is mod 2**32;
+
+  type Id is record
+    Value      : Id_Value := 0;
+    Is_Defined : Boolean  := False;
+  end record;
 
 end Os.Process;

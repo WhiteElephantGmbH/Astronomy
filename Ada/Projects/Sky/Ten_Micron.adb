@@ -46,7 +46,6 @@ package body Ten_Micron is
   end Is_Simulation_Mode;
 
 
-
   procedure Set_Status (Item : State) is
   begin
     Last_State := Item;
@@ -684,6 +683,13 @@ package body Ten_Micron is
     Log.Write ("start capturing");
     The_Status := Capturing;
   end Start_Capturing;
+
+
+  procedure End_Capturing is
+  begin
+    Log.Write ("end capturing");
+    The_Status := Last_State;
+  end End_Capturing;
 
 
   procedure Start_Solving is

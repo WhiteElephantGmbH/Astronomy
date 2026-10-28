@@ -49,6 +49,8 @@ package body Control is
                    Align,
                    Go_To,
                    Go_To_Next,
+                   View,
+                   Take_Darks,
                    Park,
                    Start_Auto_Focus,
                    Stop,
@@ -97,7 +99,7 @@ package body Control is
         Action_Handler.Put_Goto (The_Direction);
       end if;
     else
-      User.Set (The_Target);
+      User.Go_To (The_Target);
     end if;
   end Goto_Handler;
 
@@ -179,6 +181,10 @@ package body Control is
           The_Command := Go_To;
         when User.Go_To_Next =>
           The_Command := Go_To_Next;
+        when User.View =>
+          The_Command := View;
+        when User.Take_Darks =>
+          The_Command := Take_Darks;
         when User.Park =>
           The_Command := Park;
         when User.Auto_Focus_Start =>
@@ -346,6 +352,7 @@ package body Control is
           The_Neo_Target := Name.No_Id;
           Targets.Get_For (Target_Name, The_Item);
           if Name.Is_Known (The_Item)  then
+            Stellarium.Center_On (The_Item);
             case Name.Kind_Of (The_Item) is
             when Name.Sky_Object =>
               Telescope.Define_Space_Access (Name.Direction_Of'access, The_Item);
@@ -379,6 +386,10 @@ package body Control is
         Telescope.Go_To;
       when Go_To_Next =>
         Telescope.Go_To_Next;
+      when View =>
+        Telescope.View;
+      when Take_Darks =>
+        Telescope.Take_Darks;
       when Park =>
         Telescope.Park;
       when Start_Auto_Focus =>
@@ -469,6 +480,7 @@ package body Control is
         Targets.Start (Clear    => User.Clear_Targets'access,
                        Define   => User.Define'access,
                        Update   => User.Update_Targets'access,
+                       Show     => User.Show'access,
                        Arriving => Neo.Is_Arriving'access);
         User.Execute (Startup'access,
                       User_Action_Handler'access,
