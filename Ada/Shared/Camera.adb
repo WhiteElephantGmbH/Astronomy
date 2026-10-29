@@ -33,17 +33,13 @@ package body Camera is
 
   procedure Detect_Model is
   begin
-    if Canon.Is_Available then
-      Camera_Data.Set (Canon_Eos_6D);
-    elsif QHYCCD.Is_Available then
-      Camera_Data.Set (QHY600C);
-    else
-      Camera_Data.Set (Unknown);
+    if not (Canon.Is_Available or else QHYCCD.Is_Available) then
+      Camera_Data.Set (Unknown_Camera);
     end if;
   end Detect_Model;
 
 
-  function Available return Boolean is (Actual_Model /= Unknown);
+  function Available return Boolean is (Actual_Model /= Unknown_Camera);
 
   function Actual_Model return Model is (Actual_Information.Camera);
 
@@ -53,7 +49,7 @@ package body Camera is
   function Model_Image return String is
   begin
     case Actual_Information.Camera is
-    when Unknown =>
+    when Unknown_Camera =>
       return "";
     when Canon_Eos_60D =>
       return "Canon EOS 60D";
@@ -77,8 +73,10 @@ package body Camera is
                      Time      : Exposure.Item;
                      Parameter : Sensitivity.Item) is
 
-    function Filename_With_Extension (Extension : String) return String is
-      Folder : constant String := File.Containing_Directory_Of (Filename);
+
+    function Filename_With_Extension return String is
+      Extension : constant String := Units.Extension (Camera.Actual_Model);
+      Folder    : constant String := File.Containing_Directory_Of (Filename);
     begin
       The_File_Extension := [Extension];
       if not Directory.Exists (Folder) then
@@ -91,13 +89,13 @@ package body Camera is
     end Filename_With_Extension;
 
   begin -- Capture
-    Camera_Data.Set (Unknown);
+    Camera_Data.Set (Unknown_Camera);
     The_File_Extension.Clear;
     Log.Write ("Capture " & Filename & " - Time: " & Time'image & " - Parameter: " & Parameter'image);
     if Canon.Is_Available then
-      Canon.Capture_Picture (Filename_With_Extension ("CR2"), Time, Parameter);
+      Canon.Capture_Picture (Filename_With_Extension, Time, Parameter);
     elsif QHYCCD.Is_Available then
-      QHYCCD.Capture_Picture (Filename_With_Extension ("FITS"), Time, Parameter);
+      QHYCCD.Capture_Picture (Filename_With_Extension, Time, Parameter);
     else
       Camera_Data.Set_Error ("No Camera Available");
     end if;
@@ -118,7 +116,7 @@ package body Camera is
                      Parameter : Sensitivity.Item) is
   begin
     Log.Write ("Capture - Size:" & Size'image & " - Time: " & Time'image & " - Parameter: " & Parameter'image);
-    Camera_Data.Set (Unknown);
+    Camera_Data.Set (Unknown_Camera);
     if Canon.Is_Available then
       Canon.Capture_Grid (Size, Time, Parameter);
     elsif QHYCCD.Is_Available then
@@ -145,7 +143,7 @@ package body Camera is
       return Raw.Grid;
     when QHY600C =>
       return QHYCCD.Grid;
-    when Unknown =>
+    when Unknown_Camera =>
       Camera_Data.Set_Error ("No Camera Connected");
       return [];
     end case;
@@ -164,7 +162,7 @@ package body Camera is
       Canon.Stop_Capture;
     when QHY600C =>
       QHYCCD.Stop_Capture;
-    when Unknown =>
+    when Unknown_Camera =>
       null;
     end case;
   exception

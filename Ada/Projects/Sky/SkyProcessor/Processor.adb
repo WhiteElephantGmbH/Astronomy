@@ -23,7 +23,6 @@ with AWS.Response;
 with File;
 with Siril;
 with Traces;
-with Units;
 
 package body Processor is
 
@@ -207,9 +206,9 @@ package body Processor is
     Flats_Stacked_Fit : constant String := Flats_Directory & "\" & Stacked_Fit;
     Darks_Stacked_Fit : constant String := Darks_Directory & "\" & The_Light_Parameters.Darks_Id.S & "_" & Stacked_Fit;
 
-    Celestron_Focal_Length : constant Units.Focal_Length := 2669.6;
+    Celestron_Focal_Length : constant Units.Focal_Length := The_Light_Parameters.Focal_Length;
 
-    EOS6D_Pixel_Size : constant Units.Pixel_Size := 6.55;
+    EOS6D_Pixel_Size : constant Units.Pixel_Size := The_Light_Parameters.Pixel_Size;
 
     M13_Tones : constant Units.Tones := (Shadows    => 0.00016,
                                          Midtones   => 0.00018,

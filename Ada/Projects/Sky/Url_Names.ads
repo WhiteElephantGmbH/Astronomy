@@ -31,6 +31,10 @@ package Url_Names is
   Ra  : constant String := "ra";
   Dec : constant String := "dec";
 
+  Camera_Model : constant String := "camera";
+  Pixel_Size   : constant String := "pixel";
+  Focal_Length : constant String := "focal";
+
   Picture : constant String := "/picture";
 
   Stop : constant String := "/stop";

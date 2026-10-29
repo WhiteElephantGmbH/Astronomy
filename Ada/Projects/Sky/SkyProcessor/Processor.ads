@@ -18,6 +18,7 @@ pragma Style_Astronomy;
 with Image;
 with Space;
 with Text;
+with Units;
 
 package Processor is
 
@@ -26,8 +27,11 @@ package Processor is
   end record;
 
   type Light_Parameters is record
-    Target   : Space.Direction;
-    Darks_Id : Text.String;
+    Target       : Space.Direction;
+    Darks_Id     : Text.String;
+    Camera_Model : Units.Camera_Model;
+    Pixel_Size   : Units.Pixel_Size;
+    Focal_Length : Units.Focal_Length;
   end record;
 
   procedure Start;

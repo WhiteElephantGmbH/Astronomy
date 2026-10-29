@@ -26,6 +26,7 @@ with Processor;
 with Space;
 with Traces;
 with Url_Names;
+with Units;
 
 package body Collector is
 
@@ -83,9 +84,16 @@ package body Collector is
     begin
       The_Light_Parameters := (Target => Space.Direction_Of (Ra_Image  => P.Get (Url_Names.Ra),
                                                              Dec_Image => P.Get (Url_Names.Dec)),
-                               Darks_Id => [P.Get (Url_Names.Id)]);
-      Log.Write ("Light - Target  : " & Space.Image_Of (The_Light_Parameters.Target));
-      Log.Write ("      - Darks_Id: " & The_Light_Parameters.Darks_Id.S);
+                               Darks_Id     => [P.Get (Url_Names.Id)],
+                               Camera_Model => Units.Camera_Model'value(P.Get (Url_Names.Camera_Model)),
+                               Pixel_Size   => Units.Pixel_Size'value(P.Get (Url_Names.Pixel_Size)),
+                               Focal_Length => Units.Focal_Length'value(P.Get (Url_Names.Focal_Length)));
+      Log.Write ("Light - Target      : " & Space.Image_Of (The_Light_Parameters.Target));
+      Log.Write ("      - Darks_Id    : " & The_Light_Parameters.Darks_Id.S);
+      Log.Write ("      - Camera_Model: " & The_Light_Parameters.Camera_Model'image);
+      Log.Write ("      - Pixel_Size  :"  & The_Light_Parameters.Pixel_Size'image);
+      Log.Write ("      - Focal_Length:"  & The_Light_Parameters.Focal_Length'image);
+      Image.Set (The_Light_Parameters.Camera_Model);
       The_Index := 0;
     end Get_Light_Parameters;
 

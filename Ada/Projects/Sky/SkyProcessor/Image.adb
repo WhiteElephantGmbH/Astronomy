@@ -21,13 +21,21 @@ with Text;
 
 package body Image is
 
-  Raw_File_Extension : constant String := ".cr2";
-
   Processor_Directory : constant String := "D:\Pictures\Processor";
   Work_Directory      : constant String := Processor_Directory & "\Siril";
   LIGHT_Directory     : constant String := Work_Directory & "\LIGHT";
 
   Source : constant String := "\Image";
+
+
+  The_Camera_Model : Units.Camera_Model := Units.Unknown_Camera;
+
+  procedure Set (Camera_Model : Units.Camera_Model) is
+  begin
+    The_Camera_Model := Camera_Model;
+  end Set;
+
+  function Raw_File_Extension return String is ('.' & Units.Extension (The_Camera_Model));
 
 
   function Name_Of (Filename : String;

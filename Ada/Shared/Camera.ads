@@ -46,7 +46,7 @@ package Camera is
     Width  : Columns;
   end record;
 
-  No_Information : constant Information := (Idle, Unknown, Rows'last, Columns'last);
+  No_Information : constant Information := (Idle, Unknown_Camera, Rows'last, Columns'last);
 
   Pixel_Bits : constant := 16;
 

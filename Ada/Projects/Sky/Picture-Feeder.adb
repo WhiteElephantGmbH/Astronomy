@@ -75,7 +75,7 @@ package body Picture.Feeder is
 
   Is_M13_Simulation : Boolean := False;
   M13_Picture_Index : Natural := 0;
-
+  
   function Next_M13_Picture return String is
     Index_Image   : constant String := "000" & Text.Trimmed (M13_Picture_Index'image);
     Picture_Index : constant String := Index_Image(Index_Image'last - 3 .. Index_Image'last);
@@ -155,6 +155,9 @@ package body Picture.Feeder is
     P.Add (Url_Names.Ra, Space.Ra_Image_Of (The_Target_Direction));
     P.Add (Url_Names.Dec, Space.Dec_Image_Of (The_Target_Direction));
     P.Add (Url_Names.Id, Darks_Filename);
+    P.Add (Url_Names.Camera_Model, Stellarium.Camera_Model'image);
+    P.Add (Url_Names.Pixel_Size, Text.Trimmed(Stellarium.Pixel_Size'image));
+    P.Add (Url_Names.Focal_Length, Text.Trimmed(Stellarium.Telescope_Focal_Length'image));
     Check (AWS.Client.Get (Base_URL & Url_Names.Light_Parameters & P.URI_Format));
   end Send_Light_Parameters;
 

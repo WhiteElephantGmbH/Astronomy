@@ -23,6 +23,8 @@ package Image is
 
   subtype Number is Count range 1 .. Count'last;
 
+  procedure Set (Camera_Model : Units.Camera_Model);
+
   function Collector_Directory return String;
 
   function Collector_Filename (Index : Number) return String;

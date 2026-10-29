@@ -558,7 +558,7 @@ package body Stellarium is
     elsif Text.Location_Of ("QHY600C", Name) /= Text.Not_Found then
       return Units.QHY600C;
     end if;
-    return Units.Unknown;
+    return Units.Unknown_Camera;
   end Camera_Model;
 
 
