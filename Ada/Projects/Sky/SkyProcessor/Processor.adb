@@ -31,7 +31,7 @@ package body Processor is
   package IO  renames Ada.Text_IO;
   package SIO renames Ada.Streams.Stream_IO;
 
-  type Action is (Process_Darks, Start_Light_Sequence, Show_First, Processing, Shutdown);
+  type Action is (Process_Darks, Start_Light_Sequence, Show_First, Processing, Stop, Shutdown);
 
 
   protected Action_Handler is
@@ -44,9 +44,15 @@ package body Processor is
 
     procedure Get_Collected (The_Index : out Image.Count);
 
+    procedure Set_Stop;
+
     procedure Set_Shutdown;
 
     entry Get (Item : out Action);
+
+    procedure Set_Stopped;
+
+    entry Await_Stopped;
 
     procedure Set_Complete;
 
@@ -55,6 +61,7 @@ package body Processor is
   private
     Is_Waiting          : Boolean := True;
     Is_Complete         : Boolean := False;
+    Is_Stopped          : Boolean := False;
     The_Action          : Action  := Processing;
     The_Collected_Count : Image.Count := 0;
     The_Processed_Count : Image.Count := 0;
@@ -128,14 +135,16 @@ package body Processor is
   procedure Stop is
   begin
     Show ("Stop");
+    Action_Handler.Set_Stop;
     Siril.Close_Immediate;
+    Action_Handler.Await_Stopped;
   end Stop;
 
 
   procedure Shutdown is
   begin
+    Stop;
     Show ("Shutdown");
-    Siril.Close_Immediate;
     Action_Handler.Set_Shutdown;
   end Shutdown;
 
@@ -206,9 +215,9 @@ package body Processor is
     Flats_Stacked_Fit : constant String := Flats_Directory & "\" & Stacked_Fit;
     Darks_Stacked_Fit : constant String := Darks_Directory & "\" & The_Light_Parameters.Darks_Id.S & "_" & Stacked_Fit;
 
-    Celestron_Focal_Length : constant Units.Focal_Length := The_Light_Parameters.Focal_Length;
+    Telescope_Focal_Length : constant Units.Focal_Length := The_Light_Parameters.Focal_Length;
 
-    EOS6D_Pixel_Size : constant Units.Pixel_Size := The_Light_Parameters.Pixel_Size;
+    Camera_Pixel_Size : constant Units.Pixel_Size := The_Light_Parameters.Pixel_Size;
 
     M13_Tones : constant Units.Tones := (Shadows    => 0.00016,
                                          Midtones   => 0.00018,
@@ -230,7 +239,7 @@ package body Processor is
     Siril.Stack_Light;
     Siril.Load_Stacked_Light;
 
-    Siril.Plate_Solve (The_Light_Parameters.Target, Celestron_Focal_Length, EOS6D_Pixel_Size);
+    Siril.Plate_Solve (The_Light_Parameters.Target, Telescope_Focal_Length, Camera_Pixel_Size);
 
     Siril.Remove_Background;
     Siril.Calibrate_Color;
@@ -307,12 +316,17 @@ package body Processor is
           IO.Put_Line ("Process 1 .." & Collected_Count'image);
           Generate_Jpec;
           Send_Jpec;
+        when Stop =>
+          Processed_Count := 0;
+          Collected_Count := 0;
+          Show ("Stopped");
+          Action_Handler.Set_Stopped;
         when Shutdown =>
           exit;
         end case;
       exception
       when Siril.Aborted =>
-        IO.Put_Line ("Stopped");
+        null;
       when Siril.Not_Enough_Stars =>
         Show ("Not enough stars detected!", Warning);
       when Siril.Plate_Solving_Failed =>
@@ -331,7 +345,7 @@ package body Processor is
 
     procedure Evaluate_Darks is
     begin
-      if The_Action /= Shutdown then
+      if not (The_Action in Shutdown | Stop) then
         The_Action := Process_Darks;
         Is_Waiting := False;
         Is_Complete := False;
@@ -341,7 +355,7 @@ package body Processor is
 
     procedure New_Light_Sequence is
     begin
-      if The_Action /= Shutdown then
+      if not (The_Action in Shutdown | Stop) then
         The_Action := Start_Light_Sequence;
         The_Collected_Count := 0;
         The_Processed_Count := 0;
@@ -353,7 +367,7 @@ package body Processor is
     procedure Set_Collected (The_Index : Image.Count) is
       use type Image.Count;
     begin
-      if The_Action /= Shutdown then
+      if not (The_Action in Shutdown | Stop) then
         The_Collected_Count := The_Index;
         if The_Collected_Count = 1 then
           The_Action := Show_First;
@@ -372,9 +386,16 @@ package body Processor is
     end Get_Collected;
 
 
-    procedure Set_Shutdown is
+    procedure Set_Stop is
     begin
       Is_Complete := True;
+      Is_Waiting := False;
+      The_Action := Stop;
+    end Set_Stop;
+
+
+    procedure Set_Shutdown is
+    begin
       Is_Waiting := False;
       The_Action := Shutdown;
     end Set_Shutdown;
@@ -397,6 +418,19 @@ package body Processor is
     begin
       Is_Complete := False;
     end Await_Completion;
+
+
+    procedure Set_Stopped is
+    begin
+      The_Action := Processing;
+      Is_Stopped := True;
+    end Set_Stopped;
+
+
+    entry Await_Stopped when Is_Stopped is
+    begin
+      Is_Stopped := False;
+    end Await_Stopped;
 
   end Action_Handler;
 

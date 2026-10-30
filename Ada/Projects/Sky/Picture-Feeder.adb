@@ -75,7 +75,7 @@ package body Picture.Feeder is
 
   Is_M13_Simulation : Boolean := False;
   M13_Picture_Index : Natural := 0;
-  
+
   function Next_M13_Picture return String is
     Index_Image   : constant String := "000" & Text.Trimmed (M13_Picture_Index'image);
     Picture_Index : constant String := Index_Image(Index_Image'last - 3 .. Index_Image'last);
@@ -227,7 +227,12 @@ package body Picture.Feeder is
   procedure Stop is
   begin
     if The_Sequence_Type /= Start then
-      Check (AWS.Client.Get (Base_URL & Url_Names.Stop));
+      begin
+        Check (AWS.Client.Get (Base_URL & Url_Names.Stop));
+      exception
+      when Processor_Not_Connected =>
+        null;
+      end;
       The_Sequence_Type := Start;
     end if;
   end Stop;

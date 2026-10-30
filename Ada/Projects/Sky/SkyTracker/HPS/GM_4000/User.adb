@@ -114,17 +114,23 @@ package body User is
 
   The_Setup_Command    : Setup_Command;
   Setup_Command_Change : Boolean := False;
-  Is_Focusing          : Boolean := False;
 
-  subtype State is Telescope.State;
+  subtype State          is Telescope.State;
+  subtype Operation_Mode is Telescope.Operation_Mode;
 
   use all type State;
+  use all type Operation_Mode;
 
   subtype Error_State is Telescope.Error_State;
 
   subtype Transit_State is Telescope.Transit_State;
 
-  The_Status : State := Disconnected;
+  The_Status : State          := Disconnected;
+  The_Mode   : Operation_Mode := Normal;
+
+  Camera_At_Selection : Boolean := False;
+
+  Is_Focusing : Boolean := False;
 
   Action_Routine   : Action_Handler;
   The_Last_Action  : Action := Action'pred (Button_Action'first);
@@ -190,12 +196,14 @@ package body User is
 
   procedure Perform_Park is
   begin
+    Clear_Target;
     Signal_Action (Park);
   end Perform_Park;
 
 
   procedure Perform_Unpark is
   begin
+    Clear_Target;
     Signal_Action (Unpark);
   end Perform_Unpark;
 
@@ -227,6 +235,12 @@ package body User is
   end Perform_Goto_Next;
 
 
+  procedure Perform_View is
+  begin
+    Signal_Action (View);
+  end Perform_View;
+
+
   procedure Perform_Setup_Command is
   begin
     Setup_Command_Is_Active := True;
@@ -235,8 +249,11 @@ package body User is
     when Auto_Focus =>
       Signal_Action (Auto_Focus_Start);
       Is_Focusing := True;
-    when Align_Stars =>
+    when Build_Pointing_Model =>
       Signal_Action (Go_To_Next);
+      Is_Focusing := False;
+    when Take_Darks =>
+      Signal_Action (Take_Darks);
       Is_Focusing := False;
     end case;
   exception
@@ -377,6 +394,15 @@ package body User is
         Perform_Control := The_Control;
       end Enable_Control;
 
+      procedure Enable_View is
+      begin
+        if The_Target_Selection = No_Target then
+          Disable_Action;
+        else
+          Enable_Action ("View", Perform_View'access);
+        end if;
+      end Enable_View;
+
       procedure Enable_Goto is
       begin
         if The_Target_Selection = No_Target then
@@ -408,11 +434,22 @@ package body User is
         Enable_Goto;
         Enable_Control ("Park", Perform_Park'access);
       when Tracking =>
-        if Align_On_Picture_Is_Enabled then
-          Enable_Action ("Align", Perform_Align'access);
-        else
-          Enable_Goto;
-        end if;
+        case The_Mode is
+        when Normal =>
+          if Camera_At_Selection then
+            Enable_View;
+          else
+            Enable_Goto;
+          end if;
+        when Acquiring | Taking_Darks =>
+          Disable_Action;
+        when Building_Pointing_Model =>
+          if Align_On_Picture_Is_Enabled then
+            Enable_Action ("Align", Perform_Align'access);
+          else
+            Enable_Goto;
+          end if;
+        end case;
         Enable_Stop;
       when Capturing | Focusing | Solving =>
         Disable_Action;
@@ -476,8 +513,10 @@ package body User is
           case The_Setup_Command is
           when Auto_Focus =>
             Disable_Action;
-          when Align_Stars =>
+          when Build_Pointing_Model =>
             Enable_Command;
+          when Take_Darks =>
+            Disable_Action;
           end case;
         end if;
         if Alignment.Star_Count > 0 then
@@ -486,9 +525,20 @@ package body User is
           Enable_Control ("Park", Perform_Park'access);
         end if;
       when Tracking =>
-        if not Setup_Command_Is_Active then
-          Enable_Command;
-        end if;
+        case The_Setup_Command is
+        when Auto_Focus =>
+          if not Setup_Command_Is_Active then
+            Enable_Command;
+          end if;
+        when Build_Pointing_Model =>
+          Disable_Action;
+        when Take_Darks =>
+          if Camera_At_Selection then
+            Enable_Command;
+          else
+            Disable_Action;
+          end if;
+        end case;
         Enable_Stop;
       when Capturing | Focusing | Slewing | Solving =>
         Disable_Action;
@@ -511,6 +561,8 @@ package body User is
 
   begin -- Show
     if (The_Status /= Information.Status)
+      or (The_Mode /= Information.Mode)
+      or (Camera_At_Selection /= Information.Camera_At_Selection)
       or (Last_Target_Selection /= The_Target_Selection)
       or Align_Change
       or Setup_Command_Change
@@ -518,12 +570,15 @@ package body User is
       Align_Change := False;
       Setup_Command_Change := False;
       The_Status := Information.Status;
+      The_Mode := Information.Mode;
+      Camera_At_Selection := Information.Camera_At_Selection;
       Last_Target_Selection := The_Target_Selection;
       Define_Control_Buttons;
       if Is_Expert_Mode then
         Define_Setup_Buttons;
       end if;
-      Gui.Set_Status_Line (Information.Status'img);
+      Gui.Set_Status_Line (Information.Status'img & (
+                           if The_Mode = Normal then "" else " [" & Text.Legible_Of (The_Mode'image) & ']'));
     end if;
     if Space.Direction_Is_Known (Information.Actual_Direction) then
       if Site.Is_Defined then
@@ -626,12 +681,20 @@ package body User is
   end Show;
 
 
-  procedure Set (The_Target : Name.Id) is
+  procedure Show (The_Target : Name.Id) is
   begin
-    Set_Target_Name (Name.Image_Of (The_Target));
-    Signal_Action (Define_Target);
+    if Name.Exists (The_Target) then
+      Set_Target_Name (Name.Image_Of (The_Target));
+      Signal_Action (Define_Target);
+    end if;
+  end Show;
+
+
+  procedure Go_To (The_Target : Name.Id) is
+  begin
+    Show (The_Target);
     Perform_Goto;
-  end Set;
+  end Go_To;
 
 
   procedure Clear_Target is

@@ -422,6 +422,20 @@ package body Telescope is
     end Update_Time_And_Weather_Data;
 
 
+    procedure Error_Camera_Not_Defined is
+    begin
+      User.Show_Error ("Camera " & Camera.Model_Image & "not defined in Stellarium.");
+    end Error_Camera_Not_Defined;
+
+
+    procedure Error_Processor_Not_Connected is
+    begin
+      User.Show_Error ("Picture processor not connected.");
+      Picture.Stop_Taking;
+      User.Perform_Stop;
+    end Error_Processor_Not_Connected;
+
+
     procedure Update_Handling is
 
       procedure Update_Camera_At_Selection is
@@ -502,19 +516,29 @@ package body Telescope is
         when Acquiring =>
           if Camera.Actual_Information.State = Camera.Idle and then Picture.Exists then
             Ten_Micron.End_Capturing;
-            Picture.Take_Next_Light;
-            Is_Preparing_For_Capture := True;
+            begin
+              Picture.Take_Next_Light;
+              Is_Preparing_For_Capture := True;
+            exception
+            when Picture.Processor_Not_Connected =>
+              Error_Processor_Not_Connected;
+            end;
           else
             Check_Camera_Error;
           end if;
         when Taking_Darks =>
           if Camera.Actual_Information.State = Camera.Idle and then Picture.Exists then
             Ten_Micron.End_Capturing;
-            if Picture.Taking_Next_Dark_Was_Last then
-              User.Perform_Stop;
-            else
-              Is_Preparing_For_Capture := True;
-            end if;
+            begin
+              if Picture.Taking_Next_Dark_Was_Last then
+                User.Perform_Stop;
+              else
+                Is_Preparing_For_Capture := True;
+              end if;
+            exception
+            when Picture.Processor_Not_Connected =>
+              Error_Processor_Not_Connected;
+            end;
           else
             Check_Camera_Error;
           end if;
@@ -608,19 +632,6 @@ package body Telescope is
       Ten_Micron.Synch_To (The_Picture_Direction);
       The_Picture_Direction := Space.Unknown_Direction;
     end Synch_On_Picture;
-
-
-    procedure Error_Camera_Not_Defined is
-    begin
-      User.Show_Error ("Camera " & Camera.Model_Image & "not defined in Stellarium.");
-    end Error_Camera_Not_Defined;
-
-    procedure Error_Processor_Not_Connected is
-    begin
-      User.Show_Error ("Picture processor not connected.");
-      Picture.Stop_Taking;
-      User.Perform_Stop;
-    end Error_Processor_Not_Connected;
 
   begin -- Control_Task
     if Focuser_Client.Server_Exists then

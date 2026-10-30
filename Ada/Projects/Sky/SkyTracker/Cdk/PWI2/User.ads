@@ -38,7 +38,9 @@ package User is
 
   procedure Show (Information : Telescope.Data);
 
-  procedure Set (The_Target : Name.Id);
+  procedure Show (The_Target : Name.Id);
+
+  procedure Go_To (The_Target : Name.Id);
 
   procedure Clear_Target;
 
