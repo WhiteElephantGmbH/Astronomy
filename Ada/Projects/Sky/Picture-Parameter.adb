@@ -27,6 +27,19 @@ package body Picture.Parameter is
   Height_Key     : constant String := "Height";
   Width_Key      : constant String := "Width";
 
+  Processor_Id    : constant String := "Processor";
+  Ip_Address_Key  : constant String := Section.Ip_Address_Key;
+  Port_Key        : constant String := Section.Port_Key;
+  Darks_Count_Key : constant String := "Darks Count";
+
+
+  function Number_Of_Darks return Darks_Count is
+    Minimum : constant Integer := Integer(Darks_Count'first);
+    Maximum : constant Integer := Integer(Darks_Count'last);
+  begin
+    return Darks_Count(Section.Value_Of (Darks_Count_Key, Id, Minimum, Maximum));
+  end Number_Of_Darks;
+
 
   procedure Define (Handle : Configuration.File_Handle) is
   begin
@@ -43,6 +56,14 @@ package body Picture.Parameter is
               Height       => Section.Degrees_Of (Height_Key, Maximum_Heigth),
               Width        => Section.Degrees_Of (Width_Key, Maximum_Width));
     end;
+    Section.Set (Configuration.Handle_For (Handle, Processor_Id));
+    if Section.Exists then
+      Log.Write ("Processing is enabled");
+      Processing_Is_Enabled := True;
+      The_Processor_Address := Section.Ip_Address_For (Processor_Id);
+      The_Processor_Port := Section.Port_For (Processor_Id);
+      The_Number_Of_Darks := Number_Of_Darks;
+    end if;
   end Define;
 
 
@@ -62,6 +83,11 @@ package body Picture.Parameter is
     Put (Filename_Key & " = " & Default_Name);
     Put (Height_Key & "   = " & Height & Angle.Degree);
     Put (Width_Key & "    = " & Width & Angle.Degree);
+    Put ("");
+    Put ("[" & Processor_Id & "]");
+    Put (Ip_Address_Key & "  = localhost");
+    Put (Port_Key & "        = 11000");
+    Put (Darks_Count_Key & " = 20");
   end Defaults;
 
 end Picture.Parameter;

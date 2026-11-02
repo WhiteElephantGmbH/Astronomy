@@ -18,6 +18,7 @@ pragma Style_Astronomy;
 with Directory;
 with File;
 with Text;
+with Time;
 
 package body Image is
 
@@ -66,15 +67,27 @@ package body Image is
 
 
   function Cleared return Boolean is
+    Max_Retries : constant := 100;
+    Retry_Delay : constant Duration := 0.1;
+    Retry_Count : Natural := 0;
   begin
-    Directory.Delete (Collector_Directory);
+    loop
+      begin
+        Directory.Delete (Collector_Directory);
+        Directory.Delete (Work_Directory);
+        exit;
+      exception
+      when File.In_Use =>
+        if Retry_Count = Max_Retries then
+          return False;
+        end if;
+        Retry_Count := @ + 1;
+        Time.Wait (Retry_Delay);
+      end;
+    end loop;
     Directory.Create (Collector_Directory);
-    Directory.Delete (Work_Directory);
     Directory.Create (LIGHT_Directory);
     return True;
-  exception
-  when others =>
-    return False;
   end Cleared;
 
 

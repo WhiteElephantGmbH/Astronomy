@@ -77,6 +77,16 @@ package body Collector is
       return Filename;
     end Darks_Filename;
 
+
+    procedure Get_Dark_Parameters is
+      P : constant AWS.Parameters.List := AWS.Status.Parameters (Request);
+      Camera_Model : constant Units.Camera_Model := Units.Camera_Model'value (P.Get (Url_Names.Camera_Model));
+    begin
+      Log.Write ("Darks - Camera_Model: " & Camera_Model'image);
+      Image.Set (Camera_Model);
+    end Get_Dark_Parameters;
+
+
     The_Light_Parameters : Processor.Light_Parameters;
 
     procedure Get_Light_Parameters is
@@ -135,6 +145,7 @@ package body Collector is
     if URI = Url_Names.New_Darks then
       Check (Stopped);
       if Image.Cleared then
+        Get_Dark_Parameters;
         The_Processing := Darks;
         The_Index := 0;
         return AWS.Response.Acknowledge (AWS.Messages.S200, "OK");

@@ -109,12 +109,12 @@ private
 
   The_Port_Number : Network.Port_Number;
 
+  The_Remote_Ip_Address  : Network.Ip_Address;
+  The_Remote_Port_Number : Network.Port_Number;
+
   The_Search_Tolerance : Angle.Degrees;
 
-  Goto_Is_Enabled : Boolean := False;
-
-  The_Client_Address : Network.Ip_Address := Network.Ip_Address_Of_Host ("localhost");
-  The_Client_Port    : Network.Port_Number := 8090;
+  Cntl_Goto_Is_Enabled : Boolean;
 
   type Property_Index is range -1 .. 100;
 

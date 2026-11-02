@@ -226,30 +226,36 @@ package body Processor is
     M13_Saturation : constant Units.Saturation := (Amount     => 0.9,
                                                    Multiplier => 1.0);
   begin
-    File.Delete (Picture_Filename);
-    Siril.Open (Progress'unrestricted_access);
-    Siril.Change_Directory (Source_Directory);
+    if not File.Exists (Darks_Stacked_Fit) then
+      Show ("Dasks " & Darks_Stacked_Fit & " not found", Warning);
+    elsif not File.Exists (Darks_Stacked_Fit) then
+      Show ("Flats " & Flats_Stacked_Fit & " not found", Warning);
+    else
+      File.Delete (Picture_Filename);
+      Siril.Open (Progress'unrestricted_access);
+      Siril.Change_Directory (Source_Directory);
 
-    Siril.Convert_Light (Destination => Lights_Directory);
-    Siril.Change_Directory (Lights_Directory);
+      Siril.Convert_Light (Destination => Lights_Directory);
+      Siril.Change_Directory (Lights_Directory);
 
-    Siril.Calibrate_Light (Dark => Darks_Stacked_Fit,
-                           Flat => Flats_Stacked_Fit);
-    Siril.Register_Light;
-    Siril.Stack_Light;
-    Siril.Load_Stacked_Light;
+      Siril.Calibrate_Light (Dark => Darks_Stacked_Fit,
+                             Flat => Flats_Stacked_Fit);
+      Siril.Register_Light;
+      Siril.Stack_Light;
+      Siril.Load_Stacked_Light;
 
-    Siril.Plate_Solve (The_Light_Parameters.Target, Telescope_Focal_Length, Camera_Pixel_Size);
+      Siril.Plate_Solve (The_Light_Parameters.Target, Telescope_Focal_Length, Camera_Pixel_Size);
 
-    Siril.Remove_Background;
-    Siril.Calibrate_Color;
-    Siril.Transfer (M13_Tones);
-    Siril.Set (M13_Saturation);
+      Siril.Remove_Background;
+      Siril.Calibrate_Color;
+      Siril.Transfer (M13_Tones);
+      Siril.Set (M13_Saturation);
 
-    Siril.Change_Directory ("..");
-    Siril.Save_Jpeg (Picture_Name);
-    Siril.Close;
-    IO.Put_Line ("Generated new picture");
+      Siril.Change_Directory ("..");
+      Siril.Save_Jpeg (Picture_Name);
+      Siril.Close;
+      IO.Put_Line ("Generated new picture");
+    end if;
   exception
   when others =>
     Siril.Close;

@@ -25,6 +25,7 @@ with Time;
 with Units;
 with Exposure;
 with Sensitivity;
+private with Network;
 private with Traces;
 
 package Picture is
@@ -82,6 +83,8 @@ package Picture is
 
   function Taking_Sensitivity return Sensitivity.Item;
 
+  function Processing_Enabled return Boolean;
+
   Processor_Not_Connected : exception;
 
 private
@@ -89,10 +92,15 @@ private
   Id : constant String := "Picture";
 
   package Log is new Traces (Id);
+  
+  subtype Darks_Count is Units.Picture_Number range 1 .. 99; 
 
-  The_Number_Of_Darks : Units.Picture_Number := 10;
-  The_Exposure        : Exposure.Item;
-  The_Sensitivity     : Sensitivity.Item;
+  Processing_Is_Enabled : Boolean := False;
+  The_Processor_Address : Network.Ip_Address;
+  The_Processor_Port    : Network.Port_Number;
+  The_Number_Of_Darks   : Darks_Count;
+  The_Exposure          : Exposure.Item;
+  The_Sensitivity       : Sensitivity.Item;
 
   procedure Define (Default_Name : String;
                     Height       : Angle.Degrees;

@@ -501,6 +501,7 @@ package body Control is
       Targets.Start (Clear    => User.Clear_Targets'access,
                      Define   => User.Define'access,
                      Update   => User.Update_Targets'access,
+                     Show     => null, -- IMPLEMENT !!!
                      Arriving => Neo.Is_Arriving'access);
       User.Execute (Startup'access,
                     User_Action_Handler'access,

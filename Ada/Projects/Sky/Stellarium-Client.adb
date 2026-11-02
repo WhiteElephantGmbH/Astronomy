@@ -33,8 +33,8 @@ package body Stellarium.Client is
 
 
   function Url (Path : String) return String is
-    Host : constant String := Network.Image_Of (The_Client_Address);
-    Port : constant String := Text.Trimmed (The_Client_Port'image);
+    Host : constant String := Network.Image_Of (The_Remote_Ip_Address);
+    Port : constant String := Text.Trimmed (The_Remote_Port_Number'image);
   begin
     return "http://" & Host & ":" & Port & Path;
   end Url;

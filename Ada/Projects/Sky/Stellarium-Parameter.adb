@@ -21,26 +21,35 @@ with Targets;
 
 package body Stellarium.Parameter is
 
-  Port_Key             : constant String := "Port";
-  Program_Key          : constant String := "Program";
-  Search_Tolerance_Key : constant String := "Search Tolerance";
+  Program_Key           : constant String := "Program";
+  Port_Key              : constant String := "Port";
+  Remote_Ip_Address_Key : constant String := "Remote Ip Address";
+  Remote_Port_Key       : constant String := "Remote Port";
+  Search_Tolerance_Key  : constant String := "Search Tolerance";
+  Cntl_Goto_Enabled_Key : constant String := "Cntl Goto Enabled";
 
 
   procedure Define (Handle : Configuration.File_Handle) is
   begin
     Section.Set (Configuration.Handle_For (Handle, Id));
-    The_Port_Number := Section.Port_For (Id);
-    The_Search_Tolerance := Section.Degrees_Of (Search_Tolerance_Key, Targets.Maximum_Search_Tolerance);
     The_Filename := [Section.String_Value_Of (Program_Key)];
+    The_Port_Number := Section.Port_For (Id);
+    The_Remote_Ip_Address := Section.Ip_Address_For (Id, Remote_Ip_Address_Key);
+    The_Remote_Port_Number := Section.Port_For (Id, Remote_Port_Key);
+    The_Search_Tolerance := Section.Degrees_Of (Search_Tolerance_Key, Targets.Maximum_Search_Tolerance);
+    Cntl_Goto_Is_Enabled := Section.Value_Of (Cntl_Goto_Enabled_Key);
   end Define;
 
 
   procedure Defaults (Put : access procedure (Item : String)) is
   begin
     Put ("[" & Id & "]");
-    Put (Port_Key & "             = 10001");
-    Put (Program_Key & "          = " & Os.System.Program_Files_Folder & "Stellarium\Stellarium.exe");
-    Put (Search_Tolerance_Key & " = 10""");
+    Put (Program_Key & "           = " & Os.System.Program_Files_Folder & "Stellarium\Stellarium.exe");
+    Put (Port_Key & "              = 10001");
+    Put (Remote_Ip_Address_Key & " = localhost");
+    Put (Remote_Port_Key & "       = 8090");
+    Put (Search_Tolerance_Key & "  = 10""");
+    Put (Cntl_Goto_Enabled_Key & " = False");
   end Defaults;
 
 end Stellarium.Parameter;

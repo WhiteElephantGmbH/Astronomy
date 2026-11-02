@@ -16,7 +16,6 @@
 pragma Style_Astronomy;
 
 with Section;
-with Text;
 
 package body Ten_Micron.Parameter is
 
@@ -28,7 +27,7 @@ package body Ten_Micron.Parameter is
     use type Network.Ip_Address;
   begin
     Section.Set (Configuration.Handle_For (Handle, Id));
-    Is_In_Expert_Mode := Text.Matches (Section.String_Value_Of (Expert_Mode_Key), "True");
+    Is_In_Expert_Mode := Section.Value_Of (Expert_Mode_Key);
     Log.Write ("Expert Mode: " & Is_In_Expert_Mode'image);
     The_Server_Address := Section.Ip_Address_For (Id);
     Is_In_Simulation_Mode := The_Server_Address = Network.Loopback_Address;

@@ -432,5 +432,7 @@ package body Picture is
   function Taking_Exposure return Exposure.Item is (The_Exposure);
 
   function Taking_Sensitivity return Sensitivity.Item is (The_Sensitivity);
+  
+  function Processing_Enabled return Boolean is (Processing_Is_Enabled);
 
 end Picture;

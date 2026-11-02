@@ -282,7 +282,7 @@ package body Telescope is
 
     The_Mode : Operation_Mode := Normal;
 
-    Camera_At_Selection      : Boolean := False;
+    Processing_Is_Enabled    : Boolean := False;
     Is_Preparing_For_Capture : Boolean := False;
 
     The_Information : Ten_Micron.Information;
@@ -442,10 +442,11 @@ package body Telescope is
         use type Angle.Value;
       begin
         if Camera.Available then
-          Camera_At_Selection := Space.Angle_Between (Targets.Stellarium_Direction, The_Information.Direction,
-                                                      Smaller_Than => +Angle.One_Minute);
+          Processing_Is_Enabled := Picture.Processing_Enabled and then
+                                   Space.Angle_Between (Targets.Stellarium_Direction, The_Information.Direction,
+                                                        Smaller_Than => +Angle.One_Minute);
         else
-          Camera_At_Selection := False;
+          Processing_Is_Enabled := False;
         end if;
       end Update_Camera_At_Selection;
 
@@ -783,7 +784,7 @@ package body Telescope is
           accept Get (The_Data : out Data) do
             The_Data := (Status              => Telescope.State(The_Information.Status),
                          Mode                => The_Mode,
-                         Camera_At_Selection => Camera_At_Selection,
+                         Processing_Enabled  => Processing_Is_Enabled,
                          Target_Direction    => Actual_Target_Direction,
                          Actual_Direction    => The_Information.Direction,
                          Actual_Position     => The_Information.Position,

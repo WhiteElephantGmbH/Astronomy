@@ -29,8 +29,15 @@ package body Picture.Feeder is
 
   package SIO renames Ada.Streams.Stream_IO;
 
-  Base_URL : constant String := "http://localhost:11000";
-
+  function Base_URL return String is
+    Processor_Address : constant String := Network.Image_Of (The_Processor_Address);
+    Processor_Port    : constant String := Network.Image_Of (The_Processor_Port);
+  begin
+    if not Processing_Is_Enabled then
+      raise Program_Error;
+    end if;
+    return "http://" & Processor_Address & ':' & Processor_Port;
+  end Base_URL;
 
   type Sequence_Type is (Start, Darks, Lights);
 
@@ -93,9 +100,11 @@ package body Picture.Feeder is
     Is_M13_Simulation := Text.Location_Of ("M13", Name.Image_Of (Target)) /= Text.Not_Found;
     Log.Write ("XXX Simulate M13: " & Is_M13_Simulation'image);
     The_Target_Type := Name.Type_Of (Target);
-    Log.Write ("target type: " & Text.Legible_Of (The_Target_Type'image));
+    Log.Write ("Target Type: " & Text.Legible_Of (The_Target_Type'image));
     The_Exposure := Target_Exposure (Stellarium.Camera_Model, The_Target_Type);
+    Log.Write ("Exposure: " & The_Exposure'image);
     The_Sensitivity := Target_Sensitivity (Stellarium.Camera_Model, The_Target_Type);
+    Log.Write ("Sensitivity: " & The_Sensitivity'image);
     The_Target_Direction := Target_Direction;
   end Define_Parameters_For;
 
@@ -158,20 +167,32 @@ package body Picture.Feeder is
     P.Add (Url_Names.Camera_Model, Stellarium.Camera_Model'image);
     P.Add (Url_Names.Pixel_Size, Text.Trimmed(Stellarium.Pixel_Size'image));
     P.Add (Url_Names.Focal_Length, Text.Trimmed(Stellarium.Telescope_Focal_Length'image));
-    Check (AWS.Client.Get (Base_URL & Url_Names.Light_Parameters & P.URI_Format));
+    declare
+      Url : constant String := Base_URL & Url_Names.Light_Parameters & P.URI_Format;
+    begin
+      Log.Write ("URL: " & Url);
+      Check (AWS.Client.Get (Url));
+    end;
   end Send_Light_Parameters;
 
 
-  The_Darks_To_Send : Units.Picture_Number;
+  The_Darks_To_Send : Darks_Count;
 
   procedure New_Darks_Sequence (Target           : Name.Id;
                                 Target_Direction : Space.Direction) is
+    P : AWS.Parameters.List;
   begin
     Log.Write ("new darks sequence for " & Name.Image_Of (Target));
     Check (Start);
     The_Darks_To_Send := The_Number_Of_Darks;
     Define_Parameters_For (Target, Target_Direction);
-    Check (AWS.Client.Get (Base_URL & Url_Names.New_Darks));
+    P.Add (Url_Names.Camera_Model, Stellarium.Camera_Model'image);
+    declare
+      Url : constant String := Base_URL & Url_Names.New_Darks & P.URI_Format;
+    begin
+      Log.Write ("URL: " & Url);
+      Check (AWS.Client.Get (Url));
+    end;
     The_Sequence_Type := Darks;
   end New_Darks_Sequence;
 

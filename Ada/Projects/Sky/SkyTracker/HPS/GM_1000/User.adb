@@ -131,7 +131,7 @@ package body User is
   The_Status : State          := Disconnected;
   The_Mode   : Operation_Mode := Normal;
 
-  Camera_At_Selection : Boolean := False;
+  Processing_Is_Enabled : Boolean := False;
 
   Is_Focusing : Boolean := False;
 
@@ -450,7 +450,7 @@ package body User is
       when Tracking =>
         case The_Mode is
         when Normal =>
-          if Camera_At_Selection then
+          if Processing_Is_Enabled then
             Enable_View;
           else
             Enable_Goto;
@@ -547,7 +547,7 @@ package body User is
         when Build_Pointing_Model =>
           Disable_Action;
         when Take_Darks =>
-          if Camera_At_Selection then
+          if Processing_Is_Enabled then
             Enable_Command;
           else
             Disable_Action;
@@ -576,7 +576,7 @@ package body User is
   begin -- Show
     if (The_Status /= Information.Status)
       or (The_Mode /= Information.Mode)
-      or (Camera_At_Selection /= Information.Camera_At_Selection)
+      or (Processing_Is_Enabled /= Information.Processing_Enabled)
       or (Last_Target_Selection /= The_Target_Selection)
       or Align_Change
       or Setup_Command_Change
@@ -585,7 +585,7 @@ package body User is
       Setup_Command_Change := False;
       The_Status := Information.Status;
       The_Mode := Information.Mode;
-      Camera_At_Selection := Information.Camera_At_Selection;
+      Processing_Is_Enabled := Information.Processing_Enabled;
       Last_Target_Selection := The_Target_Selection;
       Define_Control_Buttons;
       if Is_Expert_Mode then
