@@ -24,8 +24,6 @@ package body Picture.Parameter is
 
   Astap_Key      : constant String := "ASTAP";
   Filename_Key   : constant String := "Filename";
-  Height_Key     : constant String := "Height";
-  Width_Key      : constant String := "Width";
 
   Processor_Id    : constant String := "Processor";
   Ip_Address_Key  : constant String := Section.Ip_Address_Key;
@@ -52,9 +50,7 @@ package body Picture.Parameter is
       if not Directory.Exists (Folder) then
         Error.Raise_With ("Unknown picture directory " & Folder);
       end if;
-      Define (Default_Name => Picture_Filename,
-              Height       => Section.Degrees_Of (Height_Key, Maximum_Heigth),
-              Width        => Section.Degrees_Of (Width_Key, Maximum_Width));
+      Define (Default_Name => Picture_Filename);
     end;
     Section.Set (Configuration.Handle_For (Handle, Processor_Id));
     if Section.Exists then
@@ -74,15 +70,11 @@ package body Picture.Parameter is
 
 
   procedure Defaults (Put          : access procedure (Item : String);
-                      Default_Name : String := Temp_Filename;
-                      Height       : String := Default_Height;
-                      Width        : String := Default_Width) is
+                      Default_Name : String := Temp_Filename) is
   begin
     Put ("[" & Id & "]");
     Put (Astap_Key & "    = " & Default_Astap_Executable);
     Put (Filename_Key & " = " & Default_Name);
-    Put (Height_Key & "   = " & Height & Angle.Degree);
-    Put (Width_Key & "    = " & Width & Angle.Degree);
     Put ("");
     Put ("[" & Processor_Id & "]");
     Put (Ip_Address_Key & "  = localhost");

@@ -102,8 +102,6 @@ private
   The_Exposure          : Exposure.Item;
   The_Sensitivity       : Sensitivity.Item;
 
-  procedure Define (Default_Name : String;
-                    Height       : Angle.Degrees;
-                    Width        : Angle.Degrees);
+  procedure Define (Default_Name : String);
 
 end Picture;

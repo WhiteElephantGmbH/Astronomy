@@ -18,6 +18,7 @@ pragma Style_Astronomy;
 with Ada.Environment_Variables;
 with Ada.Text_IO;
 with Applications;
+with Astro;
 with Configuration;
 with Directory;
 with Error;
@@ -588,10 +589,10 @@ package body Stellarium is
   end Chip_Resolution;
 
 
-  function Chip_Size return Units.Chip_Dimension is
+  function Chip_Dimension return Units.Chip_Dimension is
   begin
     return Client.Get.Camera.Dimension;
-  end Chip_Size;
+  end Chip_Dimension;
 
 
   function Chip_Binning return Units.Chip_Binning is
@@ -691,6 +692,29 @@ package body Stellarium is
   begin
     return Client.Get.Telescope.Focal_Length;
   end Telescope_Focal_Length;
+
+
+  function Picture_Field_Of_View return Units.Picture_Field is
+
+    Data : constant Client.Data := Client.Get;
+
+    use type Angle.Degrees;
+
+    Focal_Length : constant Units.Focal_Length := Data.Telescope.Focal_Length;
+    Multiplier   : constant Units.Lens_Multiplier := Data.Lens.Multiplier;
+    Effective_FL : constant Astro.REAL := Astro.REAL(Focal_Length) * Astro.REAL(Multiplier);
+    Dimension    : constant Units.Chip_Dimension := Data.Camera.Dimension;
+
+    function View_Angle (Chip_Size : Units.Chip_Size) return Angle.Degrees is
+      use Astro.MATLIB;
+    begin
+      return 2.0 * ATN2 ( Astro.REAL(Chip_Size), 2.0 * Effective_FL);
+    end View_Angle;
+
+  begin -- Picture_Field_Of_View
+    return (Height => View_Angle (Dimension.Y),
+            Width  => View_Angle (Dimension.X));
+  end Picture_Field_Of_View;
 
 begin
   Read_Location;

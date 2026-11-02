@@ -144,9 +144,7 @@ package body Parameter is
       Put ("");
       Focus.Parameter.Defaults (Put'access);
       Put ("");
-      Picture.Parameter.Defaults (Put'access,
-                                  Height => (if Site.Location = Cdk_West then "0.311" else "0.44"),
-                                  Width  => (if Site.Location = Cdk_West then "0.448" else "0.66"));
+      Picture.Parameter.Defaults (Put'access);
       Put ("");
       Satellite.Parameter.Defaults (Put'access);
       Put ("");

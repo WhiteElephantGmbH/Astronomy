@@ -49,7 +49,7 @@ begin
     Stellarium.Set_Camera (Units.Canon_Eos_6D);
     IO.Put_Line ("Camera Name: " & Stellarium.Camera_Name);
     IO.Put_Line ("Chip Resolution: " & Stellarium.Chip_Resolution'image);
-    IO.Put_Line ("Chip Size: " & Stellarium.Chip_Size'image);
+    IO.Put_Line ("Chip Dimension: " & Stellarium.Chip_Dimension'image);
     IO.Put_Line ("Chip Binning: " & Stellarium.Chip_Binning'image);
     IO.Put_Line ("Pixel Size:" & Stellarium.Pixel_Size'image);
   exception

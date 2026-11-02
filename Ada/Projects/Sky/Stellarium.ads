@@ -71,7 +71,7 @@ package Stellarium is
 
   function Chip_Resolution return Units.Chip_Resolution;
 
-  function Chip_Size return Units.Chip_Dimension;
+  function Chip_Dimension return Units.Chip_Dimension;
 
   function Chip_Binning return Units.Chip_Binning;
 
@@ -95,6 +95,8 @@ package Stellarium is
   -- raises not found if telescope not in list
 
   function Telescope_Focal_Length return Units.Focal_Length;
+
+  function Picture_Field_Of_View return Units.Picture_Field;
 
   Not_Found        : exception;
   Operation_Failed : exception;

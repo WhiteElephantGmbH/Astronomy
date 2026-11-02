@@ -67,7 +67,12 @@ package Units is
     Y : Chip_Size;
   end record;
 
-  subtype Field_Of_View is Angle.Degrees range 0.1 .. 180.0;
+  subtype Field_Of_View is Angle.Degrees range 0.001 .. 180.0;
+
+  type Picture_Field is record
+    Width  : Field_Of_View;
+    Height : Field_Of_View;
+  end record;
 
   Rotation_Delta : constant := 0.000_001;
   type Rotation is delta Rotation_Delta range -360.0 .. 360.0 with Small => Rotation_Delta;

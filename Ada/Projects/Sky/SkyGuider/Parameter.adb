@@ -98,7 +98,7 @@ package body Parameter is
         Error.Raise_With ("Incorrect M-Zero IP Address: " & IP_Address_Image);
       end;
       begin
-        The_M_Zero_Port := Network.Port_Number (Section.Value_Of (Port_Key));
+        The_M_Zero_Port := Network.Port_Number(Integer'(Section.Value_Of (Port_Key)));
         Log.Write ("M-Zero Port:" & The_M_Zero_Port'img);
       exception
       when others =>

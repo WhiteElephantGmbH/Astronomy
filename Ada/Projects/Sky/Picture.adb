@@ -21,24 +21,19 @@ with Camera;
 with File;
 with Fits;
 with Picture.Feeder;
+with Stellarium;
 with Site;
 with Text;
 
 package body Picture is
 
   The_Filename : Text.String;
-  The_Height   : Angle.Degrees;
-  The_Width    : Angle.Degrees;
 
 
-  procedure Define (Default_Name : String;
-                    Height       : Angle.Degrees;
-                    Width        : Angle.Degrees) is
+  procedure Define (Default_Name : String) is
   begin
     Log.Write ("Define Filename: " & Default_Name);
     The_Filename := [Default_Name];
-    The_Height := Height;
-    The_Width := Width;
   end Define;
 
 
@@ -178,6 +173,8 @@ package body Picture is
 
   function Solve (Search_From : Space.Direction) return Boolean is
 
+    Picture_View : constant Units.Picture_Field := Stellarium.Picture_Field_Of_View;
+
     Actual_Height : Angle.Degrees;
 
     use type Angle.Value;
@@ -190,9 +187,9 @@ package body Picture is
       Log.Write ("Use Fits information");
       Fits_Header_Read := True;
       if Fits.Is_Landscape then
-        Actual_Height := The_Height;
+        Actual_Height := Picture_View.Height;
       else
-        Actual_Height := The_Width;
+        Actual_Height := Picture_View.Width;
       end if;
     else -- no fits type file -> try exif
       Log.Write ("Use Exif information");
@@ -205,9 +202,9 @@ package body Picture is
         Log.Error ("Image size undefined");
         raise Not_Solved;
       elsif Exif.Image_Height < Exif.Image_Width then
-        Actual_Height := The_Height;
+        Actual_Height := Picture_View.Height;
       else
-        Actual_Height := The_Width;
+        Actual_Height := Picture_View.Width;
       end if;
     end if;
     Astap.Solve (Filename => Filename,
@@ -432,7 +429,7 @@ package body Picture is
   function Taking_Exposure return Exposure.Item is (The_Exposure);
 
   function Taking_Sensitivity return Sensitivity.Item is (The_Sensitivity);
-  
+
   function Processing_Enabled return Boolean is (Processing_Is_Enabled);
 
 end Picture;

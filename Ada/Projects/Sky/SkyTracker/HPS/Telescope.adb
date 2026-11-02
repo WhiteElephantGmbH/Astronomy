@@ -390,8 +390,16 @@ package body Telescope is
     end Get_Information;
 
 
+    procedure Define_Camera is
+    begin
+      Camera.Detect_Model;
+      Stellarium.Set_Camera (Camera.Actual_Model);
+    end Define_Camera;
+
+
     function Solve_Picture return Boolean is
     begin
+      Define_Camera;
       if not Picture.Solve (Actual_Target_Direction) then
         Log.Warning ("solve picture not started");
         return False;
@@ -655,7 +663,7 @@ package body Telescope is
         or
           accept Go_To do
             Alignment.Clear;
-            Camera.Detect_Model;
+            Define_Camera;
             Set_Tracking_Rates;
             Ten_Micron.Slew_To (Actual_Target_Direction, Target_Kind);
             if Name.Is_Known (Next_Id) then
@@ -685,7 +693,7 @@ package body Telescope is
         or
           accept View do
             begin
-              Stellarium.Set_Camera (Camera.Actual_Model);
+              Define_Camera;
               Picture.Start_Taking_Lights (Next_Id, Actual_Target_Direction);
               The_Mode := Acquiring;
               Is_Preparing_For_Capture := True;
@@ -699,7 +707,7 @@ package body Telescope is
         or
           accept Take_Darks do
             begin
-              Stellarium.Set_Camera (Camera.Actual_Model);
+              Define_Camera;
               Picture.Start_Taking_Darks (Next_Id, Actual_Target_Direction);
               The_Mode := Taking_Darks;
               Is_Preparing_For_Capture := True;
@@ -728,6 +736,7 @@ package body Telescope is
           end Start_Auto_Focus;
         or
           accept Stop do
+            Define_Camera;
             Remote.Define (Target => "");
             case The_Information.Status is
             when Solving =>
@@ -744,7 +753,7 @@ package body Telescope is
            end Stop;
         or
           accept Unpark do
-            Camera.Detect_Model;
+            Define_Camera;
             Remote.Define (Target => "");
             Ten_Micron.Unpark;
             Update_Time_And_Weather_Data;

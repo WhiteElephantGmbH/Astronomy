@@ -78,7 +78,7 @@ package body Parameter is
       Put ("");
       Focus.Parameter.Defaults (Put'access);
       Put ("");
-      Picture.Parameter.Defaults (Put'access, Height => "0.51", Width => "0.74");
+      Picture.Parameter.Defaults (Put'access);
       Put ("");
       Alignment.Parameter.Defaults (Put'access);
       Put ("");
