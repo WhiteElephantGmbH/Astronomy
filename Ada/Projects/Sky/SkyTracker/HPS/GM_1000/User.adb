@@ -207,12 +207,6 @@ package body User is
   end Perform_Goto;
 
 
-  procedure Perform_Goto_Next is
-  begin
-    Signal_Action (Go_To_Next);
-  end Perform_Goto_Next;
-
-
   procedure Perform_View is
   begin
     Signal_Action (View);
@@ -228,7 +222,7 @@ package body User is
       Signal_Action (Auto_Focus_Start);
       Is_Focusing := True;
     when Build_Pointing_Model =>
-      Signal_Action (Go_To_Next);
+      Signal_Action (Start_New_Model);
       Is_Focusing := False;
     when Take_Darks =>
       Signal_Action (Take_Darks);

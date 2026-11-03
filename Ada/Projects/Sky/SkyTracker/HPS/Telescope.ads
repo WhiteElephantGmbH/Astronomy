@@ -67,7 +67,7 @@ package Telescope is
 
   procedure Go_To;
 
-  procedure Go_To_Next;
+  procedure Start_New_Model;
 
   procedure View;
 

@@ -48,7 +48,7 @@ package body Control is
                    Define_Target,
                    Align,
                    Go_To,
-                   Go_To_Next,
+                   Start_New_Model,
                    View,
                    Take_Darks,
                    Park,
@@ -179,8 +179,8 @@ package body Control is
           The_Command := Align;
         when User.Go_To =>
           The_Command := Go_To;
-        when User.Go_To_Next =>
-          The_Command := Go_To_Next;
+        when User.Start_New_Model =>
+          The_Command := Start_New_Model;
         when User.View =>
           The_Command := View;
         when User.Take_Darks =>
@@ -384,8 +384,8 @@ package body Control is
         Telescope.Align;
       when Go_To =>
         Telescope.Go_To;
-      when Go_To_Next =>
-        Telescope.Go_To_Next;
+      when Start_New_Model =>
+        Telescope.Start_New_Model;
       when View =>
         Telescope.View;
       when Take_Darks =>

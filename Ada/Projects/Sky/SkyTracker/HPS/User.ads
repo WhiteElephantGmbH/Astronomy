@@ -22,7 +22,7 @@ with Telescope;
 package User is
 
   type Action is (Define_Catalog, Define_Target, Update,
-                  Go_To, View, Auto_Focus_Start, Go_To_Next, Align, Take_Darks, Park, Stop, Unpark,
+                  Go_To, View, Auto_Focus_Start, Start_New_Model, Align, Take_Darks, Park, Stop, Unpark,
                   Close);
 
   subtype Command_Action is Action range Go_To .. Close;
@@ -50,8 +50,6 @@ package User is
                      The_Termination_Handler : not null access procedure);
 
   procedure Perform_Goto;
-
-  procedure Perform_Goto_Next;
 
   procedure Perform_Stop;
 

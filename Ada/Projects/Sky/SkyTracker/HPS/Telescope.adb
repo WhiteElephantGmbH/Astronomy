@@ -52,7 +52,7 @@ package body Telescope is
 
     entry Go_To;
 
-    entry Go_To_Next;
+    entry Start_New_Model;
 
     entry View;
 
@@ -143,10 +143,10 @@ package body Telescope is
   end Go_To;
 
 
-  procedure Go_To_Next is
+  procedure Start_New_Model is
   begin
-    Control.Go_To_Next;
-  end Go_To_Next;
+    Control.Start_New_Model;
+  end Start_New_Model;
 
 
   procedure View is
@@ -389,14 +389,40 @@ package body Telescope is
       if The_Information.Status /= Disconnected and then User.In_Setup_Mode then
         Alignment.Update_Info;
       end if;
+      if not Camera.Available then
+        Camera.Detect_Model;
+      end if;
     end Get_Information;
 
 
-    procedure Define_Camera is
+    procedure Perform_Stop is
+    begin
+      User.Perform_Stop;
+    end Perform_Stop;
+
+
+    procedure Show_Error_And_Stop (Message : String) is
+    begin
+      User.Show_Error (Message);
+      Perform_Stop;
+    end Show_Error_And_Stop;
+
+
+    function Defined_Camera return Boolean is
     begin
       Camera.Detect_Model;
-      Stellarium.Set_Camera (Camera.Actual_Model);
-    end Define_Camera;
+      if Camera.Available then
+        Stellarium.Set_Camera (Camera.Actual_Model);
+        return True;
+      else
+        Show_Error_And_Stop ("Camera not available.");
+        return False;
+      end if;
+    exception
+    when Stellarium.Not_Found =>
+      Show_Error_And_Stop ("Camera " & Camera.Model_Image & " not defined in Stellarium.");
+      return False;
+    end Defined_Camera;
 
 
     function Solve_Picture return Boolean is
@@ -440,24 +466,16 @@ package body Telescope is
     end Set_Sideral_Rates;
 
 
-    procedure Error_Camera_Not_Defined is
-    begin
-      User.Show_Error ("Camera " & Camera.Model_Image & "not defined in Stellarium.");
-    end Error_Camera_Not_Defined;
-
-
     procedure Error_Processor_Not_Connected is
     begin
-      User.Show_Error ("Picture processor not connected.");
       Picture.Stop_Taking;
-      User.Perform_Stop;
+      Show_Error_And_Stop ("Picture processor not connected.");
     end Error_Processor_Not_Connected;
 
 
     procedure Error_Not_Solved is
     begin
-      User.Show_Error ("Picture not solved.");
-      User.Perform_Stop;
+      Show_Error_And_Stop ("Picture not solved.");
     end Error_Not_Solved;
 
 
@@ -480,9 +498,7 @@ package body Telescope is
         use type Camera.Status;
       begin
         if Camera.Actual_Information.State = Camera.Failed then
-          User.Show_Error (Camera.Error_Message);
-          User.Perform_Stop;
-          The_Mode := Normal;
+          Show_Error_And_Stop (Camera.Error_Message);
         end if;
       end Check_Camera_Error;
 
@@ -522,8 +538,6 @@ package body Telescope is
             exception
             when Picture.Processor_Not_Connected =>
               Error_Processor_Not_Connected;
-            when Stellarium.Not_Found =>
-              Error_Camera_Not_Defined;
             end;
           when Capture =>
             Ten_Micron.Start_Capturing;
@@ -639,7 +653,7 @@ package body Telescope is
                                 Lmst      => The_Picture_Lmst,
                                 Pier_Side => The_Information.Pier_Side);
               if Alignment.Align_More then
-                User.Perform_Goto_Next;
+                User.Perform_Goto;
               else
                 User.Perform_Stop;
               end if;
@@ -649,7 +663,7 @@ package body Telescope is
             Ten_Micron.End_Solving;
             The_Phase := Capture;
             if User.In_Setup_Mode then
-              User.Perform_Goto_Next;
+              User.Perform_Goto;
             end if;
           end;
         when others =>
@@ -694,6 +708,19 @@ package body Telescope is
       end case;
     end Set_Tracking_Rates;
 
+    procedure Goto_Next_Model_Star is
+    begin
+      The_Picture_Direction := Space.Unknown_Direction;
+      The_Next_Star := Alignment.Next_Star;
+      Set_Sideral_Rates;
+      if Space.Direction_Is_Known (The_Next_Star) then
+        The_Phase := Capture;
+        Ten_Micron.Slew_To (The_Next_Star);
+      else
+        Ten_Micron.Stop;
+      end if;
+    end Goto_Next_Model_Star;
+
   begin -- Control_Task
     if Focuser_Client.Server_Exists then
       Focuser_Client.Initialize;
@@ -711,58 +738,53 @@ package body Telescope is
           end Align;
         or
           accept Go_To do
-            Alignment.Clear;
-            Define_Camera;
-            Set_Tracking_Rates;
-            Ten_Micron.Slew_To (Actual_Target_Direction, Target_Kind);
-            if Name.Is_Known (Next_Id) then
-              case Name.Kind_Of (Next_Id) is
-              when Name.Axis_Position =>
+            case The_Mode is
+            when Normal =>
+              Set_Tracking_Rates;
+              Ten_Micron.Slew_To (Actual_Target_Direction, Target_Kind);
+              if Name.Is_Known (Next_Id) then
+                case Name.Kind_Of (Next_Id) is
+                when Name.Axis_Position =>
+                  Remote.Define (Target => "");
+                when others =>
+                  Remote.Define (Target => Name.Image_Of (Next_Id));
+                end case;
+              else
                 Remote.Define (Target => "");
-              when others =>
-                Remote.Define (Target => Name.Image_Of (Next_Id));
-              end case;
-            else
-              Remote.Define (Target => "");
-            end if;
+              end if;
+            when Building_Pointing_Model =>
+              Goto_Next_Model_Star;
+            when others =>
+              null;
+            end case;
           end Go_To;
         or
-          accept Go_To_Next do
-            The_Picture_Direction := Space.Unknown_Direction;
-            The_Next_Star := Alignment.Next_Star;
-            Set_Sideral_Rates;
-            if Space.Direction_Is_Known (The_Next_Star) then
+          accept Start_New_Model do
+            if Defined_Camera then
               The_Mode := Building_Pointing_Model;
-              The_Phase := Capture;
-              Ten_Micron.Slew_To (The_Next_Star);
-            else
-              Ten_Micron.Stop;
+              Alignment.Clear;
+              Goto_Next_Model_Star;
             end if;
-          end Go_To_Next;
+          end Start_New_Model;
         or
           accept View do
-            begin
-              Define_Camera;
+            if Defined_Camera then
               The_Mode := Acquiring;
               The_Phase := First_Capture;
-            exception
-            when Stellarium.Not_Found =>
-              Error_Camera_Not_Defined;
-            end;
+            end if;
           end View;
         or
           accept Take_Darks do
-            begin
-              Define_Camera;
-              Picture.Start_Taking_Darks (Next_Id, Actual_Target_Direction);
-              The_Mode := Taking_Darks;
-              The_Phase := Capture;
-            exception
-            when Picture.Processor_Not_Connected =>
-              Error_Processor_Not_Connected;
-            when Stellarium.Not_Found =>
-              Error_Camera_Not_Defined;
-            end;
+            if Defined_Camera then
+              begin
+                Picture.Start_Taking_Darks (Next_Id, Actual_Target_Direction);
+                The_Mode := Taking_Darks;
+                The_Phase := Capture;
+              exception
+              when Picture.Processor_Not_Connected =>
+                Error_Processor_Not_Connected;
+              end;
+            end if;
           end Take_Darks;
         or
           accept Prepare_Tle do
@@ -782,7 +804,6 @@ package body Telescope is
           end Start_Auto_Focus;
         or
           accept Stop do
-            Define_Camera;
             Remote.Define (Target => "");
             case The_Information.Status is
             when Solving =>
@@ -796,6 +817,7 @@ package body Telescope is
             end case;
             Set_Sideral_Rates;
             Ten_Micron.Stop;
+            The_Mode := Normal;
            end Stop;
         or
           accept Unpark do
