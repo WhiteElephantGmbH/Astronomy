@@ -58,6 +58,9 @@ package Picture is
   function Direction return Space.Direction;
   -- returns the center of the picture in J2000 coordinates.
 
+  function Rotation return Units.Rotation;
+  -- returns the rotation of the picture.
+
   procedure Evaluate (Center : out Space.Direction;
                       Lmst   : out Time.Value);
   -- PRECONDITION: The site must be defined (persistent type in package Site) or the camera must provide the location.
@@ -92,8 +95,8 @@ private
   Id : constant String := "Picture";
 
   package Log is new Traces (Id);
-  
-  subtype Darks_Count is Units.Picture_Number range 1 .. 99; 
+
+  subtype Darks_Count is Units.Picture_Number range 1 .. 99;
 
   Processing_Is_Enabled : Boolean := False;
   The_Processor_Address : Network.Ip_Address;

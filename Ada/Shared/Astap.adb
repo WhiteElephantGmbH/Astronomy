@@ -15,6 +15,7 @@
 -- *********************************************************************************************************************
 pragma Style_Astronomy;
 
+with Astro;
 with Configuration;
 with File;
 with Os.Process;
@@ -31,6 +32,8 @@ package body Astap is
   The_Process_Id : Os.Process.Id;
 
   Is_Solving : Boolean := False;
+
+  Undefined : constant Angle.Degrees := Angle.Degrees'last;
 
 
   procedure Terminate_Process is
@@ -139,14 +142,42 @@ package body Astap is
 
   function Solved (The_Ra  : out Angle.Degrees;
                    The_Dec : out Angle.Degrees) return Boolean is
-    CRVAL : Location;
-    Unused_CD : Matrix;
+    CRVAL       : Location;
+    Unused_CD   : Matrix;
     Unused_Size : Pixels;
-    Result : constant Boolean := Solved (CRVAL, Unused_CD, Unused_Size);
   begin
-    The_Ra := CRVAL(Ra);
-    The_Dec := CRVAL(Dec);
-    return Result;
+    if Solved (CRVAL, Unused_CD, Unused_Size) then
+      The_Ra := CRVAL(Ra);
+      The_Dec := CRVAL(Dec);
+      return True;
+    else
+      The_Ra := Undefined;
+      The_Dec := Undefined;
+      return False;
+    end if;
+  end Solved;
+
+
+  function Solved (The_Ra  : out Angle.Degrees;
+                   The_Dec : out Angle.Degrees;
+                   The_Rot : out Units.Rotation) return Boolean is
+    CRVAL       : Location;
+    CD          : Matrix;
+    Unused_Size : Pixels;
+    use Astro.MATLIB;
+    use type Angle.Degrees;
+  begin
+    if Solved (CRVAL, CD, Unused_Size) then
+      The_Ra := CRVAL(Ra);
+      The_Dec := CRVAL(Dec);
+      The_Rot := Units.Rotation(ATN2 (-CD(1,2), CD(2,2)));
+      return True;
+    else
+      The_Ra := Undefined;
+      The_Dec := Undefined;
+      The_Rot := 0.0;
+      return False;
+    end if;
   end Solved;
 
 

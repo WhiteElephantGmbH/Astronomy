@@ -206,6 +206,7 @@ package body Picture is
       else
         Actual_Height := Picture_View.Width;
       end if;
+      Log.Write ("Exif - Actual_Height:" & Actual_Height'image);
     end if;
     Astap.Solve (Filename => Filename,
                  Height   => Actual_Height,
@@ -224,11 +225,12 @@ package body Picture is
 
   The_Ra    : Angle.Degrees;
   The_Dec   : Angle.Degrees;
+  The_Rot   : Units.Rotation;
   Is_Solved : Boolean := False;
 
   function Solved return Boolean is
   begin
-    Is_Solved := Astap.Solved (The_Ra, The_Dec);
+    Is_Solved := Astap.Solved (The_Ra, The_Dec, The_Rot);
     if Is_Solved then
       Is_Solving := False;
       File.Delete (Filename);
@@ -334,10 +336,20 @@ package body Picture is
   end Direction;
 
 
+  function Rotation return Units.Rotation is
+    use type Units.Rotation;
+  begin
+    if not Is_Solved then
+      raise Undefined_Value;
+    end if;
+    return The_Rot + 180.0;
+  end Rotation;
+
+
   use Astro;
 
-  procedure Evaluate_Actual (Ra   : out REAL;
-                             Dec  : out REAL;
+  procedure Evaluate_Actual (Ra   : out Angle.Degrees;
+                             Dec  : out Angle.Degrees;
                              Lmst : out Time.Value) is
     use Astro.PNULIB;
     use Astro.SPHLIB;
@@ -362,8 +374,8 @@ package body Picture is
       T := Time.Tut;
       Lmst := Time.Lmst;
     end;
-    Ra := REAL(The_Ra);
-    Dec := REAL(The_Dec);
+    Ra := The_Ra;
+    Dec := The_Dec;
     PN_MATRIX (Time.T_J2000, T, Pn_Mat);
     ABERRAT (T, Ve);
     APPARENT (Pn_Mat, Ve, Ra, Dec);

@@ -62,8 +62,6 @@ package User is
   procedure Update_Targets;
   -- PRECONDITION: Targets defined
 
-  procedure Enable_Align_On_Picture;
-
   function Window_Minimized return Boolean;
 
   function In_Setup_Mode return Boolean;

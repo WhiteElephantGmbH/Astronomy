@@ -138,7 +138,7 @@ private
     Multiplier : Units.Lens_Multiplier;
   end record;
 
-  No_Lens_Data : constant Lens_Data := ([], Units.Lens_Multiplier'last);
+  No_Lens_Data : constant Lens_Data := ([], Multiplier => 1.0);
 
   function Lens (Index : Property_Id) return Lens_Data;
 

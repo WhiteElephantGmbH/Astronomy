@@ -110,10 +110,9 @@ package body User is
   The_Target_Selection  : Target_Selection := No_Target;
   Last_Target_Selection : Target_Selection := Target_Object;
 
-  The_Alignment_Points        : Natural := 0;
-  Alignment_Is_Ready          : Boolean := False;
-  Align_Change                : Boolean := False;
-  Align_On_Picture_Is_Enabled : Boolean := False;
+  The_Alignment_Points : Natural := 0;
+  Alignment_Is_Ready   : Boolean := False;
+  Align_Change         : Boolean := False;
 
   The_Setup_Command    : Setup_Command;
   Setup_Command_Change : Boolean := False;
@@ -199,7 +198,6 @@ package body User is
   begin
     Signal_Action (Align);
     Setup_Command_Is_Active := False;
-    Align_On_Picture_Is_Enabled := False;
   end Perform_Align;
 
 
@@ -434,14 +432,12 @@ package body User is
     begin -- Define_Control_Buttons
       case Information.Status is
       when Disconnected | Error_State | Inhibited | Unparking =>
-        Align_On_Picture_Is_Enabled := False;
         Disable_Action;
         Disable_Control;
       when Parked =>
         Disable_Action;
         Enable_Control ("Unpark", Perform_Unpark'access);
       when Slewing | Parking | Homing | Following | Transit_State | Positioned =>
-        Align_On_Picture_Is_Enabled := False;
         Enable_Goto;
         Enable_Stop;
       when Stopped | Outside =>
@@ -458,11 +454,7 @@ package body User is
         when Acquiring | Taking_Darks =>
           Disable_Action;
         when Building_Pointing_Model =>
-          if Align_On_Picture_Is_Enabled then
-            Enable_Action ("Align", Perform_Align'access);
-          else
-            Enable_Goto;
-          end if;
+          Enable_Goto;
         end case;
         Enable_Stop;
       when Capturing | Focusing | Solving =>
@@ -1183,13 +1175,6 @@ package body User is
   begin -- Update_Targets
     Name.Update (The_Targets, Remove_Target'access, Insert_Target'access);
   end Update_Targets;
-
-
-  procedure Enable_Align_On_Picture is
-  begin
-    Align_On_Picture_Is_Enabled := True;
-    Align_Change := True;
-  end Enable_Align_On_Picture;
 
 
   function Window_Minimized return Boolean is (Gui.Application_Is_Minimized);

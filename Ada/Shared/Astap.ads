@@ -18,6 +18,7 @@ pragma Style_Astronomy;
 with Ada.Numerics.Generic_Real_Arrays;
 with Angle;
 with Text;
+with Units;
 
 package Astap is
 
@@ -45,6 +46,11 @@ package Astap is
 
   function Solved (The_Ra  : out Angle.Degrees;
                    The_Dec : out Angle.Degrees) return Boolean;
+  -- exception: Not_Solved if no sulution found
+
+  function Solved (The_Ra  : out Angle.Degrees;
+                   The_Dec : out Angle.Degrees;
+                   The_Rot : out Units.Rotation) return Boolean;
   -- exception: Not_Solved if no sulution found
 
   function Solved (CRVAL : out Location;
