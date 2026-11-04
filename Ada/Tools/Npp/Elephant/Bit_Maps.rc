@@ -1,0 +1,7 @@
+PromoteBmp       BITMAP Promote.Bmp
+PromoteAllBmp    BITMAP PromoteAll.Bmp
+RunBmp           BITMAP Run.Bmp
+ShowReferenceBmp BITMAP ShowReference.Bmp
+UndoReferenceBmp BITMAP UndoReference.Bmp
+ShowUsageBmp     BITMAP ShowUsage.Bmp
+ShowUnusedBmp    BITMAP ShowUnused.Bmp
