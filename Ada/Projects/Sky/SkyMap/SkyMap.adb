@@ -18,6 +18,7 @@ pragma Style_Astronomy;
 pragma Build (Description => "Sky Map Generator",
               Version     => (1, 2, 0, 7),
               Kind        => Windows,
+              Libraries   => ("AWS", "GNATCOLL"),
               Compiler    => "GNAT\14.2");
 
 with Generator;

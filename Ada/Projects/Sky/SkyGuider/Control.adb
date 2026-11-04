@@ -91,7 +91,7 @@ package body Control is
     if The_Target = Name.No_Id then
       Action_Handler.Put_Goto (The_Direction);
     else
-      User.Set (The_Target);
+      User.Go_To (The_Target);
     end if;
   end Goto_Handler;
 
@@ -465,7 +465,8 @@ package body Control is
       Telescope.Start (Information_Update_Handler'access);
       Targets.Start (Clear  => User.Clear_Targets'access,
                      Define => User.Define'access,
-                     Update => User.Update_Targets'access);
+                     Update => User.Update_Targets'access,
+                     Show   => User.Show'access);
       User.Execute (Startup'access,
                     User_Action_Handler'access,
                     Termination'access);

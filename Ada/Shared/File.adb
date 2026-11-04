@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2015 .. 2025 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2015 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -68,6 +68,44 @@ package body File is
   begin
     return String(Directory) & The_Folder_Separator & Filename_With_Extension;
   end Composure;
+
+
+  function Name_Of (Name      : String;
+                    Extension : String) return String is
+  begin
+    begin
+      if Extension_Of (Name) = "" then
+        return Name & Extension;
+      end if;
+    exception
+    when others =>
+      null;
+    end;
+    return Name;
+  end Name_Of;
+
+
+  function Full_Name_Of (Name_Or_Directory : String;
+                         Current_Directory : String) return String is
+  begin
+    if Name_Or_Directory'length > 2 and then Name_Or_Directory(Name_Or_Directory'first + 1) = ':' then
+      return Ada.Directories.Full_Name (Name_Or_Directory);
+    end if;
+    return Ada.Directories.Full_Name (Current_Directory & '/' & Name_Or_Directory);
+  end Full_Name_Of;
+
+
+  function Is_Legal (Name_Or_Directory : String) return Boolean is
+  begin
+    declare
+      Unused : constant String := Ada.Directories.Full_Name (Name_Or_Directory);
+    begin
+      return True;
+    end;
+  exception
+  when others =>
+    return False;
+  end Is_Legal;
 
 
   function Exists (Name : String) return Boolean is

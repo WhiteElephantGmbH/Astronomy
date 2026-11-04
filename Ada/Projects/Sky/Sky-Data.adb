@@ -66,13 +66,13 @@ package body Sky.Data is
 
 
   function Find_Element (From_Direction : Space.Direction;
-                         With_Tolerance : Space.Distance) return Element is
-
+                         With_Tolerance : Space.Distance;
+                         Is_Jear_2000   : Boolean := False) return Element is
     The_Object   : Index;
     The_Distance : Space.Distance;
 
     function Found return Boolean is
-      The_Direction : constant Space.Direction := Direction_Of (The_Object, Time.Universal);
+      The_Direction : constant Space.Direction := Direction_Of (The_Object, Time.Universal, Is_Jear_2000);
     begin
       The_Distance := Space.Angle_Between (From_Direction, The_Direction);
       if The_Distance <= With_Tolerance then
@@ -104,6 +104,8 @@ package body Sky.Data is
     use type Angle.Value;
 
   begin -- Find_Element
+    Log.Write ("Find_Element - Direction : " & Space.Image_Of (From_Direction));
+    Log.Write ("             - Tollerance:" & With_Tolerance'image);
     The_Object := Start_Object;
     Search:
     loop

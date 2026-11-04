@@ -1,0 +1,45 @@
+-- *********************************************************************************************************************
+-- *                           (c) 2026 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                                               www.white-elephant.ch                                               *
+-- *                                                                                                                   *
+-- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
+-- *    Public License as published by the Free Software Foundation; either version 2 of the License, or               *
+-- *    (at your option) any later version.                                                                            *
+-- *                                                                                                                   *
+-- *    This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the     *
+-- *    implied warranty of MERCHANTABILITY or FITNESS for A PARTICULAR PURPOSE. See the GNU General Public License    *
+-- *    for more details.                                                                                              *
+-- *                                                                                                                   *
+-- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
+-- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
+-- *********************************************************************************************************************
+pragma Style_Astronomy;
+
+private package Stellarium.Client is
+
+  type Data is record
+    Rotation  : Units.Rotation;
+    Camera    : Camera_Data;
+    Ocular    : Ocular_Data;
+    Lens      : Lens_Data;
+    Telescope : Telescope_Data;
+  end record;
+
+  function Get_Target return Target_Data;
+
+  procedure Set_Focus_To (Target_Name : String;
+                          Mode        : Focus_Mode);
+
+  function Get return Data;
+
+  procedure Set_Rotation (Value : Units.Rotation);
+
+  procedure Set_CCD (Index : Property_Id);
+
+  procedure Set_Lens (Index : Property_Index);
+
+  procedure Set_Ocular (Index : Property_Id);
+
+  procedure Set_Telescope (Index : Property_Id);
+
+end Stellarium.Client;

@@ -481,6 +481,7 @@ package body Camera.Canon is
     function One_Device_Is_Ready return Boolean is
       Dummy_Result : CI.Result;
       Count : aliased CI.Uint32;
+      Not_Ready : exception;
       use type CI.Uint32;
     begin
       Camera_Data.Check (Idle);
@@ -488,8 +489,23 @@ package body Camera.Canon is
       Dummy_Result := CI.Get_Camera_List (The_Session.Device_List'access);
       Dummy_Result := CI.Get_Child_Count (The_Session.Device_List, Count'access);
       Log.Write ("Number of detected cameras:" & CI.Uint32'image (Count));
-      Release_Device_List_And_Terminate_SDK;
-      return Count = 1;
+      if Count = 1 then
+        Dummy_Result := CI.Get_Camera_At_Index (List       => The_Session.Device_List,
+                                                Index      => 0,
+                                                The_Camera => The_Session.Device'access);
+        Dummy_Result := CI.Get_Device_Info (From     => The_Session.Device,
+                                            The_Info => The_Session.Device_Info'access);
+        declare
+          Device_Description : constant String := C.Helper.String_Of (The_Session.Device_Info.Sz_Device_Description);
+        begin
+          Log.Write ("Camera description: " & Device_Description);
+          The_Camera := Model'value (Text.Identifier_Of (Device_Description));
+          Camera_Data.Set (The_Camera);
+          Release_Device_List_And_Terminate_SDK;
+          return True;
+        end;
+      end if;
+      raise Not_Ready;
     exception
     when others =>
       Release_Device_List_And_Terminate_SDK;
@@ -518,11 +534,11 @@ package body Camera.Canon is
       end if;
       Check ("Get camera at index 0",
              CI.Get_Camera_At_Index (List       => The_Session.Device_List,
-                                      Index      => 0,
-                                      The_Camera => The_Session.Device'access));
+                                     Index      => 0,
+                                     The_Camera => The_Session.Device'access));
       Check ("Get device information",
              CI.Get_Device_Info (From     => The_Session.Device,
-                                  The_Info => The_Session.Device_Info'access));
+                                 The_Info => The_Session.Device_Info'access));
       declare
         Device_Description : constant String := C.Helper.String_Of (The_Session.Device_Info.Sz_Device_Description);
       begin

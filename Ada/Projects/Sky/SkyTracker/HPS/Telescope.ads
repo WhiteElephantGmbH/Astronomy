@@ -24,6 +24,8 @@ with Time;
 
 package Telescope is
 
+  type Operation_Mode is (Normal, Building_Pointing_Model, Taking_Darks, Acquiring);
+
   subtype State is Ten_Micron.State;
 
   subtype Error_State is Ten_Micron.Error_State;
@@ -38,6 +40,8 @@ package Telescope is
 
   type Data is record
     Status             : State := Disconnected;
+    Mode               : Operation_Mode := Normal;
+    Processing_Enabled : Boolean := False;
     Target_Direction   : Space.Direction;
     Actual_Direction   : Space.Direction;
     Actual_Position    : Space.Direction;
@@ -63,7 +67,11 @@ package Telescope is
 
   procedure Go_To;
 
-  procedure Go_To_Next;
+  procedure Start_New_Model;
+
+  procedure View;
+
+  procedure Take_Darks;
 
   procedure Prepare_Tle;
 

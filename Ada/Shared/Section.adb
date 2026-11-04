@@ -180,8 +180,9 @@ package body Section is
   end Image_Of;
 
 
-  function Ip_Address_For (Name : String) return Network.Ip_Address is
-    Server      : constant String := String_Of (Ip_Address_Key, Name);
+  function Ip_Address_For (Id  : String;
+                           Key : String := Ip_Address_Key) return Network.Ip_Address is
+    Server      : constant String := String_Of (Key, Id);
     The_Address : Network.Ip_Address;
   begin
     begin
@@ -193,17 +194,18 @@ package body Section is
     return The_Address;
   exception
   when others =>
-    Error.Raise_With ("Incorrect " & Name & " IP address " & Server);
+    Error.Raise_With ("Incorrect " & Id & ' ' & Text.Legible_Of (Key) & ' ' & Server);
   end Ip_Address_For;
 
 
-  function Port_For (Name : String) return Network.Port_Number is
-    Value : constant Integer := Value_Of (Port_Key, Name);
+  function Port_For (Id  : String;
+                     Key : String := Port_Key) return Network.Port_Number is
+    Value : constant Integer := Value_Of (Key, Id);
   begin
     return Network.Port_Number (Value);
   exception
   when others =>
-    Error.Raise_With (Name & " port number" & Value'image & " out of range");
+    Error.Raise_With (Id & ' ' & Text.Legible_Of (Key) & Value'image & " out of range");
   end Port_For;
 
 
@@ -258,6 +260,18 @@ package body Section is
   exception
   when others =>
     Error.Raise_With ("Incorrect " & (if Name = "" then "" else Name & " ") & Key & ": <" & Item & ">");
+  end Value_Of;
+
+
+  function Value_Of (Key : String) return Boolean is
+    Item : constant String := Section.String_Value_Of (Key);
+  begin
+    if Text.Matches (Item, "True") then
+      return True;
+    elsif Text.Matches (Item, "False") then
+      return False;
+    end if;
+    Error.Raise_With ("Incorrect " & Key & ": <" & Item & "> (expected True or False)");
   end Value_Of;
 
 end Section;

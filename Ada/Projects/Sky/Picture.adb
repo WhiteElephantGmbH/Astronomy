@@ -20,39 +20,32 @@ with Astro;
 with Camera;
 with File;
 with Fits;
+with Picture.Feeder;
+with Stellarium;
 with Site;
 with Text;
-with Traces;
 
 package body Picture is
 
-  package Log is new Traces (Id);
-
   The_Filename : Text.String;
-  The_Height   : Angle.Degrees;
-  The_Width    : Angle.Degrees;
 
 
-  procedure Define (Name   : String;
-                    Height : Angle.Degrees;
-                    Width  : Angle.Degrees) is
+  procedure Define (Default_Name : String) is
   begin
-    Log.Write ("Define Filename: " & Name);
-    The_Filename := [Name];
-    The_Height := Height;
-    The_Width := Width;
+    Log.Write ("Define Filename: " & Default_Name);
+    The_Filename := [Default_Name];
   end Define;
 
 
   function Filename return String is
-    Name             : constant String := The_Filename.S;
-    Extension        : constant String := File.Extension_Of (Name);
+    Picture_Name     : constant String := The_Filename.S;
+    Extension        : constant String := File.Extension_Of (Picture_Name);
     Camera_Extension : constant String := Camera.File_Extension;
   begin
     if Extension = "" and Camera_Extension /= "" then
-      return Name & '.' & Camera.File_Extension;
+      return Picture_Name & '.' & Camera.File_Extension;
     end if;
-    return Name;
+    return Picture_Name;
   end Filename;
 
 
@@ -60,6 +53,12 @@ package body Picture is
   begin
     return File.Exists (Filename);
   end Exists;
+
+
+  procedure Delete is
+  begin
+    File.Delete (Filename);
+  end Delete;
 
 
   Value_Delta   : constant := 1.0 / 3600_000.0; -- millisecond
@@ -174,6 +173,8 @@ package body Picture is
 
   function Solve (Search_From : Space.Direction) return Boolean is
 
+    Picture_View : constant Units.Picture_Field := Stellarium.Picture_Field_Of_View;
+
     Actual_Height : Angle.Degrees;
 
     use type Angle.Value;
@@ -186,9 +187,9 @@ package body Picture is
       Log.Write ("Use Fits information");
       Fits_Header_Read := True;
       if Fits.Is_Landscape then
-        Actual_Height := The_Height;
+        Actual_Height := Picture_View.Height;
       else
-        Actual_Height := The_Width;
+        Actual_Height := Picture_View.Width;
       end if;
     else -- no fits type file -> try exif
       Log.Write ("Use Exif information");
@@ -201,10 +202,11 @@ package body Picture is
         Log.Error ("Image size undefined");
         raise Not_Solved;
       elsif Exif.Image_Height < Exif.Image_Width then
-        Actual_Height := The_Height;
+        Actual_Height := Picture_View.Height;
       else
-        Actual_Height := The_Width;
+        Actual_Height := Picture_View.Width;
       end if;
+      Log.Write ("Exif - Actual_Height:" & Actual_Height'image);
     end if;
     Astap.Solve (Filename => Filename,
                  Height   => Actual_Height,
@@ -223,11 +225,12 @@ package body Picture is
 
   The_Ra    : Angle.Degrees;
   The_Dec   : Angle.Degrees;
+  The_Rot   : Units.Rotation;
   Is_Solved : Boolean := False;
 
   function Solved return Boolean is
   begin
-    Is_Solved := Astap.Solved (The_Ra, The_Dec);
+    Is_Solved := Astap.Solved (The_Ra, The_Dec, The_Rot);
     if Is_Solved then
       Is_Solving := False;
       File.Delete (Filename);
@@ -333,10 +336,20 @@ package body Picture is
   end Direction;
 
 
+  function Rotation return Units.Rotation is
+    use type Units.Rotation;
+  begin
+    if not Is_Solved then
+      raise Undefined_Value;
+    end if;
+    return The_Rot + 180.0;
+  end Rotation;
+
+
   use Astro;
 
-  procedure Evaluate_Actual (Ra   : out REAL;
-                             Dec  : out REAL;
+  procedure Evaluate_Actual (Ra   : out Angle.Degrees;
+                             Dec  : out Angle.Degrees;
                              Lmst : out Time.Value) is
     use Astro.PNULIB;
     use Astro.SPHLIB;
@@ -361,8 +374,8 @@ package body Picture is
       T := Time.Tut;
       Lmst := Time.Lmst;
     end;
-    Ra := REAL(The_Ra);
-    Dec := REAL(The_Dec);
+    Ra := The_Ra;
+    Dec := The_Dec;
     PN_MATRIX (Time.T_J2000, T, Pn_Mat);
     ABERRAT (T, Ve);
     APPARENT (Pn_Mat, Ve, Ra, Dec);
@@ -411,5 +424,24 @@ package body Picture is
     return Earth.Direction_Of (Alt => +Alt,
                                Az  => Angle.Semi_Circle + Az);
   end Direction;
+
+
+  procedure Start_Taking_Darks (Target           : Name.Id;
+                                Target_Direction : Space.Direction) renames Feeder.New_Darks_Sequence;
+
+  function Taking_Next_Dark_Was_Last return Boolean renames Feeder.Send_Next_Dark_Was_Last;
+
+  procedure Start_Taking_Lights (Target           : Name.Id;
+                                 Target_Direction : Space.Direction) renames Feeder.New_Light_Sequence;
+
+  procedure Take_Next_Light renames Feeder.Send_Next_Light;
+
+  procedure Stop_Taking renames Feeder.Stop;
+
+  function Taking_Exposure return Exposure.Item is (The_Exposure);
+
+  function Taking_Sensitivity return Sensitivity.Item is (The_Sensitivity);
+
+  function Processing_Enabled return Boolean is (Processing_Is_Enabled);
 
 end Picture;

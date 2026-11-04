@@ -59,9 +59,11 @@ package Section is
   function Image_Of (Item : String;
                      Unit : String := "") return String;
 
-  function Ip_Address_For (Name : String) return Network.Ip_Address;
+  function Ip_Address_For (Id  : String;
+                           Key : String := Ip_Address_Key) return Network.Ip_Address;
 
-  function Port_For (Name : String) return Network.Port_Number;
+  function Port_For (Id  : String;
+                     Key : String := Port_Key) return Network.Port_Number;
 
   function Sensitivity_Of (Key  : String;
                            Name : String) return Sensitivity.Item;
@@ -75,5 +77,7 @@ package Section is
                      Name    : String  := "";
                      Minimum : Integer := Integer'first;
                      Maximum : Integer := Integer'last) return Integer;
+
+  function Value_Of (Key : String) return Boolean;
 
 end Section;

@@ -126,6 +126,8 @@ package Ten_Micron is
 
   procedure Start_Capturing;
 
+  procedure End_Capturing;
+
   procedure Start_Solving;
 
   procedure End_Solving;

@@ -59,6 +59,7 @@ package Targets is
   procedure Start (Clear    : access procedure;
                    Define   : access procedure (List : Name.Id_List_Access);
                    Update   : access procedure;
+                   Show     : access procedure (Target : Name.Id);
                    Arriving : Arriving_Handling := null);
 
   procedure Define_Catalog;
@@ -77,6 +78,8 @@ package Targets is
                      Target_Id     : out Name.Id);
 
   procedure Stop;
+
+  function Stellarium_Direction return Space.Direction;
 
   function J2000_Direction_Of (Id : Name.Id) return Space.Direction;
 

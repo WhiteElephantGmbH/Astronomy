@@ -265,9 +265,21 @@ package body Camera.QHYCCD is
 
     use type CI.Handle;
 
+    procedure Get_Camera_Name (Id_Buffer : C.Name)is
+      Id_Parts    : constant Text.Strings := Text.Strings_Of (C.Helper.String_Of (Id_Buffer), Separator => '-');
+      Camera_Name : constant String := Id_Parts (1);
+    begin
+      Log.Write ("Camera Name: " & Camera_Name);
+      The_Camera := Model'value(Camera_Name);
+    exception
+    when others =>
+      Raise_Error ("Unknown Camera " & Camera_Name);
+    end Get_Camera_Name;
+
 
     function One_Device_Is_Ready return Boolean is
-      Count : CI.Camera_Count;
+      Id_Buffer : aliased C.Name(1 .. 64) := [others => Ascii.Nul];
+      Count     : CI.Camera_Count;
       use type CI.Camera_Count;
     begin
       Camera_Data.Check (Idle);
@@ -275,7 +287,13 @@ package body Camera.QHYCCD is
       Count := CI.Scan;
       Log.Write ("Number detected cameras:" & Count'image);
       Check ("Release Resource", CI.Release_Resource);
-      return Count = 1;
+      if Count = 1 then
+        Check ("Get Id", CI.Get_Id (0, Id_Buffer'address));
+        Get_Camera_Name (Id_Buffer);
+        Camera_Data.Set (The_Camera);
+        return True;
+      end if;
+      return False;
     exception
     when others =>
       Disconnect;
@@ -308,16 +326,7 @@ package body Camera.QHYCCD is
       if Exposing.Handle = CI.No_Handle then
         Raise_Error ("Open failed");
       end if;
-      declare
-        Id_Parts    : constant Text.Strings := Text.Strings_Of (C.Helper.String_Of (Id_Buffer), Separator => '-');
-        Camera_Name : constant String := Id_Parts (1);
-      begin
-        Log.Write ("Camera Name: " & Camera_Name);
-        The_Camera := Model'value(Camera_Name);
-      exception
-      when others =>
-        Raise_Error ("Unknown Camera " & Camera_Name);
-      end;
+      Get_Camera_Name (Id_Buffer);
       Camera_Data.Set (The_Camera);
       Camera_Data.Set (Connected);
     end Start_Capture;

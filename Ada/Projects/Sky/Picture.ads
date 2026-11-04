@@ -19,8 +19,14 @@ with Angle;
 with Astap;
 with Earth;
 with Exif;
+with Name;
 with Space;
 with Time;
+with Units;
+with Exposure;
+with Sensitivity;
+private with Network;
+private with Traces;
 
 package Picture is
 
@@ -36,6 +42,8 @@ package Picture is
 
   function Exists return Boolean;
 
+  procedure Delete;
+
   procedure Set_Site;
 
   function Solve (Search_From : Space.Direction) return Boolean;
@@ -50,6 +58,9 @@ package Picture is
   function Direction return Space.Direction;
   -- returns the center of the picture in J2000 coordinates.
 
+  function Rotation return Units.Rotation;
+  -- returns the rotation of the picture.
+
   procedure Evaluate (Center : out Space.Direction;
                       Lmst   : out Time.Value);
   -- PRECONDITION: The site must be defined (persistent type in package Site) or the camera must provide the location.
@@ -59,12 +70,41 @@ package Picture is
   -- PRECONDITION: The site must be defined (persistent type in package Site) or the camera must provide the location.
   -- returns the center of the picture in alt/az coordinates.
 
+  procedure Start_Taking_Darks (Target           : Name.Id;
+                                Target_Direction : Space.Direction);
+
+  function Taking_Next_Dark_Was_Last return Boolean;
+
+  procedure Start_Taking_Lights (Target           : Name.Id;
+                                 Target_Direction : Space.Direction);
+
+  procedure Take_Next_Light;
+
+  procedure Stop_Taking;
+
+  function Taking_Exposure return Exposure.Item;
+
+  function Taking_Sensitivity return Sensitivity.Item;
+
+  function Processing_Enabled return Boolean;
+
+  Processor_Not_Connected : exception;
+
 private
 
   Id : constant String := "Picture";
 
-  procedure Define (Name   : String;
-                    Height : Angle.Degrees;
-                    Width  : Angle.Degrees);
+  package Log is new Traces (Id);
+
+  subtype Darks_Count is Units.Picture_Number range 1 .. 99;
+
+  Processing_Is_Enabled : Boolean := False;
+  The_Processor_Address : Network.Ip_Address;
+  The_Processor_Port    : Network.Port_Number;
+  The_Number_Of_Darks   : Darks_Count;
+  The_Exposure          : Exposure.Item;
+  The_Sensitivity       : Sensitivity.Item;
+
+  procedure Define (Default_Name : String);
 
 end Picture;
