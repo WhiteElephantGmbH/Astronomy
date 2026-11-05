@@ -113,4 +113,11 @@ package Units is
   function "&" (Left  : String;
                 Right : Tone) return String is (Left & Text.Trimmed(Right'image));
 
+-- types used in Stellarium
+
+  type Sun_Altitude is range -90 .. 90;
+
+  type Sun_Altitude_Range (Minimum, Maximum : Sun_Altitude) is null record
+  with Dynamic_Predicate => Minimum <= Maximum;
+
 end Units;

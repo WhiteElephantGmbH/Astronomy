@@ -117,12 +117,16 @@ package body Stellarium.Client is
 
   Api_Property : constant String := "/api/stelproperty/";
 
-  CCD_Rotation_Angle      : constant String := "Oculars.selectedCCDRotationAngle";
-  Oculars_CCD_Index       : constant String := "Oculars.selectedCCDIndex";
-  Oculars_Lens_Index      : constant String := "Oculars.selectedLensIndex";
-  Oculars_Ocular_Index    : constant String := "Oculars.selectedOcularIndex";
-  Oculars_Telescope_Index : constant String := "Oculars.selectedTelescopeIndex";
-
+  CCD_Rotation_Angle             : constant String := "Oculars.selectedCCDRotationAngle";
+  Oculars_CCD_Index              : constant String := "Oculars.selectedCCDIndex";
+  Oculars_Lens_Index             : constant String := "Oculars.selectedLensIndex";
+  Oculars_Ocular_Index           : constant String := "Oculars.selectedOcularIndex";
+  Oculars_Telescope_Index        : constant String := "Oculars.selectedTelescopeIndex";
+  Terminator_Min_Altitude        : constant String := "NomenclatureMgr.terminatorMinAltitude";
+  Terminator_Max_Altitude        : constant String := "NomenclatureMgr.terminatorMaxAltitude";
+  Flag_Show_Nomenclature         : constant String := "NomenclatureMgr.flagShowNomenclature";
+  Flag_Hide_Local_Nomenclature   : constant String := "NomenclatureMgr.flagHideLocalNomenclature";
+  Flag_Show_Terminator_Zone_Only : constant String := "NomenclatureMgr.flagShowTerminatorZoneOnly";
 
   function Get_Properties return JS.JSON_Value is
   begin
@@ -206,6 +210,12 @@ package body Stellarium.Client is
   end Set_Property;
 
 
+  procedure Set_Property (Id : String) is
+  begin
+    Set_Property (Id, "true");
+  end Set_Property;
+
+
   procedure Set_Rotation (Value : Units.Rotation) is
     Value_Image : constant String := Text.Trimmed (Value'image);
   begin
@@ -247,5 +257,18 @@ package body Stellarium.Client is
   begin
     Set_Index (Oculars_Telescope_Index, Index);
   end Set_Telescope;
+
+
+  procedure Set_Terminator (Value : Units.Sun_Altitude_Range) is
+    Minimum_Image : constant String := Text.Trimmed (Value.Minimum'image);
+    Maximum_Image : constant String := Text.Trimmed (Value.Maximum'image);
+  begin
+    Log.Write ("Set_Terminator: " & Minimum_Image & " .. " & Maximum_Image);
+    Set_Property (Flag_Show_Nomenclature);
+    Set_Property (Flag_Hide_Local_Nomenclature);
+    Set_Property (Flag_Show_Terminator_Zone_Only);
+    Set_Property (Terminator_Min_Altitude, Minimum_Image);
+    Set_Property (Terminator_Max_Altitude, Maximum_Image);
+  end Set_Terminator;
 
 end Stellarium.Client;

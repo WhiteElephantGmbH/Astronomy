@@ -42,6 +42,8 @@ package Stellarium is
 
   procedure Define_Handler (The_Handler : Goto_Handler);
 
+  procedure Set_For_Moon (Terminator : Units.Sun_Altitude_Range);
+
   procedure Set (Direction : Space.Direction);
 
   type Target_Data is record

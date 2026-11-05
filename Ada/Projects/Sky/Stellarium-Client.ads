@@ -42,4 +42,6 @@ private package Stellarium.Client is
 
   procedure Set_Telescope (Index : Property_Id);
 
+  procedure Set_Terminator (Value : Units.Sun_Altitude_Range);
+
 end Stellarium.Client;

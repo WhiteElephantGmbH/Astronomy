@@ -419,6 +419,9 @@ package body Stellarium is
   end Define_Handler;
 
 
+  procedure Set_For_Moon (Terminator : Units.Sun_Altitude_Range) renames Client.Set_Terminator;
+
+
   procedure Message_Handler (The_Message : Receive_Message) is
     use type Angle.Value;
   begin
