@@ -1918,7 +1918,8 @@ package body Ada_95.Token.Parser is
 
     -- simple_expression ::=
     --      [unary_adding_operator] term {binary_adding_operator term}
-    function Simple_Expression (Within : Data.Context) return Data_Handle;
+    function Simple_Expression (Within       : Data.Context;
+                                Discriminats : Data_Handle := null) return Data_Handle;
 
 
     -- simple_statement ::=
@@ -2979,6 +2980,8 @@ package body Ada_95.Token.Parser is
 
     function Expression (Within : Data.Context) return Data_Handle is
 
+      The_Discriminant_Record : Data_Handle := null;
+
       The_Type : Data_Handle;
 
       procedure Relation with Inline is
@@ -2991,7 +2994,7 @@ package body Ada_95.Token.Parser is
         if Element_Is (Lexical.Is_Raise) then
           The_Type := Raise_Expression (Within);
         else
-          The_Type := Simple_Expression (Within);
+          The_Type := Simple_Expression (Within, The_Discriminant_Record);
           case Token_Element is
           when Lexical.Equal
              | Lexical.Not_Equal
@@ -3002,15 +3005,15 @@ package body Ada_95.Token.Parser is
           =>
             Get_Next_Token;
             if The_Type = null then
-              The_Type := Simple_Expression (Within);
+              The_Type := Simple_Expression (Within, The_Discriminant_Record);
               if The_Type /= null then
                 End_Token := The_Token;
                 The_Token := Left_Token;
-                The_Type := Simple_Expression ((Within.Scope, The_Type));
+                The_Type := Simple_Expression ((Within.Scope, The_Type), The_Discriminant_Record);
                 The_Token := End_Token;
               end if;
             else
-              Dummy := Simple_Expression ((Within.Scope, The_Type));
+              Dummy := Simple_Expression ((Within.Scope, The_Type), The_Discriminant_Record);
             end if;
             The_Type := Data.Predefined_Boolean;
             return;
@@ -3034,6 +3037,14 @@ package body Ada_95.Token.Parser is
       end Relation;
 
     begin --Expression;
+      if Within.Sub_Type /= null and then Within.Sub_Type.all in Data.Record_Type'class then
+        if not Data.Record_Handle(Within.Sub_Type).Discriminants.Is_Empty then
+          The_Discriminant_Record := Within.Sub_Type;
+          --TEST----------------------------------------------------------------------------------
+          --Log.Write ("Discriminant record: " & Image_Of (The_Discriminant_Record.Location.all));
+          ----------------------------------------------------------------------------------------
+        end if;
+      end if;
       Was_Component := True;
       case Token_Element is
       when Lexical.Is_If =>
@@ -3149,7 +3160,8 @@ package body Ada_95.Token.Parser is
     --               new subtype_indication
     --             | new qualified_expression
     --
-    function Simple_Expression (Within : Data.Context) return Data_Handle is
+    function Simple_Expression (Within       : Data.Context;
+                                Discriminats : Data_Handle := null) return Data_Handle is
 
       The_Type    : Data_Handle;
       The_Context : Data.Context := Within;
@@ -3173,6 +3185,10 @@ package body Ada_95.Token.Parser is
           else
             The_Context.Sub_Type := The_Type;
             Dummy := Name_Of (The_Context);
+          end if;
+          if Discriminats /= null then
+            The_Actual_Identifier.Data := Data.Discriminant_Of (The_Actual_Identifier, Discriminats);
+            Data.Set_Used (The_Actual_Identifier.Data);
           end if;
         when Is_Integer_Literal =>
           Get_Next_Token;
