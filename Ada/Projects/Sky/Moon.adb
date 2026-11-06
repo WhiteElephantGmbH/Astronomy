@@ -168,18 +168,13 @@ package body Moon is
 
   MR : constant REAL := Moon_Radius;
 
-  Minimum_Sun_Altitude : Angle.Degrees;
-  Maximum_Sun_Altitude : Angle.Degrees;
+  The_Terminator_Zone : Units.Solar_Elevation_Range;
 
 
-  procedure Define (Min_Sun_Altitude : Angle.Degrees;
-                    Max_Sun_Altitude : Angle.Degrees) is
-    use type Angle.Value;
+  procedure Define (Solar_Elevation_Range : Units.Solar_Elevation_Range) is
   begin
-    Minimum_Sun_Altitude := Min_Sun_Altitude;
-    Maximum_Sun_Altitude := Max_Sun_Altitude;
-    Log.Write ("Sun Altitude - Minimum : " & Angle.Signed_Degrees_Image_Of (+Min_Sun_Altitude) &
-                           " - Maximum : " & Angle.Signed_Degrees_Image_Of (+Max_Sun_Altitude));
+    The_Terminator_Zone := Solar_Elevation_Range;
+    Log.Write ("Solar elevation" & Solar_Elevation_Range.Minimum'image & " .." & Solar_Elevation_Range.Maximum'image);
   end Define;
 
 
@@ -188,7 +183,9 @@ package body Moon is
 
   function Direction_Of (Id               : Name.Id;
                          Check_Visibility : Boolean := True) return Space.Direction is
+
     The_Direction : Space.Direction;
+
   begin
     Mutex.Wait;
     declare
@@ -244,6 +241,8 @@ package body Moon is
         Delta_Dec : REAL;
 
         procedure Check_Feature_Visibility is
+          Min : constant Angle.Degrees := Angle.Degrees(The_Terminator_Zone.Minimum);
+          Max : constant Angle.Degrees := Angle.Degrees(The_Terminator_Zone.Maximum);
           DM, MRS, SH : REAL;
           use all type Feature_Type;
         begin
@@ -252,7 +251,7 @@ package body Moon is
                            B0  => B0,
                            C0  => C0,
                            H   => SH);
-          if SH < Minimum_Sun_Altitude or (if Kind in Mare | Oceanus then False else SH > Maximum_Sun_Altitude) then
+          if SH < Min or (if Kind in Mare | Oceanus then False else SH > Max) then
             raise Feature_Invisible;
           end if;
           MRS := ASN (MR / R);
@@ -407,5 +406,7 @@ package body Moon is
                         " - libration " & Angle.Image_Of (+Libration, Show_Signed => True));
   end Get_New_Phase;
 
+
+  function Terminator_Zone return Units.Solar_Elevation_Range is (The_Terminator_Zone);
 
 end Moon;

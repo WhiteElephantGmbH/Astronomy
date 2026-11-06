@@ -20,6 +20,7 @@ with Name;
 with Sky;
 with Space;
 with Time;
+with Units;
 
 package Moon is
 
@@ -38,7 +39,7 @@ package Moon is
   subtype Feature is Sky.Moon_Feature;
 
   subtype Feature_Type is Sky.Moon_Feature_Type;
-  
+
   function Has_Feature (Id   :     Name.Id;
                         Item : out Feature;
                         Kind : out Feature_Type) return Boolean;
@@ -55,11 +56,13 @@ package Moon is
                            Before    : out Time.Ut;
                            After     : out Time.Ut;
                            Libration : out Angle.Degrees);
+
+  function Terminator_Zone return Units.Solar_Elevation_Range;
+
 private
 
   Id : constant String := "Moon";
 
-  procedure Define (Min_Sun_Altitude : Angle.Degrees;
-                    Max_Sun_Altitude : Angle.Degrees);
+  procedure Define (Solar_Elevation_Range : Units.Solar_Elevation_Range);
 
 end Moon;

@@ -281,22 +281,24 @@ package body Camera.QHYCCD is
       Id_Buffer : aliased C.Name(1 .. 64) := [others => Ascii.Nul];
       Count     : CI.Camera_Count;
       use type CI.Camera_Count;
+      use type CI.Result;
     begin
       Camera_Data.Check (Idle);
-      Check ("Init Resource", CI.Init_Resource);
-      Count := CI.Scan;
-      Log.Write ("Number detected cameras:" & Count'image);
-      Check ("Release Resource", CI.Release_Resource);
-      if Count = 1 then
-        Check ("Get Id", CI.Get_Id (0, Id_Buffer'address));
-        Get_Camera_Name (Id_Buffer);
-        Camera_Data.Set (The_Camera);
-        return True;
+      if CI.Init_Resource = CI.QHY_SUCCESS then
+        Count := CI.Scan;
+        if CI.Release_Resource = CI.QHY_SUCCESS then
+          if Count = 1 then
+            Check ("Get Id", CI.Get_Id (0, Id_Buffer'address));
+            Get_Camera_Name (Id_Buffer);
+            Camera_Data.Set (The_Camera);
+            return True;
+          end if;
+        end if;
       end if;
       return False;
     exception
-    when others =>
-      Disconnect;
+    when Item: others =>
+      Log.Termination (Item);
       return False;
     end One_Device_Is_Ready;
 

@@ -42,9 +42,12 @@ package Stellarium is
 
   procedure Define_Handler (The_Handler : Goto_Handler);
 
-  procedure Set_For_Moon (Terminator : Units.Sun_Altitude_Range);
-
   procedure Set (Direction : Space.Direction);
+
+  -- used at startup to wait for stellarium
+  procedure Set (Item    : Units.Solar_Elevation_Range;
+                 Timeout : Duration);
+
 
   type Target_Data is record
     Name            : Text.String;

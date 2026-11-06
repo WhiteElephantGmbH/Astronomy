@@ -488,7 +488,6 @@ package body Camera.Canon is
       Dummy_Result := CI.Initialize_SDK;
       Dummy_Result := CI.Get_Camera_List (The_Session.Device_List'access);
       Dummy_Result := CI.Get_Child_Count (The_Session.Device_List, Count'access);
-      Log.Write ("Number of detected cameras:" & CI.Uint32'image (Count));
       if Count = 1 then
         Dummy_Result := CI.Get_Camera_At_Index (List       => The_Session.Device_List,
                                                 Index      => 0,

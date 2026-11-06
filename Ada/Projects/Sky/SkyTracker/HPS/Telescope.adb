@@ -389,9 +389,6 @@ package body Telescope is
       if The_Information.Status /= Disconnected and then User.In_Setup_Mode then
         Alignment.Update_Info;
       end if;
-      if not Camera.Available then
-        Camera.Detect_Model;
-      end if;
     end Get_Information;
 
 
@@ -515,6 +512,9 @@ package body Telescope is
       use type Camera.Status;
 
     begin -- Update_Handling
+      if not Camera.Available then
+        Camera.Detect_Model;
+      end if;
       Get_Information;
       Update_Time_Delta;
       case The_Information.Status is

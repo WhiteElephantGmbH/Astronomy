@@ -466,8 +466,11 @@ package body Targets is
 
     The_Countdown : Positive := Update_Countdown;
 
+    Maximum_Startup_Time : constant Duration := 30.0;
+
   begin -- Handler
     Log.Write ("handler start");
+    Stellarium.Set (Moon.Terminator_Zone, Maximum_Startup_Time);
     loop
       select
         accept Define_Catalog;

@@ -20,6 +20,7 @@ with AWS.Messages;
 with AWS.Parameters;
 with AWS.Response;
 with GNATCOLL.JSON;
+with Time;
 with Url_Names;
 
 package body Stellarium.Client is
@@ -30,6 +31,8 @@ package body Stellarium.Client is
   package AR renames AWS.Response;
 
   package JS renames GNATCOLL.JSON;
+
+  Is_Startup : Boolean := False;
 
 
   function Url (Path : String) return String is
@@ -50,7 +53,9 @@ package body Stellarium.Client is
     Status : constant AM.Status_Code := AR.Status_Code (Result);
   begin
     if not (Status in AM.Success) then
-      Log.Error ("Status:" & AR.Status_Code (Result)'image);
+      if not Is_Startup then
+        Log.Error ("Status:" & AR.Status_Code (Result)'image);
+      end if;
       raise Operation_Failed;
     end if;
     return Result;
@@ -259,16 +264,36 @@ package body Stellarium.Client is
   end Set_Telescope;
 
 
-  procedure Set_Terminator (Value : Units.Sun_Altitude_Range) is
+  procedure Set_Terminator (Value   : Units.Solar_Elevation_Range;
+                            Timeout : Duration) is
     Minimum_Image : constant String := Text.Trimmed (Value.Minimum'image);
     Maximum_Image : constant String := Text.Trimmed (Value.Maximum'image);
+    Retry_Delay   : constant Duration := 1.0;
+    Startup_Time  : Duration := 0.0;
   begin
-    Log.Write ("Set_Terminator: " & Minimum_Image & " .. " & Maximum_Image);
-    Set_Property (Flag_Show_Nomenclature);
+    Is_Startup := True;
+    loop
+      begin
+        Set_Property (Flag_Show_Nomenclature);
+        exit;
+      exception
+      when others =>
+        Startup_Time := @ + Retry_Delay;
+        if Startup_Time > Timeout then
+          Log.Error ("Stellarium not ready");
+          Is_Startup := False;
+          return;
+        end if;
+        Time.Wait (Retry_Delay);
+      end;
+    end loop;
+    Is_Startup := False;
+    Log.Write ("Startup duration:" & Natural(Startup_Time)'image & 's');
     Set_Property (Flag_Hide_Local_Nomenclature);
     Set_Property (Flag_Show_Terminator_Zone_Only);
     Set_Property (Terminator_Min_Altitude, Minimum_Image);
     Set_Property (Terminator_Max_Altitude, Maximum_Image);
+    Log.Write ("Moon terminator: " & Minimum_Image & " .. " & Maximum_Image);
   end Set_Terminator;
 
 end Stellarium.Client;

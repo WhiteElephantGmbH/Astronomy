@@ -115,9 +115,11 @@ package Units is
 
 -- types used in Stellarium
 
-  type Sun_Altitude is range -90 .. 90;
+  type Solar_Elevation is range -90 .. 90;
 
-  type Sun_Altitude_Range (Minimum, Maximum : Sun_Altitude) is null record
-  with Dynamic_Predicate => Minimum <= Maximum;
+  type Solar_Elevation_Range is record
+    Minimum, Maximum : Solar_Elevation := 0;
+  end record
+  with Dynamic_Predicate => Solar_Elevation_Range.Minimum <= Solar_Elevation_Range.Maximum;
 
 end Units;
