@@ -9172,8 +9172,8 @@ package body Ada_95.Token.Parser is
                                             Interfaces    => Interfaces);
           The_Actual_Record_Definition := Data.Record_Handle(The_Type);
           Data.Record_Handle(The_Type).Components := Components;
-          The_Actual_Record_Definition := null;
           Data.Add_Iterator_Aspects (The_Type, Aspect_Specification ((Scope, The_Type)));
+          The_Actual_Record_Definition := null;
         end Record_Definition;
 
 
