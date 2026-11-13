@@ -75,6 +75,10 @@ package Picture is
 
   function Taking_Next_Dark_Was_Last return Boolean;
 
+  procedure Start_Taking_Flats;
+
+  function Taking_Next_Flat_Was_Last return Boolean;
+
   procedure Start_Taking_Lights (Target           : Name.Id;
                                  Target_Direction : Space.Direction);
 
@@ -90,21 +94,41 @@ package Picture is
 
   Processor_Not_Connected : exception;
 
+  procedure Define_Lights_Simulation (Id : Name.Id);
+
+  procedure Define_Darks_Simulation;
+
+  procedure Define_Flats_Simulation;
+
+  function Is_Simulated return Boolean;
+
+  function Simulated_Filename return String;
+
 private
 
   Id : constant String := "Picture";
 
   package Log is new Traces (Id);
 
-  subtype Darks_Count is Units.Picture_Number range 1 .. 99;
+  subtype Picture_Count is Units.Picture_Number range 1 .. 99;
 
   Processing_Is_Enabled : Boolean := False;
   The_Processor_Address : Network.Ip_Address;
   The_Processor_Port    : Network.Port_Number;
-  The_Number_Of_Darks   : Darks_Count;
+  The_Number_Of_Darks   : Picture_Count;
+  The_Number_Of_Flats   : Picture_Count;
+  The_Flats_Exposure    : Exposure.Item;
+  The_Flats_Sensitivity : Sensitivity.Item;
   The_Exposure          : Exposure.Item;
   The_Sensitivity       : Sensitivity.Item;
 
   procedure Define (Default_Name : String);
+
+  type Simulation is (None, Darks, Flats, M13, M15, M27, M57, M103, NGC_6992, NGC_7331);
+
+  subtype Simulation_Target is Simulation range M13 .. Simulation'last;
+
+  The_Simulation   : Simulation := None;
+  Simulation_Index : Natural := 0;
 
 end Picture;

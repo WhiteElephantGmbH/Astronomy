@@ -16,7 +16,7 @@
 pragma Style_Astronomy;
 
 pragma Build (Description => "Camera test",
-              Version     => (1, 0, 0, 3),
+              Version     => (1, 0, 0, 4),
               Kind        => Console,
               Icon        => False,
               Compiler    => "GNAT\14.2");
@@ -29,10 +29,19 @@ with Os.System;
 with Sensitivity;
 with Rt;
 with Text;
+with Traces;
 
 procedure Camera_Test is
 
+  package Log is new Traces ("Test");
+
   package IO renames Ada.Text_IO;
+
+  procedure Show (Message : String) is
+  begin
+    Log.Write (Message);
+    IO.Put_Line (Message);
+  end Show;
 
   procedure Show_Grid is
     Grid : constant Camera.Raw_Grid := Camera.Captured;
@@ -61,19 +70,29 @@ procedure Camera_Test is
   The_Count : Integer;
 
 begin -- Camera_Test
-  IO.Put_Line ("Camera Test");
+  Show ("Camera Test");
   IO.Put_Line ("===========");
   Camera.Start;
-  IO.Put ("Started");
+
+  Camera.Detect_Model;
+  if Camera.Available then
+    IO.Put_Line ("Model: " & Camera.Model_Image);
+  else
+    Show ("No Camera Available");
+    Camera.Finish;
+    return;
+  end if;
+
+  Show ("Started");
   loop
-    declare
+     declare
       function Info return Camera.Information is (Camera.Actual_Information);
     begin
       case Info.State is
       when Camera.Idle =>
         The_Count := Counter;
         IO.New_Line;
-        IO.Put_Line ("Idle");
+        Show ("Idle");
         IO.Put ("cmd> ");
         declare
           Parameters : constant Text.Strings := Text.Strings_Of (IO.Get_Line, Separator => ' ');
@@ -92,25 +111,27 @@ begin -- Camera_Test
                                                       then Sensitivity.Default
                                                       else Sensitivity.Value (Parameters(3)));
           begin
+            Log.Write ("Command : " & Command);
+            Log.Write ("Exposure: " & Exp_Time'image);
+            Log.Write ("Sensitivity: " & Parameter'image);
             case Text.Uppercase_Of (Command(Command'first)) is
             when 'C' =>
               Camera.Capture (Os.System.Temp_Path & "Picture", Exp_Time, Parameter);
             when 'G' =>
               Camera.Capture (10, Exp_Time, Parameter);
             when others =>
-              raise Constraint_Error;
+              Show ("### Unknown - expexted: [('C' | 'G') [<time> [<iso> | '[' <gain> ',' <offset> ']']]] ###");
             end case;
           end;
         exception
         when Item: others =>
-          IO.Put_Line ("### Unknown - expexted: [('C' | 'G') [<time> [<iso> | '[' <gain> ',' <offset> ']']]] ###");
-          IO.Put_Line (Exceptions.Information_Of (Item));
+          Show (Exceptions.Information_Of (Item));
         end;
       when Camera.Connecting =>
         IO.Put ("o");
       when Camera.Connected =>
         IO.New_Line;
-        IO.Put_Line ("Connnected " & Info.Camera'image);
+        Show ("Connnected " & Info.Camera'image);
       when Camera.Capturing =>
         IO.Put ("c");
       when Camera.Captured =>
@@ -122,13 +143,13 @@ begin -- Camera_Test
       when Camera.Cropped =>
         IO.New_Line;
         Show_Grid;
-        IO.Put_Line ("Image Height:" & Info.Height'image);
-        IO.Put_Line ("Image Width :" & Info.Width'image);
+        Show ("Image Height:" & Info.Height'image);
+        Show ("Image Width :" & Info.Width'image);
       when Camera.Stopping =>
         IO.Put ("s");
       when Camera.Failed =>
         IO.New_Line;
-        IO.Put_Line ("### " & Camera.Error_Message & " ###");
+        Show ("### " & Camera.Error_Message & " ###");
       end case;
     end;
     Rt.Wait (Delay_Time);
@@ -141,9 +162,9 @@ begin -- Camera_Test
     end if;
   end loop;
   Camera.Finish;
-  IO.Put_Line ("Stopped");
+  Show ("Stopped");
 
 exception
 when Item: others =>
-  IO.Put_Line (Exceptions.Information_Of (Item));
+  Show (Exceptions.Information_Of (Item));
 end Camera_Test;

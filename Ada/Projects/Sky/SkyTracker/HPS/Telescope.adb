@@ -58,6 +58,8 @@ package body Telescope is
 
     entry Take_Darks;
 
+    entry Take_Flats;
+
     entry Park;
 
     entry Prepare_Tle;
@@ -159,6 +161,12 @@ package body Telescope is
   begin
     Control.Take_Darks;
   end Take_Darks;
+
+
+  procedure Take_Flats is
+  begin
+    Control.Take_Flats;
+  end Take_Flats;
 
 
   procedure Prepare_Tle is
@@ -389,9 +397,6 @@ package body Telescope is
       if The_Information.Status /= Disconnected and then User.In_Setup_Mode then
         Alignment.Update_Info;
       end if;
-      if not Camera.Available then
-        Camera.Detect_Model;
-      end if;
     end Get_Information;
 
 
@@ -427,9 +432,11 @@ package body Telescope is
 
     function Solve_Picture return Boolean is
     begin
-      Log.Write ("XXX Simulate M13 solving");
-      File.Copy ("D:\Pictures\M13\Image_0000.cr2", Picture.Filename);
-      Time.Wait (0.3);
+      if Picture.Is_Simulated then
+        Log.Warning ("solve simulated picture: " & Picture.Simulated_Filename);
+        File.Copy (Picture.Simulated_Filename, Picture.Filename);
+        Time.Wait (0.3);
+      end if;
       if not Picture.Solve (Actual_Target_Direction) then
         Log.Warning ("solve picture not started");
         return False;
@@ -515,6 +522,9 @@ package body Telescope is
       use type Camera.Status;
 
     begin -- Update_Handling
+      if not Camera.Available then
+        Camera.Detect_Model;
+      end if;
       Get_Information;
       Update_Time_Delta;
       case The_Information.Status is
@@ -555,7 +565,7 @@ package body Telescope is
           when others =>
             null;
           end case;
-        when Taking_Darks =>
+        when Taking_Darks | Taking_Flats =>
           case The_Phase is
           when Capture =>
             Ten_Micron.Start_Capturing;
@@ -600,6 +610,22 @@ package body Telescope is
             Ten_Micron.End_Capturing;
             begin
               if Picture.Taking_Next_Dark_Was_Last then
+                User.Perform_Stop;
+              else
+                The_Phase := Capture;
+              end if;
+            exception
+            when Picture.Processor_Not_Connected =>
+              Error_Processor_Not_Connected;
+            end;
+          else
+            Check_Camera_Error;
+          end if;
+        when Taking_Flats =>
+          if Camera.Actual_Information.State = Camera.Idle and then Picture.Exists then
+            Ten_Micron.End_Capturing;
+            begin
+              if Picture.Taking_Next_Flat_Was_Last then
                 User.Perform_Stop;
               else
                 The_Phase := Capture;
@@ -771,6 +797,7 @@ package body Telescope is
             if Defined_Camera then
               The_Mode := Acquiring;
               The_Phase := First_Capture;
+              Picture.Define_Lights_Simulation (Next_Id);
             end if;
           end View;
         or
@@ -780,12 +807,27 @@ package body Telescope is
                 Picture.Start_Taking_Darks (Next_Id, Actual_Target_Direction);
                 The_Mode := Taking_Darks;
                 The_Phase := Capture;
+                Picture.Define_Darks_Simulation;
               exception
               when Picture.Processor_Not_Connected =>
                 Error_Processor_Not_Connected;
               end;
             end if;
           end Take_Darks;
+        or
+          accept Take_Flats do
+            if Defined_Camera then
+              begin
+                Picture.Start_Taking_Flats;
+                The_Mode := Taking_Flats;
+                The_Phase := Capture;
+                Picture.Define_Flats_Simulation;
+              exception
+              when Picture.Processor_Not_Connected =>
+                Error_Processor_Not_Connected;
+              end;
+            end if;
+          end Take_Flats;
         or
           accept Prepare_Tle do
             Ten_Micron.Load_Tle (Name.Object_Of (Next_Id));

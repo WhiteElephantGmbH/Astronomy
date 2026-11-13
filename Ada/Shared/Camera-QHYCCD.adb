@@ -251,7 +251,7 @@ package body Camera.QHYCCD is
       end if;
     end Check;
 
-    The_Camera : Model;
+    The_Camera : QHY_Model;
 
     The_Filename   : Text.String := [Default_Filename];
     The_Exposure   : Exposure.Item;
@@ -265,38 +265,40 @@ package body Camera.QHYCCD is
 
     use type CI.Handle;
 
-    procedure Get_Camera_Name (Id_Buffer : C.Name)is
+    procedure Define_Camera (Id_Buffer : C.Name)is
       Id_Parts    : constant Text.Strings := Text.Strings_Of (C.Helper.String_Of (Id_Buffer), Separator => '-');
       Camera_Name : constant String := Id_Parts (1);
     begin
       Log.Write ("Camera Name: " & Camera_Name);
-      The_Camera := Model'value(Camera_Name);
+      The_Camera := QHY_Model'value(Camera_Name);
+      Camera_Data.Set (The_Camera);
     exception
     when others =>
       Raise_Error ("Unknown Camera " & Camera_Name);
-    end Get_Camera_Name;
+    end Define_Camera;
 
 
     function One_Device_Is_Ready return Boolean is
       Id_Buffer : aliased C.Name(1 .. 64) := [others => Ascii.Nul];
       Count     : CI.Camera_Count;
       use type CI.Camera_Count;
+      use type CI.Result;
     begin
       Camera_Data.Check (Idle);
-      Check ("Init Resource", CI.Init_Resource);
-      Count := CI.Scan;
-      Log.Write ("Number detected cameras:" & Count'image);
-      Check ("Release Resource", CI.Release_Resource);
-      if Count = 1 then
-        Check ("Get Id", CI.Get_Id (0, Id_Buffer'address));
-        Get_Camera_Name (Id_Buffer);
-        Camera_Data.Set (The_Camera);
-        return True;
+      if CI.Init_Resource = CI.QHY_SUCCESS then
+        Count := CI.Scan;
+        if CI.Release_Resource = CI.QHY_SUCCESS then
+          if Count = 1 then
+            Check ("Get Id", CI.Get_Id (0, Id_Buffer'address));
+            Define_Camera (Id_Buffer);
+            return True;
+          end if;
+        end if;
       end if;
       return False;
     exception
-    when others =>
-      Disconnect;
+    when Item: others =>
+      Log.Termination (Item);
       return False;
     end One_Device_Is_Ready;
 
@@ -326,8 +328,7 @@ package body Camera.QHYCCD is
       if Exposing.Handle = CI.No_Handle then
         Raise_Error ("Open failed");
       end if;
-      Get_Camera_Name (Id_Buffer);
-      Camera_Data.Set (The_Camera);
+      Define_Camera (Id_Buffer);
       Camera_Data.Set (Connected);
     end Start_Capture;
 
@@ -692,7 +693,7 @@ package body Camera.QHYCCD is
         end Await_Stop;
       or
         accept Shutdown do
-          if Camera_Data.Actual.Camera = QHY600C then
+          if Camera_Data.Actual.Camera in QHY_Model then
             Disconnect;
           end if;
         end Shutdown;

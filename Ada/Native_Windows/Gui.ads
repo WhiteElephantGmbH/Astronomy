@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2002 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2002 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -565,11 +565,17 @@ package Gui is
   -- Track Bar functions
   --
   ----------------------
-  function Create (Parent_Page : Page;
-                   The_Title   : String := "") return Track_Bar;
+  function Create (Parent_Page        : Page;
+                   The_Title          : String := "";
+                   The_Action_Routine : Action_Routine := null;
+                   The_Title_Size     : Natural := Automatic) return Track_Bar;
 
   procedure Define_Range (The_Track_Bar : Track_Bar;
                           The_Extent    : Positive);
+
+  procedure Define_Limits (The_Track_Bar : Track_Bar;
+                           Minimum       : Natural;
+                           Maximum       : Natural);
 
   procedure Define_Tic_Frequency (The_Track_Bar : Track_Bar;
                                   The_Frequency : Natural);

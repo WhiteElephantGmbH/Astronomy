@@ -42,4 +42,11 @@ private package Stellarium.Client is
 
   procedure Set_Telescope (Index : Property_Id);
 
+
+-------------------------
+-- Executed at startup --
+-------------------------
+  procedure Set_Terminator (Value   : Units.Solar_Elevation_Range;
+                            Timeout : Duration);
+
 end Stellarium.Client;

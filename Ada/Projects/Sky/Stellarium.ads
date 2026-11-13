@@ -44,6 +44,11 @@ package Stellarium is
 
   procedure Set (Direction : Space.Direction);
 
+  -- used at startup to wait for stellarium
+  procedure Set (Item    : Units.Solar_Elevation_Range;
+                 Timeout : Duration);
+
+
   type Target_Data is record
     Name            : Text.String;
     Kind            : Text.String;

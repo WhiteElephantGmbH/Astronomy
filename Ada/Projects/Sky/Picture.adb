@@ -23,6 +23,7 @@ with Fits;
 with Picture.Feeder;
 with Stellarium;
 with Site;
+with Ten_Micron;
 with Text;
 
 package body Picture is
@@ -43,7 +44,7 @@ package body Picture is
     Camera_Extension : constant String := Camera.File_Extension;
   begin
     if Extension = "" and Camera_Extension /= "" then
-      return Picture_Name & '.' & Camera.File_Extension;
+      return Picture_Name & Camera_Extension;
     end if;
     return Picture_Name;
   end Filename;
@@ -431,6 +432,12 @@ package body Picture is
 
   function Taking_Next_Dark_Was_Last return Boolean renames Feeder.Send_Next_Dark_Was_Last;
 
+
+  procedure Start_Taking_Flats renames Feeder.New_Flats_Sequence;
+
+  function Taking_Next_Flat_Was_Last return Boolean renames Feeder.Send_Next_Flat_Was_Last;
+
+
   procedure Start_Taking_Lights (Target           : Name.Id;
                                  Target_Direction : Space.Direction) renames Feeder.New_Light_Sequence;
 
@@ -443,5 +450,60 @@ package body Picture is
   function Taking_Sensitivity return Sensitivity.Item is (The_Sensitivity);
 
   function Processing_Enabled return Boolean is (Processing_Is_Enabled);
+
+
+  function Defined_Simulation (Item : Simulation) return Boolean is
+  begin
+    if Ten_Micron.Is_Simulation_Mode then
+      Simulation_Index := 0;
+      The_Simulation := Item;
+      if File.Exists (Simulated_Filename) then
+        return True;
+      end if;
+    end if;
+    The_Simulation := None;
+    return False;
+  end Defined_Simulation;
+
+
+  procedure Define_Lights_Simulation (Id : Name.Id) is
+    Parts : constant Text.Strings := Text.Strings_Of (Name.Image_Of (Id), Separator => '[');
+    Image : constant String := Text.Identifier_Of (Parts(1));
+  begin
+    if Defined_Simulation (Simulation_Target'value(Image)) then
+      Log.Write ("Defined lights simulation for " & The_Simulation'image);
+      return;
+    end if;
+  exception
+  when others =>
+    The_Simulation := None;
+  end Define_Lights_Simulation;
+
+
+  procedure Define_Darks_Simulation is
+  begin
+    if Defined_Simulation (Darks) then
+      Log.Write ("Defined Dark simulation");
+    end if;
+  end Define_Darks_Simulation;
+
+
+  procedure Define_Flats_Simulation is
+  begin
+    if Defined_Simulation (Flats) then
+      Log.Write ("Defined Flat simulation");
+    end if;
+  end Define_Flats_Simulation;
+
+
+  function Is_Simulated return Boolean is (The_Simulation /= None);
+
+
+  function Simulated_Filename return String is
+    Index_Image   : constant String := "000" & Text.Trimmed (Simulation_Index'image);
+    Picture_Index : constant String := Index_Image(Index_Image'last - 3 .. Index_Image'last);
+  begin
+    return "D:\Pictures\" & The_Simulation'image & "\Image_" & Picture_Index & Camera.File_Extension;
+  end Simulated_Filename;
 
 end Picture;

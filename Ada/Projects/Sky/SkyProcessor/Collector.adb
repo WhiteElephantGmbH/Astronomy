@@ -55,7 +55,7 @@ package body Collector is
 
   The_Index : Image.Count := 0;
 
-  type Processing is (Stopped, Darks, Lights);
+  type Processing is (Stopped, Darks, Flats, Lights);
 
   The_Processing : Processing := Stopped;
 
@@ -71,20 +71,29 @@ package body Collector is
 
     function Darks_Filename return String is
       P : constant AWS.Parameters.List := AWS.Status.Parameters (Request);
-      Filename : constant String := P.Get (Url_Names.Id);
+      Filename : constant String := P.Get (Url_Names.Darks);
     begin
       Log.Write ("Darks - Filename : " & Filename);
       return Filename;
     end Darks_Filename;
 
 
-    procedure Get_Dark_Parameters is
+    function Flats_Filename return String is
+      P : constant AWS.Parameters.List := AWS.Status.Parameters (Request);
+      Filename : constant String := P.Get (Url_Names.Flats);
+    begin
+      Log.Write ("Flats - Filename : " & Filename);
+      return Filename;
+    end Flats_Filename;
+
+
+    procedure Get_Camera_Parameters is
       P : constant AWS.Parameters.List := AWS.Status.Parameters (Request);
       Camera_Model : constant Units.Camera_Model := Units.Camera_Model'value (P.Get (Url_Names.Camera_Model));
     begin
-      Log.Write ("Darks - Camera_Model: " & Camera_Model'image);
+      Log.Write ("Parameter - Camera_Model: " & Camera_Model'image);
       Image.Set (Camera_Model);
-    end Get_Dark_Parameters;
+    end Get_Camera_Parameters;
 
 
     The_Light_Parameters : Processor.Light_Parameters;
@@ -94,12 +103,14 @@ package body Collector is
     begin
       The_Light_Parameters := (Target => Space.Direction_Of (Ra_Image  => P.Get (Url_Names.Ra),
                                                              Dec_Image => P.Get (Url_Names.Dec)),
-                               Darks_Id     => [P.Get (Url_Names.Id)],
+                               Darks_Id     => [P.Get (Url_Names.Darks)],
+                               Flats_Id     => [P.Get (Url_Names.Flats)],
                                Camera_Model => Units.Camera_Model'value(P.Get (Url_Names.Camera_Model)),
                                Pixel_Size   => Units.Pixel_Size'value(P.Get (Url_Names.Pixel_Size)),
                                Focal_Length => Units.Focal_Length'value(P.Get (Url_Names.Focal_Length)));
       Log.Write ("Light - Target      : " & Space.Image_Of (The_Light_Parameters.Target));
       Log.Write ("      - Darks_Id    : " & The_Light_Parameters.Darks_Id.S);
+      Log.Write ("      - Flats_Id    : " & The_Light_Parameters.Flats_Id.S);
       Log.Write ("      - Camera_Model: " & The_Light_Parameters.Camera_Model'image);
       Log.Write ("      - Pixel_Size  :"  & The_Light_Parameters.Pixel_Size'image);
       Log.Write ("      - Focal_Length:"  & The_Light_Parameters.Focal_Length'image);
@@ -145,12 +156,23 @@ package body Collector is
     if URI = Url_Names.New_Darks then
       Check (Stopped);
       if Image.Cleared then
-        Get_Dark_Parameters;
+        Get_Camera_Parameters;
         The_Processing := Darks;
         The_Index := 0;
         return AWS.Response.Acknowledge (AWS.Messages.S200, "OK");
       else
         Log.Warning ("Dark work area not cleared.");
+        return AWS.Response.Acknowledge (AWS.Messages.S300, "WARNING");
+      end if;
+    elsif URI = Url_Names.New_Flats then
+      Check (Stopped);
+      if Image.Cleared then
+        Get_Camera_Parameters;
+        The_Processing := Flats;
+        The_Index := 0;
+        return AWS.Response.Acknowledge (AWS.Messages.S200, "OK");
+      else
+        Log.Warning ("Flat work area not cleared.");
         return AWS.Response.Acknowledge (AWS.Messages.S300, "WARNING");
       end if;
     elsif URI = Url_Names.Light_Parameters then
@@ -168,7 +190,7 @@ package body Collector is
       The_Index := @ + 1;
       Get_Picture;
       case The_Processing is
-      when Darks =>
+      when Darks | Flats =>
         null;
       when Lights =>
         Processor.Set (The_Index);
@@ -179,6 +201,10 @@ package body Collector is
                                  Message_Body => "OK");
     elsif URI = Url_Names.Store_Darks then
       Processor.Evaluate_Darks (Darks_Filename);
+      The_Processing := Stopped;
+      return AWS.Response.Acknowledge (AWS.Messages.S200, "OK");
+    elsif URI = Url_Names.Store_Flats then
+      Processor.Evaluate_Flats (Flats_Filename);
       The_Processing := Stopped;
       return AWS.Response.Acknowledge (AWS.Messages.S200, "OK");
     elsif URI = Url_Names.Stop then

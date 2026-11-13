@@ -19,14 +19,18 @@ with Angle, Text;
 
 package Units is
 
-  type Camera_Model is (Unknown_Camera, Canon_Eos_6D, Canon_Eos_60D, QHY600C);
+  type Camera_Model is (Unknown_Camera, Canon_Eos_60D, Canon_Eos_6D, QHY268C, QHY600C);
+
+  subtype Canon_Model is Camera_Model range Canon_Eos_60D .. Canon_Eos_6D;
+  subtype QHY_Model   is Camera_Model range QHY268C .. QHY600C;
+
   subtype Known_Camera_Model is Camera_Model range Camera_Model'succ(Camera_Model'first) .. Camera_Model'last;
 
   function Extension (Item : Camera_Model) return String is (
     case Item is
-    when Unknown_Camera               => "",
-    when Canon_Eos_6D | Canon_Eos_60D => "cr2",
-    when QHY600C                      => "fits");
+    when Unknown_Camera => "",
+    when Canon_Model    => "cr2",
+    when QHY_Model      => "fits");
 
   type Telescope_Model is (Unknown, Celestron_C11, Celestron_C14, CDK_700);
 
@@ -96,7 +100,10 @@ package Units is
     Shadows    : Tone;
     Midtones   : Tone;
     Highlights : Tone;
-  end record;
+  end record with Dynamic_Predicate =>
+    Tones.Shadows < Tones.Highlights
+    and Tones.Midtones > 0.0
+    and Tones.Midtones < 1.0;
 
   function "&" (Left  : String;
                 Right : Focal_Length) return String is (Left & Text.Trimmed(Right'image));
@@ -112,5 +119,14 @@ package Units is
 
   function "&" (Left  : String;
                 Right : Tone) return String is (Left & Text.Trimmed(Right'image));
+
+-- types used in Stellarium
+
+  type Solar_Elevation is range -90 .. 90;
+
+  type Solar_Elevation_Range is record
+    Minimum, Maximum : Solar_Elevation := 0;
+  end record
+  with Dynamic_Predicate => Minimum <= Maximum;
 
 end Units;

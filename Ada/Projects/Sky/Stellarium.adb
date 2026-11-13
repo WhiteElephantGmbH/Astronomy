@@ -419,6 +419,10 @@ package body Stellarium is
   end Define_Handler;
 
 
+  procedure Set (Item    : Units.Solar_Elevation_Range;
+                 Timeout : Duration) renames Client.Set_Terminator;
+
+
   procedure Message_Handler (The_Message : Receive_Message) is
     use type Angle.Value;
   begin

@@ -247,6 +247,9 @@ package body User is
     when Take_Darks =>
       Signal_Action (Take_Darks);
       Is_Focusing := False;
+    when Take_Flats =>
+      Signal_Action (Take_Flats);
+      Is_Focusing := False;
     end case;
   exception
   when others =>
@@ -431,7 +434,7 @@ package body User is
           else
             Enable_Goto;
           end if;
-        when Acquiring | Taking_Darks =>
+        when Acquiring | Taking_Darks | Taking_Flats =>
           Disable_Action;
         when Building_Pointing_Model =>
           Enable_Goto;
@@ -501,7 +504,7 @@ package body User is
             Disable_Action;
           when Build_Pointing_Model =>
             Enable_Command;
-          when Take_Darks =>
+          when Take_Darks | Take_Flats =>
             Disable_Action;
           end case;
         end if;
@@ -518,7 +521,7 @@ package body User is
           end if;
         when Build_Pointing_Model =>
           Disable_Action;
-        when Take_Darks =>
+        when Take_Darks | Take_Flats =>
           if Processing_Is_Enabled then
             Enable_Command;
           else

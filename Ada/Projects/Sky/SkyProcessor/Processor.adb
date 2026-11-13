@@ -23,6 +23,7 @@ with AWS.Response;
 with File;
 with Siril;
 with Traces;
+with Url_Names;
 
 package body Processor is
 
@@ -31,12 +32,14 @@ package body Processor is
   package IO  renames Ada.Text_IO;
   package SIO renames Ada.Streams.Stream_IO;
 
-  type Action is (Process_Darks, Start_Light_Sequence, Show_First, Processing, Stop, Shutdown);
+  type Action is (Process_Darks, Process_Flats, Start_Light_Sequence, Show_First, Processing, Stop, Shutdown);
 
 
   protected Action_Handler is
 
     procedure Evaluate_Darks;
+
+    procedure Evaluate_Flats;
 
     procedure New_Light_Sequence;
 
@@ -115,6 +118,22 @@ package body Processor is
   end Evaluate_Darks;
 
 
+  The_Flats_Filename : Text.String;
+
+  procedure Evaluate_Flats (Filename : String) is
+  begin
+    Show ("Evaluate Flats");
+    The_Flats_Filename := [Filename];
+    Action_Handler.Evaluate_Flats;
+    Log.Write ("Await Completion");
+    Action_Handler.Await_Completion;
+    Show ("Flats Evaluated");
+    if not Image.Cleared then
+      Show ("Image area not cleared !", Warning);
+    end if;
+  end Evaluate_Flats;
+
+
   The_Light_Parameters : Light_Parameters;
 
   procedure New_Sequence (Parameters : Light_Parameters) is
@@ -186,13 +205,30 @@ package body Processor is
   end Generate_Darks;
 
 
+  procedure Generate_Flats is
+    Flats_Work_Directory : constant String := Image.Flats_Work_Directory;
+    Flats_Fit_Filename   : constant String := Flats_Directory & "\" & The_Flats_Filename.S & "_" & Stacked_Fit;
+  begin
+    IO.Put_Line ("Generate " & Flats_Fit_Filename);
+    Siril.Open (Progress'unrestricted_access);
+    Siril.Change_Directory (Image.Collector_Directory);
+    Siril.Convert_Flat (Destination => Flats_Work_Directory);
+    Siril.Change_Directory (Flats_Work_Directory);
+    Siril.Stack_Flat (Flats_Fit_Filename);
+    Siril.Close;
+    Action_Handler.Set_Complete;
+    Log.Write ("Generated " & Flats_Fit_Filename);
+  end Generate_Flats;
+
+
   Picture_Name     : constant String := "Picture";
-  Picture_Filename : constant String := Work_Directory & '\' & Picture_Name & ".jpg";
+  Jpeg_Filename : constant String := Work_Directory & '\' & Picture_Name & ".jpg";
+  Fits_Filename : constant String := Work_Directory & '\' & Picture_Name & ".fit";
 
 
   procedure Generate_First_Jpec is
   begin
-    File.Delete (Picture_Filename);
+    File.Delete (Jpeg_Filename);
     Siril.Open;
     Siril.Load (Image.First_LIGHT_Filename);
     Siril.Auto_Stretch;
@@ -207,31 +243,27 @@ package body Processor is
   end Generate_First_Jpec;
 
 
-  procedure Generate_Jpec is
+  function Generated_Fits return Boolean is
 
     Source_Directory : constant String := Image.Siril_LIGHT_Directory;
     Lights_Directory : constant String := Work_Directory & "\lights";
 
-    Flats_Stacked_Fit : constant String := Flats_Directory & "\" & Stacked_Fit;
+    Flats_Stacked_Fit : constant String := Flats_Directory & "\" & The_Light_Parameters.Flats_Id.S & "_" & Stacked_Fit;
     Darks_Stacked_Fit : constant String := Darks_Directory & "\" & The_Light_Parameters.Darks_Id.S & "_" & Stacked_Fit;
 
     Telescope_Focal_Length : constant Units.Focal_Length := The_Light_Parameters.Focal_Length;
 
     Camera_Pixel_Size : constant Units.Pixel_Size := The_Light_Parameters.Pixel_Size;
 
-    M13_Tones : constant Units.Tones := (Shadows    => 0.00016,
-                                         Midtones   => 0.00018,
-                                         Highlights => 1.0);
-
-    M13_Saturation : constant Units.Saturation := (Amount     => 0.9,
-                                                   Multiplier => 1.0);
-  begin
+  begin -- Generated_Fits
     if not File.Exists (Darks_Stacked_Fit) then
-      Show ("Dasks " & Darks_Stacked_Fit & " not found", Warning);
-    elsif not File.Exists (Darks_Stacked_Fit) then
+      Show ("Darks " & Darks_Stacked_Fit & " not found", Warning);
+      return False;
+    elsif not File.Exists (Flats_Stacked_Fit) then
       Show ("Flats " & Flats_Stacked_Fit & " not found", Warning);
+      return False;
     else
-      File.Delete (Picture_Filename);
+      File.Delete (Fits_Filename);
       Siril.Open (Progress'unrestricted_access);
       Siril.Change_Directory (Source_Directory);
 
@@ -248,43 +280,74 @@ package body Processor is
 
       Siril.Remove_Background;
       Siril.Calibrate_Color;
-      Siril.Transfer (M13_Tones);
-      Siril.Set (M13_Saturation);
 
       Siril.Change_Directory ("..");
-      Siril.Save_Jpeg (Picture_Name);
+      Siril.Save_Fits (Picture_Name);
       Siril.Close;
       IO.Put_Line ("Generated new picture");
+      return True;
     end if;
   exception
   when others =>
     Siril.Close;
     raise;
-  end Generate_Jpec;
+  end Generated_Fits;
 
 
-  procedure Send_Jpec is
+  procedure Check (Result : AWS.Response.Data) is
+    Status : constant AWS.Messages.Status_Code := AWS.Response.Status_Code (Result);
+  begin
+    if not (Status in  AWS.Messages.Success) then
+      Log.Error ("Status:" & AWS.Response.Status_Code (Result)'image);
+    end if;
+  end Check;
 
-    procedure Check (Result : AWS.Response.Data) is
-      Status : constant AWS.Messages.Status_Code := AWS.Response.Status_Code (Result);
-    begin
-      if not (Status in  AWS.Messages.Success) then
-        Log.Error ("Status:" & AWS.Response.Status_Code (Result)'image);
-      end if;
-    end Check;
 
+  procedure Send_Fits is
 
     function Read_File return Ada.Streams.Stream_Element_Array is
       The_File : SIO.File_Type;
     begin
-      SIO.Open (The_File, SIO.In_File, Picture_Filename);
+      SIO.Open (The_File, SIO.In_File, Fits_Filename);
       declare
         Size : constant Ada.Streams.Stream_Element_Offset := Ada.Streams.Stream_Element_Offset (SIO.Size (The_File));
         Data : Ada.Streams.Stream_Element_Array (1 .. Size);
         Last : Ada.Streams.Stream_Element_Offset;
+        use type Ada.Streams.Stream_Element_Offset;
       begin
         SIO.Read (The_File, Data, Last);
         SIO.Close (The_File);
+        if Last /= Data'last then
+          raise Program_Error with "Incomplete FITS file read";
+        end if;
+        return Data;
+      end;
+    end Read_File;
+
+  begin -- Send_Fits
+    Check (AWS.Client.Post (URL          => "http://Localhost:11001" & Url_Names.Picture,
+                            Data         => Read_File,
+                            Content_Type => "application/octet-stream"));
+  end Send_Fits;
+
+
+  procedure Send_Jpec is
+
+    function Read_File return Ada.Streams.Stream_Element_Array is
+      The_File : SIO.File_Type;
+    begin
+      SIO.Open (The_File, SIO.In_File, Jpeg_Filename);
+      declare
+        Size : constant Ada.Streams.Stream_Element_Offset := Ada.Streams.Stream_Element_Offset (SIO.Size (The_File));
+        Data : Ada.Streams.Stream_Element_Array (1 .. Size);
+        Last : Ada.Streams.Stream_Element_Offset;
+        use type Ada.Streams.Stream_Element_Offset;
+      begin
+        SIO.Read (The_File, Data, Last);
+        SIO.Close (The_File);
+        if Last /= Data'last then
+          raise Program_Error with "Incomplete JPEG file read";
+        end if;
         return Data;
       end;
     end Read_File;
@@ -310,6 +373,8 @@ package body Processor is
         case The_Action is
         when Process_Darks =>
           Generate_Darks;
+        when Process_Flats =>
+          Generate_Flats;
         when Start_Light_Sequence =>
           Collected_Count := 0;
         when Show_First =>
@@ -320,8 +385,9 @@ package body Processor is
           Action_Handler.Get_Collected (Collected_Count);
           Image.Move (Processed_Count, Collected_Count);
           IO.Put_Line ("Process 1 .." & Collected_Count'image);
-          Generate_Jpec;
-          Send_Jpec;
+          if Generated_Fits then
+            Send_Fits;
+          end if;
         when Stop =>
           Processed_Count := 0;
           Collected_Count := 0;
@@ -357,6 +423,16 @@ package body Processor is
         Is_Complete := False;
       end if;
     end Evaluate_Darks;
+
+
+    procedure Evaluate_Flats is
+    begin
+      if not (The_Action in Shutdown | Stop) then
+        The_Action := Process_Flats;
+        Is_Waiting := False;
+        Is_Complete := False;
+      end if;
+    end Evaluate_Flats;
 
 
     procedure New_Light_Sequence is

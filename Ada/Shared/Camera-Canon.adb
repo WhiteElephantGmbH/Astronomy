@@ -471,6 +471,16 @@ package body Camera.Canon is
       Camera_Data.Set_Fatal (Item);
     end Internal_Error;
 
+
+    procedure Define_Camera is
+      Device_Description : constant String := C.Helper.String_Of (The_Session.Device_Info.Sz_Device_Description);
+    begin
+      Log.Write ("Camera description: " & Device_Description);
+      The_Camera := Canon_Model'value (Text.Identifier_Of (Device_Description));
+      Camera_Data.Set (The_Camera);
+    end Define_Camera;
+
+
     ---------------------------------------------
     -- Is_One_Device_Ready                    --
     --   Initializes EDSDK                    --
@@ -486,22 +496,15 @@ package body Camera.Canon is
       Dummy_Result := CI.Initialize_SDK;
       Dummy_Result := CI.Get_Camera_List (The_Session.Device_List'access);
       Dummy_Result := CI.Get_Child_Count (The_Session.Device_List, Count'access);
-      Log.Write ("Number of detected cameras:" & CI.Uint32'image (Count));
       if Count = 1 then
         Dummy_Result := CI.Get_Camera_At_Index (List       => The_Session.Device_List,
                                                 Index      => 0,
                                                 The_Camera => The_Session.Device'access);
         Dummy_Result := CI.Get_Device_Info (From     => The_Session.Device,
                                             The_Info => The_Session.Device_Info'access);
-        declare
-          Device_Description : constant String := C.Helper.String_Of (The_Session.Device_Info.Sz_Device_Description);
-        begin
-          Log.Write ("Camera description: " & Device_Description);
-          The_Camera := Model'value (Text.Identifier_Of (Device_Description));
-          Camera_Data.Set (The_Camera);
-          Release_Device_List_And_Terminate_SDK;
-          return True;
-        end;
+        Define_Camera;
+        Release_Device_List_And_Terminate_SDK;
+        return True;
       end if;
       raise Not_Ready;
     exception
@@ -537,12 +540,8 @@ package body Camera.Canon is
       Check ("Get device information",
              CI.Get_Device_Info (From     => The_Session.Device,
                                  The_Info => The_Session.Device_Info'access));
-      declare
-        Device_Description : constant String := C.Helper.String_Of (The_Session.Device_Info.Sz_Device_Description);
       begin
-        Log.Write ("Camera description: " & Device_Description);
-        The_Camera := Model'value (Text.Identifier_Of (Device_Description));
-        Camera_Data.Set (The_Camera);
+        Define_Camera;
       exception
       when others =>
         Raise_Error ("Unknown Camera");

@@ -25,22 +25,25 @@ package body Picture.Parameter is
   Astap_Key      : constant String := "ASTAP";
   Filename_Key   : constant String := "Filename";
 
-  Processor_Id    : constant String := "Processor";
-  Ip_Address_Key  : constant String := Section.Ip_Address_Key;
-  Port_Key        : constant String := Section.Port_Key;
-  Darks_Count_Key : constant String := "Darks Count";
-
-
-  function Number_Of_Darks return Darks_Count is
-    Minimum : constant Integer := Integer(Darks_Count'first);
-    Maximum : constant Integer := Integer(Darks_Count'last);
-  begin
-    return Darks_Count(Section.Value_Of (Darks_Count_Key, Id, Minimum, Maximum));
-  end Number_Of_Darks;
+  Processor_Id          : constant String := "Processor";
+  Ip_Address_Key        : constant String := Section.Ip_Address_Key;
+  Port_Key              : constant String := Section.Port_Key;
+  Darks_Count_Key       : constant String := "Darks Count";
+  Flats_Count_Key       : constant String := "Flats Count";
+  Flats_Exposure_Key    : constant String := "Flats Exposure";
+  Flats_Sensitivity_Key : constant String := "Flats Sensitivity";
 
 
   procedure Define (Handle : Configuration.File_Handle) is
-  begin
+
+    function Number_Of_Pictures (Key : String) return Picture_Count is
+      Minimum : constant Integer := Integer(Picture_Count'first);
+      Maximum : constant Integer := Integer(Picture_Count'last);
+    begin
+      return Picture_Count(Section.Value_Of (Key, Processor_Id, Minimum, Maximum));
+    end Number_Of_Pictures;
+
+  begin -- Define
     Section.Set (Configuration.Handle_For (Handle, Id));
     Astap.Define (Executable => Section.Filename_Of (Astap_Key));
     declare
@@ -58,7 +61,12 @@ package body Picture.Parameter is
       Processing_Is_Enabled := True;
       The_Processor_Address := Section.Ip_Address_For (Processor_Id);
       The_Processor_Port := Section.Port_For (Processor_Id);
-      The_Number_Of_Darks := Number_Of_Darks;
+      The_Number_Of_Darks := Number_Of_Pictures (Darks_Count_Key);
+      The_Number_Of_Flats := Number_Of_Pictures (Flats_Count_Key);
+      The_Flats_Exposure := Section.Exposure_Of (Flats_Exposure_Key, Processor_Id);
+      Log.Write (Flats_Exposure_Key & ": " & The_Flats_Exposure'image);
+      The_Flats_Sensitivity := Section.Sensitivity_Of (Flats_Sensitivity_Key, Processor_Id);
+      Log.Write (Flats_Sensitivity_Key & ": " & The_Flats_Sensitivity'image);
     end if;
   end Define;
 
@@ -77,9 +85,12 @@ package body Picture.Parameter is
     Put (Filename_Key & " = " & Default_Name);
     Put ("");
     Put ("[" & Processor_Id & "]");
-    Put (Ip_Address_Key & "  = localhost");
-    Put (Port_Key & "        = 11000");
-    Put (Darks_Count_Key & " = 20");
+    Put (Ip_Address_Key & "        = localhost");
+    Put (Port_Key & "              = 11000");
+    Put (Darks_Count_Key & "       = 20");
+    Put (Flats_Count_Key & "       = 30");
+    Put (Flats_Exposure_Key & "    = 1/15");
+    Put (Flats_Sensitivity_Key & " = 1600");
   end Defaults;
 
 end Picture.Parameter;

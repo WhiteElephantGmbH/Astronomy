@@ -17,11 +17,16 @@ pragma Style_Astronomy;
 
 package Url_Names is
 
+  Id : constant String := "id";
+
   New_Darks : constant String := "/new_darks";
+  New_Flats : constant String := "/new_flats";
 
   Store_Darks : constant String := "/store_darks";
+  Store_Flats : constant String := "/store_flats";
 
-  Id     : constant String := "id";
+  Darks  : constant String := "darks";
+  Flats  : constant String := "flats";
   Mode   : constant String := "mode";
   Target : constant String := "target";
   Value  : constant String := "value";
@@ -31,9 +36,10 @@ package Url_Names is
   Ra  : constant String := "ra";
   Dec : constant String := "dec";
 
-  Camera_Model : constant String := "camera";
-  Pixel_Size   : constant String := "pixel";
-  Focal_Length : constant String := "focal";
+  Camera_Model    : constant String := "camera";
+  Telescope_Model : constant String := "telescope";
+  Pixel_Size      : constant String := "pixel";
+  Focal_Length    : constant String := "focal";
 
   Picture : constant String := "/picture";
 

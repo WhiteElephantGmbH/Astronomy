@@ -15,28 +15,43 @@
 -- *********************************************************************************************************************
 pragma Style_Astronomy;
 
+with Error;
 with Section;
 
 package body Moon.Parameter is
 
-  Minimum_Sun_Altitude_Key : constant String := "Minimum Sun Altitude";
-  Maximum_Sun_Altitude_Key : constant String := "Maximum Sun Altitude";
+  Minimum_Solar_Elevation_Key : constant String := "Minimum Solar Elevation";
+  Maximum_Solar_Elevation_Key : constant String := "Maximum Solar Elevation";
 
 
   procedure Define (Handle : Configuration.File_Handle) is
-    use type Angle.Degrees;
-  begin
+
+    function Solar_Elevation_Of (Key : String) return Units.Solar_Elevation is
+      Image : constant String := Section.String_Of (Key);
+    begin
+      return Units.Solar_Elevation'value(Image(Image'first .. Image'last - Angle.Degree'length));
+    exception
+    when others =>
+       Error.Raise_With ("Incorrect value of " & Key & ": <" & Image & ">");
+    end Solar_Elevation_Of;
+
+  begin -- Define
     Section.Set (Configuration.Handle_For (Handle, Id));
-    Define (Min_Sun_Altitude => Section.Degrees_Of (Minimum_Sun_Altitude_Key, Minimum => -90.0, Maximum => 0.0),
-            Max_Sun_Altitude => Section.Degrees_Of (Maximum_Sun_Altitude_Key, Maximum => 90.0));
+    Define (Solar_Elevation_Range => (Minimum => Solar_Elevation_Of (Minimum_Solar_Elevation_Key),
+                                      Maximum => Solar_Elevation_Of (Maximum_Solar_Elevation_Key)));
+    exception
+    when Error.Occurred =>
+      raise;
+    when others =>
+      Error.Raise_With ("Negative range not allowed");
   end Define;
 
 
   procedure Defaults (Put : access procedure (Item : String)) is
   begin
     Put ("[" & Id & "]");
-    Put (Minimum_Sun_Altitude_Key & " = -2.0" & Angle.Degree);
-    Put (Maximum_Sun_Altitude_Key & " = 15.0" & Angle.Degree);
+    Put (Minimum_Solar_Elevation_Key & " = -2" & Angle.Degree);
+    Put (Maximum_Solar_Elevation_Key & " = 15" & Angle.Degree);
   end Defaults;
 
 end Moon.Parameter;
