@@ -27,8 +27,8 @@ with Exceptions;
 with Exposure;
 with HFD;
 with Sensitivity;
+with Rt;
 with Text;
-with Time;
 
 procedure HFD_Test is
 
@@ -100,7 +100,7 @@ begin -- Camera_Test
         IO.Put_Line ("### " & Camera.Error_Message & " ###");
       end case;
     end;
-    Time.Wait (Delay_Time);
+    Rt.Wait (Delay_Time);
     The_Count := @ - 1;
     if The_Count = 0 then
       IO.Put ("a");

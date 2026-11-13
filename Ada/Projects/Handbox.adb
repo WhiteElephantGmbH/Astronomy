@@ -16,8 +16,8 @@
 pragma Style_Astronomy;
 
 with Exceptions;
+with Rt;
 with Serial_Io;
-with Time;
 with Traces;
 
 package body Handbox is
@@ -139,7 +139,7 @@ package body Handbox is
         accept Close;
         exit;
       or
-        delay until Time.In_Future (1.0);
+        delay until Rt.In_Future (1.0);
       end select;
     end loop Main;
     The_Device.Close;

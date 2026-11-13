@@ -27,7 +27,7 @@ with Celestron.Focuser;
 with Focuser_Client;
 with Exceptions;
 with Handbox;
-with Time;
+with Rt;
 
 procedure Focuser_Test is
 
@@ -72,7 +72,7 @@ begin
   IO.Put_Line ("============");
   Handbox.Start (Execute'access);
   while Is_Executing loop
-    Time.Wait (1.0);
+    Rt.Wait (1.0);
     The_Data := Focuser_Client.Actual_Data;
     IO.Put_Line ("Rate:" & The_Data.Speed'image &
                  " - Backlash:" & The_Data.Backlash'image &
@@ -100,7 +100,7 @@ begin
       Was_Disconnected := True;
       IO.Put_Line ("Focuser Disconnected");
     end if;
-    Time.Wait (1.0);
+    Rt.Wait (1.0);
     The_Data := Focuser_Client.Actual_Data;
   end loop;
   IO.Put_Line ("Close Handbox");

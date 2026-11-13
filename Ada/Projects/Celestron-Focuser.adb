@@ -16,8 +16,8 @@
 pragma Style_Astronomy;
 
 with Exceptions;
+with Rt;
 with Serial_Io;
-with Time;
 with Traces;
 with Unsigned;
 
@@ -469,7 +469,7 @@ package body Celestron.Focuser is
           accept Stop;
           exit;
         or
-          delay until Time.In_Future (1.0);
+          delay until Rt.In_Future (1.0);
           Get_Available_State;
         end select;
       exception

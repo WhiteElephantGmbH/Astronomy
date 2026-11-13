@@ -11,8 +11,8 @@ with Astap;
 with Sky.Catalog;
 with File;
 with Os.System;
+with Rt;
 with Text;
-with Time;
 with Traces;
 
 package body Nebulae is
@@ -157,7 +157,7 @@ package body Nebulae is
                  Height   => Picture_Height,
                  Start    => [Sky.Catalog.Ra_J2000_Of(Id), Sky.Catalog.Dec_J2000_Of(Id)]);
     for Unused in 1 .. 10 loop
-      Time.Wait (1.0);
+      Rt.Wait (1.0);
       if Astap.Solved (CRVAL, CD, Size) then
         IO.Put_Line ("Solved RA =" & CRVAL(Ra)'image & " - DEC =" & CRVAL(Dec)'image);
         IO.Put_Line ("  Size RA =" & Size(Ra)'image & " - DEC =" & Size(Dec)'image);

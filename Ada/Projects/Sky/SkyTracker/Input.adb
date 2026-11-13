@@ -16,7 +16,7 @@
 pragma Style_Astronomy;
 
 with Traces;
-with Time;
+with Rt;
 
 package body Input is
 
@@ -147,7 +147,7 @@ package body Input is
           Execute (The_Command);
         end case;
       or
-        delay until Time.In_Future (20.0);
+        delay until Rt.In_Future (20.0);
         if Is_Changing then
           Execute (End_Command);
           Is_Changing := False;

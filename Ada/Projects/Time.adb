@@ -45,19 +45,6 @@ package body Time is
   end Filled_Image_Of;
 
 
-  function In_Future (Time_Offset : Duration) return Ada.Real_Time.Time is
-    use type Ada.Real_Time.Time;
-  begin
-    return Ada.Real_Time.Clock + Ada.Real_Time.To_Time_Span (Time_Offset);
-  end In_Future;
-
-
-  procedure Wait (Time_Span : Duration := For_Termination) is
-  begin
-    delay until Time.In_Future (Time_Offset => Time_Span);
-  end Wait;
-
-
   function "+" (Left  : Ut;
                 Right : Duration) return Ut is
   begin

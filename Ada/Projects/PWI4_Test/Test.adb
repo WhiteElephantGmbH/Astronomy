@@ -12,10 +12,10 @@ with PWI4.Focuser;
 with PWI4.Rotator;
 with PWI4.Mount;
 with PWI4.M3;
+with Rt;
 with Serial_Io.Usb;
 with Serial_Io.Windows;
 with Text;
-with Time;
 
 package body Test is
 
@@ -189,7 +189,7 @@ package body Test is
         Connect_Timeout : constant := 5; -- seconds
       begin
         for Unused_Count in 1 .. Connect_Timeout loop
-          Time.Wait (1.0);
+          Rt.Wait (1.0);
           Get_Status;
           Put ("State: " & PWI4.Mount.Info.Status'image);
           if PWI4.Mount.Info.Status >= PWI4.Mount.Connected then
@@ -221,7 +221,7 @@ package body Test is
         Enable_Timeout : constant := 45; -- seconds
       begin
         for Unused_Count in 1 .. Enable_Timeout loop
-          Time.Wait (1.0);
+          Rt.Wait (1.0);
           Get_Status;
           if PWI4.Mount.Info.Status /= PWI4.Mount.Connected then
             return;
@@ -255,7 +255,7 @@ package body Test is
       procedure Wait_For_Mount_At_Home is
       begin
         loop
-          Time.Wait (1.0);
+          Rt.Wait (1.0);
           Get_Status;
           case PWI4.Mount.Info.Status is
           when PWI4.Mount.Enabled =>
@@ -439,7 +439,7 @@ package body Test is
                               With_Dec   => Dec,
                               From_J2000 => True);
       loop
-        Time.Wait (1.0);
+        Rt.Wait (1.0);
         Get_Status;
         declare
           Info : constant PWI4.Mount.Information := PWI4.Mount.Info;
@@ -467,7 +467,7 @@ package body Test is
         when others =>
           exit;
         end case;
-        Time.Wait (1.0);
+        Rt.Wait (1.0);
       end loop;
     end Stop;
 

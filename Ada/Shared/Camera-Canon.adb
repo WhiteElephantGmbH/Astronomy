@@ -15,17 +15,15 @@
 -- *********************************************************************************************************************
 pragma Style_Astronomy;
 
-with Ada.Real_Time;
 with C.Helper;
 with Camera.Canon.C_Interface;
 with Camera.Raw;
+with Rt;
 with System;
-with Time;
 
 package body Camera.Canon is
 
   package CI renames Camera.Canon.C_Interface;
-  package RT renames Ada.Real_Time;
 
   task type Control with  Priority => System.Max_Priority is
 
@@ -326,9 +324,9 @@ package body Camera.Canon is
     Max_Download_Time : constant Duration := 15.0;
     AE_Mode_Set_Time  : constant Duration := 0.1;
 
-    Delta_Time : constant RT.Time_Span := RT.To_Time_Span (1.0 / 5);
+    Delta_Time : constant Rt.Time_Span := Rt.To_Time_Span (1.0 / 5);
 
-    use type RT.Time;
+    use type Rt.Time;
 
     type Session is record
       Device_List : aliased CI.Device_List;
@@ -399,7 +397,7 @@ package body Camera.Canon is
         begin
           Get (CI.Prop_Id_Evf_Output_Device, Value);
           exit when Value = CI.Evf_Output_None'enum_rep;
-          Time.Wait (0.1);
+          Rt.Wait (0.1);
         end;
       end loop;
     end Disable_Electronic_View_Finder;
@@ -577,13 +575,13 @@ package body Camera.Canon is
     --   Downloads the RAW file from the camera to Filename    --
     --   Deletes the RAW file in the camera                    --
     -------------------------------------------------------------
-    The_Start_Time  : RT.Time;
-    The_Wakeup_Time : RT.Time;
+    The_Start_Time  : Rt.Time;
+    The_Wakeup_Time : Rt.Time;
     The_Timeout     : Duration;
 
     Shutter_Is_On            : Boolean;
     Shutter_Release          : Boolean;
-    The_Shutter_Release_Time : RT.Time;
+    The_Shutter_Release_Time : Rt.Time;
 
     procedure Start_Capture is
       The_Mode : CI.Uint32;
@@ -615,7 +613,7 @@ package body Camera.Canon is
           Set (Property    => CI.Prop_Id_AE_Mode_Select,
                Value       => CI.K_AE_Mode_Manual'enum_rep,
                Where_Label => "Set AE Mode Select to Manual");
-          Time.Wait (AE_Mode_Set_Time);
+          Rt.Wait (AE_Mode_Set_Time);
         end case;
         Set (Property    => CI.Prop_Id_Tv,
              Value       => To_K_Tv (The_Exposure)'enum_rep,
@@ -641,7 +639,7 @@ package body Camera.Canon is
           Set (Property    => CI.Prop_Id_AE_Mode_Select,
                Value       => CI.K_AE_Mode_Manual'enum_rep,
                Where_Label => "Set AE Mode Select to Manual");
-          Time.Wait (AE_Mode_Set_Time);
+          Rt.Wait (AE_Mode_Set_Time);
         end case;
       end case;
 
@@ -663,10 +661,10 @@ package body Camera.Canon is
                  CI.Camera_Command_Press_Shutter_Button,
                  CI.Camera_Command_Shutter_Button_Completely_Non_AF'enum_rep);
         Shutter_Is_On := True;
-        The_Shutter_Release_Time := RT.Clock + RT.To_Time_Span (Duration(The_Exposure.Time));
-        The_Wakeup_Time := RT.Clock;
+        The_Shutter_Release_Time := Rt.Now + Rt.To_Time_Span (Duration(The_Exposure.Time));
+        The_Wakeup_Time := Rt.Now;
       end case;
-      The_Start_Time := RT.Clock;
+      The_Start_Time := Rt.Now;
       Camera_Data.Set (Capturing);
     exception
     when Camera_Error =>
@@ -690,7 +688,7 @@ package body Camera.Canon is
           The_Wakeup_Time := The_Shutter_Release_Time;
           Shutter_Release := True;
         end if;
-      elsif RT.To_Duration (RT.Clock - The_Start_Time) > The_Timeout then
+      elsif Rt.To_Duration (Rt.Now - The_Start_Time) > The_Timeout then
         Raise_Error ("Timeout: no directory item event received");
       end if;
 
@@ -767,7 +765,7 @@ package body Camera.Canon is
 
   begin -- Control
     Camera_Data.Set (Idle);
-    The_Wakeup_Time := RT.Clock + Delta_Time;
+    The_Wakeup_Time := Rt.Now + Delta_Time;
     loop
       select
         accept Get (Is_Ready : out Boolean) do
@@ -802,7 +800,7 @@ package body Camera.Canon is
           loop
             case Camera_Data.Actual.State is
             when Capturing =>
-              The_Shutter_Release_Time := RT.Clock;
+              The_Shutter_Release_Time := Rt.Now;
               Continue_Capture;
             when Cropping | Cropped =>
               exit;
@@ -821,7 +819,7 @@ package body Camera.Canon is
         exit;
       or
         when Camera_Data.Actual.Camera in Canon_Model => delay until The_Wakeup_Time;
-        The_Wakeup_Time := RT.Clock + Delta_Time;
+        The_Wakeup_Time := Rt.Now + Delta_Time;
         case Camera_Data.Actual.State is
         when Capturing =>
           Continue_Capture;

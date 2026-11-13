@@ -2,7 +2,7 @@
 -- *                   (c) 2008 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                              *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with Ada_95.Error;
 with Ada_95.Library;

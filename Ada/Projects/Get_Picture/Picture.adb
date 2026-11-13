@@ -14,8 +14,8 @@ with Exceptions;
 with File;
 with Gui;
 with Log;
+with Rt;
 with Text;
-with Time;
 
 package body Picture is
 
@@ -94,13 +94,13 @@ package body Picture is
           exit;
         exception
         when Ada.Text_IO.Use_Error =>
-          Time.Wait (0.5);
+          Rt.Wait (0.5);
         end;
       end loop;
       Ada.Text_IO.Close (The_File);
       Log.Write ("Await stable filesize for " & The_Filename);
       loop
-        Time.Wait (Size_Check_Delay);
+        Rt.Wait (Size_Check_Delay);
         New_Filesize := File.Size_Of (The_Filename);
         Log.Write ("New file size:" & New_Filesize'image);
         if New_Filesize = 0 then
@@ -108,7 +108,7 @@ package body Picture is
         end if;
         exit when New_Filesize = The_Filesize;
         The_Filesize := New_Filesize;
-        Time.Wait (0.2);
+        Rt.Wait (0.2);
       end loop;
       Log.Write ("Filesize is stable");
     end Await_Stable;
@@ -172,7 +172,7 @@ package body Picture is
           Error ("No picture file found in " & Picture_Directory);
         end if;
         The_Detection_Time := @ + Detection_Delay;
-        Time.Wait (Detection_Delay);
+        Rt.Wait (Detection_Delay);
       end loop;
       Copy_Completed (The_Filename.S, Destination_Filename);
     end;

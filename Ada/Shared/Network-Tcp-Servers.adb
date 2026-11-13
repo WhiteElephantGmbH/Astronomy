@@ -18,7 +18,7 @@ pragma Style_Astronomy;
 with Ada.Containers.Doubly_Linked_Lists;
 with Ada.Exceptions;
 with Ada.Unchecked_Deallocation;
-with Time;
+with Rt;
 with Traces;
 
 package body Network.Tcp.Servers is
@@ -119,7 +119,7 @@ package body Network.Tcp.Servers is
         end Remove;
         The_Terminating_Client.The_Reader.Finish;
         while not The_Terminating_Client.The_Reader'terminated loop
-          Time.Wait;
+          Rt.Wait;
         end loop;
         Deallocate (The_Terminating_Client.The_Reader);
         declare

@@ -2,7 +2,7 @@
 -- *                       (c) 2021 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with Ada.Calendar;
 with Ada.Text_IO;
@@ -98,7 +98,9 @@ package body Project.Resource is
     Put ("  BEGIN");
     Put ("    BLOCK ""040904E4""");
     Put ("    BEGIN");
-    Put ("      VALUE ""LegalCopyright"", """ & Copyright & Build.Actual_Company & Actual_Year'img & "\0""");
+    if Build.Actual_Company /= "" then
+      Put ("      VALUE ""LegalCopyright"", """ & Copyright & Build.Actual_Company & Actual_Year'img & "\0""");
+    end if;
     Put ("      VALUE ""FileDescription"", """ & Build.Actual_Description & "\0""");
     Put ("      VALUE ""OriginalFilename"", """ & Name & (if Build.Is_Dll then ".dll" else ".exe") & "\0""");
     Put ("      VALUE ""InternalName"", """ & Name & "\0""");

@@ -2,7 +2,7 @@
 -- *                           (c) 2008 .. 2024 by Soudronic AG, Bergdietikon, Switzerland                             *
 -- *                      Developed by White Elephant GmbH, Switzerland (www.white-elephant.ch)                        *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 package body Server is
 

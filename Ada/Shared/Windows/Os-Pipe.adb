@@ -20,8 +20,8 @@ with Log;
 with Win32.Winbase;
 with Win32.Winerror;
 with Win32.Winnt;
+with Rt;
 with Semaphore;
-with Time;
 
 package body Os.Pipe is
 
@@ -185,7 +185,7 @@ package body Os.Pipe is
             end if;
             Retry_Count := @ + 1;
           end if;
-          Time.Wait (Retry_Delay);
+          Rt.Wait (Retry_Delay);
         when others =>
           Handle_Error (Error);
         end case;
@@ -305,7 +305,7 @@ package body Os.Pipe is
           if Error = Win32.Winerror.ERROR_PIPE_BUSY and then Retry_Count < Max_Retries then
             if Win32.Winbase.WaitNamedPipe(Win32.Addr(Pipe_Name), 1000) = Win32.FALSE then
               Log.Write("Os.Pipe - WaitNamedPipe failed, continuing retry");
-              Time.Wait (0.1); -- minimum wait time if WaitNamedPipe failed
+              Rt.Wait (0.1); -- minimum wait time if WaitNamedPipe failed
             end if;
             Retry_Count := Retry_Count + 1;
             Log.Write ("Os.Pipe - Pipe busy -> retry CreateNamedPipe");

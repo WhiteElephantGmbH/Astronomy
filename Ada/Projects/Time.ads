@@ -16,9 +16,9 @@
 pragma Style_Astronomy;
 
 with Ada.Calendar;
-with Ada.Real_Time;
 with Angle;
 with Astro;
+with Rt;
 
 package Time is
 
@@ -26,11 +26,11 @@ package Time is
   -- Ada Real Time --
   -------------------
 
-  For_Termination : constant Duration := 0.01;
+  For_Termination : constant Duration := Rt.For_Termination;
 
-  function In_Future (Time_Offset : Duration) return Ada.Real_Time.Time;
+  function In_Future (Time_Offset : Duration) return Rt.Time renames Rt.In_Future;
 
-  procedure Wait (Time_Span : Duration := For_Termination);
+  procedure Wait (Time_Span : Duration := For_Termination) renames Rt.Wait;
 
 
   ------------------

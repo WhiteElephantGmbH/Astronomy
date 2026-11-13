@@ -18,8 +18,8 @@ pragma Style_Astronomy;
 with Ada.Real_Time;
 with Ada.Unchecked_Conversion;
 with Log;
+with Rt;
 with System;
-with Time;
 with Text;
 
 package body Network.Tcp is
@@ -58,7 +58,7 @@ package body Network.Tcp is
   exception
   when Net.Socket_Error =>
     Log.Write ("Network.Tcp.Socket_For: Socket_Error");
-    Time.Wait (The_Timeout); -- Same behaviour as when network if active
+    Rt.Wait (The_Timeout); -- Same behaviour as when network if active
     raise Not_Found;
   end Socket_For;
 

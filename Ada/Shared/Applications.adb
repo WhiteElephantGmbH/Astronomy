@@ -77,13 +77,14 @@ package body Applications is
   function Created_Application_Data_Directory return String is
 
     function Family return String is
+      Elephant_Dll_Name : constant String := "Elephant";
     begin
       if Product = "" then
         declare
           Application_Name : constant String := Os.Application.Name;
           Family_Name      : constant String := FS.Simple_Name (Os.Application.Origin_Folder);
         begin
-          if Family_Name /= Application_Name then
+          if not (Family_Name in Application_Name | Elephant_Dll_Name) then
             return Family_Name;
           end if;
         end;

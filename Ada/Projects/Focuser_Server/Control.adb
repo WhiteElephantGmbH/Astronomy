@@ -17,8 +17,8 @@ pragma Style_Astronomy;
 
 with Celestron.Focuser;
 with Handbox.Client;
+with Rt;
 with Server;
-with Time;
 with Traces;
 
 package body Control is
@@ -73,7 +73,7 @@ package body Control is
         accept Shutdown;
         exit;
       or
-        delay until Time.In_Future (0.2);
+        delay until Rt.In_Future (0.2);
       end select;
     end loop;
     Log.Write ("Manager terminating");

@@ -18,7 +18,7 @@ pragma Style_Astronomy;
 with Ada.Text_IO;
 with Exceptions;
 with GPIO;
-with Time;
+with Rt;
 
 package body Control is
 
@@ -34,9 +34,9 @@ package body Control is
     loop
       GPIO.Await_Change_To_High (On => GPIO.Line27);
       GPIO.Set (GPIO.Line22, GPIO.High);
-      Time.Wait (0.1);
+      Rt.Wait (0.1);
       GPIO.Await_Change_To_Low (On => GPIO.Line27);
-      Time.Wait (0.1);
+      Rt.Wait (0.1);
       GPIO.Set (GPIO.Line22, GPIO.Low);
     end loop;
   exception
@@ -52,9 +52,9 @@ package body Control is
     GPIO.Request_Output (GPIO.Line17);
     for Unused in 1 .. 10 loop
       GPIO.Set (GPIO.Line17, GPIO.High);
-      Time.Wait (0.5);
+      Rt.Wait (0.5);
       GPIO.Set (GPIO.Line17, GPIO.Low);
-      Time.Wait (0.5);
+      Rt.Wait (0.5);
     end loop;
     GPIO.Release (GPIO.Line27);
     Handler.Wait_For_End;

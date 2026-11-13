@@ -17,8 +17,8 @@ pragma Style_Astronomy;
 
 with Directory;
 with File;
+with Rt;
 with Text;
-with Time;
 
 package body Image is
 
@@ -82,7 +82,7 @@ package body Image is
           return False;
         end if;
         Retry_Count := @ + 1;
-        Time.Wait (Retry_Delay);
+        Rt.Wait (Retry_Delay);
       end;
     end loop;
     Directory.Create (Collector_Directory);

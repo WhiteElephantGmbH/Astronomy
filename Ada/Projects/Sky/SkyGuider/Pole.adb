@@ -17,8 +17,8 @@ pragma Style_Astronomy;
 
 with M_Zero;
 with Picture;
+with Rt;
 with Space;
-with Time;
 with Traces;
 with Pole_Axis;
 
@@ -33,7 +33,7 @@ package body Pole is
     if Picture.Solve (Search_From => Space.Pole_Search_Direction) then
       M_Zero.Start_Solving;
       while not Picture.Solved loop
-        Time.Wait (0.5);
+        Rt.Wait (0.5);
         The_Count := The_Count + 1;
         if The_Count = 40 then
           Picture.Stop_Solving;

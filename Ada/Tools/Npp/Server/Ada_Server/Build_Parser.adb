@@ -2,7 +2,7 @@
 -- *                       (c) 2021 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with Ada.Text_IO;
 with Build;
@@ -266,6 +266,8 @@ package body Build_Parser is
                 end if;
               end;
             end loop;
+          elsif Pragma_Name = "Style_Astronomy" then
+            Build.Define_Company ("White Elephant GmbH");
           elsif Pragma_Name = "Style_White_Elephant" then
             Build.Define_Company ("White Elephant GmbH");
           elsif Pragma_Name = "Style_Soudronic" then

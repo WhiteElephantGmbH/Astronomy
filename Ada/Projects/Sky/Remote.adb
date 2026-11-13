@@ -17,7 +17,7 @@ pragma Style_Astronomy;
 
 with AWS.Client;
 with AWS.Response;
-with Time;
+with Rt;
 with Traces;
 
 package body Remote is
@@ -220,7 +220,7 @@ package body Remote is
         accept Close;
         exit;
       or
-        delay until Time.In_Future (3.0);
+        delay until Rt.In_Future (3.0);
         Send_Actual (Clear => True);
       end select;
     end loop;

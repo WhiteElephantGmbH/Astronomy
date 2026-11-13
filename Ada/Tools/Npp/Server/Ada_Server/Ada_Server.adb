@@ -2,7 +2,7 @@
 -- *                       (c) 2013 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 pragma Build (Description => "Ada Server for NP++ Elephant Plugin",
               Version     => (2, 0, 0, 0),

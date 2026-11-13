@@ -27,8 +27,8 @@ with Exceptions;
 with Exposure;
 with Os.System;
 with Sensitivity;
+with Rt;
 with Text;
-with Time;
 
 procedure Camera_Test is
 
@@ -131,11 +131,13 @@ begin -- Camera_Test
         IO.Put_Line ("### " & Camera.Error_Message & " ###");
       end case;
     end;
-    Time.Wait (Delay_Time);
-    The_Count := @ - 1;
-    if The_Count = 0 then
-      IO.Put ("a");
-      Camera.Stop;
+    Rt.Wait (Delay_Time);
+    if The_Count > 0 then
+      The_Count := @ - 1;
+      if The_Count = 0 then
+        IO.Put ("a");
+        Camera.Stop;
+      end if;
     end if;
   end loop;
   Camera.Finish;

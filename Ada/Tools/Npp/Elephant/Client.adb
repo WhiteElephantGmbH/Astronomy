@@ -13,7 +13,7 @@
 -- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
 -- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with Ada.Containers.Indefinite_Vectors;
 with Ada.Text_IO;
@@ -26,6 +26,7 @@ with Npp.Buffer;
 with Npp.Message;
 with Npp.Plugin;
 with Npp.Tree_View;
+with Rt;
 with Scintilla;
 with Text;
 with System;
@@ -78,7 +79,7 @@ package body Client is
   function All_Saved return Boolean is
   begin
     if Npp.Plugin.All_Files_Saved then
-      delay 1.0; -- wait for files to be written
+      Rt.Wait (1.0); -- wait for files to be written
     end if;
     return True;
   end All_Saved;

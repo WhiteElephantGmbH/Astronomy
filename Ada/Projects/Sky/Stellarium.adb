@@ -25,9 +25,9 @@ with Error;
 with File;
 with Network.Tcp.Servers;
 with Os.Process;
+with Rt;
 with Site;
 with Stellarium.Client;
-with Time;
 with Unsigned;
 
 package body Stellarium is
@@ -460,7 +460,7 @@ package body Stellarium is
     end;
     Log.Write ("start");
     The_Process_Id := Os.Process.Created (The_Filename.S);
-    Time.Wait (1.0); -- wait for creation
+    Rt.Wait (1.0); -- wait for creation
     return True;
   exception
   when others =>

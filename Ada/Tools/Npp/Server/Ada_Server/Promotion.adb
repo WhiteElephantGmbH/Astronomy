@@ -2,7 +2,7 @@
 -- *                       (c) 2013 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *********************************************************************************************************************
-pragma Style_White_Elephant;
+pragma Style_Astronomy;
 
 with Ada.Unchecked_Deallocation;
 with Exceptions;
@@ -10,6 +10,7 @@ with Log;
 with Target;
 with Project;
 with Text;
+with Rt;
 
 package body Promotion is
 
@@ -186,7 +187,7 @@ package body Promotion is
   begin
     if The_Handler /= null then
       while not The_Handler'terminated loop
-        delay (0.001);
+        Rt.Wait;
       end loop;
       Dispose (The_Handler);
     end if;
