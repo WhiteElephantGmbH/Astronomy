@@ -373,7 +373,7 @@ package body Targets is
               when Sky.Moon | Sky.Satellite =>
                 raise Program_Error;
               when Sky.Unknown =>
-                return False;
+                return Is_To_Add (Stars, Sky.Data.Direction_Of (Object, Ut));
               end case;
             end;
           end case;
