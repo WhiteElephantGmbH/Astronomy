@@ -231,8 +231,11 @@ package body Targets is
     The_Feature_Selection : Moon_Feature_Selection := All_Features;
     The_Sort_Direction    : Name.Sorting := Name.No_Sort;
 
-    function Is_Selected (The_Objects : Object_Kind) return Boolean is
+    function Is_Selected (The_Objects : Selection) return Boolean is
     begin
+      if The_Objects = All_Objects then
+        return True;
+      end if;
       case The_Actual_Selection is
       when All_Objects =>
         return True;
@@ -388,7 +391,7 @@ package body Targets is
               when Sky.Moon | Sky.Satellite =>
                 raise Program_Error;
               when Sky.Unknown =>
-                return False;
+                return Is_To_Add (All_Objects, Sky.Data.Direction_Of (Object, Ut));
               end case;
             end;
           end case;
