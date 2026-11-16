@@ -62,6 +62,8 @@ package Sky.Data is
 
   function Moon_Feature_Name_Of (Item : Moon_Feature) return String;
 
+  function Moon_Stellarium_Feature_Name_Of (Item : Moon_Feature) return String;
+
   function New_Object_For (Item        : String;
                            Description : String;
                            Object_Kind : Object_Type := Unknown;

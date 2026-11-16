@@ -133,14 +133,13 @@ package body Name is
     begin -- Moon_Image
       if Moon_Data.Has_Feature (Item, The_Feature, The_Feature_Type) then
         declare
-          Feature : constant String := Sky.Data.Moon_Feature_Name_Of (The_Feature);
+          Feature : constant String := Sky.Data.Moon_Stellarium_Feature_Name_Of (The_Feature);
           On_Moon : constant String := " (moon)";
           use all type Moon_Data.Feature_Type;
         begin
           case The_Feature_Type is
           when Crater =>
-            return (if Image(Image'last) in 'X' | 'V' then Image(Image'first .. Image'last - 2) else Image) &
-                   " (crater, moon)";
+            return Feature & " (crater, moon)";
           when others =>
             return Feature & On_Moon;
           end case;

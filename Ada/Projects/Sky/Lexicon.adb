@@ -879,7 +879,7 @@ package body Lexicon is
     Black                     => E (Black,                     "Black",                    "Black",                        "Black",                        "Black",                          "Black",                            "Black"),
     Blancanus                 => E (Blancanus,                 "Blancanus",                "Blancanus",                    "Blancanus",                    "Blancanus",                      "Blancanus",                        "Blancanus"),
     Blanchard                 => E (Blanchard,                 "Blanchard",                "Blanchard",                    "Blanchard",                    "Blanchard",                      "Blanchard",                        "Blanchard"),
-    Blanchinus                => E (Blanchinus,                "Blanchinus X",             "Blanchinus X",                 "Blanchinus X",                 "Blanchinus X",                   "Blanchinus X",                     "Blanchinus X"),
+    Blanchinus                => E (Blanchinus,                "Blanchinus",               "Blanchinus X",                 "Blanchinus X",                 "Blanchinus X",                   "Blanchinus X",                     "Blanchinus X"),
     Bliss                     => E (Bliss,                     "Bliss",                    "Bliss",                        "Bliss",                        "Bliss",                          "Bliss",                            "Bliss"),
     Bode                      => E (Bode,                      "Bode",                     "Bode",                         "Bode",                         "Bode",                           "Bode",                             "Bode"),
     Boethius                  => E (Boethius,                  "Boethius",                 "Boethius",                     "Boethius",                     "Boethius",                       "Boethius",                         "Boethius"),
@@ -1762,7 +1762,7 @@ package body Lexicon is
     Triesnecker               => E (Triesnecker,               "Triesnecker",              "Triesnecker",                  "Triesnecker",                  "Triesnecker",                    "Triesnecker",                      "Triesnecker"),
     Turner                    => E (Turner,                    "Turner",                   "Turner",                       "Turner",                       "Turner",                         "Turner",                           "Turner"),
     Tycho                     => E (Tycho,                     "Tycho",                    "Tycho",                        "Tycho",                        "Tycho",                          "Tycho",                            "Tycho"),
-    Ukert                     => E (Ukert,                     "Ukert V",                  "Ukert V",                      "Ukert V",                      "Ukert V",                        "Ukert V",                          "Ukert V"),
+    Ukert                     => E (Ukert,                     "Ukert",                    "Ukert V",                      "Ukert V",                      "Ukert V",                        "Ukert V",                          "Ukert V"),
     Ulugh_Beigh               => E (Ulugh_Beigh,               "Ulugh Beigh",              "Ulugh Beigh",                  "Ulugh Beigh",                  "Ulugh Beigh",                    "Ulugh Beigh",                      "Ulugh Beigh"),
     Urey                      => E (Urey,                      "Urey",                     "Urey",                         "Urey",                         "Urey",                           "Urey",                             "Urey"),
     Vallis_Alpes              => E (Vallis_Alpes,              "Vallis Alpes",             "Vallis Alpes",                 "Alpental",                     "Vallis Alpes",                   "Vallis Alpes",                     "Vallis Alpes"),
@@ -1897,6 +1897,12 @@ package body Lexicon is
   begin
     return Dictionary(Item)(Language.Actual).all;
   end Image_Of;
+
+
+  function English_Image_Of (Item : Word) return String is
+  begin
+    return Dictionary(Item)(Language.English).all;
+  end English_Image_Of;
 
 
   function Word_Of (Name : String) return Word is

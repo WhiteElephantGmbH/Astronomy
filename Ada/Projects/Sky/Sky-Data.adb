@@ -165,6 +165,12 @@ package body Sky.Data is
   end Moon_Feature_Name_Of;
 
 
+  function Moon_Stellarium_Feature_Name_Of (Item : Moon_Feature) return String is
+  begin
+    return Lexicon.English_Image_Of (Lexicon.Word'value(Item'image));
+  end Moon_Stellarium_Feature_Name_Of;
+
+
   function Moon_Feature_Name_Of (Id : Index) return String is
   begin
     return Moon_Feature_Name_Of (Moon_Feature_Of (Id));
