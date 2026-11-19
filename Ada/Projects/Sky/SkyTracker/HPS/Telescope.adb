@@ -293,7 +293,7 @@ package body Telescope is
 
     The_Phase : Phase;
 
-    Processing_Is_Enabled    : Boolean := False;
+    Processing_Is_Enabled : Boolean := False;
 
     The_Information : Ten_Micron.Information;
 
@@ -415,9 +415,7 @@ package body Telescope is
 
     function Defined_Camera return Boolean is
     begin
-      Camera.Detect_Model;
-      if Camera.Available then
-        Stellarium.Set_Camera (Camera.Actual_Model);
+      if Targets.Defined_Camera then
         return True;
       else
         Show_Error_And_Stop ("Camera not available.");
@@ -522,9 +520,7 @@ package body Telescope is
       use type Camera.Status;
 
     begin -- Update_Handling
-      if not Camera.Available then
-        Camera.Detect_Model;
-      end if;
+      Targets.Detect_Camera_First_Time;
       Get_Information;
       Update_Time_Delta;
       case The_Information.Status is

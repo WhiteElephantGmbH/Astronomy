@@ -32,7 +32,7 @@ package Units is
     when Canon_Model    => "cr2",
     when QHY_Model      => "fits");
 
-  type Telescope_Model is (Unknown, Celestron_C11, Celestron_C14, CDK_700);
+  type Telescope_Model is (Unknown, Celestron_C11, CDK_700, RASA_11, T86SDQ);
 
   Celsius_Delta : constant := 0.1;
   type Celsius is delta  Celsius_Delta range -273.2 .. 999.9 with Small => Celsius_Delta;

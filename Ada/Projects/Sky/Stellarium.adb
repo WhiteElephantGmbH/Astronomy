@@ -419,8 +419,18 @@ package body Stellarium is
   end Define_Handler;
 
 
-  procedure Set (Item    : Units.Solar_Elevation_Range;
-                 Timeout : Duration) renames Client.Set_Terminator;
+  procedure Remote_Startup (Moon_Terminator : Units.Solar_Elevation_Range;
+                            Timeout         : Duration) is
+  begin
+    if Remote_Control_Configured then
+      Client.Define_At_Startup (Moon_Terminator, Timeout);
+    else
+      Log.Write ("Remote control not configured");
+    end if;
+  end Remote_Startup;
+
+
+  function Has_Remote_Control return Boolean is (Remote_Control_Is_Enabled);
 
 
   procedure Message_Handler (The_Message : Receive_Message) is
@@ -536,14 +546,19 @@ package body Stellarium is
 
 
   procedure Center_On (Target : Name.Id) is
-    Target_Name : constant String := Name.Image_For_Stellarium_Of (Target);
   begin
-    if Target_Name /= "" then
-      Client.Set_Focus_To (Target_Name, Center);
+    if Has_Remote_Control then
+      declare
+        Target_Name : constant String := Name.Image_For_Stellarium_Of (Target);
+      begin
+        if Target_Name /= "" then
+          Client.Set_Focus_To (Target_Name, Center);
+        end if;
+      exception
+      when others =>
+        Log.Error (Target_Name & " not centered");
+      end;
     end if;
-  exception
-  when others =>
-    null;
   end Center_On;
 
 
@@ -560,7 +575,9 @@ package body Stellarium is
       return Units.Canon_Eos_6D;
     elsif Text.Location_Of ("EOS 60D", Name) /= Text.Not_Found then
       return Units.Canon_Eos_60D;
-    elsif Text.Location_Of ("QHY600C", Name) /= Text.Not_Found then
+    elsif Text.Location_Of ("QHY268C", Name) /= Text.Not_Found then
+      return Units.QHY268C;
+    elsif Text.Location_Of ("QHY600PH-C", Name) /= Text.Not_Found then
       return Units.QHY600C;
     end if;
     return Units.Unknown_Camera;
@@ -663,10 +680,12 @@ package body Stellarium is
   begin
     if Text.Location_Of ("Celestron C11", Name) /= Text.Not_Found then
       return Units.Celestron_C11;
-    elsif Text.Location_Of ("Celestron C14", Name) /= Text.Not_Found then
-      return Units.Celestron_C14;
-    elsif Text.Location_Of ("CDK_700", Name) /= Text.Not_Found then
+    elsif Text.Location_Of ("CDK700", Name) /= Text.Not_Found then
       return Units.CDK_700;
+    elsif Text.Location_Of ("RASA11", Name) /= Text.Not_Found then
+      return Units.RASA_11;
+    elsif Text.Location_Of ("T86SDQ", Name) /= Text.Not_Found then
+      return Units.T86SDQ;
     end if;
     return Units.Unknown;
   end Telescope_Model;

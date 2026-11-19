@@ -264,10 +264,10 @@ package body Stellarium.Client is
   end Set_Telescope;
 
 
-  procedure Set_Terminator (Value   : Units.Solar_Elevation_Range;
-                            Timeout : Duration) is
-    Minimum_Image : constant String := Text.Trimmed (Value.Minimum'image);
-    Maximum_Image : constant String := Text.Trimmed (Value.Maximum'image);
+  procedure Define_At_Startup (Moon_Terminator : Units.Solar_Elevation_Range;
+                               Timeout         : Duration) is
+    Minimum_Image : constant String := Text.Trimmed (Moon_Terminator.Minimum'image);
+    Maximum_Image : constant String := Text.Trimmed (Moon_Terminator.Maximum'image);
     Retry_Delay   : constant Duration := 1.0;
     Startup_Time  : Duration := 0.0;
   begin
@@ -280,13 +280,15 @@ package body Stellarium.Client is
       when others =>
         Startup_Time := @ + Retry_Delay;
         if Startup_Time > Timeout then
-          Log.Error ("Stellarium not ready");
+          Log.Warning ("Remote control not enabled");
+          Remote_Control_Is_Enabled := False;
           Is_Startup := False;
           return;
         end if;
         Time.Wait (Retry_Delay);
       end;
     end loop;
+    Remote_Control_Is_Enabled := True;
     Is_Startup := False;
     Log.Write ("Startup duration:" & Natural(Startup_Time)'image & 's');
     Set_Property (Flag_Hide_Local_Nomenclature);
@@ -294,6 +296,6 @@ package body Stellarium.Client is
     Set_Property (Terminator_Min_Altitude, Minimum_Image);
     Set_Property (Terminator_Max_Altitude, Maximum_Image);
     Log.Write ("Moon terminator: " & Minimum_Image & " .. " & Maximum_Image);
-  end Set_Terminator;
+  end Define_At_Startup;
 
 end Stellarium.Client;

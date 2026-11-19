@@ -49,6 +49,18 @@ package body Configuration is
   end Found_Item;
 
 
+  function Exists (Key        : String;
+                   In_Section : Section_Handle) return Boolean is
+  begin
+    for The_Item of In_Section.all loop
+      if Text.Matches (The_Item.Key, Key) then
+        return True;
+      end if;
+    end loop;
+    return False;
+  end Exists;
+
+
   function Handle_For (File_Name : String) return File_Handle is
 
     package IO renames Ada.Text_IO;

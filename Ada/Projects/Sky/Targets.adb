@@ -15,6 +15,7 @@
 -- *********************************************************************************************************************
 pragma Style_Astronomy;
 
+with Camera;
 with Earth;
 with Lexicon;
 with Moon;
@@ -469,11 +470,11 @@ package body Targets is
 
     The_Countdown : Positive := Update_Countdown;
 
-    Maximum_Startup_Time : constant Duration := 30.0;
+    Maximum_Startup_Time : constant Duration := 10.0;
 
   begin -- Handler
     Log.Write ("handler start");
-    Stellarium.Set (Moon.Terminator_Zone, Maximum_Startup_Time);
+    Stellarium.Remote_Startup (Moon.Terminator_Zone, Maximum_Startup_Time);
     loop
       select
         accept Define_Catalog;
@@ -542,7 +543,9 @@ package body Targets is
         else
           The_Countdown := @ - 1;
         end if;
-        Handle_Target_Selection;
+        if Stellarium.Has_Remote_Control then
+          Handle_Target_Selection;
+        end if;
       end select;
     end loop;
     Log.Write ("handler end");
@@ -656,5 +659,37 @@ package body Targets is
     end if;
     return "";
   end Description_Of;
+
+
+  procedure Detect_Camera_First_Time is
+  begin
+    if Stellarium.Has_Remote_Control then
+      if not Camera.Available then
+        Camera.Detect_Model;
+        if Camera.Available then
+          Stellarium.Set_Camera (Camera.Actual_Model);
+        end if;
+      end if;
+    end if;
+  exception
+  when Stellarium.Not_Found =>
+    null;
+  when Occurrance: others =>
+    Log.Termination (Occurrance);
+  end Detect_Camera_First_Time;
+
+
+  function Defined_Camera return Boolean is
+  begin
+    if not Stellarium.Has_Remote_Control then
+      return False;
+    end if;
+    Camera.Detect_Model;
+    if Camera.Available then
+      Stellarium.Set_Camera (Camera.Actual_Model);
+      return True;
+    end if;
+    return False;
+  end Defined_Camera;
 
 end Targets;

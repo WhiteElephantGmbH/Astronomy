@@ -85,7 +85,7 @@ package body Picture.Parameter is
     Put (Filename_Key & " = " & Default_Name);
     Put ("");
     Put ("[" & Processor_Id & "]");
-    Put (Ip_Address_Key & "        = localhost");
+    Put (Ip_Address_Key & "        = Localhost");
     Put (Port_Key & "              = 11000");
     Put (Darks_Count_Key & "       = 20");
     Put (Flats_Count_Key & "       = 30");

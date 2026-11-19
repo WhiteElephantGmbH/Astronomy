@@ -32,6 +32,7 @@ with Picture;
 with Remote;
 with Text;
 with Site;
+with Stellarium;
 with System;
 with Targets;
 with Traces;
@@ -298,15 +299,34 @@ package body Telescope is
   end Define_Fucuser_Zoom_Size;
 
 
+  function Defined_Camera return Boolean is
+  begin
+    if Targets.Defined_Camera then
+      return True;
+    else
+      User.Show_Error ("Camera not available.");
+      return False;
+    end if;
+  exception
+  when Stellarium.Not_Found =>
+    User.Show_Error ("Camera " & Camera.Model_Image & " not defined in Stellarium.");
+    return False;
+  end Defined_Camera;
+
+
   procedure Evaluate_Focus is
   begin
-    Control.Auto_Focus;
+    if Defined_Camera then
+      Control.Auto_Focus;
+    end if;
   end Evaluate_Focus;
 
 
   procedure Add_Model_Point is
   begin
-    Control.Add_Model_Point;
+    if Defined_Camera then
+      Control.Add_Model_Point;
+    end if;
   end Add_Model_Point;
 
 
@@ -1636,6 +1656,7 @@ package body Telescope is
         or
           delay until The_Next_Time;
           The_Next_Time := The_Next_Time + Ada.Real_Time.To_Time_Span(1.0);
+          Targets.Detect_Camera_First_Time;
           case The_State is
           when Connecting =>
             if Mount.Is_Inactive then

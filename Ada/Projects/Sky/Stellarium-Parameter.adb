@@ -23,9 +23,9 @@ package body Stellarium.Parameter is
 
   Program_Key           : constant String := "Program";
   Port_Key              : constant String := "Port";
+  Search_Tolerance_Key  : constant String := "Search Tolerance";
   Remote_Ip_Address_Key : constant String := "Remote Ip Address";
   Remote_Port_Key       : constant String := "Remote Port";
-  Search_Tolerance_Key  : constant String := "Search Tolerance";
   Cntl_Goto_Enabled_Key : constant String := "Cntl Goto Enabled";
 
 
@@ -34,10 +34,13 @@ package body Stellarium.Parameter is
     Section.Set (Configuration.Handle_For (Handle, Id));
     The_Filename := [Section.String_Value_Of (Program_Key)];
     The_Port_Number := Section.Port_For (Id);
-    The_Remote_Ip_Address := Section.Ip_Address_For (Id, Remote_Ip_Address_Key);
-    The_Remote_Port_Number := Section.Port_For (Id, Remote_Port_Key);
     The_Search_Tolerance := Section.Degrees_Of (Search_Tolerance_Key, Targets.Maximum_Search_Tolerance);
-    Cntl_Goto_Is_Enabled := Section.Value_Of (Cntl_Goto_Enabled_Key);
+    Remote_Control_Configured := Section.Exists (Remote_Ip_Address_Key);
+    if Remote_Control_Configured then
+      The_Remote_Ip_Address := Section.Ip_Address_For (Id, Remote_Ip_Address_Key);
+      The_Remote_Port_Number := Section.Port_For (Id, Remote_Port_Key);
+      Cntl_Goto_Is_Enabled := Section.Value_Of (Cntl_Goto_Enabled_Key);
+    end if;
   end Define;
 
 
@@ -46,9 +49,9 @@ package body Stellarium.Parameter is
     Put ("[" & Id & "]");
     Put (Program_Key & "           = " & Os.System.Program_Files_Folder & "Stellarium\Stellarium.exe");
     Put (Port_Key & "              = 10001");
-    Put (Remote_Ip_Address_Key & " = localhost");
-    Put (Remote_Port_Key & "       = 8090");
     Put (Search_Tolerance_Key & "  = 10""");
+    Put (Remote_Ip_Address_Key & " = Localhost");
+    Put (Remote_Port_Key & "       = 8090");
     Put (Cntl_Goto_Enabled_Key & " = False");
   end Defaults;
 

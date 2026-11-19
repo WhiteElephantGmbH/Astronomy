@@ -45,9 +45,11 @@ package Stellarium is
   procedure Set (Direction : Space.Direction);
 
   -- used at startup to wait for stellarium
-  procedure Set (Item    : Units.Solar_Elevation_Range;
-                 Timeout : Duration);
+  procedure Remote_Startup (Moon_Terminator : Units.Solar_Elevation_Range;
+                            Timeout         : Duration);
+  -- Postcondition: Defines result for Has_Remote_Control
 
+  function Has_Remote_Control return Boolean;
 
   type Target_Data is record
     Name            : Text.String;
@@ -116,12 +118,14 @@ private
 
   The_Port_Number : Network.Port_Number;
 
-  The_Remote_Ip_Address  : Network.Ip_Address;
-  The_Remote_Port_Number : Network.Port_Number;
-
   The_Search_Tolerance : Angle.Degrees;
 
-  Cntl_Goto_Is_Enabled : Boolean;
+  Remote_Control_Configured : Boolean := False;
+  The_Remote_Ip_Address     : Network.Ip_Address;
+  The_Remote_Port_Number    : Network.Port_Number;
+
+  Remote_Control_Is_Enabled : Boolean := False;
+  Cntl_Goto_Is_Enabled      : Boolean := True;
 
   type Property_Index is range -1 .. 100;
 
