@@ -27,6 +27,7 @@ with Gui;
 with Image;
 with Os.Application;
 with Os.Process;
+with Rt;
 with Siril;
 with Traces;
 with User;
@@ -141,9 +142,27 @@ package body Control is
 
   task body Manager is
 
+    procedure Delete (Filename : String) is
+      Max_Retries : constant := 10;
+    begin
+      for Attempt in 1 .. Max_Retries loop
+        begin
+          File.Delete (Filename);
+          return;
+        exception
+        when others =>
+          Log.Warning ("JPEG delete retry" & Attempt'image & " of" & Max_Retries'image);
+          if Attempt = Max_Retries then
+            raise;
+          end if;
+          Rt.Wait (0.1);
+        end;
+      end loop;
+    end Delete;
+
     procedure Generate_Jpec is
     begin
-      File.Delete (Image.Jpec_Filename);
+      Delete (Image.Jpec_Filename);
       Siril.Open (Progress'unrestricted_access);
       Siril.Change_Directory (Image.Work_Directory);
       Siril.Load (Image.Fits_Filename);
