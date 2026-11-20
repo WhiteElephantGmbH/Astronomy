@@ -455,7 +455,7 @@ package body Picture is
   function Defined_Simulation (Item : Simulation) return Boolean is
   begin
     if Ten_Micron.Is_Simulation_Mode then
-      Simulation_Index := 0;
+      Simulation_Index := 1;
       The_Simulation := Item;
       if File.Exists (Simulated_Filename) then
         return True;

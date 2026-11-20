@@ -129,6 +129,6 @@ private
   subtype Simulation_Target is Simulation range M13 .. Simulation'last;
 
   The_Simulation   : Simulation := None;
-  Simulation_Index : Natural := 0;
+  Simulation_Index : Positive := 1;
 
 end Picture;
