@@ -1611,6 +1611,7 @@ package body Telescope is
           accept New_M3_Position (New_Position : M3.Position) do
             Log.Write ("M3 Position " & New_Position'img);
             The_M3_Position := New_Position;
+            Last_Rotator_Offset := Undefined_Offset;
             Has_New_Data := True;
           end New_M3_Position;
         or
