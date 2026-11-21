@@ -33,6 +33,7 @@ with Remote;
 with Text;
 with Site;
 with Stellarium;
+with Sun;
 with System;
 with Targets;
 with Traces;
@@ -418,6 +419,15 @@ package body Telescope is
     Leaving_Altitude : Angle.Degrees;
     Last_Altitude    : Angle.Degrees;
 
+
+    function Target_Is_Sun return Boolean is (Name.Is_Sun (Id));
+
+    function Sun_Not_In_Limit_Distance return Boolean is
+    begin
+      return Sun.Is_Not_In_Limit_Distance (To_Direction => Mount.Actual_Info.Actual_Direction);
+    end Sun_Not_In_Limit_Distance;
+
+
     function Target_Direction (At_Time : Time.Ut := Time.Universal) return Space.Direction is
       Direction     : constant Space.Direction := Get_Direction (Id, At_Time);
       The_Direction : Earth.Direction;
@@ -426,7 +436,7 @@ package body Telescope is
         Target_Is_Lost := True;
         raise Target_Lost;
       end if;
-      if Earth.Direction_Is_Known (The_Adjusted_Offset) then
+      if not Target_Is_Sun and then Earth.Direction_Is_Known (The_Adjusted_Offset) then
         The_Direction := Objects.Direction_Of (Direction, Time.Lmst_Of (At_Time));
         Earth.Add_To (The_Direction, The_Adjusted_Offset);
         return Objects.Direction_Of (The_Direction, At_Time);
@@ -580,12 +590,16 @@ package body Telescope is
     Moving_Index  : Integer := Moving_Speeds'first + 1;
 
     procedure Set_Moving_Speed (Index : Integer) is
+      Last_Speed : Integer := Moving_Speeds'last;
     begin
+      if Target_Is_Sun then
+        Last_Speed := Moving_Speeds'first + 1;
+      end if;
       Moving_Index := Index;
       if Moving_Index < Moving_Speeds'first then
         Moving_Index := Moving_Speeds'first;
-      elsif Moving_Index > Moving_Speeds'last then
-        Moving_Index := Moving_Speeds'last;
+      elsif Moving_Index > Last_Speed then
+        Moving_Index := Last_Speed;
       else
         Log.Write ("set moving speed => " & Angle.Image_Of (Moving_Speeds(Moving_Index), Decimals => 3));
       end if;
@@ -838,6 +852,18 @@ package body Telescope is
       Rotator.Goto_Mech (180.0);
       The_State := Homing;
     end Find_Home_And_Set_Defaults;
+
+
+    procedure Park_And_Shutdown is
+    begin
+      if Park_Position_Defined then
+        Do_Park;
+        The_State := Parking;
+      else
+        Do_Disable;
+        The_State := Disabling;
+      end if;
+    end Park_And_Shutdown;
 
 
     procedure Auto_Focusing is
@@ -1168,13 +1194,7 @@ package body Telescope is
       when Position =>
         Do_Position;
       when Shutdown =>
-        if Park_Position_Defined then
-          Do_Park;
-          The_State := Parking;
-        else
-          Do_Disable;
-          The_State := Disabling;
-        end if;
+        Park_And_Shutdown;
       when User_Setup =>
         Setup_Handling;
       when Follow =>
@@ -1366,6 +1386,8 @@ package body Telescope is
         The_State := Mount_Startup_State (The_Event);
       when Mount_Stopped =>
         The_State := Stopped;
+      when Shutdown =>
+        Park_And_Shutdown;
       when Mount_Approach =>
         The_State := Approaching;
       when Halt =>
@@ -1649,6 +1671,7 @@ package body Telescope is
                 The_Data.Mount.Model_Points := Info.Model.Points_Enabled;
               end;
             end case;
+            The_Data.Target_Is_Sun := Target_Is_Sun;
             The_Data.Target_Lost := Target_Is_Lost;
             Target_Is_Lost := False;
             The_Data.Moving_Speed := Moving_Speeds(Moving_Index);
@@ -1656,7 +1679,7 @@ package body Telescope is
           end Get;
         or
           delay until The_Next_Time;
-          The_Next_Time := The_Next_Time + Ada.Real_Time.To_Time_Span(1.0);
+          The_Next_Time := The_Next_Time + Ada.Real_Time.To_Time_Span (1.0);
           Targets.Detect_Camera_First_Time;
           case The_State is
           when Connecting =>
@@ -1665,6 +1688,9 @@ package body Telescope is
               Mount.Connect;
             end if;
           when Tracking =>
+            if Target_Is_Sun and then Sun_Not_In_Limit_Distance then
+              Back_To_Target;
+            end if;
             Update_Target_Direction;
           when Following =>
             Check_Above_Horizon;

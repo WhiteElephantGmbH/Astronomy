@@ -361,7 +361,7 @@ package body Targets is
           when Name.Planet =>
             return Is_To_Add (Solar_System, Solar_System_Direction_Of (Item, Ut));
           when Name.Sun =>
-            return Is_Selected_And_Visible (Solar_System, Solar_System_Direction_Of (Item, Ut));
+            return The_Actual_Selection = All_Objects;
           when Name.Small_Solar_System_Body =>
             return Is_To_Add (Solar_System, Sssb.Direction_Of (Item, Ut));
           when Name.Near_Earth_Object =>
@@ -454,6 +454,11 @@ package body Targets is
               Log.Write ("Selected Name: " & Target_Name);
               The_Found_Id := Name.Item_Of (The_Targets, Target_Direction, Stellarium.Search_Tolerance);
             end if;
+          end if;
+          if not Name.Is_Sun (The_Found_Id) and then
+            Sun.Is_Visible and then not Sun.Is_In_Safe_Distance (To_Target => The_Target_Direction)
+          then
+            return;
           end if;
           Show (The_Found_Id);
         end if;

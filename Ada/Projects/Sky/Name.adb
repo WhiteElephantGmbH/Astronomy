@@ -237,6 +237,12 @@ package body Name is
   end Kind_Of;
 
 
+  function Is_Sun (Item : Id) return Boolean is
+  begin
+    return Item /= No_Id and then Kind_Of (Item) = Sun;
+  end Is_Sun;
+
+
   function Object_Of (Item : Id) return Sky.Object is
   begin
     case Item.Data_Id is

@@ -20,12 +20,14 @@ with Section;
 package body Sun.Parameter is
 
   Safety_Angle_Key : constant String := "Safety Angle";
+  Limit_Angle_Key  : constant String := "Limit Angle";
 
 
   procedure Define (Handle : Configuration.File_Handle) is
   begin
     Section.Set (Configuration.Handle_For (Handle, Id));
-    Define (Section.Degrees_Of (Safety_Angle_Key, Maximum => 180.0));
+    Define (Safety_Angle => Section.Degrees_Of (Safety_Angle_Key, Maximum => 180.0),
+            Limit_Angle  => Section.Degrees_Of (Limit_Angle_Key, Maximum => 0.5));
   end Define;
 
 
@@ -34,6 +36,7 @@ package body Sun.Parameter is
   begin
     Put ("[" & Id & "]");
     Put (Safety_Angle_Key & " =" & Savety_Angle'image & Angle.Degree);
+    Put (Limit_Angle_Key & "  = 0.4" & Angle.Degree);
   end Defaults;
 
 end Sun.Parameter;

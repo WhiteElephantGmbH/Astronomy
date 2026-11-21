@@ -42,6 +42,7 @@ package Telescope is
     Status             : State := Disconnected;
     Mode               : Operation_Mode := Normal;
     Processing_Enabled : Boolean := False;
+    Target_Is_Sun      : Boolean;
     Target_Direction   : Space.Direction;
     Actual_Direction   : Space.Direction;
     Actual_Position    : Space.Direction;

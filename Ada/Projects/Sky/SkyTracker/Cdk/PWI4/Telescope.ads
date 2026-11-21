@@ -83,6 +83,7 @@ package Telescope is
 
   type Data is record
     Status           : State;
+    Target_Is_Sun    : Boolean;
     Target_Lost      : Boolean;
     Actual_Direction : Space.Direction;
     Moving_Speed     : Angle.Value;

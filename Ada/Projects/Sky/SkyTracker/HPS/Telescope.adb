@@ -29,6 +29,7 @@ with Input;
 with Picture;
 with Remote;
 with Stellarium;
+with Sun;
 with Targets;
 with Traces;
 with User;
@@ -310,6 +311,15 @@ package body Telescope is
     The_Next_Update_Time : RT.Time := RT.Clock;
 
 
+    function Target_Is_Sun return Boolean is (Name.Is_Sun (Next_Id));
+
+
+    function Sun_Not_In_Limit_Distance return Boolean is
+    begin
+      return Sun.Is_Not_In_Limit_Distance (To_Direction => The_Information.Direction);
+    end Sun_Not_In_Limit_Distance;
+
+
     function "-" (Left, Right : RT.Time) return Duration is
       use type RT.Time;
     begin
@@ -571,7 +581,9 @@ package body Telescope is
             null;
           end case;
         when others =>
-          null;
+          if not Ten_Micron.Is_Simulation_Mode and then Target_Is_Sun and then not Sun_Not_In_Limit_Distance then
+            User.Perform_Goto;
+          end if;
         end case;
         Check_Camera_Error;
       when Capturing =>
@@ -898,6 +910,7 @@ package body Telescope is
           accept Get (The_Data : out Data) do
             The_Data := (Status              => Telescope.State(The_Information.Status),
                          Mode                => The_Mode,
+                         Target_Is_Sun       => Target_Is_Sun,
                          Processing_Enabled  => Processing_Is_Enabled,
                          Target_Direction    => Actual_Target_Direction,
                          Actual_Direction    => The_Information.Direction,
