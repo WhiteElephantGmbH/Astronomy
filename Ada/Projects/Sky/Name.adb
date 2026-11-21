@@ -492,7 +492,7 @@ package body Name is
   end Define;
 
 
-  type Distances is array (Sky.Catalog.Index) of Angle.Degrees;
+  type Distances is array (Sky.Data.Static_Object) of Angle.Degrees;
 
   The_Distances : Distances;
 

@@ -361,7 +361,7 @@ package body Targets is
           when Name.Planet =>
             return Is_To_Add (Solar_System, Solar_System_Direction_Of (Item, Ut));
           when Name.Sun =>
-            return The_Actual_Selection = All_Objects;
+            return Is_Selected_And_Visible (Solar_System, Solar_System_Direction_Of (Item, Ut));
           when Name.Small_Solar_System_Body =>
             return Is_To_Add (Solar_System, Sssb.Direction_Of (Item, Ut));
           when Name.Near_Earth_Object =>

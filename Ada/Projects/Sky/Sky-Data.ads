@@ -16,6 +16,7 @@
 pragma Style_Astronomy;
 
 with Astro;
+with Sky.Catalog;
 with Space;
 with Time;
 
@@ -33,6 +34,20 @@ package Sky.Data is
                          Is_Jear_2000   : Boolean := False) return Element;
 
   subtype Index is Object range First_Object .. Object'last;
+
+  First_Moon_Feature : constant Object := Catalog.Number'last + 1;
+
+  Last_Moon_Feature : constant Object := First_Moon_Feature + Moon_Feature'pos(Moon_Feature'last);
+
+  subtype Moon_Object is Object range First_Moon_Feature .. Last_Moon_Feature;
+
+  Number_Of_Extension_Objects : constant := 1000;
+
+  First_Extension : constant Object := Last_Moon_Feature + 1;
+
+  subtype Extension_Object is Object range First_Extension .. First_Extension + Number_Of_Extension_Objects - 1;
+
+  subtype Static_Object is Object range First_Object .. Extension_Object'last;
 
   function Object_Of (Item     : Positive;
                       The_Kind : Extended_Catalogs) return Object;
