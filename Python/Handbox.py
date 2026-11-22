@@ -2,7 +2,7 @@
 ************************************************************************************************************************
 *                                             Handbox Simulator for CDK700                                             *
 ************************************************************************************************************************
-*                              (c) 2024 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+*                          (c) 2024 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 *                                                www.white-elephant.ch                                                 *
 *                                                                                                                      *
 *      This program is free software; you can redistribute it and/or modify it under the terms of the GNU General      *
@@ -109,6 +109,7 @@ def main():
     zoomed = False
     minimized = False
     rotation_homed = False
+    derotation_requested = False
     startup = True
     while True:
         try:
@@ -203,10 +204,13 @@ def main():
                                                 window['zoom'].update(button_color=(color0, color1))
                                         if rotator_position != last_rotator_position:
                                             last_rotator_position = rotator_position;
+                                            derotation_requested = False
                                             response = client.rotator_goto_mech_position(180 + rotator_position)
-                                        elif not rotator.moving():
-                                            response = client.rotator_goto_offset(0)
+                                        elif not rotator.moving() and not derotation_requested:
+                                            response = client.rotator_goto_field_angle(rotator.field_angle())
+                                            derotation_requested = True
                                 else:
+                                    derotation_requested = False
                                     if not rotation_homed:
                                         response = client.rotator_goto_mech_position(180)
                                         rotation_homed = True
@@ -222,6 +226,7 @@ def main():
                             window['-FFO-'].update(visible=False)
                             window['-FRO-'].update(visible=False)
                             startup = True
+                            derotation_requested = False
         except:
             break
     window.close()
