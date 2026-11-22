@@ -35,6 +35,9 @@ package Configuration is
   function Handle_For (For_Handle   : File_Handle;
                        Section_Name : String := No_Section) return Section_Handle;
 
+  function Exists (Key        : String;
+                   In_Section : Section_Handle) return Boolean;
+
   function Value_Of (The_Section : Section_Handle;
                      Key         : String;
                      Default     : String := "") return String;

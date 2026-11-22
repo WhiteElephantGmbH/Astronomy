@@ -36,6 +36,8 @@ package Section is
 
   function Exists return Boolean;
 
+  function Exists (Key : String) return Boolean;
+
   function Angles_Of (Key     : String;
                       Maximum : Natural; -- in degrees
                       Unit    : String := "") return Angles.List;

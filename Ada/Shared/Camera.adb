@@ -55,17 +55,17 @@ package body Camera is
       return "Canon EOS 60D";
     when Canon_Eos_6D =>
       return "Canon EOS 6D";
+    when QHY268C =>
+      return "QHY268C";
     when QHY600C =>
       return "QHY600C";
     end case;
   end Model_Image;
 
 
-  The_File_Extension : Text.String;
-
   function File_Extension return String is
   begin
-    return The_File_Extension.S;
+    return Camera_Data.Filename_Extension;
   end File_Extension;
 
 
@@ -75,14 +75,12 @@ package body Camera is
 
 
     function Filename_With_Extension return String is
-      Extension : constant String := Units.Extension (Camera.Actual_Model);
-      Folder    : constant String := File.Containing_Directory_Of (Filename);
+      Folder : constant String := File.Containing_Directory_Of (Filename);
     begin
-      The_File_Extension := [Extension];
       if not Directory.Exists (Folder) then
         Raise_Error ("Unknown picture directory " & Folder);
       elsif File.Extension_Of (Filename) = "" then
-        return Filename & '.' & File_Extension;
+        return Filename & File_Extension;
       else
         return Filename;
       end if;
@@ -90,7 +88,6 @@ package body Camera is
 
   begin -- Capture
     Camera_Data.Set (Unknown_Camera);
-    The_File_Extension.Clear;
     Log.Write ("Capture " & Filename & " - Time: " & Time'image & " - Parameter: " & Parameter'image);
     if Canon.Is_Available then
       Canon.Capture_Picture (Filename_With_Extension, Time, Parameter);
@@ -139,9 +136,9 @@ package body Camera is
   function Captured return Raw_Grid is
   begin
     case Camera_Data.Actual.Camera is
-    when Canon_Eos_6D | Canon_Eos_60D =>
+    when Canon_Model =>
       return Raw.Grid;
-    when QHY600C =>
+    when QHY_Model =>
       return QHYCCD.Grid;
     when Unknown_Camera =>
       Camera_Data.Set_Error ("No Camera Connected");
@@ -160,7 +157,7 @@ package body Camera is
     case Camera_Data.Actual.Camera is
     when Canon_Eos_6D | Canon_Eos_60D =>
       Canon.Stop_Capture;
-    when QHY600C =>
+    when QHY268C | QHY600C =>
       QHYCCD.Stop_Capture;
     when Unknown_Camera =>
       null;
@@ -236,6 +233,16 @@ package body Camera is
     begin
       The_Information.Width := Width;
     end Set;
+
+
+    function Filename_Extension return String is
+    begin
+      if The_Information.Camera /= Unknown_Camera then
+        return '.' & Units.Extension (The_Information.Camera);
+      else
+        return "";
+      end if;
+    end Filename_Extension;
 
 
     function Actual return Information is

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2002 .. 2024 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2002 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -199,6 +199,9 @@ package body Gui is
     Is_Password              : Boolean := False;
     Use_Proportional_Font    : Boolean := False;
     Color_Background         : Boolean := False;
+    Track_Extent             : Natural := 0;
+    Track_Minimum            : Natural := 0;
+    Track_Maximum            : Natural := 0;
     Is_Modifiable            : Boolean := True;
     Is_Sorted                : Boolean := True;
   end record;
@@ -1537,14 +1540,42 @@ package body Gui is
     Convention => Stdcall;
 
 
-  function Mainwindowproc(Hwnd    : Win32.Windef.HWND;
-                          Message : Win32.UINT;
-                          Wparam  : Win32.WPARAM;
-                          Lparam  : Win32.LPARAM) return Win32.LRESULT is
+  function Mainwindowproc (Hwnd    : Win32.Windef.HWND;
+                           Message : Win32.UINT;
+                           Wparam  : Win32.WPARAM;
+                           Lparam  : Win32.LPARAM) return Win32.LRESULT is
     Unused     : Win32.BOOL;
     The_Wparam : Win32.WPARAM := Wparam;
     The_Lparam : Win32.LPARAM := Lparam;
-  begin
+
+    procedure Process_Message_From_Trackbar is
+    begin
+      if Current_Page /= null then
+        declare
+          The_Child : Child_Information_Ptr := Current_Page.First_Child;
+          function Window_Handle is new Ada.Unchecked_Conversion (Win32.LPARAM, Win32.Windef.HWND);
+          use type System.Address;
+        begin
+          while The_Child /= null loop
+            if The_Child.The_Kind = Track_Bar_Child and then
+               The_Child.The_Handle = Window_Handle (Lparam)
+            then
+              declare
+                Slider   : constant Track_Bar := Track_Bar'(Ptr => The_Child);
+                Position : constant Natural := Get_Position (Slider);
+              begin
+                Set_Position (Slider, Position);
+              end;
+              Execute (The_Child.The_Action_Routine);
+              exit;
+            end if;
+            The_Child := The_Child.Next_Sibling;
+          end loop;
+        end;
+      end if;
+    end Process_Message_From_Trackbar;
+
+  begin -- Mainwindowproc
     case Message is
       when Win32.Comctl.Wm_Notify =>
         return Process_Notification_From_Child (Wparam, Lparam);
@@ -1558,6 +1589,8 @@ package body Gui is
       when Win32.Winuser.WM_SIZE =>
         Note_Private_Window_Metrics;
         Redraw_Main_Window;
+      when Win32.Winuser.WM_HSCROLL | Win32.Winuser.WM_VSCROLL =>
+        Process_Message_From_Trackbar;
       when Win32.Winuser.WM_COMMAND =>
         Process_Message_From_Child (Wparam, Lparam);
         return Win32.Winuser.DefWindowProc (Hwnd, Message, Wparam, Lparam);
@@ -2495,14 +2528,17 @@ package body Gui is
   end Buddy_For;
 
 
-  function Create (Parent_Page : Page;
-                   The_Title   : String := "") return Track_Bar is
+  function Create (Parent_Page        : Page;
+                   The_Title          : String := "";
+                   The_Action_Routine : Action_Routine := null;
+                   The_Title_Size     : Natural := Automatic) return Track_Bar is
     The_Track_Bar : constant Track_Bar := Track_Bar'(Ptr => new Child_Information);
   begin
     The_Track_Bar.Ptr.The_Window_Id := Next_Child_Id;
     The_Track_Bar.Ptr.The_Kind := Track_Bar_Child;
+    The_Track_Bar.Ptr.The_Action_Routine := The_Action_Routine;
     The_Track_Bar.Ptr.Buddy_Child := Buddy_For (The_Text      => To_Wide (The_Title),
-                                                The_Text_Size => Automatic,
+                                                The_Text_Size => The_Title_Size,
                                                 Is_Automatic  => False,
                                                 The_Kind      => Static_Child,
                                                 Parent_Page   => Parent_Page);
@@ -2514,11 +2550,26 @@ package body Gui is
   procedure Define_Range (The_Track_Bar : Track_Bar;
                           The_Extent    : Positive) is
   begin
+    The_Track_Bar.Ptr.Track_Extent := The_Extent;
+    The_Track_Bar.Ptr.Track_Minimum := 0;
+    The_Track_Bar.Ptr.Track_Maximum := The_Extent;
     Send_Message (The_Track_Bar.Ptr.The_Handle,
                   Win32.Comctl.Tbm_Setrange,
                   Win32.TRUE,
                   Make_Long(The_Extent));
   end Define_Range;
+
+  procedure Define_Limits (The_Track_Bar : Track_Bar;
+                           Minimum       : Natural;
+                           Maximum       : Natural) is
+    Position : Natural;
+  begin
+    pragma Assert (Minimum <= Maximum and Maximum <= The_Track_Bar.Ptr.Track_Extent);
+    The_Track_Bar.Ptr.Track_Minimum := Minimum;
+    The_Track_Bar.Ptr.Track_Maximum := Maximum;
+    Position := Get_Position (The_Track_Bar);
+    Set_Position (The_Track_Bar, Position);
+  end Define_Limits;
 
 
   procedure Define_Tic_Frequency (The_Track_Bar : Track_Bar;
@@ -2535,7 +2586,9 @@ package body Gui is
   begin
     Send_Message (The_Track_Bar.Ptr.The_Handle,
                   Win32.Comctl.Tbm_Setpos,
-                  Win32.TRUE, Win32.LPARAM (The_Position));
+                  Win32.TRUE,
+                  Win32.LPARAM (Natural'Max (The_Track_Bar.Ptr.Track_Minimum,
+                                Natural'Min (The_Position, The_Track_Bar.Ptr.Track_Maximum))));
   end Set_Position;
 
 

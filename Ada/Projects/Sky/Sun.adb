@@ -27,13 +27,17 @@ package body Sun is
 
   The_Sun_Direction : Space.Direction;
   The_Safety_Angle  : Angle.Degrees := 0.0;
+  The_Limit_Angle   : Angle.Degrees := 0.3;
 
 
-  procedure Define (Safety_Angle : Angle.Degrees) is
+  procedure Define (Safety_Angle : Angle.Degrees;
+                    Limit_Angle  : Angle.Degrees) is
     use type Angle.Value;
   begin
     The_Safety_Angle := Safety_Angle;
+    The_Limit_Angle := Limit_Angle;
     Log.Write ("Safety Angle: " & Angle.Image_Of (+The_Safety_Angle));
+    Log.Write ("Limit Angle: " & Angle.Image_Of (+The_Limit_Angle));
   end Define;
 
 
@@ -61,5 +65,13 @@ package body Sun is
     end if;
     return not Space.Angle_Between (The_Sun_Direction, To_Target, Smaller_Than => The_Safety_Angle);
   end Is_In_Safe_Distance;
+
+
+  function Is_Not_In_Limit_Distance (To_Direction : Space.Direction) return Boolean is
+    Distance : constant Angle.Degrees := Space.Angle_Between (The_Sun_Direction, To_Direction);
+    use type Angle.Degrees;
+  begin
+    return Distance > The_Limit_Angle;
+  end Is_Not_In_Limit_Distance;
 
 end Sun;

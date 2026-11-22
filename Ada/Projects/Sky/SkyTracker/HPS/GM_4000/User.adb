@@ -247,6 +247,9 @@ package body User is
     when Take_Darks =>
       Signal_Action (Take_Darks);
       Is_Focusing := False;
+    when Take_Flats =>
+      Signal_Action (Take_Flats);
+      Is_Focusing := False;
     end case;
   exception
   when others =>
@@ -404,6 +407,11 @@ package body User is
         end if;
       end Enable_Goto;
 
+      procedure Enable_Park is
+      begin
+        Enable_Control ("Park", Perform_Park'access);
+      end Enable_Park;
+
       procedure Enable_Stop is
       begin
         Enable_Control ("Stop", Perform_Stop'access);
@@ -422,21 +430,26 @@ package body User is
         Enable_Stop;
       when Stopped | Outside =>
         Enable_Goto;
-        Enable_Control ("Park", Perform_Park'access);
+        Enable_Park;
       when Tracking =>
-        case The_Mode is
-        when Normal =>
-          if Processing_Is_Enabled then
-            Enable_View;
-          else
-            Enable_Goto;
-          end if;
-        when Acquiring | Taking_Darks =>
-          Disable_Action;
-        when Building_Pointing_Model =>
+        if Information.Target_Is_Sun then
           Enable_Goto;
-        end case;
-        Enable_Stop;
+          Disable_Control;
+        else
+          case The_Mode is
+          when Normal =>
+            if Processing_Is_Enabled then
+              Enable_View;
+            else
+              Enable_Goto;
+            end if;
+          when Acquiring | Taking_Darks | Taking_Flats =>
+            Disable_Action;
+          when Building_Pointing_Model =>
+            Enable_Goto;
+          end case;
+          Enable_Stop;
+        end if;
       when Capturing | Focusing | Solving =>
         Disable_Action;
         Enable_Stop;
@@ -501,7 +514,7 @@ package body User is
             Disable_Action;
           when Build_Pointing_Model =>
             Enable_Command;
-          when Take_Darks =>
+          when Take_Darks | Take_Flats =>
             Disable_Action;
           end case;
         end if;
@@ -518,7 +531,7 @@ package body User is
           end if;
         when Build_Pointing_Model =>
           Disable_Action;
-        when Take_Darks =>
+        when Take_Darks | Take_Flats =>
           if Processing_Is_Enabled then
             Enable_Command;
           else

@@ -1862,4 +1862,6 @@ package Lexicon is
 
   function Image_Of (Item : Word) return String;
 
+  function English_Image_Of (Item : Word) return String;
+
 end Lexicon;

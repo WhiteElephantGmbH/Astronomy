@@ -32,7 +32,8 @@ package Camera is
 
   use all type Model;
 
-  subtype Canon_Model is Model range Canon_Eos_6D .. Canon_Eos_60D;
+  subtype Canon_Model is Units.Canon_Model;
+  subtype QHY_Model   is Units.QHY_Model;
 
   type Status is (Idle, Connecting, Connected, Capturing, Captured, Downloading, Cropping, Cropped, Stopping, Failed);
 
@@ -116,6 +117,8 @@ private
     procedure Set (Width : Columns);
 
     function Actual return Information;
+
+    function Filename_Extension return String;
 
     procedure Check (Item : Status);
 

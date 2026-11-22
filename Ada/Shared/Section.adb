@@ -31,6 +31,8 @@ package body Section is
 
   function Exists return Boolean is (Configuration.Exists (The_Section));
 
+  function Exists (Key : String) return Boolean is (Configuration.Exists (Key, The_Section));
+
 
   function Angles_Of (Key     : String;
                       Maximum : Natural; -- in degrees

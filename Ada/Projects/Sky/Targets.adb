@@ -15,6 +15,7 @@
 -- *********************************************************************************************************************
 pragma Style_Astronomy;
 
+with Camera;
 with Earth;
 with Lexicon;
 with Moon;
@@ -231,8 +232,11 @@ package body Targets is
     The_Feature_Selection : Moon_Feature_Selection := All_Features;
     The_Sort_Direction    : Name.Sorting := Name.No_Sort;
 
-    function Is_Selected (The_Objects : Object_Kind) return Boolean is
+    function Is_Selected (The_Objects : Selection) return Boolean is
     begin
+      if The_Objects = All_Objects then
+        return True;
+      end if;
       case The_Actual_Selection is
       when All_Objects =>
         return True;
@@ -388,7 +392,7 @@ package body Targets is
               when Sky.Moon | Sky.Satellite =>
                 raise Program_Error;
               when Sky.Unknown =>
-                return False;
+                return Is_To_Add (All_Objects, Sky.Data.Direction_Of (Object, Ut));
               end case;
             end;
           end case;
@@ -451,6 +455,11 @@ package body Targets is
               The_Found_Id := Name.Item_Of (The_Targets, Target_Direction, Stellarium.Search_Tolerance);
             end if;
           end if;
+          if not Name.Is_Sun (The_Found_Id) and then
+            Sun.Is_Visible and then not Sun.Is_In_Safe_Distance (To_Target => The_Target_Direction)
+          then
+            return;
+          end if;
           Show (The_Found_Id);
         end if;
       end;
@@ -466,8 +475,11 @@ package body Targets is
 
     The_Countdown : Positive := Update_Countdown;
 
+    Maximum_Startup_Time : constant Duration := 10.0;
+
   begin -- Handler
     Log.Write ("handler start");
+    Stellarium.Remote_Startup (Moon.Terminator_Zone, Maximum_Startup_Time);
     loop
       select
         accept Define_Catalog;
@@ -536,7 +548,9 @@ package body Targets is
         else
           The_Countdown := @ - 1;
         end if;
-        Handle_Target_Selection;
+        if Stellarium.Has_Remote_Control then
+          Handle_Target_Selection;
+        end if;
       end select;
     end loop;
     Log.Write ("handler end");
@@ -650,5 +664,37 @@ package body Targets is
     end if;
     return "";
   end Description_Of;
+
+
+  procedure Detect_Camera_First_Time is
+  begin
+    if Stellarium.Has_Remote_Control then
+      if not Camera.Available then
+        Camera.Detect_Model;
+        if Camera.Available then
+          Stellarium.Set_Camera (Camera.Actual_Model);
+        end if;
+      end if;
+    end if;
+  exception
+  when Stellarium.Not_Found =>
+    null;
+  when Occurrance: others =>
+    Log.Termination (Occurrance);
+  end Detect_Camera_First_Time;
+
+
+  function Defined_Camera return Boolean is
+  begin
+    if not Stellarium.Has_Remote_Control then
+      return False;
+    end if;
+    Camera.Detect_Model;
+    if Camera.Available then
+      Stellarium.Set_Camera (Camera.Actual_Model);
+      return True;
+    end if;
+    return False;
+  end Defined_Camera;
 
 end Targets;

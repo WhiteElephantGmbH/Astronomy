@@ -731,7 +731,7 @@ package body Device is
             The_Simulated_Rotator_Goto_Angle := @ + The_Parameter.Rotator_Value;
             The_Simulated_Rotator_Goto_Position := @ + The_Parameter.Rotator_Value;
             The_Simulated_Rotator_State := Offsetting;
-            Log.Write ("Simulated rotator goto_offset");
+            Log.Write ("Simulated rotator goto_offset :" & The_Parameter.Rotator_Value'image);
           when Stop =>
             Log.Write ("Simulated rotator stop");
             The_Simulated_Rotator_State := Stopped;

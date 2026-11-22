@@ -35,6 +35,8 @@ package Image is
 
   function Darks_Work_Directory return String;
 
+  function Flats_Work_Directory return String;
+
   function Cleared return Boolean;
 
   procedure Move (From : Number;

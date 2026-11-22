@@ -39,7 +39,7 @@ package body Picture.Feeder is
     return "http://" & Processor_Address & ':' & Processor_Port;
   end Base_URL;
 
-  type Sequence_Type is (Start, Darks, Lights);
+  type Sequence_Type is (Start, Darks, Flats, Lights);
 
   The_Sequence_Type : Sequence_Type := Start;
 
@@ -52,6 +52,7 @@ package body Picture.Feeder is
 
   The_Target_Type      : Sky.Object_Type;
   The_Target_Direction : Space.Direction;
+  The_Pictures_To_Send : Picture_Count;
 
   type Exposures     is array (Units.Known_Camera_Model, Sky.Object_Type) of Exposure.Item;
   type Sensitivities is array (Units.Known_Camera_Model, Sky.Object_Type) of Sensitivity.Item;
@@ -64,41 +65,37 @@ package body Picture.Feeder is
       Moon    | Satellite | Unknown        => Exposure.Value ("1/100"),
       Cluster | Double    | Star   | Stars => Exposure.Value ("10"),
       Galaxy  | Nebula    | Quasar         => Exposure.Value ("30")],
-    QHY600C => [
+    QHY268C | QHY600C => [
       Moon    => Exposure.Value ("0.005"),
       Cluster => Exposure.Value ("5"),
-      others  => Exposure.Value ("15")],
-    others => [others => Exposure.Value ("[]")]];
+      others  => Exposure.Value ("15")]];
 
   Target_Sensitivity : constant Sensitivities := [
-    Canon_Eos_6D | Canon_Eos_60D => [
+    Canon_Eos_60D | Canon_Eos_6D => [
       Moon    | Satellite | Unknown        => Sensitivity.Value ("100"),
       Cluster | Double    | Star   | Stars => Sensitivity.Value ("1600"),
       Galaxy  | Nebula    | Quasar         => Sensitivity.Value ("6400")],
-    QHY600C => [
+    QHY268C | QHY600C => [
       Moon    => Sensitivity.Value ("[]"),
       Cluster => Sensitivity.Value ("[]"),
       others  => Sensitivity.Value ("[]")]];
 
-  Is_M13_Simulation : Boolean := False;
-  M13_Picture_Index : Natural := 0;
 
-  function Next_M13_Picture return String is
-    Index_Image   : constant String := "000" & Text.Trimmed (M13_Picture_Index'image);
-    Picture_Index : constant String := Index_Image(Index_Image'last - 3 .. Index_Image'last);
-    Picture_Name  : constant String := "D:\Pictures\M13\Image_" & Picture_Index & ".cr2";
+
+  function Next_Picture return String is
+    Picture_Name  : constant String := Simulated_Filename;
   begin
-    Log.Write ("XXX Next Picture: " & Picture_Name);
-    M13_Picture_Index := @ + 1;
+    Log.Write ("Simulated Picture: " & Picture_Name);
+    Simulation_Index := @ + 1;
     return Picture_Name;
-  end Next_M13_Picture;
+  end Next_Picture;
 
 
   procedure Define_Parameters_For (Target           : Name.Id;
                                    Target_Direction : Space.Direction) is
+    Target_Name : constant String := Name.Image_Of (Target);
   begin
-    Is_M13_Simulation := Text.Location_Of ("M13", Name.Image_Of (Target)) /= Text.Not_Found;
-    Log.Write ("XXX Simulate M13: " & Is_M13_Simulation'image);
+    Log.Write ("Define parameters for " & Target_Name);
     The_Target_Type := Name.Type_Of (Target);
     Log.Write ("Target Type: " & Text.Legible_Of (The_Target_Type'image));
     The_Exposure := Target_Exposure (Stellarium.Camera_Model, The_Target_Type);
@@ -113,6 +110,12 @@ package body Picture.Feeder is
   begin
     return Stellarium.Camera_Model'image & '_' & The_Exposure.Filename_Part & "_" & The_Sensitivity.Filename_Part;
   end Darks_Filename;
+
+
+  function Flats_Filename return String is
+  begin
+    return Stellarium.Telescope_Model'image & '_' & Stellarium.Camera_Model'image;
+  end Flats_Filename;
 
 
   procedure Check (Result : AWS.Response.Data) is
@@ -130,7 +133,7 @@ package body Picture.Feeder is
     function Read_File return Ada.Streams.Stream_Element_Array is
       The_File : SIO.File_Type;
     begin
-      SIO.Open (The_File, SIO.In_File, (if Is_M13_Simulation then Next_M13_Picture else Filename));
+      SIO.Open (The_File, SIO.In_File, (case The_Simulation is when None  => Filename, when others => Next_Picture));
       declare
         Size : constant Ada.Streams.Stream_Element_Offset := Ada.Streams.Stream_Element_Offset (SIO.Size (The_File));
         Data : Ada.Streams.Stream_Element_Array (1 .. Size);
@@ -153,9 +156,18 @@ package body Picture.Feeder is
     P : AWS.Parameters.List;
   begin
     Log.Write ("store darks - filename: " & Darks_Filename);
-    P.Add (Url_Names.Id, Darks_Filename);
+    P.Add (Url_Names.Darks, Darks_Filename);
     Check (AWS.Client.Get (Base_URL & Url_Names.Store_Darks & P.URI_Format));
   end Store_Darks;
+
+
+  procedure Store_Flats is
+    P : AWS.Parameters.List;
+  begin
+    Log.Write ("store flats - filename: " & Flats_Filename);
+    P.Add (Url_Names.Flats, Flats_Filename);
+    Check (AWS.Client.Get (Base_URL & Url_Names.Store_Flats & P.URI_Format));
+  end Store_Flats;
 
 
   procedure Send_Light_Parameters is
@@ -163,7 +175,8 @@ package body Picture.Feeder is
   begin
     P.Add (Url_Names.Ra, Space.Ra_Image_Of (The_Target_Direction));
     P.Add (Url_Names.Dec, Space.Dec_Image_Of (The_Target_Direction));
-    P.Add (Url_Names.Id, Darks_Filename);
+    P.Add (Url_Names.Darks, Darks_Filename);
+    P.Add (Url_Names.Flats, Flats_Filename);
     P.Add (Url_Names.Camera_Model, Stellarium.Camera_Model'image);
     P.Add (Url_Names.Pixel_Size, Text.Trimmed(Stellarium.Pixel_Size'image));
     P.Add (Url_Names.Focal_Length, Text.Trimmed(Stellarium.Telescope_Focal_Length'image));
@@ -176,15 +189,13 @@ package body Picture.Feeder is
   end Send_Light_Parameters;
 
 
-  The_Darks_To_Send : Darks_Count;
-
   procedure New_Darks_Sequence (Target           : Name.Id;
                                 Target_Direction : Space.Direction) is
     P : AWS.Parameters.List;
   begin
     Log.Write ("new darks sequence for " & Name.Image_Of (Target));
     Check (Start);
-    The_Darks_To_Send := The_Number_Of_Darks;
+    The_Pictures_To_Send := The_Number_Of_Darks;
     Define_Parameters_For (Target, Target_Direction);
     P.Add (Url_Names.Camera_Model, Stellarium.Camera_Model'image);
     declare
@@ -202,22 +213,63 @@ package body Picture.Feeder is
   begin
     Log.Write ("send next dark");
     Check (Darks);
-    Is_M13_Simulation := False;
+    The_Simulation := None;
     Send_Next;
     case The_Sequence_Type is
     when Darks =>
-      if The_Darks_To_Send = 1 then
+      if The_Pictures_To_Send = 1 then
         Store_Darks;
         The_Sequence_Type := Start;
         return True;
       else
-        The_Darks_To_Send := @ - 1;
+        The_Pictures_To_Send := @ - 1;
         return False;
       end if;
     when others =>
       raise Program_Error;
     end case;
   end Send_Next_Dark_Was_Last;
+
+
+  procedure New_Flats_Sequence is
+    P : AWS.Parameters.List;
+  begin
+    Log.Write ("new flats sequence");
+    Check (Start);
+    The_Pictures_To_Send := The_Number_Of_Flats;
+    The_Exposure := The_Flats_Exposure;
+    The_Sensitivity := The_Flats_Sensitivity;
+    P.Add (Url_Names.Camera_Model, Stellarium.Camera_Model'image);
+    declare
+      Url : constant String := Base_URL & Url_Names.New_Flats & P.URI_Format;
+    begin
+      Log.Write ("URL: " & Url);
+      Check (AWS.Client.Get (Url));
+    end;
+    The_Sequence_Type := Flats;
+  end New_Flats_Sequence;
+
+
+  function Send_Next_Flat_Was_Last return Boolean is
+    use type Units.Picture_Number;
+  begin
+    Log.Write ("send next flat");
+    Check (Flats);
+    Send_Next;
+    case The_Sequence_Type is
+    when Flats =>
+      if The_Pictures_To_Send = 1 then
+        Store_Flats;
+        The_Sequence_Type := Start;
+        return True;
+      else
+        The_Pictures_To_Send := @ - 1;
+        return False;
+      end if;
+    when others =>
+      raise Program_Error;
+    end case;
+  end Send_Next_Flat_Was_Last;
 
 
   Is_First_Light : Boolean;

@@ -93,6 +93,10 @@ package Targets is
 
   function Description_Of (Id : Name.Id) return String;
 
+  procedure Detect_Camera_First_Time;
+
+  function Defined_Camera return Boolean;
+
 private
 
   procedure Set (Sort_Direction : Name.Sorting);

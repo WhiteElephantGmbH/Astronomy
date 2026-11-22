@@ -133,14 +133,13 @@ package body Name is
     begin -- Moon_Image
       if Moon_Data.Has_Feature (Item, The_Feature, The_Feature_Type) then
         declare
-          Feature : constant String := Sky.Data.Moon_Feature_Name_Of (The_Feature);
+          Feature : constant String := Sky.Data.Moon_Stellarium_Feature_Name_Of (The_Feature);
           On_Moon : constant String := " (moon)";
           use all type Moon_Data.Feature_Type;
         begin
           case The_Feature_Type is
           when Crater =>
-            return (if Image(Image'last) in 'X' | 'V' then Image(Image'first .. Image'last - 2) else Image) &
-                   " (crater, moon)";
+            return Feature & " (crater, moon)";
           when others =>
             return Feature & On_Moon;
           end case;
@@ -236,6 +235,12 @@ package body Name is
       return Sky_Object;
     end case;
   end Kind_Of;
+
+
+  function Is_Sun (Item : Id) return Boolean is
+  begin
+    return Item /= No_Id and then Kind_Of (Item) = Sun;
+  end Is_Sun;
 
 
   function Object_Of (Item : Id) return Sky.Object is
@@ -487,7 +492,7 @@ package body Name is
   end Define;
 
 
-  type Distances is array (Sky.Catalog.Index) of Angle.Degrees;
+  type Distances is array (Sky.Data.Static_Object) of Angle.Degrees;
 
   The_Distances : Distances;
 
@@ -647,6 +652,15 @@ package body Name is
             Error.Raise_With ("Incorrect Location - " & Line);
           end Add_Landmark;
 
+          function Object_Direction return Space.Direction is
+          begin
+            return Space.Direction_Of (Ra_Image  => Part_For (Text.First_Index + 2),
+                                       Dec_Image => Part_For (Text.First_Index + 3));
+          exception
+          when others =>
+            Error.Raise_With ("Incorrect Location - " & Line);
+          end Object_Direction;
+
           procedure Add_Sky_Object is
           begin
             The_Element := new Element_Data(Sky_Object);
@@ -655,19 +669,12 @@ package body Name is
               declare
                 Object      : constant String := Part_1;
                 Description : constant String := Part_For (Text.First_Index + 1);
-                Ra_Image    : constant String := Part_For (Text.First_Index + 2);
-                Dec_Image   : constant String := Part_For (Text.First_Index + 3);
               begin
                 The_Element.Kind := Sky_Object;
                 The_Element.Name := [Object];
-                The_Element.Object
-                  := Sky.Data.New_Object_For (Item        => Object,
-                                              Description => Description,
-                                              Direction   => Space.Direction_Of (Ra_Image  => Ra_Image,
-                                                                                 Dec_Image => Dec_Image));
-              exception
-              when others =>
-                Error.Raise_With ("Incorrect Location - " & Line);
+                The_Element.Object := Sky.Data.New_Object_For (Item        => Object,
+                                                               Description => Description,
+                                                               Direction   => Object_Direction);
               end;
             else
               declare
@@ -912,6 +919,8 @@ package body Name is
           Put ("SAT 48274");
           Put ("");
         end if;
+        Put ("APM 08279+5255 | Quasar mit Gravitationslinseneffekt | 8h 31m 41.7s | +52° 45' 16.8""");
+        Put ("");
         Put (Image_Of (Lexicon.Albereo));
         Put (Image_Of (Lexicon.Aldebaran));
         Put (Image_Of (Lexicon.Altair));

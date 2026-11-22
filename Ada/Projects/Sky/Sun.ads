@@ -27,10 +27,13 @@ package Sun is
   function Is_In_Safe_Distance (To_Target : Space.Direction) return Boolean;
   -- PRECONDITION: Is_Visible must have been called;
 
+  function Is_Not_In_Limit_Distance (To_Direction : Space.Direction) return Boolean;
+
 private
 
   Id : constant String := "Sun";
 
-  procedure Define (Safety_Angle : Angle.Degrees);
+  procedure Define (Safety_Angle : Angle.Degrees;
+                    Limit_Angle  : Angle.Degrees);
 
 end Sun;

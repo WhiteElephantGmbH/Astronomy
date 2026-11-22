@@ -51,6 +51,7 @@ package body Control is
                    Start_New_Model,
                    View,
                    Take_Darks,
+                   Take_Flats,
                    Park,
                    Start_Auto_Focus,
                    Stop,
@@ -106,7 +107,7 @@ package body Control is
 
   procedure User_Action_Handler (The_Action : User.Action) is
   begin
-   Action_Handler.Put (The_Action);
+    Action_Handler.Put (The_Action);
   end User_Action_Handler;
 
 
@@ -185,6 +186,8 @@ package body Control is
           The_Command := View;
         when User.Take_Darks =>
           The_Command := Take_Darks;
+        when User.Take_Flats =>
+          The_Command := Take_Flats;
         when User.Park =>
           The_Command := Park;
         when User.Auto_Focus_Start =>
@@ -345,12 +348,11 @@ package body Control is
         Targets.Update_List;
       when Define_Target =>
         declare
-          Target_Name : constant String := User.Target_Name;
-          The_Item    : Name.Id;
+          The_Item : Name.Id;
         begin
           User.Show_Description ("");
           The_Neo_Target := Name.No_Id;
-          Targets.Get_For (Target_Name, The_Item);
+          Targets.Get_For (User.Target_Name, The_Item);
           if Name.Is_Known (The_Item)  then
             Stellarium.Center_On (The_Item);
             case Name.Kind_Of (The_Item) is
@@ -390,6 +392,8 @@ package body Control is
         Telescope.View;
       when Take_Darks =>
         Telescope.Take_Darks;
+      when Take_Flats =>
+        Telescope.Take_Flats;
       when Park =>
         Telescope.Park;
       when Start_Auto_Focus =>

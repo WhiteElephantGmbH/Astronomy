@@ -66,6 +66,14 @@ package body Image is
   end Darks_Work_Directory;
 
 
+  function Flats_Work_Directory return String is
+    Work_Directory_For_Flats : constant String := Collector_Directory & "/flats";
+  begin
+    Directory.Create (Work_Directory_For_Flats);
+    return Work_Directory_For_Flats;
+  end Flats_Work_Directory;
+
+
   function Cleared return Boolean is
     Max_Retries : constant := 100;
     Retry_Delay : constant Duration := 0.1;

@@ -397,21 +397,30 @@ package body User is
         Enable_Goto_Button;
       when Telescope.Positioning | Telescope.Preparing | Telescope.Approaching | Telescope.Following =>
         Enable_Goto_Button;
-        Enable_Stop_Button;
+        if Information.Target_Is_Sun then
+          Enable_Shutdown_Button;
+        else
+          Enable_Stop_Button;
+        end if;
       when Telescope.Tracking =>
-        case The_Camera_Option is
-        when Normal =>
+        if Information.Target_Is_Sun then
           Enable_Goto_Button;
-        when Auto_Focus =>
-          Enable_Auto_Focus_Button;
-        when Add_Model_Point =>
-          if New_Model_Point then
-            Enable_Add_Model_Point_Button;
-          else
+          Enable_Shutdown_Button;
+        else
+          case The_Camera_Option is
+          when Normal =>
             Enable_Goto_Button;
-          end if;
-        end case;
-        Enable_Stop_Button;
+          when Auto_Focus =>
+            Enable_Auto_Focus_Button;
+          when Add_Model_Point =>
+            if New_Model_Point then
+              Enable_Add_Model_Point_Button;
+            else
+              Enable_Goto_Button;
+            end if;
+          end case;
+          Enable_Stop_Button;
+        end if;
       when Telescope.Capturing =>
         Disable_Left_Button;
         Enable_Stop_Button;
@@ -430,12 +439,20 @@ package body User is
   end Show;
 
 
-  procedure Set (The_Target : Name.Id) is
+  procedure Show (The_Target : Name.Id) is
   begin
-    Set_Target_Name (Name.Image_Of (The_Target));
-    Signal_Action (Define_Target);
+    if Name.Exists (The_Target) then
+      Set_Target_Name (Name.Image_Of (The_Target));
+      Signal_Action (Define_Target);
+    end if;
+  end Show;
+
+
+  procedure Go_To (The_Target : Name.Id) is
+  begin
+    Show (The_Target);
     Perform_Goto;
-  end Set;
+  end Go_To;
 
 
   procedure Clear_Target is

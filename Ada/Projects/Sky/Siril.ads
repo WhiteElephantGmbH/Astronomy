@@ -43,8 +43,14 @@ package Siril is
   procedure Stack_Dark (Output : String);
   --  Stacks the dark images without normalization.
 
+  procedure Convert_Flat (Destination : String);
+  -- Converts the flat images to FITS files.
+
+  procedure Stack_Flat (Output : String);
+  -- Stacks the flat images with multiplicative normalization.
+
   procedure Load (File_Name : String);
-  -- Loads an individual image.
+  -- Loads an individual image - full path including extension required!
 
   procedure Auto_Stretch;
   -- Applies an automatic stretch to the loaded image.
@@ -85,7 +91,10 @@ package Siril is
   -- Applies the specified saturation settings to the image.
 
   procedure Save_Jpeg (File_Name : String);
-  -- Saves the processed image as a JPEG file.
+  -- Saves the processed image as a JPEG file - no extension!
+
+  procedure Save_Fits (Filename : String);
+  -- Saves the processed image as a FITS file - no extension!
 
   procedure Close;
   -- Closes Siril and terminates the Siril session.

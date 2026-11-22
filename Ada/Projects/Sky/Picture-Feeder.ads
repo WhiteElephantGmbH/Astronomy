@@ -22,6 +22,10 @@ private package Picture.Feeder is
 
   function Send_Next_Dark_Was_Last return Boolean;
 
+  procedure New_Flats_Sequence;
+
+  function Send_Next_Flat_Was_Last return Boolean;
+
   procedure New_Light_Sequence (Target           : Name.Id;
                                 Target_Direction : Space.Direction);
 

@@ -64,6 +64,19 @@ package body Siril is
   end Stack_Dark;
 
 
+  procedure Convert_Flat (Destination : String) is
+  begin
+    Check_Directory (File.Containing_Directory_Of (Destination));
+    SI.Execute ("convert flat -out=" & Destination);
+  end Convert_Flat;
+
+
+  procedure Stack_Flat (Output : String) is
+  begin
+    SI.Execute ("stack flat median -norm=mul -out=" & Output);
+  end Stack_Flat;
+
+
   procedure Load (File_Name : String) is
   begin
     Check_File (File_Name);
@@ -178,6 +191,12 @@ package body Siril is
   begin
     SI.Execute ("savejpg " & File_Name);
   end Save_Jpeg;
+
+
+  procedure Save_Fits (Filename : String) is
+  begin
+    SI.Execute ("save " & Filename);
+  end Save_Fits;
 
 
   procedure Close renames Siril_Interface.Close;

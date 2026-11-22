@@ -29,6 +29,7 @@ package Processor is
   type Light_Parameters is record
     Target       : Space.Direction;
     Darks_Id     : Text.String;
+    Flats_Id     : Text.String;
     Camera_Model : Units.Camera_Model;
     Pixel_Size   : Units.Pixel_Size;
     Focal_Length : Units.Focal_Length;
@@ -37,6 +38,8 @@ package Processor is
   procedure Start;
 
   procedure Evaluate_Darks (Filename : String);
+
+  procedure Evaluate_Flats (Filename : String);
 
   procedure New_Sequence (Parameters : Light_Parameters);
 

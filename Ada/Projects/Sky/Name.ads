@@ -101,6 +101,8 @@ package Name is
 
   function Kind_Of (Item : Id) return Object_Kind;
 
+  function Is_Sun (Item : Id) return Boolean;
+
   function Object_Of (Item : Id) return Sky.Object;
 
   function Type_Of (Item : Id) return Sky.Object_Type;
