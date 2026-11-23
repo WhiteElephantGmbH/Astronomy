@@ -89,6 +89,8 @@ package body Gui is
 
 
   pragma Linker_Options ("-lcomctl32");
+  pragma Linker_Options ("-lgdiplus");
+  pragma Linker_Options ("-lshlwapi");
 
   type Click_Routine is access procedure (Item : Information);
 
@@ -112,14 +114,340 @@ package body Gui is
   end Termination_Handler;
 
    -- Private window messages
-  Wm_Create_Child   : constant := Win32.Winuser.WM_USER + 1107;
-  Wm_User_Callback  : constant := Win32.Winuser.WM_USER + 1108;
-  Wm_User_Close     : constant := Win32.Winuser.WM_USER + 1109;
+  Wm_Create_Child    : constant := Win32.Winuser.WM_USER + 1107;
+  Wm_User_Callback   : constant := Win32.Winuser.WM_USER + 1108;
+  Wm_User_Close      : constant := Win32.Winuser.WM_USER + 1109;
+  Wm_Create_Detached : constant := Win32.Winuser.WM_USER + 1110;
+  Wm_Show_Detached   : constant := Win32.Winuser.WM_USER + 1111;
 
   The_Termination_Routine : Action_Routine := null;
 
   subtype Status_Line_Control is Win32.Windef.HWND;
   subtype Tab_Control         is Win32.Windef.HWND;
+
+  type Detached_Window_Information is record
+    The_Handle : Win32.Windef.HWND := System.Null_Address;
+  end record;
+
+  type Detached_Create_Request is record
+    Title      : Win32.PCWCH;
+    Width      : Win32.INT;
+    Height     : Win32.INT;
+    X_Position : Win32.INT;
+    Y_Position : Win32.INT;
+    Result     : Win32.Windef.HWND := System.Null_Address;
+    On_Close   : Detached_Close_Callback := null;
+  end record;
+
+  type Detached_Create_Request_Ptr is access all Detached_Create_Request;
+
+  function To_Lparam is new Ada.Unchecked_Conversion --> UD: To_Lparam
+    (Detached_Create_Request_Ptr, Win32.LPARAM);
+  function To_Request is new Ada.Unchecked_Conversion
+    (Win32.LPARAM, Detached_Create_Request_Ptr);
+
+  -- The request is used only during synchronous SendMessage.
+  type Detached_Show_Request is record
+    Hwnd    : Win32.Windef.HWND;
+    Address : System.Address;
+    Length  : Win32.UINT;
+    Success : Boolean := False;
+  end record;
+
+  type Detached_Show_Request_Ptr is access all Detached_Show_Request;
+  function To_Lparam is new Ada.Unchecked_Conversion
+    (Detached_Show_Request_Ptr, Win32.LPARAM);
+  function To_Show_Request is new Ada.Unchecked_Conversion
+    (Win32.LPARAM, Detached_Show_Request_Ptr);
+
+  -- GDI+ flat API, with an IStream holding the JPEG bytes in memory.
+  type Gdiplus_Startup_Input is record
+    Version                  : Win32.UINT := 1;
+    Debug_Callback           : System.Address := System.Null_Address;
+    Suppress_Background_Task : Win32.BOOL := Win32.FALSE;
+    Suppress_External_Codecs : Win32.BOOL := Win32.FALSE;
+  end record with Convention => C;
+
+  function Gdiplus_Startup (Token  : access System.Address;
+                            Input  : access constant Gdiplus_Startup_Input;
+                            Output : System.Address) return Win32.INT
+  with Import, Convention => Stdcall, External_Name => "GdiplusStartup";
+
+  procedure Gdiplus_Shutdown (Token : System.Address)
+  with Import, Convention => Stdcall, External_Name => "GdiplusShutdown";
+
+  function Memory_Stream (Data : System.Address; Length : Win32.UINT) return System.Address
+  with Import, Convention => Stdcall, External_Name => "SHCreateMemStream";
+
+  function Load_Image (Stream : System.Address; Result : access System.Address) return Win32.INT
+  with Import, Convention => Stdcall, External_Name => "GdipLoadImageFromStream";
+
+  function Dispose_Image (Picture : System.Address) return Win32.INT
+  with Import, Convention => Stdcall, External_Name => "GdipDisposeImage";
+
+  function Image_Width (Picture : System.Address; Result : access Win32.UINT) return Win32.INT
+  with Import, Convention => Stdcall, External_Name => "GdipGetImageWidth";
+
+  function Image_Height (Picture : System.Address; Result : access Win32.UINT) return Win32.INT
+  with Import, Convention => Stdcall, External_Name => "GdipGetImageHeight";
+
+  function Create_Graphics (Hwnd : Win32.Windef.HWND; Result : access System.Address) return Win32.INT
+  with Import, Convention => Stdcall, External_Name => "GdipCreateFromHWND";
+
+  function Delete_Graphics (Graphics : System.Address) return Win32.INT
+  with Import, Convention => Stdcall, External_Name => "GdipDeleteGraphics";
+
+  function Clear_Graphics (Graphics : System.Address; Color : Win32.DWORD) return Win32.INT
+  with Import, Convention => Stdcall, External_Name => "GdipGraphicsClear";
+
+  function Set_Interpolation (Graphics : System.Address; Mode : Win32.INT) return Win32.INT
+  with Import, Convention => Stdcall, External_Name => "GdipSetInterpolationMode";
+
+  function Draw_Image (Graphics : System.Address;
+                       Picture  : System.Address;
+                       X, Y, Width, Height : Win32.INT) return Win32.INT
+  with Import, Convention => Stdcall, External_Name => "GdipDrawImageRectI";
+
+  function Validate_Window (Hwnd : Win32.Windef.HWND; Rect : System.Address) return Win32.BOOL
+  with Import, Convention => Stdcall, External_Name => "ValidateRect";
+
+  function Invalidate_Window (Hwnd : Win32.Windef.HWND;
+                              Rect : System.Address;
+                              Erase : Win32.BOOL) return Win32.BOOL
+  with Import, Convention => Stdcall, External_Name => "InvalidateRect";
+
+  -- The first pointer of an IStream object addresses its COM vtable.
+  type Stream_Vtable is record
+    Query_Interface : System.Address; --> UD: Query_Interface
+    Add_Ref         : System.Address; --> UD: Add_Ref
+    Release         : System.Address;
+  end record with Convention => C;
+  type Stream_Vtable_Ptr is access all Stream_Vtable;
+  type Stream_Object is record
+    Methods : Stream_Vtable_Ptr;
+  end record with Convention => C;
+  package Stream_Addresses is new System.Address_To_Access_Conversions (Stream_Object);
+  type Release_Routine is access function (This : System.Address) return Win32.ULONG
+    with Convention => Stdcall;
+  function To_Release is new Ada.Unchecked_Conversion (System.Address, Release_Routine);
+
+  procedure Release_Stream (Stream : System.Address) is
+    Unused : Win32.ULONG;
+    use type System.Address;
+  begin
+    if Stream /= System.Null_Address then
+      Unused := To_Release (Stream_Addresses.To_Pointer (Stream).Methods.Release) (Stream);
+    end if;
+  end Release_Stream;
+
+  -- Fullscreen is deliberately private to detached windows.
+  type Window_Placement is record
+    Length          : Win32.UINT;
+    Flags           : Win32.UINT;
+    Show_Command    : Win32.UINT;
+    Min_Position    : Win32.Windef.POINT;
+    Max_Position    : Win32.Windef.POINT;
+    Normal_Position : Win32.Windef.RECT;
+  end record with Convention => C;
+
+  type Monitor_Information is record
+    Size       : Win32.DWORD;
+    Monitor    : Win32.Windef.RECT;
+    Work       : Win32.Windef.RECT;
+    Flags      : Win32.DWORD;
+  end record with Convention => C;
+
+  function Get_Window_Placement (Hwnd : Win32.Windef.HWND;
+                                 Place : access Window_Placement) return Win32.BOOL
+    with Import, Convention => Stdcall, External_Name => "GetWindowPlacement";
+  function Set_Window_Placement (Hwnd : Win32.Windef.HWND;
+                                 Place : access Window_Placement) return Win32.BOOL
+    with Import, Convention => Stdcall, External_Name => "SetWindowPlacement";
+  function Monitor_From_Window (Hwnd : Win32.Windef.HWND;
+                                Flags : Win32.DWORD) return System.Address
+    with Import, Convention => Stdcall, External_Name => "MonitorFromWindow";
+  function Get_Monitor_Info (Monitor : System.Address;
+                             Info : access Monitor_Information) return Win32.BOOL
+    with Import, Convention => Stdcall, External_Name => "GetMonitorInfoW";
+  function Get_Window_Style (Hwnd : Win32.Windef.HWND;
+                             Index : Win32.INT) return Win32.LONG
+    with Import, Convention => Stdcall, External_Name => "GetWindowLongW";
+  function Set_Window_Style (Hwnd : Win32.Windef.HWND;
+                             Index : Win32.INT;
+                             Value : Win32.LONG) return Win32.LONG
+    with Import, Convention => Stdcall, External_Name => "SetWindowLongW";
+
+  use type Win32.INT;
+
+  Gwl_Style       : constant Win32.INT := -16;
+  Monitor_Nearest : constant Win32.DWORD := 2;
+  Swp_Framechanged : constant Win32.UINT := 16#0020#;
+  Swp_Noownerzorder : constant Win32.UINT := 16#0200#;
+  function To_Signed_Style is new Ada.Unchecked_Conversion (Win32.DWORD, Win32.LONG);
+  function To_Unsigned_Style is new Ada.Unchecked_Conversion (Win32.LONG, Win32.DWORD);
+  Ws_Popup       : constant Win32.DWORD := 16#8000_0000#;
+  Ws_Caption     : constant Win32.DWORD := 16#00C0_0000#;
+  Ws_Thickframe  : constant Win32.DWORD := 16#0004_0000#;
+  Ws_Minimizebox : constant Win32.DWORD := 16#0002_0000#;
+  Ws_Maximizebox : constant Win32.DWORD := 16#0001_0000#;
+  Ws_Sysmenu     : constant Win32.DWORD := 16#0008_0000#;
+
+  type Detached_Image_State;
+  type Detached_Image_State_Ptr is access Detached_Image_State;
+  type Detached_Image_State is record
+    Hwnd    : Win32.Windef.HWND;
+    Picture : System.Address := System.Null_Address;
+    Stream  : System.Address := System.Null_Address;
+    Width   : Win32.UINT := 0;
+    Height  : Win32.UINT := 0;
+    Fullscreen : Boolean := False;
+    On_Close : Detached_Close_Callback := null;
+    Saved_Style : Win32.LONG := 0;
+    Saved_Placement : aliased Window_Placement :=
+      (Length => Win32.UINT (Window_Placement'size / 8),
+       Flags => 0, Show_Command => 0,
+       Min_Position => (0, 0), Max_Position => (0, 0),
+       Normal_Position => (0, 0, 0, 0));
+    Next    : Detached_Image_State_Ptr := null;
+  end record;
+  procedure Free_Image_State is new Ada.Unchecked_Deallocation
+    (Detached_Image_State, Detached_Image_State_Ptr);
+  Images : Detached_Image_State_Ptr := null;
+
+  Gdiplus_Token : aliased System.Address := System.Null_Address;
+
+  function Image_State (Hwnd : Win32.Windef.HWND) return Detached_Image_State_Ptr is
+    Current : Detached_Image_State_Ptr := Images;
+    use type System.Address;
+  begin
+    while Current /= null loop
+      if Current.Hwnd = Hwnd then
+        return Current;
+      end if;
+      Current := Current.Next;
+    end loop;
+    return null;
+  end Image_State;
+
+  procedure Dispose (State : Detached_Image_State_Ptr) is
+    Unused : Win32.INT;
+    use type System.Address;
+  begin
+    if State.Picture /= System.Null_Address then
+      Unused := Dispose_Image (State.Picture);
+      State.Picture := System.Null_Address;
+    end if;
+    Release_Stream (State.Stream);
+    State.Stream := System.Null_Address;
+  end Dispose;
+
+  procedure Remove_Image_State (Hwnd : Win32.Windef.HWND) is
+    Current  : Detached_Image_State_Ptr := Images;
+    Previous : Detached_Image_State_Ptr := null;
+    use type System.Address;
+  begin
+    while Current /= null loop
+      if Current.Hwnd = Hwnd then
+        Dispose (Current);
+        if Previous = null then
+          Images := Current.Next;
+        else
+          Previous.Next := Current.Next;
+        end if;
+        Free_Image_State (Current);
+        return;
+      end if;
+      Previous := Current;
+      Current := Current.Next;
+    end loop;
+  end Remove_Image_State;
+
+  procedure Paint_Detached (Hwnd : Win32.Windef.HWND) is
+    State    : constant Detached_Image_State_Ptr := Image_State (Hwnd);
+    Graphics : aliased System.Address := System.Null_Address;
+    Rectangle : aliased Win32.Windef.RECT;
+    Unused : Win32.INT;
+    Unused_Bool : Win32.BOOL;
+    Width, Height, X, Y : Win32.INT;
+    Client_Width, Client_Height : Win32.INT;
+    use type System.Address;
+    use type Win32.LONG;
+  begin
+    if State /= null and then State.Picture /= System.Null_Address then
+      Unused_Bool := Win32.Winuser.GetClientRect (Hwnd, Rectangle'unchecked_access);
+      Client_Width := Win32.INT (Rectangle.right - Rectangle.left);
+      Client_Height := Win32.INT (Rectangle.bottom - Rectangle.top);
+      if Client_Width > 0 and then Client_Height > 0 then
+        if Long_Long_Integer (Client_Width) * Long_Long_Integer (State.Height) <=
+           Long_Long_Integer (Client_Height) * Long_Long_Integer (State.Width)
+        then
+          Width := Client_Width;
+          Height := Win32.INT (Long_Long_Integer (Client_Width) *
+                               Long_Long_Integer (State.Height) / Long_Long_Integer (State.Width));
+        else
+          Height := Client_Height;
+          Width := Win32.INT (Long_Long_Integer (Client_Height) *
+                              Long_Long_Integer (State.Width) / Long_Long_Integer (State.Height));
+        end if;
+        X := (Client_Width - Width) / 2;
+        Y := (Client_Height - Height) / 2;
+        if Create_Graphics (Hwnd, Graphics'access) = 0 then
+          Unused := Clear_Graphics (Graphics, 16#FF000000#); -- Opaque black
+          Unused := Set_Interpolation (Graphics, 7); -- HighQualityBicubic
+          Unused := Draw_Image (Graphics, State.Picture, X, Y, Width, Height);
+          Unused := Delete_Graphics (Graphics);
+        end if;
+      end if;
+    end if;
+    Unused_Bool := Validate_Window (Hwnd, System.Null_Address);
+  end Paint_Detached;
+
+  procedure Show_Detached_Image (Lparam : Win32.LPARAM) is
+    Request : constant Detached_Show_Request_Ptr := To_Show_Request (Lparam);
+    State   : constant Detached_Image_State_Ptr := Image_State (Request.Hwnd);
+    Startup : aliased constant Gdiplus_Startup_Input := (others => <>);
+    New_Stream : System.Address := System.Null_Address;
+    New_Image  : aliased System.Address := System.Null_Address;
+    Width, Height : aliased Win32.UINT := 0;
+    Unused : Win32.INT;
+    Unused_Bool : Win32.BOOL;
+    use type System.Address;
+    use type Win32.UINT;
+  begin
+    if State = null or else Request.Length = 0 then
+      return;
+    end if;
+    if Gdiplus_Token = System.Null_Address then
+      if Gdiplus_Startup (Gdiplus_Token'access, Startup'access, System.Null_Address) /= 0 then
+        return;
+      end if;
+    end if;
+    New_Stream := Memory_Stream (Request.Address, Request.Length);
+    if New_Stream = System.Null_Address then
+      return;
+    end if;
+    if Load_Image (New_Stream, New_Image'access) /= 0 then
+      Release_Stream (New_Stream);
+      return;
+    end if;
+    if Image_Width (New_Image, Width'access) /= 0 or else
+       Image_Height (New_Image, Height'access) /= 0 or else Width = 0 or else Height = 0
+    then
+      Unused := Dispose_Image (New_Image);
+      Release_Stream (New_Stream);
+      return;
+    end if;
+    Dispose (State);
+    State.Stream := New_Stream;
+    State.Picture := New_Image;
+    State.Width := Width;
+    State.Height := Height;
+    Request.Success := True;
+    Unused_Bool := Invalidate_Window (Request.Hwnd, System.Null_Address, Win32.TRUE);
+  end Show_Detached_Image;
+
+  Detached_Class_Name : aliased constant String := "GuiDetachedWindow" & Nul;
+  Detached_Class_Name_Wide : aliased constant Wide_String := "GuiDetachedWindow" & Wide_Nul;
 
   type String_Ptr is access String;
   type Wide_String_Ptr is access Wide_String;
@@ -529,7 +857,6 @@ package body Gui is
   function Is_Confirmed (The_Question : String) return Boolean is
     With_Question : aliased constant Wide_String := To_Wide(The_Question) & Wide_Nul;
     Box_Style     : constant := Win32.Winuser.MB_ICONQUESTION + Win32.Winuser.MB_YESNO;
-    use type Win32.INT;
   begin
     return Win32.Winuser.MessageBoxW (Private_Window,
                                       Win32.Addr(With_Question),
@@ -685,8 +1012,6 @@ package body Gui is
 
 
   procedure Redraw_Main_Window is
-
-    use type Win32.INT;
 
     Unused_Bool           : Win32.BOOL;
     Unused_Hwnd           : Win32.Windef.HWND;
@@ -1155,15 +1480,16 @@ package body Gui is
   function Process_Notification_From_Child (Unused_Wparam : Win32.WPARAM;
                                                    Lparam : Win32.LPARAM) return Win32.LRESULT is
 
-    The_Notification      : Win32.Comctl.Lv_Dispinfo_Wide_Ptr;
-    The_Custom_Draw_Info  : Win32.Comctl.Customdraw_Info_Ptr;
-    The_Listview_Info     : Win32.Comctl.Nm_Listview_Ptr;
-    The_Child             : Child_Information_Ptr;
+    The_Notification     : Win32.Comctl.Lv_Dispinfo_Wide_Ptr;
+    The_Custom_Draw_Info : Win32.Comctl.Customdraw_Info_Ptr;
+    The_Listview_Info    : Win32.Comctl.Nm_Listview_Ptr;
+    The_Child            : Child_Information_Ptr;
+
     function Convert is new Ada.Unchecked_Conversion (Win32.LPARAM, Information);
     function Convert is new Ada.Unchecked_Conversion (Win32.LPARAM, System.Address);
     function Convert is new Ada.Unchecked_Conversion (System.Address, Win32.LPARAM);
     function Convert is new Ada.Unchecked_Conversion (Child_Information_Ptr, Win32.WPARAM);
-    use type Win32.INT;
+
     use type Win32.Comctl.Lv_Dispinfo_Wide_Ptr;
     use type Win32.Comctl.Customdraw_Info_Ptr;
     use type Win32.Comctl.Nm_Listview_Ptr;
@@ -1296,7 +1622,6 @@ package body Gui is
     Class_Name     : Win32.LPCWSTR;
     Previous_Child : Child_Information_Ptr;
 
-    use type Win32.INT;
     use type Win32.Windef.HWND;
   begin
     if (The_Child = null) or (Parent_Page = null) then
@@ -1532,6 +1857,162 @@ package body Gui is
   end Process_Message_From_Child;
 
 
+  procedure Set_Detached_Fullscreen (Hwnd : Win32.Windef.HWND;
+                                      Enable : Boolean) is
+    State        : constant Detached_Image_State_Ptr := Image_State (Hwnd);
+    Info         : aliased Monitor_Information := (Size => Win32.DWORD (Monitor_Information'size / 8), others => <>);
+    Unused       : Win32.BOOL;
+    Unused_Style : Win32.LONG;
+    Monitor      : System.Address;
+    use type Win32.LONG;
+    use type System.Address;
+    use type Win32.BOOL;
+    use type Win32.UINT;
+  begin
+    if State = null or else State.Fullscreen = Enable then
+      return;
+    end if;
+    if Enable then
+      State.Saved_Placement.Length := Win32.UINT (Window_Placement'size / 8);
+      if Get_Window_Placement (Hwnd, State.Saved_Placement'access) = Win32.FALSE then
+        return;
+      end if;
+      Monitor := Monitor_From_Window (Hwnd, Monitor_Nearest);
+      if Monitor = System.Null_Address or else
+        Get_Monitor_Info (Monitor, Info'access) = Win32.FALSE
+      then
+        return;
+      end if;
+      State.Saved_Style := Get_Window_Style (Hwnd, Gwl_Style);
+      Unused_Style := Set_Window_Style
+        (Hwnd, Gwl_Style,
+         To_Signed_Style
+           ((To_Unsigned_Style (State.Saved_Style) or Ws_Popup) and
+            not (Ws_Caption or Ws_Thickframe or Ws_Minimizebox or
+                 Ws_Maximizebox or Ws_Sysmenu)));
+      Unused := Win32.Winuser.SetWindowPos (Hwnd, System.Null_Address,
+                                            Win32.INT (Info.Monitor.left), Win32.INT (Info.Monitor.top),
+                                            Win32.INT (Info.Monitor.right - Info.Monitor.left),
+                                            Win32.INT (Info.Monitor.bottom - Info.Monitor.top),
+                                            Win32.Winuser.SWP_NOZORDER + Swp_Framechanged + Swp_Noownerzorder +
+                                            Win32.Winuser.SWP_SHOWWINDOW);
+      Unused := Invalidate_Window (Hwnd, System.Null_Address, Win32.FALSE);
+      State.Fullscreen := True;
+    else
+      Unused_Style := Set_Window_Style (Hwnd, Gwl_Style, State.Saved_Style);
+      Unused := Set_Window_Placement (Hwnd, State.Saved_Placement'access);
+      Unused := Win32.Winuser.SetWindowPos
+        (Hwnd, System.Null_Address, 0, 0, 0, 0,
+         Win32.Winuser.SWP_NOZORDER + Swp_Framechanged + Swp_Noownerzorder +
+         Win32.Winuser.SWP_NOMOVE + Win32.Winuser.SWP_NOSIZE);
+      State.Fullscreen := False;
+    end if;
+  end Set_Detached_Fullscreen;
+
+  function Detached_Window_Proc (Hwnd    : Win32.Windef.HWND;
+                                 Message : Win32.UINT;
+                                 Wparam  : Win32.WPARAM;
+                                 Lparam  : Win32.LPARAM) return Win32.LRESULT
+  with Convention => Stdcall;
+
+  function Detached_Window_Proc (Hwnd    : Win32.Windef.HWND;
+                                 Message : Win32.UINT;
+                                 Wparam  : Win32.WPARAM;
+                                 Lparam  : Win32.LPARAM) return Win32.LRESULT is
+    use type Win32.WPARAM;
+  begin
+    case Message is
+      when Win32.Winuser.WM_KEYDOWN =>
+        if Wparam = Win32.WPARAM (16#7A#) then -- F11
+          declare
+            State : constant Detached_Image_State_Ptr := Image_State (Hwnd);
+          begin
+            if State /= null then
+              Set_Detached_Fullscreen (Hwnd, not State.Fullscreen);
+            end if;
+          end;
+          return 0;
+        elsif Wparam = Win32.WPARAM (16#1B#) then -- Escape
+          Set_Detached_Fullscreen (Hwnd, False);
+          return 0;
+        end if;
+      when Win32.Winuser.WM_PAINT =>
+        Paint_Detached (Hwnd);
+        return 0;
+      when Win32.Winuser.WM_ERASEBKGND =>
+        return 1; -- WM_PAINT clears the entire client area
+      when Win32.Winuser.WM_SIZE =>
+        declare
+          Unused : constant Win32.BOOL :=
+            Invalidate_Window (Hwnd, System.Null_Address, Win32.FALSE);
+        begin
+          null;
+        end;
+      when Win32.Winuser.WM_DESTROY =>
+        declare
+          State : constant Detached_Image_State_Ptr := Image_State (Hwnd);
+          Place : aliased Window_Placement :=
+            (Length => Win32.UINT (Window_Placement'size / 8),
+             Flags => 0, Show_Command => 0,
+             Min_Position => (0, 0), Max_Position => (0, 0),
+             Normal_Position => (0, 0, 0, 0));
+          use type Win32.BOOL;
+          use type Win32.LONG;
+        begin
+          if State /= null and then State.On_Close /= null then
+            if State.Fullscreen then
+              Place := State.Saved_Placement;
+            elsif Get_Window_Placement (Hwnd, Place'access) = Win32.FALSE then
+              raise Program_Error with "GetWindowPlacement failed for detached window";
+            end if;
+            State.On_Close.all
+              ((X_Position => Integer (Place.Normal_Position.left),
+                Y_Position => Integer (Place.Normal_Position.top),
+                Width => Natural (Place.Normal_Position.right - Place.Normal_Position.left),
+                Height => Natural (Place.Normal_Position.bottom - Place.Normal_Position.top)));
+          end if;
+        end;
+        Remove_Image_State (Hwnd);
+      when others =>
+        null;
+    end case;
+    return Win32.Winuser.DefWindowProc (Hwnd, Message, Wparam, Lparam);
+  end Detached_Window_Proc;
+
+
+  procedure Create_Detached_Window (Lparam : Win32.LPARAM) is
+    Request : constant Detached_Create_Request_Ptr := To_Request (Lparam);
+    Unused  : Win32.BOOL;
+    use type System.Address;
+  begin
+    Request.Result := Win32.Winuser.CreateWindowExW (0,
+                                                     Win32.Addr (Detached_Class_Name_Wide),
+                                                     Request.Title,
+                                                     Win32.Winuser.WS_OVERLAPPEDWINDOW,
+                                                     Request.X_Position, Request.Y_Position,
+                                                     Request.Width, Request.Height,
+                                                     System.Null_Address, System.Null_Address,
+                                                     Our_Instance, System.Null_Address);
+    if Request.Result /= System.Null_Address then
+      Images := new Detached_Image_State'(Hwnd => Request.Result,
+                                          Picture => System.Null_Address,
+                                          Stream => System.Null_Address,
+                                          Width => 0, Height => 0,
+                                          Fullscreen => False,
+                                          On_Close => Request.On_Close,
+                                          Saved_Style => 0,
+                                          Saved_Placement =>
+                                            (Length => Win32.UINT (Window_Placement'size / 8),
+                                             Flags => 0, Show_Command => 0,
+                                             Min_Position => (0, 0), Max_Position => (0, 0),
+                                             Normal_Position => (0, 0, 0, 0)),
+                                          Next => Images);
+      Unused := Win32.Winuser.ShowWindow (Request.Result, Win32.Winuser.SW_SHOW);
+      Unused := Win32.Winuser.UpdateWindow (Request.Result);
+    end if;
+  end Create_Detached_Window;
+
+
   function Mainwindowproc(Hwnd    : Win32.Windef.HWND;
                           Message : Win32.UINT;
                           Wparam  : Win32.WPARAM;
@@ -1582,6 +2063,10 @@ package body Gui is
 --      when Win32.Comctl.Wm_Notifyformat =>  -- Allow control to decide the format
 --        return either Nfr_Ansi or Nfr_Unicode
 --      The above is not required as the format for a control is fixed.
+      when Wm_Create_Detached =>
+        Create_Detached_Window (Lparam);
+      when Wm_Show_Detached =>
+        Show_Detached_Image (Lparam);
       when Wm_Create_Child =>
         Create_Child (Lparam, Wparam);
       when Win32.Winuser.WM_MOVE =>
@@ -1749,6 +2234,7 @@ package body Gui is
         The_Icon := Win32.Winuser.LoadImageA (Our_Instance, Icon_Resource, 1, 0, 0, Win32.Winuser.LR_DEFAULT_SIZE);
         The_Application_Class_Name := new String'(Application_Name & Nul);
         Register_Class (The_Application_Class_Name.all, Mainwindowproc'access, The_Icon);
+        Register_Class (Detached_Class_Name, Detached_Window_Proc'access, The_Icon);
         if Is_Visible (X_Position => Win32.LONG(Window_X_Position),
                        Y_Position => Win32.LONG(Window_Y_Position),
                        Width      => Win32.LONG(Window_Width),
@@ -1786,9 +2272,18 @@ package body Gui is
     Unused := Win32.Winuser.ShowWindow (Private_Window, Win32.Winuser.SW_SHOW);
     Unused := Win32.Winuser.UpdateWindow (Private_Window);
     Dispatch;
+    -- Destroy remaining detached windows on the GUI thread.
+    while Images /= null loop
+      Unused := Win32.Winuser.DestroyWindow (Images.Hwnd);
+    end loop;
     Unused := Win32.Winuser.DestroyWindow (Private_Window);
     Private_Window := System.Null_Address;
     Unregister_Class (The_Application_Class_Name.all);
+    Unregister_Class (Detached_Class_Name);
+    if Gdiplus_Token /= System.Null_Address then
+      Gdiplus_Shutdown (Gdiplus_Token);
+      Gdiplus_Token := System.Null_Address;
+    end if;
     if Rich_Edit_Dll /= System.Null_Address then
       Unused := Win32.Winbase.FreeLibrary (Rich_Edit_Dll);
     end if;
@@ -1923,7 +2418,6 @@ package body Gui is
     Transition_State : constant Win32.UINT := 16#8000_0000#;
     function Convert is new Ada.Unchecked_Conversion (Win32.LPARAM, Information);
     use type Win32.UINT;
-    use type Win32.INT;
   begin
     if The_Key_Handling_Is_Enabled then
       if Code >= 0 then
@@ -1955,8 +2449,6 @@ package body Gui is
                            Lparam : Win32.LPARAM) return Win32.LRESULT is
 
     function Convert is new Ada.Unchecked_Conversion (Win32.LPARAM, System.Address);
-
-    use type Win32.INT;
 
   begin
     if Code >= 0 then
@@ -2505,7 +2997,6 @@ package body Gui is
                       Parent_Page   : Page) return Child_Information_Ptr is
     The_Buddy : Child_Information_Ptr := null;
     The_Title : constant Wide_String_Ptr := new Wide_String'(The_Text & Wide_Nul);
-    use type Win32.INT;
   begin
     if The_Text /= "" then
       The_Buddy := new Child_Information;
@@ -2587,8 +3078,8 @@ package body Gui is
     Send_Message (The_Track_Bar.Ptr.The_Handle,
                   Win32.Comctl.Tbm_Setpos,
                   Win32.TRUE,
-                  Win32.LPARAM (Natural'Max (The_Track_Bar.Ptr.Track_Minimum,
-                                Natural'Min (The_Position, The_Track_Bar.Ptr.Track_Maximum))));
+                  Win32.LPARAM (Natural'max (The_Track_Bar.Ptr.Track_Minimum,
+                                Natural'min (The_Position, The_Track_Bar.Ptr.Track_Maximum))));
   end Set_Position;
 
 
@@ -2613,7 +3104,6 @@ package body Gui is
     Text        : aliased constant Wide_String := To_Wide (The_Text) & Wide_Nul;
     The_Button  : constant Button := Button'(Ptr => new Child_Information);
     Button_Size : constant Win32.INT := Win32.INT (The_Button_Size);
-    use type Win32.INT;
   begin
     The_Button.Ptr.The_Window_Id := Next_Child_Id;
     The_Button.Ptr.Initial_Title := Win32.Addr(Text);
@@ -2735,7 +3225,6 @@ package body Gui is
 
 
   procedure Increment (The_Count : in out Win32.INT) is
-    use type Win32.INT;
   begin
     The_Count := The_Count + 1;
   end Increment;
@@ -2762,7 +3251,6 @@ package body Gui is
 
 
   procedure Decrement (The_Count : in out Win32.INT) is
-    use type Win32.INT;
   begin
     if The_Count > 0 then
       The_Count := The_Count - 1;
@@ -4002,6 +4490,55 @@ package body Gui is
     Log.Write ("Gui.Action_Handler", Event);
   end Action_Handler;
 
+
+  function Create (Title    : String;
+                   Metrics  : Window_Metrics := Default_Metrics;
+                   On_Close : Detached_Close_Callback := null) return Detached_Window is
+    Wide_Title : aliased constant Wide_String := To_Wide (Title) & Wide_Nul;
+    Request    : aliased Detached_Create_Request :=
+      (Title      => Win32.Addr (Wide_Title),
+       Width      => (if Metrics.Width = Automatic then Default_Position else Win32.INT (Metrics.Width)),
+       Height     => (if Metrics.Height = Automatic then Default_Position else Win32.INT (Metrics.Height)),
+       X_Position => Win32.INT (Metrics.X_Position),
+       Y_Position => Win32.INT (Metrics.Y_Position),
+       Result     => System.Null_Address,
+       On_Close   => On_Close);
+    Unused : Win32.LRESULT;
+    use type System.Address;
+  begin
+    if not Is_Active then
+      raise Sequence_Error;
+    end if;
+    Unused := Win32.Winuser.SendMessage
+      (Private_Window, Wm_Create_Detached, 0, To_Lparam (Request'unchecked_access));
+    if Request.Result = System.Null_Address then
+      raise Main_Window_Creation_Failure;
+    end if;
+    return new Detached_Window_Information'(The_Handle => Request.Result);
+  end Create;
+
+
+  procedure Show (The_Window : Detached_Window;
+                  Data       : Ada.Streams.Stream_Element_Array) is
+    Request : aliased Detached_Show_Request;
+    Unused  : Win32.LRESULT;
+    use type Ada.Streams.Stream_Element_Offset;
+  begin
+    if not Is_Active or else The_Window = null or else Data'length = 0 or else
+       Long_Long_Integer (Data'length) > Long_Long_Integer (Win32.UINT'last)
+    then
+      raise Sequence_Error;
+    end if;
+    Request := (Hwnd    => The_Window.The_Handle,
+                Address => Data (Data'first)'address,
+                Length  => Win32.UINT (Data'length),
+                Success => False);
+    Unused := Win32.Winuser.SendMessage
+      (Private_Window, Wm_Show_Detached, 0, To_Lparam (Request'unchecked_access));
+    if not Request.Success then
+      raise Image_Decode_Error;
+    end if;
+  end Show;
 
 begin
   Win32.Commctrl.InitCommonControls;

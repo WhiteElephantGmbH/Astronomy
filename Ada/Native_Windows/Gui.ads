@@ -15,6 +15,7 @@
 -- *********************************************************************************************************************
 pragma Style_Astronomy;
 
+with Ada.Streams;
 with Win32.Comctl;
 with Win32.Windef;
 with Win32.Wingdi; pragma Elaborate (Win32.Wingdi);
@@ -65,6 +66,11 @@ package Gui is
   end record;
 
   Default_Position : constant := Win32.Winuser.CW_USEDEFAULT;
+
+  Default_Metrics : Window_Metrics := (Width      => Automatic,
+                                       Height     => Automatic,
+                                       X_Position => Default_Position,
+                                       Y_Position => Default_Position);
 
   type Menu_Kind is (Plain, Checked, Radio);
 
@@ -689,8 +695,26 @@ package Gui is
 
   procedure Clear (The_Checked_Combo_Box : Checked_Combo_Box);
 
-private
+  -------------------
+  --
+  -- Detached Window
+  --
+  -------------------
 
+  type Detached_Window is private;
+
+  Image_Decode_Error : exception;
+
+  type Detached_Close_Callback is access procedure (Metrics : Window_Metrics);
+
+  function Create (Title    : String;
+                   Metrics  : Window_Metrics := Default_Metrics;
+                   On_Close : Detached_Close_Callback := null) return Detached_Window;
+
+  procedure Show (The_Window : Detached_Window;
+                  Data       : Ada.Streams.Stream_Element_Array);
+
+private
   type Menu_Information;
   type Menu is access all Menu_Information;
 
@@ -738,5 +762,8 @@ private
   procedure Delete_Menu_Item (Item : Radio_Menu_Item);
 
   procedure Dispose_Menu_Item (Item : in out Radio_Menu_Item);
+
+  type Detached_Window_Information;
+  type Detached_Window is access all Detached_Window_Information;
 
 end Gui;

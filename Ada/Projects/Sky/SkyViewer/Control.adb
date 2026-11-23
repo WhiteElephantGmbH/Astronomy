@@ -171,6 +171,7 @@ package body Control is
       Siril.Save_Jpeg (Image.Picture_Name);
       Siril.Close;
       Log.Write ("Generated new picture");
+      User.Show_Picture (Image.Jpec_Filename);
     exception
     when others =>
       Log.Error ("Generate picture failed");

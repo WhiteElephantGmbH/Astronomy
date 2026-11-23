@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2015 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2015 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -21,7 +21,10 @@ package Gui.Registered is
                      The_Version             : String := "";
                      The_Startup_Routine     : access procedure;
                      The_Termination_Routine : access procedure := null;
-                     Initial_Metrics         : Window_Metrics;
+                     Initial_Metrics         : Window_Metrics := Default_Metrics;
                      Always_Topmost          : Boolean := False);
+
+  function Create (Title           : String;
+                   Initial_Metrics : Window_Metrics := Default_Metrics) return Detached_Window;
 
 end Gui.Registered;

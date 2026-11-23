@@ -34,5 +34,7 @@ package User is
   procedure Set (Saturation : Units.Saturation);
 
   function Saturation return Units.Saturation;
+  
+  procedure Show_Picture (Filename : String);
 
 end User;

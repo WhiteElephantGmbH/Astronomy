@@ -15,6 +15,7 @@
 -- *********************************************************************************************************************
 pragma Style_Astronomy;
 
+with Ada.Streams.Stream_IO;
 with Application;
 with Gui.Registered;
 with Text;
@@ -23,6 +24,8 @@ with Traces;
 package body User is
 
   package Log is new Traces ("User");
+
+  package SIO renames Ada.Streams.Stream_IO;
 
   Shadows_Slider    : Gui.Track_Bar;
   Midtones_Slider   : Gui.Track_Bar;
@@ -262,6 +265,33 @@ package body User is
   end Saturation;
 
 
+  Picture_Window : Gui.Detached_Window;
+
+  procedure Show_Picture (Filename : String) is
+
+    subtype Data_Array  is Ada.Streams.Stream_Element_Array;
+    subtype Data_Offset is Ada.Streams.Stream_Element_Offset;
+
+    function Read_File return Data_Array is
+      The_File : SIO.File_Type;
+    begin
+      SIO.Open (The_File, SIO.In_File, Filename);
+      declare
+        Size : constant Data_Offset := Data_Offset (SIO.Size (The_File));
+        Data : Data_Array (1 .. Size);
+        Last : Data_Offset;
+      begin
+        SIO.Read (The_File, Data, Last);
+        SIO.Close (The_File);
+        return Data;
+      end;
+    end Read_File;
+
+  begin -- Show_Picture
+    Gui.Show (Picture_Window, Read_File);
+  end Show_Picture;
+
+
   procedure Execute (The_Startup_Handler     : not null access procedure;
                      The_Action_Handler      : Action_Handler;
                      The_Termination_Handler : not null access procedure) is
@@ -327,8 +357,14 @@ package body User is
 
       end Define_Control_Page;
 
+      procedure Define_Picture_Display is
+      begin
+        Picture_Window := Gui.Registered.Create ("SkyViewer Live");
+      end Define_Picture_Display;
+
     begin -- Create_Interface
       Define_Control_Page;
+      Define_Picture_Display;
       The_Startup_Handler.all;
     exception
     when Item: others =>
