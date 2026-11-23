@@ -200,6 +200,11 @@ package body Gui is
   function Clear_Graphics (Graphics : System.Address; Color : Win32.DWORD) return Win32.INT
   with Import, Convention => Stdcall, External_Name => "GdipGraphicsClear";
 
+  function Paint_Black (DC : Win32.Windef.HDC;
+                        X, Y, Width, Height : Win32.INT;
+                        Raster_Operation : Win32.DWORD) return Win32.BOOL
+  with Import, Convention => Stdcall, External_Name => "PatBlt";
+
   function Set_Interpolation (Graphics : System.Address; Mode : Win32.INT) return Win32.INT
   with Import, Convention => Stdcall, External_Name => "GdipSetInterpolationMode";
 
@@ -279,12 +284,15 @@ package body Gui is
 
   use type Win32.INT;
 
-  Gwl_Style       : constant Win32.INT := -16;
-  Monitor_Nearest : constant Win32.DWORD := 2;
-  Swp_Framechanged : constant Win32.UINT := 16#0020#;
+  Gwl_Style         : constant Win32.INT := -16;
+  Monitor_Nearest   : constant Win32.DWORD := 2;
+  Blackness         : constant Win32.DWORD := 16#0000_0042#;
+  Swp_Framechanged  : constant Win32.UINT := 16#0020#;
   Swp_Noownerzorder : constant Win32.UINT := 16#0200#;
+
   function To_Signed_Style is new Ada.Unchecked_Conversion (Win32.DWORD, Win32.LONG);
   function To_Unsigned_Style is new Ada.Unchecked_Conversion (Win32.LONG, Win32.DWORD);
+
   Ws_Popup       : constant Win32.DWORD := 16#8000_0000#;
   Ws_Caption     : constant Win32.DWORD := 16#00C0_0000#;
   Ws_Thickframe  : constant Win32.DWORD := 16#0004_0000#;
@@ -373,6 +381,21 @@ package body Gui is
     use type System.Address;
     use type Win32.LONG;
   begin
+    if State = null or else State.Picture = System.Null_Address then
+      declare
+        DC : constant Win32.Windef.HDC := Win32.Winuser.GetDC (Hwnd);
+        Unused_Rect : aliased Win32.Windef.RECT;
+        Unused_Paint : Win32.BOOL;
+        Unused_Release : Win32.INT;
+      begin
+        Unused_Paint := Win32.Winuser.GetClientRect (Hwnd, Unused_Rect'unchecked_access);
+        Unused_Paint := Paint_Black (DC, 0, 0,
+                                     Win32.INT (Unused_Rect.right - Unused_Rect.left),
+                                     Win32.INT (Unused_Rect.bottom - Unused_Rect.top),
+                                     Blackness);
+        Unused_Release := Win32.Winuser.ReleaseDC (Hwnd, DC);
+      end;
+    end if;
     if State /= null and then State.Picture /= System.Null_Address then
       Unused_Bool := Win32.Winuser.GetClientRect (Hwnd, Rectangle'unchecked_access);
       Client_Width := Win32.INT (Rectangle.right - Rectangle.left);
