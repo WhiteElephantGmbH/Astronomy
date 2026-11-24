@@ -1,0 +1,432 @@
+-- *********************************************************************************************************************
+-- *                           (c) 2026 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                                               www.white-elephant.ch                                               *
+-- *                                                                                                                   *
+-- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
+-- *    Public License as published by the Free Software Foundation; either version 2 of the License, or               *
+-- *    (at your option) any later version.                                                                            *
+-- *                                                                                                                   *
+-- *    This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the     *
+-- *    implied warranty of MERCHANTABILITY or FITNESS for A PARTICULAR PURPOSE. See the GNU General Public License    *
+-- *    for more details.                                                                                              *
+-- *                                                                                                                   *
+-- *    You should have received a copy of the GNU General Public License along with this program; if not, write to    *
+-- *    the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.                *
+-- *********************************************************************************************************************
+pragma Style_Astronomy;
+
+with Distributor;
+with File;
+with Renderer;
+with Siril;
+with Traces;
+with User;
+
+package body Processor is
+
+  package Log is new Traces ("Processor");
+
+  type Action is (Process_Darks, Process_Flats, Start_Light_Sequence, Show_First, Processing, Stop, Shutdown);
+
+
+  protected Action_Handler is
+
+    procedure Evaluate_Darks;
+
+    procedure Evaluate_Flats;
+
+    procedure New_Light_Sequence;
+
+    procedure Set_Collected (The_Index : Image.Count);
+
+    procedure Get_Collected (The_Index : out Image.Count);
+
+    procedure Set_Stop;
+
+    procedure Set_Shutdown;
+
+    entry Get (Item : out Action);
+
+    procedure Set_Stopped;
+
+    entry Await_Stopped;
+
+    procedure Set_Complete;
+
+    entry Await_Completion;
+
+  private
+    Is_Waiting          : Boolean := True;
+    Is_Complete         : Boolean := False;
+    Is_Stopped          : Boolean := False;
+    The_Action          : Action  := Processing;
+    The_Collected_Count : Image.Count := 0;
+    The_Processed_Count : Image.Count := 0;
+  end Action_Handler;
+
+
+  task Control is
+    entry Start;
+  end Control;
+
+
+  type Log_Kind is (Normal, Warning, Error);
+
+  procedure Show (Message : String;
+                  Kind    : Log_Kind := Normal) is
+  begin
+    case Kind is
+    when Normal =>
+      Log.Write (Message);
+      User.Show (Message);
+    when Warning =>
+      Log.Warning (Message);
+      User.Show ("Warning: " & Message & "!");
+    when Error =>
+      Log.Error (Message);
+      User.Show_Error (Message);
+    end case;
+  end Show;
+
+
+  procedure Start is
+  begin
+    Control.Start;
+  end Start;
+
+
+  The_Darks_Filename : Text.String;
+
+  procedure Evaluate_Darks (Filename : String) is
+  begin
+    Show ("Evaluate Darks");
+    The_Darks_Filename := [Filename];
+    Action_Handler.Evaluate_Darks;
+    Log.Write ("Await Completion");
+    Action_Handler.Await_Completion;
+    Show ("Darks Evaluated");
+    if not Image.Cleared then
+      Show ("Image area not cleared !", Warning);
+    end if;
+  end Evaluate_Darks;
+
+
+  The_Flats_Filename : Text.String;
+
+  procedure Evaluate_Flats (Filename : String) is
+  begin
+    Show ("Evaluate Flats");
+    The_Flats_Filename := [Filename];
+    Action_Handler.Evaluate_Flats;
+    Log.Write ("Await Completion");
+    Action_Handler.Await_Completion;
+    Show ("Flats Evaluated");
+    if not Image.Cleared then
+      Show ("Image area not cleared !", Warning);
+    end if;
+  end Evaluate_Flats;
+
+
+  The_Light_Parameters : Light_Parameters;
+
+  procedure New_Sequence (Parameters : Light_Parameters) is
+  begin
+    Show ("New light sequence");
+    The_Light_Parameters := Parameters;
+    Action_Handler.New_Light_Sequence;
+  end New_Sequence;
+
+
+  procedure Set (Index : Image.Number) is
+  begin
+    Show ("Set Collected" & Index'image);
+    Action_Handler.Set_Collected (Index);
+  end Set;
+
+
+  procedure Stop is
+  begin
+    Action_Handler.Set_Stop;
+    Siril.Close_Immediate;
+    Action_Handler.Await_Stopped;
+  end Stop;
+
+
+  procedure Shutdown is
+  begin
+    Stop;
+    Action_Handler.Set_Shutdown;
+  end Shutdown;
+
+
+  Stacked_Fit : constant String := "stacked.fit";
+
+  Darks_Directory : constant String := Image.Darks_Directory;
+  Flats_Directory : constant String := Image.Flats_Directory;
+  Work_Directory  : constant String := Image.Siril_Work_Directory;
+
+
+  procedure Generate_Darks is
+    Darks_Work_Directory : constant String := Image.Darks_Work_Directory;
+    Darks_Fit_Filename   : constant String := Darks_Directory & "\" & The_Darks_Filename.S & "_" & Stacked_Fit;
+  begin
+    User.Show ("Generate " & Darks_Fit_Filename);
+    Siril.Open (User.Show_Progress'unrestricted_access);
+    Siril.Change_Directory (Image.Collector_Directory);
+    Siril.Convert_Dark (Destination => Darks_Work_Directory);
+    Siril.Change_Directory (Darks_Work_Directory);
+    Siril.Stack_Dark (Darks_Fit_Filename);
+    Siril.Close;
+    Action_Handler.Set_Complete;
+    Log.Write ("Generated " & Darks_Fit_Filename);
+  end Generate_Darks;
+
+
+  procedure Generate_Flats is
+    Flats_Work_Directory : constant String := Image.Flats_Work_Directory;
+    Flats_Fit_Filename   : constant String := Flats_Directory & "\" & The_Flats_Filename.S & "_" & Stacked_Fit;
+  begin
+    Show ("Generate " & Flats_Fit_Filename);
+    Siril.Open (User.Show_Progress'unrestricted_access);
+    Siril.Change_Directory (Image.Collector_Directory);
+    Siril.Convert_Flat (Destination => Flats_Work_Directory);
+    Siril.Change_Directory (Flats_Work_Directory);
+    Siril.Stack_Flat (Flats_Fit_Filename);
+    Siril.Close;
+    Action_Handler.Set_Complete;
+    Log.Write ("Generated " & Flats_Fit_Filename);
+  end Generate_Flats;
+
+
+  Picture_Name  : constant String := Image.Picture_Name;
+  Jpeg_Filename : constant String := Image.Jpeg_Filename;
+  Fits_Filename : constant String := Image.Fits_Filename;
+
+
+  procedure Generate_First_Jpeg is
+  begin
+    File.Delete (Jpeg_Filename);
+    Siril.Open;
+    Siril.Load (Image.First_LIGHT_Filename);
+    Siril.Auto_Stretch;
+    Siril.Change_Directory (Work_Directory);
+    Siril.Save_Jpeg (Picture_Name);
+    Siril.Close;
+    User.Show ("Generated first picture");
+  exception
+  when others =>
+    Siril.Close;
+    raise;
+  end Generate_First_Jpeg;
+
+
+  function Generated_Fits return Boolean is
+
+    Source_Directory : constant String := Image.Siril_LIGHT_Directory;
+    Lights_Directory : constant String := Work_Directory & "\lights";
+
+    Flats_Stacked_Fit : constant String := Flats_Directory & "\" & The_Light_Parameters.Flats_Id.S & "_" & Stacked_Fit;
+    Darks_Stacked_Fit : constant String := Darks_Directory & "\" & The_Light_Parameters.Darks_Id.S & "_" & Stacked_Fit;
+
+    Telescope_Focal_Length : constant Units.Focal_Length := The_Light_Parameters.Focal_Length;
+
+    Camera_Pixel_Size : constant Units.Pixel_Size := The_Light_Parameters.Pixel_Size;
+
+  begin -- Generated_Fits
+    if not File.Exists (Darks_Stacked_Fit) then
+      Show ("Darks " & Darks_Stacked_Fit & " not found", Warning);
+      return False;
+    elsif not File.Exists (Flats_Stacked_Fit) then
+      Show ("Flats " & Flats_Stacked_Fit & " not found", Warning);
+      return False;
+    else
+      File.Delete (Fits_Filename);
+      Siril.Open (User.Show_Progress'unrestricted_access);
+      Siril.Change_Directory (Source_Directory);
+
+      Siril.Convert_Light (Destination => Lights_Directory);
+      Siril.Change_Directory (Lights_Directory);
+
+      Siril.Calibrate_Light (Dark => Darks_Stacked_Fit,
+                             Flat => Flats_Stacked_Fit);
+      Siril.Register_Light;
+      Siril.Stack_Light;
+      Siril.Load_Stacked_Light;
+
+      Siril.Plate_Solve (The_Light_Parameters.Target, Telescope_Focal_Length, Camera_Pixel_Size);
+
+      Siril.Remove_Background;
+      Siril.Calibrate_Color;
+
+      Siril.Change_Directory ("..");
+      Siril.Save_Fits (Picture_Name);
+      Siril.Close;
+      User.Show ("Generated new picture");
+      return True;
+    end if;
+  exception
+  when others =>
+    Siril.Close;
+    raise;
+  end Generated_Fits;
+
+
+  task body Control is
+    The_Action      : Action;
+    Collected_Count : Image.Count := 0;
+    Processed_Count : Image.Count;
+    use type Image.Number;
+  begin
+    accept Start;
+    Log.Write ("started");
+    loop
+      begin
+        Action_Handler.Get (The_Action);
+        case The_Action is
+        when Process_Darks =>
+          Generate_Darks;
+        when Process_Flats =>
+          Generate_Flats;
+        when Start_Light_Sequence =>
+          Renderer.New_Sequence;
+          Collected_Count := 0;
+        when Show_First =>
+          Generate_First_Jpeg;
+          Distributor.Send_Jpeg (Jpeg_Filename);
+        when Processing =>
+          Processed_Count := Collected_Count + 1;
+          Action_Handler.Get_Collected (Collected_Count);
+          Image.Move (Processed_Count, Collected_Count);
+          User.Show ("Process 1 .." & Collected_Count'image);
+          if Generated_Fits then
+            Renderer.New_Picture;
+          end if;
+        when Stop =>
+          Processed_Count := 0;
+          Collected_Count := 0;
+          Show ("stopped");
+          Action_Handler.Set_Stopped;
+        when Shutdown =>
+          exit;
+        end case;
+      exception
+      when Siril.Aborted =>
+        null;
+      when Siril.Not_Enough_Stars =>
+        Show ("Not enough stars detected!", Warning);
+      when Siril.Plate_Solving_Failed =>
+        Show ("Plate solving failed!", Warning);
+      end;
+    end loop;
+    Log.Write ("finalized");
+  exception
+  when Item: others =>
+    User.Show_Error ("Error: Unexpected Termination!");
+    Log.Termination (Item);
+  end Control;
+
+
+  protected body Action_Handler is
+
+    procedure Evaluate_Darks is
+    begin
+      if not (The_Action in Shutdown | Stop) then
+        The_Action := Process_Darks;
+        Is_Waiting := False;
+        Is_Complete := False;
+      end if;
+    end Evaluate_Darks;
+
+
+    procedure Evaluate_Flats is
+    begin
+      if not (The_Action in Shutdown | Stop) then
+        The_Action := Process_Flats;
+        Is_Waiting := False;
+        Is_Complete := False;
+      end if;
+    end Evaluate_Flats;
+
+
+    procedure New_Light_Sequence is
+    begin
+      if not (The_Action in Shutdown | Stop) then
+        The_Action := Start_Light_Sequence;
+        The_Collected_Count := 0;
+        The_Processed_Count := 0;
+        Is_Waiting := False;
+      end if;
+    end New_Light_Sequence;
+
+
+    procedure Set_Collected (The_Index : Image.Count) is
+      use type Image.Count;
+    begin
+      if not (The_Action in Shutdown | Stop) then
+        The_Collected_Count := The_Index;
+        if The_Collected_Count = 1 then
+          The_Action := Show_First;
+        else
+          The_Action := Processing;
+        end if;
+        Is_Waiting := The_Collected_Count = 0 or else The_Collected_Count <= The_Processed_Count;
+      end if;
+    end Set_Collected;
+
+
+    procedure Get_Collected (The_Index : out Image.Count) is
+    begin
+      The_Processed_Count := The_Collected_Count;
+      The_Index := The_Collected_Count;
+    end Get_Collected;
+
+
+    procedure Set_Stop is
+    begin
+      Is_Complete := True;
+      Is_Waiting := False;
+      The_Action := Stop;
+    end Set_Stop;
+
+
+    procedure Set_Shutdown is
+    begin
+      Is_Waiting := False;
+      The_Action := Shutdown;
+    end Set_Shutdown;
+
+
+    entry Get (Item : out Action) when not Is_Waiting is
+    begin
+      Item := The_Action;
+      Is_Waiting := True;
+    end Get;
+
+
+    procedure Set_Complete is
+    begin
+      Is_Complete := True;
+    end Set_Complete;
+
+
+    entry Await_Completion when Is_Complete is
+    begin
+      Is_Complete := False;
+    end Await_Completion;
+
+
+    procedure Set_Stopped is
+    begin
+      The_Action := Processing;
+      Is_Stopped := True;
+    end Set_Stopped;
+
+
+    entry Await_Stopped when Is_Stopped is
+    begin
+      Is_Stopped := False;
+    end Await_Stopped;
+
+  end Action_Handler;
+
+end Processor;

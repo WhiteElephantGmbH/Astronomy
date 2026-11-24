@@ -25,6 +25,6 @@ package body Image is
 
   function Fits_Filename return String is (Work_Directory & '\' & Fits_Name);
 
-  function Jpec_Filename return String is (Work_Directory & '\' & Picture_Name & ".jpg");
+  function Jpeg_Filename return String is (Work_Directory & '\' & Picture_Name & ".jpg");
 
 end Image;

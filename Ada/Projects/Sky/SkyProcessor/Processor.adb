@@ -226,7 +226,7 @@ package body Processor is
   Fits_Filename : constant String := Work_Directory & '\' & Picture_Name & ".fit";
 
 
-  procedure Generate_First_Jpec is
+  procedure Generate_First_Jpeg is
   begin
     File.Delete (Jpeg_Filename);
     Siril.Open;
@@ -240,7 +240,7 @@ package body Processor is
   when others =>
     Siril.Close;
     raise;
-  end Generate_First_Jpec;
+  end Generate_First_Jpeg;
 
 
   function Generated_Fits return Boolean is
@@ -331,7 +331,7 @@ package body Processor is
   end Send_Fits;
 
 
-  procedure Send_Jpec is
+  procedure Send_Jpeg is
 
     function Read_File return Ada.Streams.Stream_Element_Array is
       The_File : SIO.File_Type;
@@ -352,11 +352,11 @@ package body Processor is
       end;
     end Read_File;
 
-  begin -- Send_Jpec
+  begin -- Send_Jpeg
     Check (AWS.Client.Post (URL          => "http://192.168.178.20:8000/image",
                             Data         => Read_File,
                             Content_Type => "image/jpeg"));
-  end Send_Jpec;
+  end Send_Jpeg;
 
 
   task body Control is
@@ -378,8 +378,8 @@ package body Processor is
         when Start_Light_Sequence =>
           Collected_Count := 0;
         when Show_First =>
-          Generate_First_Jpec;
-          Send_Jpec;
+          Generate_First_Jpeg;
+          Send_Jpeg;
         when Processing =>
           Processed_Count := Collected_Count + 1;
           Action_Handler.Get_Collected (Collected_Count);

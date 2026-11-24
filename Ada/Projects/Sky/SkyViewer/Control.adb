@@ -160,9 +160,9 @@ package body Control is
       end loop;
     end Delete;
 
-    procedure Generate_Jpec is
+    procedure Generate_Jpeg is
     begin
-      Delete (Image.Jpec_Filename);
+      Delete (Image.Jpeg_Filename);
       Siril.Open (Progress'unrestricted_access);
       Siril.Change_Directory (Image.Work_Directory);
       Siril.Load (Image.Fits_Filename);
@@ -171,15 +171,15 @@ package body Control is
       Siril.Save_Jpeg (Image.Picture_Name);
       Siril.Close;
       Log.Write ("Generated new picture");
-      User.Show_Picture (Image.Jpec_Filename);
+      User.Show_Picture (Image.Jpeg_Filename);
     exception
     when others =>
       Log.Error ("Generate picture failed");
       Siril.Close;
       raise;
-    end Generate_Jpec;
+    end Generate_Jpeg;
 
-    procedure Send_Jpec is
+    procedure Send_Jpeg is
 
       procedure Check (Result : AWS.Response.Data) is
         Status : constant AWS.Messages.Status_Code := AWS.Response.Status_Code (Result);
@@ -193,7 +193,7 @@ package body Control is
       function Read_File return Ada.Streams.Stream_Element_Array is
         The_File : SIO.File_Type;
       begin
-        SIO.Open (The_File, SIO.In_File, Image.Jpec_Filename);
+        SIO.Open (The_File, SIO.In_File, Image.Jpeg_Filename);
         declare
           Size : constant Ada.Streams.Stream_Element_Offset := Ada.Streams.Stream_Element_Offset (SIO.Size (The_File));
           Data : Ada.Streams.Stream_Element_Array (1 .. Size);
@@ -205,11 +205,11 @@ package body Control is
         end;
       end Read_File;
 
-    begin -- Send_Jpec
+    begin -- Send_Jpeg
       Check (AWS.Client.Post (URL          => "http://192.168.178.20:8000/image",
                               Data         => Read_File,
                               Content_Type => "image/jpeg"));
-    end Send_Jpec;
+    end Send_Jpeg;
 
     The_Command : Command;
 
@@ -220,11 +220,11 @@ package body Control is
       Action_Handler.Get (The_Command);
       case The_Command is
       when View =>
-        Generate_Jpec;
-        Send_Jpec;
+        Generate_Jpeg;
+        Send_Jpeg;
       when New_Picture =>
-        Generate_Jpec;
-        Send_Jpec;
+        Generate_Jpeg;
+        Send_Jpeg;
       when Close =>
         exit;
       end case;

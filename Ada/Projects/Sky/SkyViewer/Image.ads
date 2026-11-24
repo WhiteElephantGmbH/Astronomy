@@ -25,6 +25,6 @@ package Image is
 
   function Fits_Filename return String;
 
-  function Jpec_Filename return String;
+  function Jpeg_Filename return String;
 
 end Image;

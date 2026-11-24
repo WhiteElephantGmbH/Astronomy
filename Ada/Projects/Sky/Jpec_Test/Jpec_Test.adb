@@ -15,7 +15,7 @@
 -- *********************************************************************************************************************
 pragma Style_Astronomy;
 
-pragma Build (Description => "Jpec test",
+pragma Build (Description => "Jpeg test",
               Version     => (1, 0, 0, 1),
               Kind        => Console,
               Icon        => False,
@@ -29,7 +29,7 @@ with AWS.Client;
 with AWS.Response;
 with Exceptions;
 
-procedure Jpec_Test is
+procedure Jpeg_Test is
 
   package IO  renames Ada.Text_IO;
   package SIO renames Ada.Streams.Stream_IO;
@@ -52,7 +52,7 @@ procedure Jpec_Test is
   Result : AWS.Response.Data;
 
 begin
-  IO.Put_Line ("Jpec Test");
+  IO.Put_Line ("Jpeg Test");
   declare
     Data : constant Ada.Streams.Stream_Element_Array := Read_File ("test.jpg");
   begin
@@ -66,4 +66,4 @@ begin
 exception
 when Item : others =>
   IO.Put_Line ("Exception: " & Exceptions.Information_Of (Item));
-end Jpec_Test;
+end Jpeg_Test;
