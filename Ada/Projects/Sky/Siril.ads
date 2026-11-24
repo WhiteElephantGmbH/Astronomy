@@ -19,9 +19,9 @@ with Siril_Interface;
 with Space;
 with Units;
 
+generic
+  with package SI is new Siril_Interface (<>);
 package Siril is
-
-  package SI renames Siril_Interface;
 
   subtype Percent is SI.Percent;
 
@@ -103,8 +103,8 @@ package Siril is
   -- Aborts the current Siril session and closes Siril.
 
   Name_Error           : exception;
-  Not_Enough_Stars     : exception renames Siril_Interface.Not_Enough_Stars;
-  Plate_Solving_Failed : exception renames Siril_Interface.Plate_Solving_Failed;
-  Aborted              : exception renames Siril_Interface.Aborted;
+  Not_Enough_Stars     : exception renames SI.Not_Enough_Stars;
+  Plate_Solving_Failed : exception renames SI.Plate_Solving_Failed;
+  Aborted              : exception renames SI.Aborted;
 
 end Siril;

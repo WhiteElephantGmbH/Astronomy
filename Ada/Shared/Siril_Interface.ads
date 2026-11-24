@@ -15,12 +15,15 @@
 -- *********************************************************************************************************************
 pragma Style_Astronomy;
 
+with Siril_Progress;
+
+generic
+  Name : String;
 package Siril_Interface is
 
-  type Percent is delta 0.01 range 0.0 .. 100.0;
+  subtype Percent is Siril_Progress.Percent;
 
-  type Progress_Handler  is access procedure (Command : String;
-                                              Item    : Percent);
+  subtype Progress_Handler is Siril_Progress.Handler;
 
   procedure Open (Progress : Progress_Handler := null);
 

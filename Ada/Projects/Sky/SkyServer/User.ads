@@ -15,7 +15,7 @@
 -- *********************************************************************************************************************
 pragma Style_Astronomy;
 
-with Siril;
+with Siril_Progress;
 
 package User is
 
@@ -28,6 +28,6 @@ package User is
   procedure Show_Error (Message : String);
 
   procedure Show_Progress (Item    : String;
-                           Percent : Siril.Percent);
+                           Percent : Siril_Progress.Percent);
 
 end User;

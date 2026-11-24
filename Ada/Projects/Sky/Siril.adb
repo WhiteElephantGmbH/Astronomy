@@ -23,8 +23,8 @@ package body Siril is
 
   procedure Open (Progress : Progress_Handler := null) is
   begin
-    Siril_Interface.Open (Progress);
-    Siril_Interface.Execute ("requires 1.4.4");
+    SI.Open (Progress);
+    SI.Execute ("requires 1.4.4");
   end Open;
 
 
@@ -199,8 +199,8 @@ package body Siril is
   end Save_Fits;
 
 
-  procedure Close renames Siril_Interface.Close;
+  procedure Close renames SI.Close;
 
-  procedure Close_Immediate renames Siril_Interface.Abort_And_Close;
+  procedure Close_Immediate renames SI.Abort_And_Close;
 
 end Siril;

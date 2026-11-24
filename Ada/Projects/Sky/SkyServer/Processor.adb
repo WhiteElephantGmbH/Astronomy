@@ -19,12 +19,16 @@ with Distributor;
 with File;
 with Renderer;
 with Siril;
+with Siril_Interface;
 with Traces;
 with User;
 
 package body Processor is
 
   package Log is new Traces ("Processor");
+
+  package SI is new Siril_Interface ("processor");
+  package Session is new Siril (SI);
 
   type Action is (Process_Darks, Process_Flats, Start_Light_Sequence, Show_First, Processing, Stop, Shutdown);
 
@@ -147,7 +151,7 @@ package body Processor is
   procedure Stop is
   begin
     Action_Handler.Set_Stop;
-    Siril.Close_Immediate;
+    Session.Close_Immediate;
     Action_Handler.Await_Stopped;
   end Stop;
 
@@ -171,12 +175,12 @@ package body Processor is
     Darks_Fit_Filename   : constant String := Darks_Directory & "\" & The_Darks_Filename.S & "_" & Stacked_Fit;
   begin
     User.Show ("Generate " & Darks_Fit_Filename);
-    Siril.Open (User.Show_Progress'unrestricted_access);
-    Siril.Change_Directory (Image.Collector_Directory);
-    Siril.Convert_Dark (Destination => Darks_Work_Directory);
-    Siril.Change_Directory (Darks_Work_Directory);
-    Siril.Stack_Dark (Darks_Fit_Filename);
-    Siril.Close;
+    Session.Open (User.Show_Progress'unrestricted_access);
+    Session.Change_Directory (Image.Collector_Directory);
+    Session.Convert_Dark (Destination => Darks_Work_Directory);
+    Session.Change_Directory (Darks_Work_Directory);
+    Session.Stack_Dark (Darks_Fit_Filename);
+    Session.Close;
     Action_Handler.Set_Complete;
     Log.Write ("Generated " & Darks_Fit_Filename);
   end Generate_Darks;
@@ -187,12 +191,12 @@ package body Processor is
     Flats_Fit_Filename   : constant String := Flats_Directory & "\" & The_Flats_Filename.S & "_" & Stacked_Fit;
   begin
     Show ("Generate " & Flats_Fit_Filename);
-    Siril.Open (User.Show_Progress'unrestricted_access);
-    Siril.Change_Directory (Image.Collector_Directory);
-    Siril.Convert_Flat (Destination => Flats_Work_Directory);
-    Siril.Change_Directory (Flats_Work_Directory);
-    Siril.Stack_Flat (Flats_Fit_Filename);
-    Siril.Close;
+    Session.Open (User.Show_Progress'unrestricted_access);
+    Session.Change_Directory (Image.Collector_Directory);
+    Session.Convert_Flat (Destination => Flats_Work_Directory);
+    Session.Change_Directory (Flats_Work_Directory);
+    Session.Stack_Flat (Flats_Fit_Filename);
+    Session.Close;
     Action_Handler.Set_Complete;
     Log.Write ("Generated " & Flats_Fit_Filename);
   end Generate_Flats;
@@ -206,16 +210,16 @@ package body Processor is
   procedure Generate_First_Jpeg is
   begin
     File.Delete (Jpeg_Filename);
-    Siril.Open;
-    Siril.Load (Image.First_LIGHT_Filename);
-    Siril.Auto_Stretch;
-    Siril.Change_Directory (Work_Directory);
-    Siril.Save_Jpeg (Picture_Name);
-    Siril.Close;
+    Session.Open;
+    Session.Load (Image.First_LIGHT_Filename);
+    Session.Auto_Stretch;
+    Session.Change_Directory (Work_Directory);
+    Session.Save_Jpeg (Picture_Name);
+    Session.Close;
     User.Show ("Generated first picture");
   exception
   when others =>
-    Siril.Close;
+    Session.Close;
     raise;
   end Generate_First_Jpeg;
 
@@ -241,32 +245,32 @@ package body Processor is
       return False;
     else
       File.Delete (Fits_Filename);
-      Siril.Open (User.Show_Progress'unrestricted_access);
-      Siril.Change_Directory (Source_Directory);
+      Session.Open (User.Show_Progress'unrestricted_access);
+      Session.Change_Directory (Source_Directory);
 
-      Siril.Convert_Light (Destination => Lights_Directory);
-      Siril.Change_Directory (Lights_Directory);
+      Session.Convert_Light (Destination => Lights_Directory);
+      Session.Change_Directory (Lights_Directory);
 
-      Siril.Calibrate_Light (Dark => Darks_Stacked_Fit,
+      Session.Calibrate_Light (Dark => Darks_Stacked_Fit,
                              Flat => Flats_Stacked_Fit);
-      Siril.Register_Light;
-      Siril.Stack_Light;
-      Siril.Load_Stacked_Light;
+      Session.Register_Light;
+      Session.Stack_Light;
+      Session.Load_Stacked_Light;
 
-      Siril.Plate_Solve (The_Light_Parameters.Target, Telescope_Focal_Length, Camera_Pixel_Size);
+      Session.Plate_Solve (The_Light_Parameters.Target, Telescope_Focal_Length, Camera_Pixel_Size);
 
-      Siril.Remove_Background;
-      Siril.Calibrate_Color;
+      Session.Remove_Background;
+      Session.Calibrate_Color;
 
-      Siril.Change_Directory ("..");
-      Siril.Save_Fits (Picture_Name);
-      Siril.Close;
+      Session.Change_Directory ("..");
+      Session.Save_Fits (Picture_Name);
+      Session.Close;
       User.Show ("Generated new picture");
       return True;
     end if;
   exception
   when others =>
-    Siril.Close;
+    Session.Close;
     raise;
   end Generated_Fits;
 
@@ -310,11 +314,11 @@ package body Processor is
           exit;
         end case;
       exception
-      when Siril.Aborted =>
+      when Session.Aborted =>
         null;
-      when Siril.Not_Enough_Stars =>
+      when Session.Not_Enough_Stars =>
         Show ("Not enough stars detected!", Warning);
-      when Siril.Plate_Solving_Failed =>
+      when Session.Plate_Solving_Failed =>
         Show ("Plate solving failed!", Warning);
       end;
     end loop;

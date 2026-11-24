@@ -20,11 +20,17 @@ with File;
 with Image;
 with Rt;
 with Siril;
+with Siril_Interface;
 with Traces;
 
 package body Renderer is
 
-  package Log is new Traces ("Renderer");
+  Id : constant String := "Renderer";
+
+  package Log is new Traces (Id);
+
+  package SI is new Siril_Interface (Id);
+  package Session is new Siril (SI);
 
   task type Manager is
     entry Set (Tones : Units.Tones);
@@ -106,20 +112,20 @@ package body Renderer is
     begin
       if Picture_Available then
         Delete (Image.Renderer_Jpeg_Filename);
-        Siril.Open;
-        Siril.Change_Directory (Image.Renderer_Work_Directory);
-        Siril.Load (Image.Renderer_Fits_Filename);
-        Siril.Transfer (The_Tones);
-        Siril.Set (The_Saturation);
-        Siril.Save_Jpeg (Image.Picture_Name);
-        Siril.Close;
+        Session.Open;
+        Session.Change_Directory (Image.Renderer_Work_Directory);
+        Session.Load (Image.Renderer_Fits_Filename);
+        Session.Transfer (The_Tones);
+        Session.Set (The_Saturation);
+        Session.Save_Jpeg (Image.Picture_Name);
+        Session.Close;
         Log.Write ("Generated new picture");
       else
         Log.Warning ("Picture not available");
       end if;
     exception
     when others =>
-      Siril.Close;
+      Session.Close;
       raise;
     end Generate_Jpeg;
 
@@ -152,8 +158,8 @@ package body Renderer is
       or
         accept New_Picture do
           Picture_Available := Image.Copied_Fits;
-          Generate_Jpeg;
         end New_Picture;
+        Generate_Jpeg;
         Send_Jpeg;
       or
         accept Close;

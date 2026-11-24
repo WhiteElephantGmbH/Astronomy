@@ -70,7 +70,7 @@ package body User is
 
 
   procedure Show_Progress (Item    : String;
-                           Percent : Siril.Percent) is
+                           Percent : Siril_Progress.Percent) is
   begin
     null; -- !!! to be implemented
   end Show_Progress;
