@@ -94,6 +94,7 @@ package body Gui is
   pragma Linker_Options ("-lgdiplus");
   pragma Linker_Options ("-lshlwapi");
   pragma Linker_Options ("-ldwmapi");
+  pragma Linker_Options ("-lmsimg32");
 
   type Click_Routine is access procedure (Item : Information);
 
@@ -543,6 +544,7 @@ package body Gui is
   type Child_Information is record
     Is_Frame                 : Boolean := False;
     Is_Value_Box             : Boolean := False;
+    Is_Label                 : Boolean := False;
     Hold_Installed           : Boolean := False;
     Event_Handler            : Button_Event_Handler := null;
     Has_Symbol               : Boolean := False;
@@ -574,6 +576,7 @@ package body Gui is
     Is_Password              : Boolean := False;
     Use_Proportional_Font    : Boolean := False;
     Color_Background         : Boolean := False;
+    Track_Direction          : Orientation := Horizontal;
     Track_Extent             : Natural := 0;
     Track_Minimum            : Natural := 0;
     Track_Maximum            : Natural := 0;
@@ -1130,6 +1133,9 @@ package body Gui is
   end Note_Private_Window_Metrics;
 
 
+  Vertical_Track_Width : constant := 40;
+
+
   procedure Redraw_Layout is
     Client, Status : aliased Win32.Windef.RECT;
     Unused         : Win32.BOOL;
@@ -1212,6 +1218,9 @@ package body Gui is
               R.Width := Side;
               R.Height := Side;
             end;
+          elsif Item.The_Kind = Track_Bar_Child and then Item.Track_Direction = Vertical then
+            R.X := R.X + (R.Width - Vertical_Track_Width) / 2;
+            R.Width := Vertical_Track_Width;
           end if;
           Unused := Win32.Winuser.SetWindowPos (Item.The_Handle, System.Null_Address,
                       Win32.INT(R.X), Win32.INT(R.Y), Win32.INT(R.Width), Win32.INT(R.Height),
@@ -1703,6 +1712,83 @@ package body Gui is
   package Customdraw_Info_Conversion is new System.Address_To_Access_Conversions (Win32.Comctl.Nmlv_Customdraw);
 
 
+  -- NMCUSTOMDRAW uses a pointer-sized item specification on 64-bit Windows.
+  type Track_Custom_Draw is record
+    Hdr       : Win32.Comctl.Nm_Hdr;
+    Drawstage : Win32.DWORD;
+    Dc        : Win32.Windef.HDC;
+    Bounds    : Win32.Windef.RECT;
+    Itemspec  : Win32.DWORD_PTR;
+    Itemstate : Win32.UINT;
+    Itemparam : Win32.LPARAM;
+  end record with Convention => C;
+
+  package Track_Draw_Pointers is new System.Address_To_Access_Conversions (Track_Custom_Draw);
+
+
+  procedure Shade_Disabled_Track (Info : Track_Custom_Draw) is
+
+    function Create_Dc (Dc : Win32.Windef.HDC) return Win32.Windef.HDC
+      with Import, Convention => Stdcall, External_Name => "CreateCompatibleDC";
+
+    function Create_Bitmap (Dc : Win32.Windef.HDC; Width, Height : Win32.INT) return System.Address
+      with Import, Convention => Stdcall, External_Name => "CreateCompatibleBitmap";
+
+    function Select_Bitmap (Dc : Win32.Windef.HDC; Item : System.Address) return System.Address
+      with Import, Convention => Stdcall, External_Name => "SelectObject";
+
+    function Delete_Bitmap (Item : System.Address) return Win32.BOOL
+      with Import, Convention => Stdcall, External_Name => "DeleteObject";
+
+    function Delete_Dc (Dc : Win32.Windef.HDC) return Win32.BOOL
+      with Import, Convention => Stdcall, External_Name => "DeleteDC";
+
+    function Background_Brush (Index : Win32.INT) return System.Address
+      with Import, Convention => Stdcall, External_Name => "GetSysColorBrush";
+
+    function Fill_Rectangle (Dc : Win32.Windef.HDC; Bounds, Brush : System.Address) return Win32.INT
+      with Import, Convention => Stdcall, External_Name => "FillRect";
+
+    function Blend (Dc : Win32.Windef.HDC; X, Y, Width, Height : Win32.INT;
+                    Source : Win32.Windef.HDC; Sx, Sy, Sw, Sh : Win32.INT;
+                    Blend_Function : Win32.DWORD) return Win32.BOOL
+      with Import, Convention => Stdcall, External_Name => "AlphaBlend";
+
+    Client : aliased Win32.Windef.RECT;
+    Pixel  : aliased Win32.Windef.RECT := (0, 0, 1, 1);
+    Source : Win32.Windef.HDC;
+    Bitmap : System.Address;
+    Old    : System.Address;
+    Unused : Win32.BOOL;
+    Ignore : Win32.INT;
+    pragma Unreferenced (Unused, Ignore);
+    use type Win32.BOOL;
+    use type System.Address;
+
+  begin
+    if Win32.Winuser.GetClientRect (Info.Hdr.Hwndfrom, Client'unchecked_access) = Win32.FALSE then
+      return;
+    end if;
+    Source := Create_Dc (Info.Dc);
+    if Source = System.Null_Address then
+      return;
+    end if;
+    Bitmap := Create_Bitmap (Info.Dc, 1, 1);
+    if Bitmap /= System.Null_Address then
+      Old := Select_Bitmap (Source, Bitmap);
+      if Old /= System.Null_Address then
+        Ignore := Fill_Rectangle (Source, Pixel'address, Background_Brush (Win32.Winuser.COLOR_BTNFACE));
+        -- BLENDFUNCTION: AC_SRC_OVER, no flags, 60% constant opacity, no source alpha.
+        Unused := Blend (Info.Dc, 0, 0, Win32.INT(Client.right), Win32.INT(Client.bottom),
+                         Source, 0, 0, 1, 1, 16#00990000#);
+        Old := Select_Bitmap (Source, Old);
+      end if;
+      Unused := Delete_Bitmap (Bitmap);
+    end if;
+    Unused := Delete_Dc (Source);
+  end Shade_Disabled_Track;
+
+
   function Process_Notification_From_Child (Unused_Wparam : Win32.WPARAM;
                                             Lparam        : Win32.LPARAM) return Win32.LRESULT is
 
@@ -1735,8 +1821,26 @@ package body Gui is
         exit when The_Child = null;
         if The_Notification.Hdr.Idfrom = Win32.INT_PTR(The_Child.The_Window_Id) then
           -- Notification from a child in the current page
-          Active_Child := The_Child;
-          if The_Child.The_Kind = List_View_Child then -- we can process it further
+          if The_Child.The_Kind /= Track_Bar_Child then
+            Active_Child := The_Child;
+          end if;
+          if The_Child.The_Kind = Track_Bar_Child then
+            if The_Notification.Hdr.Code = Win32.Comctl.Nm_Customdraw then
+              declare
+                Info : constant Track_Draw_Pointers.Object_Pointer :=
+                  Track_Draw_Pointers.To_Pointer (Convert (Lparam));
+                use type Win32.BOOL;
+              begin
+                if Win32.Winuser.IsWindowEnabled (The_Child.The_Handle) = Win32.FALSE then
+                  if Info.Drawstage = Win32.Comctl.Cdds_Prepaint then
+                    return Win32.Comctl.Cdrf_Notifypostpaint;
+                  elsif Info.Drawstage = Win32.Comctl.Cdds_Postpaint then
+                    Shade_Disabled_Track (Info.all);
+                  end if;
+                end if;
+              end;
+            end if;
+          elsif The_Child.The_Kind = List_View_Child then -- we can process it further
             if The_Notification.Hdr.Code = Win32.Comctl.Lvn_Getdisplayinfo_Wide then
               The_Notification.Item.Text
                 := Wide_Text_Address_Of (Ansi_Handler (The_Child,
@@ -2025,8 +2129,12 @@ package body Gui is
         end if;
       when Track_Bar_Child =>
         Class_Name := Wide_Text_Address_Of ("msctls_trackbar32");
-        Window_Style := Window_Style + Win32.Comctl.Tbs_Autoticks +
-                                       Win32.Comctl.Tbs_Tooltips;
+        Window_Style := Window_Style + Win32.Comctl.Tbs_Autoticks;
+        if The_Child.Track_Direction = Vertical then
+          Window_Style := Window_Style + Win32.Comctl.Tbs_Vert;
+        else
+          Window_Style := Window_Style + Win32.Comctl.Tbs_Tooltips;
+        end if;
       when Edit_Box_Child =>
         Class_Name := Wide_Text_Address_Of ("Edit");
         Window_Style := Window_Style + Win32.Winuser.WS_BORDER +
@@ -2060,6 +2168,8 @@ package body Gui is
           Class_Name := Wide_Text_Address_Of ("Static");
           if The_Child.Is_Value_Box then
             Window_Style := Window_Style + Win32.Winuser.WS_BORDER + Ss_Center + Ss_Centerimage + Ss_Noprefix;
+          elsif The_Child.Is_Label then
+            Window_Style := Window_Style + Ss_Center + Ss_Centerimage + Ss_Noprefix;
           end if;
         end if;
     end case;
@@ -2087,7 +2197,7 @@ package body Gui is
     The_Child.Parent_Page := Parent_Page;
     Parent_Page.Nr_Of_Children := Parent_Page.Nr_Of_Children + 1;
     Set_Unicode_For (The_Child.The_Handle);
-    if The_Child.Is_Frame then
+    if The_Child.Is_Frame or The_Child.Is_Label then
       Send_Message (The_Child.The_Handle,
                     Win32.Winuser.WM_SETFONT,
                     To_Wparam (Send_Message (The_Status_Line, Win32.Winuser.WM_GETFONT, 0, 0)),
@@ -3663,13 +3773,31 @@ package body Gui is
   function Create (Parent             : Group;
                    The_Action_Routine : Action_Routine := null;
                    Minimum_Width      : Positive := 160) return Track_Bar is
-    Result : Track_Bar;
+  begin
+    return Create (Parent, Horizontal, The_Action_Routine, Minimum_Width);
+  end Create;
+
+
+  function Create (Parent             : Group;
+                   Direction          : Orientation;
+                   The_Action_Routine : Action_Routine := null;
+                   Minimum_Length     : Positive := 160) return Track_Bar is
+    Result : constant Track_Bar := (Ptr => new Child_Information);
   begin
     if Layout_Complete then
       raise Sequence_Error;
     end if;
-    Result := Create (Parent.Owner, The_Action_Routine => The_Action_Routine);
-    Result.Ptr.Layout_Node := Layout.Control ((Minimum_Width, 40), Weight => 1);
+    Result.Ptr.The_Window_Id := Next_Child_Id;
+    Result.Ptr.The_Kind := Track_Bar_Child;
+    Result.Ptr.The_Action_Routine := The_Action_Routine;
+    Result.Ptr.Track_Direction := Direction;
+    Create (Result.Ptr, Parent.Owner);
+    case Direction is
+    when Horizontal =>
+      Result.Ptr.Layout_Node := Layout.Control ((Minimum_Length, 40), Weight => 1);
+    when Vertical =>
+      Result.Ptr.Layout_Node := Layout.Control ((Vertical_Track_Width, Minimum_Length), Weight => 1);
+    end case;
     Layout.Append (Parent.Node, Result.Ptr.Layout_Node);
     return Result;
   end Create;
@@ -3710,28 +3838,34 @@ package body Gui is
   end Define_Tic_Frequency;
 
 
+  -- Vertical trackbars have their native zero at the top.
+  function Track_Position (The_Track_Bar : Track_Bar;
+                           Position      : Natural) return Natural is
+  begin
+    if The_Track_Bar.Ptr.Track_Direction = Vertical then
+      return The_Track_Bar.Ptr.Track_Extent - Position;
+    end if;
+    return Position;
+  end Track_Position;
+
+
   procedure Set_Position (The_Track_Bar : Track_Bar;
                           The_Position  : Natural) is
+    Position : constant Natural := Natural'max (The_Track_Bar.Ptr.Track_Minimum,
+                                   Natural'min (The_Position, The_Track_Bar.Ptr.Track_Maximum));
   begin
     Send_Message (The_Track_Bar.Ptr.The_Handle,
                   Win32.Comctl.Tbm_Setpos,
                   Win32.TRUE,
-                  Win32.LPARAM(Natural'max (The_Track_Bar.Ptr.Track_Minimum,
-                                Natural'min (The_Position, The_Track_Bar.Ptr.Track_Maximum))));
+                  Win32.LPARAM(Track_Position (The_Track_Bar, Position)));
   end Set_Position;
 
 
   function Get_Position (The_Track_Bar : Track_Bar) return Natural is
-                         The_Position  : Win32.LRESULT;
-    use type Win32.LRESULT;
+    Position : constant Win32.LRESULT := Send_Message (The_Track_Bar.Ptr.The_Handle,
+                                                       Win32.Comctl.Tbm_Getpos, 0, 0);
   begin
-    The_Position := Send_Message (The_Track_Bar.Ptr.The_Handle,
-                                  Win32.Comctl.Tbm_Getpos, 0, 0);
-    if The_Position > 0 then
-      return Natural(The_Position);
-    else
-      return 0;
-    end if;
+    return Track_Position (The_Track_Bar, Natural(Position));
   end Get_Position;
 
 
@@ -3874,7 +4008,10 @@ package body Gui is
   end Space;
 
 
-  function Button_Width (The_Text : String; Minimum_Width : Natural) return Natural is
+  function Button_Width (The_Text      : String;
+                         Minimum_Width : Natural;
+                         Padding       : Natural := 20;
+                         Font          : Win32.Windef.HGDIOBJ := The_Font) return Natural is
     Text            : aliased constant Wide_String := To_Wide (The_Text) & Wide_Nul;
     Dc              : constant Win32.Windef.HDC := Win32.Winuser.GetDC (System.Null_Address);
     Previous_Font   : System.Address;
@@ -3882,7 +4019,6 @@ package body Gui is
     Measured        : Win32.BOOL;
     Unused_Font     : System.Address with Unreferenced;
     Unused_Release  : Win32.INT with Unreferenced;
-    Padding         : constant := 20;
 
     use type System.Address;
     use type Win32.BOOL;
@@ -3890,7 +4026,7 @@ package body Gui is
     if Dc = System.Null_Address then
       raise Program_Error;
     end if;
-    Previous_Font := Select_Object (Dc, The_Font);
+    Previous_Font := Select_Object (Dc, Font);
     if Previous_Font = System.Null_Address then
       Unused_Release := Win32.Winuser.ReleaseDC (System.Null_Address, Dc);
       raise Program_Error;
@@ -3904,6 +4040,31 @@ package body Gui is
     end if;
     return Natural'max (Minimum_Width, Natural(Text_Size.cx) + Padding);
   end Button_Width;
+
+
+  procedure Create_Label (Parent : Group; The_Text : String) is
+
+    function To_Font is new Ada.Unchecked_Conversion (Win32.LRESULT, Win32.Windef.HGDIOBJ);
+
+    Text : aliased constant Wide_String := To_Wide (The_Text) & Wide_Nul;
+    Item : constant Child_Information_Ptr := new Child_Information;
+  begin
+    if Layout_Complete then
+      raise Sequence_Error;
+    end if;
+    Item.Is_Label := True;
+    Item.The_Kind := Static_Child;
+    Item.The_Window_Id := Next_Child_Id;
+    Item.Initial_Title := Win32.Addr(Text);
+    Create (Item, Parent.Owner);
+    declare
+      Font  : constant Win32.Windef.HGDIOBJ := To_Font (Send_Message (The_Status_Line, Win32.Winuser.WM_GETFONT, 0, 0));
+      Width : constant Natural := Button_Width (The_Text, 0, Padding => 4, Font => Font);
+    begin
+      Item.Layout_Node := Layout.Control ((Width, 24), Weight => 0);
+    end;
+    Layout.Append (Parent.Node, Item.Layout_Node);
+  end Create_Label;
 
 
   function Create (Parent             : Group;
@@ -4024,7 +4185,8 @@ package body Gui is
 
   function Create_Value (Parent        : Group;
                          Initial_Text  : String;
-                         Minimum_Width : Positive := 90) return Value_Box is
+                         Minimum_Width : Positive := 90;
+                         Expand        : Boolean := True) return Value_Box is
                          Text          : aliased constant Wide_String := To_Wide (Initial_Text) & Wide_Nul;
                          Result        : constant Value_Box := (Ptr => new Child_Information);
   begin
@@ -4036,7 +4198,7 @@ package body Gui is
     Result.Ptr.The_Window_Id := Next_Child_Id;
     Result.Ptr.Initial_Title := Win32.Addr(Text);
     Create (Result.Ptr, Parent.Owner);
-    Result.Ptr.Layout_Node := Layout.Control ((Minimum_Width, 30), Weight => 1);
+    Result.Ptr.Layout_Node := Layout.Control ((Minimum_Width, 30), Weight => Boolean'pos (Expand));
     Layout.Append (Parent.Node, Result.Ptr.Layout_Node);
     return Result;
   end Create_Value;
@@ -4107,6 +4269,9 @@ package body Gui is
                     Unused    : Win32.BOOL;
   begin
     Unused := Win32.Winuser.EnableWindow (The_Child.The_Handle, Win32.TRUE);
+    if The_Child.The_Kind = Track_Bar_Child then
+      Unused := Invalidate_Window (The_Child.The_Handle, System.Null_Address, Win32.TRUE);
+    end if;
     if The_Child.Buddy_Child /= null then
       Enable (The_Child.Buddy_Child);
     end if;
@@ -4123,6 +4288,9 @@ package body Gui is
                      Unused    : Win32.BOOL;
   begin
     Unused := Win32.Winuser.EnableWindow(The_Child.The_Handle, Win32.FALSE);
+    if The_Child.The_Kind = Track_Bar_Child then
+      Unused := Invalidate_Window (The_Child.The_Handle, System.Null_Address, Win32.TRUE);
+    end if;
     if The_Child.Buddy_Child /= null then
       Disable (The_Child.Buddy_Child);
     end if;
@@ -4720,7 +4888,7 @@ package body Gui is
       raise Sequence_Error;
     end if;
     Result := Create (Parent.Owner, "", Initial_Text, Is_Modifiable => Is_Modifiable);
-    Result.Ptr.Layout_Node := Layout.Control ((Minimum_Width, 30), Weight => 1);
+    Result.Ptr.Layout_Node := Layout.Control ((Minimum_Width, 30));
     Layout.Append (Parent.Node, Result.Ptr.Layout_Node);
     return Result;
   end Create;

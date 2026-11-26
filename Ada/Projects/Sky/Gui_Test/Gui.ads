@@ -126,6 +126,8 @@ package Gui is
 
   procedure Space (Parent : Group);
 
+  procedure Create_Label (Parent : Group; The_Text : String);
+
   procedure Finish_Layout;
 
   type Child is abstract tagged private;
@@ -450,7 +452,8 @@ package Gui is
   -------------------------
   function Create_Value (Parent        : Group;
                          Initial_Text  : String;
-                         Minimum_Width : Positive := 90) return Value_Box;
+                         Minimum_Width : Positive := 90;
+                         Expand        : Boolean := True) return Value_Box;
 
   procedure Set_Text (The_Value_Box : Value_Box;
                       The_Text      : String);
@@ -630,6 +633,11 @@ package Gui is
   function Create (Parent             : Group;
                    The_Action_Routine : Action_Routine := null;
                    Minimum_Width      : Positive := 160) return Track_Bar;
+
+  function Create (Parent             : Group;
+                   Direction          : Orientation;
+                   The_Action_Routine : Action_Routine := null;
+                   Minimum_Length     : Positive := 160) return Track_Bar;
 
   procedure Define_Range (The_Track_Bar : Track_Bar;
                           The_Extent    : Positive);
