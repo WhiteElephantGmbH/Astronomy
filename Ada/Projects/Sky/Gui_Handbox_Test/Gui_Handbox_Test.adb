@@ -151,7 +151,7 @@ procedure Gui_Handbox_Test is
                         Move_Down'unrestricted_access,
                         Expand => True);
     Gui.Space (Bottom);
-    Gui.Set_Status_Line ("ready");
+    Gui.Set_Status_Line ("READY");
   end Startup;
 
 begin

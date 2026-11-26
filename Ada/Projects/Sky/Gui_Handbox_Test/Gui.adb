@@ -1944,6 +1944,7 @@ package body Gui is
 
     function Convert is new Ada.Unchecked_Conversion (Win32.LPARAM, System.Address);
     function Convert is new Ada.Unchecked_Conversion (Win32.WPARAM, System.Address);
+    function To_Wparam is new Ada.Unchecked_Conversion (Win32.LRESULT, Win32.WPARAM);
 
     The_Child : constant Child_Information_Ptr
                            := Child_Information_Ptr(Child_Information_Conversion.To_Pointer (Convert (The_Object)));
@@ -2067,7 +2068,7 @@ package body Gui is
     if The_Child.Is_Frame then
       Send_Message (The_Child.The_Handle,
                     Win32.Winuser.WM_SETFONT,
-                    Win32.WPARAM(Send_Message (The_Status_Line, Win32.Winuser.WM_GETFONT, 0, 0)),
+                    To_Wparam (Send_Message (The_Status_Line, Win32.Winuser.WM_GETFONT, 0, 0)),
                     Win32.FALSE);
     else
       Set_Font_For (The_Child.The_Handle);
