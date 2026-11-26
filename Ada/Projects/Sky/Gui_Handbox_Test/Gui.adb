@@ -1163,6 +1163,7 @@ package body Gui is
     if not Layout_Complete or else Application_Is_Minimized then
       return;
     end if;
+    Send_Message (The_Status_Line, Win32.Winuser.WM_SIZE, 0, 0);
     Unused := Win32.Winuser.GetClientRect (Private_Window, Client'unchecked_access);
     Unused := Win32.Winuser.GetWindowRect (Win32.Windef.HWND(The_Status_Line), Status'unchecked_access);
     Area := (0, 0, Natural'max (0, Integer(Client.right)),
@@ -1180,16 +1181,30 @@ package body Gui is
       end if;
       if not Item.Is_Frame then
         declare
-          R : constant Layout.Rectangle := Layout.Bounds (Item.Layout_Node);
-      begin
-        Unused := Win32.Winuser.SetWindowPos (Item.The_Handle, System.Null_Address,
-                    Win32.INT(R.X), Win32.INT(R.Y), Win32.INT(R.Width), Win32.INT(R.Height),
-                    Win32.Winuser.SWP_NOZORDER + Swp_Nocopybits);
+          R : Layout.Rectangle := Layout.Bounds (Item.Layout_Node);
+        begin
+          if Item.Has_Symbol then
+            declare
+              Cell_Side : constant Natural := Natural'min (R.Width, R.Height);
+              Minimum   : constant Layout.Size := Layout.Minimum (Item.Layout_Node);
+              Side      : constant Natural := Natural'max (Minimum.Width, 3 * Cell_Side / 4);
+            begin
+              R.X := R.X + (R.Width - Side) / 2;
+              R.Y := R.Y + (R.Height - Side) / 2;
+              R.Width := Side;
+              R.Height := Side;
+            end;
+          end if;
+          Unused := Win32.Winuser.SetWindowPos (Item.The_Handle, System.Null_Address,
+                      Win32.INT(R.X), Win32.INT(R.Y), Win32.INT(R.Width), Win32.INT(R.Height),
+                      Win32.Winuser.SWP_NOZORDER + Swp_Nocopybits);
         end;
       end if;
       Item := Item.Next_Sibling;
     end loop;
-    Send_Message (Win32.Windef.HWND(The_Status_Line), Win32.Winuser.WM_SIZE, 0, 0);
+    Unused := Win32.Winuser.SetWindowPos (The_Status_Line, Win32.Winuser.HWND_TOP,
+                                          0, Win32.INT(Area.Height), Win32.INT(Area.Width),
+                                          Win32.INT(Status.bottom - Status.top), Swp_Nocopybits);
   end Redraw_Layout;
 
 
@@ -2049,7 +2064,14 @@ package body Gui is
     The_Child.Parent_Page := Parent_Page;
     Parent_Page.Nr_Of_Children := Parent_Page.Nr_Of_Children + 1;
     Set_Unicode_For (The_Child.The_Handle);
-    Set_Font_For (The_Child.The_Handle);
+    if The_Child.Is_Frame then
+      Send_Message (The_Child.The_Handle,
+                    Win32.Winuser.WM_SETFONT,
+                    Win32.WPARAM(Send_Message (The_Status_Line, Win32.Winuser.WM_GETFONT, 0, 0)),
+                    Win32.FALSE);
+    else
+      Set_Font_For (The_Child.The_Handle);
+    end if;
     if Parent_Page.Nr_Of_Children = 1 then -- First and only child
       Parent_Page.First_Child := The_Child;
     elsif Display_Priority(Parent_Page.First_Child.The_Kind) > Display_Priority(The_Child.The_Kind) then
@@ -2448,6 +2470,18 @@ package body Gui is
     X := (Bounds.left + Bounds.right) / 2;
     Y := (Bounds.top + Bounds.bottom) / 2;
     Symbol_Size := Win32.LONG'min (Bounds.right - Bounds.left, Bounds.bottom - Bounds.top);
+    declare
+      use type Layout.Element;
+    begin
+      if The_Child.Layout_Node /= null then
+        declare
+          Cell : constant Layout.Rectangle := Layout.Bounds (The_Child.Layout_Node);
+          Span : constant Natural := Natural'min (Cell.Width, Cell.Height);
+        begin
+          Symbol_Size := Win32.LONG'min (2 * Symbol_Size, Win32.LONG(Span));
+        end;
+      end if;
+    end;
     if Pressed then
       X := X + 1;
       Y := Y + 1;
@@ -3658,9 +3692,9 @@ package body Gui is
   function Frame_Margin (Frame : Boolean; Title : String) return Natural is
   begin
     if Title /= "" then
-      return 24;
+      return 16;
     elsif Frame then
-      return 14;
+      return 8;
     end if;
     return 0;
   end Frame_Margin;
@@ -3819,6 +3853,7 @@ package body Gui is
       raise Sequence_Error;
     end if;
     Required := Layout.Minimum (Current_Page.Layout_Root);
+    Send_Message (The_Status_Line, Win32.Winuser.WM_SIZE, 0, 0);
     Unused := Win32.Winuser.GetClientRect (Private_Window, Client'unchecked_access);
     Unused := Win32.Winuser.GetWindowRect (Win32.Windef.HWND(The_Status_Line), Status'unchecked_access);
     Minimum_Window := (Required.Width + Natural'max (0, Metrics.Width - Integer(Client.right)),

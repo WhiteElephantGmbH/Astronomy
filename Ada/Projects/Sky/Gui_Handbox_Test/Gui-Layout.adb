@@ -125,11 +125,26 @@ package body Gui.Layout is
     end Fitted_Size;
 
 
-    function Capacity (Child : Element) return Natural is
+    function Capacity (Child : Element; Cross_Size : Natural) return Natural is
       Base : constant Natural := Along (Minimum (Child), Item.Arrangement);
-      Target : constant Natural := Fitted_Size (Child, Cross, Width => Item.Arrangement = Horizontal);
+      Target : Natural;
+      Member : Element;
+      Result : Natural := 0;
     begin
-      return Natural'max (Base, Target) - Base;
+      if Child.Aspect_Ratio > 0.0 then
+        Target := Fitted_Size (Child, Cross_Size, Width => Item.Arrangement = Horizontal);
+        return Natural'max (Base, Target) - Base;
+      elsif Child.Is_Group and then Child.Weight = 0 and then
+        Child.Arrangement = Item.Arrangement and then not Child.Equal_Cells
+      then
+        -- A fixed group may need extra space to fit its aspect-constrained children.
+        Member := Child.First;
+        while Member /= null loop
+          Result := Result + Capacity (Member, Cross_Size - 2 * Child.Margin);
+          Member := Member.Next;
+        end loop;
+      end if;
+      return Result;
     end Capacity;
 
   begin -- Arrange
@@ -170,8 +185,8 @@ package body Gui.Layout is
     if not Item.Equal_Cells then
       Child := Item.First;
       while Child /= null loop
-        if Child.Aspect_Ratio > 0.0 then
-          Reserved := Reserved + Natural'min (Extra - Reserved, Capacity (Child));
+        if Child.Aspect_Ratio > 0.0 or else Child.Weight = 0 then
+          Reserved := Reserved + Natural'min (Extra - Reserved, Capacity (Child, Cross));
         else
           Total_Weight := Total_Weight + Child.Weight;
         end if;
@@ -188,8 +203,8 @@ package body Gui.Layout is
         Used_Weight := Used_Weight + 1;
       else
         Extent := Along (Child_Size, Item.Arrangement);
-        if Child.Aspect_Ratio > 0.0 then
-          Bonus := Natural'min (Limit, Capacity (Child));
+        if Child.Aspect_Ratio > 0.0 or else Child.Weight = 0 then
+          Bonus := Natural'min (Limit, Capacity (Child, Cross));
           Limit := Limit - Bonus;
           Extent := Extent + Bonus;
         else

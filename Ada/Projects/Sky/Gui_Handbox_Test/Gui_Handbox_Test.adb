@@ -24,21 +24,19 @@ pragma Build (Description => "GUI Handbox Test",
 with Gui;
 
 procedure Gui_Handbox_Test is
-  Page                                : Gui.Page;
-  Speed, Handbox, Top, Middle, Bottom : Gui.Group;
-  Slower, Faster                      : Gui.Button with Unreferenced;
-  Speed_Value                         : Gui.Value_Box;
-  Status_Value                        : Gui.Value_Box;
-  Status_Group                        : Gui.Group;
-  Speed_Index                         : Natural := 1;
-  Speed_Button_Size                   : constant := 44;
-  Up, Left, Center, Right, Down       : Gui.Button with Unreferenced;
+  Page                                                   : Gui.Page;
+  Speed, Handbox, Direction_Buttons, Top, Middle, Bottom : Gui.Group;
+  Slower, Faster                                         : Gui.Button with Unreferenced;
+  Speed_Value                                            : Gui.Value_Box;
+  Speed_Index                                            : Natural := 1;
+  Speed_Button_Size                                      : constant := 44;
+  Up, Left, Center, Right, Down                          : Gui.Button with Unreferenced;
 
   procedure Return_To_Target (Event : Gui.Button_Event) is
   begin
     case Event is
     when Gui.Pressed =>
-      Gui.Set_Text (Status_Value, "return to target");
+      Gui.Set_Status_Line ("return to target");
     when Gui.Released =>
       null;
     end case;
@@ -49,9 +47,9 @@ procedure Gui_Handbox_Test is
   begin
     case Event is
     when Gui.Pressed =>
-      Gui.Set_Text (Status_Value, "move up");
+      Gui.Set_Status_Line ("move up");
     when Gui.Released =>
-      Gui.Set_Text (Status_Value, "stop moving up");
+      Gui.Set_Status_Line ("stop moving up");
     end case;
   end Move_Up;
 
@@ -60,9 +58,9 @@ procedure Gui_Handbox_Test is
   begin
     case Event is
     when Gui.Pressed =>
-      Gui.Set_Text (Status_Value, "move down");
+      Gui.Set_Status_Line ("move down");
     when Gui.Released =>
-      Gui.Set_Text (Status_Value, "stop moving down");
+      Gui.Set_Status_Line ("stop moving down");
     end case;
   end Move_Down;
 
@@ -71,9 +69,9 @@ procedure Gui_Handbox_Test is
   begin
     case Event is
     when Gui.Pressed =>
-      Gui.Set_Text (Status_Value, "move left");
+      Gui.Set_Status_Line ("move left");
     when Gui.Released =>
-      Gui.Set_Text (Status_Value, "stop moving left");
+      Gui.Set_Status_Line ("stop moving left");
     end case;
   end Move_Left;
 
@@ -82,9 +80,9 @@ procedure Gui_Handbox_Test is
   begin
     case Event is
     when Gui.Pressed =>
-      Gui.Set_Text (Status_Value, "move right");
+      Gui.Set_Status_Line ("move right");
     when Gui.Released =>
-      Gui.Set_Text (Status_Value, "stop moving right");
+      Gui.Set_Status_Line ("stop moving right");
     end case;
   end Move_Right;
 
@@ -120,23 +118,26 @@ procedure Gui_Handbox_Test is
   procedure Startup is
   begin
     Page := Gui.Add_Page ("Handbox");
-    Speed := Gui.Create (Page, Gui.Horizontal, Expand => Gui.Fixed, Title => "Speed");
+    Handbox := Gui.Create (Page, Gui.Vertical,
+                           Expand => Gui.Fixed,
+                           Title  => "Handbox");
+    Speed := Gui.Create (Handbox, Gui.Horizontal, Expand => Gui.Fixed, Title => "Speed");
     Slower := Gui.Create (Speed, Gui.Arrow_Left, Decrease_Speed'unrestricted_access,
                           The_Button_Size => Speed_Button_Size);
     Speed_Value := Gui.Create_Value (Speed, "14.99""/s", Minimum_Width => 90);
     Faster := Gui.Create (Speed, Gui.Arrow_Right, Increase_Speed'unrestricted_access,
                           The_Button_Size => Speed_Button_Size);
-    Handbox := Gui.Create (Page, Gui.Vertical,
-                           Equal_Cells => True,
-                           Ratio       => Gui.Square,
-                           Frame       => True);
-    Top := Gui.Create (Handbox, Gui.Horizontal, Equal_Cells => True);
+    Direction_Buttons := Gui.Create (Handbox, Gui.Vertical,
+                                     Equal_Cells => True,
+                                     Ratio       => Gui.Square,
+                                     Frame       => True);
+    Top := Gui.Create (Direction_Buttons, Gui.Horizontal, Equal_Cells => True);
     Gui.Space (Top);
     Up := Gui.Create (Top, Gui.Arrow_Up,
                       Move_Up'unrestricted_access,
                       Expand => True);
     Gui.Space (Top);
-    Middle := Gui.Create (Handbox, Gui.Horizontal, Equal_Cells => True);
+    Middle := Gui.Create (Direction_Buttons, Gui.Horizontal, Equal_Cells => True);
     Left := Gui.Create (Middle, Gui.Arrow_Left,
                         Move_Left'unrestricted_access,
                         Expand => True);
@@ -144,14 +145,13 @@ procedure Gui_Handbox_Test is
     Right := Gui.Create (Middle, Gui.Arrow_Right,
                          Move_Right'unrestricted_access,
                          Expand => True);
-    Bottom := Gui.Create (Handbox, Gui.Horizontal, Equal_Cells => True);
+    Bottom := Gui.Create (Direction_Buttons, Gui.Horizontal, Equal_Cells => True);
     Gui.Space (Bottom);
     Down := Gui.Create (Bottom, Gui.Arrow_Down,
                         Move_Down'unrestricted_access,
                         Expand => True);
     Gui.Space (Bottom);
-    Status_Group := Gui.Create (Page, Gui.Horizontal, Expand => Gui.Fixed);
-    Status_Value := Gui.Create_Value (Status_Group, "ready", Minimum_Width => 160);
+    Gui.Set_Status_Line ("ready");
   end Startup;
 
 begin
