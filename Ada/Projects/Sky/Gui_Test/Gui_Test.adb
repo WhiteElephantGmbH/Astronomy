@@ -15,7 +15,7 @@
 -- *********************************************************************************************************************
 pragma Style_Astronomy;
 
-pragma Build (Description => "GUI Handbox Test",
+pragma Build (Description => "GUI Test",
               Version  => (0, 0, 0, 0),
               Kind     => Windows,
               Icon     => False,
@@ -23,7 +23,7 @@ pragma Build (Description => "GUI Handbox Test",
 
 with Gui;
 
-procedure Gui_Handbox_Test is
+procedure Gui_Test is
   Page                                                   : Gui.Page;
   Speed, Handbox, Direction_Buttons, Top, Middle, Bottom : Gui.Group;
   Slower, Faster                                         : Gui.Button with Unreferenced;
@@ -31,6 +31,38 @@ procedure Gui_Handbox_Test is
   Speed_Index                                            : Natural := 1;
   Speed_Button_Size                                      : constant := 44;
   Up, Left, Center, Right, Down                          : Gui.Button with Unreferenced;
+
+  Slider_Page    : Gui.Page;
+  Slider_Group   : Gui.Group;
+  Slider_Row     : Gui.Group;
+  Button_Row     : Gui.Group;
+  Slider         : Gui.Track_Bar;
+  Slider_Value   : Gui.Value_Box;
+  Reset_Button   : Gui.Button with Unreferenced;
+  Toggle_Button  : Gui.Button with Unreferenced;
+
+  procedure Slider_Changed is
+  begin
+    Gui.Set_Text (Slider_Value, Natural'image (Gui.Get_Position (Slider)));
+  end Slider_Changed;
+
+
+  procedure Reset_Slider is
+  begin
+    Gui.Set_Position (Slider, 50);
+    Slider_Changed;
+  end Reset_Slider;
+
+
+  procedure Toggle_Slider is
+  begin
+    if Gui.Is_Enabled (Slider) then
+      Gui.Disable (Slider);
+    else
+      Gui.Enable (Slider);
+    end if;
+  end Toggle_Slider;
+
 
   procedure Return_To_Target (Event : Gui.Button_Event) is
   begin
@@ -151,10 +183,23 @@ procedure Gui_Handbox_Test is
                         Move_Down'unrestricted_access,
                         Expand => True);
     Gui.Space (Bottom);
+    Slider_Page := Gui.Add_Page ("Sliders");
+    Slider_Group := Gui.Create (Slider_Page, Gui.Vertical, Expand => Gui.Fixed, Title => "Horizontal slider");
+    Slider_Row := Gui.Create (Slider_Group, Gui.Horizontal, Expand => Gui.Fixed);
+    Slider := Gui.Create (Slider_Row, Slider_Changed'unrestricted_access);
+    Slider_Value := Gui.Create_Value (Slider_Row, "50", Minimum_Width => 50);
+    Gui.Define_Range (Slider, 100);
+    Gui.Define_Limits (Slider, 10, 90);
+    Gui.Define_Tic_Frequency (Slider, 10);
+    Gui.Set_Position (Slider, 50);
+    Button_Row := Gui.Create (Slider_Group, Gui.Horizontal, Expand => Gui.Fixed);
+    Reset_Button := Gui.Create (Button_Row, "Reset", Reset_Slider'unrestricted_access);
+    Toggle_Button := Gui.Create (Button_Row, "Enable/Disable", Toggle_Slider'unrestricted_access,
+                                 The_Button_Size => 120);
     Gui.Set_Status_Line ("READY");
   end Startup;
 
 begin
-  Gui.Execute ("Gui Handbox Test", Startup'access,
+  Gui.Execute ("Gui Test", Startup'access,
                Initial_Metrics => (0, 0, 1, 350));
-end Gui_Handbox_Test;
+end Gui_Test;

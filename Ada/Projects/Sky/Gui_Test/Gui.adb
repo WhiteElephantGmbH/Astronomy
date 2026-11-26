@@ -1135,6 +1135,8 @@ package body Gui is
     Unused         : Win32.BOOL;
     Area           : Layout.Rectangle;
     Required       : Layout.Size;
+    Tab_Area       : aliased Win32.Windef.RECT;
+    function To_Lparam is new Ada.Unchecked_Conversion (System.Address, Win32.LPARAM);
     Item           : Child_Information_Ptr;
     Swp_Nocopybits : constant Win32.UINT := 16#0100#;
     use type Win32.LONG;
@@ -1169,12 +1171,27 @@ package body Gui is
     Unused := Win32.Winuser.GetWindowRect (Win32.Windef.HWND(The_Status_Line), Status'unchecked_access);
     Area := (0, 0, Natural'max (0, Integer(Client.right)),
                    Integer'max (0, Integer(Client.bottom - (Status.bottom - Status.top))));
+    if Nr_Of_Pages > 1 then
+      Tab_Area := (left => 0, top => 0, right => Win32.LONG(Area.Width), bottom => Win32.LONG(Area.Height));
+      Unused := Win32.Winuser.SetWindowPos (The_Tabs, System.Null_Address,
+                                           0, 0, Win32.INT(Area.Width), Win32.INT(Area.Height),
+                                           Win32.Winuser.SWP_NOZORDER + Win32.Winuser.SWP_SHOWWINDOW);
+      Send_Message (The_Tabs, Win32.Comctl.Tcm_Adjustrect, 0, To_Lparam (Tab_Area'address));
+      Area := (Natural'max (0, Integer(Tab_Area.left)), Natural'max (0, Integer(Tab_Area.top)),
+               Natural'max (0, Integer(Tab_Area.right - Tab_Area.left)),
+               Natural'max (0, Integer(Tab_Area.bottom - Tab_Area.top)));
+    end if;
     Required := Layout.Minimum (Current_Page.Layout_Root);
     if Area.Width < Required.Width or else Area.Height < Required.Height then
       return;
     end if;
     Layout.Arrange (Current_Page.Layout_Root, Area);
     Position_Frames (Current_Page.First_Child);
+    if Nr_Of_Pages > 1 then
+      Unused := Win32.Winuser.SetWindowPos (The_Tabs, System.Storage_Elements.To_Address (1),
+                                           0, 0, 0, 0,
+                                           Win32.Winuser.SWP_NOMOVE + Win32.Winuser.SWP_NOSIZE);
+    end if;
     Item := Current_Page.First_Child;
     while Item /= null loop
       if Item.Layout_Node = null then
@@ -1203,9 +1220,13 @@ package body Gui is
       end if;
       Item := Item.Next_Sibling;
     end loop;
-    Unused := Win32.Winuser.SetWindowPos (The_Status_Line, Win32.Winuser.HWND_TOP,
-                                          0, Win32.INT(Area.Height), Win32.INT(Area.Width),
-                                          Win32.INT(Status.bottom - Status.top), Swp_Nocopybits);
+    Unused := Win32.Winuser.SetWindowPos (The_Status_Line,
+                                         Win32.Winuser.HWND_TOP,
+                                         0,
+                                         Win32.INT(Client.bottom - (Status.bottom - Status.top)),
+                                         Win32.INT(Client.right),
+                                         Win32.INT(Status.bottom - Status.top),
+                                         Swp_Nocopybits);
   end Redraw_Layout;
 
 
@@ -3639,6 +3660,21 @@ package body Gui is
   end Create;
 
 
+  function Create (Parent             : Group;
+                   The_Action_Routine : Action_Routine := null;
+                   Minimum_Width      : Positive := 160) return Track_Bar is
+    Result : Track_Bar;
+  begin
+    if Layout_Complete then
+      raise Sequence_Error;
+    end if;
+    Result := Create (Parent.Owner, The_Action_Routine => The_Action_Routine);
+    Result.Ptr.Layout_Node := Layout.Control ((Minimum_Width, 40), Weight => 1);
+    Layout.Append (Parent.Node, Result.Ptr.Layout_Node);
+    return Result;
+  end Create;
+
+
   procedure Define_Range (The_Track_Bar : Track_Bar;
                           The_Extent    : Positive) is
   begin
@@ -3646,9 +3682,9 @@ package body Gui is
     The_Track_Bar.Ptr.Track_Minimum := 0;
     The_Track_Bar.Ptr.Track_Maximum := The_Extent;
     Send_Message (The_Track_Bar.Ptr.The_Handle,
-                  Win32.Comctl.Tbm_Setrange,
+                  Win32.Comctl.Tbm_Settangemax,
                   Win32.TRUE,
-                  Make_Long(The_Extent));
+                  Win32.LPARAM(The_Extent));
   end Define_Range;
 
 
@@ -3784,7 +3820,7 @@ package body Gui is
                                                     Aspect_Ratio  => Float(Ratio));
     use type Gui.Layout.Element;
   begin
-    if Layout_Complete or else Parent /= Current_Page or else Nr_Of_Pages /= 1 then
+    if Layout_Complete then
       raise Sequence_Error;
     end if;
     if Parent.Layout_Root = null then
@@ -3838,18 +3874,52 @@ package body Gui is
   end Space;
 
 
+  function Button_Width (The_Text : String; Minimum_Width : Natural) return Natural is
+    Text            : aliased constant Wide_String := To_Wide (The_Text) & Wide_Nul;
+    Dc              : constant Win32.Windef.HDC := Win32.Winuser.GetDC (System.Null_Address);
+    Previous_Font   : System.Address;
+    Text_Size       : aliased Win32.Windef.SIZE;
+    Measured        : Win32.BOOL;
+    Unused_Font     : System.Address with Unreferenced;
+    Unused_Release  : Win32.INT with Unreferenced;
+    Padding         : constant := 20;
+
+    use type System.Address;
+    use type Win32.BOOL;
+  begin
+    if Dc = System.Null_Address then
+      raise Program_Error;
+    end if;
+    Previous_Font := Select_Object (Dc, The_Font);
+    if Previous_Font = System.Null_Address then
+      Unused_Release := Win32.Winuser.ReleaseDC (System.Null_Address, Dc);
+      raise Program_Error;
+    end if;
+    Measured := Win32.Wingdi.GetTextExtentPoint32W (Dc, Win32.Addr(Text),
+                                                   Win32.INT(Text'length - 1), Text_Size'unchecked_access);
+    Unused_Font := Select_Object (Dc, Previous_Font);
+    Unused_Release := Win32.Winuser.ReleaseDC (System.Null_Address, Dc);
+    if Measured = Win32.FALSE then
+      raise Program_Error;
+    end if;
+    return Natural'max (Minimum_Width, Natural(Text_Size.cx) + Padding);
+  end Button_Width;
+
+
   function Create (Parent             : Group;
                    The_Text           : String;
                    The_Action_Routine : Action_Routine := null;
                    Expand             : Boolean := False;
                    The_Button_Size    : Natural := Default_Button_Width) return Button is
                    Result             : Button;
+                   Width              : Natural;
   begin
     if Layout_Complete then
       raise Sequence_Error;
     end if;
-    Result := Create (Parent.Owner, The_Text, The_Action_Routine, The_Button_Size);
-    Result.Ptr.Layout_Node := Layout.Control ((The_Button_Size, 30), Weight => (if Expand then 1 else 0));
+    Width := Button_Width (The_Text, The_Button_Size);
+    Result := Create (Parent.Owner, The_Text, The_Action_Routine, Width);
+    Result.Ptr.Layout_Node := Layout.Control ((Width, 30), Weight => (if Expand then 1 else 0));
     Layout.Append (Parent.Node, Result.Ptr.Layout_Node);
     return Result;
   end Create;
@@ -3892,7 +3962,11 @@ package body Gui is
   procedure Finish_Layout is
     Client, Status : aliased Win32.Windef.RECT;
     Metrics        : constant Window_Metrics := Get_Window_Metrics;
-    Required       : Layout.Size;
+    Required       : Layout.Size := (0, 0);
+    Tab_Area       : aliased Win32.Windef.RECT;
+    Tab_Info       : aliased Win32.Comctl.Tc_Item;
+    function To_Lparam is new Ada.Unchecked_Conversion (System.Address, Win32.LPARAM);
+    function To_Address is new Ada.Unchecked_Conversion (Win32.LPARAM, System.Address);
     Unused         : Win32.BOOL;
     use type Win32.LONG;
     use type Gui.Layout.Element;
@@ -3900,7 +3974,27 @@ package body Gui is
     if Layout_Complete or else Current_Page = null or else Current_Page.Layout_Root = null then
       raise Sequence_Error;
     end if;
-    Required := Layout.Minimum (Current_Page.Layout_Root);
+    for Index in 0 .. Nr_Of_Pages - 1 loop
+      Tab_Info.Mask := Win32.Comctl.Tcif_Param;
+      Send_Message (The_Tabs, Win32.Comctl.Tcm_Getitem, Win32.WPARAM(Index), To_Lparam (Tab_Info'address));
+      declare
+        Item : constant Page := Page(Page_Conversion.To_Pointer (To_Address (Tab_Info.Lparam)));
+      begin
+        if Item.Layout_Root = null then
+          raise Sequence_Error;
+        end if;
+        declare
+          Size : constant Layout.Size := Layout.Minimum (Item.Layout_Root);
+        begin
+          Required := (Natural'max (Required.Width, Size.Width), Natural'max (Required.Height, Size.Height));
+        end;
+      end;
+    end loop;
+    if Nr_Of_Pages > 1 then
+      Tab_Area := (left => 0, top => 0, right => Win32.LONG(Required.Width), bottom => Win32.LONG(Required.Height));
+      Send_Message (The_Tabs, Win32.Comctl.Tcm_Adjustrect, Win32.TRUE, To_Lparam (Tab_Area'address));
+      Required := (Natural(Tab_Area.right - Tab_Area.left), Natural(Tab_Area.bottom - Tab_Area.top));
+    end if;
     Send_Message (The_Status_Line, Win32.Winuser.WM_SIZE, 0, 0);
     Unused := Win32.Winuser.GetClientRect (Private_Window, Client'unchecked_access);
     Unused := Win32.Winuser.GetWindowRect (Win32.Windef.HWND(The_Status_Line), Status'unchecked_access);
@@ -3908,6 +4002,9 @@ package body Gui is
                        Required.Height + Natural'max (0, Metrics.Height - Integer(Client.bottom))
                                        + Natural(Status.bottom - Status.top));
     Layout_Complete := True;
+    if Nr_Of_Pages > 1 then
+      Send_Message (The_Tabs, Win32.Comctl.Tcm_Setcursel, Win32.WPARAM(Index_Of (Current_Page)), 0);
+    end if;
     Set_Window_Metrics (Metrics.X_Position, Metrics.Y_Position,
                         Natural'max (Metrics.Width, Minimum_Window.Width),
                         Natural'max (Metrics.Height, Minimum_Window.Height));

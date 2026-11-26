@@ -627,6 +627,10 @@ package Gui is
                    The_Action_Routine : Action_Routine := null;
                    The_Title_Size     : Natural := Automatic) return Track_Bar;
 
+  function Create (Parent             : Group;
+                   The_Action_Routine : Action_Routine := null;
+                   Minimum_Width      : Positive := 160) return Track_Bar;
+
   procedure Define_Range (The_Track_Bar : Track_Bar;
                           The_Extent    : Positive);
 
