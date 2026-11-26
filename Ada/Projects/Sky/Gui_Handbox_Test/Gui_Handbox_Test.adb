@@ -26,7 +26,11 @@ with Gui;
 
 procedure Gui_Handbox_Test is
   Page : Gui.Page;
-  Handbox, Top, Middle, Bottom : Gui.Group;
+  Speed, Handbox, Top, Middle, Bottom : Gui.Group;
+  Slower, Faster : Gui.Button with Unreferenced;
+  Speed_Value : Gui.Plain_Edit_Box;
+  Speed_Index : Natural := 1;
+  Speed_Button_Size : constant := 44;
   Up, Left, Center, Right, Down : Gui.Button with Unreferenced;
 
   procedure Pressed is
@@ -34,10 +38,46 @@ procedure Gui_Handbox_Test is
     Ada.Text_IO.Put_Line ("button pressed");
   end Pressed;
 
+
+  procedure Show_Speed is
+  begin
+    case Speed_Index is
+    when 0 => Gui.Set_Text (Speed_Value, "7.50""/s");
+    when 1 => Gui.Set_Text (Speed_Value, "14.99""/s");
+    when others => Gui.Set_Text (Speed_Value, "29.98""/s");
+    end case;
+  end Show_Speed;
+
+
+  procedure Decrease_Speed is
+  begin
+    if Speed_Index > 0 then
+      Speed_Index := Speed_Index - 1;
+      Show_Speed;
+    end if;
+  end Decrease_Speed;
+
+
+  procedure Increase_Speed is
+  begin
+    if Speed_Index < 2 then
+      Speed_Index := Speed_Index + 1;
+      Show_Speed;
+    end if;
+  end Increase_Speed;
+
+
   procedure Startup is
   begin
     Page := Gui.Add_Page ("Handbox");
-    Handbox := Gui.Create (Page, Gui.Vertical, Equal_Cells => True, Aspect_Ratio => 1.0);
+    Speed := Gui.Create (Page, Gui.Horizontal, Weight => 0, Title => "Speed");
+    Slower := Gui.Create (Speed, Gui.Arrow_Left, Decrease_Speed'unrestricted_access,
+                          The_Button_Size => Speed_Button_Size);
+    Speed_Value := Gui.Create (Speed, "14.99""/s", Minimum_Width => 90);
+    Faster := Gui.Create (Speed, Gui.Arrow_Right, Increase_Speed'unrestricted_access,
+                          The_Button_Size => Speed_Button_Size);
+    Handbox := Gui.Create (Page, Gui.Vertical, Equal_Cells => True,
+                           Aspect_Ratio => 1.0, Frame => True);
     Top := Gui.Create (Handbox, Gui.Horizontal, Equal_Cells => True);
     Gui.Space (Top);
     Up := Gui.Create (Top, Gui.Arrow_Up, Pressed'unrestricted_access, Expand => True);

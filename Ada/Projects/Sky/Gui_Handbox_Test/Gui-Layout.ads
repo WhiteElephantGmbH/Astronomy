@@ -20,7 +20,8 @@ private package Gui.Layout is
                   Margin      : Natural := 0;
                   Weight      : Natural := 1;
                   Equal_Cells : Boolean := False;
-                  Aspect_Ratio : Float := 0.0) return Element;
+                  Aspect_Ratio : Float := 0.0;
+                  Minimum_Width : Natural := 0) return Element;
 
   function Control (Minimum : Size;
                     Weight  : Natural := 0) return Element;

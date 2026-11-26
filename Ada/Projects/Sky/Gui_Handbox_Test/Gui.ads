@@ -92,11 +92,15 @@ package Gui is
   type Page is private;
 
   function Create (Parent : Page; Arrangement : Orientation;
-                   Weight : Positive := 1; Equal_Cells : Boolean := False;
-                   Aspect_Ratio : Float := 0.0) return Group;
+                   Weight : Natural := 1; Equal_Cells : Boolean := False;
+                   Aspect_Ratio : Float := 0.0;
+                   Frame : Boolean := False;
+                   Title : String := "") return Group;
   function Create (Parent : Group; Arrangement : Orientation;
-                   Weight : Positive := 1; Equal_Cells : Boolean := False;
-                   Aspect_Ratio : Float := 0.0) return Group;
+                   Weight : Natural := 1; Equal_Cells : Boolean := False;
+                   Aspect_Ratio : Float := 0.0;
+                   Frame : Boolean := False;
+                   Title : String := "") return Group;
   procedure Space (Parent : Group);
   procedure Finish_Layout;
   type Child is abstract tagged private;
@@ -275,11 +279,9 @@ package Gui is
                                 Initial_Filename      : String := "";
                                 Default_Directory     : String := "") return String;
 
-  ---------------------------------------
-  --
-  -- Keyboard handling
-  --
-  ---------------------------------------
+  -----------------------
+  -- Keyboard handling --
+  -----------------------
 
   type Key_Event is (Key_Pressed, Key_Released);
 
@@ -296,11 +298,9 @@ package Gui is
   procedure Enable_Key_Handler;
 
 
-  ---------------------------------------
-  --
-  -- Functions available for all controls
-  --
-  ---------------------------------------
+  ------------------------------------------
+  -- Functions available for all controls --
+  ------------------------------------------
 
   function Is_Defined (The_Child : Child'class) return Boolean;
   --
@@ -330,11 +330,9 @@ package Gui is
 
   function Parent_Page_Of (The_Child : Child'class) return Page;
 
-  ---------------------------------------
-  --
-  -- Menu handling
-  --
-  ---------------------------------------
+  -------------------
+  -- Menu handling --
+  -------------------
 
   function Add_Menu (The_Text : String) return Menu;
 
@@ -390,11 +388,9 @@ package Gui is
   --
   -- If this procedure is not used, the first radio item of the menu is set by default
 
-  -------------------
-  --
-  -- Button functions
-  --
-  -------------------
+  ----------------------
+  -- Button functions --
+  ----------------------
   function Create (Parent_Page        : Page;
                    The_Text           : String;
                    The_Action_Routine : Action_Routine := null;
@@ -417,11 +413,9 @@ package Gui is
   procedure Set_Text (The_Button : Button;
                       The_Text   : String);
 
-  -------------------------
-  --
-  -- Progress Bar functions
-  --
-  -------------------------
+  ----------------------------
+  -- Progress Bar functions --
+  ----------------------------
   function Create (Parent_Page : Page) return Progress_Bar;
   -- Creates a progress bar with a range 0..100 incrementing in steps of 10
 
@@ -438,11 +432,9 @@ package Gui is
   procedure Set_Color (The_Progress_Bar : Progress_Bar;
                        The_Color        : Color);
 
-  ----------------------
-  --
-  -- List View functions
-  --
-  ----------------------
+  -------------------------
+  -- List View functions --
+  -------------------------
 
   type Column is record
     Position : Positive;
@@ -515,11 +507,9 @@ package Gui is
 
   procedure Thaw (The_List_View : List_View);
 
-  ----------------------
-  --
-  -- Tree View functions
-  --
-  ----------------------
+  -------------------------
+  -- Tree View functions --
+  -------------------------
   subtype Tree_Item is Win32.Comctl.Htreeitem;
 
   Root_Item : constant Tree_Item := Win32.Comctl.Tvi_First;
@@ -572,11 +562,9 @@ package Gui is
   -- Expands all ancestor nodes and scrolls Tree_view so that the item is visible
   --
 
-  ----------------------
-  --
-  -- Text View functions
-  --
-  ----------------------
+  -------------------------
+  -- Text View functions --
+  -------------------------
   function Create (Parent_Page   : Page;
                    Word_Wrapping : Boolean := False) return Text_View;
 
@@ -592,11 +580,9 @@ package Gui is
 
   procedure Clear (The_Rich_Edit : Text_View);
 
-  ----------------------
-  --
-  -- Track Bar functions
-  --
-  ----------------------
+  -------------------------
+  -- Track Bar functions --
+  -------------------------
   function Create (Parent_Page        : Page;
                    The_Title          : String := "";
                    The_Action_Routine : Action_Routine := null;
@@ -617,11 +603,9 @@ package Gui is
 
   function Get_Position (The_Track_Bar : Track_Bar) return Natural;
 
-  ---------------------
-  --
-  -- Edit Box functions
-  --
-  ---------------------
+  ------------------------
+  -- Edit Box functions --
+  ------------------------
   function Create (Parent_Page        : Page;
                    The_Title          : String;
                    Initial_Text       : String;
@@ -630,6 +614,11 @@ package Gui is
                    Is_Modifiable      : Boolean := True;
                    The_Size           : Natural := Automatic;
                    The_Title_Size     : Natural := Automatic) return Plain_Edit_Box;
+
+  function Create (Parent        : Group;
+                   Initial_Text  : String;
+                   Is_Modifiable : Boolean := False;
+                   Minimum_Width : Positive := 90) return Plain_Edit_Box;
 
   procedure Set_Text (The_Edit_Box : Edit_Box'class;
                       The_Text     : String);
@@ -653,11 +642,9 @@ package Gui is
 
   procedure Clear (The_Checked_Edit_Box : Checked_Edit_Box);
 
-  ----------------------
-  --
-  -- Check Box functions
-  --
-  ----------------------
+  -------------------------
+  -- Check Box functions --
+  -------------------------
   function Create (Parent_Page        : Page;
                    The_Title          : String;
                    The_Action_Routine : Action_Routine := null) return Check_Box;
@@ -668,11 +655,9 @@ package Gui is
 
   procedure Clear (The_Check_Box : Check_Box);
 
-  ----------------------
-  --
-  -- Combo Box functions
-  --
-  ----------------------
+  -------------------------
+  -- Combo Box functions --
+  -------------------------
   type Combo_Styles is (Sorted,
                         Modifiable);
 
@@ -721,11 +706,9 @@ package Gui is
 
   procedure Clear (The_Checked_Combo_Box : Checked_Combo_Box);
 
-  -------------------
-  --
-  -- Detached Window
-  --
-  -------------------
+  ---------------------
+  -- Detached Window --
+  ---------------------
 
   type Detached_Window is private;
 

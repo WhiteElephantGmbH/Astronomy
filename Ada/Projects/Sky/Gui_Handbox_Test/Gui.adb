@@ -1,3 +1,4 @@
+with System.Storage_Elements;
 -- *********************************************************************************************************************
 -- *                       (c) 2002 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
@@ -319,6 +320,8 @@ package body Gui is
        Normal_Position => (0, 0, 0, 0));
     Next    : Detached_Image_State_Ptr := null;
   end record;
+
+
   procedure Free_Image_State is new Ada.Unchecked_Deallocation
     (Detached_Image_State, Detached_Image_State_Ptr);
   Images : Detached_Image_State_Ptr := null;
@@ -530,6 +533,7 @@ package body Gui is
                                                                  Text_View_Child    => 70];
 
   type Child_Information is record
+    Is_Frame                 : Boolean := False;
     Has_Symbol               : Boolean := False;
     Symbol                   : Button_Symbol := Stop_Symbol;
     Layout_Node : Layout.Element := null;
@@ -636,6 +640,7 @@ package body Gui is
       Count := @ - 1;
     end Wait;
 
+
     procedure Signal is
     begin
       Count := @ + 1;
@@ -701,6 +706,7 @@ package body Gui is
       end if;
     end Put;
 
+
     procedure Put (The_Click       : Click_Routine;
                    The_Information : Information) is
     begin
@@ -712,6 +718,7 @@ package body Gui is
         Is_Enabled := False;
       end if;
     end Put;
+
 
     procedure Finish is
     begin
@@ -732,10 +739,12 @@ package body Gui is
       Is_Pending := False;
     end Get;
 
+
     procedure Enable is
     begin
       Is_Enabled := not Is_Finishing;
     end Enable;
+
 
     procedure Do_Terminate is
     begin
@@ -1074,6 +1083,26 @@ package body Gui is
     use type Win32.LONG;
     use type Win32.UINT;
     use type Gui.Layout.Element;
+
+    procedure Position_Frames (Child : Child_Information_Ptr) is
+      Hwnd_Bottom : constant Win32.Windef.HWND := System.Storage_Elements.To_Address (1);
+      Ignored : Win32.BOOL with Unreferenced;
+    begin
+      if Child = null then
+        return;
+      end if;
+      Position_Frames (Child.Next_Sibling);
+      if Child.Is_Frame then
+        declare
+          R : constant Layout.Rectangle := Layout.Bounds (Child.Layout_Node);
+        begin
+          Ignored := Win32.Winuser.SetWindowPos (Child.The_Handle, Hwnd_Bottom,
+                       Win32.INT(R.X), Win32.INT(R.Y), Win32.INT(R.Width), Win32.INT(R.Height),
+                       Swp_Nocopybits);
+        end;
+      end if;
+    end Position_Frames;
+
   begin
     if not Layout_Complete or else Application_Is_Minimized then
       return;
@@ -1087,22 +1116,26 @@ package body Gui is
       return;
     end if;
     Layout.Arrange (Current_Page.Layout_Root, Area);
+    Position_Frames (Current_Page.First_Child);
     Item := Current_Page.First_Child;
     while Item /= null loop
       if Item.Layout_Node = null then
         raise Program_Error with "stage 2: only grouped buttons supported";
       end if;
-      declare
-        R : constant Layout.Rectangle := Layout.Bounds (Item.Layout_Node);
+      if not Item.Is_Frame then
+        declare
+          R : constant Layout.Rectangle := Layout.Bounds (Item.Layout_Node);
       begin
         Unused := Win32.Winuser.SetWindowPos (Item.The_Handle, System.Null_Address,
                     Win32.INT(R.X), Win32.INT(R.Y), Win32.INT(R.Width), Win32.INT(R.Height),
                     Win32.Winuser.SWP_NOZORDER + Swp_Nocopybits);
-      end;
+        end;
+      end if;
       Item := Item.Next_Sibling;
     end loop;
     Send_Message (Win32.Windef.HWND(The_Status_Line), Win32.Winuser.WM_SIZE, 0, 0);
   end Redraw_Layout;
+
 
   procedure Redraw_Main_Window is
 
@@ -1793,7 +1826,12 @@ package body Gui is
           Window_Style := Window_Style + Win32.Winuser.CBS_SORT;
         end if;
       when Static_Child =>
-        Class_Name := Wide_Text_Address_Of ("Static");
+        if The_Child.Is_Frame then
+          Class_Name := Wide_Text_Address_Of ("Button");
+          Window_Style := Window_Style + 16#0007# + Win32.Winuser.WS_CLIPSIBLINGS; -- BS_GROUPBOX
+        else
+          Class_Name := Wide_Text_Address_Of ("Static");
+        end if;
     end case;
     if Parent_Page = Current_Page then
       Window_Style := Window_Style + Win32.Winuser.WS_VISIBLE;
@@ -2010,6 +2048,7 @@ package body Gui is
       State.Fullscreen := False;
     end if;
   end Set_Detached_Fullscreen;
+
 
   function Detached_Window_Proc (Hwnd    : Win32.Windef.HWND;
                                  Message : Win32.UINT;
@@ -2951,6 +2990,7 @@ package body Gui is
       The_Ids(Last_Index) := Id;
     end Put;
 
+
     function Has_Id return Boolean is (Last_Index > 0);
 
     function Id return Positive is
@@ -3314,6 +3354,7 @@ package body Gui is
                   Make_Long(The_Extent));
   end Define_Range;
 
+
   procedure Define_Limits (The_Track_Bar : Track_Bar;
                            Minimum       : Natural;
                            Maximum       : Natural) is
@@ -3362,11 +3403,11 @@ package body Gui is
 
 
   function Create_Button (Parent_Page        : Page;
-                   The_Text           : String;
-                   The_Action_Routine : Action_Routine;
-                   The_Button_Size    : Natural;
-                   Has_Symbol         : Boolean;
-                   Symbol             : Button_Symbol) return Button is
+                          The_Text           : String;
+                          The_Action_Routine : Action_Routine;
+                          The_Button_Size    : Natural;
+                          Has_Symbol         : Boolean;
+                          Symbol             : Button_Symbol) return Button is
     Text        : aliased constant Wide_String := To_Wide (The_Text) & Wide_Nul;
     The_Button  : constant Button := Button'(Ptr => new Child_Information);
     Button_Size : constant Win32.INT := Win32.INT (The_Button_Size);
@@ -3397,12 +3438,47 @@ package body Gui is
   end Create;
 
 
+  function Frame_Margin (Frame : Boolean; Title : String) return Natural is
+  begin
+    if Title /= "" then
+      return 24;
+    elsif Frame then
+      return 14;
+    end if;
+    return 0;
+  end Frame_Margin;
+
+
+  procedure Create_Frame (Owner : Page;
+                          Node  : Layout.Element;
+                          Title : String) is
+    Text : aliased constant Wide_String := To_Wide (Title) & Wide_Nul;
+    Item : constant Child_Information_Ptr := new Child_Information;
+  begin
+    Item.Is_Frame := True;
+    Item.The_Kind := Static_Child;
+    Item.The_Window_Id := Next_Child_Id;
+    Item.Initial_Title := Win32.Addr(Text);
+    Item.Layout_Node := Node;
+    Create (Item, Owner);
+  end Create_Frame;
+
+
   function Create (Parent : Page; Arrangement : Orientation;
-                   Weight : Positive := 1; Equal_Cells : Boolean := False;
-                   Aspect_Ratio : Float := 0.0) return Group is
+                   Weight : Natural := 1; Equal_Cells : Boolean := False;
+                   Aspect_Ratio : Float := 0.0;
+                   Frame : Boolean := False;
+                   Title : String := "") return Group is
+    Margin : constant Natural := Frame_Margin (Frame, Title);
+    Minimum_Width : constant Natural := (if Title = "" then 0
+                                         else To_Wide(Title)'length * Character_Width + 2 * Margin);
     Node : constant Layout.Element := Layout.Group (Layout.Direction'val (Orientation'pos (Arrangement)),
-                                                      Gap => 4, Weight => Weight, Equal_Cells => Equal_Cells,
-                                                      Aspect_Ratio => Aspect_Ratio);
+                                                    Gap           => 4,
+                                                    Weight        => Weight,
+                                                    Equal_Cells   => Equal_Cells,
+                                                    Margin        => Margin,
+                                                    Minimum_Width => Minimum_Width,
+                                                    Aspect_Ratio  => Aspect_Ratio);
     use type Gui.Layout.Element;
   begin
     if Layout_Complete or else Parent /= Current_Page or else Nr_Of_Pages /= 1 then
@@ -3412,22 +3488,41 @@ package body Gui is
       Parent.Layout_Root := Layout.Group (Layout.Vertical, Gap => 4, Margin => 4);
     end if;
     Layout.Append (Parent.Layout_Root, Node);
+    if Frame or else Title /= "" then
+      Create_Frame (Parent, Node, Title);
+    end if;
     return new Group_Information'(Parent, Node);
   end Create;
 
+
   function Create (Parent : Group; Arrangement : Orientation;
-                   Weight : Positive := 1; Equal_Cells : Boolean := False;
-                   Aspect_Ratio : Float := 0.0) return Group is
+                   Weight : Natural := 1; Equal_Cells : Boolean := False;
+                   Aspect_Ratio : Float := 0.0;
+                   Frame : Boolean := False;
+                   Title : String := "") return Group is
+
+    Margin : constant Natural := Frame_Margin (Frame, Title);
+    Minimum_Width : constant Natural := (if Title = "" then 0
+                                         else To_Wide(Title)'length * Character_Width + 2 * Margin);
+
     Node : constant Layout.Element := Layout.Group (Layout.Direction'val (Orientation'pos (Arrangement)),
-                                                      Gap => 4, Weight => Weight, Equal_Cells => Equal_Cells,
-                                                      Aspect_Ratio => Aspect_Ratio);
+                                                    Gap           => 4,
+                                                    Weight        => Weight,
+                                                    Equal_Cells   => Equal_Cells,
+                                                    Margin        => Margin,
+                                                    Minimum_Width => Minimum_Width,
+                                                    Aspect_Ratio  => Aspect_Ratio);
   begin
     if Layout_Complete then
       raise Sequence_Error;
     end if;
     Layout.Append (Parent.Node, Node);
+    if Frame or else Title /= "" then
+      Create_Frame (Parent.Owner, Node, Title);
+    end if;
     return new Group_Information'(Parent.Owner, Node);
   end Create;
+
 
   procedure Space (Parent : Group) is
   begin
@@ -3436,6 +3531,7 @@ package body Gui is
     end if;
     Layout.Append (Parent.Node, Layout.Control ((0, 0), Weight => 1));
   end Space;
+
 
   function Create (Parent : Group;
                    The_Text : String;
@@ -3619,6 +3715,7 @@ package body Gui is
     end if;
   end Hide;
 
+
   procedure Hide (The_Child : Child'class) is
   begin
     Hide (The_Child.Ptr);
@@ -3648,6 +3745,7 @@ package body Gui is
       end if;
     end if;
   end Show;
+
 
   procedure Show (The_Child : Child'class) is
   begin
@@ -4160,6 +4258,22 @@ package body Gui is
     The_Edit_Box.Ptr.Is_Modifiable := Is_Modifiable;
     Create (The_Edit_Box.Ptr, Parent_Page);
     return The_Edit_Box;
+  end Create;
+
+
+  function Create (Parent        : Group;
+                   Initial_Text  : String;
+                   Is_Modifiable : Boolean := False;
+                   Minimum_Width : Positive := 90) return Plain_Edit_Box is
+    Result : Plain_Edit_Box;
+  begin
+    if Layout_Complete then
+      raise Sequence_Error;
+    end if;
+    Result := Create (Parent.Owner, "", Initial_Text, Is_Modifiable => Is_Modifiable);
+    Result.Ptr.Layout_Node := Layout.Control ((Minimum_Width, 30), Weight => 1);
+    Layout.Append (Parent.Node, Result.Ptr.Layout_Node);
+    return Result;
   end Create;
 
 

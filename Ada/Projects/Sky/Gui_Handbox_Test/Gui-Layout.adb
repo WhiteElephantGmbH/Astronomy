@@ -5,14 +5,16 @@ package body Gui.Layout is
                   Margin      : Natural := 0;
                   Weight      : Natural := 1;
                   Equal_Cells : Boolean := False;
-                  Aspect_Ratio : Float := 0.0) return Element is
+                  Aspect_Ratio : Float := 0.0;
+                  Minimum_Width : Natural := 0) return Element is
   begin
     if Aspect_Ratio < 0.0 then
       raise Constraint_Error;
     end if;
     return new Node'(Is_Group => True, Arrangement => Arrangement,
                      Gap => Gap, Margin => Margin, Weight => Weight,
-                     Equal_Cells => Equal_Cells, Aspect_Ratio => Aspect_Ratio, others => <>);
+                     Equal_Cells => Equal_Cells, Aspect_Ratio => Aspect_Ratio,
+                     Required => (Minimum_Width, 0), others => <>);
   end Group;
 
 
@@ -48,6 +50,7 @@ package body Gui.Layout is
   function Along (Item : Size; Arrangement : Direction) return Natural is
     (if Arrangement = Horizontal then Item.Width else Item.Height);
 
+
   function Across (Item : Size; Arrangement : Direction) return Natural is
     (if Arrangement = Horizontal then Item.Height else Item.Width);
 
@@ -56,7 +59,17 @@ package body Gui.Layout is
     Child : Element := Item.First;
     Count, Total, Largest, Cross : Natural := 0;
     Required : Size;
-  begin
+
+    function Required_Size (Extent : Natural; Other : Natural; Width : Boolean) return Natural is
+      Margin : constant Natural := 2 * Item.Margin;
+      Interior : constant Float := Float (Other - Margin);
+      Scaled : constant Float := (if Width then Interior * Item.Aspect_Ratio
+                                 else Interior / Item.Aspect_Ratio);
+    begin
+      return Natural'max (Extent, Margin + Natural (Float'ceiling (Scaled)));
+    end Required_Size;
+
+  begin -- Minimum
     if not Item.Is_Group then
       return Item.Required;
     end if;
@@ -81,11 +94,10 @@ package body Gui.Layout is
     else
       Required := (Cross, Total);
     end if;
+    Required.Width := Natural'max (Required.Width, Item.Required.Width);
     if Item.Aspect_Ratio > 0.0 then
-      Required.Width :=
-        Natural'max (Required.Width, Natural (Float'ceiling (Float (Required.Height) * Item.Aspect_Ratio)));
-      Required.Height :=
-        Natural'max (Required.Height, Natural (Float'ceiling (Float (Required.Width) / Item.Aspect_Ratio)));
+      Required.Width := Required_Size (Required.Width, Required.Height, Width => True);
+      Required.Height := Required_Size (Required.Height, Required.Width, Width => False);
     end if;
     return Required;
   end Minimum;
@@ -103,15 +115,20 @@ package body Gui.Layout is
     Fit : Rectangle := Area;
     Reserved, Limit, Bonus : Natural := 0;
 
+    function Fitted_Size (Group : Element; Other : Natural; Width : Boolean) return Natural is
+      Margin : constant Natural := 2 * Group.Margin;
+      Interior : constant Float := Float (Other - Margin);
+      Scaled : constant Float := (if Width then Interior * Group.Aspect_Ratio
+                                 else Interior / Group.Aspect_Ratio);
+    begin
+      return Margin + Natural (Float'floor (Scaled));
+    end Fitted_Size;
+
+
     function Capacity (Child : Element) return Natural is
       Base : constant Natural := Along (Minimum (Child), Item.Arrangement);
-      Target : Natural;
+      Target : constant Natural := Fitted_Size (Child, Cross, Width => Item.Arrangement = Horizontal);
     begin
-      if Item.Arrangement = Horizontal then
-        Target := Natural (Float'floor (Float (Cross) * Child.Aspect_Ratio));
-      else
-        Target := Natural (Float'floor (Float (Cross) / Child.Aspect_Ratio));
-      end if;
       return Natural'max (Base, Target) - Base;
     end Capacity;
 
@@ -120,11 +137,11 @@ package body Gui.Layout is
       raise Constraint_Error with "layout below minimum size";
     end if;
     if Item.Aspect_Ratio > 0.0 then
-      if Float (Area.Width) > Float (Area.Height) * Item.Aspect_Ratio then
-        Fit.Width := Natural'max (Required.Width, Natural (Float'floor (Float (Area.Height) * Item.Aspect_Ratio)));
+      if Float (Area.Width - 2 * Item.Margin) > Float (Area.Height - 2 * Item.Margin) * Item.Aspect_Ratio then
+        Fit.Width := Natural'max (Required.Width, Fitted_Size (Item, Area.Height, Width => True));
         Fit.X := Area.X + (Area.Width - Fit.Width) / 2;
       else
-        Fit.Height := Natural'max (Required.Height, Natural (Float'floor (Float (Area.Width) / Item.Aspect_Ratio)));
+        Fit.Height := Natural'max (Required.Height, Fitted_Size (Item, Area.Width, Width => False));
       end if;
     end if;
     Item.Area := Fit;
