@@ -32,7 +32,8 @@ package Gui is
 
   Automatic : constant Natural := 0;
 
-  Default_Button_Width : constant := 100;
+  Default_Button_Width       : constant := 100;
+  Default_Symbol_Button_Size : constant := 30;
 
   subtype Color is Win32.Windef.COLORREF;
 
@@ -404,6 +405,14 @@ package Gui is
                    The_Action_Routine : Action_Routine := null;
                    Expand : Boolean := False;
                    The_Button_Size : Natural := Default_Button_Width) return Button;
+
+  type Button_Symbol is (Arrow_Up, Arrow_Down, Arrow_Left, Arrow_Right, Stop_Symbol, Cross_Symbol);
+
+  function Create (Parent             : Group;
+                   Symbol             : Button_Symbol;
+                   The_Action_Routine : Action_Routine := null;
+                   Expand             : Boolean := False;
+                   The_Button_Size    : Natural := Default_Symbol_Button_Size) return Button;
 
   procedure Set_Text (The_Button : Button;
                       The_Text   : String);

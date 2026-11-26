@@ -530,6 +530,8 @@ package body Gui is
                                                                  Text_View_Child    => 70];
 
   type Child_Information is record
+    Has_Symbol               : Boolean := False;
+    Symbol                   : Button_Symbol := Stop_Symbol;
     Layout_Node : Layout.Element := null;
     The_Handle               : Win32.Windef.HWND := System.Null_Address;
     The_Kind                 : Child_Kind;
@@ -1726,7 +1728,11 @@ package body Gui is
     case The_Child.The_Kind is
       when Button_Child =>
         Class_Name := Wide_Text_Address_Of ("button");
-        Window_Style := Window_Style + Win32.Winuser.BS_PUSHBUTTON;
+        if The_Child.Has_Symbol then
+          Window_Style := Window_Style + 16#000B#; -- BS_OWNERDRAW
+        else
+          Window_Style := Window_Style + Win32.Winuser.BS_PUSHBUTTON;
+        end if;
       when Progress_Bar_Child =>
         Class_Name := Wide_Text_Address_Of ("msctls_progress32");
       when Tree_View_Child =>
@@ -2109,6 +2115,150 @@ package body Gui is
   end Create_Detached_Window;
 
 
+  -- Native DRAWITEMSTRUCT, including pointer-sized handles on Win64.
+  type Draw_Item_Info is record
+    Control_Type : Win32.UINT;
+    Control_Id   : Win32.UINT;
+    Item_Id      : Win32.UINT;
+    Item_Action  : Win32.UINT;
+    Item_State   : Win32.UINT;
+    Handle       : Win32.Windef.HWND;
+    Dc           : Win32.Windef.HDC;
+    Bounds       : Win32.Windef.RECT;
+    Item_Data    : System.Address;
+  end record with Convention => C;
+
+  package Draw_Item_Pointers is new System.Address_To_Access_Conversions (Draw_Item_Info);
+
+  function Draw_Frame (Dc : Win32.Windef.HDC; Bounds : System.Address;
+                       Kind, State : Win32.UINT) return Win32.BOOL
+    with Import, Convention => Stdcall, External_Name => "DrawFrameControl";
+
+  function Draw_Focus (Dc : Win32.Windef.HDC; Bounds : System.Address) return Win32.BOOL
+    with Import, Convention => Stdcall, External_Name => "DrawFocusRect";
+
+  function System_Brush (Index : Win32.INT) return System.Address
+    with Import, Convention => Stdcall, External_Name => "GetSysColorBrush";
+
+  function Stock_Object (Index : Win32.INT) return System.Address
+    with Import, Convention => Stdcall, External_Name => "GetStockObject";
+
+  function Select_Object (Dc : Win32.Windef.HDC; Item : System.Address) return System.Address
+    with Import, Convention => Stdcall, External_Name => "SelectObject";
+
+  function Draw_Polygon (Dc : Win32.Windef.HDC; Points : System.Address;
+                         Count : Win32.INT) return Win32.BOOL
+    with Import, Convention => Stdcall, External_Name => "Polygon";
+
+
+  function Draw_Symbol_Button (Lparam : Win32.LPARAM) return Boolean is
+    Info : constant Draw_Item_Pointers.Object_Pointer := Draw_Item_Pointers.To_Pointer (To_Address (Lparam));
+    use type Draw_Item_Pointers.Object_Pointer;
+    use type Win32.UINT;
+    use type Win32.LONG;
+    use type System.Address;
+    The_Child : Child_Information_Ptr;
+    Bounds    : aliased Win32.Windef.RECT;
+    State     : Win32.UINT := 16#0010#; -- DFCS_BUTTONPUSH
+    Disabled  : Boolean;
+    Pressed   : Boolean;
+    Unused    : Win32.BOOL with Unreferenced;
+    Old_Brush : System.Address;
+    Old_Pen   : System.Address;
+    Ignored   : System.Address with Unreferenced;
+    type Point_Array is array (Positive range <>) of Win32.Windef.POINT with Convention => C;
+    Points : aliased Point_Array (1 .. 12);
+    Count  : Win32.INT;
+    X, Y, Symbol_Size : Win32.LONG;
+
+    procedure Set_Point (Index : Positive; Dx, Dy : Win32.LONG) is
+      Px : Win32.LONG := Dx;
+      Py : Win32.LONG := Dy;
+    begin
+      case The_Child.Symbol is
+      when Arrow_Up | Stop_Symbol | Cross_Symbol => null;
+      when Arrow_Down => Px := -Dx; Py := -Dy;
+      when Arrow_Left => Px := Dy; Py := -Dx;
+      when Arrow_Right => Px := -Dy; Py := Dx;
+      end case;
+      Points(Index) := (X + Px * Symbol_Size / 200, Y + Py * Symbol_Size / 200);
+    end Set_Point;
+
+  begin
+    if Info = null or else Info.Control_Type /= 4 or else Current_Page = null then
+      return False;
+    end if;
+    The_Child := Current_Page.First_Child;
+    while The_Child /= null loop
+      exit when The_Child.The_Handle = Info.Handle;
+      The_Child := The_Child.Next_Sibling;
+    end loop;
+    if The_Child = null or else not The_Child.Has_Symbol then
+      return False;
+    end if;
+    Bounds := Info.Bounds;
+    Disabled := (Info.Item_State and 16#0004#) /= 0;
+    Pressed := (Info.Item_State and 16#0001#) /= 0;
+    if Disabled then
+      State := State or 16#0100#; -- DFCS_INACTIVE
+    end if;
+    if Pressed then
+      State := State or 16#0200#; -- DFCS_PUSHED
+    end if;
+    Unused := Draw_Frame (Info.Dc, Bounds'address, 4, State); -- DFC_BUTTON
+    X := (Bounds.left + Bounds.right) / 2;
+    Y := (Bounds.top + Bounds.bottom) / 2;
+    Symbol_Size := Win32.LONG'min (Bounds.right - Bounds.left, Bounds.bottom - Bounds.top);
+    if Pressed then
+      X := X + 1;
+      Y := Y + 1;
+    end if;
+    if Symbol_Size > 0 then
+      case The_Child.Symbol is
+      when Stop_Symbol =>
+        Set_Point (1, -25, -25);
+        Set_Point (2, 25, -25);
+        Set_Point (3, 25, 25);
+        Set_Point (4, -25, 25);
+        Count := 4;
+      when Cross_Symbol =>
+        Set_Point (1, -12, -30);
+        Set_Point (2, 12, -30);
+        Set_Point (3, 12, -12);
+        Set_Point (4, 30, -12);
+        Set_Point (5, 30, 12);
+        Set_Point (6, 12, 12);
+        Set_Point (7, 12, 30);
+        Set_Point (8, -12, 30);
+        Set_Point (9, -12, 12);
+        Set_Point (10, -30, 12);
+        Set_Point (11, -30, -12);
+        Set_Point (12, -12, -12);
+        Count := 12;
+      when others =>
+        Set_Point (1, 0, -30);
+        Set_Point (2, 36, 0);
+        Set_Point (3, 15, 0);
+        Set_Point (4, 15, 30);
+        Set_Point (5, -15, 30);
+        Set_Point (6, -15, 0);
+        Set_Point (7, -36, 0);
+        Count := 7;
+      end case;
+      Old_Brush := Select_Object (Info.Dc, System_Brush (if Disabled then 17 else 18));
+      Old_Pen := Select_Object (Info.Dc, Stock_Object (8)); -- NULL_PEN
+      Unused := Draw_Polygon (Info.Dc, Points'address, Count);
+      Ignored := Select_Object (Info.Dc, Old_Pen);
+      Ignored := Select_Object (Info.Dc, Old_Brush);
+    end if;
+    if (Info.Item_State and 16#0210#) = 16#0010# then -- ODS_FOCUS, not ODS_NOFOCUSRECT
+      Bounds := (Bounds.left + 4, Bounds.top + 4, Bounds.right - 4, Bounds.bottom - 4);
+      Unused := Draw_Focus (Info.Dc, Bounds'address);
+    end if;
+    return True;
+  end Draw_Symbol_Button;
+
+
   function Mainwindowproc(Hwnd    : Win32.Windef.HWND;
                           Message : Win32.UINT;
                           Wparam  : Win32.WPARAM;
@@ -2180,6 +2330,11 @@ package body Gui is
         Redraw_Main_Window;
       when Win32.Winuser.WM_HSCROLL | Win32.Winuser.WM_VSCROLL =>
         Process_Message_From_Trackbar;
+      when 16#002B# => -- WM_DRAWITEM
+        if Draw_Symbol_Button (Lparam) then
+          return 1;
+        end if;
+        return Win32.Winuser.DefWindowProc (Hwnd, Message, Wparam, Lparam);
       when Win32.Winuser.WM_COMMAND =>
         Process_Message_From_Child (Wparam, Lparam);
         return Win32.Winuser.DefWindowProc (Hwnd, Message, Wparam, Lparam);
@@ -3206,14 +3361,18 @@ package body Gui is
   end Get_Position;
 
 
-  function Create (Parent_Page        : Page;
+  function Create_Button (Parent_Page        : Page;
                    The_Text           : String;
-                   The_Action_Routine : Action_Routine := null;
-                   The_Button_Size    : Natural := Default_Button_Width) return Button is
+                   The_Action_Routine : Action_Routine;
+                   The_Button_Size    : Natural;
+                   Has_Symbol         : Boolean;
+                   Symbol             : Button_Symbol) return Button is
     Text        : aliased constant Wide_String := To_Wide (The_Text) & Wide_Nul;
     The_Button  : constant Button := Button'(Ptr => new Child_Information);
     Button_Size : constant Win32.INT := Win32.INT (The_Button_Size);
   begin
+    The_Button.Ptr.Has_Symbol := Has_Symbol;
+    The_Button.Ptr.Symbol := Symbol;
     The_Button.Ptr.The_Window_Id := Next_Child_Id;
     The_Button.Ptr.Initial_Title := Win32.Addr(Text);
     The_Button.Ptr.The_Kind := Button_Child;
@@ -3226,6 +3385,15 @@ package body Gui is
     Parent_Page.Total_Button_Width := Parent_Page.Total_Button_Width + Button_Size;
     Create (The_Button.Ptr, Parent_Page);
     return The_Button;
+  end Create_Button;
+
+
+  function Create (Parent_Page        : Page;
+                   The_Text           : String;
+                   The_Action_Routine : Action_Routine := null;
+                   The_Button_Size    : Natural := Default_Button_Width) return Button is
+  begin
+    return Create_Button (Parent_Page, The_Text, The_Action_Routine, The_Button_Size, False, Stop_Symbol);
   end Create;
 
 
@@ -3281,6 +3449,23 @@ package body Gui is
     end if;
     Result := Create (Parent.Owner, The_Text, The_Action_Routine, The_Button_Size);
     Result.Ptr.Layout_Node := Layout.Control ((The_Button_Size, 30), Weight => (if Expand then 1 else 0));
+    Layout.Append (Parent.Node, Result.Ptr.Layout_Node);
+    return Result;
+  end Create;
+
+
+  function Create (Parent             : Group;
+                   Symbol             : Button_Symbol;
+                   The_Action_Routine : Action_Routine := null;
+                   Expand             : Boolean := False;
+                   The_Button_Size    : Natural := Default_Symbol_Button_Size) return Button is
+    Result : Button;
+  begin
+    if Layout_Complete then
+      raise Sequence_Error;
+    end if;
+    Result := Create_Button (Parent.Owner, "", The_Action_Routine, The_Button_Size, True, Symbol);
+    Result.Ptr.Layout_Node := Layout.Control ((The_Button_Size, The_Button_Size), Weight => (if Expand then 1 else 0));
     Layout.Append (Parent.Node, Result.Ptr.Layout_Node);
     return Result;
   end Create;

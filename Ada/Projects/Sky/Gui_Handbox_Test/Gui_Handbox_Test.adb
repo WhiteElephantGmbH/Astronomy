@@ -40,15 +40,15 @@ procedure Gui_Handbox_Test is
     Handbox := Gui.Create (Page, Gui.Vertical, Equal_Cells => True, Aspect_Ratio => 1.0);
     Top := Gui.Create (Handbox, Gui.Horizontal, Equal_Cells => True);
     Gui.Space (Top);
-    Up := Gui.Create (Top, "Up", Pressed'unrestricted_access, Expand => True);
+    Up := Gui.Create (Top, Gui.Arrow_Up, Pressed'unrestricted_access, Expand => True);
     Gui.Space (Top);
     Middle := Gui.Create (Handbox, Gui.Horizontal, Equal_Cells => True);
-    Left := Gui.Create (Middle, "Left", Pressed'unrestricted_access, Expand => True);
-    Center := Gui.Create (Middle, "Stop", Pressed'unrestricted_access, Expand => True);
-    Right := Gui.Create (Middle, "Right", Pressed'unrestricted_access, Expand => True);
+    Left := Gui.Create (Middle, Gui.Arrow_Left, Pressed'unrestricted_access, Expand => True);
+    Center := Gui.Create (Middle, Gui.Cross_Symbol, Pressed'unrestricted_access, Expand => True);
+    Right := Gui.Create (Middle, Gui.Arrow_Right, Pressed'unrestricted_access, Expand => True);
     Bottom := Gui.Create (Handbox, Gui.Horizontal, Equal_Cells => True);
     Gui.Space (Bottom);
-    Down := Gui.Create (Bottom, "Down", Pressed'unrestricted_access, Expand => True);
+    Down := Gui.Create (Bottom, Gui.Arrow_Down, Pressed'unrestricted_access, Expand => True);
     Gui.Space (Bottom);
   end Startup;
 
