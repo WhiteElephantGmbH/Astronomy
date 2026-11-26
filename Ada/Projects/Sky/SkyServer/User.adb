@@ -23,7 +23,9 @@ package body User is
 
   package Log is new Traces ("User");
 
-  Main_Page : Gui.Page with Unreferenced;
+  Main_Page     : Gui.Page;
+  Progress_Bar : Gui.Progress_Bar;
+  Text_View     : Gui.Text_View;
 
 
   procedure Execute (The_Startup_Handler     : not null access procedure;
@@ -33,6 +35,9 @@ package body User is
     procedure Create_Interface is
     begin
       Main_Page := Gui.Add_Page ("Main");
+      Progress_Bar := Gui.Create (Main_Page);
+      Gui.Define_Range (Progress_Bar, 100);
+      Text_View := Gui.Create (Main_Page, Word_Wrapping => True);
       The_Startup_Handler.all;
     exception
     when Item: others =>
@@ -59,7 +64,7 @@ package body User is
 
   procedure Show (Message : String) is
   begin
-    null; -- !!! to be implemented
+    Gui.Append_Line_To (Text_View, Message);
   end Show;
 
 
@@ -71,8 +76,16 @@ package body User is
 
   procedure Show_Progress (Item    : String;
                            Percent : Siril_Progress.Percent) is
+    use type Siril_Progress.Percent;
   begin
-    null; -- !!! to be implemented
+    if Percent = Siril_Progress.Percent'first then
+      Show ("Siril: " & Item);
+      Gui.Report_Progress (Progress_Bar, 0);
+    elsif Percent = Siril_Progress.Percent'last then
+      Gui.Report_Progress (Progress_Bar, 0);
+    else
+      Gui.Report_Progress (Progress_Bar, Natural(Percent));
+    end if;
   end Show_Progress;
 
 end User;

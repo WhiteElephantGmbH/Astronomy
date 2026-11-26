@@ -29,6 +29,10 @@ package body Siril_Interface is
   Command_Pipe_Name  : constant String := Text.Lowercase_Of ("siril_" & Name & ".in");
   Response_Pipe_Name : constant String := Text.Lowercase_Of ("siril_" & Name & ".out");
 
+  Pipe_Prefix : constant String := "\\.\pipe\";
+  Read_Pipe   : constant String := Pipe_Prefix & Command_Pipe_Name;
+  Write_Pipe  : constant String := Pipe_Prefix & Response_Pipe_Name;
+
   Max_Pipe_Length : constant := 65536;
   Startup_Timeout : constant Os.Pipe.Timer := 10.0;
 
@@ -68,7 +72,7 @@ package body Siril_Interface is
     begin
       The_Progress_Handler := Progress;
       The_Id := Os.Process.Created (Executable => Cli_Application,
-                                    Parameters => "-p -r " & Command_Pipe_Name & " -w " & Response_Pipe_Name,
+                                    Parameters => "-p -r " & Read_Pipe & " -w " & Write_Pipe,
                                     Console    => Os.Process.Invisible);
       Os.Pipe.Open (The_Pipe  => Response_Pipe,
                     Name      => Response_Pipe_Name,
