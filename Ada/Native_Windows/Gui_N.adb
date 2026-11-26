@@ -28,7 +28,7 @@ with Win32.Winmain; pragma Elaborate_All (Win32.Winmain);
 with Win32.Winnt;
 with System.Address_To_Access_Conversions;
 
-package body Gui is
+package body Gui_N is
 
   function Convert is new Ada.Unchecked_Conversion (Long_Long_Integer, Win32.LPCSTR);
 
@@ -3723,7 +3723,7 @@ package body Gui is
 
   procedure Append_Wide_To (The_Rich_Edit  : Text_View;
                             The_Text       : Wide_String;
-                            The_Color      : Color := Gui.Black;
+                            The_Color      : Color := Black;
                             Ensure_Visible : Boolean := True) is
     Text : aliased constant Wide_String := The_Text & Wide_Nul;
     function Convert is new Ada.Unchecked_Conversion(System.Address, Win32.LPARAM);
@@ -3757,7 +3757,7 @@ package body Gui is
 
   procedure Append_To (The_Rich_Edit  : Text_View;
                        The_Text       : String;
-                       The_Color      : Color := Gui.Black;
+                       The_Color      : Color := Black;
                        Ensure_Visible : Boolean := True) is
   begin
     Append_Wide_To (The_Rich_Edit, To_Wide (The_Text), The_Color, Ensure_Visible);
@@ -3766,7 +3766,7 @@ package body Gui is
 
   procedure Append_Line_To (The_Rich_Edit  : Text_View;
                             The_Text       : String;
-                            The_Color      : Color := Gui.Black;
+                            The_Color      : Color := Black;
                             Ensure_Visible : Boolean := True) is
   begin
     Append_Wide_To (The_Rich_Edit, To_Wide (The_Text) & Wide_Character'val(10), The_Color, Ensure_Visible);
@@ -4565,4 +4565,4 @@ package body Gui is
 
 begin
   Win32.Commctrl.InitCommonControls;
-end Gui;
+end Gui_N;

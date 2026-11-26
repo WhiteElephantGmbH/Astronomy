@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2024 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                           (c) 2026 by White Elephant GmbH, Schaffhausen, Switzerland                              *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,28 +15,43 @@
 -- *********************************************************************************************************************
 pragma Style_Astronomy;
 
-with Text;
+pragma Build (Description => "GUI Handbox Test",
+              Version     => (0, 0, 0, 0),
+              Kind        => Windows,
+              Icon        => False,
+              Compiler    => "GNAT\14.2");
 
-generic
-  type Group is (<>);
-package Gui.Radio_Menu_Of is
+with Ada.Text_IO;
+with Gui;
 
-  type Element is new Natural;
+procedure Gui_Handbox_Test is
+  Page : Gui.Page;
+  Top, Middle, Bottom : Gui.Group;
+  Up, Left, Center, Right, Down : Gui.Button with Unreferenced;
 
-  type Handler is access procedure (From : Group;
-                                    Item : String);
+  procedure Pressed is
+  begin
+    Ada.Text_IO.Put_Line ("button pressed");
+  end Pressed;
 
-  type Images is array (Group) of Text.Vector;
+  procedure Startup is
+  begin
+    Page := Gui.Add_Page ("Handbox");
+    Top := Gui.Create (Page, Gui.Horizontal, Equal_Cells => True);
+    Gui.Space (Top);
+    Up := Gui.Create (Top, "Up", Pressed'unrestricted_access, Expand => True);
+    Gui.Space (Top);
+    Middle := Gui.Create (Page, Gui.Horizontal, Equal_Cells => True);
+    Left := Gui.Create (Middle, "Left", Pressed'unrestricted_access, Expand => True);
+    Center := Gui.Create (Middle, "Stop", Pressed'unrestricted_access, Expand => True);
+    Right := Gui.Create (Middle, "Right", Pressed'unrestricted_access, Expand => True);
+    Bottom := Gui.Create (Page, Gui.Horizontal, Equal_Cells => True);
+    Gui.Space (Bottom);
+    Down := Gui.Create (Bottom, "Down", Pressed'unrestricted_access, Expand => True);
+    Gui.Space (Bottom);
+  end Startup;
 
-  procedure Create (Menu_Name   : String;
-                    Name_Lists  : Images;
-                    The_Handler : Handler);
-  -- Postcondition: Set to first group
-
-  procedure Set (To : Group);
-
-  procedure Enable;
-
-  procedure Disable;
-
-end Gui.Radio_Menu_Of;
+begin
+  Gui.Execute ("Gui Handbox Test", Startup'access,
+               Initial_Metrics => (100, 100, 420, 420));
+end Gui_Handbox_Test;

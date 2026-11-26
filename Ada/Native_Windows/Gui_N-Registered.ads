@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2021 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2015 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,32 +15,16 @@
 -- *********************************************************************************************************************
 pragma Style_Astronomy;
 
-private package Gui.Style is
+package Gui_N.Registered is
 
-  procedure Load_Css_File;
-  --
-  -- Loads the CSS rules contained in the file Soudronic.css
-  -- Under Windows from the folder %LocalAppData%\Gtk-3.0
-  -- otherise from $HOME.local/Gtk-3.0
-  --
-  -- If the file is missing or the contents contain syntax errors the load fails without error.
-  --
+  procedure Execute (The_Application_Name    : String;
+                     The_Version             : String := "";
+                     The_Startup_Routine     : access procedure;
+                     The_Termination_Routine : access procedure := null;
+                     Initial_Metrics         : Window_Metrics := Default_Metrics;
+                     Always_Topmost          : Boolean := False);
 
-  procedure Apply_Rule_To (The_Widget : not null access Gtk.Widget.Gtk_Widget_Record'class;
-                           Css_Rule   : String);
-  --
-  -- Applies the specified CSS rule to the specified widget
-  --
+  function Create (Title           : String;
+                   Initial_Metrics : Window_Metrics := Default_Metrics) return Detached_Window;
 
-  procedure Apply_Rule (Css_Rule : String);
-  --
-  -- Applies the specified CSS rule (for the application from now on)
-  --
-
-  procedure Change_Color (The_Progress_Bar : Gtk.Progress_Bar.Gtk_Progress_Bar;
-                          The_Color        : String);
-  -- Change the progress color of the specified progress bar
-  -- The_Color should either be the name of an X11 color or
-  -- the symbol # immediately followed the 6 hexadecimal digits denoting the RBG value
-  --
-end Gui.Style;
+end Gui_N.Registered;

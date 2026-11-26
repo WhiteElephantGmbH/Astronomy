@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2015 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2024 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,39 +15,28 @@
 -- *********************************************************************************************************************
 pragma Style_Astronomy;
 
-with Gtk.Window;
+with Text;
 
-private package Gui.Router is
+generic
+  type Group is (<>);
+package Gui_N.Radio_Menu_Of is
 
-  type Request_Data is abstract tagged null record;
+  type Element is new Natural;
 
-  procedure Request (Data : in out Request_Data'class);
+  type Handler is access procedure (From : Group;
+                                    Item : String);
 
-  procedure Synchronous_Service (Data : in out Request_Data) is abstract;
+  type Images is array (Group) of Text.Vector;
 
-  procedure Execute (Application_Name    : String;
-                     Startup_Routine     : access procedure (Window : Gtk.Window.Gtk_Window);
-                     Termination_Routine : Action_Routine;
-                     Period              : Duration);
+  procedure Create (Menu_Name   : String;
+                    Name_Lists  : Images;
+                    The_Handler : Handler);
+  -- Postcondition: Set to first group
 
-  function Get_Window_Metrics (For_Window : Gtk.Window.Gtk_Window) return Window_Metrics;
+  procedure Set (To : Group);
 
-  procedure Close (The_Window : Gtk.Window.Gtk_Window);
+  procedure Enable;
 
-  procedure Execute (The_Action : Action_Routine);
+  procedure Disable;
 
-  procedure Execute (The_Action      : Click_Routine;
-                     The_Information : Information);
-
-  procedure Execute (The_Action  : Key_Handler;
-                     The_Event   : Key_Event;
-                     The_Keycode : Key_Code);
-
-  type Message_Data is abstract tagged null record;
-
-  procedure Asynchronous_Service (The_Message : Message_Data) is abstract;
-
-  procedure Send (Message : Message_Data'class);
-
-
-end Gui.Router;
+end Gui_N.Radio_Menu_Of;

@@ -25,7 +25,7 @@ with Clock;
 with Earth;
 with Focus;
 with Focuser_Client;
-with Gui.Registered;
+with Gui_N.Registered;
 with Lexicon;
 with Lx200;
 with Name.Catalog;
@@ -43,6 +43,8 @@ with Time.Server;
 with Traces;
 
 package body User is
+
+  package Gui renames Gui_N;
 
   package Log is new Traces ("User");
 

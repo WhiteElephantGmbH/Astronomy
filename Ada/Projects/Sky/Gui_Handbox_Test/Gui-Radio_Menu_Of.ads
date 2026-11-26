@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2002 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2024 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,29 +15,28 @@
 -- *********************************************************************************************************************
 pragma Style_Astronomy;
 
+with Text;
+
 generic
-  type Element is (<>);
-  The_Kind : Menu_Kind;
-  with function Image_Of (The_Element : Element) return String;
-package Gui.Enumeration_Menu_Of is
+  type Group is (<>);
+package Gui.Radio_Menu_Of is
 
-  type Handler is access procedure (The_Element : Element);
+  type Element is new Natural;
 
-  procedure Create (The_Menu_Name : String;
-                    The_Handler   : Handler);
+  type Handler is access procedure (From : Group;
+                                    Item : String);
+
+  type Images is array (Group) of Text.Vector;
+
+  procedure Create (Menu_Name   : String;
+                    Name_Lists  : Images;
+                    The_Handler : Handler);
+  -- Postcondition: Set to first group
+
+  procedure Set (To : Group);
 
   procedure Enable;
 
   procedure Disable;
 
-  procedure Enable (The_Element : Element);
-
-  procedure Disable (The_Element : Element);
-
-  procedure Set (The_Element : Element);
-  -- Precondition: The_Kind must be Gui.Checked or Gui.Radio
-
-  procedure Clear (The_Element : Element);
-  -- Precondition: The_Kind must be Gui.Checked
-
-end Gui.Enumeration_Menu_Of;
+end Gui.Radio_Menu_Of;
