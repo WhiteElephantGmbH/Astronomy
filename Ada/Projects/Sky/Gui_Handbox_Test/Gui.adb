@@ -93,6 +93,7 @@ package body Gui is
   pragma Linker_Options ("-lcomctl32");
   pragma Linker_Options ("-lgdiplus");
   pragma Linker_Options ("-lshlwapi");
+  pragma Linker_Options ("-ldwmapi");
 
   type Click_Routine is access procedure (Item : Information);
 
@@ -2760,9 +2761,50 @@ package body Gui is
   end Dispatch;
 
 
+  procedure Position_Visible_Window (X_Position : Win32.INT;
+                                     Y_Position : Win32.INT) is
+
+    function Dwm_Get_Window_Attribute (Hwnd      : Win32.Windef.HWND;
+                                       Attribute : Win32.DWORD;
+                                       Value     : System.Address;
+                                       Size      : Win32.DWORD) return Win32.LONG
+    with Import, Convention => Stdcall, External_Name => "DwmGetWindowAttribute";
+
+    function Physical_To_Logical (Hwnd  : Win32.Windef.HWND;
+                                  Point : access Win32.Windef.POINT) return Win32.BOOL
+    with Import, Convention => Stdcall, External_Name => "PhysicalToLogicalPointForPerMonitorDPI";
+
+    Extended_Frame_Bounds : constant Win32.DWORD := 9;
+    Outer, Visible        : aliased Win32.Windef.RECT;
+    Origin                : aliased Win32.Windef.POINT;
+    Unused                : Win32.BOOL with Unreferenced;
+    use type Win32.BOOL;
+    use type Win32.LONG;
+    use type Win32.UINT;
+  begin
+    if Win32.Winuser.GetWindowRect (Private_Window, Outer'unchecked_access) = Win32.FALSE then
+      return;
+    end if;
+    if Dwm_Get_Window_Attribute (Private_Window, Extended_Frame_Bounds,
+                                 Visible'address, Win32.DWORD(Visible'size / System.Storage_Unit)) /= 0 then
+      return;
+    end if;
+    Origin := (x => Visible.left, y => Visible.top);
+    if Physical_To_Logical (Private_Window, Origin'access) = Win32.FALSE then
+      return;
+    end if;
+    Unused := Win32.Winuser.SetWindowPos (Private_Window, System.Null_Address,
+                                          X_Position - Win32.INT(Origin.x - Outer.left),
+                                          Y_Position - Win32.INT(Origin.y - Outer.top),
+                                          0, 0, Win32.Winuser.SWP_NOSIZE + Win32.Winuser.SWP_NOZORDER +
+                                                Win32.Winuser.SWP_NOACTIVATE);
+  end Position_Visible_Window;
+
+
   task body Display is
-    Unused   : Win32.BOOL;
-    The_Icon : Win32.Windef.HICON;
+    Unused               : Win32.BOOL;
+    The_Icon             : Win32.Windef.HICON;
+    Initial_X, Initial_Y : Win32.INT := Default_Position;
     use type Win32.Windef.HWND;
   begin
     accept Create (Application_Name  : String;
@@ -2783,6 +2825,8 @@ package body Gui is
                        Width      => Win32.LONG(Window_Width),
                        Height     => Win32.LONG(Window_Height))
         then
+          Initial_X := Window_X_Position;
+          Initial_Y := Window_Y_Position;
           Private_Window := Create_Window (The_Application_Name.all,
                                            Window_Width,
                                            Window_Height,
@@ -2813,6 +2857,9 @@ package body Gui is
     Main_Thread := Current_Thread_Id;
     accept Ready;
     Unused := Win32.Winuser.ShowWindow (Private_Window, Win32.Winuser.SW_SHOW);
+    if Initial_X /= Default_Position and then Initial_Y /= Default_Position then
+      Position_Visible_Window (Initial_X, Initial_Y);
+    end if;
     Unused := Win32.Winuser.UpdateWindow (Private_Window);
     Dispatch;
     -- Destroy remaining detached windows on the GUI thread.
