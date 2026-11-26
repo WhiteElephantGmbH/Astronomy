@@ -202,24 +202,24 @@ package body Gui is
   function Clear_Graphics (Graphics : System.Address; Color : Win32.DWORD) return Win32.INT
   with Import, Convention => Stdcall, External_Name => "GdipGraphicsClear";
 
-  function Paint_Black (DC : Win32.Windef.HDC;
+  function Paint_Black (DC                  : Win32.Windef.HDC;
                         X, Y, Width, Height : Win32.INT;
-                        Raster_Operation : Win32.DWORD) return Win32.BOOL
+                        Raster_Operation    : Win32.DWORD) return Win32.BOOL
   with Import, Convention => Stdcall, External_Name => "PatBlt";
 
   function Set_Interpolation (Graphics : System.Address; Mode : Win32.INT) return Win32.INT
   with Import, Convention => Stdcall, External_Name => "GdipSetInterpolationMode";
 
-  function Draw_Image (Graphics : System.Address;
-                       Picture  : System.Address;
+  function Draw_Image (Graphics            : System.Address;
+                       Picture             : System.Address;
                        X, Y, Width, Height : Win32.INT) return Win32.INT
   with Import, Convention => Stdcall, External_Name => "GdipDrawImageRectI";
 
   function Validate_Window (Hwnd : Win32.Windef.HWND; Rect : System.Address) return Win32.BOOL
   with Import, Convention => Stdcall, External_Name => "ValidateRect";
 
-  function Invalidate_Window (Hwnd : Win32.Windef.HWND;
-                              Rect : System.Address;
+  function Invalidate_Window (Hwnd  : Win32.Windef.HWND;
+                              Rect  : System.Address;
                               Erase : Win32.BOOL) return Win32.BOOL
   with Import, Convention => Stdcall, External_Name => "InvalidateRect";
 
@@ -229,17 +229,23 @@ package body Gui is
     Add_Ref         : System.Address; --> UD: Add_Ref
     Release         : System.Address;
   end record with Convention => C;
+
   type Stream_Vtable_Ptr is access all Stream_Vtable;
+
   type Stream_Object is record
     Methods : Stream_Vtable_Ptr;
   end record with Convention => C;
+
   package Stream_Addresses is new System.Address_To_Access_Conversions (Stream_Object);
+
   type Release_Routine is access function (This : System.Address) return Win32.ULONG
     with Convention => Stdcall;
+
   function To_Release is new Ada.Unchecked_Conversion (System.Address, Release_Routine);
 
+
   procedure Release_Stream (Stream : System.Address) is
-    Unused : Win32.ULONG;
+                            Unused : Win32.ULONG;
     use type System.Address;
   begin
     if Stream /= System.Null_Address then
@@ -258,28 +264,28 @@ package body Gui is
   end record with Convention => C;
 
   type Monitor_Information is record
-    Size       : Win32.DWORD;
-    Monitor    : Win32.Windef.RECT;
-    Work       : Win32.Windef.RECT;
-    Flags      : Win32.DWORD;
+    Size    : Win32.DWORD;
+    Monitor : Win32.Windef.RECT;
+    Work    : Win32.Windef.RECT;
+    Flags   : Win32.DWORD;
   end record with Convention => C;
 
-  function Get_Window_Placement (Hwnd : Win32.Windef.HWND;
+  function Get_Window_Placement (Hwnd  : Win32.Windef.HWND;
                                  Place : access Window_Placement) return Win32.BOOL
     with Import, Convention => Stdcall, External_Name => "GetWindowPlacement";
-  function Set_Window_Placement (Hwnd : Win32.Windef.HWND;
+  function Set_Window_Placement (Hwnd  : Win32.Windef.HWND;
                                  Place : access Window_Placement) return Win32.BOOL
     with Import, Convention => Stdcall, External_Name => "SetWindowPlacement";
-  function Monitor_From_Window (Hwnd : Win32.Windef.HWND;
+  function Monitor_From_Window (Hwnd  : Win32.Windef.HWND;
                                 Flags : Win32.DWORD) return System.Address
     with Import, Convention => Stdcall, External_Name => "MonitorFromWindow";
   function Get_Monitor_Info (Monitor : System.Address;
-                             Info : access Monitor_Information) return Win32.BOOL
+                             Info    : access Monitor_Information) return Win32.BOOL
     with Import, Convention => Stdcall, External_Name => "GetMonitorInfoW";
-  function Get_Window_Style (Hwnd : Win32.Windef.HWND;
+  function Get_Window_Style (Hwnd  : Win32.Windef.HWND;
                              Index : Win32.INT) return Win32.LONG
     with Import, Convention => Stdcall, External_Name => "GetWindowLongW";
-  function Set_Window_Style (Hwnd : Win32.Windef.HWND;
+  function Set_Window_Style (Hwnd  : Win32.Windef.HWND;
                              Index : Win32.INT;
                              Value : Win32.LONG) return Win32.LONG
     with Import, Convention => Stdcall, External_Name => "SetWindowLongW";
@@ -305,18 +311,18 @@ package body Gui is
   type Detached_Image_State;
   type Detached_Image_State_Ptr is access Detached_Image_State;
   type Detached_Image_State is record
-    Hwnd    : Win32.Windef.HWND;
-    Picture : System.Address := System.Null_Address;
-    Stream  : System.Address := System.Null_Address;
-    Width   : Win32.UINT := 0;
-    Height  : Win32.UINT := 0;
-    Fullscreen : Boolean := False;
-    On_Close : Detached_Close_Callback := null;
-    Saved_Style : Win32.LONG := 0;
+    Hwnd            : Win32.Windef.HWND;
+    Picture         : System.Address := System.Null_Address;
+    Stream          : System.Address := System.Null_Address;
+    Width           : Win32.UINT := 0;
+    Height          : Win32.UINT := 0;
+    Fullscreen      : Boolean := False;
+    On_Close        : Detached_Close_Callback := null;
+    Saved_Style     : Win32.LONG := 0;
     Saved_Placement : aliased Window_Placement :=
-      (Length => Win32.UINT (Window_Placement'size / 8),
-       Flags => 0, Show_Command => 0,
-       Min_Position => (0, 0), Max_Position => (0, 0),
+      (Length => Win32.UINT(Window_Placement'size / 8),
+       Flags           => 0, Show_Command => 0,
+       Min_Position    => (0, 0), Max_Position => (0, 0),
        Normal_Position => (0, 0, 0, 0));
     Next    : Detached_Image_State_Ptr := null;
   end record;
@@ -328,8 +334,9 @@ package body Gui is
 
   Gdiplus_Token : aliased System.Address := System.Null_Address;
 
-  function Image_State (Hwnd : Win32.Windef.HWND) return Detached_Image_State_Ptr is
-    Current : Detached_Image_State_Ptr := Images;
+
+  function Image_State (Hwnd    : Win32.Windef.HWND) return Detached_Image_State_Ptr is
+                        Current : Detached_Image_State_Ptr := Images;
     use type System.Address;
   begin
     while Current /= null loop
@@ -342,8 +349,8 @@ package body Gui is
   end Image_State;
 
 
-  procedure Dispose (State : Detached_Image_State_Ptr) is
-    Unused : Win32.INT;
+  procedure Dispose (State  : Detached_Image_State_Ptr) is
+                     Unused : Win32.INT;
     use type System.Address;
   begin
     if State.Picture /= System.Null_Address then
@@ -355,9 +362,9 @@ package body Gui is
   end Dispose;
 
 
-  procedure Remove_Image_State (Hwnd : Win32.Windef.HWND) is
-    Current  : Detached_Image_State_Ptr := Images;
-    Previous : Detached_Image_State_Ptr := null;
+  procedure Remove_Image_State (Hwnd     : Win32.Windef.HWND) is
+                                Current  : Detached_Image_State_Ptr := Images;
+                                Previous : Detached_Image_State_Ptr := null;
     use type System.Address;
   begin
     while Current /= null loop
@@ -377,46 +384,46 @@ package body Gui is
   end Remove_Image_State;
 
 
-  procedure Paint_Detached (Hwnd : Win32.Windef.HWND) is
-    State    : constant Detached_Image_State_Ptr := Image_State (Hwnd);
-    Graphics : aliased System.Address := System.Null_Address;
-    Rectangle : aliased Win32.Windef.RECT;
-    Unused : Win32.INT;
-    Unused_Bool : Win32.BOOL;
-    Width, Height, X, Y : Win32.INT;
-    Client_Width, Client_Height : Win32.INT;
+  procedure Paint_Detached (Hwnd                        : Win32.Windef.HWND) is
+                            State                       : constant Detached_Image_State_Ptr := Image_State (Hwnd);
+                            Graphics                    : aliased System.Address := System.Null_Address;
+                            Rectangle                   : aliased Win32.Windef.RECT;
+                            Unused                      : Win32.INT;
+                            Unused_Bool                 : Win32.BOOL;
+                            Width, Height, X, Y         : Win32.INT;
+                            Client_Width, Client_Height : Win32.INT;
     use type System.Address;
     use type Win32.LONG;
   begin
     if State = null or else State.Picture = System.Null_Address then
       declare
-        DC : constant Win32.Windef.HDC := Win32.Winuser.GetDC (Hwnd);
-        Unused_Rect : aliased Win32.Windef.RECT;
-        Unused_Paint : Win32.BOOL;
+        DC             : constant Win32.Windef.HDC := Win32.Winuser.GetDC (Hwnd);
+        Unused_Rect    : aliased Win32.Windef.RECT;
+        Unused_Paint   : Win32.BOOL;
         Unused_Release : Win32.INT;
       begin
         Unused_Paint := Win32.Winuser.GetClientRect (Hwnd, Unused_Rect'unchecked_access);
         Unused_Paint := Paint_Black (DC, 0, 0,
-                                     Win32.INT (Unused_Rect.right - Unused_Rect.left),
-                                     Win32.INT (Unused_Rect.bottom - Unused_Rect.top),
+                                     Win32.INT(Unused_Rect.right - Unused_Rect.left),
+                                     Win32.INT(Unused_Rect.bottom - Unused_Rect.top),
                                      Blackness);
         Unused_Release := Win32.Winuser.ReleaseDC (Hwnd, DC);
       end;
     end if;
     if State /= null and then State.Picture /= System.Null_Address then
       Unused_Bool := Win32.Winuser.GetClientRect (Hwnd, Rectangle'unchecked_access);
-      Client_Width := Win32.INT (Rectangle.right - Rectangle.left);
-      Client_Height := Win32.INT (Rectangle.bottom - Rectangle.top);
+      Client_Width := Win32.INT(Rectangle.right - Rectangle.left);
+      Client_Height := Win32.INT(Rectangle.bottom - Rectangle.top);
       if Client_Width > 0 and then Client_Height > 0 then
         if Long_Long_Integer (Client_Width) * Long_Long_Integer (State.Height) <=
            Long_Long_Integer (Client_Height) * Long_Long_Integer (State.Width)
         then
           Width := Client_Width;
-          Height := Win32.INT (Long_Long_Integer (Client_Width) *
+          Height := Win32.INT(Long_Long_Integer (Client_Width) *
                                Long_Long_Integer (State.Height) / Long_Long_Integer (State.Width));
         else
           Height := Client_Height;
-          Width := Win32.INT (Long_Long_Integer (Client_Height) *
+          Width := Win32.INT(Long_Long_Integer (Client_Height) *
                               Long_Long_Integer (State.Width) / Long_Long_Integer (State.Height));
         end if;
         X := (Client_Width - Width) / 2;
@@ -433,15 +440,15 @@ package body Gui is
   end Paint_Detached;
 
 
-  procedure Show_Detached_Image (Lparam : Win32.LPARAM) is
-    Request : constant Detached_Show_Request_Ptr := To_Show_Request (Lparam);
-    State   : constant Detached_Image_State_Ptr := Image_State (Request.Hwnd);
-    Startup : aliased constant Gdiplus_Startup_Input := (others => <>);
-    New_Stream : System.Address := System.Null_Address;
-    New_Image  : aliased System.Address := System.Null_Address;
-    Width, Height : aliased Win32.UINT := 0;
-    Unused : Win32.INT;
-    Unused_Bool : Win32.BOOL;
+  procedure Show_Detached_Image (Lparam        : Win32.LPARAM) is
+                                 Request       : constant Detached_Show_Request_Ptr := To_Show_Request (Lparam);
+                                 State         : constant Detached_Image_State_Ptr := Image_State (Request.Hwnd);
+                                 Startup       : aliased constant Gdiplus_Startup_Input := (others => <>);
+                                 New_Stream    : System.Address := System.Null_Address;
+                                 New_Image     : aliased System.Address := System.Null_Address;
+                                 Width, Height : aliased Win32.UINT := 0;
+                                 Unused        : Win32.INT;
+                                 Unused_Bool   : Win32.BOOL;
     use type System.Address;
     use type Win32.UINT;
   begin
@@ -478,7 +485,7 @@ package body Gui is
   end Show_Detached_Image;
 
 
-  Detached_Class_Name : aliased constant String := "GuiDetachedWindow" & Nul;
+  Detached_Class_Name      : aliased constant String := "GuiDetachedWindow" & Nul;
   Detached_Class_Name_Wide : aliased constant Wide_String := "GuiDetachedWindow" & Wide_Nul;
 
   type String_Ptr is access String;
@@ -535,9 +542,11 @@ package body Gui is
   type Child_Information is record
     Is_Frame                 : Boolean := False;
     Is_Value_Box             : Boolean := False;
+    Hold_Installed           : Boolean := False;
+    Event_Handler            : Button_Event_Handler := null;
     Has_Symbol               : Boolean := False;
     Symbol                   : Button_Symbol := Stop_Symbol;
-    Layout_Node : Layout.Element := null;
+    Layout_Node              : Layout.Element := null;
     The_Handle               : Win32.Windef.HWND := System.Null_Address;
     The_Kind                 : Child_Kind;
     Parent_Page              : Page;
@@ -574,7 +583,7 @@ package body Gui is
   type Population_Data is array (Child_Kind) of Win32.INT;
 
   type Page_Information is record
-    Layout_Root : Layout.Element := null;
+    Layout_Root          : Layout.Element := null;
     Nr_Of_Children       : Win32.INT := 0;
     Nr_Of_Buddies        : Win32.INT := 0;
     Population           : Population_Data := [others => 0];
@@ -596,7 +605,7 @@ package body Gui is
   end record;
 
   Layout_Complete : Boolean := False;
-  Minimum_Window : Layout.Size;
+  Minimum_Window  : Layout.Size;
 
   type Minimum_Maximum_Info is record
     Reserved       : Win32.Windef.POINT with Unreferenced;
@@ -650,9 +659,9 @@ package body Gui is
   end Mutex;
 
 
-  Last_Menu_Item         : Menu_Item_Access := null;
-  First_Menu_Item_Id     : constant Positive := 1000;
-  The_Next_Menu_Item_Id  : Positive := First_Menu_Item_Id;
+  Last_Menu_Item        : Menu_Item_Access := null;
+  First_Menu_Item_Id    : constant Positive := 1000;
+  The_Next_Menu_Item_Id : Positive := First_Menu_Item_Id;
 
   Nr_Of_Pages  : Natural := 0;
   Current_Page : Page;
@@ -674,17 +683,23 @@ package body Gui is
 
 
   protected Action is
+    procedure Start_Hold (Handler : Button_Event_Handler; Accepted : out Boolean);
+    procedure End_Hold;
     procedure Put (The_Action : Action_Routine);
     procedure Put (The_Click       : Click_Routine;
                    The_Information : Information);
     procedure Finish;
     entry Get (The_Action : out Action_Routine;
-               The_Click  : out Click_Routine;
-               The_Info   : out Information);
+               The_Click : out Click_Routine;
+               The_Info  : out Information;
+               Handler   : out Button_Event_Handler;
+               Event     : out Button_Event);
     procedure Enable;
     procedure Do_Terminate;
     entry Terminated;
   private
+    Hold_Handler     : Button_Event_Handler := null;
+    Release_Pending  : Boolean := False;
     Next_Action      : Action_Routine := null;
     Next_Click       : Click_Routine := null;
     Next_Information : Information;
@@ -696,6 +711,27 @@ package body Gui is
 
 
   protected body Action is
+
+    procedure Start_Hold (Handler : Button_Event_Handler; Accepted : out Boolean) is
+    begin
+      Accepted := Is_Enabled and not Is_Finishing;
+      if Accepted then
+        Hold_Handler := Handler;
+        Next_Action := null;
+        Next_Click := null;
+        Is_Pending := True;
+        Is_Enabled := False;
+      end if;
+    end Start_Hold;
+
+
+    procedure End_Hold is
+    begin
+      if Hold_Handler /= null then
+        Release_Pending := True;
+      end if;
+    end End_Hold;
+
 
     procedure Put (The_Action : Action_Routine) is
     begin
@@ -723,27 +759,46 @@ package body Gui is
 
     procedure Finish is
     begin
-      Next_Click := null;
-      Next_Action := null;
-      Is_Pending := True;
       Is_Enabled := False;
       Is_Finishing := True;
+      if Hold_Handler = null then
+        Is_Pending := False;
+      else
+        End_Hold;
+      end if;
     end Finish;
 
     entry Get (The_Action : out Action_Routine;
-               The_Click  : out Click_Routine;
-               The_Info   : out Information) when Is_Pending is
+               The_Click : out Click_Routine;
+               The_Info  : out Information;
+               Handler   : out Button_Event_Handler;
+               Event     : out Button_Event) when Is_Pending or Release_Pending or Is_Finishing is
     begin
-      The_Action := Next_Action;
-      The_Click  := Next_Click;
       The_Info := Next_Information;
-      Is_Pending := False;
+      Handler := null;
+      Event := Pressed;
+      if Is_Pending then
+        Handler := Hold_Handler;
+        The_Action := Next_Action;
+        The_Click := Next_Click;
+        Is_Pending := False;
+      elsif Release_Pending then
+        The_Action := null;
+        Handler := Hold_Handler;
+        Event := Released;
+        The_Click := null;
+        Hold_Handler := null;
+        Release_Pending := False;
+      else
+        The_Action := null;
+        The_Click := null;
+      end if;
     end Get;
 
 
     procedure Enable is
     begin
-      Is_Enabled := not Is_Finishing;
+      Is_Enabled := not Is_Finishing and Hold_Handler = null;
     end Enable;
 
 
@@ -773,8 +828,8 @@ package body Gui is
   end Execute;
 
 
-  function Send_Message (Hwnd  : Win32.Windef.HWND;
-                         Msg   : Win32.UINT;
+  function Send_Message (Hwnd : Win32.Windef.HWND;
+                         Msg  : Win32.UINT;
                          Wparam: Win32.WPARAM;
                          Lparam: Win32.LPARAM) return Win32.LRESULT is
   begin
@@ -786,8 +841,8 @@ package body Gui is
   end Send_Message;
 
 
-  procedure Send_Message (Hwnd  : Win32.Windef.HWND;
-                          Msg   : Win32.UINT;
+  procedure Send_Message (Hwnd : Win32.Windef.HWND;
+                          Msg  : Win32.UINT;
                           Wparam: Win32.WPARAM;
                           Lparam: Win32.LPARAM) is
     Unused : Win32.LRESULT;
@@ -798,8 +853,8 @@ package body Gui is
   end Send_Message;
 
 
-  function Send_Message_Wide (Hwnd  : Win32.Windef.HWND;
-                              Msg   : Win32.UINT;
+  function Send_Message_Wide (Hwnd : Win32.Windef.HWND;
+                              Msg  : Win32.UINT;
                               Wparam: Win32.WPARAM;
                               Lparam: Win32.LPARAM) return Win32.LRESULT is
   begin
@@ -811,8 +866,8 @@ package body Gui is
   end Send_Message_Wide;
 
 
-  procedure Send_Message_Wide (Hwnd  : Win32.Windef.HWND;
-                               Msg   : Win32.UINT;
+  procedure Send_Message_Wide (Hwnd : Win32.Windef.HWND;
+                               Msg  : Win32.UINT;
                                Wparam: Win32.WPARAM;
                                Lparam: Win32.LPARAM) is
     Unused : Win32.LRESULT;
@@ -825,9 +880,9 @@ package body Gui is
 
   procedure Message_Box (The_Message    : String;
                          Is_Exclamation : Boolean := True) is
-    Message   : aliased constant Wide_String := To_Wide (The_Message) & Wide_Nul;
-    Unused    : Win32.INT;
-    Box_Style : Win32.UINT := Win32.Winuser.MB_OK;
+                         Message        : aliased constant Wide_String := To_Wide (The_Message) & Wide_Nul;
+                         Unused         : Win32.INT;
+                         Box_Style      : Win32.UINT := Win32.Winuser.MB_OK;
     use type Win32.UINT;
   begin
     if Is_Exclamation then
@@ -843,8 +898,8 @@ package body Gui is
 
 
   procedure Beep (With_Sound : Sound := Standard_Sound) is
-    The_Sound : Win32.UINT;
-    Unused    : Win32.BOOL;
+                  The_Sound  : Win32.UINT;
+                  Unused     : Win32.BOOL;
   begin
     case With_Sound is
     when Standard_Sound => The_Sound := 16#FFFFFFFF#;
@@ -860,8 +915,8 @@ package body Gui is
 
   procedure Shell_Open (The_File       : String;
                         The_Parameters : String := "") is
-    Name   : aliased constant String := The_File & Nul;
-    Unused : Win32.Windef.HINSTANCE;
+                        Name           : aliased constant String := The_File & Nul;
+                        Unused         : Win32.Windef.HINSTANCE;
   begin
     if The_Parameters = "" then
       Unused := Win32.Shellapi.ShellExecute (Private_Window, null,
@@ -880,8 +935,8 @@ package body Gui is
   end Shell_Open;
 
 
-  procedure Change_Application_Name (Name : String) is
-    Unused : Win32.BOOL;
+  procedure Change_Application_Name (Name   : String) is
+                                     Unused : Win32.BOOL;
     procedure Dispose is new Ada.Unchecked_Deallocation (Wide_String, Wide_String_Ptr);
     use type Win32.Windef.HWND;
   begin
@@ -917,9 +972,9 @@ package body Gui is
   end Name_Of_Application;
 
 
-  function Is_Confirmed (The_Question : String) return Boolean is
-    With_Question : aliased constant Wide_String := To_Wide(The_Question) & Wide_Nul;
-    Box_Style     : constant := Win32.Winuser.MB_ICONQUESTION + Win32.Winuser.MB_YESNO;
+  function Is_Confirmed (The_Question  : String) return Boolean is
+                         With_Question : aliased constant Wide_String := To_Wide(The_Question) & Wide_Nul;
+                         Box_Style     : constant := Win32.Winuser.MB_ICONQUESTION + Win32.Winuser.MB_YESNO;
   begin
     return Win32.Winuser.MessageBoxW (Private_Window,
                                       Win32.Addr(With_Question),
@@ -938,7 +993,7 @@ package body Gui is
     for The_Record'address use The_Longword'address;
     Temp : Win32.WORD;
   begin
-    The_Longword := Win32.LPARAM (The_Number);
+    The_Longword := Win32.LPARAM(The_Number);
     Temp := The_Record.Low;
     The_Record.Low := The_Record.High;
     The_Record.High := Temp;
@@ -947,7 +1002,7 @@ package body Gui is
 
 
   procedure Set_Status_Line (The_Text : String) is
-    function Convert is new Ada.Unchecked_Conversion(System.Address, Win32.LPARAM);
+    function Convert is new Ada.Unchecked_Conversion (System.Address, Win32.LPARAM);
     Text : aliased constant Wide_String := To_Wide (The_Text) & Wide_Nul;
   begin
     Send_Message_Wide (Win32.Windef.HWND(The_Status_Line),
@@ -961,9 +1016,9 @@ package body Gui is
     use type Win32.LONG;
   begin
     return (Height     => Natural(The_Private_Window_Rectangle.bottom - The_Private_Window_Rectangle.top),
-            Width      => Natural (The_Private_Window_Rectangle.right - The_Private_Window_Rectangle.left),
-            X_Position => Integer (The_Private_Window_Rectangle.left),
-            Y_Position => Integer (The_Private_Window_Rectangle.top));
+            Width      => Natural(The_Private_Window_Rectangle.right - The_Private_Window_Rectangle.left),
+            X_Position => Integer(The_Private_Window_Rectangle.left),
+            Y_Position => Integer(The_Private_Window_Rectangle.top));
   end Get_Window_Metrics;
 
 
@@ -971,7 +1026,7 @@ package body Gui is
                                 Y_Position    : Integer;
                                 Window_Width  : Natural;
                                 Window_Height : Natural) is
-    Unused : Win32.BOOL;
+                                Unused        : Win32.BOOL;
   begin
     Unused := Win32.Winuser.SetWindowPos (Private_Window, System.Null_Address,
                                           Win32.INT(X_Position), Win32.INT(Y_Position),
@@ -987,7 +1042,7 @@ package body Gui is
 --Monitor_Default_To_Primary : constant Win32.DWORD := 1;
 --Monitor_Default_To_Nearest : constant Win32.DWORD := 2;
 
-  function Monitor_From_Point(Point : Win32.Windef.POINT;
+  function Monitor_From_Point (Point : Win32.Windef.POINT;
                               Flags : Win32.DWORD)
                              return Win32.Windef.HWND
   with
@@ -1005,12 +1060,12 @@ package body Gui is
     External_Name => "MonitorFromRect";
 
 
-  function Is_Visible (X_Position : Win32.LONG;
-                       Y_Position : Win32.LONG;
-                       Width      : Win32.LONG := 0;
-                       Height     : Win32.LONG := 0) return Boolean is
-    The_Monitor : Win32.Windef.HWND := System.Null_Address;
-    Flags       : constant Win32.DWORD := Monitor_Default_To_Null;
+  function Is_Visible (X_Position  : Win32.LONG;
+                       Y_Position  : Win32.LONG;
+                       Width       : Win32.LONG := 0;
+                       Height      : Win32.LONG := 0) return Boolean is
+                       The_Monitor : Win32.Windef.HWND := System.Null_Address;
+                       Flags       : constant Win32.DWORD := Monitor_Default_To_Null;
     use type Win32.Windef.HWND;
     use type Win32.LONG;
   begin
@@ -1076,18 +1131,18 @@ package body Gui is
 
   procedure Redraw_Layout is
     Client, Status : aliased Win32.Windef.RECT;
-    Unused : Win32.BOOL;
-    Area : Layout.Rectangle;
-    Required : Layout.Size;
-    Item : Child_Information_Ptr;
+    Unused         : Win32.BOOL;
+    Area           : Layout.Rectangle;
+    Required       : Layout.Size;
+    Item           : Child_Information_Ptr;
     Swp_Nocopybits : constant Win32.UINT := 16#0100#;
     use type Win32.LONG;
     use type Win32.UINT;
     use type Gui.Layout.Element;
 
-    procedure Position_Frames (Child : Child_Information_Ptr) is
-      Hwnd_Bottom : constant Win32.Windef.HWND := System.Storage_Elements.To_Address (1);
-      Ignored : Win32.BOOL with Unreferenced;
+    procedure Position_Frames (Child       : Child_Information_Ptr) is
+                               Hwnd_Bottom : constant Win32.Windef.HWND := System.Storage_Elements.To_Address (1);
+                               Ignored     : Win32.BOOL with Unreferenced;
     begin
       if Child = null then
         return;
@@ -1168,7 +1223,7 @@ package body Gui is
     The_Text_Size         : aliased Win32.Windef.SIZE;
     The_Min_Object_Width  : Win32.INT;
 
-  function Convert is new Ada.Unchecked_Conversion(Win32.Windef.LPRECT, Win32.LPARAM);
+  function Convert is new Ada.Unchecked_Conversion (Win32.Windef.LPRECT, Win32.LPARAM);
     use type Gui.Layout.Element;
   begin
     if not Is_Active then
@@ -1417,22 +1472,22 @@ package body Gui is
 
 
   procedure Make_Visible (The_Control : Tab_Control) is
-    Unused_Bool : Win32.BOOL;
+                          Unused_Bool : Win32.BOOL;
   begin
     Unused_Bool := Win32.Winuser.ShowWindow(Win32.Windef.HWND(The_Control), Win32.Winuser.SW_SHOW);
   end Make_Visible;
 
 
   procedure Make_Invisible (The_Control : Tab_Control) is
-    Unused_Bool : Win32.BOOL;
+                            Unused_Bool : Win32.BOOL;
   begin
     Unused_Bool := Win32.Winuser.ShowWindow(Win32.Windef.HWND(The_Control), Win32.Winuser.SW_HIDE);
   end Make_Invisible;
 
 
-  procedure Make_Visible (The_Page : Page) is
-    The_Child : Child_Information_Ptr;
-    Unused : Win32.BOOL;
+  procedure Make_Visible (The_Page  : Page) is
+                          The_Child : Child_Information_Ptr;
+                          Unused    : Win32.BOOL;
   begin
     The_Child := The_Page.First_Child;
     loop
@@ -1445,9 +1500,9 @@ package body Gui is
   end Make_Visible;
 
 
-  procedure Make_Invisible (The_Page : Page) is
-    The_Child : Child_Information_Ptr;
-    Unused    : Win32.BOOL;
+  procedure Make_Invisible (The_Page  : Page) is
+                            The_Child : Child_Information_Ptr;
+                            Unused    : Win32.BOOL;
   begin
     The_Child := The_Page.First_Child;
     loop
@@ -1472,8 +1527,9 @@ package body Gui is
 
   package Page_Conversion is new System.Address_To_Access_Conversions (Page_Information);
 
+
   function Index_Of (The_Page : Page) return Natural is
-    Tab_Info  : aliased Win32.Comctl.Tc_Item;
+                     Tab_Info : aliased Win32.Comctl.Tc_Item;
     function Convert is new Ada.Unchecked_Conversion (System.Address, Win32.LPARAM);
     function Convert is new Ada.Unchecked_Conversion (Win32.LPARAM, System.Address);
   begin
@@ -1481,7 +1537,7 @@ package body Gui is
     for Index in 0 .. Nr_Of_Pages - 1 loop
       Send_Message (Win32.Windef.HWND(The_Tabs),
                     Win32.Comctl.Tcm_Getitem,
-                    Win32.WPARAM (Index),
+                    Win32.WPARAM(Index),
                     Convert(Tab_Info'address));
       if The_Page = Page(Page_Conversion.To_Pointer(Convert(Tab_Info.Lparam))) then
         return Index;
@@ -1496,7 +1552,7 @@ package body Gui is
     if Is_Active and then Nr_Of_Pages > 0 then
       Send_Message (Win32.Windef.HWND(The_Tabs),
                     Win32.Comctl.Tcm_Setcursel,
-                    Win32.WPARAM (Index_Of (The_Page)),0);
+                    Win32.WPARAM(Index_Of (The_Page)),0);
       Display_Page (The_Page);
     end if;
   end Select_Page;
@@ -1530,10 +1586,10 @@ package body Gui is
   with
     Convention => Stdcall;
 
-  function Listview_Sort_Routine (First_Info    : Information;
-                                  Second_Info   : Information;
-                                  The_List_View : Child_Information_Ptr) return Integer is
-    The_Return_Code : Relation;
+  function Listview_Sort_Routine (First_Info      : Information;
+                                  Second_Info     : Information;
+                                  The_List_View   : Child_Information_Ptr) return Integer is
+                                  The_Return_Code : Relation;
   begin
     The_Return_Code := The_List_View.The_Sort_Routine.all (The_List_View.The_Sort_Column,
                                                            First_Info,
@@ -1554,9 +1610,9 @@ package body Gui is
   end Listview_Sort_Routine;
 
 
-  function Lparam_Of (The_Handle : Win32.Windef.HWND;
-                      The_Item   : Win32.INT) return Win32.LPARAM is
-    The_Info_Item : Win32.Comctl.Lv_Item_Wide;
+  function Lparam_Of (The_Handle    : Win32.Windef.HWND;
+                      The_Item      : Win32.INT) return Win32.LPARAM is
+                      The_Info_Item : Win32.Comctl.Lv_Item_Wide;
     function Convert is new Ada.Unchecked_Conversion (System.Address, Win32.LPARAM);
   begin
     The_Info_Item.Mask := Win32.Comctl.Lvif_Param;
@@ -1569,10 +1625,10 @@ package body Gui is
   end Lparam_Of;
 
 
-  procedure Process_Tree_View_Click (The_Handle  : Win32.Windef.HWND;
-                                     The_Routine : access procedure (Item : Information)) is
-    Selected_Item : aliased Win32.LRESULT;
-    The_Item      : aliased Win32.Comctl.Tv_Item_Ansi;
+  procedure Process_Tree_View_Click (The_Handle    : Win32.Windef.HWND;
+                                     The_Routine   : access procedure (Item : Information)) is
+                                     Selected_Item : aliased Win32.LRESULT;
+                                     The_Item      : aliased Win32.Comctl.Tv_Item_Ansi;
     function Convert is new Ada.Unchecked_Conversion (System.Address, Win32.LPARAM);
     function Convert is new Ada.Unchecked_Conversion (Win32.LPARAM, Information);
   begin
@@ -1595,7 +1651,7 @@ package body Gui is
   function Ansi_Handler (The_Child        : Child_Information_Ptr;
                          For_Column       : Natural;
                          With_Information : Information) return Wide_String is
-    The_Text_Handler : Text_Handler;
+                         The_Text_Handler : Text_Handler;
     function Convert is new Ada.Unchecked_Conversion (Action_Routine, Text_Handler);
   begin
     The_Text_Handler := Convert (The_Child.The_Action_Routine);
@@ -1609,8 +1665,9 @@ package body Gui is
 
   package Customdraw_Info_Conversion is new System.Address_To_Access_Conversions (Win32.Comctl.Nmlv_Customdraw);
 
+
   function Process_Notification_From_Child (Unused_Wparam : Win32.WPARAM;
-                                                   Lparam : Win32.LPARAM) return Win32.LRESULT is
+                                            Lparam        : Win32.LPARAM) return Win32.LRESULT is
 
     The_Notification     : Win32.Comctl.Lv_Dispinfo_Wide_Ptr;
     The_Custom_Draw_Info : Win32.Comctl.Customdraw_Info_Ptr;
@@ -1719,7 +1776,7 @@ package body Gui is
 
 
   procedure Set_Font_For (The_Handle : Win32.Windef.HWND) is
-    function Convert is new Ada.Unchecked_Conversion(Win32.Windef.HGDIOBJ, Win32.WPARAM);
+    function Convert is new Ada.Unchecked_Conversion (Win32.Windef.HGDIOBJ, Win32.WPARAM);
   begin
     Send_Message (The_Handle,
                   Win32.Winuser.WM_SETFONT,
@@ -1737,6 +1794,133 @@ package body Gui is
 
 
   package Child_Information_Conversion is new System.Address_To_Access_Conversions (Child_Information);
+
+  type Subclass_Routine is access function (Hwnd    : Win32.Windef.HWND;
+                                            Message : Win32.UINT;
+                                            Wparam  : Win32.WPARAM;
+                                            Lparam  : Win32.LPARAM;
+                                            Id      : System.Address;
+                                            Data    : System.Address) return Win32.LRESULT
+    with Convention => Stdcall;
+
+  function Set_Window_Subclass (Hwnd : Win32.Windef.HWND;
+                                Proc : Subclass_Routine;
+                                Id   : System.Address;
+                                Data : System.Address) return Win32.BOOL
+    with Import, Convention => Stdcall, External_Name => "SetWindowSubclass";
+
+  function Def_Subclass_Proc (Hwnd    : Win32.Windef.HWND;
+                              Message : Win32.UINT;
+                              Wparam  : Win32.WPARAM;
+                              Lparam  : Win32.LPARAM) return Win32.LRESULT
+    with Import, Convention => Stdcall, External_Name => "DefSubclassProc";
+
+  function Remove_Window_Subclass (Hwnd : Win32.Windef.HWND;
+                                   Proc : Subclass_Routine;
+                                   Id   : System.Address) return Win32.BOOL
+    with Import, Convention => Stdcall, External_Name => "RemoveWindowSubclass";
+
+  function Get_Capture return Win32.Windef.HWND
+    with Import, Convention => Stdcall, External_Name => "GetCapture";
+
+  Held_Button   : Child_Information_Ptr := null;
+  Held_By_Mouse : Boolean := False;
+
+
+  procedure Release_Held_Button is
+  begin
+    if Held_Button /= null then
+      Held_Button := null;
+      Action.End_Hold;
+    end if;
+  end Release_Held_Button;
+
+
+  function Hold_Button_Proc (Hwnd    : Win32.Windef.HWND;
+                             Message : Win32.UINT;
+                             Wparam  : Win32.WPARAM;
+                             Lparam  : Win32.LPARAM;
+                             Id      : System.Address;
+                             Data    : System.Address) return Win32.LRESULT
+    with Convention => Stdcall;
+
+
+  function Hold_Button_Proc (Hwnd                 : Win32.Windef.HWND;
+                             Message              : Win32.UINT;
+                             Wparam               : Win32.WPARAM;
+                             Lparam               : Win32.LPARAM;
+                             Id                   : System.Address;
+                             Data                 : System.Address) return Win32.LRESULT is
+                             Wm_Left_Down         : constant Win32.UINT := 16#0201#;
+                             Wm_Left_Double_Click : constant Win32.UINT := 16#0203#;
+                             Wm_Key_Down          : constant Win32.UINT := 16#0100#;
+                             Wm_Left_Up           : constant Win32.UINT := 16#0202#;
+                             Wm_Key_Up            : constant Win32.UINT := 16#0101#;
+                             Wm_Cancel_Mode       : constant Win32.UINT := 16#001F#;
+                             Wm_Capture_Changed   : constant Win32.UINT := 16#0215#;
+                             Wm_Kill_Focus        : constant Win32.UINT := 16#0008#;
+                             Wm_Enable            : constant Win32.UINT := 16#000A#;
+                             Wm_Show_Window       : constant Win32.UINT := 16#0018#;
+                             Wm_Nc_Destroy        : constant Win32.UINT := 16#0082#;
+
+    Item     : constant Child_Information_Ptr := Child_Information_Ptr (Child_Information_Conversion.To_Pointer (Data));
+    Accepted : Boolean;
+    Result   : Win32.LRESULT;
+    Unused   : Win32.BOOL;
+    pragma Unreferenced (Unused);
+    use type Win32.WPARAM;
+    use type Win32.BOOL;
+    use type Win32.UINT;
+    use type System.Storage_Elements.Integer_Address;
+    use type System.Address;
+  begin
+    case Message is
+    when Wm_Left_Down | Wm_Left_Double_Click | Wm_Key_Down => -- mouse down, double click, key down
+      if Message /= Wm_Key_Down or else Wparam = 32 then
+        if Held_Button = null and then Win32.Winuser.IsWindowEnabled (Hwnd) = Win32.TRUE then
+          -- Ignore keyboard auto-repeat, including after cancellation.
+          if Message /= Wm_Key_Down or else
+             (System.Storage_Elements.To_Integer (To_Address (Lparam)) / 2**30) mod 2 = 0
+          then
+            Action.Start_Hold (Item.Event_Handler, Accepted);
+            if Accepted then
+              Held_Button := Item;
+              Held_By_Mouse := Message /= Wm_Key_Down;
+            end if;
+          end if;
+        end if;
+      end if;
+    when Wm_Left_Up => -- mouse up
+      if Held_Button = Item and then Held_By_Mouse then
+        Release_Held_Button;
+      end if;
+    when Wm_Key_Up => -- key up
+      if Wparam = 32 and then Held_Button = Item and then not Held_By_Mouse then
+        Release_Held_Button;
+      end if;
+    when Wm_Cancel_Mode | Wm_Capture_Changed | Wm_Kill_Focus => -- cancel mode, capture changed, kill focus
+      if Held_Button = Item then
+        Release_Held_Button;
+      end if;
+    when Wm_Enable | Wm_Show_Window => -- enable, show window
+      if Wparam = 0 and then Held_Button = Item then
+        Release_Held_Button;
+      end if;
+    when Wm_Nc_Destroy => -- non-client destroy
+      if Held_Button = Item then
+        Release_Held_Button;
+      end if;
+      Unused := Remove_Window_Subclass (Hwnd, Hold_Button_Proc'access, Id);
+    when others =>
+      null;
+    end case;
+    Result := Def_Subclass_Proc (Hwnd, Message, Wparam, Lparam);
+    if Held_Button = Item and then Held_By_Mouse and then Get_Capture /= Hwnd then
+      Release_Held_Button;
+    end if;
+    return Result;
+  end Hold_Button_Proc;
+
 
   procedure Create_Child (The_Object : Win32.LPARAM;
                           The_Page   : Win32.WPARAM) is
@@ -1854,6 +2038,14 @@ package body Gui is
                                                            Our_Instance,
                                                            System.Null_Address);
     end if;
+    if The_Child.Event_Handler /= null then
+      declare
+        use type Win32.BOOL;
+      begin
+        The_Child.Hold_Installed := Set_Window_Subclass (The_Child.The_Handle, Hold_Button_Proc'access,
+                                                         System.Null_Address, The_Child.all'address) = Win32.TRUE;
+      end;
+    end if;
     The_Child.Parent_Page := Parent_Page;
     Parent_Page.Nr_Of_Children := Parent_Page.Nr_Of_Children + 1;
     Set_Unicode_For (The_Child.The_Handle);
@@ -1889,7 +2081,7 @@ package body Gui is
 
 
   procedure Set (The_Item : Menu_Item_Access) is
-    Unused : Win32.DWORD;
+                 Unused   : Win32.DWORD;
   begin
     Unused := Win32.Winuser.CheckMenuItem (The_Item.The_Parent_Menu.The_Handle,
                                            Win32.UINT(The_Item.The_Id),
@@ -1897,8 +2089,8 @@ package body Gui is
   end Set;
 
 
-  function Is_Set (The_Item : Menu_Item_Access) return Boolean is
-    The_State : Win32.UINT;
+  function Is_Set (The_Item  : Menu_Item_Access) return Boolean is
+                   The_State : Win32.UINT;
     use type Win32.UINT;
   begin
     The_State := Win32.Winuser.GetMenuState (The_Item.The_Parent_Menu.The_Handle,
@@ -1909,7 +2101,7 @@ package body Gui is
 
 
   procedure Clear (The_Item : Menu_Item_Access) is
-    Unused : Win32.DWORD;
+                   Unused   : Win32.DWORD;
   begin
     Unused := Win32.Winuser.CheckMenuItem (The_Item.The_Parent_Menu.The_Handle,
                                            Win32.UINT(The_Item.The_Id),
@@ -1941,7 +2133,7 @@ package body Gui is
     use type Win32.WORD;
   begin
     The_Longword := Wparam;
-    The_Window_Id := Natural (The_Message.Window_Id);
+    The_Window_Id := Natural(The_Message.Window_Id);
     if The_Window_Id >= First_Menu_Item_Id then -- look for menu item
       Mutex.Wait;
       The_Menu_Item := Last_Menu_Item;
@@ -2008,7 +2200,7 @@ package body Gui is
   procedure Set_Detached_Fullscreen (Hwnd : Win32.Windef.HWND;
                                       Enable : Boolean) is
     State        : constant Detached_Image_State_Ptr := Image_State (Hwnd);
-    Info         : aliased Monitor_Information := (Size => Win32.DWORD (Monitor_Information'size / 8), others => <>);
+    Info         : aliased Monitor_Information := (Size => Win32.DWORD(Monitor_Information'size / 8), others => <>);
     Unused       : Win32.BOOL;
     Unused_Style : Win32.LONG;
     Monitor      : System.Address;
@@ -2021,7 +2213,7 @@ package body Gui is
       return;
     end if;
     if Enable then
-      State.Saved_Placement.Length := Win32.UINT (Window_Placement'size / 8);
+      State.Saved_Placement.Length := Win32.UINT(Window_Placement'size / 8);
       if Get_Window_Placement (Hwnd, State.Saved_Placement'access) = Win32.FALSE then
         return;
       end if;
@@ -2039,9 +2231,9 @@ package body Gui is
             not (Ws_Caption or Ws_Thickframe or Ws_Minimizebox or
                  Ws_Maximizebox or Ws_Sysmenu)));
       Unused := Win32.Winuser.SetWindowPos (Hwnd, System.Null_Address,
-                                            Win32.INT (Info.Monitor.left), Win32.INT (Info.Monitor.top),
-                                            Win32.INT (Info.Monitor.right - Info.Monitor.left),
-                                            Win32.INT (Info.Monitor.bottom - Info.Monitor.top),
+                                            Win32.INT(Info.Monitor.left), Win32.INT(Info.Monitor.top),
+                                            Win32.INT(Info.Monitor.right - Info.Monitor.left),
+                                            Win32.INT(Info.Monitor.bottom - Info.Monitor.top),
                                             Win32.Winuser.SWP_NOZORDER + Swp_Framechanged + Swp_Noownerzorder +
                                             Win32.Winuser.SWP_SHOWWINDOW);
       Unused := Invalidate_Window (Hwnd, System.Null_Address, Win32.FALSE);
@@ -2072,7 +2264,7 @@ package body Gui is
   begin
     case Message is
       when Win32.Winuser.WM_KEYDOWN =>
-        if Wparam = Win32.WPARAM (16#7A#) then -- F11
+        if Wparam = Win32.WPARAM(16#7A#) then -- F11
           declare
             State : constant Detached_Image_State_Ptr := Image_State (Hwnd);
           begin
@@ -2081,7 +2273,7 @@ package body Gui is
             end if;
           end;
           return 0;
-        elsif Wparam = Win32.WPARAM (16#1B#) then -- Escape
+        elsif Wparam = Win32.WPARAM(16#1B#) then -- Escape
           Set_Detached_Fullscreen (Hwnd, False);
           return 0;
         end if;
@@ -2101,9 +2293,9 @@ package body Gui is
         declare
           State : constant Detached_Image_State_Ptr := Image_State (Hwnd);
           Place : aliased Window_Placement :=
-            (Length => Win32.UINT (Window_Placement'size / 8),
-             Flags => 0, Show_Command => 0,
-             Min_Position => (0, 0), Max_Position => (0, 0),
+            (Length => Win32.UINT(Window_Placement'size / 8),
+             Flags           => 0, Show_Command => 0,
+             Min_Position    => (0, 0), Max_Position => (0, 0),
              Normal_Position => (0, 0, 0, 0));
           use type Win32.BOOL;
           use type Win32.LONG;
@@ -2115,10 +2307,10 @@ package body Gui is
               raise Program_Error with "GetWindowPlacement failed for detached window";
             end if;
             State.On_Close.all
-              ((X_Position => Integer (Place.Normal_Position.left),
-                Y_Position => Integer (Place.Normal_Position.top),
-                Width => Natural (Place.Normal_Position.right - Place.Normal_Position.left),
-                Height => Natural (Place.Normal_Position.bottom - Place.Normal_Position.top)));
+              ((X_Position => Integer(Place.Normal_Position.left),
+                Y_Position => Integer(Place.Normal_Position.top),
+                Width      => Natural(Place.Normal_Position.right - Place.Normal_Position.left),
+                Height     => Natural(Place.Normal_Position.bottom - Place.Normal_Position.top)));
           end if;
         end;
         Remove_Image_State (Hwnd);
@@ -2129,9 +2321,9 @@ package body Gui is
   end Detached_Window_Proc;
 
 
-  procedure Create_Detached_Window (Lparam : Win32.LPARAM) is
-    Request : constant Detached_Create_Request_Ptr := To_Request (Lparam);
-    Unused  : Win32.BOOL;
+  procedure Create_Detached_Window (Lparam  : Win32.LPARAM) is
+                                    Request : constant Detached_Create_Request_Ptr := To_Request (Lparam);
+                                    Unused  : Win32.BOOL;
     use type System.Address;
   begin
     Request.Result := Win32.Winuser.CreateWindowExW (0,
@@ -2144,16 +2336,16 @@ package body Gui is
                                                      Our_Instance, System.Null_Address);
     if Request.Result /= System.Null_Address then
       Images := new Detached_Image_State'(Hwnd => Request.Result,
-                                          Picture => System.Null_Address,
-                                          Stream => System.Null_Address,
-                                          Width => 0, Height => 0,
-                                          Fullscreen => False,
-                                          On_Close => Request.On_Close,
-                                          Saved_Style => 0,
+                                          Picture         => System.Null_Address,
+                                          Stream          => System.Null_Address,
+                                          Width           => 0, Height => 0,
+                                          Fullscreen      => False,
+                                          On_Close        => Request.On_Close,
+                                          Saved_Style     => 0,
                                           Saved_Placement =>
-                                            (Length => Win32.UINT (Window_Placement'size / 8),
-                                             Flags => 0, Show_Command => 0,
-                                             Min_Position => (0, 0), Max_Position => (0, 0),
+                                            (Length => Win32.UINT(Window_Placement'size / 8),
+                                             Flags           => 0, Show_Command => 0,
+                                             Min_Position    => (0, 0), Max_Position => (0, 0),
                                              Normal_Position => (0, 0, 0, 0)),
                                           Next => Images);
       Unused := Win32.Winuser.ShowWindow (Request.Result, Win32.Winuser.SW_SHOW);
@@ -2177,7 +2369,7 @@ package body Gui is
 
   package Draw_Item_Pointers is new System.Address_To_Access_Conversions (Draw_Item_Info);
 
-  function Draw_Frame (Dc : Win32.Windef.HDC; Bounds : System.Address;
+  function Draw_Frame (Dc          : Win32.Windef.HDC; Bounds : System.Address;
                        Kind, State : Win32.UINT) return Win32.BOOL
     with Import, Convention => Stdcall, External_Name => "DrawFrameControl";
 
@@ -2193,7 +2385,7 @@ package body Gui is
   function Select_Object (Dc : Win32.Windef.HDC; Item : System.Address) return System.Address
     with Import, Convention => Stdcall, External_Name => "SelectObject";
 
-  function Draw_Polygon (Dc : Win32.Windef.HDC; Points : System.Address;
+  function Draw_Polygon (Dc    : Win32.Windef.HDC; Points : System.Address;
                          Count : Win32.INT) return Win32.BOOL
     with Import, Convention => Stdcall, External_Name => "Polygon";
 
@@ -2214,13 +2406,13 @@ package body Gui is
     Old_Pen   : System.Address;
     Ignored   : System.Address with Unreferenced;
     type Point_Array is array (Positive range <>) of Win32.Windef.POINT with Convention => C;
-    Points : aliased Point_Array (1 .. 12);
-    Count  : Win32.INT;
+    Points            : aliased Point_Array (1 .. 12);
+    Count             : Win32.INT;
     X, Y, Symbol_Size : Win32.LONG;
 
     procedure Set_Point (Index : Positive; Dx, Dy : Win32.LONG) is
-      Px : Win32.LONG := Dx;
-      Py : Win32.LONG := Dy;
+                         Px    : Win32.LONG := Dx;
+                         Py    : Win32.LONG := Dy;
     begin
       case The_Child.Symbol is
       when Arrow_Up | Stop_Symbol | Cross_Symbol => null;
@@ -2314,13 +2506,14 @@ package body Gui is
     Convention => Stdcall;
 
 
-  function Mainwindowproc (Hwnd    : Win32.Windef.HWND;
-                           Message : Win32.UINT;
-                           Wparam  : Win32.WPARAM;
-                           Lparam  : Win32.LPARAM) return Win32.LRESULT is
-    Unused     : Win32.BOOL;
-    The_Wparam : Win32.WPARAM := Wparam;
-    The_Lparam : Win32.LPARAM := Lparam;
+  function Mainwindowproc (Hwnd       : Win32.Windef.HWND;
+                           Message    : Win32.UINT;
+                           Wparam     : Win32.WPARAM;
+                           Lparam     : Win32.LPARAM) return Win32.LRESULT is
+                           Unused     : Win32.BOOL;
+                           The_Wparam : Win32.WPARAM := Wparam;
+                           The_Lparam : Win32.LPARAM := Lparam;
+    use type Win32.WPARAM;
 
     procedure Process_Message_From_Trackbar is
     begin
@@ -2373,6 +2566,9 @@ package body Gui is
       when Win32.Winuser.WM_MOVE =>
         Note_Private_Window_Metrics;
       when Win32.Winuser.WM_SIZE =>
+        if Wparam = 1 then -- SIZE_MINIMIZED
+          Release_Held_Button;
+        end if;
         Note_Private_Window_Metrics;
         Redraw_Main_Window;
       when Win32.Winuser.WM_HSCROLL | Win32.Winuser.WM_VSCROLL =>
@@ -2398,7 +2594,13 @@ package body Gui is
         Win32.Winuser.PostQuitMessage (0);
       when Wm_User_Callback =>
         Execute (The_Callback_Routine);
+      when 16#001C# => -- WM_ACTIVATEAPP
+        if Wparam = 0 then
+          Release_Held_Button;
+        end if;
+        return Win32.Winuser.DefWindowProc (Hwnd, Message, Wparam, Lparam);
       when Win32.Winuser.WM_CLOSE =>
+        Release_Held_Button;
         The_Wparam := Wparam;
         The_Lparam := Lparam;
         select
@@ -2424,8 +2626,8 @@ package body Gui is
   procedure Register_Class (Class_Name   : String;
                             The_Callback : Win32.Winuser.WNDPROC;
                             The_Icon     : Win32.Windef.HICON) is
-    Unused     : Win32.Windef.ATOM;
-    Class_Spec : constant Win32.Winuser.ac_WNDCLASSEXA_t := new Win32.Winuser.WNDCLASSEXA;
+                            Unused       : Win32.Windef.ATOM;
+                            Class_Spec   : constant Win32.Winuser.ac_WNDCLASSEXA_t := new Win32.Winuser.WNDCLASSEXA;
     use type Win32.UINT;
   begin
     Class_Spec.cbSize := Win32.Winuser.WNDCLASSEXA'size / 8;
@@ -2444,13 +2646,13 @@ package body Gui is
   end Register_Class;
 
 
-  function Create_Window (The_Name          : Wide_String;
-                          Window_Width      : Win32.INT;
-                          Window_Height     : Win32.INT;
-                          Window_X_Position : Win32.INT;
-                          Window_Y_Position : Win32.INT;
-                          Always_Topmost    : Boolean) return Win32.Windef.HWND is
-    The_Extended_Style : Win32.DWORD := 0;
+  function Create_Window (The_Name           : Wide_String;
+                          Window_Width       : Win32.INT;
+                          Window_Height      : Win32.INT;
+                          Window_X_Position  : Win32.INT;
+                          Window_Y_Position  : Win32.INT;
+                          Always_Topmost     : Boolean) return Win32.Windef.HWND is
+                          The_Extended_Style : Win32.DWORD := 0;
   begin
     if Always_Topmost then
       The_Extended_Style := Win32.Winuser.WS_EX_TOPMOST;
@@ -2466,8 +2668,8 @@ package body Gui is
   end Create_Window;
 
 
-  function Create_Status_Line (The_Parent : Win32.Windef.HWND) return Status_Line_Control is
-    Window_Style  : constant := Win32.Winuser.WS_CHILD +
+  function Create_Status_Line (The_Parent   : Win32.Windef.HWND) return Status_Line_Control is
+                               Window_Style : constant := Win32.Winuser.WS_CHILD +
                                 Win32.Winuser.WS_BORDER +
                                 Win32.Winuser.WS_VISIBLE +
                                 Win32.Comctl.Sbs_Sizegrip;
@@ -2486,8 +2688,8 @@ package body Gui is
   end Create_Status_Line;
 
 
-  function Create_Tabs (The_Parent : Win32.Windef.HWND) return Tab_Control is
-    Window_Style : constant := Win32.Winuser.WS_CHILD +
+  function Create_Tabs (The_Parent   : Win32.Windef.HWND) return Tab_Control is
+                        Window_Style : constant := Win32.Winuser.WS_CHILD +
                                Win32.Winuser.WS_CLIPSIBLINGS;
     Name : aliased constant Wide_String := "SysTabControl32" & Wide_Nul;
   begin
@@ -2503,7 +2705,7 @@ package body Gui is
 
 
   procedure Unregister_Class (Class_Name : String) is
-    Unused : Win32.BOOL;
+                              Unused     : Win32.BOOL;
   begin
     Unused := Win32.Winuser.UnregisterClass (Win32.Addr(Class_Name), Our_Instance);
   end Unregister_Class;
@@ -2642,6 +2844,9 @@ package body Gui is
                   Convert(The_Parent),
                   Convert(The_Child));
     The_Child.For_Completion.Wait;
+    if The_Child.Event_Handler /= null and then not The_Child.Hold_Installed then
+      raise Main_Window_Creation_Failure;
+    end if;
   end Create;
 
 
@@ -2652,8 +2857,8 @@ package body Gui is
                     Window_X_Position   : Integer := Default_Position;
                     Window_Y_Position   : Integer := Default_Position;
                     Always_Topmost      : Boolean := False) is
-    The_Height : Win32.INT := Win32.INT(Window_Height);
-    The_Width  : Win32.INT := Win32.INT(Window_Width);
+                    The_Height          : Win32.INT := Win32.INT(Window_Height);
+                    The_Width           : Win32.INT := Win32.INT(Window_Width);
   begin
     if The_Action_Handler /= null then
       raise Sequence_Error;  -- Can only be used once
@@ -2722,11 +2927,12 @@ package body Gui is
 
   The_Key_Handling_Is_Enabled : Boolean := False;
 
-  function Keyboard_Handler (Code   : Win32.INT;
-                             Wparam : Win32.WPARAM;
-                             Lparam : Win32.LPARAM) return Win32.LRESULT is
-    Prev_Key_State   : constant Win32.UINT := 16#4000_0000#;
-    Transition_State : constant Win32.UINT := 16#8000_0000#;
+
+  function Keyboard_Handler (Code             : Win32.INT;
+                             Wparam           : Win32.WPARAM;
+                             Lparam           : Win32.LPARAM) return Win32.LRESULT is
+                             Prev_Key_State   : constant Win32.UINT := 16#4000_0000#;
+                             Transition_State : constant Win32.UINT := 16#8000_0000#;
     function Convert is new Ada.Unchecked_Conversion (Win32.LPARAM, Information);
     use type Win32.UINT;
   begin
@@ -2754,6 +2960,7 @@ package body Gui is
 
 
   package MOUSEHOOKSTRUCT_Conversion is new System.Address_To_Access_Conversions (Win32.Winuser.MOUSEHOOKSTRUCT);
+
 
   function Mouse_Handling (Code   : Win32.INT;
                            Wparam : Win32.WPARAM;
@@ -2836,8 +3043,8 @@ package body Gui is
                                                       The_Kind     => Plain,
                                                       The_Callback => null,
                                                       Radio_Item   => null);
-    Unused   : Win32.BOOL;
-    Text     : aliased constant Wide_String := To_Wide (The_Text) & Wide_Nul;
+    Unused : Win32.BOOL;
+    Text   : aliased constant Wide_String := To_Wide (The_Text) & Wide_Nul;
   begin
     Unused := Win32.Winuser.AppendMenuW (The_Menu_Bar, Win32.Winuser.MF_POPUP, Convert(The_Menu.The_Handle),
                                          Win32.Addr (Text));
@@ -2853,8 +3060,8 @@ package body Gui is
                                                       The_Kind     => Plain,
                                                       The_Callback => null,
                                                       Radio_Item   => null);
-    Unused   : Win32.BOOL;
-    Text     : aliased constant Wide_String := To_Wide (The_Text) & Wide_Nul;
+    Unused : Win32.BOOL;
+    Text   : aliased constant Wide_String := To_Wide (The_Text) & Wide_Nul;
   begin
     Unused := Win32.Winuser.AppendMenuW (To_Menu.The_Handle,
                                          Win32.Winuser.MF_POPUP, Convert(The_Menu.The_Handle),
@@ -2864,7 +3071,7 @@ package body Gui is
 
 
   procedure Add_Menu_Separator (To_Menu : Menu) is
-    Unused : Win32.BOOL;
+                                Unused  : Win32.BOOL;
   begin
     Unused := Win32.Winuser.AppendMenu (To_Menu.The_Handle,
                                         Win32.Winuser.MF_SEPARATOR,
@@ -2907,8 +3114,8 @@ package body Gui is
                                                                                 The_Parent_Menu => To_Menu,
                                                                                 Previous        => null,
                                                                                 Next            => Last_Menu_Item);
-      Unused   : Win32.BOOL;
-      Text     : aliased constant Wide_String := To_Wide (The_Text) & Wide_Nul;
+      Unused : Win32.BOOL;
+      Text   : aliased constant Wide_String := To_Wide (The_Text) & Wide_Nul;
     begin
       if Last_Menu_Item /= null then
         Last_Menu_Item.Previous := The_Item_Access;
@@ -3010,10 +3217,10 @@ package body Gui is
   end Menu_Store;
 
 
-  procedure Delete_Menu_Item (Item : Radio_Menu_Item) is
-    Menu_Item : Menu_Item_Access renames Item.The_Menu_Item;
-    Id        : constant Positive := Menu_Item.The_Id;
-    Parent    : Menu renames Menu_Item.The_Parent_Menu;
+  procedure Delete_Menu_Item (Item      : Radio_Menu_Item) is
+                              Menu_Item : Menu_Item_Access renames Item.The_Menu_Item;
+                              Id        : constant Positive := Menu_Item.The_Id;
+                              Parent    : Menu renames Menu_Item.The_Parent_Menu;
     use type Win32.BOOL;
   begin
     Menu_Store.Put (Id);
@@ -3047,9 +3254,9 @@ package body Gui is
   end Dispose_Menu_Item;
 
 
-  procedure Set_Menubar (The_Flags : Win32.UINT) is
-    The_Position : Win32.UINT := 0;
-    Unused       : Win32.BOOL;
+  procedure Set_Menubar (The_Flags    : Win32.UINT) is
+                         The_Position : Win32.UINT := 0;
+                         Unused       : Win32.BOOL;
     use type Win32.UINT;
     use type Win32.BOOL;
   begin
@@ -3102,7 +3309,7 @@ package body Gui is
 
 
   procedure Enable (The_Item : Menu_Item'class) is
-    Unused : Win32.BOOL;
+                    Unused   : Win32.BOOL;
   begin
     Unused := Win32.Winuser.EnableMenuItem (The_Item.The_Menu_Item.The_Parent_Menu.The_Handle,
                                             Win32.UINT(The_Item.The_Menu_Item.The_Id),
@@ -3111,7 +3318,7 @@ package body Gui is
 
 
   procedure Disable (The_Item : Menu_Item'class) is
-    Unused : Win32.BOOL;
+                     Unused   : Win32.BOOL;
   begin
     Unused := Win32.Winuser.EnableMenuItem (The_Item.The_Menu_Item.The_Parent_Menu.The_Handle,
                                             Win32.UINT(The_Item.The_Menu_Item.The_Id),
@@ -3162,10 +3369,10 @@ package body Gui is
 
   procedure Add_Page (The_Page  : Page;
                       The_Title : String) is
-    Title    : aliased constant String := The_Title & Nul;
-    Tab_Info : Win32.Comctl.Tc_Item;
-    function Convert is new Ada.Unchecked_Conversion(System.Address, Win32.LPARAM);
-    function Convert is new Ada.Unchecked_Conversion(Page, Win32.LPARAM);
+                      Title     : aliased constant String := The_Title & Nul;
+                      Tab_Info  : Win32.Comctl.Tc_Item;
+    function Convert is new Ada.Unchecked_Conversion (System.Address, Win32.LPARAM);
+    function Convert is new Ada.Unchecked_Conversion (Page, Win32.LPARAM);
     use type Win32.UINT;
   begin
     Nr_Of_Pages := Nr_Of_Pages + 1;
@@ -3188,7 +3395,7 @@ package body Gui is
                      The_Style            : Page_Style     := Default_Page_Style;
                      The_Action           : Action_Routine := null;
                      Minimum_Button_Width : Natural        := Default_Button_Width) return Page is
-    The_Page : constant Page := new Page_Information;
+                     The_Page             : constant Page := new Page_Information;
   begin
     The_Page.The_Style := The_Style;
     The_Page.The_Action := The_Action;
@@ -3198,9 +3405,9 @@ package body Gui is
   end Add_Page;
 
 
-  procedure Remove_Page (The_Page : Page) is
-    Next_Page : Natural;
-    Tab_Info  : aliased Win32.Comctl.Tc_Item;
+  procedure Remove_Page (The_Page  : Page) is
+                         Next_Page : Natural;
+                         Tab_Info  : aliased Win32.Comctl.Tc_Item;
     function Convert is new Ada.Unchecked_Conversion (System.Address, Win32.LPARAM);
     function Convert is new Ada.Unchecked_Conversion (Win32.LPARAM, System.Address);
   begin
@@ -3234,13 +3441,13 @@ package body Gui is
         Tab_Info.Mask := Win32.Comctl.Tcif_Param;
         Send_Message (Win32.Windef.HWND(The_Tabs),
                       Win32.Comctl.Tcm_Getitem,
-                      Win32.WPARAM (Next_Page),
+                      Win32.WPARAM(Next_Page),
                       Convert(Tab_Info'address));
         Current_Page := Page(Page_Conversion.To_Pointer (Convert (Tab_Info.Lparam)));
         Make_Visible (Current_Page);
         Send_Message (Win32.Windef.HWND(The_Tabs),
                       Win32.Comctl.Tcm_Setcursel,
-                      Win32.WPARAM (Next_Page),0);
+                      Win32.WPARAM(Next_Page),0);
       end if;
     end if;
     if Nr_Of_Pages = 1 then -- Remove tabs
@@ -3276,8 +3483,8 @@ package body Gui is
                    The_Routine : Pop_Up_Termination;
                    Cancel_Text : String := "";
                    Ok_Text     : String := "") return Page is
-    The_Page : constant Page := new Page_Information;
-    Unused   : Button;
+                   The_Page    : constant Page := new Page_Information;
+                   Unused      : Button;
   begin
     The_Page.The_Style := The_Style;
     The_Page.Termination_Routine := The_Routine;
@@ -3294,7 +3501,7 @@ package body Gui is
 
   function Create (The_Style  : Page_Style     := Default_Page_Style;
                    The_Action : Action_Routine := null ) return Page is
-    The_Page : constant Page := new Page_Information;
+                   The_Page   : constant Page := new Page_Information;
   begin
     The_Page.The_Style := The_Style;
     The_Page.The_Action := The_Action;
@@ -3307,8 +3514,8 @@ package body Gui is
                       Is_Automatic  : Boolean;
                       The_Kind      : Child_Kind;
                       Parent_Page   : Page) return Child_Information_Ptr is
-    The_Buddy : Child_Information_Ptr := null;
-    The_Title : constant Wide_String_Ptr := new Wide_String'(The_Text & Wide_Nul);
+                      The_Buddy     : Child_Information_Ptr := null;
+                      The_Title     : constant Wide_String_Ptr := new Wide_String'(The_Text & Wide_Nul);
   begin
     if The_Text /= "" then
       The_Buddy := new Child_Information;
@@ -3335,7 +3542,7 @@ package body Gui is
                    The_Title          : String := "";
                    The_Action_Routine : Action_Routine := null;
                    The_Title_Size     : Natural := Automatic) return Track_Bar is
-    The_Track_Bar : constant Track_Bar := Track_Bar'(Ptr => new Child_Information);
+                   The_Track_Bar      : constant Track_Bar := Track_Bar'(Ptr => new Child_Information);
   begin
     The_Track_Bar.Ptr.The_Window_Id := Next_Child_Id;
     The_Track_Bar.Ptr.The_Kind := Track_Bar_Child;
@@ -3366,7 +3573,7 @@ package body Gui is
   procedure Define_Limits (The_Track_Bar : Track_Bar;
                            Minimum       : Natural;
                            Maximum       : Natural) is
-    Position : Natural;
+                           Position      : Natural;
   begin
     pragma Assert (Minimum <= Maximum and Maximum <= The_Track_Bar.Ptr.Track_Extent);
     The_Track_Bar.Ptr.Track_Minimum := Minimum;
@@ -3381,7 +3588,7 @@ package body Gui is
   begin
     Send_Message (The_Track_Bar.Ptr.The_Handle,
                   Win32.Comctl.Tbm_Setticfreq,
-                  Win32.WPARAM (The_Frequency), 0);
+                  Win32.WPARAM(The_Frequency), 0);
   end Define_Tic_Frequency;
 
 
@@ -3391,13 +3598,13 @@ package body Gui is
     Send_Message (The_Track_Bar.Ptr.The_Handle,
                   Win32.Comctl.Tbm_Setpos,
                   Win32.TRUE,
-                  Win32.LPARAM (Natural'max (The_Track_Bar.Ptr.Track_Minimum,
+                  Win32.LPARAM(Natural'max (The_Track_Bar.Ptr.Track_Minimum,
                                 Natural'min (The_Position, The_Track_Bar.Ptr.Track_Maximum))));
   end Set_Position;
 
 
   function Get_Position (The_Track_Bar : Track_Bar) return Natural is
-    The_Position : Win32.LRESULT;
+                         The_Position  : Win32.LRESULT;
     use type Win32.LRESULT;
   begin
     The_Position := Send_Message (The_Track_Bar.Ptr.The_Handle,
@@ -3415,11 +3622,13 @@ package body Gui is
                           The_Action_Routine : Action_Routine;
                           The_Button_Size    : Natural;
                           Has_Symbol         : Boolean;
-                          Symbol             : Button_Symbol) return Button is
-    Text        : aliased constant Wide_String := To_Wide (The_Text) & Wide_Nul;
-    The_Button  : constant Button := Button'(Ptr => new Child_Information);
-    Button_Size : constant Win32.INT := Win32.INT (The_Button_Size);
+                          Symbol             : Button_Symbol;
+                          Handler            : Button_Event_Handler := null) return Button is
+                          Text               : aliased constant Wide_String := To_Wide (The_Text) & Wide_Nul;
+                          The_Button         : constant Button := Button'(Ptr => new Child_Information);
+                          Button_Size        : constant Win32.INT := Win32.INT(The_Button_Size);
   begin
+    The_Button.Ptr.Event_Handler := Handler;
     The_Button.Ptr.Has_Symbol := Has_Symbol;
     The_Button.Ptr.Symbol := Symbol;
     The_Button.Ptr.The_Window_Id := Next_Child_Id;
@@ -3460,8 +3669,8 @@ package body Gui is
   procedure Create_Frame (Owner : Page;
                           Node  : Layout.Element;
                           Title : String) is
-    Text : aliased constant Wide_String := To_Wide (Title) & Wide_Nul;
-    Item : constant Child_Information_Ptr := new Child_Information;
+                          Text  : aliased constant Wide_String := To_Wide (Title) & Wide_Nul;
+                          Item  : constant Child_Information_Ptr := new Child_Information;
   begin
     Item.Is_Frame := True;
     Item.The_Kind := Static_Child;
@@ -3472,21 +3681,25 @@ package body Gui is
   end Create_Frame;
 
 
-  function Create (Parent : Page; Arrangement : Orientation;
-                   Weight : Natural := 1; Equal_Cells : Boolean := False;
-                   Aspect_Ratio : Float := 0.0;
-                   Frame : Boolean := False;
-                   Title : String := "") return Group is
-    Margin : constant Natural := Frame_Margin (Frame, Title);
+  function Create (Parent       : Page;
+                   Arrangement  : Orientation;
+                   Expand       : Expansion    := Normal;
+                   Equal_Cells  : Boolean      := False;
+                   Ratio        : Aspect_Ratio := Unrestricted;
+                   Frame        : Boolean      := False;
+                   Title        : String       := "") return Group is
+
+    Margin        : constant Natural := Frame_Margin (Frame, Title);
     Minimum_Width : constant Natural := (if Title = "" then 0
                                          else To_Wide(Title)'length * Character_Width + 2 * Margin);
+
     Node : constant Layout.Element := Layout.Group (Layout.Direction'val (Orientation'pos (Arrangement)),
                                                     Gap           => 4,
-                                                    Weight        => Weight,
+                                                    Weight        => Expansion'pos (Expand),
                                                     Equal_Cells   => Equal_Cells,
                                                     Margin        => Margin,
                                                     Minimum_Width => Minimum_Width,
-                                                    Aspect_Ratio  => Aspect_Ratio);
+                                                    Aspect_Ratio  => Float(Ratio));
     use type Gui.Layout.Element;
   begin
     if Layout_Complete or else Parent /= Current_Page or else Nr_Of_Pages /= 1 then
@@ -3503,23 +3716,25 @@ package body Gui is
   end Create;
 
 
-  function Create (Parent : Group; Arrangement : Orientation;
-                   Weight : Natural := 1; Equal_Cells : Boolean := False;
-                   Aspect_Ratio : Float := 0.0;
-                   Frame : Boolean := False;
-                   Title : String := "") return Group is
+  function Create (Parent       : Group;
+                   Arrangement  : Orientation;
+                   Expand       : Expansion    := Normal;
+                   Equal_Cells  : Boolean      := False;
+                   Ratio        : Aspect_Ratio := Unrestricted;
+                   Frame        : Boolean      := False;
+                   Title        : String       := "") return Group is
 
-    Margin : constant Natural := Frame_Margin (Frame, Title);
+    Margin        : constant Natural := Frame_Margin (Frame, Title);
     Minimum_Width : constant Natural := (if Title = "" then 0
                                          else To_Wide(Title)'length * Character_Width + 2 * Margin);
 
     Node : constant Layout.Element := Layout.Group (Layout.Direction'val (Orientation'pos (Arrangement)),
                                                     Gap           => 4,
-                                                    Weight        => Weight,
+                                                    Weight        => Expansion'pos (Expand),
                                                     Equal_Cells   => Equal_Cells,
                                                     Margin        => Margin,
                                                     Minimum_Width => Minimum_Width,
-                                                    Aspect_Ratio  => Aspect_Ratio);
+                                                    Aspect_Ratio  => Float(Ratio));
   begin
     if Layout_Complete then
       raise Sequence_Error;
@@ -3541,12 +3756,12 @@ package body Gui is
   end Space;
 
 
-  function Create (Parent : Group;
-                   The_Text : String;
+  function Create (Parent             : Group;
+                   The_Text           : String;
                    The_Action_Routine : Action_Routine := null;
-                   Expand : Boolean := False;
-                   The_Button_Size : Natural := Default_Button_Width) return Button is
-    Result : Button;
+                   Expand             : Boolean := False;
+                   The_Button_Size    : Natural := Default_Button_Width) return Button is
+                   Result             : Button;
   begin
     if Layout_Complete then
       raise Sequence_Error;
@@ -3563,7 +3778,7 @@ package body Gui is
                    The_Action_Routine : Action_Routine := null;
                    Expand             : Boolean := False;
                    The_Button_Size    : Natural := Default_Symbol_Button_Size) return Button is
-    Result : Button;
+                   Result             : Button;
   begin
     if Layout_Complete then
       raise Sequence_Error;
@@ -3575,11 +3790,28 @@ package body Gui is
   end Create;
 
 
+  function Create (Parent          : Group;
+                   Symbol          : Button_Symbol;
+                   Handler         : not null Button_Event_Handler;
+                   Expand          : Boolean := False;
+                   The_Button_Size : Natural := Default_Symbol_Button_Size) return Button is
+                   Result          : Button;
+  begin
+    if Layout_Complete then
+      raise Sequence_Error;
+    end if;
+    Result := Create_Button (Parent.Owner, "", null, The_Button_Size, True, Symbol, Handler);
+    Result.Ptr.Layout_Node := Layout.Control ((The_Button_Size, The_Button_Size), Weight => (if Expand then 1 else 0));
+    Layout.Append (Parent.Node, Result.Ptr.Layout_Node);
+    return Result;
+  end Create;
+
+
   procedure Finish_Layout is
     Client, Status : aliased Win32.Windef.RECT;
-    Metrics : constant Window_Metrics := Get_Window_Metrics;
-    Required : Layout.Size;
-    Unused : Win32.BOOL;
+    Metrics        : constant Window_Metrics := Get_Window_Metrics;
+    Required       : Layout.Size;
+    Unused         : Win32.BOOL;
     use type Win32.LONG;
     use type Gui.Layout.Element;
   begin
@@ -3602,8 +3834,8 @@ package body Gui is
 
   procedure Set_Text (The_Button : Button;
                       The_Text   : String) is
-    Text   : aliased constant Wide_String := To_Wide (The_Text) & Wide_Nul;
-    Unused : Win32.BOOL;
+                      Text       : aliased constant Wide_String := To_Wide (The_Text) & Wide_Nul;
+                      Unused     : Win32.BOOL;
   begin
     Unused := Win32.Winuser.SetWindowTextW (The_Button.Ptr.The_Handle,
                                             Win32.Addr(Text));
@@ -3613,8 +3845,8 @@ package body Gui is
   function Create_Value (Parent        : Group;
                          Initial_Text  : String;
                          Minimum_Width : Positive := 90) return Value_Box is
-    Text   : aliased constant Wide_String := To_Wide (Initial_Text) & Wide_Nul;
-    Result : constant Value_Box := (Ptr => new Child_Information);
+                         Text          : aliased constant Wide_String := To_Wide (Initial_Text) & Wide_Nul;
+                         Result        : constant Value_Box := (Ptr => new Child_Information);
   begin
     if Layout_Complete then
       raise Sequence_Error;
@@ -3632,15 +3864,15 @@ package body Gui is
 
   procedure Set_Text (The_Value_Box : Value_Box;
                       The_Text      : String) is
-    Text   : aliased constant Wide_String := To_Wide (The_Text) & Wide_Nul;
-    Unused : Win32.BOOL with Unreferenced;
+                      Text          : aliased constant Wide_String := To_Wide (The_Text) & Wide_Nul;
+                      Unused        : Win32.BOOL with Unreferenced;
   begin
     Unused := Win32.Winuser.SetWindowTextW (The_Value_Box.Ptr.The_Handle, Win32.Addr(Text));
   end Set_Text;
 
 
-  function Create (Parent_Page : Page) return Progress_Bar is
-    The_Progress_Bar : constant Progress_Bar := Progress_Bar'(Ptr => new Child_Information);
+  function Create (Parent_Page      : Page) return Progress_Bar is
+                   The_Progress_Bar : constant Progress_Bar := Progress_Bar'(Ptr => new Child_Information);
   begin
     The_Progress_Bar.Ptr.The_Window_Id := Next_Child_Id;
     The_Progress_Bar.Ptr.The_Kind := Progress_Bar_Child;
@@ -3692,7 +3924,7 @@ package body Gui is
 
 
   procedure Enable (The_Child : Child_Information_Ptr) is
-    Unused : Win32.BOOL;
+                    Unused    : Win32.BOOL;
   begin
     Unused := Win32.Winuser.EnableWindow (The_Child.The_Handle, Win32.TRUE);
     if The_Child.Buddy_Child /= null then
@@ -3708,7 +3940,7 @@ package body Gui is
 
 
   procedure Disable (The_Child : Child_Information_Ptr) is
-    Unused : Win32.BOOL;
+                     Unused    : Win32.BOOL;
   begin
     Unused := Win32.Winuser.EnableWindow(The_Child.The_Handle, Win32.FALSE);
     if The_Child.Buddy_Child /= null then
@@ -3740,7 +3972,7 @@ package body Gui is
 
 
   procedure Hide (The_Child : Child_Information_Ptr) is
-    Unused : Win32.BOOL;
+                  Unused    : Win32.BOOL;
   begin
     if not The_Child.Is_Hidden then
       Increment (The_Child.Parent_Page.Population(The_Child.The_Kind));
@@ -3769,7 +4001,7 @@ package body Gui is
 
 
   procedure Show (The_Child : Child_Information_Ptr) is
-    Unused : Win32.BOOL;
+                  Unused    : Win32.BOOL;
   begin
     if The_Child.Is_Hidden then
       Decrement (The_Child.Parent_Page.Population(The_Child.The_Kind));
@@ -3798,8 +4030,8 @@ package body Gui is
 
 
   procedure Set_Focus (The_Child : Child_Information_Ptr) is
-    Unused   : Win32.Windef.HWND;
-    The_Page : constant Page := The_Child.Parent_Page;
+                       Unused    : Win32.Windef.HWND;
+                       The_Page  : constant Page := The_Child.Parent_Page;
   begin
     The_Page.Keyboard_Focus := The_Child;
     if The_Page = Current_Page then
@@ -3852,7 +4084,7 @@ package body Gui is
 
   function Create (Parent_Page       : Page;
                    The_Click_Routine : access procedure (Item : Information) := null;
-                   The_Color_Handler     : Color_Handler := null) return Tree_View is
+                   The_Color_Handler : Color_Handler := null) return Tree_View is
 
     The_Tree_View : constant Tree_View := Tree_View'(Ptr => new Child_Information);
   begin
@@ -3867,14 +4099,14 @@ package body Gui is
 
   function Create (Parent_Page           : Page;
                    The_Text_Handler      : access function (For_Column       : Natural;
-                                                            With_Information : Information) return String;
+                   With_Information      : Information) return String;
                    The_Color_Handler     : Color_Handler := null;
                    The_Sort_Routine      : Sort_Routine := null;
                    The_Click_Routine     : access procedure (Item : Information) := null;
                    The_Click_Kind        : Click_Kind := Double_Click;
                    Use_Proportional_Font : Boolean := True;
                    Color_Background      : Boolean := False) return List_View is
-    The_List_View : constant List_View := List_View'(Ptr => new Child_Information);
+                   The_List_View         : constant List_View := List_View'(Ptr => new Child_Information);
     function Convert is new Ada.Unchecked_Conversion (Text_Handler, Action_Routine);
   begin
     The_List_View.Ptr.The_Window_Id := Next_Child_Id;
@@ -3891,8 +4123,8 @@ package body Gui is
   end Create;
 
 
-  procedure Add_Gridlines (The_List_View : List_View) is
-    Extended_Style : Win32.DWORD;
+  procedure Add_Gridlines (The_List_View  : List_View) is
+                           Extended_Style : Win32.DWORD;
   begin
     if Is_Active then
       Extended_Style := Win32.DWORD(Send_Message (The_List_View.Ptr.The_Handle,
@@ -3905,8 +4137,8 @@ package body Gui is
   end Add_Gridlines;
 
 
-  procedure Remove_Gridlines (The_List_View : List_View) is
-    Extended_Style : Win32.DWORD;
+  procedure Remove_Gridlines (The_List_View  : List_View) is
+                              Extended_Style : Win32.DWORD;
   begin
     if Is_Active then
       Extended_Style := Win32.DWORD(Send_Message (The_List_View.Ptr.The_Handle,
@@ -3929,7 +4161,7 @@ package body Gui is
     Title        : aliased constant Wide_String := To_Wide (The_Title) & Wide_Nul;
     Column_Index : constant Win32.WPARAM := Win32.WPARAM(The_List_View.Ptr.Number_Of_Columns);
     Column_Info  : aliased Win32.Comctl.Lv_Column_Wide;
-    function Convert is new Ada.Unchecked_Conversion(System.Address, Win32.LPARAM);
+    function Convert is new Ada.Unchecked_Conversion (System.Address, Win32.LPARAM);
     use type Win32.UINT;
 
   begin
@@ -3953,11 +4185,11 @@ package body Gui is
   end Add_Column;
 
 
-  procedure Set_Title (The_Column    : Column;
-                       The_Title     : String) is
-    Title       : aliased constant Wide_String := To_Wide (The_Title) & Wide_Nul;
-    Column_Info : Win32.Comctl.Lv_Column_Wide;
-    function Convert is new Ada.Unchecked_Conversion(System.Address, Win32.LPARAM);
+  procedure Set_Title (The_Column  : Column;
+                       The_Title   : String) is
+                       Title       : aliased constant Wide_String := To_Wide (The_Title) & Wide_Nul;
+                       Column_Info : Win32.Comctl.Lv_Column_Wide;
+    function Convert is new Ada.Unchecked_Conversion (System.Address, Win32.LPARAM);
   begin
     Column_Info.Mask := Win32.Comctl.Lvcf_Text;
     Column_Info.Text := Win32.Addr(Title);
@@ -3979,7 +4211,7 @@ package body Gui is
 
 
   function Width_Of (The_Column : Column) return Natural is
-    The_Width : Win32.LRESULT;
+                     The_Width  : Win32.LRESULT;
     use type Win32.LRESULT;
   begin
     The_Width := Send_Message (The_Column.List.Ptr.The_Handle,
@@ -4079,7 +4311,7 @@ package body Gui is
 
   procedure Sort (The_Column    : Column;
                   The_Direction : Sort_Direction) is
-    The_View  : constant Child_Information_Ptr := The_Column.List.Ptr;
+                  The_View      : constant Child_Information_Ptr := The_Column.List.Ptr;
     function Convert is new Ada.Unchecked_Conversion (Child_Information_Ptr, Win32.WPARAM);
     function Convert is new Ada.Unchecked_Conversion (System.Address, Win32.LPARAM);
   begin
@@ -4104,12 +4336,12 @@ package body Gui is
   begin
    Send_Message (The_List_View.Ptr.The_Handle,
                  Win32.Comctl.Lvm_Setitemcount,
-                 Win32.WPARAM (Amount), 0);
+                 Win32.WPARAM(Amount), 0);
   end Reserve_Space_For;
 
 
   function Visible_Region_Of (The_List_View : List_View) return Natural is
-    The_Region : Win32.LRESULT;
+                              The_Region    : Win32.LRESULT;
     use type Win32.LRESULT;
   begin
     The_Region :=  Send_Message (The_List_View.Ptr.The_Handle,
@@ -4143,10 +4375,10 @@ package body Gui is
 
 
   function Get_Selection_Count (The_Handle : Win32.Windef.HWND) return Natural is
-    Count : Win32.LRESULT;
+                                Count      : Win32.LRESULT;
   begin
     Count :=  Send_Message (The_Handle, Win32.Comctl.LVM_Getselectedcount, 0, 0);
-    return Natural (Count);
+    return Natural(Count);
   end Get_Selection_Count;
 
 
@@ -4190,7 +4422,7 @@ package body Gui is
 
   function Create (Parent_Page   : Page;
                    Word_Wrapping : Boolean := False) return Text_View is
-    The_Text_View : constant Text_View := Text_View'(Ptr => new Child_Information);
+                   The_Text_View : constant Text_View := Text_View'(Ptr => new Child_Information);
   begin
     The_Text_View.Ptr.The_Window_Id := Next_Child_Id;
     The_Text_View.Ptr.The_Kind := Text_View_Child;
@@ -4213,8 +4445,8 @@ package body Gui is
                             The_Text       : Wide_String;
                             The_Color      : Color := Black;
                             Ensure_Visible : Boolean := True) is
-    Text : aliased constant Wide_String := The_Text & Wide_Nul;
-    function Convert is new Ada.Unchecked_Conversion(System.Address, Win32.LPARAM);
+                            Text           : aliased constant Wide_String := The_Text & Wide_Nul;
+    function Convert is new Ada.Unchecked_Conversion (System.Address, Win32.LPARAM);
     Charformat : aliased Win32.Comctl.Charformat;
     use type Win32.LONG;
     Everything : aliased constant Win32.Comctl.Charrange := (Min => -1, Max => -1);
@@ -4278,8 +4510,8 @@ package body Gui is
                    Is_Modifiable      : Boolean := True;
                    The_Size           : Natural := Automatic;
                    The_Title_Size     : Natural := Automatic) return Plain_Edit_Box is
-    Text         : aliased constant Wide_String := To_Wide (Initial_Text) & Wide_Nul;
-    The_Edit_Box : constant Plain_Edit_Box := Plain_Edit_Box'(Ptr => new Child_Information);
+                   Text               : aliased constant Wide_String := To_Wide (Initial_Text) & Wide_Nul;
+                   The_Edit_Box       : constant Plain_Edit_Box := Plain_Edit_Box'(Ptr => new Child_Information);
   begin
     The_Edit_Box.Ptr.Buddy_Child := Buddy_For (The_Text      => To_Wide (The_Title),
                                                The_Text_Size => The_Title_Size,
@@ -4302,7 +4534,7 @@ package body Gui is
                    Initial_Text  : String;
                    Is_Modifiable : Boolean := False;
                    Minimum_Width : Positive := 90) return Plain_Edit_Box is
-    Result : Plain_Edit_Box;
+                   Result        : Plain_Edit_Box;
   begin
     if Layout_Complete then
       raise Sequence_Error;
@@ -4315,7 +4547,7 @@ package body Gui is
 
 
   function Text_Size_Of (The_Text : String) return Natural is
-    Text : constant Wide_String := To_Wide (The_Text);
+                         Text     : constant Wide_String := To_Wide (The_Text);
   begin
     return Text'length * Character_Width;
   end Text_Size_Of;
@@ -4323,17 +4555,17 @@ package body Gui is
 
   procedure Set_Text (The_Edit_Box : Edit_Box'class;
                       The_Text     : String) is
-    Text   : aliased constant Wide_String := To_Wide (The_Text) & Wide_Nul;
-    Unused : Win32.BOOL;
+                      Text         : aliased constant Wide_String := To_Wide (The_Text) & Wide_Nul;
+                      Unused       : Win32.BOOL;
   begin
     Unused := Win32.Winuser.SetWindowTextW (The_Edit_Box.Ptr.The_Handle, Win32.Addr(Text));
   end Set_Text;
 
 
-  function Contents_Of (The_Edit_Box : Edit_Box'class) return String is
-    Max_Text_Size : constant := 250;
-    Text_Length   : Win32.INT;
-    The_Text      : aliased Wide_String (1 .. Max_Text_Size);
+  function Contents_Of (The_Edit_Box  : Edit_Box'class) return String is
+                        Max_Text_Size : constant := 250;
+                        Text_Length   : Win32.INT;
+                        The_Text      : aliased Wide_String (1 .. Max_Text_Size);
     pragma Warnings (Off, The_Text);
   begin
     Text_Length := Win32.Winuser.GetWindowTextW (The_Edit_Box.Ptr.The_Handle,
@@ -4372,8 +4604,8 @@ package body Gui is
   function Create (Parent_Page        : Page;
                    The_Title          : String;
                    The_Action_Routine : Action_Routine := null) return Check_Box is
-    Title         : aliased constant Wide_String := To_Wide (The_Title) & Wide_Nul;
-    The_Check_Box : constant Check_Box := Check_Box'(Ptr => new Child_Information);
+                   Title              : aliased constant Wide_String := To_Wide (The_Title) & Wide_Nul;
+                   The_Check_Box      : constant Check_Box := Check_Box'(Ptr => new Child_Information);
   begin
     The_Check_Box.Ptr.The_Window_Id := Next_Child_Id;
     The_Check_Box.Ptr.The_Kind := Check_Box_Child;
@@ -4410,8 +4642,8 @@ package body Gui is
                     Is_Modifiable      : Boolean := True;
                     The_Size           : Natural := Automatic;
                     The_Title_Size     : Natural := Automatic) return Checked_Edit_Box is
-    Text         : aliased constant Wide_String := To_Wide (Initial_Text) & Wide_Nul;
-    The_Edit_Box : constant Checked_Edit_Box := Checked_Edit_Box'(Ptr => new Child_Information);
+                    Text               : aliased constant Wide_String := To_Wide (Initial_Text) & Wide_Nul;
+                    The_Edit_Box       : constant Checked_Edit_Box := Checked_Edit_Box'(Ptr => new Child_Information);
   begin
     The_Edit_Box.Ptr.Buddy_Child := Buddy_For (The_Text      => To_Wide (The_Title),
                                                The_Text_Size => The_Title_Size,
@@ -4458,7 +4690,7 @@ package body Gui is
                     The_Style          : Combo_Style := Default_Combo_Style;
                     The_Size           : Natural := Automatic;
                     The_Title_Size     : Natural := Automatic) return Plain_Combo_Box is
-    The_Combo_Box : constant Plain_Combo_Box := Plain_Combo_Box'(Ptr => new Child_Information);
+                    The_Combo_Box      : constant Plain_Combo_Box := Plain_Combo_Box'(Ptr => new Child_Information);
   begin
     The_Combo_Box.Ptr.Buddy_Child
       := Buddy_For (The_Text      => To_Wide (The_Title),
@@ -4480,7 +4712,7 @@ package body Gui is
 
   procedure Add_Text (The_Combo_Box : Combo_Box'class;
                       The_Text      : String) is
-    Text : aliased constant String := The_Text & Nul;
+                      Text          : aliased constant String := The_Text & Nul;
     function Convert is new Ada.Unchecked_Conversion (System.Address, Win32.LPARAM);
   begin
     Send_Message (The_Combo_Box.Ptr.The_Handle,
@@ -4493,7 +4725,7 @@ package body Gui is
   procedure Insert_Text (The_Combo_Box : Combo_Box'class;
                          At_Index      : Natural;
                          The_Text      : String) is
-    Text : aliased constant String := The_Text & Nul;
+                         Text          : aliased constant String := The_Text & Nul;
     function Convert is new Ada.Unchecked_Conversion (System.Address, Win32.LPARAM);
   begin
     Send_Message (The_Combo_Box.Ptr.The_Handle,
@@ -4505,9 +4737,9 @@ package body Gui is
 
   procedure Remove_Text (The_Combo_Box : Combo_Box'class;
                          The_Text      : String) is
-    Text        : aliased constant String := The_Text & Nul;
-    Entire_List : constant Win32.WPARAM := 16#FFFFFFFF#;
-    The_Index   : aliased Win32.LRESULT;
+                         Text          : aliased constant String := The_Text & Nul;
+                         Entire_List   : constant Win32.WPARAM := 16#FFFFFFFF#;
+                         The_Index     : aliased Win32.LRESULT;
     function Convert is new Ada.Unchecked_Conversion (System.Address, Win32.LPARAM);
   begin
     The_Index := Send_Message (The_Combo_Box.Ptr.The_Handle,
@@ -4531,8 +4763,8 @@ package body Gui is
 
   procedure Select_Text (The_Combo_Box : Combo_Box'class;
                          The_Text      : String) is
-    Text : aliased constant String := The_Text & Nul;
-    Entire_List : constant Win32.WPARAM := 16#FFFFFFFF#;
+                         Text          : aliased constant String := The_Text & Nul;
+                         Entire_List   : constant Win32.WPARAM := 16#FFFFFFFF#;
     function Convert is new Ada.Unchecked_Conversion (System.Address, Win32.LPARAM);
   begin
     Send_Message (The_Combo_Box.Ptr.The_Handle,
@@ -4550,7 +4782,7 @@ package body Gui is
 
 
   procedure Deselect (The_Combo_Box : Combo_Box'class) is
-    Nothing : constant Win32.WPARAM := 16#FFFFFFFF#;
+                      Nothing       : constant Win32.WPARAM := 16#FFFFFFFF#;
   begin
     Send_Message (The_Combo_Box.Ptr.The_Handle,
                   Win32.Winuser.CB_SETCURSEL, Nothing, 0);
@@ -4558,11 +4790,11 @@ package body Gui is
 
 
   function Contents_Of (The_Combo_Box : Combo_Box'class) return String is
-    The_Index : Win32.LRESULT;
-    The_Size  : Win32.LRESULT;
-    Unused    : Win32.INT;
-    Max_Text_Size : constant := 255;
-    The_Text      : aliased Wide_String (1..Max_Text_Size);
+                        The_Index     : Win32.LRESULT;
+                        The_Size      : Win32.LRESULT;
+                        Unused        : Win32.INT;
+                        Max_Text_Size : constant := 255;
+                        The_Text      : aliased Wide_String (1..Max_Text_Size);
     pragma Warnings (Off, The_Text);
     function Convert is new Ada.Unchecked_Conversion (Win32.PWSTR, Win32.LPARAM);
     use type Win32.LRESULT;
@@ -4652,7 +4884,7 @@ package body Gui is
 
   procedure Mark_Has_Children (The_Tree_View : Tree_View;
                                The_Tree_Item : Tree_Item) is
-    The_Item : aliased Win32.Comctl.Tv_Item_Ansi;
+                               The_Item      : aliased Win32.Comctl.Tv_Item_Ansi;
     function Convert is new Ada.Unchecked_Conversion (System.Address, Win32.LPARAM);
   begin
     The_Item.Mask := Win32.Comctl.Tvif_Children;
@@ -4665,8 +4897,8 @@ package body Gui is
 
 
   procedure Mark_Has_No_Children (The_Tree_View : Tree_View;
-                                       The_Tree_Item : Tree_Item) is
-    The_Item : aliased Win32.Comctl.Tv_Item_Ansi;
+                                  The_Tree_Item : Tree_Item) is
+                                  The_Item      : aliased Win32.Comctl.Tv_Item_Ansi;
     function Convert is new Ada.Unchecked_Conversion (System.Address, Win32.LPARAM);
   begin
     The_Item.Mask := Win32.Comctl.Tvif_Children;
@@ -4683,7 +4915,7 @@ package body Gui is
                      The_Parent      : Tree_Item := Root_Item;
                      After_Item      : Tree_Item;
                      The_Information : Information := No_Information) return Tree_Item is
-    Title : aliased constant String := The_Title & Nul;
+                     Title           : aliased constant String := The_Title & Nul;
     function Convert is new Ada.Unchecked_Conversion (System.Address, Win32.LPARAM);
     function Convert is new Ada.Unchecked_Conversion (Information, Win32.LPARAM);
     The_Item      : aliased Win32.Comctl.Tv_Item_Ansi;
@@ -4713,7 +4945,7 @@ package body Gui is
                           The_Parent      : Tree_Item := Root_Item;
                           After_Item      : Tree_Item;
                           The_Information : Information := No_Information) return Tree_Item is
-    Title : aliased constant Wide_String := The_Title & Wide_Nul;
+                          Title           : aliased constant Wide_String := The_Title & Wide_Nul;
     function Convert is new Ada.Unchecked_Conversion (Information, Win32.LPARAM);
     function Convert is new Ada.Unchecked_Conversion (System.Address, Win32.LPARAM);
     The_Item      : aliased Win32.Comctl.Tv_Item_Wide;
@@ -4742,7 +4974,7 @@ package body Gui is
                      The_Parent      : Tree_Item := Root_Item;
                      The_Position    : Item_Position := Sorted;
                      The_Information : Information := No_Information) return Tree_Item is
-    The_Item : Tree_Item;
+                     The_Item        : Tree_Item;
   begin
     case The_Position is
     when First  => The_Item := Tree_Item (Win32.Comctl.Tvi_First);
@@ -4756,7 +4988,7 @@ package body Gui is
   procedure Rename_Item (The_Tree_View : Tree_View;
                          The_Item      : Tree_Item;
                          New_Title     : String) is
-    Title : aliased constant Wide_String := To_Wide (New_Title) & Wide_Nul;
+                         Title         : aliased constant Wide_String := To_Wide (New_Title) & Wide_Nul;
     function Convert is new Ada.Unchecked_Conversion (System.Address, Win32.LPARAM);
     Replacement : Win32.Comctl.Tv_Item_Wide;
   begin
@@ -4869,7 +5101,7 @@ package body Gui is
 
 
   function Nr_Of_Nuls_In (The_String : String) return Natural is
-    Nr_Of_Nuls : Natural := 0;
+                          Nr_Of_Nuls : Natural := 0;
   begin
     for The_Index in The_String'range loop
       if The_String (The_Index) = Nul then
@@ -4881,6 +5113,7 @@ package body Gui is
 
 
   package OPENFILENAMEA_Conversion is new System.Address_To_Access_Conversions (Win32.Commdlg.OPENFILENAMEA);
+
 
   function Get_Input_Filename (Default_Extension     : String;
                                Extension_Description : String) return String is
@@ -4900,7 +5133,7 @@ package body Gui is
     The_Information.hInstance := Our_Instance;
     The_Information.lpstrFilter := Win32.Addr(Filters);
     The_Information.lpstrCustomFilter := null;
-    The_Information.nFilterIndex := Win32.DWORD ((Nr_Of_Nuls_In (Extension_Description) / 2) + 1);
+    The_Information.nFilterIndex := Win32.DWORD((Nr_Of_Nuls_In (Extension_Description) / 2) + 1);
     The_Information.lpstrFile := Win32.Addr(The_Filename);
     The_Information.nMaxFile := Max_Filename_Size;
     The_Information.lpstrFileTitle := null;
@@ -4948,7 +5181,7 @@ package body Gui is
     The_Information.hInstance := Our_Instance;
     The_Information.lpstrFilter := Win32.Addr(Filters);
     The_Information.lpstrCustomFilter := null;
-    The_Information.nFilterIndex := Win32.DWORD ((Nr_Of_Nuls_In (Extension_Description) / 2) + 1);
+    The_Information.nFilterIndex := Win32.DWORD((Nr_Of_Nuls_In (Extension_Description) / 2) + 1);
     The_Information.lpstrFile := Win32.Addr(The_Filename);
     The_Information.nMaxFile := Max_Filename_Size;
     The_Information.lpstrFileTitle := null;
@@ -4997,10 +5230,14 @@ package body Gui is
     The_Action : Action_Routine;
     The_Click  : Click_Routine;
     The_Info   : Information;
+    Handler    : Button_Event_Handler;
+    The_Event  : Button_Event;
   begin
     loop
-      Action.Get (The_Action, The_Click, The_Info);
-      if The_Click /= null then
+      Action.Get (The_Action, The_Click, The_Info, Handler, The_Event);
+      if Handler /= null then
+        Handler.all (The_Event);
+      elsif The_Click /= null then
         The_Click.all (The_Info);
       else
         if The_Action /= null then
@@ -5018,16 +5255,16 @@ package body Gui is
   end Action_Handler;
 
 
-  function Create (Title    : String;
-                   Metrics  : Window_Metrics := Default_Metrics;
-                   On_Close : Detached_Close_Callback := null) return Detached_Window is
-    Wide_Title : aliased constant Wide_String := To_Wide (Title) & Wide_Nul;
-    Request    : aliased Detached_Create_Request :=
+  function Create (Title      : String;
+                   Metrics    : Window_Metrics := Default_Metrics;
+                   On_Close   : Detached_Close_Callback := null) return Detached_Window is
+                   Wide_Title : aliased constant Wide_String := To_Wide (Title) & Wide_Nul;
+                   Request    : aliased Detached_Create_Request :=
       (Title      => Win32.Addr (Wide_Title),
-       Width      => (if Metrics.Width = Automatic then Default_Position else Win32.INT (Metrics.Width)),
-       Height     => (if Metrics.Height = Automatic then Default_Position else Win32.INT (Metrics.Height)),
-       X_Position => Win32.INT (Metrics.X_Position),
-       Y_Position => Win32.INT (Metrics.Y_Position),
+       Width      => (if Metrics.Width = Automatic then Default_Position else Win32.INT(Metrics.Width)),
+       Height     => (if Metrics.Height = Automatic then Default_Position else Win32.INT(Metrics.Height)),
+       X_Position => Win32.INT(Metrics.X_Position),
+       Y_Position => Win32.INT(Metrics.Y_Position),
        Result     => System.Null_Address,
        On_Close   => On_Close);
     Unused : Win32.LRESULT;
@@ -5047,8 +5284,8 @@ package body Gui is
 
   procedure Show (The_Window : Detached_Window;
                   Data       : Ada.Streams.Stream_Element_Array) is
-    Request : aliased Detached_Show_Request;
-    Unused  : Win32.LRESULT;
+                  Request    : aliased Detached_Show_Request;
+                  Unused     : Win32.LRESULT;
     use type Ada.Streams.Stream_Element_Offset;
   begin
     if not Is_Active or else The_Window = null or else Data'length = 0 or else
@@ -5058,7 +5295,7 @@ package body Gui is
     end if;
     Request := (Hwnd    => The_Window.The_Handle,
                 Address => Data (Data'first)'address,
-                Length  => Win32.UINT (Data'length),
+                Length  => Win32.UINT(Data'length),
                 Success => False);
     Unused := Win32.Winuser.SendMessage
       (Private_Window, Wm_Show_Detached, 0, To_Lparam (Request'unchecked_access));

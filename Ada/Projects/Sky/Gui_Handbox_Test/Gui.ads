@@ -88,21 +88,46 @@ package Gui is
   type Radio_Menu_Item is new Selection_Menu_Item with private;
 
   type Orientation is (Horizontal, Vertical);
+
+  type Expansion is (Fixed, Normal, Double, Triple);
+
+  type Aspect_Ratio is delta 0.001 range 0.0 .. 100.0;
+
+  Unrestricted : constant Aspect_Ratio := 0.0;
+  Square       : constant Aspect_Ratio := 1.0;
+
   type Group is private;
   type Page is private;
 
-  function Create (Parent : Page; Arrangement : Orientation;
-                   Weight : Natural := 1; Equal_Cells : Boolean := False;
-                   Aspect_Ratio : Float := 0.0;
-                   Frame : Boolean := False;
-                   Title : String := "") return Group;
-  function Create (Parent : Group; Arrangement : Orientation;
-                   Weight : Natural := 1; Equal_Cells : Boolean := False;
-                   Aspect_Ratio : Float := 0.0;
-                   Frame : Boolean := False;
-                   Title : String := "") return Group;
+  -- Arrangement : Direction in which the elements are arranged.
+  -- Expand      : Relative share of extra space along the parent's arrangement.
+  --               Fixed retains the minimum size; Normal, Double and Triple have weights 1, 2 and 3.
+  -- Equal_Cells : All elements receive equally sized cells.
+  -- Ratio       : Width divided by height of the group interior. Unrestricted disables the constraint.
+  -- Frame       : Display a frame around the group.
+  -- Title       : Optional frame title. A nonempty title implies Frame.
+  -- These parameters apply to both group creation functions.
+
+  function Create (Parent       : Page;
+                   Arrangement  : Orientation;
+                   Expand       : Expansion    := Normal;
+                   Equal_Cells  : Boolean      := False;
+                   Ratio        : Aspect_Ratio := Unrestricted;
+                   Frame        : Boolean      := False;
+                   Title        : String       := "") return Group;
+
+  function Create (Parent       : Group;
+                   Arrangement  : Orientation;
+                   Expand       : Expansion    := Normal;
+                   Equal_Cells  : Boolean      := False;
+                   Ratio        : Aspect_Ratio := Unrestricted;
+                   Frame        : Boolean      := False;
+                   Title        : String       := "") return Group;
+
   procedure Space (Parent : Group);
+
   procedure Finish_Layout;
+
   type Child is abstract tagged private;
   type Button is new Child with private;
   type Value_Box is new Child with private;
@@ -255,10 +280,8 @@ package Gui is
   -- This routine adds the page to the window and can then be accessed by the user via a tab control
 
   procedure Select_Page (The_Page : Page);
-  --
   -- Causes the specified page to become the current (displayed) page
   -- (same effect as if the user had selected the page using the tab control
-  --
 
   procedure Remove_Page (The_Page : Page);
   -- Removes the first occurrence of the page from the window.
@@ -304,9 +327,7 @@ package Gui is
   ------------------------------------------
 
   function Is_Defined (The_Child : Child'class) return Boolean;
-  --
-  --  Function that returns True if the specified child has been created
-  --
+  -- Returns True if the specified child has been created
 
   procedure Hide (The_Child : Child'class);
 
@@ -397,11 +418,11 @@ package Gui is
                    The_Action_Routine : Action_Routine := null;
                    The_Button_Size    : Natural := Default_Button_Width) return Button;
 
-  function Create (Parent : Group;
-                   The_Text : String;
+  function Create (Parent             : Group;
+                   The_Text           : String;
                    The_Action_Routine : Action_Routine := null;
-                   Expand : Boolean := False;
-                   The_Button_Size : Natural := Default_Button_Width) return Button;
+                   Expand             : Boolean := False;
+                   The_Button_Size    : Natural := Default_Button_Width) return Button;
 
   type Button_Symbol is (Arrow_Up, Arrow_Down, Arrow_Left, Arrow_Right, Stop_Symbol, Cross_Symbol);
 
@@ -410,6 +431,16 @@ package Gui is
                    The_Action_Routine : Action_Routine := null;
                    Expand             : Boolean := False;
                    The_Button_Size    : Natural := Default_Symbol_Button_Size) return Button;
+
+  type Button_Event is (Pressed, Released);
+
+  type Button_Event_Handler is access procedure (Event : Button_Event);
+
+  function Create (Parent          : Group;
+                   Symbol          : Button_Symbol;
+                   Handler         : not null Button_Event_Handler;
+                   Expand          : Boolean := False;
+                   The_Button_Size : Natural := Default_Symbol_Button_Size) return Button;
 
   procedure Set_Text (The_Button : Button;
                       The_Text   : String);
@@ -452,9 +483,10 @@ package Gui is
     List     : List_View;
   end record;
 
+
   function Create (Parent_Page           : Page;
                    The_Text_Handler      : access function (For_Column       : Natural;
-                                                            With_Information : Information) return String;
+                   With_Information      : Information) return String;
                    The_Color_Handler     : Color_Handler := null;
                    The_Sort_Routine      : Sort_Routine := null;
                    The_Click_Routine     : access procedure (Item : Information) := null;
@@ -505,7 +537,7 @@ package Gui is
                                Amount        : Positive);
 
   function Visible_Region_Of (The_List_View : List_View) return Natural;
-  -- returns how many items can be seen in the list view.
+  -- Returns how many items can be seen in the list view.
 
   procedure Make_Visible_In (The_List_View : List_View;
                              Item_Ordinal  : Positive := 1);
@@ -530,12 +562,10 @@ package Gui is
   function Create (Parent_Page       : Page;
                    The_Click_Routine : access procedure (Item : Information) := null;
                    The_Color_Handler : Color_Handler := null) return Tree_View;
---
 -- Note: If a colour handler is supplied then it is called to define the colour
 --       of each tree item. The background colour is fixed to be always white
 --       Ie Selected items no longer have a blue background but retain the enclosing frame
 --       (so it is still possible to identify which item is selected)
---
 
   function Add_Item (The_Tree_View   : Tree_View;
                      The_Title       : String;
@@ -551,9 +581,7 @@ package Gui is
 
   function Get_Parent (The_Tree_View : Tree_View;
                        The_Item      : Tree_Item) return Tree_Item;
-  --
-  -- Exception Tree_Item_Is_Root raised if The_Item is Root_Item (as this has no parent)
-  --
+  -- Exception: Tree_Item_Is_Root if The_Item is Root_Item (as this has no parent)
 
   procedure Rename_Item (The_Tree_View : Tree_View;
                          The_Item      : Tree_Item;
