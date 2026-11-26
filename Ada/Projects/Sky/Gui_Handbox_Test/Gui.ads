@@ -105,6 +105,7 @@ package Gui is
   procedure Finish_Layout;
   type Child is abstract tagged private;
   type Button is new Child with private;
+  type Value_Box is new Child with private;
   type Progress_Bar is new Child with private;
   type List_View is new Child with private;
   type Tree_View is new Child with private;
@@ -412,6 +413,16 @@ package Gui is
 
   procedure Set_Text (The_Button : Button;
                       The_Text   : String);
+
+  -------------------------
+  -- Value Box functions --
+  -------------------------
+  function Create_Value (Parent        : Group;
+                         Initial_Text  : String;
+                         Minimum_Width : Positive := 90) return Value_Box;
+
+  procedure Set_Text (The_Value_Box : Value_Box;
+                      The_Text      : String);
 
   ----------------------------
   -- Progress Bar functions --
@@ -756,6 +767,7 @@ private
   end record;
 
   type Button is new Child with null record;
+  type Value_Box is new Child with null record;
   type Progress_Bar is new Child with null record;
   type List_View is new Child with null record;
   type Tree_View is new Child with null record;

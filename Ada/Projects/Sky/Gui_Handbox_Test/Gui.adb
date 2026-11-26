@@ -534,6 +534,7 @@ package body Gui is
 
   type Child_Information is record
     Is_Frame                 : Boolean := False;
+    Is_Value_Box             : Boolean := False;
     Has_Symbol               : Boolean := False;
     Symbol                   : Button_Symbol := Stop_Symbol;
     Layout_Node : Layout.Element := null;
@@ -1750,6 +1751,10 @@ package body Gui is
 
     Parent_Page : constant Page := Page(Page_Conversion.To_Pointer (Convert (The_Page)));
 
+    Ss_Center      : constant Win32.DWORD := 16#0001#;
+    Ss_Centerimage : constant Win32.DWORD := 16#0200#;
+    Ss_Noprefix    : constant Win32.DWORD := 16#0080#;
+
     Class_Name     : Win32.LPCWSTR;
     Previous_Child : Child_Information_Ptr;
 
@@ -1831,6 +1836,9 @@ package body Gui is
           Window_Style := Window_Style + 16#0007# + Win32.Winuser.WS_CLIPSIBLINGS; -- BS_GROUPBOX
         else
           Class_Name := Wide_Text_Address_Of ("Static");
+          if The_Child.Is_Value_Box then
+            Window_Style := Window_Style + Win32.Winuser.WS_BORDER + Ss_Center + Ss_Centerimage + Ss_Noprefix;
+          end if;
         end if;
     end case;
     if Parent_Page = Current_Page then
@@ -3599,6 +3607,35 @@ package body Gui is
   begin
     Unused := Win32.Winuser.SetWindowTextW (The_Button.Ptr.The_Handle,
                                             Win32.Addr(Text));
+  end Set_Text;
+
+
+  function Create_Value (Parent        : Group;
+                         Initial_Text  : String;
+                         Minimum_Width : Positive := 90) return Value_Box is
+    Text   : aliased constant Wide_String := To_Wide (Initial_Text) & Wide_Nul;
+    Result : constant Value_Box := (Ptr => new Child_Information);
+  begin
+    if Layout_Complete then
+      raise Sequence_Error;
+    end if;
+    Result.Ptr.Is_Value_Box := True;
+    Result.Ptr.The_Kind := Static_Child;
+    Result.Ptr.The_Window_Id := Next_Child_Id;
+    Result.Ptr.Initial_Title := Win32.Addr(Text);
+    Create (Result.Ptr, Parent.Owner);
+    Result.Ptr.Layout_Node := Layout.Control ((Minimum_Width, 30), Weight => 1);
+    Layout.Append (Parent.Node, Result.Ptr.Layout_Node);
+    return Result;
+  end Create_Value;
+
+
+  procedure Set_Text (The_Value_Box : Value_Box;
+                      The_Text      : String) is
+    Text   : aliased constant Wide_String := To_Wide (The_Text) & Wide_Nul;
+    Unused : Win32.BOOL with Unreferenced;
+  begin
+    Unused := Win32.Winuser.SetWindowTextW (The_Value_Box.Ptr.The_Handle, Win32.Addr(Text));
   end Set_Text;
 
 

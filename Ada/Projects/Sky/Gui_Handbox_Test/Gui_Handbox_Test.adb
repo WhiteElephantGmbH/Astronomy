@@ -28,7 +28,7 @@ procedure Gui_Handbox_Test is
   Page : Gui.Page;
   Speed, Handbox, Top, Middle, Bottom : Gui.Group;
   Slower, Faster : Gui.Button with Unreferenced;
-  Speed_Value : Gui.Plain_Edit_Box;
+  Speed_Value : Gui.Value_Box;
   Speed_Index : Natural := 1;
   Speed_Button_Size : constant := 44;
   Up, Left, Center, Right, Down : Gui.Button with Unreferenced;
@@ -73,7 +73,7 @@ procedure Gui_Handbox_Test is
     Speed := Gui.Create (Page, Gui.Horizontal, Weight => 0, Title => "Speed");
     Slower := Gui.Create (Speed, Gui.Arrow_Left, Decrease_Speed'unrestricted_access,
                           The_Button_Size => Speed_Button_Size);
-    Speed_Value := Gui.Create (Speed, "14.99""/s", Minimum_Width => 90);
+    Speed_Value := Gui.Create_Value (Speed, "14.99""/s", Minimum_Width => 90);
     Faster := Gui.Create (Speed, Gui.Arrow_Right, Increase_Speed'unrestricted_access,
                           The_Button_Size => Speed_Button_Size);
     Handbox := Gui.Create (Page, Gui.Vertical, Equal_Cells => True,
