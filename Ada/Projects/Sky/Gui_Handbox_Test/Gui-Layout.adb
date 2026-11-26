@@ -4,18 +4,24 @@ package body Gui.Layout is
                   Gap         : Natural := 0;
                   Margin      : Natural := 0;
                   Weight      : Natural := 1;
-                  Equal_Cells : Boolean := False) return Element is
+                  Equal_Cells : Boolean := False;
+                  Aspect_Ratio : Float := 0.0) return Element is
   begin
+    if Aspect_Ratio < 0.0 then
+      raise Constraint_Error;
+    end if;
     return new Node'(Is_Group => True, Arrangement => Arrangement,
                      Gap => Gap, Margin => Margin, Weight => Weight,
-                     Equal_Cells => Equal_Cells, others => <>);
+                     Equal_Cells => Equal_Cells, Aspect_Ratio => Aspect_Ratio, others => <>);
   end Group;
+
 
   function Control (Minimum : Size;
                     Weight  : Natural := 0) return Element is
   begin
     return new Node'(Required => Minimum, Weight => Weight, others => <>);
   end Control;
+
 
   procedure Append (Parent, Child : Element) is
     Ancestor : Element := Parent;
@@ -38,11 +44,13 @@ package body Gui.Layout is
     Parent.Last := Child;
   end Append;
 
+
   function Along (Item : Size; Arrangement : Direction) return Natural is
     (if Arrangement = Horizontal then Item.Width else Item.Height);
 
   function Across (Item : Size; Arrangement : Direction) return Natural is
     (if Arrangement = Horizontal then Item.Height else Item.Width);
+
 
   function Minimum (Item : Element) return Size is
     Child : Element := Item.First;
@@ -56,8 +64,8 @@ package body Gui.Layout is
       Required := Minimum (Child);
       Count := Count + 1;
       Total := Total + Along (Required, Item.Arrangement);
-      Largest := Natural'Max (Largest, Along (Required, Item.Arrangement));
-      Cross := Natural'Max (Cross, Across (Required, Item.Arrangement));
+      Largest := Natural'max (Largest, Along (Required, Item.Arrangement));
+      Cross := Natural'max (Cross, Across (Required, Item.Arrangement));
       Child := Child.Next;
     end loop;
     if Item.Equal_Cells then
@@ -69,41 +77,92 @@ package body Gui.Layout is
       Total := Total + (Count - 1) * Item.Gap;
     end if;
     if Item.Arrangement = Horizontal then
-      return (Total, Cross);
+      Required := (Total, Cross);
     else
-      return (Cross, Total);
+      Required := (Cross, Total);
     end if;
+    if Item.Aspect_Ratio > 0.0 then
+      Required.Width :=
+        Natural'max (Required.Width, Natural (Float'ceiling (Float (Required.Height) * Item.Aspect_Ratio)));
+      Required.Height :=
+        Natural'max (Required.Height, Natural (Float'ceiling (Float (Required.Width) / Item.Aspect_Ratio)));
+    end if;
+    return Required;
   end Minimum;
 
+
   procedure Arrange (Item : Element; Area : Rectangle) is
+
     Required : constant Size := Minimum (Item);
     Child : Element := Item.First;
-    Count, Total_Weight, Largest : Natural := 0;
+    Count, Total_Weight, Largest, Total : Natural := 0;
     Extra, Share, Extent, Cross, Offset, Used_Weight, Distributed : Natural := 0;
     Available : Natural;
     Child_Area : Rectangle;
     Child_Size : Size;
-  begin
+    Fit : Rectangle := Area;
+    Reserved, Limit, Bonus : Natural := 0;
+
+    function Capacity (Child : Element) return Natural is
+      Base : constant Natural := Along (Minimum (Child), Item.Arrangement);
+      Target : Natural;
+    begin
+      if Item.Arrangement = Horizontal then
+        Target := Natural (Float'floor (Float (Cross) * Child.Aspect_Ratio));
+      else
+        Target := Natural (Float'floor (Float (Cross) / Child.Aspect_Ratio));
+      end if;
+      return Natural'max (Base, Target) - Base;
+    end Capacity;
+
+  begin -- Arrange
     if Area.Width < Required.Width or else Area.Height < Required.Height then
       raise Constraint_Error with "layout below minimum size";
     end if;
-    Item.Area := Area;
+    if Item.Aspect_Ratio > 0.0 then
+      if Float (Area.Width) > Float (Area.Height) * Item.Aspect_Ratio then
+        Fit.Width := Natural'max (Required.Width, Natural (Float'floor (Float (Area.Height) * Item.Aspect_Ratio)));
+        Fit.X := Area.X + (Area.Width - Fit.Width) / 2;
+      else
+        Fit.Height := Natural'max (Required.Height, Natural (Float'floor (Float (Area.Width) / Item.Aspect_Ratio)));
+      end if;
+    end if;
+    Item.Area := Fit;
     if not Item.Is_Group then
       return;
     end if;
-    Available := Along ((Area.Width, Area.Height), Item.Arrangement);
-    Cross := Across ((Area.Width, Area.Height), Item.Arrangement) - 2 * Item.Margin;
-    Extra := Available - Along (Required, Item.Arrangement);
+    Available := Along ((Fit.Width, Fit.Height), Item.Arrangement);
+    Cross := Across ((Fit.Width, Fit.Height), Item.Arrangement) - 2 * Item.Margin;
     Offset := Item.Margin;
     while Child /= null loop
       Count := Count + 1;
-      Total_Weight := Total_Weight + Child.Weight;
-      Largest := Natural'Max (Largest, Along (Minimum (Child), Item.Arrangement));
+      Child_Size := Minimum (Child);
+      Total := Total + Along (Child_Size, Item.Arrangement);
+      Largest := Natural'max (Largest, Along (Child_Size, Item.Arrangement));
       Child := Child.Next;
     end loop;
     if Item.Equal_Cells then
+      Total := Count * Largest;
       Total_Weight := Count;
     end if;
+    Total := Total + 2 * Item.Margin;
+    if Count > 0 then
+      Total := Total + (Count - 1) * Item.Gap;
+    end if;
+    Extra := Available - Total;
+    if not Item.Equal_Cells then
+      Child := Item.First;
+      while Child /= null loop
+        if Child.Aspect_Ratio > 0.0 then
+          Reserved := Reserved + Natural'min (Extra - Reserved, Capacity (Child));
+        else
+          Total_Weight := Total_Weight + Child.Weight;
+        end if;
+        Child := Child.Next;
+      end loop;
+    end if;
+    Extra := Extra - Reserved;
+    Limit := Reserved;
     Child := Item.First;
     while Child /= null loop
       Child_Size := Minimum (Child);
@@ -112,7 +171,13 @@ package body Gui.Layout is
         Used_Weight := Used_Weight + 1;
       else
         Extent := Along (Child_Size, Item.Arrangement);
-        Used_Weight := Used_Weight + Child.Weight;
+        if Child.Aspect_Ratio > 0.0 then
+          Bonus := Natural'min (Limit, Capacity (Child));
+          Limit := Limit - Bonus;
+          Extent := Extent + Bonus;
+        else
+          Used_Weight := Used_Weight + Child.Weight;
+        end if;
       end if;
       if Total_Weight > 0 then
         Share := Natural (Long_Long_Integer (Extra) * Long_Long_Integer (Used_Weight)
@@ -121,9 +186,9 @@ package body Gui.Layout is
         Distributed := Share;
       end if;
       if Item.Arrangement = Horizontal then
-        Child_Area := (Area.X + Offset, Area.Y + Item.Margin, Extent, Cross);
+        Child_Area := (Fit.X + Offset, Fit.Y + Item.Margin, Extent, Cross);
       else
-        Child_Area := (Area.X + Item.Margin, Area.Y + Offset, Cross, Extent);
+        Child_Area := (Fit.X + Item.Margin, Fit.Y + Offset, Cross, Extent);
       end if;
       Arrange (Child, Child_Area);
       Child := Child.Next;
@@ -132,6 +197,7 @@ package body Gui.Layout is
       end if;
     end loop;
   end Arrange;
+
 
   function Bounds (Item : Element) return Rectangle is (Item.Area);
 

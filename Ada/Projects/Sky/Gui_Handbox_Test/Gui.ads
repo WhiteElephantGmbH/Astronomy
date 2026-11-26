@@ -91,9 +91,11 @@ package Gui is
   type Page is private;
 
   function Create (Parent : Page; Arrangement : Orientation;
-                   Weight : Positive := 1; Equal_Cells : Boolean := False) return Group;
+                   Weight : Positive := 1; Equal_Cells : Boolean := False;
+                   Aspect_Ratio : Float := 0.0) return Group;
   function Create (Parent : Group; Arrangement : Orientation;
-                   Weight : Positive := 1; Equal_Cells : Boolean := False) return Group;
+                   Weight : Positive := 1; Equal_Cells : Boolean := False;
+                   Aspect_Ratio : Float := 0.0) return Group;
   procedure Space (Parent : Group);
   procedure Finish_Layout;
   type Child is abstract tagged private;

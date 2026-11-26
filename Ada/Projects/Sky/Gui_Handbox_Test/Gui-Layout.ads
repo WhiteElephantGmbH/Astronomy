@@ -19,7 +19,8 @@ private package Gui.Layout is
                   Gap         : Natural := 0;
                   Margin      : Natural := 0;
                   Weight      : Natural := 1;
-                  Equal_Cells : Boolean := False) return Element;
+                  Equal_Cells : Boolean := False;
+                  Aspect_Ratio : Float := 0.0) return Element;
 
   function Control (Minimum : Size;
                     Weight  : Natural := 0) return Element;
@@ -38,6 +39,7 @@ private
     Margin      : Natural := 0;
     Weight      : Natural := 0;
     Equal_Cells : Boolean := False;
+    Aspect_Ratio : Float := 0.0;
     Required    : Size;
     Area        : Rectangle;
     Parent      : Element;

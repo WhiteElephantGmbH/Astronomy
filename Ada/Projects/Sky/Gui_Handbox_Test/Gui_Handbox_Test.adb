@@ -26,7 +26,7 @@ with Gui;
 
 procedure Gui_Handbox_Test is
   Page : Gui.Page;
-  Top, Middle, Bottom : Gui.Group;
+  Handbox, Top, Middle, Bottom : Gui.Group;
   Up, Left, Center, Right, Down : Gui.Button with Unreferenced;
 
   procedure Pressed is
@@ -37,15 +37,16 @@ procedure Gui_Handbox_Test is
   procedure Startup is
   begin
     Page := Gui.Add_Page ("Handbox");
-    Top := Gui.Create (Page, Gui.Horizontal, Equal_Cells => True);
+    Handbox := Gui.Create (Page, Gui.Vertical, Equal_Cells => True, Aspect_Ratio => 1.0);
+    Top := Gui.Create (Handbox, Gui.Horizontal, Equal_Cells => True);
     Gui.Space (Top);
     Up := Gui.Create (Top, "Up", Pressed'unrestricted_access, Expand => True);
     Gui.Space (Top);
-    Middle := Gui.Create (Page, Gui.Horizontal, Equal_Cells => True);
+    Middle := Gui.Create (Handbox, Gui.Horizontal, Equal_Cells => True);
     Left := Gui.Create (Middle, "Left", Pressed'unrestricted_access, Expand => True);
     Center := Gui.Create (Middle, "Stop", Pressed'unrestricted_access, Expand => True);
     Right := Gui.Create (Middle, "Right", Pressed'unrestricted_access, Expand => True);
-    Bottom := Gui.Create (Page, Gui.Horizontal, Equal_Cells => True);
+    Bottom := Gui.Create (Handbox, Gui.Horizontal, Equal_Cells => True);
     Gui.Space (Bottom);
     Down := Gui.Create (Bottom, "Down", Pressed'unrestricted_access, Expand => True);
     Gui.Space (Bottom);

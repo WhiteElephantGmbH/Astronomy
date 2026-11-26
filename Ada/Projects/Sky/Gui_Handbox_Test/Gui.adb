@@ -20,7 +20,6 @@ with Ada.Unchecked_Conversion;
 with Ada.Unchecked_Deallocation;
 with Log;
 with Gui.Layout;
-use type Gui.Layout.Element;
 with Semaphore;
 with Win32.Commctrl;
 with Win32.Commdlg;
@@ -339,6 +338,7 @@ package body Gui is
     return null;
   end Image_State;
 
+
   procedure Dispose (State : Detached_Image_State_Ptr) is
     Unused : Win32.INT;
     use type System.Address;
@@ -350,6 +350,7 @@ package body Gui is
     Release_Stream (State.Stream);
     State.Stream := System.Null_Address;
   end Dispose;
+
 
   procedure Remove_Image_State (Hwnd : Win32.Windef.HWND) is
     Current  : Detached_Image_State_Ptr := Images;
@@ -371,6 +372,7 @@ package body Gui is
       Current := Current.Next;
     end loop;
   end Remove_Image_State;
+
 
   procedure Paint_Detached (Hwnd : Win32.Windef.HWND) is
     State    : constant Detached_Image_State_Ptr := Image_State (Hwnd);
@@ -427,6 +429,7 @@ package body Gui is
     Unused_Bool := Validate_Window (Hwnd, System.Null_Address);
   end Paint_Detached;
 
+
   procedure Show_Detached_Image (Lparam : Win32.LPARAM) is
     Request : constant Detached_Show_Request_Ptr := To_Show_Request (Lparam);
     State   : constant Detached_Image_State_Ptr := Image_State (Request.Hwnd);
@@ -470,6 +473,7 @@ package body Gui is
     Request.Success := True;
     Unused_Bool := Invalidate_Window (Request.Hwnd, System.Null_Address, Win32.TRUE);
   end Show_Detached_Image;
+
 
   Detached_Class_Name : aliased constant String := "GuiDetachedWindow" & Nul;
   Detached_Class_Name_Wide : aliased constant Wide_String := "GuiDetachedWindow" & Wide_Nul;
@@ -588,9 +592,15 @@ package body Gui is
   Minimum_Window : Layout.Size;
 
   type Minimum_Maximum_Info is record
-    Reserved, Max_Size, Max_Position, Min_Track_Size, Max_Track_Size : Win32.Windef.POINT;
+    Reserved       : Win32.Windef.POINT with Unreferenced;
+    Max_Size       : Win32.Windef.POINT with Unreferenced;
+    Max_Position   : Win32.Windef.POINT with Unreferenced;
+    Min_Track_Size : Win32.Windef.POINT;
+    Max_Track_Size : Win32.Windef.POINT with Unreferenced;
   end record with Convention => C;
+
   package Minmax_Pointers is new System.Address_To_Access_Conversions (Minimum_Maximum_Info);
+
   function To_Address is new Ada.Unchecked_Conversion (Win32.LPARAM, System.Address);
 
   type Menu_Information is record
@@ -1058,7 +1068,10 @@ package body Gui is
     Area : Layout.Rectangle;
     Required : Layout.Size;
     Item : Child_Information_Ptr;
+    Swp_Nocopybits : constant Win32.UINT := 16#0100#;
     use type Win32.LONG;
+    use type Win32.UINT;
+    use type Gui.Layout.Element;
   begin
     if not Layout_Complete or else Application_Is_Minimized then
       return;
@@ -1082,7 +1095,7 @@ package body Gui is
       begin
         Unused := Win32.Winuser.SetWindowPos (Item.The_Handle, System.Null_Address,
                     Win32.INT(R.X), Win32.INT(R.Y), Win32.INT(R.Width), Win32.INT(R.Height),
-                    Win32.Winuser.SWP_NOZORDER);
+                    Win32.Winuser.SWP_NOZORDER + Swp_Nocopybits);
       end;
       Item := Item.Next_Sibling;
     end loop;
@@ -1120,6 +1133,7 @@ package body Gui is
     The_Min_Object_Width  : Win32.INT;
 
   function Convert is new Ada.Unchecked_Conversion(Win32.Windef.LPRECT, Win32.LPARAM);
+    use type Gui.Layout.Element;
   begin
     if not Is_Active then
       return;
@@ -2459,6 +2473,7 @@ package body Gui is
     Main_Display.Ready;
   end Create;
 
+
   procedure Create (Application_Name    : String;
                     Termination_Routine : Action_Routine;
                     The_Metrics         : Window_Metrics;
@@ -2479,6 +2494,7 @@ package body Gui is
                      Termination_Routine : access procedure := null;
                      Initial_Metrics     : Window_Metrics;
                      Always_Topmost      : Boolean := False) is
+    use type Gui.Layout.Element;
   begin
     Create (Application_Name    => Application_Name,
             Termination_Routine => Termination_Routine,
@@ -3214,24 +3230,29 @@ package body Gui is
 
 
   function Create (Parent : Page; Arrangement : Orientation;
-                   Weight : Positive := 1; Equal_Cells : Boolean := False) return Group is
+                   Weight : Positive := 1; Equal_Cells : Boolean := False;
+                   Aspect_Ratio : Float := 0.0) return Group is
     Node : constant Layout.Element := Layout.Group (Layout.Direction'val (Orientation'pos (Arrangement)),
-                                                      Gap => 4, Weight => Weight, Equal_Cells => Equal_Cells);
+                                                      Gap => 4, Weight => Weight, Equal_Cells => Equal_Cells,
+                                                      Aspect_Ratio => Aspect_Ratio);
+    use type Gui.Layout.Element;
   begin
     if Layout_Complete or else Parent /= Current_Page or else Nr_Of_Pages /= 1 then
       raise Sequence_Error;
     end if;
     if Parent.Layout_Root = null then
-      Parent.Layout_Root := Layout.Group (Layout.Vertical, Gap => 4, Margin => 4, Equal_Cells => True);
+      Parent.Layout_Root := Layout.Group (Layout.Vertical, Gap => 4, Margin => 4);
     end if;
     Layout.Append (Parent.Layout_Root, Node);
     return new Group_Information'(Parent, Node);
   end Create;
 
   function Create (Parent : Group; Arrangement : Orientation;
-                   Weight : Positive := 1; Equal_Cells : Boolean := False) return Group is
+                   Weight : Positive := 1; Equal_Cells : Boolean := False;
+                   Aspect_Ratio : Float := 0.0) return Group is
     Node : constant Layout.Element := Layout.Group (Layout.Direction'val (Orientation'pos (Arrangement)),
-                                                      Gap => 4, Weight => Weight, Equal_Cells => Equal_Cells);
+                                                      Gap => 4, Weight => Weight, Equal_Cells => Equal_Cells,
+                                                      Aspect_Ratio => Aspect_Ratio);
   begin
     if Layout_Complete then
       raise Sequence_Error;
@@ -3264,12 +3285,14 @@ package body Gui is
     return Result;
   end Create;
 
+
   procedure Finish_Layout is
     Client, Status : aliased Win32.Windef.RECT;
     Metrics : constant Window_Metrics := Get_Window_Metrics;
     Required : Layout.Size;
     Unused : Win32.BOOL;
     use type Win32.LONG;
+    use type Gui.Layout.Element;
   begin
     if Layout_Complete or else Current_Page = null or else Current_Page.Layout_Root = null then
       raise Sequence_Error;
@@ -3286,6 +3309,7 @@ package body Gui is
                         Natural'max (Metrics.Height, Minimum_Window.Height));
     Send_Message (Private_Window, Win32.Winuser.WM_SIZE, 0, 0);
   end Finish_Layout;
+
 
   procedure Set_Text (The_Button : Button;
                       The_Text   : String) is
