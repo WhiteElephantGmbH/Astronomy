@@ -595,6 +595,7 @@ package body Gui is
     Is_Password              : Boolean := False;
     Use_Proportional_Font    : Boolean := False;
     Color_Background         : Boolean := False;
+    Progress_Color           : Color := 16#FF00_0000#;
     Track_Direction          : Orientation := Horizontal;
     Track_Extent             : Natural := 0;
     Track_Minimum            : Natural := 0;
@@ -938,6 +939,24 @@ package body Gui is
       Ignored := Set_Window_Theme (Handle, System.Null_Address, System.Null_Address);
     end if;
   end Set_Scrollbar_Theme;
+
+
+  procedure Set_Progress_Colors (Item : Child_Information_Ptr) is
+    No_Theme : aliased constant Wide_String := [1 => Wide_Nul];
+    Ignored  : Win32.LONG with Unreferenced;
+    Pbm_Set_Background : constant := 16#2001#; -- CCM_SETBKCOLOR
+    Default_Color      : constant Color := 16#FF00_0000#;
+  begin
+    if The_Color_Mode = Astronomy then
+      Ignored := Set_Window_Theme (Item.The_Handle, No_Theme'address, No_Theme'address);
+      Send_Message (Item.The_Handle, Pbm_Set_Background, 0, Win32.LPARAM(Background_Color));
+      Send_Message (Item.The_Handle, Win32.Comctl.Pbm_Setbarcolor, 0, Win32.LPARAM(Text_Color));
+    else
+      Ignored := Set_Window_Theme (Item.The_Handle, System.Null_Address, System.Null_Address);
+      Send_Message (Item.The_Handle, Pbm_Set_Background, 0, Win32.LPARAM(Default_Color));
+      Send_Message (Item.The_Handle, Win32.Comctl.Pbm_Setbarcolor, 0, Win32.LPARAM(Item.Progress_Color));
+    end if;
+  end Set_Progress_Colors;
 
 
   procedure Set_List_Colors (Handle : Win32.Windef.HWND) is
@@ -1795,6 +1814,8 @@ package body Gui is
       while Item /= null loop
         if Item.The_Kind = List_View_Child then
           Set_List_Colors (Item.The_Handle);
+        elsif Item.The_Kind = Progress_Bar_Child then
+          Set_Progress_Colors (Item);
         end if;
         Item := Item.Next_Sibling;
       end loop;
@@ -3529,6 +3550,8 @@ package body Gui is
                 Send_Message (Item.The_Handle, Wm_Theme_Changed, 0, 0);
               elsif Item.The_Kind = List_View_Child then
                 Set_List_Colors (Item.The_Handle);
+              elsif Item.The_Kind = Progress_Bar_Child then
+                Set_Progress_Colors (Item);
               end if;
               Item := Item.Next_Sibling;
             end loop;
@@ -5099,6 +5122,7 @@ package body Gui is
     Result.Ptr.Layout_Node := Layout.Control ((100, 20), Weight => 0);
     Layout.Append (Parent.Node, Result.Ptr.Layout_Node);
     Define_Range (Result, 100, 10);
+    Set_Progress_Colors (Result.Ptr);
     return Result;
   end Create;
 
@@ -5138,10 +5162,13 @@ package body Gui is
   procedure Set_Color (The_Progress_Bar : Progress_Bar;
                        The_Color        : Color) is
   begin
-    Send_Message (The_Progress_Bar.Ptr.The_Handle,
-                  Win32.Comctl.Pbm_Setbarcolor,
-                  Win32.WPARAM(0),
-                  Win32.LPARAM(The_Color));
+    The_Progress_Bar.Ptr.Progress_Color := The_Color;
+    if The_Color_Mode = Normal then
+      Send_Message (The_Progress_Bar.Ptr.The_Handle,
+                    Win32.Comctl.Pbm_Setbarcolor,
+                    Win32.WPARAM(0),
+                    Win32.LPARAM(The_Color));
+    end if;
   end Set_Color;
 
 
