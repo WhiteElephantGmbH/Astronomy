@@ -99,6 +99,7 @@ package body Gui is
   pragma Linker_Options ("-lshlwapi");
   pragma Linker_Options ("-ldwmapi");
   pragma Linker_Options ("-lmsimg32");
+  pragma Linker_Options ("-luxtheme");
 
   type Click_Routine is access procedure (Item : Information);
 
@@ -919,6 +920,47 @@ package body Gui is
   begin
     return Color(The_Text_Intensity / 3);
   end Disabled_Text_Color;
+
+
+  function Set_Window_Theme (Handle : Win32.Windef.HWND;
+                             App    : System.Address;
+                             Id     : System.Address) return Win32.LONG
+    with Import, Convention => Stdcall, External_Name => "SetWindowTheme";
+
+
+  procedure Set_Scrollbar_Theme (Handle : Win32.Windef.HWND) is
+    Dark_Theme : aliased constant Wide_String := "DarkMode_Explorer" & Wide_Nul;
+    Ignored    : Win32.LONG with Unreferenced;
+  begin
+    if The_Color_Mode = Astronomy then
+      Ignored := Set_Window_Theme (Handle, Dark_Theme'address, System.Null_Address);
+    else
+      Ignored := Set_Window_Theme (Handle, System.Null_Address, System.Null_Address);
+    end if;
+  end Set_Scrollbar_Theme;
+
+
+  procedure Set_List_Colors (Handle : Win32.Windef.HWND) is
+    function To_Handle is new Ada.Unchecked_Conversion (Win32.LRESULT, Win32.Windef.HWND);
+    Lvm_Get_Header          : constant := Win32.Comctl.Lvm_First + 31;
+    Header                  : constant Win32.Windef.HWND := To_Handle (Send_Message (Handle, Lvm_Get_Header, 0, 0));
+    Ignored                 : Win32.BOOL with Unreferenced;
+    use type System.Address;
+    Lvm_Set_Background      : constant := Win32.Comctl.Lvm_First + 1;
+    Lvm_Set_Text_Background : constant := Win32.Comctl.Lvm_First + 38;
+    Background : constant Color := (if The_Color_Mode = Astronomy then Background_Color
+                                    else Color(Win32.Winuser.GetSysColor (Win32.Winuser.COLOR_WINDOW)));
+    Foreground : constant Color := (if The_Color_Mode = Astronomy then Text_Color
+                                    else Color(Win32.Winuser.GetSysColor (Win32.Winuser.COLOR_WINDOWTEXT)));
+  begin
+    Set_Scrollbar_Theme (Handle);
+    Send_Message (Handle, Lvm_Set_Background, 0, Win32.LPARAM(Background));
+    Send_Message (Handle, Lvm_Set_Text_Background, 0, Win32.LPARAM(Background));
+    Send_Message (Handle, Win32.Comctl.Lvm_Settextcolor, 0, Win32.LPARAM(Foreground));
+    if Header /= System.Null_Address then
+      Ignored := Win32.Winuser.InvalidateRect (Header, null, Win32.TRUE);
+    end if;
+  end Set_List_Colors;
 
 
   function Get_Color_Mode return Color_Mode is
@@ -1747,6 +1789,16 @@ package body Gui is
   begin
     Make_Invisible (Current_Page);
     Current_Page := The_Page;
+    declare
+      Item : Child_Information_Ptr := Current_Page.First_Child;
+    begin
+      while Item /= null loop
+        if Item.The_Kind = List_View_Child then
+          Set_List_Colors (Item.The_Handle);
+        end if;
+        Item := Item.Next_Sibling;
+      end loop;
+    end;
     Make_Visible (Current_Page);
     Redraw_Main_Window;
     if Current_Page.The_Action /= null then -- Signal page change
@@ -1904,8 +1956,8 @@ package body Gui is
     Hdr       : Win32.Comctl.Nm_Hdr;
     Drawstage : Win32.DWORD;
     Dc        : Win32.Windef.HDC;
-    Bounds    : Win32.Windef.RECT with Unreferenced;
-    Itemspec  : Win32.DWORD_PTR with Unreferenced;
+    Bounds    : Win32.Windef.RECT;
+    Itemspec  : Win32.DWORD_PTR;
     Itemstate : Win32.UINT with Unreferenced;
     Itemparam : Win32.LPARAM with Unreferenced;
   end record with Convention => C;
@@ -2100,11 +2152,14 @@ package body Gui is
                 := Win32.Comctl.Customdraw_Info_Ptr(Customdraw_Info_Conversion.To_Pointer (Convert (Lparam)));
               if The_Custom_Draw_Info /= null then
                 if The_Custom_Draw_Info.Nmcd.Drawstage = Win32.Comctl.Cdds_Prepaint and then
-                   The_Child.The_Color_Routine /= null
+                   (The_Color_Mode = Astronomy or else The_Child.The_Color_Routine /= null)
                 then  -- Ask to be notified when item is about to be drawn
                   return Win32.Comctl.Cdrf_Notifyitemdraw;
                 elsif The_Custom_Draw_Info.Nmcd.Drawstage = Win32.Comctl.Cdds_Itemprepaint then
-                  if The_Child.Color_Background then
+                  if The_Color_Mode = Astronomy then
+                    The_Custom_Draw_Info.Textcolor := Text_Color;
+                    The_Custom_Draw_Info.Bkgndcolor := Background_Color;
+                  elsif The_Child.Color_Background then
                     The_Custom_Draw_Info.Bkgndcolor :=
                                          The_Child.The_Color_Routine (Convert(The_Notification.Item.Lparam));
                   else
@@ -2271,6 +2326,50 @@ package body Gui is
   end Hold_Button_Proc;
 
 
+  function Draw_List_Header (Info : Track_Custom_Draw;
+                             List : Win32.Windef.HWND) return Win32.LRESULT is
+    use type Win32.LONG;
+    use type Win32.UINT;
+    function To_Lparam is new Ada.Unchecked_Conversion (System.Address, Win32.LPARAM);
+    function Delete_Brush (Brush : System.Address) return Win32.BOOL
+      with Import, Convention => Stdcall, External_Name => "DeleteObject";
+    Bounds : aliased Win32.Windef.RECT := Info.Bounds;
+    Ignored : Win32.INT with Unreferenced;
+    Ignored_Color : Color with Unreferenced;
+    Deleted : Win32.BOOL with Unreferenced;
+  begin
+    if Info.Drawstage = Win32.Comctl.Cdds_Prepaint then
+      Ignored := Win32.Winuser.FillRect (Info.Dc, Bounds'unchecked_access, Astronomy_Brush);
+      return Win32.Comctl.Cdrf_Notifyitemdraw;
+    elsif Info.Drawstage = Win32.Comctl.Cdds_Itemprepaint then
+      declare
+        Text : aliased Wide_String (1 .. 1024) with Unmodified;
+        Column : aliased Win32.Comctl.Lv_Column_Wide :=
+          (Mask => Win32.Comctl.Lvcf_Text, Fmt => 0, Width => 0, Text => Win32.Addr(Text),
+           Maxtext => Text'length, Subitem => 0);
+        Brush : constant Win32.Windef.HBRUSH := Win32.Wingdi.CreateSolidBrush (Button_Color (False));
+        Edge  : constant Win32.Windef.HBRUSH := Win32.Wingdi.CreateSolidBrush (Border_Color);
+      begin
+        Send_Message (List, Win32.Comctl.Lvm_Getcolumn_Wide, Win32.WPARAM(Info.Itemspec),
+                      To_Lparam (Column'address));
+        Ignored := Win32.Winuser.FillRect (Info.Dc, Bounds'unchecked_access, Brush);
+        Ignored := Win32.Winuser.FrameRect (Info.Dc, Bounds'unchecked_access, Edge);
+        Bounds.left := Bounds.left + 5;
+        Bounds.right := Bounds.right - 3;
+        Ignored_Color := Win32.Wingdi.SetTextColor (Info.Dc, Text_Color);
+        Ignored_Color := Win32.Wingdi.SetBkColor (Info.Dc, Button_Color (False));
+        Ignored := Win32.Winuser.DrawTextW (Info.Dc, Win32.Addr(Text), -1, Bounds'unchecked_access,
+                                           Win32.Winuser.DT_SINGLELINE + Win32.Winuser.DT_VCENTER +
+                                           Win32.Winuser.DT_NOPREFIX + 16#8000#); -- DT_END_ELLIPSIS
+        Deleted := Delete_Brush (Brush);
+        Deleted := Delete_Brush (Edge);
+      end;
+      return Win32.Comctl.Cdrf_Skipdefault;
+    end if;
+    return 0;
+  end Draw_List_Header;
+
+
   function List_View_Proc (Hwnd    : Win32.Windef.HWND;
                            Message : Win32.UINT;
                            Wparam  : Win32.WPARAM;
@@ -2289,11 +2388,25 @@ package body Gui is
     Item    : constant Child_Information_Ptr := Child_Information_Ptr (Child_Information_Conversion.To_Pointer (Data));
     Result  : Win32.LRESULT;
     Ignored : Win32.BOOL with Unreferenced;
+    function To_Address is new Ada.Unchecked_Conversion (Win32.LPARAM, System.Address);
+    function To_Handle is new Ada.Unchecked_Conversion (Win32.LRESULT, Win32.Windef.HWND);
     use type Win32.UINT;
+    use type System.Address;
   begin
     if Message = 16#0082# then -- WM_NCDESTROY
       Ignored := Remove_Window_Subclass (Hwnd, List_View_Proc'access, Id);
       return Def_Subclass_Proc (Hwnd, Message, Wparam, Lparam);
+    end if;
+    if The_Color_Mode = Astronomy and then Message = Win32.Comctl.Wm_Notify then
+      declare
+        Info : constant Track_Draw_Pointers.Object_Pointer := Track_Draw_Pointers.To_Pointer (To_Address (Lparam));
+        Header : constant Win32.Windef.HWND :=
+          To_Handle (Send_Message (Hwnd, Win32.Comctl.Lvm_First + 31, 0, 0));
+      begin
+        if Info.Hdr.Hwndfrom = Header and then Info.Hdr.Code = Win32.Comctl.Nm_Customdraw then
+          return Draw_List_Header (Info.all, Hwnd);
+        end if;
+      end;
     end if;
     Result := Def_Subclass_Proc (Hwnd, Message, Wparam, Lparam);
     case Message is
@@ -2305,6 +2418,67 @@ package body Gui is
     end case;
     return Result;
   end List_View_Proc;
+
+
+  type Combo_Box_Info is record
+    Size        : Win32.DWORD;
+    Item        : Win32.Windef.RECT;
+    Button      : Win32.Windef.RECT;
+    State       : Win32.DWORD;
+    Combo       : Win32.Windef.HWND;
+    Edit        : Win32.Windef.HWND;
+    List        : Win32.Windef.HWND;
+  end record with Convention => C;
+
+  function Get_Combo_Box_Info (Hwnd : Win32.Windef.HWND; Info : access Combo_Box_Info) return Win32.BOOL
+    with Import, Convention => Stdcall, External_Name => "GetComboBoxInfo";
+
+
+  function Combo_List_Proc (Hwnd    : Win32.Windef.HWND;
+                            Message : Win32.UINT;
+                            Wparam  : Win32.WPARAM;
+                            Lparam  : Win32.LPARAM;
+                            Id      : System.Address;
+                            Data    : System.Address) return Win32.LRESULT
+    with Convention => Stdcall;
+
+
+  function Combo_List_Proc (Hwnd    : Win32.Windef.HWND;
+                            Message : Win32.UINT;
+                            Wparam  : Win32.WPARAM;
+                            Lparam  : Win32.LPARAM;
+                            Id      : System.Address;
+                            Data    : System.Address) return Win32.LRESULT is
+    pragma Unreferenced (Data);
+    use type Win32.UINT;
+    use type Win32.LONG;
+    Unused     : Win32.BOOL with Unreferenced;
+    Unused_Int : Win32.INT with Unreferenced;
+    Result     : Win32.LRESULT;
+    Bounds     : aliased Win32.Windef.RECT;
+    function Delete_Brush (Brush : System.Address) return Win32.BOOL
+      with Import, Convention => Stdcall, External_Name => "DeleteObject";
+  begin
+    if Message = 16#0082# then -- WM_NCDESTROY
+      Unused := Remove_Window_Subclass (Hwnd, Combo_List_Proc'access, Id);
+    end if;
+    Result := Def_Subclass_Proc (Hwnd, Message, Wparam, Lparam);
+    if The_Color_Mode = Astronomy and then
+       (Message = Win32.Winuser.WM_PAINT or Message = Win32.Winuser.WM_NCPAINT)
+    then
+      declare
+        Dc    : constant Win32.Windef.HDC := Win32.Winuser.GetWindowDC (Hwnd);
+        Brush : constant Win32.Windef.HBRUSH := Win32.Wingdi.CreateSolidBrush (Border_Color);
+      begin
+        Unused := Win32.Winuser.GetWindowRect (Hwnd, Bounds'unchecked_access);
+        Bounds := (0, 0, Bounds.right - Bounds.left, Bounds.bottom - Bounds.top);
+        Unused_Int := Win32.Winuser.FrameRect (Dc, Bounds'unchecked_access, Brush);
+        Unused := Delete_Brush (Brush);
+        Unused_Int := Win32.Winuser.ReleaseDC (Hwnd, Dc);
+      end;
+    end if;
+    return Result;
+  end Combo_List_Proc;
 
 
   function Surface_Proc (Hwnd    : Win32.Windef.HWND;
@@ -2354,6 +2528,11 @@ package body Gui is
     if The_Color_Mode /= Astronomy then
       return Def_Subclass_Proc (Hwnd, Message, Wparam, Lparam);
     end if;
+    if Message = Win32.Winuser.WM_CTLCOLOREDIT or Message = Win32.Winuser.WM_CTLCOLORLISTBOX or
+       Message = Win32.Winuser.WM_CTLCOLORSTATIC
+    then
+      return Win32.Winuser.SendMessageW (Private_Window, Message, Wparam, Lparam);
+    end if;
     if Data = System.Null_Address then -- Tab control
       Result := Def_Subclass_Proc (Hwnd, Message, Wparam, Lparam);
       if Message = Win32.Winuser.WM_PAINT then
@@ -2371,7 +2550,47 @@ package body Gui is
     declare
       Item : constant Child_Information_Ptr := Child_Information_Ptr (Child_Information_Conversion.To_Pointer (Data));
     begin
-      if (Item.The_Kind = Button_Child or Item.The_Kind = Check_Box_Child) and then
+      if Item.The_Kind = Combo_Box_Child and then Message = Win32.Winuser.WM_PAINT then
+        Result := Def_Subclass_Proc (Hwnd, Message, Wparam, Lparam);
+        declare
+          use type Win32.BOOL;
+          Dc      : constant Win32.Windef.HDC := Win32.Winuser.GetDC (Hwnd);
+          Enabled : constant Boolean := Win32.Winuser.IsWindowEnabled (Hwnd) /= Win32.FALSE;
+          Ink     : constant Color := (if Enabled then Text_Color else Disabled_Text_Color);
+          Width   : constant Win32.LONG := Win32.LONG(Win32.Winuser.GetSystemMetrics (Win32.Winuser.SM_CXVSCROLL));
+          Arrow   : aliased Win32.Windef.RECT;
+          Brush   : constant Win32.Windef.HBRUSH := Win32.Wingdi.CreateSolidBrush (Button_Color (False));
+          Mark    : constant Win32.Windef.HBRUSH := Win32.Wingdi.CreateSolidBrush (Ink);
+          X, Y    : Win32.LONG;
+        begin
+          Ignored := Win32.Winuser.GetClientRect (Hwnd, Bounds'unchecked_access);
+          Draw_Border (Dc);
+          declare
+            Info : aliased Combo_Box_Info := (Size => Combo_Box_Info'size / 8,
+                                              Item | Button => (0, 0, 0, 0), State => 0,
+                                              Combo | Edit | List => System.Null_Address);
+          begin
+            if Get_Combo_Box_Info (Hwnd, Info'access) /= Win32.FALSE then
+              Bounds := (Info.Item.left - 1, Info.Item.top - 1, Info.Item.right + 1, Info.Item.bottom + 1);
+              Draw_Border (Dc);
+              Ignored := Win32.Winuser.GetClientRect (Hwnd, Bounds'unchecked_access);
+            end if;
+          end;
+          Arrow := (Bounds.right - Width - 1, 1, Bounds.right - 1, Bounds.bottom - 1);
+          Ignored_Int := Win32.Winuser.FillRect (Dc, Arrow'unchecked_access, Brush);
+          X := (Arrow.left + Arrow.right) / 2;
+          Y := (Arrow.top + Arrow.bottom) / 2;
+          for Row in 0 .. 3 loop
+            Arrow := (X - 3 + Win32.LONG(Row), Y - 1 + Win32.LONG(Row),
+                      X + 4 - Win32.LONG(Row), Y + Win32.LONG(Row));
+            Ignored_Int := Win32.Winuser.FillRect (Dc, Arrow'unchecked_access, Mark);
+          end loop;
+          Ignored := Delete_Brush (Brush);
+          Ignored := Delete_Brush (Mark);
+          Ignored_Int := Win32.Winuser.ReleaseDC (Hwnd, Dc);
+        end;
+        return Result;
+      elsif (Item.The_Kind = Button_Child or Item.The_Kind = Check_Box_Child) and then
          Message = Win32.Winuser.WM_PAINT
       then
         declare
@@ -2588,7 +2807,8 @@ package body Gui is
         if The_Child.Is_Modifiable then
           Window_Style := Window_Style + Win32.Winuser.CBS_DROPDOWN;
         else
-          Window_Style := Window_Style + Win32.Winuser.CBS_DROPDOWNLIST;
+          Window_Style := Window_Style + Win32.Winuser.CBS_DROPDOWNLIST +
+                          Win32.Winuser.CBS_OWNERDRAWFIXED + Win32.Winuser.CBS_HASSTRINGS;
         end if;
         if The_Child.Is_Sorted then
           Window_Style := Window_Style + Win32.Winuser.CBS_SORT;
@@ -2628,6 +2848,7 @@ package body Gui is
       end;
     end if;
     if The_Child.The_Kind = List_View_Child then
+      Set_List_Colors (The_Child.The_Handle);
       declare
         use type Win32.BOOL;
       begin
@@ -2638,6 +2859,7 @@ package body Gui is
       end;
     end if;
     if The_Child.Is_Frame or The_Child.Is_Value_Box or The_Child.The_Kind = Check_Box_Child or
+       The_Child.The_Kind = Combo_Box_Child or
        (The_Child.The_Kind = Button_Child and then not The_Child.Has_Symbol)
     then
       declare
@@ -2646,6 +2868,21 @@ package body Gui is
         if Set_Window_Subclass (The_Child.The_Handle, Surface_Proc'access,
                                 System.Null_Address, The_Child.all'address) = Win32.FALSE then
           raise Program_Error;
+        end if;
+      end;
+    end if;
+    if The_Child.The_Kind = Combo_Box_Child then
+      declare
+        use type Win32.BOOL;
+        Info : aliased Combo_Box_Info := (Size => Combo_Box_Info'size / 8,
+                                              Item | Button => (0, 0, 0, 0), State => 0,
+                                              Combo | Edit | List => System.Null_Address);
+      begin
+        if Get_Combo_Box_Info (The_Child.The_Handle, Info'access) /= Win32.FALSE then
+          if Set_Window_Subclass (Info.List, Combo_List_Proc'access,
+                                  System.Null_Address, System.Null_Address) = Win32.FALSE then
+            raise Program_Error;
+          end if;
         end if;
       end;
     end if;
@@ -2968,7 +3205,7 @@ package body Gui is
   type Draw_Item_Info is record
     Control_Type : Win32.UINT;
     Control_Id   : Win32.UINT with Unreferenced;
-    Item_Id      : Win32.UINT with Unreferenced;
+    Item_Id      : Win32.UINT;
     Item_Action  : Win32.UINT with Unreferenced;
     Item_State   : Win32.UINT;
     Handle       : Win32.Windef.HWND;
@@ -3002,6 +3239,82 @@ package body Gui is
 
   function Delete_Gdi_Object (Item : System.Address) return Win32.BOOL
     with Import, Convention => Stdcall, External_Name => "DeleteObject";
+
+
+  function Draw_Combo_Item (Lparam : Win32.LPARAM) return Boolean is
+    Info : constant Draw_Item_Pointers.Object_Pointer := Draw_Item_Pointers.To_Pointer (To_Address (Lparam));
+    use type Draw_Item_Pointers.Object_Pointer;
+    use type Win32.UINT;
+    use type Win32.LRESULT;
+    use type Win32.LONG;
+    function To_Lparam is new Ada.Unchecked_Conversion (Win32.PWSTR, Win32.LPARAM);
+    function Font_Handle is new Ada.Unchecked_Conversion (Win32.LRESULT, System.Address);
+    Bounds       : aliased Win32.Windef.RECT;
+    Selected     : Boolean;
+    Disabled     : Boolean;
+    Ink, Surface : Color;
+    Brush        : Win32.Windef.HBRUSH;
+    Unused       : Win32.BOOL with Unreferenced;
+    Unused_Int   : Win32.INT with Unreferenced;
+    Unused_Color : Color with Unreferenced;
+    Unused_Font  : System.Address with Unreferenced;
+    Old_Font     : System.Address;
+  begin
+    if Info = null or else Info.Control_Type /= 3 then -- ODT_COMBOBOX
+      return False;
+    end if;
+    Selected := (Info.Item_State and Win32.Winuser.ODS_SELECTED) /= 0;
+    Disabled := (Info.Item_State and Win32.Winuser.ODS_DISABLED) /= 0;
+    if The_Color_Mode = Astronomy then
+      Surface := (if Selected then Button_Color (True) else Background_Color);
+      Ink := (if Disabled then Disabled_Text_Color else Text_Color);
+    else
+      Surface := Color(Win32.Winuser.GetSysColor
+        (if Selected then Win32.Winuser.COLOR_HIGHLIGHT else Win32.Winuser.COLOR_WINDOW));
+      Ink := Color(Win32.Winuser.GetSysColor
+        (if Disabled then Win32.Winuser.COLOR_GRAYTEXT
+         elsif Selected then Win32.Winuser.COLOR_HIGHLIGHTTEXT else Win32.Winuser.COLOR_WINDOWTEXT));
+    end if;
+    Bounds := Info.Bounds;
+    Brush := Win32.Wingdi.CreateSolidBrush (Surface);
+    Unused_Int := Win32.Winuser.FillRect (Info.Dc, Bounds'unchecked_access, Brush);
+    Unused := Delete_Gdi_Object (Brush);
+    if Info.Item_Id /= Win32.UINT'last then
+      declare
+        Size : constant Win32.LRESULT := Send_Message_Wide (Info.Handle, Win32.Winuser.CB_GETLBTEXTLEN,
+                                                            Win32.WPARAM(Info.Item_Id), 0);
+      begin
+        if Size > 0 then
+          declare
+            Text : aliased Wide_String (1 .. Integer(Size) + 1) with Unmodified;
+          begin
+            Send_Message_Wide (Info.Handle, Win32.Winuser.CB_GETLBTEXT,
+                               Win32.WPARAM(Info.Item_Id), To_Lparam (Win32.Addr(Text)));
+            Old_Font := Select_Object (Info.Dc, Font_Handle (Send_Message (Info.Handle,
+                                                                          Win32.Winuser.WM_GETFONT, 0, 0)));
+            Unused_Color := Win32.Wingdi.SetTextColor (Info.Dc, Ink);
+            Unused_Color := Win32.Wingdi.SetBkColor (Info.Dc, Surface);
+            Bounds.left := Bounds.left + 2;
+            Unused_Int := Win32.Winuser.DrawTextW (Info.Dc, Win32.Addr(Text), Win32.INT(Size),
+                                                  Bounds'unchecked_access, Win32.Winuser.DT_SINGLELINE +
+                                                  Win32.Winuser.DT_VCENTER + Win32.Winuser.DT_NOPREFIX);
+            Unused_Font := Select_Object (Info.Dc, Old_Font);
+          end;
+        end if;
+      end;
+    end if;
+    if (Info.Item_State and Win32.Winuser.ODS_FOCUS) /= 0 then
+      Bounds := Info.Bounds;
+      if The_Color_Mode = Astronomy then
+        Brush := Win32.Wingdi.CreateSolidBrush (Border_Color);
+        Unused_Int := Win32.Winuser.FrameRect (Info.Dc, Bounds'unchecked_access, Brush);
+        Unused := Delete_Gdi_Object (Brush);
+      else
+        Unused := Draw_Focus (Info.Dc, Bounds'address);
+      end if;
+    end if;
+    return True;
+  end Draw_Combo_Item;
 
 
   function Draw_Symbol_Button (Lparam : Win32.LPARAM) return Boolean is
@@ -3212,8 +3525,10 @@ package body Gui is
             Item             : Child_Information_Ptr := Current_Page.First_Child;
           begin
             while Item /= null loop
-              if Item.The_Kind = Track_Bar_Child then
+              if Item.The_Kind = Track_Bar_Child or Item.The_Kind = Combo_Box_Child then
                 Send_Message (Item.The_Handle, Wm_Theme_Changed, 0, 0);
+              elsif Item.The_Kind = List_View_Child then
+                Set_List_Colors (Item.The_Handle);
               end if;
               Item := Item.Next_Sibling;
             end loop;
@@ -3233,6 +3548,20 @@ package body Gui is
             Unused := Win32.Winuser.GetClientRect (Hwnd, Bounds'unchecked_access);
             Unused_Fill := Win32.Winuser.FillRect (To_Dc (Wparam), Bounds'unchecked_access, Astronomy_Brush);
             return 1;
+          end;
+        end if;
+        return Win32.Winuser.DefWindowProc (Hwnd, Message, Wparam, Lparam);
+      when Win32.Winuser.WM_CTLCOLOREDIT | Win32.Winuser.WM_CTLCOLORLISTBOX =>
+        if The_Color_Mode = Astronomy then
+          declare
+            function To_Dc is new Ada.Unchecked_Conversion (Win32.WPARAM, Win32.Windef.HDC);
+            function To_Result is new Ada.Unchecked_Conversion (Win32.Windef.HBRUSH, Win32.LRESULT);
+            Dc : constant Win32.Windef.HDC := To_Dc (Wparam);
+            Unused_Color : Color with Unreferenced;
+          begin
+            Unused_Color := Win32.Wingdi.SetTextColor (Dc, Text_Color);
+            Unused_Color := Win32.Wingdi.SetBkColor (Dc, Background_Color);
+            return To_Result (Astronomy_Brush);
           end;
         end if;
         return Win32.Winuser.DefWindowProc (Hwnd, Message, Wparam, Lparam);
@@ -3281,8 +3610,19 @@ package body Gui is
         Redraw_Main_Window;
       when Win32.Winuser.WM_HSCROLL | Win32.Winuser.WM_VSCROLL =>
         Process_Message_From_Trackbar;
+      when Win32.Winuser.WM_MEASUREITEM =>
+        declare
+          package Measure_Pointers is new System.Address_To_Access_Conversions (Win32.Winuser.MEASUREITEMSTRUCT);
+          Info : constant Measure_Pointers.Object_Pointer := Measure_Pointers.To_Pointer (To_Address (Lparam));
+        begin
+          if Info.CtlType = 3 then -- ODT_COMBOBOX
+            Info.itemHeight := 20;
+            return 1;
+          end if;
+        end;
+        return Win32.Winuser.DefWindowProc (Hwnd, Message, Wparam, Lparam);
       when 16#002B# => -- WM_DRAWITEM
-        if Draw_Symbol_Button (Lparam) then
+        if Draw_Combo_Item (Lparam) or else Draw_Symbol_Button (Lparam) then
           return 1;
         end if;
         return Win32.Winuser.DefWindowProc (Hwnd, Message, Wparam, Lparam);
