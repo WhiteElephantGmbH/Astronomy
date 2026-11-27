@@ -555,6 +555,13 @@ package body Gui is
 
   package Column_Names is new Ada.Containers.Indefinite_Vectors (Positive, String);
 
+  type Text_Color_Run is record
+    First, Last : Win32.LONG;
+    Original    : Color;
+  end record;
+
+  package Text_Color_Runs is new Ada.Containers.Indefinite_Vectors (Positive, Text_Color_Run);
+
   type Child_Information is record
     Is_Frame                 : Boolean := False;
     Is_Value_Box             : Boolean := False;
@@ -595,6 +602,8 @@ package body Gui is
     Is_Password              : Boolean := False;
     Use_Proportional_Font    : Boolean := False;
     Color_Background         : Boolean := False;
+    Message_Colors           : Text_Color_Runs.Vector;
+    Message_Color_Mode       : Color_Mode := Normal;
     Progress_Color           : Color := 16#FF00_0000#;
     Track_Direction          : Orientation := Horizontal;
     Track_Extent             : Natural := 0;
@@ -957,6 +966,63 @@ package body Gui is
       Send_Message (Item.The_Handle, Win32.Comctl.Pbm_Setbarcolor, 0, Win32.LPARAM(Item.Progress_Color));
     end if;
   end Set_Progress_Colors;
+
+
+  function Message_Color (Original : Color) return Color is
+    use type Color;
+  begin
+    if The_Color_Mode = Normal then
+      return Original;
+    elsif Original = Red then
+      return Orange;
+    elsif Original = Orange then
+      return Win32.Wingdi.RGB (224, 64, 0);
+    else
+      return Text_Color;
+    end if;
+  end Message_Color;
+
+
+  procedure Set_Message_Color (Handle : Win32.Windef.HWND; The_Color : Color) is
+    function To_Lparam is new Ada.Unchecked_Conversion (System.Address, Win32.LPARAM);
+    Format : aliased Win32.Comctl.Charformat;
+  begin
+    Format.Mask := Win32.Comctl.Cfm_Color;
+    Format.Effects := 0;
+    Format.Textcolor := Message_Color (The_Color);
+    Send_Message (Handle, Win32.Comctl.Em_Setcharformat, Win32.Comctl.Scf_Selection,
+                  To_Lparam (Format'address));
+  end Set_Message_Color;
+
+
+  procedure Set_Text_View_Colors (Item : Child_Information_Ptr) is
+    function To_Lparam is new Ada.Unchecked_Conversion (System.Address, Win32.LPARAM);
+    Em_Set_Background : constant := 16#0443#; -- EM_SETBKGNDCOLOR
+    Handle            : constant Win32.Windef.HWND := Item.The_Handle;
+    Selection         : aliased Win32.Comctl.Charrange with Unmodified;
+  begin
+    Set_Scrollbar_Theme (Handle);
+    if The_Color_Mode = Astronomy then
+      Send_Message (Handle, Em_Set_Background, 0, Win32.LPARAM(Background_Color));
+    else
+      Send_Message (Handle, Em_Set_Background, 1, 0);
+    end if;
+    if Item.Message_Color_Mode /= The_Color_Mode then
+      Send_Message (Handle, Win32.Winuser.WM_SETREDRAW, 0, 0);
+      Send_Message (Handle, Win32.Comctl.Em_Exgetsel, 0, To_Lparam (Selection'address));
+      for Run of Item.Message_Colors loop
+        declare
+          Bounds : aliased constant Win32.Comctl.Charrange := (Min => Run.First, Max => Run.Last);
+        begin
+          Send_Message (Handle, Win32.Comctl.Em_Exsetsel, 0, To_Lparam (Bounds'address));
+          Set_Message_Color (Handle, Run.Original);
+        end;
+      end loop;
+      Send_Message (Handle, Win32.Comctl.Em_Exsetsel, 0, To_Lparam (Selection'address));
+      Item.Message_Color_Mode := The_Color_Mode;
+      Send_Message (Handle, Win32.Winuser.WM_SETREDRAW, 1, 0);
+    end if;
+  end Set_Text_View_Colors;
 
 
   procedure Set_List_Colors (Handle : Win32.Windef.HWND) is
@@ -1816,6 +1882,8 @@ package body Gui is
           Set_List_Colors (Item.The_Handle);
         elsif Item.The_Kind = Progress_Bar_Child then
           Set_Progress_Colors (Item);
+        elsif Item.The_Kind = Text_View_Child then
+          Set_Text_View_Colors (Item);
         end if;
         Item := Item.Next_Sibling;
       end loop;
@@ -3552,6 +3620,8 @@ package body Gui is
                 Set_List_Colors (Item.The_Handle);
               elsif Item.The_Kind = Progress_Bar_Child then
                 Set_Progress_Colors (Item);
+              elsif Item.The_Kind = Text_View_Child then
+                Set_Text_View_Colors (Item);
               end if;
               Item := Item.Next_Sibling;
             end loop;
@@ -5691,6 +5761,7 @@ package body Gui is
     The_Text_View.Ptr.The_Window_Id := Next_Child_Id;
     The_Text_View.Ptr.The_Kind := Text_View_Child;
     Create (The_Text_View.Ptr, Parent.Owner);
+    Set_Text_View_Colors (The_Text_View.Ptr);
     The_Text_View.Ptr.Layout_Node := Layout.Control ((Minimum_Width, Minimum_Height), Weight => 1);
     Layout.Append (Parent.Node, The_Text_View.Ptr.Layout_Node);
     Send_Message (The_Text_View.Ptr.The_Handle,
@@ -5713,25 +5784,25 @@ package body Gui is
                             Ensure_Visible : Boolean := True) is
                             Text           : aliased constant Wide_String := The_Text & Wide_Nul;
     function Convert is new Ada.Unchecked_Conversion (System.Address, Win32.LPARAM);
-    Charformat : aliased Win32.Comctl.Charformat;
     use type Win32.LONG;
     Everything : aliased constant Win32.Comctl.Charrange := (Min => -1, Max => -1);
+    Before     : aliased Win32.Comctl.Charrange with Unmodified;
+    After      : aliased Win32.Comctl.Charrange with Unmodified;
+    Item       : constant Child_Information_Ptr := The_Rich_Edit.Ptr;
   begin
-    Charformat.Mask := Win32.Comctl.Cfm_Color;
-    Charformat.Effects := 0;
-    Charformat.Textcolor := The_Color;
-    Send_Message (The_Rich_Edit.Ptr.The_Handle,
-                  Win32.Comctl.Em_Setcharformat,
-                  Win32.WPARAM(Win32.Comctl.Scf_Selection),
-                  Convert(Charformat'address));
-    Send_Message_Wide (The_Rich_Edit.Ptr.The_Handle,
-                       Win32.Comctl.Em_Exsetsel,
-                       Win32.WPARAM(0),
-                       Convert(Everything'address));
-    Send_Message_Wide (The_Rich_Edit.Ptr.The_Handle,
-                       Win32.Winuser.EM_REPLACESEL,
-                       Win32.WPARAM(0),
-                       Convert(Text(Text'first)'address));
+    if Item.Message_Color_Mode /= The_Color_Mode then
+      Set_Text_View_Colors (Item);
+    end if;
+    Send_Message_Wide (Item.The_Handle, Win32.Comctl.Em_Exsetsel, 0, Convert(Everything'address));
+    Send_Message (Item.The_Handle, Win32.Comctl.Em_Exgetsel, 0, Convert(Before'address));
+    Set_Message_Color (Item.The_Handle, The_Color);
+    Send_Message_Wide (Item.The_Handle, Win32.Winuser.EM_REPLACESEL, 0, Convert(Text(Text'first)'address));
+    Send_Message (Item.The_Handle, Win32.Comctl.Em_Exgetsel, 0, Convert(After'address));
+    if After.Max > Before.Max then
+      Item.Message_Colors.Append (Text_Color_Run'(First    => Before.Max,
+                                                  Last     => After.Max,
+                                                  Original => The_Color));
+    end if;
     if Ensure_Visible then
       Send_Message (The_Rich_Edit.Ptr.The_Handle,
                     Win32.Winuser.WM_VSCROLL,
@@ -5761,6 +5832,7 @@ package body Gui is
 
   procedure Clear (The_Rich_Edit : Text_View) is
   begin
+    The_Rich_Edit.Ptr.Message_Colors.Clear;
     Send_Message (The_Rich_Edit.Ptr.The_Handle,
                   Win32.Winuser.WM_SETTEXT,
                   Win32.WPARAM(0),
