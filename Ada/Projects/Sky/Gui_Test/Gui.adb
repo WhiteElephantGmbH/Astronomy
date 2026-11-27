@@ -589,6 +589,7 @@ package body Gui is
     Number_Of_Rows           : Natural := 0;
     Number_Of_Columns        : Natural := 0;
     Column_Titles            : Column_Names.Vector;
+    Gridlines                : Boolean := False;
     Columns_Sized            : Boolean := False;
     Sizing_Columns           : Boolean := False;
     Last_Header_Width        : Natural := 0;
@@ -1040,6 +1041,17 @@ package body Gui is
   end Set_Text_View_Colors;
 
 
+  procedure Set_List_Gridlines (Item : Child_Information_Ptr) is
+    Style : constant Win32.LPARAM :=
+      (if Item.Gridlines and then The_Color_Mode /= Astronomy then Win32.Comctl.Lvs_Ex_Gridlines else 0);
+    Ignored : Win32.BOOL with Unreferenced;
+  begin
+    Send_Message (Item.The_Handle, Win32.Comctl.Lvm_Setextendedlistviewstyle,
+                  Win32.WPARAM(Win32.Comctl.Lvs_Ex_Gridlines), Style);
+    Ignored := Win32.Winuser.InvalidateRect (Item.The_Handle, null, Win32.TRUE);
+  end Set_List_Gridlines;
+
+
   procedure Set_List_Colors (Handle : Win32.Windef.HWND) is
     function To_Handle is new Ada.Unchecked_Conversion (Win32.LRESULT, Win32.Windef.HWND);
     Lvm_Get_Header          : constant := Win32.Comctl.Lvm_First + 31;
@@ -1366,8 +1378,12 @@ package body Gui is
 
 
   procedure Set_Column_Width (Item : Child_Information_Ptr; Index : Natural; Width : Win32.LPARAM) is
+    Ignored : Win32.BOOL with Unreferenced;
   begin
     Send_Message (Item.The_Handle, Win32.Comctl.Lvm_Setcolumnwidth, Win32.WPARAM(Index), Width);
+    if The_Color_Mode = Astronomy and then Item.Gridlines then
+      Ignored := Win32.Winuser.InvalidateRect (Item.The_Handle, null, Win32.TRUE);
+    end if;
   end Set_Column_Width;
 
 
@@ -1895,6 +1911,7 @@ package body Gui is
       while Item /= null loop
         if Item.The_Kind = List_View_Child then
           Set_List_Colors (Item.The_Handle);
+          Set_List_Gridlines (Item);
         elsif Item.The_Kind = Progress_Bar_Child then
           Set_Progress_Colors (Item);
         elsif Item.The_Kind = Text_View_Child then
@@ -2069,6 +2086,65 @@ package body Gui is
   package Track_Draw_Pointers is new System.Address_To_Access_Conversions (Track_Custom_Draw);
 
 
+  procedure Draw_List_Gridlines (Item : Child_Information_Ptr; Dc : Win32.Windef.HDC) is
+    use type Win32.UINT;
+    use type Win32.LONG;
+    use type Win32.LRESULT;
+    use type Win32.BOOL;
+    function To_Lparam is new Ada.Unchecked_Conversion (System.Address, Win32.LPARAM);
+    function To_Handle is new Ada.Unchecked_Conversion (Win32.LRESULT, Win32.Windef.HWND);
+    function Delete_Brush (Brush : System.Address) return Win32.BOOL
+      with Import, Convention => Stdcall, External_Name => "DeleteObject";
+    function Scroll_Position (Handle : Win32.Windef.HWND; Bar : Win32.INT) return Win32.INT
+      with Import, Convention => Stdcall, External_Name => "GetScrollPos";
+    Header : constant Win32.Windef.HWND :=
+      To_Handle (Send_Message (Item.The_Handle, Win32.Comctl.Lvm_First + 31, 0, 0));
+    Client        : aliased Win32.Windef.RECT;
+    Header_Bounds : aliased Win32.Windef.RECT;
+    Row           : aliased Win32.Windef.RECT := (0, 0, 0, 0);
+    Bounds        : aliased Win32.Windef.RECT;
+    Top_Index     : constant Win32.LRESULT := Send_Message (Item.The_Handle, Win32.Comctl.Lvm_First + 39, 0, 0);
+    Brush         : Win32.Windef.HBRUSH;
+    Ignored       : Win32.INT with Unreferenced;
+    Deleted       : Win32.BOOL with Unreferenced;
+    Height        : Win32.LONG;
+    Y             : Win32.LONG;
+    X             : Win32.LONG;
+  begin
+    if Win32.Winuser.GetClientRect (Item.The_Handle, Client'unchecked_access) = Win32.FALSE or else
+       Win32.Winuser.GetClientRect (Header, Header_Bounds'unchecked_access) = Win32.FALSE
+    then
+      return;
+    end if;
+    Brush := Win32.Wingdi.CreateSolidBrush (Border_Color);
+    -- Draw column boundaries.
+    X := -Win32.LONG(Scroll_Position (Item.The_Handle, 0));
+    for Index in 1 .. Item.Number_Of_Columns loop
+      X := X + Win32.LONG(Column_Width (Item, Index - 1));
+      Bounds := (X - 1, Header_Bounds.Bottom, X, Client.Bottom);
+      Ignored := Win32.Winuser.FillRect (Dc, Bounds'unchecked_access, Brush);
+    end loop;
+    -- LVM_GETITEMRECT with LVIR_BOUNDS gives the actual row height.
+    if Top_Index >= 0 and then
+       Send_Message (Item.The_Handle, Win32.Comctl.Lvm_First + 14, Win32.WPARAM(Top_Index),
+                     To_Lparam (Row'address)) /= 0
+    then
+      Height := Row.Bottom - Row.Top;
+      if Height > 0 then
+        Y := Row.Bottom - 1;
+        while Y < Client.Bottom loop
+          if Y >= Header_Bounds.Bottom then
+            Bounds := (0, Y, Win32.LONG'min (X, Client.Right), Y + 1);
+            Ignored := Win32.Winuser.FillRect (Dc, Bounds'unchecked_access, Brush);
+          end if;
+          Y := Y + Height;
+        end loop;
+      end if;
+    end if;
+    Deleted := Delete_Brush (Brush);
+  end Draw_List_Gridlines;
+
+
   procedure Shade_Disabled_Track (Info : Track_Custom_Draw) is
 
     function Create_Dc (Dc : Win32.Windef.HDC) return Win32.Windef.HDC
@@ -2181,6 +2257,7 @@ package body Gui is
     use type Win32.Comctl.Customdraw_Info_Ptr;
     use type Win32.Comctl.Nm_Listview_Ptr;
     use type Win32.INT_PTR;
+    use type Win32.LONG_PTR;
 
   begin
     The_Notification := Win32.Comctl.Lv_Dispinfo_Wide_Ptr(Lv_Dispinfo_Wide_Conversion.To_Pointer (Convert (Lparam)));
@@ -2258,7 +2335,14 @@ package body Gui is
                 if The_Custom_Draw_Info.Nmcd.Drawstage = Win32.Comctl.Cdds_Prepaint and then
                    (The_Color_Mode = Astronomy or else The_Child.The_Color_Routine /= null)
                 then  -- Ask to be notified when item is about to be drawn
+                  if The_Color_Mode = Astronomy and then The_Child.Gridlines then
+                    return Win32.Comctl.Cdrf_Notifyitemdraw + Win32.Comctl.Cdrf_Notifypostpaint;
+                  end if;
                   return Win32.Comctl.Cdrf_Notifyitemdraw;
+                elsif The_Custom_Draw_Info.Nmcd.Drawstage = Win32.Comctl.Cdds_Postpaint then
+                  if The_Color_Mode = Astronomy and then The_Child.Gridlines then
+                    Draw_List_Gridlines (The_Child, Track_Draw_Pointers.To_Pointer (Convert (Lparam)).Dc);
+                  end if;
                 elsif The_Custom_Draw_Info.Nmcd.Drawstage = Win32.Comctl.Cdds_Itemprepaint then
                   if The_Color_Mode = Astronomy then
                     The_Custom_Draw_Info.Textcolor := Text_Color;
@@ -2500,6 +2584,9 @@ package body Gui is
     if Message = 16#0082# then -- WM_NCDESTROY
       Ignored := Remove_Window_Subclass (Hwnd, List_View_Proc'access, Id);
       return Def_Subclass_Proc (Hwnd, Message, Wparam, Lparam);
+    end if;
+    if The_Color_Mode = Astronomy and then Message = Win32.Winuser.WM_CTLCOLOREDIT then
+      return Win32.Winuser.SendMessageW (Private_Window, Message, Wparam, Lparam);
     end if;
     if The_Color_Mode = Astronomy and then Message = Win32.Comctl.Wm_Notify then
       declare
@@ -2825,6 +2912,30 @@ package body Gui is
       Ignored := Delete_Brush (Brush);
     end Draw_Border;
 
+    procedure Draw_Text_View_Border is
+      Dc : constant Win32.Windef.HDC := Win32.Winuser.GetWindowDC (Hwnd);
+    begin
+      if Dc /= System.Null_Address then
+        Ignored := Win32.Winuser.GetWindowRect (Hwnd, Bounds'unchecked_access);
+        Bounds := (0, 0, Bounds.Right - Bounds.Left, Bounds.Bottom - Bounds.Top);
+        Draw_Border (Dc);
+        Bounds := (1, 1, Bounds.Right - 1, Bounds.Bottom - 1);
+        Ignored_Int := Win32.Winuser.FrameRect (Dc, Bounds'unchecked_access, Astronomy_Brush);
+        Ignored_Int := Win32.Winuser.ReleaseDC (Hwnd, Dc);
+      end if;
+    end Draw_Text_View_Border;
+
+    procedure Draw_Progress_Border is
+      Dc : constant Win32.Windef.HDC := Win32.Winuser.GetWindowDC (Hwnd);
+    begin
+      if Dc /= System.Null_Address then
+        Ignored := Win32.Winuser.GetWindowRect (Hwnd, Bounds'unchecked_access);
+        Bounds := (0, 0, Bounds.Right - Bounds.Left, Bounds.Bottom - Bounds.Top);
+        Draw_Border (Dc);
+        Ignored_Int := Win32.Winuser.ReleaseDC (Hwnd, Dc);
+      end if;
+    end Draw_Progress_Border;
+
     function To_Lparam is new Ada.Unchecked_Conversion (System.Address, Win32.LPARAM);
 
   begin -- Surface_Proc
@@ -2914,8 +3025,10 @@ package body Gui is
                                               Combo | Edit | List => System.Null_Address);
           begin
             if Get_Combo_Box_Info (Hwnd, Info'access) /= Win32.FALSE then
-              Bounds := (Info.Item.left - 1, Info.Item.top - 1, Info.Item.right + 1, Info.Item.bottom + 1);
+              Bounds := (Info.Item.left - 2, Info.Item.top - 2, Info.Item.right + 2, Info.Item.bottom + 2);
               Draw_Border (Dc);
+              Bounds := (Info.Item.left - 1, Info.Item.top - 1, Info.Item.right + 1, Info.Item.bottom + 1);
+              Ignored_Int := Win32.Winuser.FrameRect (Dc, Bounds'unchecked_access, Astronomy_Brush);
               Ignored := Win32.Winuser.GetClientRect (Hwnd, Bounds'unchecked_access);
             end if;
           end;
@@ -3035,6 +3148,16 @@ package body Gui is
           Ignored := Win32.Winuser.EndPaint (Hwnd, Paint'access);
         end;
         return 0;
+      elsif Item.The_Kind = Progress_Bar_Child and then
+        (Message = Win32.Winuser.WM_PAINT or Message = Win32.Winuser.WM_NCPAINT)
+      then
+        Result := Def_Subclass_Proc (Hwnd, Message, Wparam, Lparam);
+        Draw_Progress_Border;
+        return Result;
+      elsif Item.The_Kind = Text_View_Child and then Message = Win32.Winuser.WM_NCPAINT then
+        Result := Def_Subclass_Proc (Hwnd, Message, Wparam, Lparam);
+        Draw_Text_View_Border;
+        return Result;
       elsif Item.Is_Value_Box and then Message = Win32.Winuser.WM_NCPAINT then
         Result := Def_Subclass_Proc (Hwnd, Message, Wparam, Lparam);
         declare
@@ -3192,6 +3315,7 @@ package body Gui is
     end if;
     if The_Child.The_Kind = List_View_Child then
       Set_List_Colors (The_Child.The_Handle);
+      Set_List_Gridlines (The_Child);
       declare
         use type Win32.BOOL;
       begin
@@ -3202,7 +3326,8 @@ package body Gui is
       end;
     end if;
     if The_Child.Is_Frame or The_Child.Is_Value_Box or The_Child.The_Kind = Check_Box_Child or
-       The_Child.The_Kind = Combo_Box_Child or
+       The_Child.The_Kind = Combo_Box_Child or The_Child.The_Kind = Text_View_Child or
+       The_Child.The_Kind = Progress_Bar_Child or
        (The_Child.The_Kind = Button_Child and then not The_Child.Has_Symbol)
     then
       declare
@@ -4131,6 +4256,7 @@ package body Gui is
                 Send_Message (Item.The_Handle, Wm_Theme_Changed, 0, 0);
               elsif Item.The_Kind = List_View_Child then
                 Set_List_Colors (Item.The_Handle);
+                Set_List_Gridlines (Item);
               elsif Item.The_Kind = Progress_Bar_Child then
                 Set_Progress_Colors (Item);
               elsif Item.The_Kind = Text_View_Child then
@@ -5963,32 +6089,20 @@ package body Gui is
   end Create;
 
 
-  procedure Add_Gridlines (The_List_View  : List_View) is
-                           Extended_Style : Win32.DWORD;
+  procedure Add_Gridlines (The_List_View : List_View) is
   begin
     if Is_Active then
-      Extended_Style := Win32.DWORD(Send_Message (The_List_View.Ptr.The_Handle,
-                                                  Win32.Comctl.Lvm_Getextendedlistviewstyle, 0, 0));
-      Extended_Style := Extended_Style or Win32.Comctl.Lvs_Ex_Gridlines;
-      Send_Message (The_List_View.Ptr.The_Handle,
-                    Win32.Comctl.Lvm_Setextendedlistviewstyle,
-                    Win32.WPARAM(0),  Win32.LPARAM(Extended_Style));
+      The_List_View.Ptr.Gridlines := True;
+      Set_List_Gridlines (The_List_View.Ptr);
     end if;
   end Add_Gridlines;
 
 
-  procedure Remove_Gridlines (The_List_View  : List_View) is
-                              Extended_Style : Win32.DWORD;
+  procedure Remove_Gridlines (The_List_View : List_View) is
   begin
     if Is_Active then
-      Extended_Style := Win32.DWORD(Send_Message (The_List_View.Ptr.The_Handle,
-                                                  Win32.Comctl.Lvm_Getextendedlistviewstyle, 0, 0));
-      if (Extended_Style and Win32.Comctl.Lvs_Ex_Gridlines) /= 0 then -- Gridlines Are set
-        Extended_Style := Extended_Style xor Win32.Comctl.Lvs_Ex_Gridlines;
-        Send_Message (The_List_View.Ptr.The_Handle,
-                      Win32.Comctl.Lvm_Setextendedlistviewstyle,
-                      Win32.WPARAM(0),  Win32.LPARAM(Extended_Style));
-      end if;
+      The_List_View.Ptr.Gridlines := False;
+      Set_List_Gridlines (The_List_View.Ptr);
     end if;
   end Remove_Gridlines;
 
@@ -6046,10 +6160,9 @@ package body Gui is
   procedure Set_Width (The_Column    : Column;
                        The_New_Width : Natural) is
   begin
-    Send_Message (The_Column.List.Ptr.The_Handle,
-                  Win32.Comctl.Lvm_Setcolumnwidth,
-                  Win32.WPARAM(The_Column.Position - Positive'first),
-                  Win32.LPARAM(The_New_Width));
+    Set_Column_Width (The_Column.List.Ptr,
+                      The_Column.Position - Positive'first,
+                      Win32.LPARAM(The_New_Width));
   end Set_Width;
 
 
