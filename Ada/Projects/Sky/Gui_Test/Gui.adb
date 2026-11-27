@@ -659,6 +659,19 @@ package body Gui is
     Radio_Item   : Menu_Item_Access;
   end record;
 
+  type Menu_Bar_Item;
+  type Menu_Bar_Item_Access is access all Menu_Bar_Item;
+  type Menu_Bar_Item is record
+    Handle      : Win32.Windef.HMENU;
+    Position    : Win32.UINT;
+    Text        : Ada.Strings.Unbounded.Unbounded_String;
+    Owner_Drawn : Boolean := False;
+    Next        : Menu_Bar_Item_Access;
+  end record;
+
+  First_Menu_Bar_Item : Menu_Bar_Item_Access;
+  Menu_Bar_Count      : Win32.UINT := 0;
+
   type Menu_Item_Information is record
     The_Information : Information;
     The_Id          : Positive;
@@ -3541,7 +3554,7 @@ package body Gui is
     Handle       : Win32.Windef.HWND;
     Dc           : Win32.Windef.HDC;
     Bounds       : Win32.Windef.RECT;
-    Item_Data    : System.Address with Unreferenced;
+    Item_Data    : System.Address;
   end record with Convention => C;
 
   package Draw_Item_Pointers is new System.Address_To_Access_Conversions (Draw_Item_Info);
@@ -3585,6 +3598,82 @@ package body Gui is
   end Find_Menu_Item;
 
 
+  type Menu_Background_Info is record
+    Size       : Win32.DWORD;
+    Mask       : Win32.DWORD;
+    Style      : Win32.DWORD := 0;
+    Max_Height : Win32.UINT := 0;
+    Brush      : Win32.Windef.HBRUSH;
+    Help_Id    : Win32.DWORD := 0;
+    Data       : System.Address := System.Null_Address;
+  end record with Convention => C;
+
+  function Set_Menu_Info (Handle : Win32.Windef.HMENU; Info : System.Address) return Win32.BOOL
+    with Import, Convention => Stdcall, External_Name => "SetMenuInfo";
+
+  function Find_Menu_Bar_Item (Data : System.Address) return Menu_Bar_Item_Access is
+    Item : Menu_Bar_Item_Access := First_Menu_Bar_Item;
+    use type System.Address;
+  begin
+    while Item /= null loop
+      if Item.all'address = Data then
+        return Item;
+      end if;
+      Item := Item.Next;
+    end loop;
+    return null;
+  end Find_Menu_Bar_Item;
+
+
+  procedure Set_Menu_Bar_Colors is
+    function Convert is new Ada.Unchecked_Conversion (Win32.Windef.HMENU, Win32.UINT_PTR);
+    function To_Text is new Ada.Unchecked_Conversion (System.Address, Win32.LPCWSTR);
+    Item : Menu_Bar_Item_Access := First_Menu_Bar_Item;
+    Info : aliased Menu_Background_Info :=
+      (Size => Win32.DWORD(Menu_Background_Info'size / 8), Mask => 2,
+       Brush => (if The_Color_Mode = Astronomy then Astronomy_Brush else System.Null_Address), others => <>);
+    Ok : Win32.BOOL;
+    use type Win32.UINT;
+    use type Win32.BOOL;
+
+    procedure Set_Item_Color is
+      State     : constant Win32.UINT := Win32.Winuser.GetMenuState
+        (The_Menu_Bar, Item.Position, Win32.Winuser.MF_BYPOSITION);
+      Flags     : constant Win32.UINT := Win32.Winuser.MF_BYPOSITION or Win32.Winuser.MF_POPUP or
+        (State and (Win32.Winuser.MF_DISABLED or Win32.Winuser.MF_GRAYED));
+      Text      : aliased constant Wide_String := To_Wide (Ada.Strings.Unbounded.To_String (Item.Text)) & Wide_Nul;
+    begin
+      if The_Color_Mode = Astronomy then
+        Ok := Win32.Winuser.ModifyMenuW (The_Menu_Bar, Item.Position, Flags or Win32.Winuser.MF_OWNERDRAW,
+                                         Convert (Item.Handle), To_Text (Item.all'address));
+      else
+        Ok := Win32.Winuser.ModifyMenuW (The_Menu_Bar, Item.Position, Flags or Win32.Winuser.MF_STRING,
+                                         Convert (Item.Handle), Win32.Addr (Text));
+      end if;
+      if Ok = Win32.FALSE then
+        raise Program_Error;
+      end if;
+      Item.Owner_Drawn := The_Color_Mode = Astronomy;
+    end Set_Item_Color;
+
+  begin
+    Ok := Set_Menu_Info (The_Menu_Bar, Info'address);
+    if Ok = Win32.FALSE then
+      raise Program_Error;
+    end if;
+    while Item /= null loop
+      if Item.Owner_Drawn /= (The_Color_Mode = Astronomy) then
+        Set_Item_Color;
+      end if;
+      Item := Item.Next;
+    end loop;
+    Ok := Win32.Winuser.DrawMenuBar (Private_Window);
+    if Ok = Win32.FALSE then
+      raise Program_Error;
+    end if;
+  end Set_Menu_Bar_Colors;
+
+
   procedure Set_Popup_Colors is
     Item : Menu_Item_Access := Last_Menu_Item;
     use type Win32.UINT;
@@ -3620,18 +3709,94 @@ package body Gui is
   end Set_Popup_Colors;
 
 
+  type Measure_Item_Info is record
+    Control_Type : Win32.UINT;
+    Control_Id   : Win32.UINT;
+    Item_Id      : Win32.UINT;
+    Item_Width   : Win32.UINT;
+    Item_Height  : Win32.UINT;
+    Item_Data    : System.Address;
+  end record with Convention => C;
+
+  package Measure_Pointers is new System.Address_To_Access_Conversions (Measure_Item_Info);
+
+
+  function Measure_Item (Lparam : Win32.LPARAM) return Boolean is
+    Info : constant Measure_Pointers.Object_Pointer := Measure_Pointers.To_Pointer (To_Address (Lparam));
+    use type Measure_Pointers.Object_Pointer;
+    use type Win32.UINT;
+
+    function Measure_Menu return Boolean is
+      Bar_Item : constant Menu_Bar_Item_Access := Find_Menu_Bar_Item (Info.Item_Data);
+      Item     : constant Menu_Item_Access := Find_Menu_Item (Info.Item_Id);
+    begin
+      if Bar_Item /= null then
+        Info.Item_Width := Win32.UINT(Ada.Strings.Unbounded.Length (Bar_Item.Text) * Character_Width + 12);
+        Info.Item_Height := 20;
+      elsif Item /= null then
+        Info.Item_Width := Win32.UINT(Ada.Strings.Unbounded.Length (Item.The_Text) * Character_Width + 36);
+        Info.Item_Height := 24;
+      else
+        return False;
+      end if;
+      return True;
+    end Measure_Menu;
+
+  begin -- Measure_Item
+    if Info = null then
+      return False;
+    elsif Info.Control_Type = Win32.Winuser.ODT_MENU then
+      return Measure_Menu;
+    elsif Info.Control_Type = 3 then -- ODT_COMBOBOX
+      Info.Item_Height := 20;
+      return True;
+    end if;
+    return False;
+  end Measure_Item;
+
+
   function Draw_Menu_Item (Lparam : Win32.LPARAM) return Boolean is
     Info : constant Draw_Item_Pointers.Object_Pointer := Draw_Item_Pointers.To_Pointer (To_Address (Lparam));
     use type Draw_Item_Pointers.Object_Pointer;
     use type Win32.UINT;
     use type Win32.LONG;
+
+    procedure Draw_Menu_Bar_Item (Bar_Item : Menu_Bar_Item_Access) is
+      Selected  : constant Boolean := (Info.Item_State and Win32.Winuser.ODS_SELECTED) /= 0;
+      Disabled  : constant Boolean := (Info.Item_State and (Win32.Winuser.ODS_DISABLED or
+                                                           Win32.Winuser.ODS_GRAYED)) /= 0;
+      Surface   : constant Color := (if Selected then Button_Color (True) else Background_Color);
+      Brush     : constant Win32.Windef.HBRUSH := Win32.Wingdi.CreateSolidBrush (Surface);
+      Text      : aliased constant Wide_String := To_Wide (Ada.Strings.Unbounded.To_String (Bar_Item.Text)) & Wide_Nul;
+      Bounds    : aliased Win32.Windef.RECT := Info.Bounds;
+      Old_Font  : constant System.Address := Select_Object (Info.Dc, The_Font);
+      Ignored   : Win32.INT with Unreferenced;
+      Unused    : Win32.BOOL with Unreferenced;
+      Previous  : Color with Unreferenced;
+      Font      : System.Address with Unreferenced;
+    begin
+      Ignored   := Win32.Winuser.FillRect (Info.Dc, Bounds'unchecked_access, Brush);
+      Unused    := Delete_Gdi_Object (Brush);
+      Previous  := Win32.Wingdi.SetTextColor (Info.Dc, (if Disabled then Disabled_Text_Color else Text_Color));
+      Previous  := Win32.Wingdi.SetBkColor (Info.Dc, Surface);
+      Ignored   := Win32.Winuser.DrawTextW (Info.Dc, Win32.Addr (Text), -1, Bounds'unchecked_access,
+                                          Win32.Winuser.DT_CENTER + Win32.Winuser.DT_VCENTER +
+                                          Win32.Winuser.DT_SINGLELINE);
+      Font      := Select_Object (Info.Dc, Old_Font);
+    end Draw_Menu_Bar_Item;
+
   begin
     if Info = null or else Info.Control_Type /= Win32.Winuser.ODT_MENU then
       return False;
     end if;
     declare
+      Bar_Item : constant Menu_Bar_Item_Access := Find_Menu_Bar_Item (Info.Item_Data);
       Item : constant Menu_Item_Access := Find_Menu_Item (Info.Item_Id);
     begin
+      if Bar_Item /= null then
+        Draw_Menu_Bar_Item (Bar_Item);
+        return True;
+      end if;
       if Item = null then
         return False;
       end if;
@@ -3954,6 +4119,7 @@ package body Gui is
     case Message is
       when Wm_Color_Mode =>
         The_Color_Mode := Color_Mode'val (Wparam);
+        Set_Menu_Bar_Colors;
         Set_Popup_Colors;
         if Current_Page /= null then
           declare
@@ -4054,25 +4220,9 @@ package body Gui is
         Set_Popup_Colors;
         return Win32.Winuser.DefWindowProc (Hwnd, Message, Wparam, Lparam);
       when Win32.Winuser.WM_MEASUREITEM =>
-        declare
-          package Measure_Pointers is new System.Address_To_Access_Conversions (Win32.Winuser.MEASUREITEMSTRUCT);
-          Info : constant Measure_Pointers.Object_Pointer := Measure_Pointers.To_Pointer (To_Address (Lparam));
-        begin
-          if Info.CtlType = Win32.Winuser.ODT_MENU then
-            declare
-              Item : constant Menu_Item_Access := Find_Menu_Item (Info.itemID);
-            begin
-              if Item /= null then
-                Info.itemWidth := Win32.UINT(Ada.Strings.Unbounded.Length (Item.The_Text) * Character_Width + 36);
-                Info.itemHeight := 24;
-                return 1;
-              end if;
-            end;
-          elsif Info.CtlType = 3 then -- ODT_COMBOBOX
-            Info.itemHeight := 20;
-            return 1;
-          end if;
-        end;
+        if Measure_Item (Lparam) then
+          return 1;
+        end if;
         return Win32.Winuser.DefWindowProc (Hwnd, Message, Wparam, Lparam);
       when 16#002B# => -- WM_DRAWITEM
         if Draw_Menu_Item (Lparam) or else Draw_Combo_Item (Lparam) or else Draw_Symbol_Button (Lparam) then
@@ -4608,10 +4758,21 @@ package body Gui is
                                                       Radio_Item   => null);
     Unused : Win32.BOOL;
     Text   : aliased constant Wide_String := To_Wide (The_Text) & Wide_Nul;
+    use type Win32.UINT;
   begin
     Unused := Win32.Winuser.AppendMenuW (The_Menu_Bar, Win32.Winuser.MF_POPUP, Convert(The_Menu.The_Handle),
                                          Win32.Addr (Text));
-    Unused := Win32.Winuser.DrawMenuBar (Private_Window);
+    First_Menu_Bar_Item := new Menu_Bar_Item'(Handle      => The_Menu.The_Handle,
+                                             Position    => Menu_Bar_Count,
+                                             Text        => Ada.Strings.Unbounded.To_Unbounded_String (The_Text),
+                                             Owner_Drawn => False,
+                                             Next        => First_Menu_Bar_Item);
+    Menu_Bar_Count := Menu_Bar_Count + 1;
+    if The_Color_Mode = Astronomy then
+      Set_Menu_Bar_Colors;
+    else
+      Unused := Win32.Winuser.DrawMenuBar (Private_Window);
+    end if;
     return The_Menu;
   end Add_Menu;
 
