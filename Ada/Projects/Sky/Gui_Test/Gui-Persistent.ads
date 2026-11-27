@@ -25,6 +25,10 @@ private package Gui.Persistent is
   function Create (Title           : String;
                    Initial_Metrics : Window_Metrics := Default_Metrics) return Detached_Window;
 
+  function Stored_Color_Mode return Color_Mode;
+
+  procedure Save_Color_Mode (Mode : Color_Mode);
+
   type Column_Widths is array (Positive range <>) of Natural;
 
   function Widths_Of (Id : String) return Column_Widths;

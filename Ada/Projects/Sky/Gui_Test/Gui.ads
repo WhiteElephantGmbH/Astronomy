@@ -33,6 +33,12 @@ package Gui is
   Default_Button_Width       : constant := 100;
   Default_Symbol_Button_Size : constant := 30;
 
+  type Color_Mode is (Normal, Astronomy);
+
+  procedure Set_Color_Mode (Mode : Color_Mode);
+
+  function Get_Color_Mode return Color_Mode;
+
   subtype Color is Win32.Windef.COLORREF;
 
   -- Gdi colours
@@ -689,6 +695,11 @@ package Gui is
                   Data       : Ada.Streams.Stream_Element_Array);
 
 private
+  subtype Color_Intensity is Natural range 0 .. 255;
+
+  procedure Set_Text_Intensity (Intensity : Color_Intensity);
+  -- Defines the Astronomy text intensity before Execute.
+
   type Menu_Information;
   type Menu is access all Menu_Information;
 

@@ -20,6 +20,24 @@ with Persistent;
 
 package body Gui.Persistent is
 
+  package Persistent_Color_Mode is new Standard.Persistent (Color_Mode, "Color_Mode");
+
+  The_Color_Mode_Data : Persistent_Color_Mode.Data;
+
+
+  function Stored_Color_Mode return Color_Mode is
+  begin
+    return The_Color_Mode_Data.Storage;
+  end Stored_Color_Mode;
+
+
+  procedure Save_Color_Mode (Mode : Color_Mode) is
+  begin
+    The_Color_Mode_Data.Storage := Mode;
+    Persistent_Color_Mode.Save (The_Color_Mode_Data);
+  end Save_Color_Mode;
+
+
   package Column_Maps is new Ada.Containers.Indefinite_Ordered_Maps (String, Column_Widths);
 
   package Persistent_Columns is new Standard.Persistent (Column_Maps.Map, "List_Columns");
@@ -102,6 +120,9 @@ package body Gui.Persistent is
   end Create;
 
 begin
+  if Persistent_Color_Mode.Storage_Is_Empty then
+    The_Color_Mode_Data.Storage := Normal;
+  end if;
   if Persistent_Detached_Metrics.Storage_Is_Empty then
     The_Detached_Metrics := Default_Metrics;
   end if;

@@ -623,12 +623,28 @@ procedure Gui_Test is
   end Test_Detached_Window;
 
 
+  Astronomy_Item : Gui.Checked_Menu_Item;
+
+
+  procedure Change_Color_Mode (Unused_Item : Gui.Information) is
+    pragma Unreferenced (Unused_Item);
+  begin
+    Gui.Set_Color_Mode (if Gui.Is_Set (Astronomy_Item) then Gui.Astronomy else Gui.Normal);
+  end Change_Color_Mode;
+
+
   procedure Startup is
+    use type Gui.Color_Mode;
+    Options  : constant Gui.Menu := Gui.Add_Menu ("Options");
     Column   : Gui.Group;
     Handlers : constant array (Tone) of Gui.Action_Routine :=
       [Shadows_Changed'unrestricted_access, Midtones_Changed'unrestricted_access,
        Highlights_Changed'unrestricted_access];
   begin
+    Astronomy_Item := Gui.Add_Menu_Item ("Astronomy Mode", Options, Change_Color_Mode'unrestricted_access);
+    if Gui.Get_Color_Mode = Gui.Astronomy then
+      Gui.Set (Astronomy_Item);
+    end if;
     Page := Gui.Add_Page ("Handbox");
     Handbox := Gui.Create (Page, Gui.Vertical,
                            Expand => Gui.Fixed,

@@ -127,6 +127,14 @@ package body Gui is
   Wm_User_Close      : constant := Win32.Winuser.WM_USER + 1109;
   Wm_Create_Detached : constant := Win32.Winuser.WM_USER + 1110;
   Wm_Show_Detached   : constant := Win32.Winuser.WM_USER + 1111;
+  Wm_Color_Mode      : constant := Win32.Winuser.WM_USER + 1112;
+
+  The_Color_Mode : Color_Mode := Normal with Atomic;
+
+  Astronomy_Background : constant Color := Win32.Wingdi.RGB (12, 0, 0);
+  The_Text_Intensity   : Color_Intensity := 192;
+
+  Astronomy_Brush : Win32.Windef.HBRUSH := System.Null_Address;
 
   The_Termination_Routine : Action_Routine := null;
 
@@ -865,6 +873,67 @@ package body Gui is
       Unused := Win32.Winuser.SendMessage (Hwnd, Msg, Wparam, Lparam);
     end if;
   end Send_Message;
+
+
+  procedure Set_Text_Intensity (Intensity : Color_Intensity) is
+  begin
+    The_Text_Intensity := Intensity;
+  end Set_Text_Intensity;
+
+
+  function Text_Color return Color is
+  begin
+    case The_Color_Mode is
+    when Normal =>
+      return Color(Win32.Winuser.GetSysColor (Win32.Winuser.COLOR_BTNTEXT));
+    when Astronomy =>
+      return Color(The_Text_Intensity);
+    end case;
+  end Text_Color;
+
+
+  function Background_Color return Color is
+  begin
+    case The_Color_Mode is
+    when Normal =>
+      return Color(Win32.Winuser.GetSysColor (Win32.Winuser.COLOR_BTNFACE));
+    when Astronomy =>
+      return Astronomy_Background;
+    end case;
+  end Background_Color;
+
+
+  function Border_Color return Color is
+  begin
+    return Color(The_Text_Intensity / 2);
+  end Border_Color;
+
+
+  function Button_Color (Pressed : Boolean) return Color is
+  begin
+    return Color(if Pressed then 48 else 24);
+  end Button_Color;
+
+
+  function Disabled_Text_Color return Color is
+  begin
+    return Color(The_Text_Intensity / 3);
+  end Disabled_Text_Color;
+
+
+  function Get_Color_Mode return Color_Mode is
+  begin
+    return The_Color_Mode;
+  end Get_Color_Mode;
+
+
+  procedure Set_Color_Mode (Mode : Color_Mode) is
+  begin
+    if Mode /= The_Color_Mode then
+      Send_Message (Private_Window, Wm_Color_Mode, Win32.WPARAM(Color_Mode'pos (Mode)), 0);
+      Persistent.Save_Color_Mode (Mode);
+    end if;
+  end Set_Color_Mode;
 
 
   function Send_Message_Wide (Hwnd : Win32.Windef.HWND;
@@ -1907,6 +1976,38 @@ package body Gui is
   end Shade_Disabled_Track;
 
 
+  procedure Draw_Astronomy_Track (Info : Track_Custom_Draw; Direction : Orientation) is
+
+    function To_Lparam is new Ada.Unchecked_Conversion (System.Address, Win32.LPARAM);
+    function Delete_Brush (Brush : System.Address) return Win32.BOOL
+      with Import, Convention => Stdcall, External_Name => "DeleteObject";
+
+    Client  : aliased Win32.Windef.RECT;
+    Channel : aliased Win32.Windef.RECT := (0, 0, 0, 0);
+    Thumb   : aliased Win32.Windef.RECT with Unmodified;
+    Ignored : Win32.BOOL with Unreferenced;
+    Count   : Win32.INT with Unreferenced;
+    use type Win32.BOOL;
+    Ink : constant Color := (if Win32.Winuser.IsWindowEnabled (Info.Hdr.Hwndfrom) = Win32.FALSE
+                             then Disabled_Text_Color else Text_Color);
+    Track_Brush : constant Win32.Windef.HBRUSH := Win32.Wingdi.CreateSolidBrush (Border_Color);
+    Thumb_Brush : constant Win32.Windef.HBRUSH := Win32.Wingdi.CreateSolidBrush (Ink);
+
+  begin
+    Ignored := Win32.Winuser.GetClientRect (Info.Hdr.Hwndfrom, Client'unchecked_access);
+    Send_Message (Info.Hdr.Hwndfrom, Win32.Comctl.Tbm_Getchannelrect, 0, To_Lparam (Channel'address));
+    Send_Message (Info.Hdr.Hwndfrom, Win32.Comctl.Tbm_Getthumbrect, 0, To_Lparam (Thumb'address));
+    if Direction = Vertical then
+      Channel := (Channel.top, Channel.left, Channel.bottom, Channel.right);
+    end if;
+    Count := Win32.Winuser.FillRect (Info.Dc, Client'unchecked_access, Astronomy_Brush);
+    Count := Win32.Winuser.FillRect (Info.Dc, Channel'unchecked_access, Track_Brush);
+    Count := Win32.Winuser.FillRect (Info.Dc, Thumb'unchecked_access, Thumb_Brush);
+    Ignored := Delete_Brush (Track_Brush);
+    Ignored := Delete_Brush (Thumb_Brush);
+  end Draw_Astronomy_Track;
+
+
   function Process_Notification_From_Child (Unused_Wparam : Win32.WPARAM;
                                             Lparam        : Win32.LPARAM) return Win32.LRESULT is
 
@@ -1949,7 +2050,12 @@ package body Gui is
                   Track_Draw_Pointers.To_Pointer (Convert (Lparam));
                 use type Win32.BOOL;
               begin
-                if Win32.Winuser.IsWindowEnabled (The_Child.The_Handle) = Win32.FALSE then
+                if The_Color_Mode = Astronomy then
+                  if Info.Drawstage = Win32.Comctl.Cdds_Prepaint then
+                    Draw_Astronomy_Track (Info.all, The_Child.Track_Direction);
+                    return Win32.Comctl.Cdrf_Skipdefault;
+                  end if;
+                elsif Win32.Winuser.IsWindowEnabled (The_Child.The_Handle) = Win32.FALSE then
                   if Info.Drawstage = Win32.Comctl.Cdds_Prepaint then
                     return Win32.Comctl.Cdrf_Notifypostpaint;
                   elsif Info.Drawstage = Win32.Comctl.Cdds_Postpaint then
@@ -2201,6 +2307,201 @@ package body Gui is
   end List_View_Proc;
 
 
+  function Surface_Proc (Hwnd    : Win32.Windef.HWND;
+                         Message : Win32.UINT;
+                         Wparam  : Win32.WPARAM;
+                         Lparam  : Win32.LPARAM;
+                         Id      : System.Address;
+                         Data    : System.Address) return Win32.LRESULT
+    with Convention => Stdcall;
+
+
+  function Surface_Proc (Hwnd    : Win32.Windef.HWND;
+                         Message : Win32.UINT;
+                         Wparam  : Win32.WPARAM;
+                         Lparam  : Win32.LPARAM;
+                         Id      : System.Address;
+                         Data    : System.Address) return Win32.LRESULT is
+    use type Win32.UINT;
+    use type Win32.LONG;
+    use type System.Address;
+    function Font_Handle is new Ada.Unchecked_Conversion (Win32.LRESULT, System.Address);
+    function Select_Font (Dc : Win32.Windef.HDC; Font : System.Address) return System.Address
+      with Import, Convention => Stdcall, External_Name => "SelectObject";
+    function Delete_Brush (Brush : System.Address) return Win32.BOOL
+      with Import, Convention => Stdcall, External_Name => "DeleteObject";
+    Ignored       : Win32.BOOL with Unreferenced;
+    Ignored_Int   : Win32.INT with Unreferenced;
+    Ignored_Color : Color with Unreferenced;
+    Ignored_Font  : System.Address with Unreferenced;
+    Bounds        : aliased Win32.Windef.RECT;
+    Result        : Win32.LRESULT;
+
+    procedure Draw_Border (Dc : Win32.Windef.HDC) is
+      Brush : constant Win32.Windef.HBRUSH := Win32.Wingdi.CreateSolidBrush (Border_Color);
+    begin
+      Ignored_Int := Win32.Winuser.FrameRect (Dc, Bounds'unchecked_access, Brush);
+      Ignored := Delete_Brush (Brush);
+    end Draw_Border;
+
+    function To_Lparam is new Ada.Unchecked_Conversion (System.Address, Win32.LPARAM);
+
+  begin -- Surface_Proc
+    if Message = 16#0082# then -- WM_NCDESTROY
+      Ignored := Remove_Window_Subclass (Hwnd, Surface_Proc'access, Id);
+      return Def_Subclass_Proc (Hwnd, Message, Wparam, Lparam);
+    end if;
+    if The_Color_Mode /= Astronomy then
+      return Def_Subclass_Proc (Hwnd, Message, Wparam, Lparam);
+    end if;
+    if Data = System.Null_Address then -- Tab control
+      Result := Def_Subclass_Proc (Hwnd, Message, Wparam, Lparam);
+      if Message = Win32.Winuser.WM_PAINT then
+        declare
+          Dc : constant Win32.Windef.HDC := Win32.Winuser.GetDC (Hwnd);
+        begin
+          Ignored := Win32.Winuser.GetClientRect (Hwnd, Bounds'unchecked_access);
+          Send_Message (Hwnd, Win32.Comctl.Tcm_Adjustrect, 0, To_Lparam (Bounds'address));
+          Ignored_Int := Win32.Winuser.FillRect (Dc, Bounds'unchecked_access, Astronomy_Brush);
+          Ignored_Int := Win32.Winuser.ReleaseDC (Hwnd, Dc);
+        end;
+      end if;
+      return Result;
+    end if;
+    declare
+      Item : constant Child_Information_Ptr := Child_Information_Ptr (Child_Information_Conversion.To_Pointer (Data));
+    begin
+      if (Item.The_Kind = Button_Child or Item.The_Kind = Check_Box_Child) and then
+         Message = Win32.Winuser.WM_PAINT
+      then
+        declare
+          use type Win32.BOOL;
+          use type Win32.LRESULT;
+          Paint : aliased Win32.Winuser.PAINTSTRUCT;
+          Dc    : constant Win32.Windef.HDC := Win32.Winuser.BeginPaint (Hwnd, Paint'access);
+          Size  : constant Win32.INT := Win32.Winuser.GetWindowTextLengthW (Hwnd);
+          Text  : aliased Wide_String (1 .. Integer(Size) + 1) with Unmodified;
+          Font  : constant System.Address := Font_Handle (Send_Message (Hwnd, Win32.Winuser.WM_GETFONT, 0, 0));
+          Old_Font : constant System.Address := Select_Font (Dc, Font);
+          State    : constant Win32.LRESULT := Send_Message (Hwnd, Win32.Winuser.BM_GETSTATE, 0, 0);
+          Pressed  : constant Boolean := (State / 4) mod 2 = 1;
+          Focused  : constant Boolean := (State / 8) mod 2 = 1;
+          Enabled  : constant Boolean := Win32.Winuser.IsWindowEnabled (Hwnd) /= Win32.FALSE;
+          Ink      : constant Color := (if Enabled then Text_Color else Disabled_Text_Color);
+          Surface  : constant Color := (if Item.The_Kind = Check_Box_Child then Background_Color
+                                        else Button_Color (Pressed));
+          Brush    : constant Win32.Windef.HBRUSH := Win32.Wingdi.CreateSolidBrush (Surface);
+          Mark     : aliased Win32.Windef.RECT;
+          Flags    : Win32.UINT := Win32.Winuser.DT_SINGLELINE + Win32.Winuser.DT_VCENTER;
+        begin
+          Ignored := Win32.Winuser.GetClientRect (Hwnd, Bounds'unchecked_access);
+          Ignored_Int := Win32.Winuser.FillRect (Dc, Bounds'unchecked_access, Brush);
+          Ignored := Delete_Brush (Brush);
+          if Item.The_Kind = Check_Box_Child then
+            Mark := (4, (Bounds.bottom - 14) / 2, 18, (Bounds.bottom + 14) / 2);
+            declare
+              Box_Brush : constant Win32.Windef.HBRUSH := Win32.Wingdi.CreateSolidBrush (Border_Color);
+              Ink_Brush : constant Win32.Windef.HBRUSH := Win32.Wingdi.CreateSolidBrush (Ink);
+            begin
+              Ignored_Int := Win32.Winuser.FrameRect (Dc, Mark'unchecked_access, Box_Brush);
+              if Send_Message (Hwnd, Win32.Winuser.BM_GETCHECK, 0, 0) /= 0 then
+                Mark := (Mark.left + 3, Mark.top + 3, Mark.right - 3, Mark.bottom - 3);
+                Ignored_Int := Win32.Winuser.FillRect (Dc, Mark'unchecked_access, Ink_Brush);
+              end if;
+              Ignored := Delete_Brush (Box_Brush);
+              Ignored := Delete_Brush (Ink_Brush);
+            end;
+            Bounds.left := 24;
+          else
+            Draw_Border (Dc);
+            Flags := Flags + Win32.Winuser.DT_CENTER;
+          end if;
+          if Focused then
+            declare
+              Focus_Brush : constant Win32.Windef.HBRUSH := Win32.Wingdi.CreateSolidBrush (Ink);
+              Focus : aliased Win32.Windef.RECT := (Bounds.left + 2, Bounds.top + 2,
+                                                   Bounds.right - 2, Bounds.bottom - 2);
+            begin
+              Ignored_Int := Win32.Winuser.FrameRect (Dc, Focus'unchecked_access, Focus_Brush);
+              Ignored := Delete_Brush (Focus_Brush);
+            end;
+          end if;
+          Ignored_Int := Win32.Winuser.GetWindowTextW (Hwnd, Win32.Addr(Text), Size + 1);
+          Ignored_Color := Win32.Wingdi.SetTextColor (Dc, Ink);
+          Ignored_Color := Win32.Wingdi.SetBkColor (Dc, Surface);
+          Ignored_Int := Win32.Winuser.DrawTextW (Dc, Win32.Addr(Text), Size, Bounds'unchecked_access, Flags);
+          Ignored_Font := Select_Font (Dc, Old_Font);
+          Ignored := Win32.Winuser.EndPaint (Hwnd, Paint'access);
+        end;
+        return 0;
+      elsif (Item.The_Kind = Button_Child or Item.The_Kind = Check_Box_Child) and then
+            Message = Win32.Winuser.WM_ERASEBKGND
+      then
+        return 1;
+      elsif Item.Is_Frame and then Message = Win32.Winuser.WM_ERASEBKGND then
+        return 1;
+      elsif Item.Is_Frame and then Message = Win32.Winuser.WM_PAINT then
+        declare
+          Paint : aliased Win32.Winuser.PAINTSTRUCT;
+          Dc    : constant Win32.Windef.HDC := Win32.Winuser.BeginPaint (Hwnd, Paint'access);
+          Size  : constant Win32.INT := Win32.Winuser.GetWindowTextLengthW (Hwnd);
+          Text  : aliased Wide_String (1 .. Integer(Size) + 1) with Unmodified;
+          Title : aliased Win32.Windef.RECT := (0, 0, 0, 0);
+          Font  : constant System.Address := Font_Handle (Send_Message (Hwnd, Win32.Winuser.WM_GETFONT, 0, 0));
+          Old_Font : constant System.Address := Select_Font (Dc, Font);
+        begin
+          Ignored := Win32.Winuser.GetClientRect (Hwnd, Bounds'unchecked_access);
+          Ignored_Int := Win32.Winuser.FillRect (Dc, Bounds'unchecked_access, Astronomy_Brush);
+          if Size > 0 then
+            Ignored_Int := Win32.Winuser.GetWindowTextW (Hwnd, Win32.Addr(Text), Size + 1);
+            Ignored_Int := Win32.Winuser.DrawTextW (Dc, Win32.Addr(Text), Size, Title'unchecked_access,
+                                                    Win32.Winuser.DT_CALCRECT + Win32.Winuser.DT_SINGLELINE);
+            Bounds.top := Title.bottom / 2;
+          end if;
+          Draw_Border (Dc);
+          if Size > 0 then
+            Title.left := 8;
+            Title.right := Title.right + 12;
+            Ignored_Int := Win32.Winuser.FillRect (Dc, Title'unchecked_access, Astronomy_Brush);
+            Title.left := 10;
+            Ignored_Color := Win32.Wingdi.SetTextColor (Dc, Text_Color);
+            Ignored_Color := Win32.Wingdi.SetBkColor (Dc, Background_Color);
+            Ignored_Int := Win32.Winuser.DrawTextW (Dc, Win32.Addr(Text), Size, Title'unchecked_access,
+                                                    Win32.Winuser.DT_SINGLELINE + Win32.Winuser.DT_NOPREFIX);
+          end if;
+          Ignored_Font := Select_Font (Dc, Old_Font);
+          Ignored := Win32.Winuser.EndPaint (Hwnd, Paint'access);
+        end;
+        return 0;
+      elsif Item.Is_Value_Box and then Message = Win32.Winuser.WM_NCPAINT then
+        Result := Def_Subclass_Proc (Hwnd, Message, Wparam, Lparam);
+        declare
+          Dc : constant Win32.Windef.HDC := Win32.Winuser.GetWindowDC (Hwnd);
+        begin
+          Ignored := Win32.Winuser.GetWindowRect (Hwnd, Bounds'unchecked_access);
+          Bounds := (0, 0, Bounds.right - Bounds.left, Bounds.bottom - Bounds.top);
+          Draw_Border (Dc);
+          Ignored_Int := Win32.Winuser.ReleaseDC (Hwnd, Dc);
+        end;
+        return Result;
+      end if;
+      if Item.The_Kind = Button_Child or Item.The_Kind = Check_Box_Child then
+        Result := Def_Subclass_Proc (Hwnd, Message, Wparam, Lparam);
+        case Message is
+        when Win32.Winuser.WM_ENABLE | Win32.Winuser.WM_SETFOCUS | Win32.Winuser.WM_KILLFOCUS |
+             Win32.Winuser.WM_LBUTTONDOWN | Win32.Winuser.WM_LBUTTONUP | Win32.Winuser.WM_MOUSEMOVE |
+             Win32.Winuser.WM_KEYDOWN | Win32.Winuser.WM_KEYUP | Win32.Winuser.WM_SETTEXT |
+             16#00F1# | 16#00F3# | 16#0215# => -- BM_SETCHECK, BM_SETSTATE, WM_CAPTURECHANGED
+          Ignored := Win32.Winuser.InvalidateRect (Hwnd, null, Win32.FALSE);
+        when others => null;
+        end case;
+        return Result;
+      end if;
+    end;
+    return Def_Subclass_Proc (Hwnd, Message, Wparam, Lparam);
+  end Surface_Proc;
+
+
   procedure Create_Child (The_Object : Win32.LPARAM;
                           The_Page   : Win32.WPARAM) is
 
@@ -2331,6 +2632,18 @@ package body Gui is
         use type Win32.BOOL;
       begin
         if Set_Window_Subclass (The_Child.The_Handle, List_View_Proc'access,
+                                System.Null_Address, The_Child.all'address) = Win32.FALSE then
+          raise Program_Error;
+        end if;
+      end;
+    end if;
+    if The_Child.Is_Frame or The_Child.Is_Value_Box or The_Child.The_Kind = Check_Box_Child or
+       (The_Child.The_Kind = Button_Child and then not The_Child.Has_Symbol)
+    then
+      declare
+        use type Win32.BOOL;
+      begin
+        if Set_Window_Subclass (The_Child.The_Handle, Surface_Proc'access,
                                 System.Null_Address, The_Child.all'address) = Win32.FALSE then
           raise Program_Error;
         end if;
@@ -2687,6 +3000,10 @@ package body Gui is
     with Import, Convention => Stdcall, External_Name => "Polygon";
 
 
+  function Delete_Gdi_Object (Item : System.Address) return Win32.BOOL
+    with Import, Convention => Stdcall, External_Name => "DeleteObject";
+
+
   function Draw_Symbol_Button (Lparam : Win32.LPARAM) return Boolean is
     Info : constant Draw_Item_Pointers.Object_Pointer := Draw_Item_Pointers.To_Pointer (To_Address (Lparam));
     use type Draw_Item_Pointers.Object_Pointer;
@@ -2699,6 +3016,7 @@ package body Gui is
     Disabled  : Boolean;
     Pressed   : Boolean;
     Unused    : Win32.BOOL with Unreferenced;
+    Symbol_Brush : Win32.Windef.HBRUSH := System.Null_Address;
     Old_Brush : System.Address;
     Old_Pen   : System.Address;
     Ignored   : System.Address with Unreferenced;
@@ -2741,7 +3059,20 @@ package body Gui is
     if Pressed then
       State := State or 16#0200#; -- DFCS_PUSHED
     end if;
-    Unused := Draw_Frame (Info.Dc, Bounds'address, 4, State); -- DFC_BUTTON
+    if The_Color_Mode = Astronomy then
+      declare
+        Surface : constant Win32.Windef.HBRUSH := Win32.Wingdi.CreateSolidBrush (Button_Color (Pressed));
+        Border  : constant Win32.Windef.HBRUSH := Win32.Wingdi.CreateSolidBrush (Border_Color);
+        Ignored_Fill : Win32.INT with Unreferenced;
+      begin
+        Ignored_Fill := Win32.Winuser.FillRect (Info.Dc, Bounds'unchecked_access, Surface);
+        Ignored_Fill := Win32.Winuser.FrameRect (Info.Dc, Bounds'unchecked_access, Border);
+        Unused := Delete_Gdi_Object (Surface);
+        Unused := Delete_Gdi_Object (Border);
+      end;
+    else
+      Unused := Draw_Frame (Info.Dc, Bounds'address, 4, State); -- DFC_BUTTON
+    end if;
     X := (Bounds.left + Bounds.right) / 2;
     Y := (Bounds.top + Bounds.bottom) / 2;
     Symbol_Size := Win32.LONG'min (Bounds.right - Bounds.left, Bounds.bottom - Bounds.top);
@@ -2793,15 +3124,33 @@ package body Gui is
         Set_Point (7, -36, 0);
         Count := 7;
       end case;
-      Old_Brush := Select_Object (Info.Dc, System_Brush (if Disabled then 17 else 18));
+      if The_Color_Mode = Astronomy then
+        Symbol_Brush := Win32.Wingdi.CreateSolidBrush (if Disabled then Disabled_Text_Color else Text_Color);
+        Old_Brush := Select_Object (Info.Dc, Symbol_Brush);
+      else
+        Old_Brush := Select_Object (Info.Dc, System_Brush (if Disabled then 17 else 18));
+      end if;
       Old_Pen := Select_Object (Info.Dc, Stock_Object (8)); -- NULL_PEN
       Unused := Draw_Polygon (Info.Dc, Points'address, Count);
       Ignored := Select_Object (Info.Dc, Old_Pen);
       Ignored := Select_Object (Info.Dc, Old_Brush);
+      if Symbol_Brush /= System.Null_Address then
+        Unused := Delete_Gdi_Object (Symbol_Brush);
+      end if;
     end if;
     if (Info.Item_State and 16#0210#) = 16#0010# then -- ODS_FOCUS, not ODS_NOFOCUSRECT
       Bounds := (Bounds.left + 4, Bounds.top + 4, Bounds.right - 4, Bounds.bottom - 4);
-      Unused := Draw_Focus (Info.Dc, Bounds'address);
+      if The_Color_Mode = Astronomy then
+        declare
+          Brush : constant Win32.Windef.HBRUSH := Win32.Wingdi.CreateSolidBrush (Text_Color);
+          Ignored_Fill : Win32.INT with Unreferenced;
+        begin
+          Ignored_Fill := Win32.Winuser.FrameRect (Info.Dc, Bounds'unchecked_access, Brush);
+          Unused := Delete_Gdi_Object (Brush);
+        end;
+      else
+        Unused := Draw_Focus (Info.Dc, Bounds'address);
+      end if;
     end if;
     return True;
   end Draw_Symbol_Button;
@@ -2851,8 +3200,58 @@ package body Gui is
       end if;
     end Process_Message_From_Trackbar;
 
+    use type Win32.UINT;
+
   begin -- Mainwindowproc
     case Message is
+      when Wm_Color_Mode =>
+        The_Color_Mode := Color_Mode'val (Wparam);
+        if Current_Page /= null then
+          declare
+            Wm_Theme_Changed : constant Win32.UINT := 16#031A#;
+            Item             : Child_Information_Ptr := Current_Page.First_Child;
+          begin
+            while Item /= null loop
+              if Item.The_Kind = Track_Bar_Child then
+                Send_Message (Item.The_Handle, Wm_Theme_Changed, 0, 0);
+              end if;
+              Item := Item.Next_Sibling;
+            end loop;
+          end;
+        end if;
+        Unused := Win32.Winuser.RedrawWindow (Hwnd, null, System.Null_Address,
+                                              Win32.Winuser.RDW_INVALIDATE + Win32.Winuser.RDW_ERASE +
+                                              Win32.Winuser.RDW_ALLCHILDREN + Win32.Winuser.RDW_FRAME);
+        return 0;
+      when Win32.Winuser.WM_ERASEBKGND =>
+        if The_Color_Mode = Astronomy then
+          declare
+            function To_Dc is new Ada.Unchecked_Conversion (Win32.WPARAM, Win32.Windef.HDC);
+            Bounds : aliased Win32.Windef.RECT;
+            Unused_Fill : Win32.INT;
+          begin
+            Unused := Win32.Winuser.GetClientRect (Hwnd, Bounds'unchecked_access);
+            Unused_Fill := Win32.Winuser.FillRect (To_Dc (Wparam), Bounds'unchecked_access, Astronomy_Brush);
+            return 1;
+          end;
+        end if;
+        return Win32.Winuser.DefWindowProc (Hwnd, Message, Wparam, Lparam);
+      when Win32.Winuser.WM_CTLCOLORSTATIC =>
+        declare
+          function To_Dc is new Ada.Unchecked_Conversion (Win32.WPARAM, Win32.Windef.HDC);
+          function To_Result is new Ada.Unchecked_Conversion (Win32.Windef.HBRUSH, Win32.LRESULT);
+          function System_Brush (Index : Win32.INT) return Win32.Windef.HBRUSH
+            with Import, Convention => Stdcall, External_Name => "GetSysColorBrush";
+          Dc : constant Win32.Windef.HDC := To_Dc (Wparam);
+          Unused_Color : Color with Unreferenced;
+        begin
+          Unused_Color := Win32.Wingdi.SetTextColor (Dc, Text_Color);
+          Unused_Color := Win32.Wingdi.SetBkColor (Dc, Background_Color);
+          if The_Color_Mode = Astronomy then
+            return To_Result (Astronomy_Brush);
+          end if;
+          return To_Result (System_Brush (Win32.Winuser.COLOR_BTNFACE));
+        end;
       when Win32.Comctl.Wm_Notify =>
         return Process_Notification_From_Child (Wparam, Lparam);
 --      when Win32.Comctl.Wm_Notifyformat =>  -- Allow control to decide the format
@@ -3090,8 +3489,9 @@ package body Gui is
     Unused := Win32.Winuser.SetWindowPos (Private_Window, System.Null_Address,
                                           X_Position - Win32.INT(Origin.x - Outer.left),
                                           Y_Position - Win32.INT(Origin.y - Outer.top),
-                                          0, 0, Win32.Winuser.SWP_NOSIZE + Win32.Winuser.SWP_NOZORDER +
-                                                Win32.Winuser.SWP_NOACTIVATE);
+                                          0, 0,
+                                          Win32.Winuser.SWP_NOSIZE + Win32.Winuser.SWP_NOZORDER +
+                                          Win32.Winuser.SWP_NOACTIVATE);
   end Position_Visible_Window;
 
 
@@ -3100,6 +3500,7 @@ package body Gui is
     The_Icon             : Win32.Windef.HICON;
     Initial_X, Initial_Y : Win32.INT := Default_Position;
     use type Win32.Windef.HWND;
+    use type Win32.BOOL;
   begin
     accept Create (Application_Name  : String;
                    Window_Width      : Win32.INT;
@@ -3147,6 +3548,10 @@ package body Gui is
     The_Tabs := Create_Tabs (Private_Window);
     if The_Tabs = System.Null_Address then
       raise Tab_Creation_Failure;
+    end if;
+    if Set_Window_Subclass (The_Tabs, Surface_Proc'access,
+                            System.Null_Address, System.Null_Address) = Win32.FALSE then
+      raise Program_Error;
     end if;
     Main_Thread := Current_Thread_Id;
     accept Ready;
@@ -3265,6 +3670,8 @@ package body Gui is
                      Always_Topmost      : Boolean := False) is
     use type Gui.Layout.Element;
   begin
+    The_Color_Mode := Persistent.Stored_Color_Mode;
+    Astronomy_Brush := Win32.Wingdi.CreateSolidBrush (Astronomy_Background);
     Persistent.Create (Title               => Application_Name & (if Version = "" then "" else ' ' & Version),
                        Termination_Routine => Termination_Routine,
                        Initial_Metrics     => Initial_Metrics,
