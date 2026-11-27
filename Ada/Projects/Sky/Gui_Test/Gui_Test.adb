@@ -16,7 +16,7 @@
 pragma Style_Astronomy;
 
 pragma Build (Description => "GUI Test",
-              Version  => (0, 0, 0, 0),
+              Version  => (1, 0, 0, 0),
               Kind     => Windows,
               Icon     => False,
               Compiler => "GNAT\14.2");

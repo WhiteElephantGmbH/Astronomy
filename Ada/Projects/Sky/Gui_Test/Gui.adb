@@ -2949,7 +2949,7 @@ package body Gui is
     Class_Spec.hIcon         := The_Icon;
     Class_Spec.hIconSm       := The_Icon;
     Class_Spec.hCursor       := Win32.Winuser.LoadCursor (System.Null_Address, Win32.LPCSTR(Win32.Winuser.IDC_ARROW));
-    Class_Spec.hbrBackground := Convert(Win32.Winuser.COLOR_BACKGROUND);
+    Class_Spec.hbrBackground := Convert(Win32.Winuser.COLOR_BTNFACE + 1);
     Class_Spec.lpszMenuName  := null;
     Class_Spec.lpszClassName := Win32.Addr(Class_Name);
     Unused := Win32.Winuser.RegisterClassExA (Class_Spec);
