@@ -441,7 +441,7 @@ package Gui is
   ----------------------------
   -- Progress Bar functions --
   ----------------------------
-  function Create (Parent_Page : Page) return Progress_Bar;
+  function Create (Parent : Group) return Progress_Bar;
   -- Creates a progress bar with a range 0..100 incrementing in steps of 10
 
   procedure Define_Range (The_Progress_Bar : Progress_Bar;

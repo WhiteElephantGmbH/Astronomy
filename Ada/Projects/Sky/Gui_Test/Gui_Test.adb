@@ -24,8 +24,13 @@ pragma Build (Description => "GUI Test",
 with Ada.Streams;
 with Application;
 with Gui;
+with Rt;
+with Traces;
 
 procedure Gui_Test is
+
+  package Log is new Traces ("Gui_Test");
+
   Page                                                   : Gui.Page;
   Speed, Handbox, Direction_Buttons, Top, Middle, Bottom : Gui.Group;
   Slower, Faster                                         : Gui.Button with Unreferenced;
@@ -420,6 +425,106 @@ procedure Gui_Test is
   end Test_Targets;
 
 
+  Processing_Bar, Exposure_Bar : Gui.Progress_Bar;
+
+  task Progress_Test is
+    entry Start;
+    entry Stop;
+    entry Reset;
+    entry Shutdown;
+  end Progress_Test;
+
+
+  task body Progress_Test is
+    Running    : Boolean := False;
+    Processing : Natural := 0;
+    Exposure   : Natural := 0;
+  begin
+    loop
+      select
+        accept Start do
+          Running := Processing < 100 or else Exposure < 30;
+        end Start;
+      or
+        accept Stop do
+          Running := False;
+        end Stop;
+      or
+        accept Reset do
+          Running := False;
+          Processing := 0;
+          Exposure := 0;
+          Gui.Report_Progress (Processing_Bar, 0);
+          Gui.Report_Progress (Exposure_Bar, 0);
+        end Reset;
+      or
+        accept Shutdown;
+        exit;
+      or
+        when Running => delay until Rt.In_Future (1.0);
+          if Processing < 100 then
+            Processing := Processing + 5;
+            Gui.Report_Progress (Processing_Bar, Processing);
+          end if;
+          if Exposure < 30 then
+            Exposure := Exposure + 1;
+            Gui.Increment_Progress (Exposure_Bar);
+          end if;
+          Running := Processing < 100 or else Exposure < 30;
+      end select;
+    end loop;
+  exception
+  when Occurrence : others =>
+    Log.Termination (Occurrence);
+  end Progress_Test;
+
+
+  procedure Start_Progress is
+  begin
+    Progress_Test.Start;
+  end Start_Progress;
+
+
+  procedure Stop_Progress is
+  begin
+    Progress_Test.Stop;
+  end Stop_Progress;
+
+
+  procedure Reset_Progress is
+  begin
+    Progress_Test.Reset;
+  end Reset_Progress;
+
+
+  procedure Termination is
+  begin
+    Progress_Test.Shutdown;
+  end Termination;
+
+
+  procedure Test_Progress is
+    Progress_Page : constant Gui.Page := Gui.Add_Page ("Progress");
+    Content       : constant Gui.Group := Gui.Create (Progress_Page, Gui.Vertical);
+    Bars          : constant Gui.Group := Gui.Create (Content, Gui.Vertical, Expand => Gui.Fixed);
+    Buttons       : Gui.Group;
+    Start, Stop, Reset : Gui.Button with Unreferenced;
+  begin
+    Gui.Create_Label (Bars, "Processing");
+    Processing_Bar := Gui.Create (Bars);
+    Gui.Define_Range (Processing_Bar, 100, 5);
+    Gui.Set_Color (Processing_Bar, Gui.Green);
+    Gui.Create_Label (Bars, "Exposure");
+    Exposure_Bar := Gui.Create (Bars);
+    Gui.Define_Range (Exposure_Bar, 30);
+    Gui.Set_Color (Exposure_Bar, Gui.Blue);
+    Buttons := Gui.Create (Content, Gui.Horizontal, Expand => Gui.Fixed);
+    Start := Gui.Create (Buttons, "Start", Start_Progress'unrestricted_access);
+    Stop := Gui.Create (Buttons, "Stop", Stop_Progress'unrestricted_access);
+    Reset := Gui.Create (Content, "Reset", Reset_Progress'unrestricted_access);
+  end Test_Progress;
+
+
   procedure Test_Detached_Window is
     -- Embedded 4 x 4 bitmap with four coloured quadrants.
     Picture : constant Ada.Streams.Stream_Element_Array :=
@@ -510,12 +615,14 @@ procedure Gui_Test is
     Vertical_Toggle := Gui.Create (Tone_Buttons, "Toggle", Toggle_Vertical'unrestricted_access);
     Test_Selections;
     Test_Targets;
+    Test_Progress;
     Test_Detached_Window;
     Gui.Set_Status_Line ("READY");
   end Startup;
 
 begin
-  Gui.Execute (Application_Name => Application.Title,
-               Startup_Routine  => Startup'access,
-               Initial_Metrics  => (0, 0, 1, 350));
+  Gui.Execute (Application_Name    => Application.Title,
+               Startup_Routine     => Startup'access,
+               Termination_Routine => Termination'access,
+               Initial_Metrics     => (0, 0, 1, 350));
 end Gui_Test;

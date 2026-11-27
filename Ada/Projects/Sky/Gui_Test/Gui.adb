@@ -1174,7 +1174,7 @@ package body Gui is
       Used := Used + Column_Width (Item, Index - 1);
     end loop;
     -- A width change can change scrollbar visibility and hence the client width.
-    for Pass in 1 .. 3 loop
+    for Unused_Pass in 1 .. 3 loop
       Ignored := Win32.Winuser.GetClientRect (Item.The_Handle, Client'unchecked_access);
       Width := Natural'max (Item.Last_Column_Minimum, Integer(Client.right) - Used);
       exit when Width = Column_Width (Item, Item.Number_Of_Columns - 1);
@@ -1329,6 +1329,9 @@ package body Gui is
           elsif Item.The_Kind = Track_Bar_Child and then Item.Track_Direction = Vertical then
             R.X := R.X + (R.Width - Vertical_Track_Width) / 2;
             R.Width := Vertical_Track_Width;
+          elsif Item.The_Kind = Progress_Bar_Child then
+            R.Y := R.Y + (R.Height - 20) / 2;
+            R.Height := 20;
           elsif Item.The_Kind = Combo_Box_Child then
             -- The native height includes the drop-down list, not just the selection field.
             R.Height := 200;
@@ -4386,13 +4389,19 @@ package body Gui is
   end Set_Text;
 
 
-  function Create (Parent_Page      : Page) return Progress_Bar is
-                   The_Progress_Bar : constant Progress_Bar := Progress_Bar'(Ptr => new Child_Information);
+  function Create (Parent : Group) return Progress_Bar is
+    Result : constant Progress_Bar := (Ptr => new Child_Information);
   begin
-    The_Progress_Bar.Ptr.The_Window_Id := Next_Child_Id;
-    The_Progress_Bar.Ptr.The_Kind := Progress_Bar_Child;
-    Create (The_Progress_Bar.Ptr, Parent_Page);
-    return The_Progress_Bar;
+    if Layout_Complete then
+      raise Sequence_Error;
+    end if;
+    Result.Ptr.The_Window_Id := Next_Child_Id;
+    Result.Ptr.The_Kind := Progress_Bar_Child;
+    Create (Result.Ptr, Parent.Owner);
+    Result.Ptr.Layout_Node := Layout.Control ((100, 20), Weight => 0);
+    Layout.Append (Parent.Node, Result.Ptr.Layout_Node);
+    Define_Range (Result, 100, 10);
+    return Result;
   end Create;
 
 
