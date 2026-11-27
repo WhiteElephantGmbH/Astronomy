@@ -568,6 +568,10 @@ package body Gui is
     The_Color_Routine        : Color_Handler := null;
     Number_Of_Rows           : Natural := 0;
     Number_Of_Columns        : Natural := 0;
+    Columns_Sized            : Boolean := False;
+    Sizing_Columns           : Boolean := False;
+    Last_Header_Width        : Natural := 0;
+    Last_Column_Minimum      : Natural := 0;
     The_Sort_Routine         : Sort_Routine;
     The_Sort_Column          : Natural;
     The_Sort_Direction       : Sort_Direction := Forward;
@@ -1137,6 +1141,69 @@ package body Gui is
   Vertical_Track_Width : constant := 40;
 
 
+  function Column_Width (Item : Child_Information_Ptr; Index : Natural) return Natural is
+  begin
+    return Natural'max (0, Integer(Send_Message (Item.The_Handle,
+                                                 Win32.Comctl.Lvm_Getcolumnwidth,
+                                                 Win32.WPARAM(Index), 0)));
+  end Column_Width;
+
+
+  procedure Set_Column_Width (Item : Child_Information_Ptr; Index : Natural; Width : Win32.LPARAM) is
+  begin
+    Send_Message (Item.The_Handle, Win32.Comctl.Lvm_Setcolumnwidth, Win32.WPARAM(Index), Width);
+  end Set_Column_Width;
+
+
+  procedure Fit_Last_Column (Item : Child_Information_Ptr) is
+    Client  : aliased Win32.Windef.RECT;
+    Used    : Natural := 0;
+    Width   : Natural;
+    Ignored : Win32.BOOL with Unreferenced;
+  begin
+    if not Item.Columns_Sized or else Item.Sizing_Columns or else Item.Number_Of_Columns = 0 then
+      return;
+    end if;
+    Item.Sizing_Columns := True;
+    for Index in 1 .. Item.Number_Of_Columns - 1 loop
+      Used := Used + Column_Width (Item, Index - 1);
+    end loop;
+    -- A width change can change scrollbar visibility and hence the client width.
+    for Pass in 1 .. 3 loop
+      Ignored := Win32.Winuser.GetClientRect (Item.The_Handle, Client'unchecked_access);
+      Width := Natural'max (Item.Last_Column_Minimum, Integer(Client.right) - Used);
+      exit when Width = Column_Width (Item, Item.Number_Of_Columns - 1);
+      Set_Column_Width (Item, Item.Number_Of_Columns - 1, Win32.LPARAM(Width));
+    end loop;
+    Item.Sizing_Columns := False;
+  end Fit_Last_Column;
+
+
+  procedure Size_List_Columns (Item : Child_Information_Ptr) is
+    use type Win32.LPARAM;
+    Autosize        : constant Win32.LPARAM := -1;
+    Autosize_Header : constant Win32.LPARAM := -2;
+    Content_Width   : Natural;
+  begin
+    if not Item.Columns_Sized and then Item.Number_Of_Columns > 0 then
+      Item.Sizing_Columns := True;
+      for Index in 0 .. Item.Number_Of_Columns - 1 loop
+        Set_Column_Width (Item, Index, Autosize);
+        Content_Width := Column_Width (Item, Index);
+        if Index = Item.Number_Of_Columns - 1 then
+          Item.Last_Column_Minimum := Natural'max (Content_Width, Item.Last_Header_Width);
+        else
+          Set_Column_Width (Item, Index, Autosize_Header);
+          Set_Column_Width (Item, Index, Win32.LPARAM(Natural'max (Content_Width, Column_Width (Item, Index))));
+        end if;
+      end loop;
+      Item.Columns_Sized := True;
+      Item.Sizing_Columns := False;
+    end if;
+    Fit_Last_Column (Item);
+  end Size_List_Columns;
+
+
   procedure Redraw_Layout is
     Client, Status : aliased Win32.Windef.RECT;
     Unused         : Win32.BOOL;
@@ -1229,6 +1296,9 @@ package body Gui is
           Unused := Win32.Winuser.SetWindowPos (Item.The_Handle, System.Null_Address,
                       Win32.INT(R.X), Win32.INT(R.Y), Win32.INT(R.Width), Win32.INT(R.Height),
                       Win32.Winuser.SWP_NOZORDER + Swp_Nocopybits);
+          if Item.The_Kind = List_View_Child then
+            Size_List_Columns (Item);
+          end if;
         end;
       end if;
       Item := Item.Next_Sibling;
@@ -1850,7 +1920,9 @@ package body Gui is
                 := Wide_Text_Address_Of (Ansi_Handler (The_Child,
                                                        Natural(The_Notification.Item.Subitem),
                                                        Convert(The_Notification.Item.Lparam)));
-            elsif The_Notification.Hdr.Code = Win32.Comctl.Lvn_Columnclick then
+            elsif The_Notification.Hdr.Code = Win32.Comctl.Lvn_Columnclick and then
+                  The_Child.The_Sort_Routine /= null
+            then
               The_Listview_Info := Win32.Comctl.Nm_Listview_Ptr(Nm_Listview_Conversion.To_Pointer (Convert (Lparam)));
               if The_Listview_Info /= null then
                 The_Child.The_Sort_Column := Natural(The_Listview_Info.Subitem);
@@ -2067,6 +2139,42 @@ package body Gui is
   end Hold_Button_Proc;
 
 
+  function List_View_Proc (Hwnd    : Win32.Windef.HWND;
+                           Message : Win32.UINT;
+                           Wparam  : Win32.WPARAM;
+                           Lparam  : Win32.LPARAM;
+                           Id      : System.Address;
+                           Data    : System.Address) return Win32.LRESULT
+    with Convention => Stdcall;
+
+
+  function List_View_Proc (Hwnd    : Win32.Windef.HWND;
+                           Message : Win32.UINT;
+                           Wparam  : Win32.WPARAM;
+                           Lparam  : Win32.LPARAM;
+                           Id      : System.Address;
+                           Data    : System.Address) return Win32.LRESULT is
+    Item    : constant Child_Information_Ptr := Child_Information_Ptr (Child_Information_Conversion.To_Pointer (Data));
+    Result  : Win32.LRESULT;
+    Ignored : Win32.BOOL with Unreferenced;
+    use type Win32.UINT;
+  begin
+    if Message = 16#0082# then -- WM_NCDESTROY
+      Ignored := Remove_Window_Subclass (Hwnd, List_View_Proc'access, Id);
+      return Def_Subclass_Proc (Hwnd, Message, Wparam, Lparam);
+    end if;
+    Result := Def_Subclass_Proc (Hwnd, Message, Wparam, Lparam);
+    case Message is
+    when Win32.Winuser.WM_SIZE | Win32.Comctl.Wm_Notify |
+         Win32.Comctl.Lvm_Insertitem_Wide | Win32.Comctl.Lvm_Deleteitem | Win32.Comctl.Lvm_Deleteallitems =>
+      Fit_Last_Column (Item);
+    when others =>
+      null;
+    end case;
+    return Result;
+  end List_View_Proc;
+
+
   procedure Create_Child (The_Object : Win32.LPARAM;
                           The_Page   : Win32.WPARAM) is
 
@@ -2196,6 +2304,16 @@ package body Gui is
       begin
         The_Child.Hold_Installed := Set_Window_Subclass (The_Child.The_Handle, Hold_Button_Proc'access,
                                                          System.Null_Address, The_Child.all'address) = Win32.TRUE;
+      end;
+    end if;
+    if The_Child.The_Kind = List_View_Child then
+      declare
+        use type Win32.BOOL;
+      begin
+        if Set_Window_Subclass (The_Child.The_Handle, List_View_Proc'access,
+                                System.Null_Address, The_Child.all'address) = Win32.FALSE then
+          raise Program_Error;
+        end if;
       end;
     end if;
     The_Child.Parent_Page := Parent_Page;
@@ -4433,7 +4551,7 @@ package body Gui is
   end Create;
 
 
-  function Create (Parent_Page           : Page;
+  function Create (Parent                : Group;
                    The_Text_Handler      : access function (For_Column       : Natural;
                    With_Information      : Information) return String;
                    The_Color_Handler     : Color_Handler := null;
@@ -4441,10 +4559,15 @@ package body Gui is
                    The_Click_Routine     : access procedure (Item : Information) := null;
                    The_Click_Kind        : Click_Kind := Double_Click;
                    Use_Proportional_Font : Boolean := True;
-                   Color_Background      : Boolean := False) return List_View is
+                   Color_Background      : Boolean := False;
+                   Minimum_Width         : Positive := 240;
+                   Minimum_Height        : Positive := 120) return List_View is
                    The_List_View         : constant List_View := List_View'(Ptr => new Child_Information);
     function Convert is new Ada.Unchecked_Conversion (Text_Handler, Action_Routine);
   begin
+    if Layout_Complete then
+      raise Sequence_Error;
+    end if;
     The_List_View.Ptr.The_Window_Id := Next_Child_Id;
     The_List_View.Ptr.The_Kind := List_View_Child;
     The_List_View.Ptr.The_Action_Routine := Convert(The_Text_Handler);
@@ -4454,7 +4577,9 @@ package body Gui is
     The_List_View.Ptr.The_Click_Kind := Click_Kind_Of (The_Click_Kind);
     The_List_View.Ptr.Use_Proportional_Font := Use_Proportional_Font;
     The_List_View.Ptr.Color_Background := Color_Background;
-    Create (The_List_View.Ptr, Parent_Page);
+    Create (The_List_View.Ptr, Parent.Owner);
+    The_List_View.Ptr.Layout_Node := Layout.Control ((Minimum_Width, Minimum_Height), Weight => 1);
+    Layout.Append (Parent.Node, The_List_View.Ptr.Layout_Node);
     return The_List_View;
   end Create;
 
@@ -4479,7 +4604,7 @@ package body Gui is
     if Is_Active then
       Extended_Style := Win32.DWORD(Send_Message (The_List_View.Ptr.The_Handle,
                                                   Win32.Comctl.Lvm_Getextendedlistviewstyle, 0, 0));
-      if (Extended_Style or Win32.Comctl.Lvs_Ex_Gridlines) /= 0 then -- Gridlines Are set
+      if (Extended_Style and Win32.Comctl.Lvs_Ex_Gridlines) /= 0 then -- Gridlines Are set
         Extended_Style := Extended_Style xor Win32.Comctl.Lvs_Ex_Gridlines;
         Send_Message (The_List_View.Ptr.The_Handle,
                       Win32.Comctl.Lvm_Setextendedlistviewstyle,
@@ -4516,6 +4641,8 @@ package body Gui is
                        Column_Index,
                        Convert(Column_Info'address));
     The_List_View.Ptr.Number_Of_Columns := The_List_View.Ptr.Number_Of_Columns + 1;
+    The_List_View.Ptr.Last_Header_Width := Button_Width (The_Title, 0);
+    The_List_View.Ptr.Columns_Sized := False;
     return Column'(Position => The_List_View.Ptr.Number_Of_Columns,
                    List     => The_List_View);
   end Add_Column;
@@ -4571,6 +4698,7 @@ package body Gui is
                        Win32.WPARAM(The_List_View.Ptr.Number_Of_Columns - 1), 0) = Win32.TRUE
       then
         The_List_View.Ptr.Number_Of_Columns := The_List_View.Ptr.Number_Of_Columns - 1;
+        The_List_View.Ptr.Columns_Sized := False;
       end if;
     end if;
   end Remove_Last_Column;
@@ -4634,6 +4762,19 @@ package body Gui is
       The_List_View.Ptr.Number_Of_Rows := The_List_View.Ptr.Number_Of_Rows - 1;
     end if;
   end Remove_From;
+
+
+  procedure Remove_Data (The_List_View   : List_View;
+                         The_Information : Information) is
+    function Convert is new Ada.Unchecked_Conversion (Win32.LPARAM, Information);
+  begin
+    for Index in 1 .. The_List_View.Ptr.Number_Of_Rows loop
+      if Convert(Lparam_Of (The_List_View.Ptr.The_Handle, Win32.INT(Index - 1))) = The_Information then
+        Remove_From (The_List_View, Index);
+        return;
+      end if;
+    end loop;
+  end Remove_Data;
 
 
   procedure Remove_All_From (The_List_View : List_View) is

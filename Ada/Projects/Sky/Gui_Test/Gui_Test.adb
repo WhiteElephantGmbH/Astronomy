@@ -297,6 +297,129 @@ procedure Gui_Test is
   end Increase_Speed;
 
 
+  Targets : Gui.List_View;
+
+  type Target is (M11, M13, M27, M31, M57, M1, M3, M5, M8, M16, M17, M20, M33, M42, M45,
+                  M51, M63, M64, M81, M82, M92, M101, M104, M110);
+
+  Present : array (Target) of Boolean := [others => False];
+
+
+  function Target_Text (For_Column       : Natural;
+                        With_Information : Gui.Information) return String is
+    Item : constant Target := Target'val (With_Information);
+  begin
+    case For_Column is
+    when 0 => return Target'image (Item);
+    when 1 =>
+      case Item is
+      when M11 | M45 => return "Open cluster";
+      when M13 | M3 | M5 | M92 => return "Globular cluster";
+      when M27 | M57 => return "Planetary nebula";
+      when M31 | M33 | M51 | M63 | M64 | M81 | M82 | M101 | M104 | M110 => return "Galaxy";
+      when M1 => return "Supernova remnant";
+      when M8 | M16 | M17 | M20 | M42 => return "Emission nebula";
+      end case;
+    when others => raise Program_Error;
+    end case;
+  end Target_Text;
+
+
+  function Compare_Targets (For_Column         : Natural;
+                            First_Information  : Gui.Information;
+                            Second_Information : Gui.Information) return Gui.Relation is
+    First  : constant String := Target_Text (For_Column, First_Information);
+    Second : constant String := Target_Text (For_Column, Second_Information);
+  begin
+    if First < Second then
+      return Gui.Less_Than;
+    elsif First > Second then
+      return Gui.Greater_Than;
+    else
+      return Gui.Equal_To;
+    end if;
+  end Compare_Targets;
+
+
+  procedure Target_Selected (Item : Gui.Information) is
+  begin
+    Gui.Set_Status_Line ("TARGET: " & Target_Text (0, Item));
+  end Target_Selected;
+
+
+  procedure Populate_Targets is
+  begin
+    Gui.Remove_All_From (Targets);
+    Present := [others => False];
+    for Item in M11 .. M57 loop
+      Gui.Add_Data (Targets, Target'pos (Item));
+      Present(Item) := True;
+    end loop;
+  end Populate_Targets;
+
+
+  procedure Clear_Targets is
+  begin
+    Gui.Remove_All_From (Targets);
+    Present := [others => False];
+    Gui.Set_Status_Line ("TARGETS CLEARED");
+  end Clear_Targets;
+
+
+  procedure Add_Target is
+  begin
+    for Item in Target loop
+      if not Present(Item) then
+        Gui.Add_Data (Targets, Target'pos (Item));
+        Present(Item) := True;
+        Gui.Set_Status_Line ("ADDED: " & Target'image (Item));
+        return;
+      end if;
+    end loop;
+    Gui.Set_Status_Line ("ALL TARGETS PRESENT");
+  end Add_Target;
+
+
+  procedure Remove_Target is
+    Selection : constant Gui.Information_Array := Gui.Selected_Information_From (Targets);
+  begin
+    for Item of Selection loop
+      Gui.Remove_Data (Targets, Item);
+      Present(Target'val (Item)) := False;
+    end loop;
+    if Selection'length = 0 then
+      Gui.Set_Status_Line ("NO TARGET SELECTED");
+    else
+      Gui.Set_Status_Line ("TARGETS REMOVED");
+    end if;
+  end Remove_Target;
+
+
+  procedure Test_Targets is
+    Target_Page : constant Gui.Page := Gui.Add_Page ("Targets");
+    Content     : constant Gui.Group := Gui.Create (Target_Page, Gui.Vertical);
+    Buttons     : Gui.Group;
+    Name, Kind  : Gui.Column with Unreferenced;
+    Reset, Clear, Add, Remove : Gui.Button with Unreferenced;
+  begin
+    Targets := Gui.Create (Content,
+                           Target_Text'unrestricted_access,
+                           The_Sort_Routine  => Compare_Targets'unrestricted_access,
+                           The_Click_Routine => Target_Selected'unrestricted_access,
+                           The_Click_Kind    => Gui.Single_Click);
+    Name := Gui.Add_Column (Targets, "Object");
+    Kind := Gui.Add_Column (Targets, "Type");
+    Gui.Add_Gridlines (Targets);
+    Populate_Targets;
+    Buttons := Gui.Create (Content, Gui.Horizontal, Expand => Gui.Fixed);
+    Reset := Gui.Create (Buttons, "Reset", Populate_Targets'unrestricted_access);
+    Clear := Gui.Create (Buttons, "Clear", Clear_Targets'unrestricted_access);
+    Buttons := Gui.Create (Content, Gui.Horizontal, Expand => Gui.Fixed);
+    Add := Gui.Create (Buttons, "Add", Add_Target'unrestricted_access);
+    Remove := Gui.Create (Buttons, "Remove", Remove_Target'unrestricted_access);
+  end Test_Targets;
+
+
   procedure Test_Detached_Window is
     -- Embedded 4 x 4 bitmap with four coloured quadrants.
     Picture : constant Ada.Streams.Stream_Element_Array :=
@@ -386,6 +509,7 @@ procedure Gui_Test is
     Vertical_Reset := Gui.Create (Tone_Buttons, "Reset", Reset_Vertical'unrestricted_access);
     Vertical_Toggle := Gui.Create (Tone_Buttons, "Toggle", Toggle_Vertical'unrestricted_access);
     Test_Selections;
+    Test_Targets;
     Test_Detached_Window;
     Gui.Set_Status_Line ("READY");
   end Startup;

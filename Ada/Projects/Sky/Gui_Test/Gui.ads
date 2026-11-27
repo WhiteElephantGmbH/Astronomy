@@ -467,7 +467,7 @@ package Gui is
   end record;
 
 
-  function Create (Parent_Page           : Page;
+  function Create (Parent                : Group;
                    The_Text_Handler      : access function (For_Column       : Natural;
                    With_Information      : Information) return String;
                    The_Color_Handler     : Color_Handler := null;
@@ -475,7 +475,9 @@ package Gui is
                    The_Click_Routine     : access procedure (Item : Information) := null;
                    The_Click_Kind        : Click_Kind := Double_Click;
                    Use_Proportional_Font : Boolean := True;
-                   Color_Background      : Boolean := False) return List_View;
+                   Color_Background      : Boolean := False;
+                   Minimum_Width         : Positive := 240;
+                   Minimum_Height        : Positive := 120) return List_View;
 
   procedure Add_Gridlines (The_List_View : List_View);
 
@@ -513,6 +515,9 @@ package Gui is
 
   procedure Remove_From (The_List_View : List_View;
                          Item_Ordinal  : Positive := 1);
+
+  procedure Remove_Data (The_List_View   : List_View;
+                         The_Information : Information);
 
   procedure Remove_All_From (The_List_View : List_View);
 
