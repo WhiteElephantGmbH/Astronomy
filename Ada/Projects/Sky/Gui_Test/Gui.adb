@@ -51,6 +51,8 @@ package body Gui is
 
   use type Win32.DWORD;
 
+  Max_Filename_Size : constant := Win32.Windef.MAX_PATH;
+
   Character_Width : constant := 9;
 
   The_Font : constant Win32.Windef.HGDIOBJ
@@ -129,6 +131,38 @@ package body Gui is
   Wm_Create_Detached : constant := Win32.Winuser.WM_USER + 1110;
   Wm_Show_Detached   : constant := Win32.Winuser.WM_USER + 1111;
   Wm_Color_Mode      : constant := Win32.Winuser.WM_USER + 1112;
+
+  -- Additional Win32 constants
+  High_Quality_Bicubic   : constant Win32.INT := 7;
+  Opaque_Black           : constant Win32.DWORD := 16#FF00_0000#;
+  Standard_Beep          : constant Win32.UINT := 16#FFFF_FFFF#;
+  Wm_Nc_Destroy          : constant Win32.UINT := 16#0082#;
+  Wm_Nc_Activate         : constant Win32.UINT := 16#0086#;
+  Wm_Get_Min_Max_Info    : constant Win32.UINT := 16#0024#;
+  Wm_Draw_Item           : constant Win32.UINT := 16#002B#;
+  Wm_Activate_App        : constant Win32.UINT := 16#001C#;
+  Wm_Capture_Changed     : constant Win32.UINT := 16#0215#;
+  Bm_Set_Check           : constant Win32.UINT := 16#00F1#;
+  Bm_Set_State           : constant Win32.UINT := 16#00F3#;
+  Dt_End_Ellipsis        : constant Win32.UINT := 16#8000#;
+  Bs_Owner_Draw          : constant Win32.DWORD := 16#000B#;
+  Bs_Group_Box           : constant Win32.DWORD := 16#0007#;
+  Vk_F11                 : constant Win32.WPARAM := 16#7A#;
+  Vk_Escape              : constant Win32.WPARAM := 16#1B#;
+  Odt_Combo_Box          : constant Win32.UINT := 3;
+  Odt_Button             : constant Win32.UINT := 4;
+  Dfcs_Button_Push       : constant Win32.UINT := 16#0010#;
+  Dfcs_Inactive          : constant Win32.UINT := 16#0100#;
+  Dfcs_Pushed            : constant Win32.UINT := 16#0200#;
+  Dfc_Button             : constant Win32.UINT := 4;
+  Null_Pen               : constant Win32.INT := 8;
+  Ods_No_Focus_Rect      : constant Win32.UINT := 16#0200#;
+  Size_Minimized         : constant Win32.WPARAM := 1;
+  Mim_Background         : constant Win32.DWORD := 2;
+  Lvm_Get_Header         : constant Win32.UINT := 16#101F#;
+  Lvm_Get_Top_Index      : constant Win32.UINT := 16#1027#;
+  Lvm_Get_Item_Rect      : constant Win32.UINT := 16#100E#;
+  Progress_Default_Color : constant Color := 16#FF00_0000#;
 
   The_Color_Mode : Color_Mode := Normal with Atomic;
 
@@ -444,8 +478,8 @@ package body Gui is
         X := (Client_Width - Width) / 2;
         Y := (Client_Height - Height) / 2;
         if Create_Graphics (Hwnd, Graphics'access) = 0 then
-          Unused := Clear_Graphics (Graphics, 16#FF000000#); -- Opaque black
-          Unused := Set_Interpolation (Graphics, 7); -- HighQualityBicubic
+          Unused := Clear_Graphics (Graphics, Opaque_Black);
+          Unused := Set_Interpolation (Graphics, High_Quality_Bicubic);
           Unused := Draw_Image (Graphics, State.Picture, X, Y, Width, Height);
           Unused := Delete_Graphics (Graphics);
         end if;
@@ -605,7 +639,7 @@ package body Gui is
     Color_Background         : Boolean := False;
     Message_Colors           : Text_Color_Runs.Vector;
     Message_Color_Mode       : Color_Mode := Normal;
-    Progress_Color           : Color := 16#FF00_0000#;
+    Progress_Color           : Color := Progress_Default_Color;
     Track_Direction          : Orientation := Horizontal;
     Track_Extent             : Natural := 0;
     Track_Minimum            : Natural := 0;
@@ -967,18 +1001,17 @@ package body Gui is
 
 
   procedure Set_Progress_Colors (Item : Child_Information_Ptr) is
-    No_Theme : aliased constant Wide_String := [1 => Wide_Nul];
-    Ignored  : Win32.LONG with Unreferenced;
-    Pbm_Set_Background : constant := 16#2001#; -- CCM_SETBKCOLOR
-    Default_Color      : constant Color := 16#FF00_0000#;
+    Ccm_Set_Bk_Color : constant Win32.UINT := 16#2001#;
+    No_Theme         : aliased constant Wide_String := [1 => Wide_Nul];
+    Ignored          : Win32.LONG with Unreferenced;
   begin
     if The_Color_Mode = Astronomy then
       Ignored := Set_Window_Theme (Item.The_Handle, No_Theme'address, No_Theme'address);
-      Send_Message (Item.The_Handle, Pbm_Set_Background, 0, Win32.LPARAM(Background_Color));
+      Send_Message (Item.The_Handle, Ccm_Set_Bk_Color, 0, Win32.LPARAM(Background_Color));
       Send_Message (Item.The_Handle, Win32.Comctl.Pbm_Setbarcolor, 0, Win32.LPARAM(Text_Color));
     else
       Ignored := Set_Window_Theme (Item.The_Handle, System.Null_Address, System.Null_Address);
-      Send_Message (Item.The_Handle, Pbm_Set_Background, 0, Win32.LPARAM(Default_Color));
+      Send_Message (Item.The_Handle, Ccm_Set_Bk_Color, 0, Win32.LPARAM(Progress_Default_Color));
       Send_Message (Item.The_Handle, Win32.Comctl.Pbm_Setbarcolor, 0, Win32.LPARAM(Item.Progress_Color));
     end if;
   end Set_Progress_Colors;
@@ -1013,7 +1046,7 @@ package body Gui is
 
   procedure Set_Text_View_Colors (Item : Child_Information_Ptr) is
     function To_Lparam is new Ada.Unchecked_Conversion (System.Address, Win32.LPARAM);
-    Em_Set_Background : constant := 16#0443#; -- EM_SETBKGNDCOLOR
+    Em_Set_Background : constant Win32.UINT := 16#0443#;
     Handle            : constant Win32.Windef.HWND := Item.The_Handle;
     Selection         : aliased Win32.Comctl.Charrange with Unmodified;
   begin
@@ -1054,7 +1087,6 @@ package body Gui is
 
   procedure Set_List_Colors (Handle : Win32.Windef.HWND) is
     function To_Handle is new Ada.Unchecked_Conversion (Win32.LRESULT, Win32.Windef.HWND);
-    Lvm_Get_Header          : constant := Win32.Comctl.Lvm_First + 31;
     Header                  : constant Win32.Windef.HWND := To_Handle (Send_Message (Handle, Lvm_Get_Header, 0, 0));
     Ignored                 : Win32.BOOL with Unreferenced;
     use type System.Address;
@@ -1139,7 +1171,7 @@ package body Gui is
                   Unused     : Win32.BOOL;
   begin
     case With_Sound is
-    when Standard_Sound => The_Sound := 16#FFFFFFFF#;
+    when Standard_Sound => The_Sound := Standard_Beep;
     when Asterisk       => The_Sound := Win32.Winuser.MB_ICONASTERISK;
     when Exclamation    => The_Sound := Win32.Winuser.MB_ICONEXCLAMATION;
     when Hand           => The_Sound := Win32.Winuser.MB_ICONHAND;
@@ -2087,7 +2119,6 @@ package body Gui is
 
 
   procedure Draw_List_Gridlines (Item : Child_Information_Ptr; Dc : Win32.Windef.HDC) is
-    use type Win32.UINT;
     use type Win32.LONG;
     use type Win32.LRESULT;
     use type Win32.BOOL;
@@ -2098,12 +2129,12 @@ package body Gui is
     function Scroll_Position (Handle : Win32.Windef.HWND; Bar : Win32.INT) return Win32.INT
       with Import, Convention => Stdcall, External_Name => "GetScrollPos";
     Header : constant Win32.Windef.HWND :=
-      To_Handle (Send_Message (Item.The_Handle, Win32.Comctl.Lvm_First + 31, 0, 0));
+      To_Handle (Send_Message (Item.The_Handle, Lvm_Get_Header, 0, 0));
     Client        : aliased Win32.Windef.RECT;
     Header_Bounds : aliased Win32.Windef.RECT;
     Row           : aliased Win32.Windef.RECT := (0, 0, 0, 0);
     Bounds        : aliased Win32.Windef.RECT;
-    Top_Index     : constant Win32.LRESULT := Send_Message (Item.The_Handle, Win32.Comctl.Lvm_First + 39, 0, 0);
+    Top_Index     : constant Win32.LRESULT := Send_Message (Item.The_Handle, Lvm_Get_Top_Index, 0, 0);
     Brush         : Win32.Windef.HBRUSH;
     Ignored       : Win32.INT with Unreferenced;
     Deleted       : Win32.BOOL with Unreferenced;
@@ -2121,20 +2152,20 @@ package body Gui is
     X := -Win32.LONG(Scroll_Position (Item.The_Handle, 0));
     for Index in 1 .. Item.Number_Of_Columns loop
       X := X + Win32.LONG(Column_Width (Item, Index - 1));
-      Bounds := (X - 1, Header_Bounds.Bottom, X, Client.Bottom);
+      Bounds := (X - 1, Header_Bounds.bottom, X, Client.bottom);
       Ignored := Win32.Winuser.FillRect (Dc, Bounds'unchecked_access, Brush);
     end loop;
     -- LVM_GETITEMRECT with LVIR_BOUNDS gives the actual row height.
     if Top_Index >= 0 and then
-       Send_Message (Item.The_Handle, Win32.Comctl.Lvm_First + 14, Win32.WPARAM(Top_Index),
+       Send_Message (Item.The_Handle, Lvm_Get_Item_Rect, Win32.WPARAM(Top_Index),
                      To_Lparam (Row'address)) /= 0
     then
-      Height := Row.Bottom - Row.Top;
+      Height := Row.bottom - Row.top;
       if Height > 0 then
-        Y := Row.Bottom - 1;
-        while Y < Client.Bottom loop
-          if Y >= Header_Bounds.Bottom then
-            Bounds := (0, Y, Win32.LONG'min (X, Client.Right), Y + 1);
+        Y := Row.bottom - 1;
+        while Y < Client.bottom loop
+          if Y >= Header_Bounds.bottom then
+            Bounds := (0, Y, Win32.LONG'min (X, Client.right), Y + 1);
             Ignored := Win32.Winuser.FillRect (Dc, Bounds'unchecked_access, Brush);
           end if;
           Y := Y + Height;
@@ -2173,6 +2204,8 @@ package body Gui is
                     Blend_Function : Win32.DWORD) return Win32.BOOL
       with Import, Convention => Stdcall, External_Name => "AlphaBlend";
 
+    Disabled_Blend : constant Win32.DWORD := 16#0099_0000#;
+
     Client : aliased Win32.Windef.RECT;
     Pixel  : aliased Win32.Windef.RECT := (0, 0, 1, 1);
     Source : Win32.Windef.HDC;
@@ -2199,7 +2232,7 @@ package body Gui is
         Ignore := Fill_Rectangle (Source, Pixel'address, Background_Brush (Win32.Winuser.COLOR_BTNFACE));
         -- BLENDFUNCTION: AC_SRC_OVER, no flags, 60% constant opacity, no source alpha.
         Unused := Blend (Info.Dc, 0, 0, Win32.INT(Client.right), Win32.INT(Client.bottom),
-                         Source, 0, 0, 1, 1, 16#00990000#);
+                         Source, 0, 0, 1, 1, Disabled_Blend);
         Old := Select_Bitmap (Source, Old);
       end if;
       Unused := Delete_Bitmap (Bitmap);
@@ -2449,11 +2482,9 @@ package body Gui is
                              Wm_Left_Up           : constant Win32.UINT := 16#0202#;
                              Wm_Key_Up            : constant Win32.UINT := 16#0101#;
                              Wm_Cancel_Mode       : constant Win32.UINT := 16#001F#;
-                             Wm_Capture_Changed   : constant Win32.UINT := 16#0215#;
                              Wm_Kill_Focus        : constant Win32.UINT := 16#0008#;
                              Wm_Enable            : constant Win32.UINT := 16#000A#;
                              Wm_Show_Window       : constant Win32.UINT := 16#0018#;
-                             Wm_Nc_Destroy        : constant Win32.UINT := 16#0082#;
 
     Item     : constant Child_Information_Ptr := Child_Information_Ptr (Child_Information_Conversion.To_Pointer (Data));
     Accepted : Boolean;
@@ -2548,7 +2579,7 @@ package body Gui is
         Ignored_Color := Win32.Wingdi.SetBkColor (Info.Dc, Button_Color (False));
         Ignored := Win32.Winuser.DrawTextW (Info.Dc, Win32.Addr(Text), -1, Bounds'unchecked_access,
                                            Win32.Winuser.DT_SINGLELINE + Win32.Winuser.DT_VCENTER +
-                                           Win32.Winuser.DT_NOPREFIX + 16#8000#); -- DT_END_ELLIPSIS
+                                           Win32.Winuser.DT_NOPREFIX + Dt_End_Ellipsis);
         Deleted := Delete_Brush (Brush);
         Deleted := Delete_Brush (Edge);
       end;
@@ -2581,7 +2612,7 @@ package body Gui is
     use type Win32.UINT;
     use type System.Address;
   begin
-    if Message = 16#0082# then -- WM_NCDESTROY
+    if Message = Wm_Nc_Destroy then
       Ignored := Remove_Window_Subclass (Hwnd, List_View_Proc'access, Id);
       return Def_Subclass_Proc (Hwnd, Message, Wparam, Lparam);
     end if;
@@ -2592,7 +2623,7 @@ package body Gui is
       declare
         Info : constant Track_Draw_Pointers.Object_Pointer := Track_Draw_Pointers.To_Pointer (To_Address (Lparam));
         Header : constant Win32.Windef.HWND :=
-          To_Handle (Send_Message (Hwnd, Win32.Comctl.Lvm_First + 31, 0, 0));
+          To_Handle (Send_Message (Hwnd, Lvm_Get_Header, 0, 0));
       begin
         if Info.Hdr.Hwndfrom = Header and then Info.Hdr.Code = Win32.Comctl.Nm_Customdraw then
           return Draw_List_Header (Info.all, Hwnd);
@@ -2650,7 +2681,7 @@ package body Gui is
     function Delete_Brush (Brush : System.Address) return Win32.BOOL
       with Import, Convention => Stdcall, External_Name => "DeleteObject";
   begin
-    if Message = 16#0082# then -- WM_NCDESTROY
+    if Message = Wm_Nc_Destroy then
       Unused := Remove_Window_Subclass (Hwnd, Combo_List_Proc'access, Id);
     end if;
     Result := Def_Subclass_Proc (Hwnd, Message, Wparam, Lparam);
@@ -2697,7 +2728,7 @@ package body Gui is
     function Delete_Brush (Brush : System.Address) return Win32.BOOL
       with Import, Convention => Stdcall, External_Name => "DeleteObject";
   begin
-    if Message = 16#0082# then -- WM_NCDESTROY
+    if Message = Wm_Nc_Destroy then
       Ignored := Remove_Window_Subclass (Hwnd, Tab_Arrow_Proc'access, Id);
     end if;
     Result := Def_Subclass_Proc (Hwnd, Message, Wparam, Lparam);
@@ -2715,18 +2746,18 @@ package body Gui is
       begin
         if Dc /= System.Null_Address then
           Ignored := Win32.Winuser.GetClientRect (Hwnd, Bounds'unchecked_access);
-          Middle := (Bounds.Left + Bounds.Right) / 2;
-          Y := (Bounds.Top + Bounds.Bottom) / 2;
+          Middle := (Bounds.left + Bounds.right) / 2;
+          Y := (Bounds.top + Bounds.bottom) / 2;
           for Index in 0 .. 1 loop
             Cell := Bounds;
             if Index = 0 then
-              Cell.Right := Middle;
+              Cell.right := Middle;
             else
-              Cell.Left := Middle;
+              Cell.left := Middle;
             end if;
             Ignored_Int := Win32.Winuser.FillRect (Dc, Cell'unchecked_access, Surface);
             Ignored_Int := Win32.Winuser.FrameRect (Dc, Cell'unchecked_access, Edge);
-            X := (Cell.Left + Cell.Right) / 2;
+            X := (Cell.left + Cell.right) / 2;
             for Step in 0 .. 4 loop
               declare
                 Offset : constant Win32.LONG := Win32.LONG(Step);
@@ -2802,7 +2833,7 @@ package body Gui is
     Result        : Win32.LRESULT;
     Bounds        : aliased Win32.Windef.RECT;
   begin
-    if Message = 16#0082# then -- WM_NCDESTROY
+    if Message = Wm_Nc_Destroy then
       Ignored := Remove_Window_Subclass (Hwnd, Status_Line_Proc'access, Id);
     elsif The_Color_Mode = Astronomy then
       case Message is
@@ -2828,15 +2859,15 @@ package body Gui is
           if not Application_Is_Maximized then
             for Row in 0 .. 2 loop
               for Column in 0 .. Row loop
-                X := Bounds.Right - 4 - 4 * Win32.LONG(Column);
-                Y := Bounds.Bottom - 4 - 4 * Win32.LONG(2 - Row);
+                X := Bounds.right - 4 - 4 * Win32.LONG(Column);
+                Y := Bounds.bottom - 4 - 4 * Win32.LONG(2 - Row);
                 Mark := (X, Y, X + 2, Y + 2);
                 Ignored_Int := Win32.Winuser.FillRect (Dc, Mark'unchecked_access, Edge);
               end loop;
             end loop;
-            Bounds.Right := Win32.LONG'max (Bounds.Left, Bounds.Right - Grip);
+            Bounds.right := Win32.LONG'max (Bounds.left, Bounds.right - Grip);
           end if;
-          Bounds.Left := Bounds.Left + 3;
+          Bounds.left := Bounds.left + 3;
           if Size > 0 then
             Text_Result := Def_Subclass_Proc (Hwnd, Sb_Gettextw, 0, To_Lparam (Text'address));
             Ignored_Color := Win32.Wingdi.SetTextColor (Dc, Text_Color);
@@ -2857,7 +2888,7 @@ package body Gui is
         begin
           if Dc /= System.Null_Address then
             Ignored := Win32.Winuser.GetWindowRect (Hwnd, Bounds'unchecked_access);
-            Bounds := (0, 0, Bounds.Right - Bounds.Left, Bounds.Bottom - Bounds.Top);
+            Bounds := (0, 0, Bounds.right - Bounds.left, Bounds.bottom - Bounds.top);
             Ignored_Int := Win32.Winuser.FrameRect (Dc, Bounds'unchecked_access, Edge);
             Ignored_Int := Win32.Winuser.ReleaseDC (Hwnd, Dc);
           end if;
@@ -2917,9 +2948,9 @@ package body Gui is
     begin
       if Dc /= System.Null_Address then
         Ignored := Win32.Winuser.GetWindowRect (Hwnd, Bounds'unchecked_access);
-        Bounds := (0, 0, Bounds.Right - Bounds.Left, Bounds.Bottom - Bounds.Top);
+        Bounds := (0, 0, Bounds.right - Bounds.left, Bounds.bottom - Bounds.top);
         Draw_Border (Dc);
-        Bounds := (1, 1, Bounds.Right - 1, Bounds.Bottom - 1);
+        Bounds := (1, 1, Bounds.right - 1, Bounds.bottom - 1);
         Ignored_Int := Win32.Winuser.FrameRect (Dc, Bounds'unchecked_access, Astronomy_Brush);
         Ignored_Int := Win32.Winuser.ReleaseDC (Hwnd, Dc);
       end if;
@@ -2930,7 +2961,7 @@ package body Gui is
     begin
       if Dc /= System.Null_Address then
         Ignored := Win32.Winuser.GetWindowRect (Hwnd, Bounds'unchecked_access);
-        Bounds := (0, 0, Bounds.Right - Bounds.Left, Bounds.Bottom - Bounds.Top);
+        Bounds := (0, 0, Bounds.right - Bounds.left, Bounds.bottom - Bounds.top);
         Draw_Border (Dc);
         Ignored_Int := Win32.Winuser.ReleaseDC (Hwnd, Dc);
       end if;
@@ -2939,7 +2970,7 @@ package body Gui is
     function To_Lparam is new Ada.Unchecked_Conversion (System.Address, Win32.LPARAM);
 
   begin -- Surface_Proc
-    if Message = 16#0082# then -- WM_NCDESTROY
+    if Message = Wm_Nc_Destroy then
       Ignored := Remove_Window_Subclass (Hwnd, Surface_Proc'access, Id);
       return Def_Subclass_Proc (Hwnd, Message, Wparam, Lparam);
     end if;
@@ -3176,7 +3207,7 @@ package body Gui is
         when Win32.Winuser.WM_ENABLE | Win32.Winuser.WM_SETFOCUS | Win32.Winuser.WM_KILLFOCUS |
              Win32.Winuser.WM_LBUTTONDOWN | Win32.Winuser.WM_LBUTTONUP | Win32.Winuser.WM_MOUSEMOVE |
              Win32.Winuser.WM_KEYDOWN | Win32.Winuser.WM_KEYUP | Win32.Winuser.WM_SETTEXT |
-             16#00F1# | 16#00F3# | 16#0215# => -- BM_SETCHECK, BM_SETSTATE, WM_CAPTURECHANGED
+             Bm_Set_Check | Bm_Set_State | Wm_Capture_Changed =>
           Ignored := Win32.Winuser.InvalidateRect (Hwnd, null, Win32.FALSE);
         when others => null;
         end case;
@@ -3217,7 +3248,7 @@ package body Gui is
       when Button_Child =>
         Class_Name := Wide_Text_Address_Of ("button");
         if The_Child.Has_Symbol then
-          Window_Style := Window_Style + 16#000B#; -- BS_OWNERDRAW
+          Window_Style := Window_Style + Bs_Owner_Draw;
         else
           Window_Style := Window_Style + Win32.Winuser.BS_PUSHBUTTON;
         end if;
@@ -3280,7 +3311,7 @@ package body Gui is
       when Static_Child =>
         if The_Child.Is_Frame then
           Class_Name := Wide_Text_Address_Of ("Button");
-          Window_Style := Window_Style + 16#0007# + Win32.Winuser.WS_CLIPSIBLINGS; -- BS_GROUPBOX
+          Window_Style := Window_Style + Bs_Group_Box + Win32.Winuser.WS_CLIPSIBLINGS;
         else
           Class_Name := Wide_Text_Address_Of ("Static");
           if The_Child.Is_Value_Box then
@@ -3577,7 +3608,7 @@ package body Gui is
   begin
     case Message is
       when Win32.Winuser.WM_KEYDOWN =>
-        if Wparam = Win32.WPARAM(16#7A#) then -- F11
+        if Wparam = Vk_F11 then
           declare
             State : constant Detached_Image_State_Ptr := Image_State (Hwnd);
           begin
@@ -3586,7 +3617,7 @@ package body Gui is
             end if;
           end;
           return 0;
-        elsif Wparam = Win32.WPARAM(16#1B#) then -- Escape
+        elsif Wparam = Vk_Escape then
           Set_Detached_Fullscreen (Hwnd, False);
           return 0;
         end if;
@@ -3783,7 +3814,7 @@ package body Gui is
     function To_Text is new Ada.Unchecked_Conversion (System.Address, Win32.LPCWSTR);
     Item : Menu_Bar_Item_Access := First_Menu_Bar_Item;
     Info : aliased Menu_Background_Info :=
-      (Size => Win32.DWORD(Menu_Background_Info'size / 8), Mask => 2,
+      (Size => Win32.DWORD(Menu_Background_Info'size / 8), Mask => Mim_Background,
        Brush => (if The_Color_Mode = Astronomy then Astronomy_Brush else System.Null_Address), others => <>);
     Ok : Win32.BOOL;
     use type Win32.UINT;
@@ -3864,7 +3895,7 @@ package body Gui is
 
   type Measure_Item_Info is record
     Control_Type : Win32.UINT;
-    Control_Id   : Win32.UINT;
+    Control_Id   : Win32.UINT with Unreferenced;
     Item_Id      : Win32.UINT;
     Item_Width   : Win32.UINT;
     Item_Height  : Win32.UINT;
@@ -3900,7 +3931,7 @@ package body Gui is
       return False;
     elsif Info.Control_Type = Win32.Winuser.ODT_MENU then
       return Measure_Menu;
-    elsif Info.Control_Type = 3 then -- ODT_COMBOBOX
+    elsif Info.Control_Type = Odt_Combo_Box then
       Info.Item_Height := 20;
       return True;
     end if;
@@ -4013,7 +4044,7 @@ package body Gui is
     Unused_Font  : System.Address with Unreferenced;
     Old_Font     : System.Address;
   begin
-    if Info = null or else Info.Control_Type /= 3 then -- ODT_COMBOBOX
+    if Info = null or else Info.Control_Type /= Odt_Combo_Box then
       return False;
     end if;
     Selected := (Info.Item_State and Win32.Winuser.ODS_SELECTED) /= 0;
@@ -4078,7 +4109,7 @@ package body Gui is
     use type System.Address;
     The_Child : Child_Information_Ptr;
     Bounds    : aliased Win32.Windef.RECT;
-    State     : Win32.UINT := 16#0010#; -- DFCS_BUTTONPUSH
+    State     : Win32.UINT := Dfcs_Button_Push;
     Disabled  : Boolean;
     Pressed   : Boolean;
     Unused    : Win32.BOOL with Unreferenced;
@@ -4105,7 +4136,7 @@ package body Gui is
     end Set_Point;
 
   begin -- Draw_Symbol_Button
-    if Info = null or else Info.Control_Type /= 4 or else Current_Page = null then
+    if Info = null or else Info.Control_Type /= Odt_Button or else Current_Page = null then
       return False;
     end if;
     The_Child := Current_Page.First_Child;
@@ -4117,13 +4148,13 @@ package body Gui is
       return False;
     end if;
     Bounds := Info.Bounds;
-    Disabled := (Info.Item_State and 16#0004#) /= 0;
-    Pressed := (Info.Item_State and 16#0001#) /= 0;
+    Disabled := (Info.Item_State and Win32.Winuser.ODS_DISABLED) /= 0;
+    Pressed := (Info.Item_State and Win32.Winuser.ODS_SELECTED) /= 0;
     if Disabled then
-      State := State or 16#0100#; -- DFCS_INACTIVE
+      State := State or Dfcs_Inactive;
     end if;
     if Pressed then
-      State := State or 16#0200#; -- DFCS_PUSHED
+      State := State or Dfcs_Pushed;
     end if;
     if The_Color_Mode = Astronomy then
       declare
@@ -4137,7 +4168,7 @@ package body Gui is
         Unused := Delete_Gdi_Object (Border);
       end;
     else
-      Unused := Draw_Frame (Info.Dc, Bounds'address, 4, State); -- DFC_BUTTON
+      Unused := Draw_Frame (Info.Dc, Bounds'address, Dfc_Button, State);
     end if;
     X := (Bounds.left + Bounds.right) / 2;
     Y := (Bounds.top + Bounds.bottom) / 2;
@@ -4196,7 +4227,7 @@ package body Gui is
       else
         Old_Brush := Select_Object (Info.Dc, System_Brush (if Disabled then 17 else 18));
       end if;
-      Old_Pen := Select_Object (Info.Dc, Stock_Object (8)); -- NULL_PEN
+      Old_Pen := Select_Object (Info.Dc, Stock_Object (Null_Pen));
       Unused := Draw_Polygon (Info.Dc, Points'address, Count);
       Ignored := Select_Object (Info.Dc, Old_Pen);
       Ignored := Select_Object (Info.Dc, Old_Brush);
@@ -4204,7 +4235,7 @@ package body Gui is
         Unused := Delete_Gdi_Object (Symbol_Brush);
       end if;
     end if;
-    if (Info.Item_State and 16#0210#) = 16#0010# then -- ODS_FOCUS, not ODS_NOFOCUSRECT
+    if (Info.Item_State and (Win32.Winuser.ODS_FOCUS or Ods_No_Focus_Rect)) = Win32.Winuser.ODS_FOCUS then
       Bounds := (Bounds.left + 4, Bounds.top + 4, Bounds.right - 4, Bounds.bottom - 4);
       if The_Color_Mode = Astronomy then
         declare
@@ -4248,11 +4279,11 @@ package body Gui is
     then
       return;
     end if;
-    if Bounds.Right <= 0 or else Origin.y <= Outer.Top then
+    if Bounds.right <= 0 or else Origin.y <= Outer.top then
       return;
     end if;
-    Bounds := (Origin.x - Outer.Left, Origin.y - Outer.Top - 1,
-               Origin.x - Outer.Left + Bounds.Right, Origin.y - Outer.Top);
+    Bounds := (Origin.x - Outer.left, Origin.y - Outer.top - 1,
+               Origin.x - Outer.left + Bounds.right, Origin.y - Outer.top);
     Dc := Win32.Winuser.GetWindowDC (Hwnd);
     if Dc /= System.Null_Address then
       Brush := Win32.Wingdi.CreateSolidBrush (Border_Color);
@@ -4320,7 +4351,7 @@ package body Gui is
 
   begin -- Mainwindowproc
     case Message is
-      when Win32.Winuser.WM_NCPAINT | 16#0086# => -- WM_NCACTIVATE
+      when Win32.Winuser.WM_NCPAINT | Wm_Nc_Activate =>
         return Paint_Non_Client;
       when Wm_Color_Mode =>
         The_Color_Mode := Color_Mode'val (Wparam);
@@ -4405,7 +4436,7 @@ package body Gui is
         Show_Detached_Image (Lparam);
       when Wm_Create_Child =>
         Create_Child (Lparam, Wparam);
-      when 16#0024# => -- WM_GETMINMAXINFO
+      when Wm_Get_Min_Max_Info =>
         declare
           Info : constant Minmax_Pointers.Object_Pointer := Minmax_Pointers.To_Pointer (To_Address (Lparam));
         begin
@@ -4416,7 +4447,7 @@ package body Gui is
       when Win32.Winuser.WM_MOVE =>
         Note_Private_Window_Metrics;
       when Win32.Winuser.WM_SIZE =>
-        if Wparam = 1 then -- SIZE_MINIMIZED
+        if Wparam = Size_Minimized then
           Release_Held_Button;
         end if;
         Note_Private_Window_Metrics;
@@ -4431,7 +4462,7 @@ package body Gui is
           return 1;
         end if;
         return Win32.Winuser.DefWindowProc (Hwnd, Message, Wparam, Lparam);
-      when 16#002B# => -- WM_DRAWITEM
+      when Wm_Draw_Item =>
         if Draw_Menu_Item (Lparam) or else Draw_Combo_Item (Lparam) or else Draw_Symbol_Button (Lparam) then
           return 1;
         end if;
@@ -4452,7 +4483,7 @@ package body Gui is
         Win32.Winuser.PostQuitMessage (0);
       when Wm_User_Callback =>
         Execute (The_Callback_Routine);
-      when 16#001C# => -- WM_ACTIVATEAPP
+      when Wm_Activate_App =>
         if Wparam = 0 then
           Release_Held_Button;
         end if;
@@ -6945,7 +6976,6 @@ package body Gui is
     The_Information   : aliased Win32.Commdlg.OPENFILENAME;
     Extension         : aliased constant String := Default_Extension & Nul;
     Filters           : aliased constant String := Extension_Description & Nul & "*." & Extension & Nul;
-    Max_Filename_Size : constant := 260;
     The_Filename      : aliased String (1..Max_Filename_Size);
     The_Index         : Natural;
     Flags             : constant := Win32.Commdlg.OFN_FILEMUSTEXIST +
@@ -6986,7 +7016,6 @@ package body Gui is
                                 Initial_Filename      : String := "";
                                 Default_Directory     : String := "") return String is
 
-    Max_Filename_Size : constant := 260;
     The_Information   : aliased Win32.Commdlg.OPENFILENAME;
     The_Filename      : aliased String(1..Max_Filename_Size);
     Directory         : aliased constant String := Default_Directory & Nul;
