@@ -667,7 +667,7 @@ package Gui is
   -------------------------
   -- Check Box functions --
   -------------------------
-  function Create (Parent_Page        : Page;
+  function Create (Parent             : Group;
                    The_Title          : String;
                    The_Action_Routine : Action_Routine := null) return Check_Box;
 

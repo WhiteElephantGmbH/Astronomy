@@ -525,6 +525,53 @@ procedure Gui_Test is
   end Test_Progress;
 
 
+  Use_Darks, Use_Flats : Gui.Check_Box;
+
+
+  procedure Options_Changed is
+  begin
+    Gui.Set_Status_Line ("DARKS: " & Boolean'image (Gui.Is_Checked (Use_Darks)) &
+                         "  FLATS: " & Boolean'image (Gui.Is_Checked (Use_Flats)));
+  end Options_Changed;
+
+
+  procedure Reset_Options is
+  begin
+    Gui.Set (Use_Darks);
+    Gui.Clear (Use_Flats);
+    Options_Changed;
+  end Reset_Options;
+
+
+  procedure Toggle_Options is
+  begin
+    if Gui.Is_Enabled (Use_Darks) then
+      Gui.Disable (Use_Darks);
+      Gui.Disable (Use_Flats);
+    else
+      Gui.Enable (Use_Darks);
+      Gui.Enable (Use_Flats);
+    end if;
+  end Toggle_Options;
+
+
+  procedure Test_Options is
+    Options_Page : constant Gui.Page := Gui.Add_Page ("Options");
+    Options      : constant Gui.Group := Gui.Create (Options_Page, Gui.Vertical);
+    Calibration  : constant Gui.Group := Gui.Create (Options, Gui.Vertical, Expand => Gui.Fixed,
+                                                     Title => "Calibration");
+    Buttons      : constant Gui.Group := Gui.Create (Options, Gui.Vertical, Expand => Gui.Fixed);
+    Reset        : Gui.Button with Unreferenced;
+    Toggle       : Gui.Button with Unreferenced;
+  begin
+    Use_Darks := Gui.Create (Calibration, "Use darks", Options_Changed'unrestricted_access);
+    Use_Flats := Gui.Create (Calibration, "Use flats", Options_Changed'unrestricted_access);
+    Reset := Gui.Create (Buttons, "Reset", Reset_Options'unrestricted_access);
+    Toggle := Gui.Create (Buttons, "Toggle", Toggle_Options'unrestricted_access);
+    Reset_Options;
+  end Test_Options;
+
+
   procedure Test_Detached_Window is
     -- Embedded 4 x 4 bitmap with four coloured quadrants.
     Picture : constant Ada.Streams.Stream_Element_Array :=
@@ -616,6 +663,7 @@ procedure Gui_Test is
     Test_Selections;
     Test_Targets;
     Test_Progress;
+    Test_Options;
     Test_Detached_Window;
     Gui.Set_Status_Line ("READY");
   end Startup;

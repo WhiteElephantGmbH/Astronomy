@@ -5133,17 +5133,23 @@ package body Gui is
   end Clear;
 
 
-  function Create (Parent_Page        : Page;
+  function Create (Parent             : Group;
                    The_Title          : String;
                    The_Action_Routine : Action_Routine := null) return Check_Box is
                    Title              : aliased constant Wide_String := To_Wide (The_Title) & Wide_Nul;
                    The_Check_Box      : constant Check_Box := Check_Box'(Ptr => new Child_Information);
   begin
+    if Layout_Complete then
+      raise Sequence_Error;
+    end if;
     The_Check_Box.Ptr.The_Window_Id := Next_Child_Id;
     The_Check_Box.Ptr.The_Kind := Check_Box_Child;
     The_Check_Box.Ptr.Initial_Title := Win32.Addr(Title);
     The_Check_Box.Ptr.The_Action_Routine := The_Action_Routine;
-    Create (The_Check_Box.Ptr, Parent_Page);
+    Create (The_Check_Box.Ptr, Parent.Owner);
+    The_Check_Box.Ptr.Layout_Node := Layout.Control ((Button_Width (The_Title, 0, Padding => 28), 30),
+                                                      Weight => 0);
+    Layout.Append (Parent.Node, The_Check_Box.Ptr.Layout_Node);
     return The_Check_Box;
   end Create;
 
