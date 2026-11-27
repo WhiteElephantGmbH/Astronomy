@@ -2570,6 +2570,101 @@ package body Gui is
   end Combo_List_Proc;
 
 
+  function Tab_Arrow_Proc (Hwnd    : Win32.Windef.HWND;
+                           Message : Win32.UINT;
+                           Wparam  : Win32.WPARAM;
+                           Lparam  : Win32.LPARAM;
+                           Id      : System.Address;
+                           Data    : System.Address) return Win32.LRESULT
+    with Convention => Stdcall;
+
+
+  function Tab_Arrow_Proc (Hwnd    : Win32.Windef.HWND;
+                           Message : Win32.UINT;
+                           Wparam  : Win32.WPARAM;
+                           Lparam  : Win32.LPARAM;
+                           Id      : System.Address;
+                           Data    : System.Address) return Win32.LRESULT is
+    pragma Unreferenced (Data);
+    use type Win32.UINT;
+    use type Win32.LONG;
+    use type System.Address;
+    Ignored     : Win32.BOOL with Unreferenced;
+    Ignored_Int : Win32.INT with Unreferenced;
+    Result      : Win32.LRESULT;
+    function Delete_Brush (Brush : System.Address) return Win32.BOOL
+      with Import, Convention => Stdcall, External_Name => "DeleteObject";
+  begin
+    if Message = 16#0082# then -- WM_NCDESTROY
+      Ignored := Remove_Window_Subclass (Hwnd, Tab_Arrow_Proc'access, Id);
+    end if;
+    Result := Def_Subclass_Proc (Hwnd, Message, Wparam, Lparam);
+    if Message = Win32.Winuser.WM_PAINT and then The_Color_Mode = Astronomy then
+      declare
+        Dc      : constant Win32.Windef.HDC := Win32.Winuser.GetDC (Hwnd);
+        Bounds  : aliased Win32.Windef.RECT;
+        Cell    : aliased Win32.Windef.RECT;
+        Mark    : aliased Win32.Windef.RECT;
+        Surface : constant Win32.Windef.HBRUSH := Win32.Wingdi.CreateSolidBrush (Button_Color (False));
+        Edge    : constant Win32.Windef.HBRUSH := Win32.Wingdi.CreateSolidBrush (Border_Color);
+        Ink     : constant Win32.Windef.HBRUSH := Win32.Wingdi.CreateSolidBrush (Text_Color);
+        Middle  : Win32.LONG;
+        X, Y    : Win32.LONG;
+      begin
+        if Dc /= System.Null_Address then
+          Ignored := Win32.Winuser.GetClientRect (Hwnd, Bounds'unchecked_access);
+          Middle := (Bounds.Left + Bounds.Right) / 2;
+          Y := (Bounds.Top + Bounds.Bottom) / 2;
+          for Index in 0 .. 1 loop
+            Cell := Bounds;
+            if Index = 0 then
+              Cell.Right := Middle;
+            else
+              Cell.Left := Middle;
+            end if;
+            Ignored_Int := Win32.Winuser.FillRect (Dc, Cell'unchecked_access, Surface);
+            Ignored_Int := Win32.Winuser.FrameRect (Dc, Cell'unchecked_access, Edge);
+            X := (Cell.Left + Cell.Right) / 2;
+            for Step in 0 .. 4 loop
+              declare
+                Offset : constant Win32.LONG := Win32.LONG(Step);
+                Column : constant Win32.LONG := (if Index = 0 then X - 2 + Offset else X + 2 - Offset);
+              begin
+                Mark := (Column, Y - Offset, Column + 1, Y + Offset + 1);
+                Ignored_Int := Win32.Winuser.FillRect (Dc, Mark'unchecked_access, Ink);
+              end;
+            end loop;
+          end loop;
+          Ignored_Int := Win32.Winuser.ReleaseDC (Hwnd, Dc);
+        end if;
+        Ignored := Delete_Brush (Surface);
+        Ignored := Delete_Brush (Edge);
+        Ignored := Delete_Brush (Ink);
+      end;
+    end if;
+    return Result;
+  end Tab_Arrow_Proc;
+
+
+  procedure Attach_Tab_Arrows (Handle : Win32.Windef.HWND) is
+    use type System.Address;
+    use type Win32.BOOL;
+    function Find_Child (Parent, After : Win32.Windef.HWND;
+                         Class, Name  : System.Address) return Win32.Windef.HWND
+      with Import, Convention => Stdcall, External_Name => "FindWindowExW";
+    Class : aliased constant Wide_String := "msctls_updown32" & Wide_Nul;
+    Child : constant Win32.Windef.HWND := Find_Child (Handle, System.Null_Address,
+                                                     Class'address, System.Null_Address);
+  begin
+    if Child /= System.Null_Address then
+      if Set_Window_Subclass (Child, Tab_Arrow_Proc'access, System.Null_Address,
+                              System.Null_Address) = Win32.FALSE then
+        raise Program_Error;
+      end if;
+    end if;
+  end Attach_Tab_Arrows;
+
+
   function Surface_Proc (Hwnd    : Win32.Windef.HWND;
                          Message : Win32.UINT;
                          Wparam  : Win32.WPARAM;
@@ -2614,6 +2709,9 @@ package body Gui is
       Ignored := Remove_Window_Subclass (Hwnd, Surface_Proc'access, Id);
       return Def_Subclass_Proc (Hwnd, Message, Wparam, Lparam);
     end if;
+    if Data = System.Null_Address and then Message = Win32.Winuser.WM_PAINT then
+      Attach_Tab_Arrows (Hwnd);
+    end if;
     if The_Color_Mode /= Astronomy then
       return Def_Subclass_Proc (Hwnd, Message, Wparam, Lparam);
     end if;
@@ -2626,12 +2724,45 @@ package body Gui is
       Result := Def_Subclass_Proc (Hwnd, Message, Wparam, Lparam);
       if Message = Win32.Winuser.WM_PAINT then
         declare
-          Dc : constant Win32.Windef.HDC := Win32.Winuser.GetDC (Hwnd);
+          use type Win32.LRESULT;
+          Tcm_Getitemrect : constant := Win32.Comctl.Tcm_First + 10;
+          Dc : constant Win32.Windef.HDC := Win32.Winuser.GetDCEx (Hwnd, System.Null_Address,
+                                                                  Win32.Winuser.DCX_CACHE +
+                                                                  Win32.Winuser.DCX_CLIPCHILDREN +
+                                                                  Win32.Winuser.DCX_CLIPSIBLINGS);
+          Selected : constant Win32.LRESULT := Send_Message (Hwnd, Win32.Comctl.Tcm_Getcursel, 0, 0);
+          Old_Font : System.Address;
+          Surface  : Color;
+          Brush    : Win32.Windef.HBRUSH;
+          Text     : aliased String (1 .. 1024) := [others => Nul] with Unmodified;
+          Tab_Info : aliased Win32.Comctl.Tc_Item :=
+            (Mask => Win32.Comctl.Tcif_Text, State => 0, Statemask => 0, Text => Win32.Addr(Text),
+             Maxtextsize => Text'length, Image => 0, Lparam => 0);
         begin
-          Ignored := Win32.Winuser.GetClientRect (Hwnd, Bounds'unchecked_access);
-          Send_Message (Hwnd, Win32.Comctl.Tcm_Adjustrect, 0, To_Lparam (Bounds'address));
-          Ignored_Int := Win32.Winuser.FillRect (Dc, Bounds'unchecked_access, Astronomy_Brush);
-          Ignored_Int := Win32.Winuser.ReleaseDC (Hwnd, Dc);
+          if Dc /= System.Null_Address then
+            Ignored := Win32.Winuser.GetClientRect (Hwnd, Bounds'unchecked_access);
+            Ignored_Int := Win32.Winuser.FillRect (Dc, Bounds'unchecked_access, Astronomy_Brush);
+            Old_Font := Select_Font (Dc, Font_Handle (Send_Message (Hwnd, Win32.Winuser.WM_GETFONT, 0, 0)));
+            for Index in 1 .. Nr_Of_Pages loop
+              if Send_Message (Hwnd, Tcm_Getitemrect, Win32.WPARAM(Index - 1), To_Lparam (Bounds'address)) /= 0
+                and then Send_Message (Hwnd, Win32.Comctl.Tcm_Getitem, Win32.WPARAM(Index - 1),
+                                       To_Lparam (Tab_Info'address)) /= 0
+              then
+                Surface := (if Win32.LRESULT(Index - 1) = Selected then Color(72) else Button_Color (False));
+                Brush := Win32.Wingdi.CreateSolidBrush (Surface);
+                Ignored_Int := Win32.Winuser.FillRect (Dc, Bounds'unchecked_access, Brush);
+                Ignored := Delete_Brush (Brush);
+                Draw_Border (Dc);
+                Ignored_Color := Win32.Wingdi.SetTextColor (Dc, Text_Color);
+                Ignored_Color := Win32.Wingdi.SetBkColor (Dc, Surface);
+                Ignored_Int := Win32.Winuser.DrawText (Dc, Win32.Addr(Text), -1, Bounds'unchecked_access,
+                                                      Win32.Winuser.DT_SINGLELINE + Win32.Winuser.DT_VCENTER +
+                                                      Win32.Winuser.DT_CENTER + Win32.Winuser.DT_NOPREFIX);
+              end if;
+            end loop;
+            Ignored_Font := Select_Font (Dc, Old_Font);
+            Ignored_Int := Win32.Winuser.ReleaseDC (Hwnd, Dc);
+          end if;
         end;
       end if;
       return Result;
