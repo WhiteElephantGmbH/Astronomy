@@ -21,6 +21,8 @@ pragma Build (Description => "GUI Test",
               Icon     => False,
               Compiler => "GNAT\14.2");
 
+with Ada.Streams;
+with Application;
 with Gui;
 
 procedure Gui_Test is
@@ -206,6 +208,23 @@ procedure Gui_Test is
   end Increase_Speed;
 
 
+  procedure Test_Detached_Window is
+    -- Embedded 4 x 4 bitmap with four coloured quadrants.
+    Picture : constant Ada.Streams.Stream_Element_Array :=
+      [
+       66, 77, 102, 0, 0, 0, 0, 0, 0, 0, 54, 0, 0, 0, 40, 0,
+       0, 0, 4, 0, 0, 0, 4, 0, 0, 0, 1, 0, 24, 0, 0, 0,
+       0, 0, 48, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+       0, 0, 0, 0, 0, 0, 0, 0, 255, 0, 0, 255, 0, 255, 0, 0,
+       255, 0, 0, 0, 255, 0, 0, 255, 0, 255, 0, 0, 255, 0, 255, 0,
+       0, 255, 0, 0, 255, 255, 255, 255, 255, 255, 255, 0, 0, 255, 0, 0,
+       255, 255, 255, 255, 255, 255];
+    Window  : constant Gui.Detached_Window := Gui.Create ("Detached Test", (350, 50, 400, 300));
+  begin
+    Gui.Show (Window, Picture);
+  end Test_Detached_Window;
+
+
   procedure Startup is
     Column   : Gui.Group;
     Handlers : constant array (Tone) of Gui.Action_Routine :=
@@ -277,10 +296,12 @@ procedure Gui_Test is
     Tone_Buttons := Gui.Create (Vertical_Group, Gui.Vertical, Expand => Gui.Fixed);
     Vertical_Reset := Gui.Create (Tone_Buttons, "Reset", Reset_Vertical'unrestricted_access);
     Vertical_Toggle := Gui.Create (Tone_Buttons, "Toggle", Toggle_Vertical'unrestricted_access);
+    Test_Detached_Window;
     Gui.Set_Status_Line ("READY");
   end Startup;
 
 begin
-  Gui.Execute ("Gui Test", Startup'access,
-               Initial_Metrics => (0, 0, 1, 350));
+  Gui.Execute (Application_Name => Application.Title,
+               Startup_Routine  => Startup'access,
+               Initial_Metrics  => (0, 0, 1, 350));
 end Gui_Test;

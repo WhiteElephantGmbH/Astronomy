@@ -21,6 +21,7 @@ with Ada.Unchecked_Conversion;
 with Ada.Unchecked_Deallocation;
 with Log;
 with Gui.Layout;
+with Gui.Persistent;
 with Semaphore;
 with Win32.Commctrl;
 with Win32.Commdlg;
@@ -1717,10 +1718,10 @@ package body Gui is
     Hdr       : Win32.Comctl.Nm_Hdr;
     Drawstage : Win32.DWORD;
     Dc        : Win32.Windef.HDC;
-    Bounds    : Win32.Windef.RECT;
-    Itemspec  : Win32.DWORD_PTR;
-    Itemstate : Win32.UINT;
-    Itemparam : Win32.LPARAM;
+    Bounds    : Win32.Windef.RECT with Unreferenced;
+    Itemspec  : Win32.DWORD_PTR with Unreferenced;
+    Itemstate : Win32.UINT with Unreferenced;
+    Itemparam : Win32.LPARAM with Unreferenced;
   end record with Convention => C;
 
   package Track_Draw_Pointers is new System.Address_To_Access_Conversions (Track_Custom_Draw);
@@ -2512,14 +2513,14 @@ package body Gui is
   -- Native DRAWITEMSTRUCT, including pointer-sized handles on Win64.
   type Draw_Item_Info is record
     Control_Type : Win32.UINT;
-    Control_Id   : Win32.UINT;
-    Item_Id      : Win32.UINT;
-    Item_Action  : Win32.UINT;
+    Control_Id   : Win32.UINT with Unreferenced;
+    Item_Id      : Win32.UINT with Unreferenced;
+    Item_Action  : Win32.UINT with Unreferenced;
     Item_State   : Win32.UINT;
     Handle       : Win32.Windef.HWND;
     Dc           : Win32.Windef.HDC;
     Bounds       : Win32.Windef.RECT;
-    Item_Data    : System.Address;
+    Item_Data    : System.Address with Unreferenced;
   end record with Convention => C;
 
   package Draw_Item_Pointers is new System.Address_To_Access_Conversions (Draw_Item_Info);
@@ -2578,7 +2579,7 @@ package body Gui is
       Points(Index) := (X + Px * Symbol_Size / 200, Y + Py * Symbol_Size / 200);
     end Set_Point;
 
-  begin
+  begin -- Draw_Symbol_Button
     if Info = null or else Info.Control_Type /= 4 or else Current_Page = null then
       return False;
     end if;
@@ -2892,8 +2893,7 @@ package body Gui is
   end Dispatch;
 
 
-  procedure Position_Visible_Window (X_Position : Win32.INT;
-                                     Y_Position : Win32.INT) is
+  function Visible_Origin (Outer : Win32.Windef.RECT) return Win32.Windef.POINT is
 
     function Dwm_Get_Window_Attribute (Hwnd      : Win32.Windef.HWND;
                                        Attribute : Win32.DWORD;
@@ -2906,9 +2906,37 @@ package body Gui is
     with Import, Convention => Stdcall, External_Name => "PhysicalToLogicalPointForPerMonitorDPI";
 
     Extended_Frame_Bounds : constant Win32.DWORD := 9;
-    Outer, Visible        : aliased Win32.Windef.RECT;
+    Visible               : aliased Win32.Windef.RECT;
     Origin                : aliased Win32.Windef.POINT;
-    Unused                : Win32.BOOL with Unreferenced;
+    use type Win32.BOOL;
+    use type Win32.LONG;
+  begin
+    if Dwm_Get_Window_Attribute (Private_Window, Extended_Frame_Bounds,
+                                 Visible'address, Win32.DWORD(Visible'size / System.Storage_Unit)) = 0 then
+      Origin := (x => Visible.left, y => Visible.top);
+      if Physical_To_Logical (Private_Window, Origin'access) /= Win32.FALSE then
+        return Origin;
+      end if;
+    end if;
+    return (x => Outer.left, y => Outer.top);
+  end Visible_Origin;
+
+
+  function Get_Persistent_Window_Metrics return Window_Metrics is
+    Metrics : Window_Metrics := Get_Window_Metrics;
+    Origin  : constant Win32.Windef.POINT := Visible_Origin (The_Private_Window_Rectangle);
+  begin
+    Metrics.X_Position := Integer(Origin.x);
+    Metrics.Y_Position := Integer(Origin.y);
+    return Metrics;
+  end Get_Persistent_Window_Metrics;
+
+
+  procedure Position_Visible_Window (X_Position : Win32.INT;
+                                     Y_Position : Win32.INT) is
+    Outer  : aliased Win32.Windef.RECT;
+    Origin : Win32.Windef.POINT;
+    Unused : Win32.BOOL with Unreferenced;
     use type Win32.BOOL;
     use type Win32.LONG;
     use type Win32.UINT;
@@ -2916,14 +2944,7 @@ package body Gui is
     if Win32.Winuser.GetWindowRect (Private_Window, Outer'unchecked_access) = Win32.FALSE then
       return;
     end if;
-    if Dwm_Get_Window_Attribute (Private_Window, Extended_Frame_Bounds,
-                                 Visible'address, Win32.DWORD(Visible'size / System.Storage_Unit)) /= 0 then
-      return;
-    end if;
-    Origin := (x => Visible.left, y => Visible.top);
-    if Physical_To_Logical (Private_Window, Origin'access) = Win32.FALSE then
-      return;
-    end if;
+    Origin := Visible_Origin (Outer);
     Unused := Win32.Winuser.SetWindowPos (Private_Window, System.Null_Address,
                                           X_Position - Win32.INT(Origin.x - Outer.left),
                                           Y_Position - Win32.INT(Origin.y - Outer.top),
@@ -3063,66 +3084,49 @@ package body Gui is
   end Create;
 
 
-  procedure Create (Application_Name    : String;
+  procedure Create (Title               : String;
                     Termination_Routine : Action_Routine;
-                    Window_Width        : Natural := 0;
-                    Window_Height       : Natural := 0;
-                    Window_X_Position   : Integer := Default_Position;
-                    Window_Y_Position   : Integer := Default_Position;
-                    Always_Topmost      : Boolean := False) is
-                    The_Height          : Win32.INT := Win32.INT(Window_Height);
-                    The_Width           : Win32.INT := Win32.INT(Window_Width);
+                    Metrics             : Window_Metrics;
+                    Always_Topmost      : Boolean) is
+    The_Height : Win32.INT := Win32.INT(Metrics.Height);
+    The_Width  : Win32.INT := Win32.INT(Metrics.Width);
   begin
     if The_Action_Handler /= null then
       raise Sequence_Error;  -- Can only be used once
     end if;
     The_Termination_Routine := Termination_Routine;
-    if Window_Width = 0 then -- default;
-      The_Width := Win32.Winuser.CW_USEDEFAULT;
-    end if;
-    if Window_Height = 0 then -- default;
+    if Metrics.Height = 0 then -- default;
       The_Height := Win32.Winuser.CW_USEDEFAULT;
+    end if;
+    if Metrics.Width = 0 then -- default;
+      The_Width := Win32.Winuser.CW_USEDEFAULT;
     end if;
     The_Action_Handler := new Action_Handler;
     The_Termination_Handler := new Termination_Handler;
     Main_Display := new Display;
     Is_Active := True;
-    Main_Display.Create (Application_Name, The_Width, The_Height,
-                         Win32.INT(Window_X_Position), Win32.INT(Window_Y_Position),
-                         Always_Topmost);
+    Main_Display.Create (Title,
+                         Window_Width      => The_Width,
+                         Window_Height     => The_Height,
+                         Window_X_Position => Win32.INT(Metrics.X_Position),
+                         Window_Y_Position => Win32.INT(Metrics.Y_Position),
+                         Always_Topmost    => Always_Topmost);
     Main_Display.Ready;
   end Create;
 
 
-  procedure Create (Application_Name    : String;
-                    Termination_Routine : Action_Routine;
-                    The_Metrics         : Window_Metrics;
-                    Always_Topmost      : Boolean := False) is
-  begin
-    Create (Application_Name    => Application_Name,
-            Termination_Routine => Termination_Routine,
-            Window_Width        => The_Metrics.Width,
-            Window_Height       => The_Metrics.Height,
-            Window_X_Position   => The_Metrics.X_Position,
-            Window_Y_Position   => The_Metrics.Y_Position,
-            Always_Topmost      => Always_Topmost);
-  end Create;
-
-
   procedure Execute (Application_Name    : String;
+                     Version             : String := "";
                      Startup_Routine     : not null access procedure;
                      Termination_Routine : access procedure := null;
-                     Initial_Metrics     : Window_Metrics;
+                     Initial_Metrics     : Window_Metrics := Default_Metrics;
                      Always_Topmost      : Boolean := False) is
     use type Gui.Layout.Element;
   begin
-    Create (Application_Name    => Application_Name,
-            Termination_Routine => Termination_Routine,
-            Window_Width        => Initial_Metrics.Width,
-            Window_Height       => Initial_Metrics.Height,
-            Window_X_Position   => Initial_Metrics.X_Position,
-            Window_Y_Position   => Initial_Metrics.Y_Position,
-            Always_Topmost      => Always_Topmost);
+    Persistent.Create (Title               => Application_Name & (if Version = "" then "" else ' ' & Version),
+                       Termination_Routine => Termination_Routine,
+                       Initial_Metrics     => Initial_Metrics,
+                       Always_Topmost      => Always_Topmost);
     Startup_Routine.all;
     if Current_Page /= null and then Current_Page.Layout_Root /= null then
       Finish_Layout;
@@ -5601,6 +5605,10 @@ package body Gui is
   when Event: others =>
     Log.Write ("Gui.Action_Handler", Event);
   end Action_Handler;
+
+
+  function Create (Title   : String;
+                   Metrics : Window_Metrics := Default_Metrics) return Detached_Window renames Persistent.Create;
 
 
   function Create (Title      : String;

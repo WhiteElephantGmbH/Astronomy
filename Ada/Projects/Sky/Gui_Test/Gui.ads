@@ -194,30 +194,15 @@ package Gui is
   procedure Shell_Open (The_File       : String;
                         The_Parameters : String := "");
 
-  procedure Create (Application_Name    : String;
-                    Termination_Routine : Action_Routine;
-                    Window_Width        : Natural := 0;
-                    Window_Height       : Natural := 0;
-                    Window_X_Position   : Integer := Default_Position;
-                    Window_Y_Position   : Integer := Default_Position;
-                    Always_Topmost      : Boolean := False);
-  -- Creates the main window for the application.
-
-
-  procedure Create (Application_Name    : String;
-                    Termination_Routine : Action_Routine;
-                    The_Metrics         : Window_Metrics;
-                    Always_Topmost      : Boolean := False);
-  -- Creates the main window for the application.
-
   procedure Execute (Application_Name    : String;
+                     Version             : String := "";
                      Startup_Routine     : not null access procedure;
                      Termination_Routine : access procedure := null;
-                     Initial_Metrics     : Window_Metrics;
+                     Initial_Metrics     : Window_Metrics := Default_Metrics;
                      Always_Topmost      : Boolean := False);
   -- Creates the main window for the application.
-  -- Note that this should be called from the main process under OSX and that it does not return until the
-  -- Gui is closed either by the user or calling the procedure Close.
+  -- Metrics are stored persistently.
+  -- Note that it does not return until either the main window is closed or the user calling the procedure Close.
   -- Code to setup the GUI interface should be placed into the Startup_Routine
   -- Code to extract the contents of Gui objects immediately before the gui is closed may be placed in the
   -- optional Termination routine
@@ -767,9 +752,8 @@ package Gui is
 
   type Detached_Close_Callback is access procedure (Metrics : Window_Metrics);
 
-  function Create (Title    : String;
-                   Metrics  : Window_Metrics := Default_Metrics;
-                   On_Close : Detached_Close_Callback := null) return Detached_Window;
+  function Create (Title   : String;
+                   Metrics : Window_Metrics := Default_Metrics) return Detached_Window;
 
   procedure Show (The_Window : Detached_Window;
                   Data       : Ada.Streams.Stream_Element_Array);
@@ -827,7 +811,19 @@ private
 
   procedure Dispose_Menu_Item (Item : in out Radio_Menu_Item);
 
+  procedure Create (Title               : String;
+                    Termination_Routine : Action_Routine;
+                    Metrics             : Window_Metrics;
+                    Always_Topmost      : Boolean);
+  -- Creates the main window for the application.
+
+  function Get_Persistent_Window_Metrics return Window_Metrics;
+
   type Detached_Window_Information;
   type Detached_Window is access all Detached_Window_Information;
+
+  function Create (Title    : String;
+                   Metrics  : Window_Metrics := Default_Metrics;
+                   On_Close : Detached_Close_Callback := null) return Detached_Window;
 
 end Gui;
