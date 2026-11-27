@@ -16,6 +16,8 @@ with System.Storage_Elements;
 -- *********************************************************************************************************************
 pragma Style_Astronomy;
 
+with Ada.Containers.Indefinite_Vectors;
+with Ada.Strings.Unbounded;
 with Ada.Strings.UTF_Encoding.Wide_Strings;
 with Ada.Unchecked_Conversion;
 with Ada.Unchecked_Deallocation;
@@ -542,6 +544,8 @@ package body Gui is
                                                                  Tree_View_Child    => 70,
                                                                  Text_View_Child    => 70];
 
+  package Column_Names is new Ada.Containers.Indefinite_Vectors (Positive, String);
+
   type Child_Information is record
     Is_Frame                 : Boolean := False;
     Is_Value_Box             : Boolean := False;
@@ -568,6 +572,7 @@ package body Gui is
     The_Color_Routine        : Color_Handler := null;
     Number_Of_Rows           : Natural := 0;
     Number_Of_Columns        : Natural := 0;
+    Column_Titles            : Column_Names.Vector;
     Columns_Sized            : Boolean := False;
     Sizing_Columns           : Boolean := False;
     Last_Header_Width        : Natural := 0;
@@ -1179,6 +1184,38 @@ package body Gui is
   end Fit_Last_Column;
 
 
+  function Column_Id (Item : Child_Information_Ptr) return String is
+    use Ada.Strings.Unbounded;
+    Id : Unbounded_String;
+  begin
+    for Title of Item.Column_Titles loop
+      Append (Id, Natural'image (Title'length) & ":" & Title);
+    end loop;
+    return To_String (Id);
+  end Column_Id;
+
+
+  procedure Restore_Column_Widths (Item : Child_Information_Ptr) is
+    Widths : constant Persistent.Column_Widths := Persistent.Widths_Of (Column_Id (Item));
+  begin
+    if Widths'length = Item.Number_Of_Columns - 1 then
+      for Index in Widths'range loop
+        Set_Column_Width (Item, Index - Widths'first, Win32.LPARAM(Widths(Index)));
+      end loop;
+    end if;
+  end Restore_Column_Widths;
+
+
+  procedure Save_Column_Widths (Item : Child_Information_Ptr) is
+    Widths : Persistent.Column_Widths (1 .. Item.Number_Of_Columns - 1);
+  begin
+    for Index in Widths'range loop
+      Widths(Index) := Column_Width (Item, Index - 1);
+    end loop;
+    Persistent.Save_Widths (Column_Id (Item), Widths);
+  end Save_Column_Widths;
+
+
   procedure Size_List_Columns (Item : Child_Information_Ptr) is
     use type Win32.LPARAM;
     Autosize        : constant Win32.LPARAM := -1;
@@ -1197,6 +1234,9 @@ package body Gui is
           Set_Column_Width (Item, Index, Win32.LPARAM(Natural'max (Content_Width, Column_Width (Item, Index))));
         end if;
       end loop;
+      if Item.Number_Of_Columns > 1 then
+        Restore_Column_Widths (Item);
+      end if;
       Item.Columns_Sized := True;
       Item.Sizing_Columns := False;
     end if;
@@ -1646,6 +1686,32 @@ package body Gui is
 
 
   package Page_Conversion is new System.Address_To_Access_Conversions (Page_Information);
+
+
+  procedure Save_List_Columns is
+    Tab_Info : aliased Win32.Comctl.Tc_Item;
+    function To_Lparam is new Ada.Unchecked_Conversion (System.Address, Win32.LPARAM);
+    function To_Address is new Ada.Unchecked_Conversion (Win32.LPARAM, System.Address);
+  begin
+    if Nr_Of_Pages = 0 then
+      return;
+    end if;
+    for Index in 0 .. Nr_Of_Pages - 1 loop
+      Tab_Info.Mask := Win32.Comctl.Tcif_Param;
+      Send_Message (The_Tabs, Win32.Comctl.Tcm_Getitem, Win32.WPARAM(Index), To_Lparam (Tab_Info'address));
+      declare
+        The_Page : constant Page := Page(Page_Conversion.To_Pointer (To_Address (Tab_Info.Lparam)));
+        Item     : Child_Information_Ptr := The_Page.First_Child;
+      begin
+        while Item /= null loop
+          if Item.The_Kind = List_View_Child and then Item.Columns_Sized and then Item.Number_Of_Columns > 1 then
+            Save_Column_Widths (Item);
+          end if;
+          Item := Item.Next_Sibling;
+        end loop;
+      end;
+    end loop;
+  end Save_List_Columns;
 
 
   function Index_Of (The_Page : Page) return Natural is
@@ -2899,6 +2965,7 @@ package body Gui is
         end select;
         return 0;
       when Wm_User_Close =>
+        Save_List_Columns;
         Is_Active := False;
         return Win32.Winuser.DefWindowProc (Hwnd, Win32.Winuser.WM_CLOSE, The_Wparam, The_Lparam);
       when others =>
@@ -4640,6 +4707,7 @@ package body Gui is
                        Win32.Comctl.Lvm_Insertcolumn_Wide,
                        Column_Index,
                        Convert(Column_Info'address));
+    The_List_View.Ptr.Column_Titles.Append (The_Title);
     The_List_View.Ptr.Number_Of_Columns := The_List_View.Ptr.Number_Of_Columns + 1;
     The_List_View.Ptr.Last_Header_Width := Button_Width (The_Title, 0);
     The_List_View.Ptr.Columns_Sized := False;
@@ -4697,6 +4765,7 @@ package body Gui is
                        Win32.Comctl.Lvm_Deletecolumn,
                        Win32.WPARAM(The_List_View.Ptr.Number_Of_Columns - 1), 0) = Win32.TRUE
       then
+        The_List_View.Ptr.Column_Titles.Delete_Last;
         The_List_View.Ptr.Number_Of_Columns := The_List_View.Ptr.Number_Of_Columns - 1;
         The_List_View.Ptr.Columns_Sized := False;
       end if;

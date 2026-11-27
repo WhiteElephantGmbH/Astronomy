@@ -15,9 +15,34 @@
 -- *********************************************************************************************************************
 pragma Style_Astronomy;
 
+with Ada.Containers.Indefinite_Ordered_Maps;
 with Persistent;
 
 package body Gui.Persistent is
+
+  package Column_Maps is new Ada.Containers.Indefinite_Ordered_Maps (String, Column_Widths);
+
+  package Persistent_Columns is new Standard.Persistent (Column_Maps.Map, "List_Columns");
+
+  The_Column_Data : Persistent_Columns.Data;
+  The_Columns     : Column_Maps.Map renames The_Column_Data.Storage;
+
+
+  function Widths_Of (Id : String) return Column_Widths is
+  begin
+    if The_Columns.Contains (Id) then
+      return The_Columns.Element (Id);
+    end if;
+    return [];
+  end Widths_Of;
+
+
+  procedure Save_Widths (Id     : String;
+                         Widths : Column_Widths) is
+  begin
+    The_Columns.Include (Id, Widths);
+  end Save_Widths;
+
 
   package Persistent_Metrics is new Standard.Persistent (Window_Metrics, "Metrics");
 

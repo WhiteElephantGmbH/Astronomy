@@ -25,4 +25,11 @@ private package Gui.Persistent is
   function Create (Title           : String;
                    Initial_Metrics : Window_Metrics := Default_Metrics) return Detached_Window;
 
+  type Column_Widths is array (Positive range <>) of Natural;
+
+  function Widths_Of (Id : String) return Column_Widths;
+
+  procedure Save_Widths (Id     : String;
+                         Widths : Column_Widths);
+
 end Gui.Persistent;
