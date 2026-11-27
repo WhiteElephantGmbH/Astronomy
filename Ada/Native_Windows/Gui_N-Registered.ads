@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2002 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2015 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,29 +15,16 @@
 -- *********************************************************************************************************************
 pragma Style_Astronomy;
 
-generic
-  type Element is (<>);
-  The_Kind : Menu_Kind;
-  with function Image_Of (The_Element : Element) return String;
-package Gui.Enumeration_Menu_Of is
+package Gui_N.Registered is
 
-  type Handler is access procedure (The_Element : Element);
+  procedure Execute (The_Application_Name    : String;
+                     The_Version             : String := "";
+                     The_Startup_Routine     : access procedure;
+                     The_Termination_Routine : access procedure := null;
+                     Initial_Metrics         : Window_Metrics := Default_Metrics;
+                     Always_Topmost          : Boolean := False);
 
-  procedure Create (The_Menu_Name : String;
-                    The_Handler   : Handler);
+  function Create (Title           : String;
+                   Initial_Metrics : Window_Metrics := Default_Metrics) return Detached_Window;
 
-  procedure Enable;
-
-  procedure Disable;
-
-  procedure Enable (The_Element : Element);
-
-  procedure Disable (The_Element : Element);
-
-  procedure Set (The_Element : Element);
-  -- Precondition: The_Kind must be Gui.Checked or Gui.Radio
-
-  procedure Clear (The_Element : Element);
-  -- Precondition: The_Kind must be Gui.Checked
-
-end Gui.Enumeration_Menu_Of;
+end Gui_N.Registered;

@@ -21,7 +21,7 @@ with Win32.Windef;
 with Win32.Wingdi; pragma Elaborate (Win32.Wingdi);
 with Win32.Winuser;
 
-package Gui is
+package Gui_N is
 
   Action_Routine_Is_Defined    : exception;
   Main_Window_Creation_Failure : exception;
@@ -556,12 +556,12 @@ package Gui is
 
   procedure Append_To (The_Rich_Edit  : Text_View;
                        The_Text       : String;
-                       The_Color      : Color := Gui.Black;
+                       The_Color      : Color := Black;
                        Ensure_Visible : Boolean := True);
 
   procedure Append_Line_To (The_Rich_Edit  : Text_View;
                             The_Text       : String;
-                            The_Color      : Color := Gui.Black;
+                            The_Color      : Color := Black;
                             Ensure_Visible : Boolean := True);
 
   procedure Clear (The_Rich_Edit : Text_View);
@@ -766,4 +766,4 @@ private
   type Detached_Window_Information;
   type Detached_Window is access all Detached_Window_Information;
 
-end Gui;
+end Gui_N;

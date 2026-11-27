@@ -17,7 +17,7 @@ pragma Style_Astronomy;
 
 with Persistent;
 
-package body Gui.Registered is
+package body Gui_N.Registered is
 
   package Persistent_Metrics is new Persistent (Window_Metrics, "Metrics");
 
@@ -33,7 +33,7 @@ package body Gui.Registered is
 
     procedure Termination is
     begin
-      if not (Gui.Application_Is_Minimized or Gui.Application_Is_Maximized) then
+      if not (Application_Is_Minimized or Application_Is_Maximized) then
         The_Metrics := Get_Window_Metrics;
       end if;
       if The_Termination_Routine /= null then
@@ -45,11 +45,11 @@ package body Gui.Registered is
     if Persistent_Metrics.Storage_Is_Empty then
       The_Metrics := Initial_Metrics;
     end if;
-    Gui.Execute (The_Application_Name & ' ' & The_Version,
-                 The_Startup_Routine,
-                 Termination'access,
-                 The_Metrics,
-                 Always_Topmost);
+    Execute (The_Application_Name & ' ' & The_Version,
+             The_Startup_Routine,
+             Termination'access,
+             The_Metrics,
+             Always_Topmost);
   end Execute;
 
 
@@ -71,7 +71,7 @@ package body Gui.Registered is
     if Persistent_Detached_Metrics.Storage_Is_Empty then
       The_Metrics := Initial_Metrics;
     end if;
-    return Gui.Create (Title, The_Metrics, Save_Detached_Metrics'access);
+    return Create (Title, The_Metrics, Save_Detached_Metrics'access);
   end Create;
 
-end Gui.Registered;
+end Gui_N.Registered;

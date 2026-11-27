@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2002 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                       (c) 2002 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -29,25 +29,25 @@ package body Gui.Enumeration_Menu_Of is
 
   procedure Enable is
   begin
-    Gui.Enable (The_Menu);
+    Enable (The_Menu);
   end Enable;
 
 
   procedure Disable is
   begin
-    Gui.Disable (The_Menu);
+    Disable (The_Menu);
   end Disable;
 
 
   procedure Enable (The_Element : Element) is
   begin
-    Gui.Enable (The_Item(The_Element).all);
+    Enable (The_Item(The_Element).all);
   end Enable;
 
 
   procedure Disable (The_Element : Element) is
   begin
-    Gui.Disable (The_Item(The_Element).all);
+    Disable (The_Item(The_Element).all);
   end Disable;
 
 

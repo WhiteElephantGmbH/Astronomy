@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2024 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2024 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -70,7 +70,7 @@ package body Gui.Radio_Menu_Of is
   procedure Delete_Group is
   begin
     for Item of The_Lists(The_Group).all loop
-      Gui.Delete_Menu_Item (Item.all);
+      Delete_Menu_Item (Item.all);
     end loop;
   end Delete_Group;
 
@@ -101,13 +101,13 @@ package body Gui.Radio_Menu_Of is
 
   procedure Enable is
   begin
-    Gui.Enable (The_Menu);
+    Enable (The_Menu);
   end Enable;
 
 
   procedure Disable is
   begin
-    Gui.Disable (The_Menu);
+    Disable (The_Menu);
   end Disable;
 
 end Gui.Radio_Menu_Of;

@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                       (c) 2015 .. 2018 by White Elephant GmbH, Schaffhausen, Switzerland                          *
+-- *                           (c) 2026 by White Elephant GmbH, Schaffhausen, Switzerland                              *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,39 +15,25 @@
 -- *********************************************************************************************************************
 pragma Style_Astronomy;
 
-with Gtk.Window;
+private package Gui.Persistent is
 
-private package Gui.Router is
+  procedure Create (Title               : String;
+                    Termination_Routine : Action_Routine;
+                    Initial_Metrics     : Window_Metrics;
+                    Always_Topmost      : Boolean);
 
-  type Request_Data is abstract tagged null record;
+  function Create (Title           : String;
+                   Initial_Metrics : Window_Metrics := Default_Metrics) return Detached_Window;
 
-  procedure Request (Data : in out Request_Data'class);
+  function Stored_Color_Mode return Color_Mode;
 
-  procedure Synchronous_Service (Data : in out Request_Data) is abstract;
+  procedure Save_Color_Mode (Mode : Color_Mode);
 
-  procedure Execute (Application_Name    : String;
-                     Startup_Routine     : access procedure (Window : Gtk.Window.Gtk_Window);
-                     Termination_Routine : Action_Routine;
-                     Period              : Duration);
+  type Column_Widths is array (Positive range <>) of Natural;
 
-  function Get_Window_Metrics (For_Window : Gtk.Window.Gtk_Window) return Window_Metrics;
+  function Widths_Of (Id : String) return Column_Widths;
 
-  procedure Close (The_Window : Gtk.Window.Gtk_Window);
+  procedure Save_Widths (Id     : String;
+                         Widths : Column_Widths);
 
-  procedure Execute (The_Action : Action_Routine);
-
-  procedure Execute (The_Action      : Click_Routine;
-                     The_Information : Information);
-
-  procedure Execute (The_Action  : Key_Handler;
-                     The_Event   : Key_Event;
-                     The_Keycode : Key_Code);
-
-  type Message_Data is abstract tagged null record;
-
-  procedure Asynchronous_Service (The_Message : Message_Data) is abstract;
-
-  procedure Send (Message : Message_Data'class);
-
-
-end Gui.Router;
+end Gui.Persistent;

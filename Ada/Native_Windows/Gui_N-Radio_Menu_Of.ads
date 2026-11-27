@@ -1,5 +1,5 @@
 -- *********************************************************************************************************************
--- *                           (c) 2021 by White Elephant GmbH, Schaffhausen, Switzerland                              *
+-- *                       (c) 2024 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
 -- *                                                                                                                   *
 -- *    This program is free software; you can redistribute it and/or modify it under the terms of the GNU General     *
@@ -15,32 +15,28 @@
 -- *********************************************************************************************************************
 pragma Style_Astronomy;
 
-private package Gui.Style is
+with Text;
 
-  procedure Load_Css_File;
-  --
-  -- Loads the CSS rules contained in the file Soudronic.css
-  -- Under Windows from the folder %LocalAppData%\Gtk-3.0
-  -- otherise from $HOME.local/Gtk-3.0
-  --
-  -- If the file is missing or the contents contain syntax errors the load fails without error.
-  --
+generic
+  type Group is (<>);
+package Gui_N.Radio_Menu_Of is
 
-  procedure Apply_Rule_To (The_Widget : not null access Gtk.Widget.Gtk_Widget_Record'class;
-                           Css_Rule   : String);
-  --
-  -- Applies the specified CSS rule to the specified widget
-  --
+  type Element is new Natural;
 
-  procedure Apply_Rule (Css_Rule : String);
-  --
-  -- Applies the specified CSS rule (for the application from now on)
-  --
+  type Handler is access procedure (From : Group;
+                                    Item : String);
 
-  procedure Change_Color (The_Progress_Bar : Gtk.Progress_Bar.Gtk_Progress_Bar;
-                          The_Color        : String);
-  -- Change the progress color of the specified progress bar
-  -- The_Color should either be the name of an X11 color or
-  -- the symbol # immediately followed the 6 hexadecimal digits denoting the RBG value
-  --
-end Gui.Style;
+  type Images is array (Group) of Text.Vector;
+
+  procedure Create (Menu_Name   : String;
+                    Name_Lists  : Images;
+                    The_Handler : Handler);
+  -- Postcondition: Set to first group
+
+  procedure Set (To : Group);
+
+  procedure Enable;
+
+  procedure Disable;
+
+end Gui_N.Radio_Menu_Of;
