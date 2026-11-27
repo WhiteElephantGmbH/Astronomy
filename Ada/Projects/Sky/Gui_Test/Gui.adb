@@ -662,6 +662,8 @@ package body Gui is
   type Menu_Item_Information is record
     The_Information : Information;
     The_Id          : Positive;
+    The_Text        : Ada.Strings.Unbounded.Unbounded_String;
+    Owner_Drawn     : Boolean := False;
     The_Parent_Menu : Menu;
     Previous        : Menu_Item_Access;
     Next            : Menu_Item_Access;
@@ -2665,6 +2667,114 @@ package body Gui is
   end Attach_Tab_Arrows;
 
 
+  function Status_Line_Proc (Hwnd    : Win32.Windef.HWND;
+                             Message : Win32.UINT;
+                             Wparam  : Win32.WPARAM;
+                             Lparam  : Win32.LPARAM;
+                             Id      : System.Address;
+                             Data    : System.Address) return Win32.LRESULT
+    with Convention => Stdcall;
+
+
+  function Status_Line_Proc (Hwnd    : Win32.Windef.HWND;
+                             Message : Win32.UINT;
+                             Wparam  : Win32.WPARAM;
+                             Lparam  : Win32.LPARAM;
+                             Id      : System.Address;
+                             Data    : System.Address) return Win32.LRESULT is
+    pragma Unreferenced (Data);
+    use type Win32.UINT;
+    use type Win32.LONG;
+    use type Win32.LRESULT;
+    use type System.Address;
+    function To_Lparam is new Ada.Unchecked_Conversion (System.Address, Win32.LPARAM);
+    function Font_Handle is new Ada.Unchecked_Conversion (Win32.LRESULT, System.Address);
+    function Select_Font (Dc : Win32.Windef.HDC; Font : System.Address) return System.Address
+      with Import, Convention => Stdcall, External_Name => "SelectObject";
+    function Delete_Brush (Brush : System.Address) return Win32.BOOL
+      with Import, Convention => Stdcall, External_Name => "DeleteObject";
+    Sb_Gettextlengthw : constant Win32.UINT := Win32.Winuser.WM_USER + 12;
+    Sb_Gettextw       : constant Win32.UINT := Win32.Winuser.WM_USER + 13;
+    Ignored       : Win32.BOOL with Unreferenced;
+    Ignored_Int   : Win32.INT with Unreferenced;
+    Ignored_Color : Color with Unreferenced;
+    Ignored_Font  : System.Address with Unreferenced;
+    Result        : Win32.LRESULT;
+    Bounds        : aliased Win32.Windef.RECT;
+  begin
+    if Message = 16#0082# then -- WM_NCDESTROY
+      Ignored := Remove_Window_Subclass (Hwnd, Status_Line_Proc'access, Id);
+    elsif The_Color_Mode = Astronomy then
+      case Message is
+      when Win32.Winuser.WM_ERASEBKGND =>
+        return 1;
+      when Win32.Winuser.WM_PAINT =>
+        declare
+          Paint : aliased Win32.Winuser.PAINTSTRUCT;
+          Dc    : constant Win32.Windef.HDC := Win32.Winuser.BeginPaint (Hwnd, Paint'access);
+          Size  : constant Natural := Natural(Def_Subclass_Proc (Hwnd, Sb_Gettextlengthw, 0, 0) mod 65536);
+          Text  : aliased Wide_String (1 .. Size + 1) := [others => Wide_Nul];
+          Font  : constant System.Address := Font_Handle (Def_Subclass_Proc (Hwnd, Win32.Winuser.WM_GETFONT, 0, 0));
+          Old_Font : constant System.Address := Select_Font (Dc, Font);
+          Edge  : constant Win32.Windef.HBRUSH := Win32.Wingdi.CreateSolidBrush (Border_Color);
+          Mark  : aliased Win32.Windef.RECT;
+          Grip  : constant Win32.LONG := Win32.LONG(Win32.Winuser.GetSystemMetrics (Win32.Winuser.SM_CXVSCROLL));
+          X, Y  : Win32.LONG;
+          Text_Result : Win32.LRESULT with Unreferenced;
+        begin
+          Ignored := Win32.Winuser.GetClientRect (Hwnd, Bounds'unchecked_access);
+          Ignored_Int := Win32.Winuser.FillRect (Dc, Bounds'unchecked_access, Astronomy_Brush);
+          Ignored_Int := Win32.Winuser.FrameRect (Dc, Bounds'unchecked_access, Edge);
+          if not Application_Is_Maximized then
+            for Row in 0 .. 2 loop
+              for Column in 0 .. Row loop
+                X := Bounds.Right - 4 - 4 * Win32.LONG(Column);
+                Y := Bounds.Bottom - 4 - 4 * Win32.LONG(2 - Row);
+                Mark := (X, Y, X + 2, Y + 2);
+                Ignored_Int := Win32.Winuser.FillRect (Dc, Mark'unchecked_access, Edge);
+              end loop;
+            end loop;
+            Bounds.Right := Win32.LONG'max (Bounds.Left, Bounds.Right - Grip);
+          end if;
+          Bounds.Left := Bounds.Left + 3;
+          if Size > 0 then
+            Text_Result := Def_Subclass_Proc (Hwnd, Sb_Gettextw, 0, To_Lparam (Text'address));
+            Ignored_Color := Win32.Wingdi.SetTextColor (Dc, Text_Color);
+            Ignored_Color := Win32.Wingdi.SetBkColor (Dc, Background_Color);
+            Ignored_Int := Win32.Winuser.DrawTextW (Dc, Win32.Addr(Text), Win32.INT(Size), Bounds'unchecked_access,
+                                                    Win32.Winuser.DT_SINGLELINE + Win32.Winuser.DT_VCENTER +
+                                                    Win32.Winuser.DT_NOPREFIX);
+          end if;
+          Ignored_Font := Select_Font (Dc, Old_Font);
+          Ignored := Delete_Brush (Edge);
+          Ignored := Win32.Winuser.EndPaint (Hwnd, Paint'access);
+        end;
+        return 0;
+      when Win32.Winuser.WM_NCPAINT =>
+        declare
+          Dc   : constant Win32.Windef.HDC := Win32.Winuser.GetWindowDC (Hwnd);
+          Edge : constant Win32.Windef.HBRUSH := Win32.Wingdi.CreateSolidBrush (Border_Color);
+        begin
+          if Dc /= System.Null_Address then
+            Ignored := Win32.Winuser.GetWindowRect (Hwnd, Bounds'unchecked_access);
+            Bounds := (0, 0, Bounds.Right - Bounds.Left, Bounds.Bottom - Bounds.Top);
+            Ignored_Int := Win32.Winuser.FrameRect (Dc, Bounds'unchecked_access, Edge);
+            Ignored_Int := Win32.Winuser.ReleaseDC (Hwnd, Dc);
+          end if;
+          Ignored := Delete_Brush (Edge);
+        end;
+        return 0;
+      when Win32.Commctrl.SB_SETTEXTW | Win32.Winuser.WM_SIZE =>
+        Result := Def_Subclass_Proc (Hwnd, Message, Wparam, Lparam);
+        Ignored := Win32.Winuser.InvalidateRect (Hwnd, null, Win32.FALSE);
+        return Result;
+      when others => null;
+      end case;
+    end if;
+    return Def_Subclass_Proc (Hwnd, Message, Wparam, Lparam);
+  end Status_Line_Proc;
+
+
   function Surface_Proc (Hwnd    : Win32.Windef.HWND;
                          Message : Win32.UINT;
                          Wparam  : Win32.WPARAM;
@@ -3461,6 +3571,111 @@ package body Gui is
     with Import, Convention => Stdcall, External_Name => "DeleteObject";
 
 
+  function Find_Menu_Item (Id : Win32.UINT) return Menu_Item_Access is
+    Item : Menu_Item_Access := Last_Menu_Item;
+    use type Win32.UINT;
+  begin
+    while Item /= null loop
+      if Win32.UINT(Item.The_Id) = Id then
+        return Item;
+      end if;
+      Item := Item.Next;
+    end loop;
+    return null;
+  end Find_Menu_Item;
+
+
+  procedure Set_Popup_Colors is
+    Item : Menu_Item_Access := Last_Menu_Item;
+    use type Win32.UINT;
+    use type Win32.BOOL;
+  begin
+    while Item /= null loop
+      if Item.Owner_Drawn /= (The_Color_Mode = Astronomy) then
+        declare
+          Id    : constant Win32.UINT := Win32.UINT(Item.The_Id);
+          Menu  : constant Win32.Windef.HMENU := Item.The_Parent_Menu.The_Handle;
+          State : constant Win32.UINT := Win32.Winuser.GetMenuState (Menu, Id, Win32.Winuser.MF_BYCOMMAND);
+          Flags : constant Win32.UINT := State and (Win32.Winuser.MF_CHECKED or Win32.Winuser.MF_DISABLED or
+                                                   Win32.Winuser.MF_GRAYED);
+          Text  : aliased constant Wide_String :=
+            To_Wide (Ada.Strings.Unbounded.To_String (Item.The_Text)) & Wide_Nul;
+          Ok    : Win32.BOOL;
+        begin
+          if The_Color_Mode = Astronomy then
+            Ok := Win32.Winuser.ModifyMenuW (Menu, Id, Flags or Win32.Winuser.MF_OWNERDRAW,
+                                             Win32.UINT_PTR(Id), null);
+          else
+            Ok := Win32.Winuser.ModifyMenuW (Menu, Id, Flags or Win32.Winuser.MF_STRING,
+                                             Win32.UINT_PTR(Id), Win32.Addr(Text));
+          end if;
+          if Ok = Win32.FALSE then
+            raise Program_Error;
+          end if;
+          Item.Owner_Drawn := The_Color_Mode = Astronomy;
+        end;
+      end if;
+      Item := Item.Next;
+    end loop;
+  end Set_Popup_Colors;
+
+
+  function Draw_Menu_Item (Lparam : Win32.LPARAM) return Boolean is
+    Info : constant Draw_Item_Pointers.Object_Pointer := Draw_Item_Pointers.To_Pointer (To_Address (Lparam));
+    use type Draw_Item_Pointers.Object_Pointer;
+    use type Win32.UINT;
+    use type Win32.LONG;
+  begin
+    if Info = null or else Info.Control_Type /= Win32.Winuser.ODT_MENU then
+      return False;
+    end if;
+    declare
+      Item : constant Menu_Item_Access := Find_Menu_Item (Info.Item_Id);
+    begin
+      if Item = null then
+        return False;
+      end if;
+      declare
+        Selected : constant Boolean := (Info.Item_State and Win32.Winuser.ODS_SELECTED) /= 0;
+        Disabled : constant Boolean := (Info.Item_State and (Win32.Winuser.ODS_DISABLED or
+                                                             Win32.Winuser.ODS_GRAYED)) /= 0;
+        Surface  : constant Color := (if Selected then Button_Color (True) else Background_Color);
+        Ink      : constant Color := (if Disabled then Disabled_Text_Color else Text_Color);
+        Brush    : constant Win32.Windef.HBRUSH := Win32.Wingdi.CreateSolidBrush (Surface);
+        Text     : aliased constant Wide_String :=
+          To_Wide (Ada.Strings.Unbounded.To_String (Item.The_Text)) & Wide_Nul;
+        Bounds   : aliased Win32.Windef.RECT := Info.Bounds;
+        Old_Font : constant System.Address := Select_Object (Info.Dc, The_Font);
+        Ignored  : Win32.INT with Unreferenced;
+        Unused   : Win32.BOOL with Unreferenced;
+        Previous : Color with Unreferenced;
+        Font     : System.Address with Unreferenced;
+      begin
+        Ignored := Win32.Winuser.FillRect (Info.Dc, Bounds'unchecked_access, Brush);
+        Unused := Delete_Gdi_Object (Brush);
+        Previous := Win32.Wingdi.SetTextColor (Info.Dc, Ink);
+        Previous := Win32.Wingdi.SetBkColor (Info.Dc, Surface);
+        if (Info.Item_State and Win32.Winuser.ODS_CHECKED) /= 0 then
+          declare
+            Mark : aliased constant Wide_String := [Wide_Character'val (16#2713#), Wide_Nul];
+            Area : aliased Win32.Windef.RECT := Bounds;
+          begin
+            Area.right := Area.left + 24;
+            Ignored := Win32.Winuser.DrawTextW (Info.Dc, Win32.Addr(Mark), 1, Area'unchecked_access,
+                                                Win32.Winuser.DT_CENTER + Win32.Winuser.DT_VCENTER +
+                                                Win32.Winuser.DT_SINGLELINE);
+          end;
+        end if;
+        Bounds.left := Bounds.left + 26;
+        Ignored := Win32.Winuser.DrawTextW (Info.Dc, Win32.Addr(Text), -1, Bounds'unchecked_access,
+                                            Win32.Winuser.DT_SINGLELINE + Win32.Winuser.DT_VCENTER);
+        Font := Select_Object (Info.Dc, Old_Font);
+      end;
+    end;
+    return True;
+  end Draw_Menu_Item;
+
+
   function Draw_Combo_Item (Lparam : Win32.LPARAM) return Boolean is
     Info : constant Draw_Item_Pointers.Object_Pointer := Draw_Item_Pointers.To_Pointer (To_Address (Lparam));
     use type Draw_Item_Pointers.Object_Pointer;
@@ -3739,6 +3954,7 @@ package body Gui is
     case Message is
       when Wm_Color_Mode =>
         The_Color_Mode := Color_Mode'val (Wparam);
+        Set_Popup_Colors;
         if Current_Page /= null then
           declare
             Wm_Theme_Changed : constant Win32.UINT := 16#031A#;
@@ -3834,19 +4050,32 @@ package body Gui is
         Redraw_Main_Window;
       when Win32.Winuser.WM_HSCROLL | Win32.Winuser.WM_VSCROLL =>
         Process_Message_From_Trackbar;
+      when Win32.Winuser.WM_INITMENUPOPUP =>
+        Set_Popup_Colors;
+        return Win32.Winuser.DefWindowProc (Hwnd, Message, Wparam, Lparam);
       when Win32.Winuser.WM_MEASUREITEM =>
         declare
           package Measure_Pointers is new System.Address_To_Access_Conversions (Win32.Winuser.MEASUREITEMSTRUCT);
           Info : constant Measure_Pointers.Object_Pointer := Measure_Pointers.To_Pointer (To_Address (Lparam));
         begin
-          if Info.CtlType = 3 then -- ODT_COMBOBOX
+          if Info.CtlType = Win32.Winuser.ODT_MENU then
+            declare
+              Item : constant Menu_Item_Access := Find_Menu_Item (Info.itemID);
+            begin
+              if Item /= null then
+                Info.itemWidth := Win32.UINT(Ada.Strings.Unbounded.Length (Item.The_Text) * Character_Width + 36);
+                Info.itemHeight := 24;
+                return 1;
+              end if;
+            end;
+          elsif Info.CtlType = 3 then -- ODT_COMBOBOX
             Info.itemHeight := 20;
             return 1;
           end if;
         end;
         return Win32.Winuser.DefWindowProc (Hwnd, Message, Wparam, Lparam);
       when 16#002B# => -- WM_DRAWITEM
-        if Draw_Combo_Item (Lparam) or else Draw_Symbol_Button (Lparam) then
+        if Draw_Menu_Item (Lparam) or else Draw_Combo_Item (Lparam) or else Draw_Symbol_Button (Lparam) then
           return 1;
         end if;
         return Win32.Winuser.DefWindowProc (Hwnd, Message, Wparam, Lparam);
@@ -4108,6 +4337,10 @@ package body Gui is
     The_Status_Line := Create_Status_Line (Private_Window);
     if The_Status_Line = System.Null_Address then
       raise Status_Line_Creation_Failure;
+    end if;
+    if Set_Window_Subclass (The_Status_Line, Status_Line_Proc'access,
+                            System.Null_Address, System.Null_Address) = Win32.FALSE then
+      raise Program_Error;
     end if;
     The_Tabs := Create_Tabs (Private_Window);
     if The_Tabs = System.Null_Address then
@@ -4439,8 +4672,12 @@ package body Gui is
   begin
     Mutex.Wait;
     declare
+      function Stored_Text return Ada.Strings.Unbounded.Unbounded_String is
+        (Ada.Strings.Unbounded.To_Unbounded_String (The_Text));
       The_Item_Access : constant Menu_Item_Access := new Menu_Item_Information'(The_Information => The_Information,
                                                                                 The_Id          => New_Menu_Item_Id,
+                                                                                The_Text        => Stored_Text,
+                                                                                Owner_Drawn     => False,
                                                                                 The_Parent_Menu => To_Menu,
                                                                                 Previous        => null,
                                                                                 Next            => Last_Menu_Item);
