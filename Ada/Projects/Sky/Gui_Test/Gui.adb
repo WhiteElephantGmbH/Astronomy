@@ -3250,8 +3250,6 @@ package body Gui is
         Window_Style := Window_Style + Win32.Comctl.Tbs_Autoticks;
         if The_Child.Track_Direction = Vertical then
           Window_Style := Window_Style + Win32.Comctl.Tbs_Vert;
-        else
-          Window_Style := Window_Style + Win32.Comctl.Tbs_Tooltips;
         end if;
       when Edit_Box_Child =>
         Class_Name := Wide_Text_Address_Of ("Edit");
@@ -3750,6 +3748,36 @@ package body Gui is
   end Find_Menu_Bar_Item;
 
 
+  procedure Set_Window_Colors is
+
+    function Dwm_Set_Window_Attribute (Hwnd      : Win32.Windef.HWND;
+                                       Attribute : Win32.DWORD;
+                                       Value     : System.Address;
+                                       Size      : Win32.DWORD) return Win32.LONG
+    with Import, Convention => Stdcall, External_Name => "DwmSetWindowAttribute";
+
+    Border_Attribute  : constant Win32.DWORD := 34;
+    Caption_Attribute : constant Win32.DWORD := 35;
+    Text_Attribute    : constant Win32.DWORD := 36;
+    Default_Color     : constant Color := 16#FFFF_FFFF#;
+
+    procedure Set_Color (Attribute : Win32.DWORD;
+                         Value     : Color) is
+      Actual_Color : aliased constant Color := (if The_Color_Mode = Astronomy then Value else Default_Color);
+      Unused       : Win32.LONG with Unreferenced;
+    begin
+      -- Older Windows versions do not support these optional attributes.
+      Unused := Dwm_Set_Window_Attribute (Private_Window, Attribute, Actual_Color'address,
+                                         Win32.DWORD(Actual_Color'size / System.Storage_Unit));
+    end Set_Color;
+
+  begin
+    Set_Color (Border_Attribute, Border_Color);
+    Set_Color (Caption_Attribute, Background_Color);
+    Set_Color (Text_Attribute, Text_Color);
+  end Set_Window_Colors;
+
+
   procedure Set_Menu_Bar_Colors is
     function Convert is new Ada.Unchecked_Conversion (Win32.Windef.HMENU, Win32.UINT_PTR);
     function To_Text is new Ada.Unchecked_Conversion (System.Address, Win32.LPCWSTR);
@@ -4194,6 +4222,49 @@ package body Gui is
   end Draw_Symbol_Button;
 
 
+  procedure Draw_Menu_Separator (Hwnd : Win32.Windef.HWND) is
+    function Client_To_Screen (Window : Win32.Windef.HWND;
+                               Point  : access Win32.Windef.POINT) return Win32.BOOL
+      with Import, Convention => Stdcall, External_Name => "ClientToScreen";
+    function Delete_Brush (Brush : System.Address) return Win32.BOOL
+      with Import, Convention => Stdcall, External_Name => "DeleteObject";
+    Outer       : aliased Win32.Windef.RECT;
+    Bounds      : aliased Win32.Windef.RECT;
+    Origin      : aliased Win32.Windef.POINT := (0, 0);
+    Dc          : Win32.Windef.HDC;
+    Brush       : Win32.Windef.HBRUSH;
+    Ignored     : Win32.BOOL with Unreferenced;
+    Ignored_Int : Win32.INT with Unreferenced;
+    use type Win32.BOOL;
+    use type Win32.LONG;
+    use type System.Address;
+  begin
+    if The_Color_Mode /= Astronomy or else First_Menu_Bar_Item = null then
+      return;
+    end if;
+    if Win32.Winuser.GetWindowRect (Hwnd, Outer'unchecked_access) = Win32.FALSE or else
+       Win32.Winuser.GetClientRect (Hwnd, Bounds'unchecked_access) = Win32.FALSE or else
+       Client_To_Screen (Hwnd, Origin'access) = Win32.FALSE
+    then
+      return;
+    end if;
+    if Bounds.Right <= 0 or else Origin.y <= Outer.Top then
+      return;
+    end if;
+    Bounds := (Origin.x - Outer.Left, Origin.y - Outer.Top - 1,
+               Origin.x - Outer.Left + Bounds.Right, Origin.y - Outer.Top);
+    Dc := Win32.Winuser.GetWindowDC (Hwnd);
+    if Dc /= System.Null_Address then
+      Brush := Win32.Wingdi.CreateSolidBrush (Border_Color);
+      if Brush /= System.Null_Address then
+        Ignored_Int := Win32.Winuser.FillRect (Dc, Bounds'unchecked_access, Brush);
+        Ignored := Delete_Brush (Brush);
+      end if;
+      Ignored_Int := Win32.Winuser.ReleaseDC (Hwnd, Dc);
+    end if;
+  end Draw_Menu_Separator;
+
+
   function Mainwindowproc(Hwnd    : Win32.Windef.HWND;
                           Message : Win32.UINT;
                           Wparam  : Win32.WPARAM;
@@ -4238,12 +4309,22 @@ package body Gui is
       end if;
     end Process_Message_From_Trackbar;
 
+    function Paint_Non_Client return Win32.LRESULT is
+      Result : constant Win32.LRESULT := Win32.Winuser.DefWindowProc (Hwnd, Message, Wparam, Lparam);
+    begin
+      Draw_Menu_Separator (Hwnd);
+      return Result;
+    end Paint_Non_Client;
+
     use type Win32.UINT;
 
   begin -- Mainwindowproc
     case Message is
+      when Win32.Winuser.WM_NCPAINT | 16#0086# => -- WM_NCACTIVATE
+        return Paint_Non_Client;
       when Wm_Color_Mode =>
         The_Color_Mode := Color_Mode'val (Wparam);
+        Set_Window_Colors;
         Set_Menu_Bar_Colors;
         Set_Popup_Colors;
         if Current_Page /= null then
@@ -4610,6 +4691,7 @@ package body Gui is
     if Private_Window = System.Null_Address then
       raise Main_Window_Creation_Failure;
     end if;
+    Set_Window_Colors;
     The_Status_Line := Create_Status_Line (Private_Window);
     if The_Status_Line = System.Null_Address then
       raise Status_Line_Creation_Failure;
@@ -6446,10 +6528,7 @@ package body Gui is
                                                   Original => The_Color));
     end if;
     if Ensure_Visible then
-      Send_Message (The_Rich_Edit.Ptr.The_Handle,
-                    Win32.Winuser.WM_VSCROLL,
-                    Win32.Winuser.SB_BOTTOM,
-                    0);
+      Send_Message (Item.The_Handle, Win32.Winuser.EM_SCROLLCARET, 0, 0);
     end if;
   end Append_Wide_To;
 
