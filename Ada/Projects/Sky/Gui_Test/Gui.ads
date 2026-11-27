@@ -708,6 +708,12 @@ package Gui is
                     The_Size           : Natural := Automatic;
                     The_Title_Size     : Natural := Automatic) return Plain_Combo_Box;
 
+  -- Minimum_Width reserves space for the longest expected entry.
+  function Create (Parent             : Group;
+                   The_Action_Routine : Action_Routine := null;
+                   The_Style          : Combo_Style := Default_Combo_Style;
+                   Minimum_Width      : Positive := 100) return Plain_Combo_Box;
+
   procedure Add_Text (The_Combo_Box : Combo_Box'class;
                       The_Text      : String);
 

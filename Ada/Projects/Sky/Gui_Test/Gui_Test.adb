@@ -56,6 +56,95 @@ procedure Gui_Test is
   Vertical_Toggle : Gui.Button with Unreferenced;
 
 
+  Exposure_Box, Sensitivity_Box : Gui.Plain_Combo_Box;
+  Alternate_Exposures           : Boolean := False;
+
+
+  procedure Selection_Changed is
+  begin
+    Gui.Set_Status_Line ("EXPOSURE: " & Gui.Contents_Of (Exposure_Box) &
+                         "  ISO: " & Gui.Contents_Of (Sensitivity_Box));
+  end Selection_Changed;
+
+
+  procedure Reset_Selections is
+  begin
+    Gui.Select_Text (Exposure_Box, (if Alternate_Exposures then "5 s" else "30 s"));
+    Gui.Select_Text (Sensitivity_Box, "6400");
+    Selection_Changed;
+  end Reset_Selections;
+
+
+  procedure Populate_Exposures is
+  begin
+    Gui.Clear_Contents_Of (Exposure_Box);
+    if Alternate_Exposures then
+      Gui.Add_Text (Exposure_Box, "1/100 s");
+      Gui.Add_Text (Exposure_Box, "1/15 s");
+      Gui.Add_Text (Exposure_Box, "1 s");
+      Gui.Add_Text (Exposure_Box, "5 s");
+    else
+      Gui.Add_Text (Exposure_Box, "5 s");
+      Gui.Add_Text (Exposure_Box, "10 s");
+      Gui.Add_Text (Exposure_Box, "30 s");
+      Gui.Add_Text (Exposure_Box, "60 s");
+      Gui.Add_Text (Exposure_Box, "120 s");
+    end if;
+  end Populate_Exposures;
+
+
+  procedure Change_Exposures is
+  begin
+    Alternate_Exposures := not Alternate_Exposures;
+    Populate_Exposures;
+    Reset_Selections;
+  end Change_Exposures;
+
+
+  procedure Toggle_Selections is
+  begin
+    if Gui.Is_Enabled (Exposure_Box) then
+      Gui.Disable (Exposure_Box);
+      Gui.Disable (Sensitivity_Box);
+    else
+      Gui.Enable (Exposure_Box);
+      Gui.Enable (Sensitivity_Box);
+    end if;
+  end Toggle_Selections;
+
+
+  procedure Test_Selections is
+    Selection_Page  : constant Gui.Page := Gui.Add_Page ("Selections");
+    Settings        : constant Gui.Group := Gui.Create (Selection_Page, Gui.Vertical);
+    Camera_Group    : constant Gui.Group := Gui.Create (Settings, Gui.Vertical,
+                                                       Expand => Gui.Fixed, Title => "Camera Settings");
+    Exposure_Row    : constant Gui.Group := Gui.Create (Camera_Group, Gui.Horizontal, Equal_Cells => True);
+    Sensitivity_Row : Gui.Group;
+    Buttons         : Gui.Group;
+    Reset, Toggle, Change : Gui.Button with Unreferenced;
+  begin
+    Gui.Create_Label (Exposure_Row, "Exposure");
+    Exposure_Box := Gui.Create (Exposure_Row, Selection_Changed'unrestricted_access,
+                                The_Style => [others => False]);
+    Sensitivity_Row := Gui.Create (Camera_Group, Gui.Horizontal, Equal_Cells => True);
+    Gui.Create_Label (Sensitivity_Row, "Sensitivity");
+    Sensitivity_Box := Gui.Create (Sensitivity_Row, Selection_Changed'unrestricted_access,
+                                   The_Style => [others => False]);
+    Populate_Exposures;
+    Gui.Add_Text (Sensitivity_Box, "100");
+    Gui.Add_Text (Sensitivity_Box, "400");
+    Gui.Add_Text (Sensitivity_Box, "800");
+    Gui.Add_Text (Sensitivity_Box, "1600");
+    Gui.Add_Text (Sensitivity_Box, "3200");
+    Gui.Add_Text (Sensitivity_Box, "6400");
+    Reset_Selections;
+    Buttons := Gui.Create (Camera_Group, Gui.Vertical, Expand => Gui.Fixed);
+    Reset := Gui.Create (Buttons, "Reset", Reset_Selections'unrestricted_access);
+    Toggle := Gui.Create (Buttons, "Toggle", Toggle_Selections'unrestricted_access);
+    Change := Gui.Create (Buttons, "Change exposures", Change_Exposures'unrestricted_access);
+  end Test_Selections;
+
+
   procedure Slider_Changed is
   begin
     Gui.Set_Text (Slider_Value, Natural'image (Gui.Get_Position (Slider)));
@@ -296,6 +385,7 @@ procedure Gui_Test is
     Tone_Buttons := Gui.Create (Vertical_Group, Gui.Vertical, Expand => Gui.Fixed);
     Vertical_Reset := Gui.Create (Tone_Buttons, "Reset", Reset_Vertical'unrestricted_access);
     Vertical_Toggle := Gui.Create (Tone_Buttons, "Toggle", Toggle_Vertical'unrestricted_access);
+    Test_Selections;
     Test_Detached_Window;
     Gui.Set_Status_Line ("READY");
   end Startup;

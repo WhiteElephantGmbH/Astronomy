@@ -1222,6 +1222,9 @@ package body Gui is
           elsif Item.The_Kind = Track_Bar_Child and then Item.Track_Direction = Vertical then
             R.X := R.X + (R.Width - Vertical_Track_Width) / 2;
             R.Width := Vertical_Track_Width;
+          elsif Item.The_Kind = Combo_Box_Child then
+            -- The native height includes the drop-down list, not just the selection field.
+            R.Height := 200;
           end if;
           Unused := Win32.Winuser.SetWindowPos (Item.The_Handle, System.Null_Address,
                       Win32.INT(R.X), Win32.INT(R.Y), Win32.INT(R.Width), Win32.INT(R.Height),
@@ -5059,6 +5062,27 @@ package body Gui is
     The_Combo_Box.Ptr.The_Action_Routine := The_Action_Routine;
     Create (The_Combo_Box.Ptr, Parent_Page);
     return The_Combo_Box;
+  end Create;
+
+
+  function Create (Parent             : Group;
+                   The_Action_Routine : Action_Routine := null;
+                   The_Style          : Combo_Style := Default_Combo_Style;
+                   Minimum_Width      : Positive := 100) return Plain_Combo_Box is
+                   Result             : constant Plain_Combo_Box := (Ptr => new Child_Information);
+  begin
+    if Layout_Complete then
+      raise Sequence_Error;
+    end if;
+    Result.Ptr.The_Window_Id := Next_Child_Id;
+    Result.Ptr.The_Kind := Combo_Box_Child;
+    Result.Ptr.Is_Modifiable := The_Style (Modifiable);
+    Result.Ptr.Is_Sorted := The_Style (Sorted);
+    Result.Ptr.The_Action_Routine := The_Action_Routine;
+    Create (Result.Ptr, Parent.Owner);
+    Result.Ptr.Layout_Node := Layout.Control ((Minimum_Width, 30));
+    Layout.Append (Parent.Node, Result.Ptr.Layout_Node);
+    return Result;
   end Create;
 
 
