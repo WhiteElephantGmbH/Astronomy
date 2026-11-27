@@ -3677,6 +3677,15 @@ package body Gui is
   end Remove_Page;
 
 
+  function Create_Button (Parent_Page        : Page;
+                          The_Text           : String;
+                          The_Action_Routine : Action_Routine;
+                          The_Button_Size    : Natural;
+                          Has_Symbol         : Boolean;
+                          Symbol             : Button_Symbol;
+                          Handler            : Button_Event_Handler := null) return Button;
+
+
   procedure Pop_Up_Button is
     The_Pop_Up_Return   : Pop_Up_Return;
     Termination_Routine : Pop_Up_Termination;
@@ -3709,11 +3718,11 @@ package body Gui is
     The_Page.The_Style := The_Style;
     The_Page.Termination_Routine := The_Routine;
     if Cancel_Text /= "" then
-      Unused := Create (The_Page, Cancel_Text, Pop_Up_Button'access);
+      Unused := Create_Button (The_Page, Cancel_Text, Pop_Up_Button'access, Default_Button_Width, False, Stop_Symbol);
       The_Page.Has_Cancel_Button := True;
     end if;
     if Ok_Text /= "" then
-      Unused := Create (The_Page, Ok_Text, Pop_Up_Button'access);
+      Unused := Create_Button (The_Page, Ok_Text, Pop_Up_Button'access, Default_Button_Width, False, Stop_Symbol);
     end if;
     return The_Page;
   end Create;
@@ -3756,25 +3765,6 @@ package body Gui is
     end if;
     return The_Buddy;
   end Buddy_For;
-
-
-  function Create (Parent_Page        : Page;
-                   The_Title          : String := "";
-                   The_Action_Routine : Action_Routine := null;
-                   The_Title_Size     : Natural := Automatic) return Track_Bar is
-                   The_Track_Bar      : constant Track_Bar := Track_Bar'(Ptr => new Child_Information);
-  begin
-    The_Track_Bar.Ptr.The_Window_Id := Next_Child_Id;
-    The_Track_Bar.Ptr.The_Kind := Track_Bar_Child;
-    The_Track_Bar.Ptr.The_Action_Routine := The_Action_Routine;
-    The_Track_Bar.Ptr.Buddy_Child := Buddy_For (The_Text      => To_Wide (The_Title),
-                                                The_Text_Size => The_Title_Size,
-                                                Is_Automatic  => False,
-                                                The_Kind      => Static_Child,
-                                                Parent_Page   => Parent_Page);
-    Create (The_Track_Bar.Ptr, Parent_Page);
-    return The_Track_Bar;
-  end Create;
 
 
   function Create (Parent             : Group;
@@ -3903,15 +3893,6 @@ package body Gui is
     Create (The_Button.Ptr, Parent_Page);
     return The_Button;
   end Create_Button;
-
-
-  function Create (Parent_Page        : Page;
-                   The_Text           : String;
-                   The_Action_Routine : Action_Routine := null;
-                   The_Button_Size    : Natural := Default_Button_Width) return Button is
-  begin
-    return Create_Button (Parent_Page, The_Text, The_Action_Routine, The_Button_Size, False, Stop_Symbol);
-  end Create;
 
 
   function Frame_Margin (Frame : Boolean; Title : String) return Natural is
@@ -4086,7 +4067,7 @@ package body Gui is
       raise Sequence_Error;
     end if;
     Width := Button_Width (The_Text, The_Button_Size);
-    Result := Create (Parent.Owner, The_Text, The_Action_Routine, Width);
+    Result := Create_Button (Parent.Owner, The_Text, The_Action_Routine, Width, False, Stop_Symbol);
     Result.Ptr.Layout_Node := Layout.Control ((Width, 30), Weight => (if Expand then 1 else 0));
     Layout.Append (Parent.Node, Result.Ptr.Layout_Node);
     return Result;
@@ -4857,44 +4838,21 @@ package body Gui is
   end Clear;
 
 
-  function Create (Parent_Page        : Page;
-                   The_Title          : String;
-                   Initial_Text       : String;
-                   The_Action_Routine : Action_Routine := null;
-                   Is_Password        : Boolean := False;
-                   Is_Modifiable      : Boolean := True;
-                   The_Size           : Natural := Automatic;
-                   The_Title_Size     : Natural := Automatic) return Plain_Edit_Box is
-                   Text               : aliased constant Wide_String := To_Wide (Initial_Text) & Wide_Nul;
-                   The_Edit_Box       : constant Plain_Edit_Box := Plain_Edit_Box'(Ptr => new Child_Information);
-  begin
-    The_Edit_Box.Ptr.Buddy_Child := Buddy_For (The_Text      => To_Wide (The_Title),
-                                               The_Text_Size => The_Title_Size,
-                                               Is_Automatic  => (The_Size = Automatic) and (The_Title_Size = Automatic),
-                                               The_Kind      => Static_Child,
-                                               Parent_Page   => Parent_Page);
-    The_Edit_Box.Ptr.The_Window_Id := Next_Child_Id;
-    The_Edit_Box.Ptr.The_Kind := Edit_Box_Child;
-    The_Edit_Box.Ptr.Initial_Title := Win32.Addr(Text);
-    The_Edit_Box.Ptr.The_Title_Size := Win32.INT(The_Size);
-    The_Edit_Box.Ptr.The_Action_Routine := The_Action_Routine;
-    The_Edit_Box.Ptr.Is_Password := Is_Password;
-    The_Edit_Box.Ptr.Is_Modifiable := Is_Modifiable;
-    Create (The_Edit_Box.Ptr, Parent_Page);
-    return The_Edit_Box;
-  end Create;
-
-
   function Create (Parent        : Group;
                    Initial_Text  : String;
                    Is_Modifiable : Boolean := False;
                    Minimum_Width : Positive := 90) return Plain_Edit_Box is
-                   Result        : Plain_Edit_Box;
+                   Text          : aliased constant Wide_String := To_Wide (Initial_Text) & Wide_Nul;
+                   Result        : constant Plain_Edit_Box := (Ptr => new Child_Information);
   begin
     if Layout_Complete then
       raise Sequence_Error;
     end if;
-    Result := Create (Parent.Owner, "", Initial_Text, Is_Modifiable => Is_Modifiable);
+    Result.Ptr.The_Window_Id := Next_Child_Id;
+    Result.Ptr.The_Kind := Edit_Box_Child;
+    Result.Ptr.Initial_Title := Win32.Addr(Text);
+    Result.Ptr.Is_Modifiable := Is_Modifiable;
+    Create (Result.Ptr, Parent.Owner);
     Result.Ptr.Layout_Node := Layout.Control ((Minimum_Width, 30));
     Layout.Append (Parent.Node, Result.Ptr.Layout_Node);
     return Result;
@@ -5037,32 +4995,6 @@ package body Gui is
   begin
     Clear (The_Checked_Edit_Box.Ptr.Buddy_Child);
   end Clear;
-
-
-  function Create  (Parent_Page        : Page;
-                    The_Title          : String;
-                    The_Action_Routine : Action_Routine := null;
-                    The_Style          : Combo_Style := Default_Combo_Style;
-                    The_Size           : Natural := Automatic;
-                    The_Title_Size     : Natural := Automatic) return Plain_Combo_Box is
-                    The_Combo_Box      : constant Plain_Combo_Box := Plain_Combo_Box'(Ptr => new Child_Information);
-  begin
-    The_Combo_Box.Ptr.Buddy_Child
-      := Buddy_For (The_Text      => To_Wide (The_Title),
-                    The_Text_Size => The_Title_Size,
-                    Is_Automatic  => (The_Size = Automatic) and (The_Title_Size = Automatic),
-                    The_Kind      => Static_Child,
-                    Parent_Page   => Parent_Page);
-    The_Combo_Box.Ptr.Buddy_Child.The_Action_Routine := The_Action_Routine;
-    The_Combo_Box.Ptr.The_Window_Id := Next_Child_Id;
-    The_Combo_Box.Ptr.The_Kind := Combo_Box_Child;
-    The_Combo_Box.Ptr.Is_Modifiable := The_Style (Modifiable);
-    The_Combo_Box.Ptr.Is_Sorted := The_Style (Sorted);
-    The_Combo_Box.Ptr.The_Title_Size := Win32.INT(The_Size);
-    The_Combo_Box.Ptr.The_Action_Routine := The_Action_Routine;
-    Create (The_Combo_Box.Ptr, Parent_Page);
-    return The_Combo_Box;
-  end Create;
 
 
   function Create (Parent             : Group;

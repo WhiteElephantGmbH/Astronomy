@@ -400,11 +400,6 @@ package Gui is
   ----------------------
   -- Button functions --
   ----------------------
-  function Create (Parent_Page        : Page;
-                   The_Text           : String;
-                   The_Action_Routine : Action_Routine := null;
-                   The_Button_Size    : Natural := Default_Button_Width) return Button;
-
   function Create (Parent             : Group;
                    The_Text           : String;
                    The_Action_Routine : Action_Routine := null;
@@ -610,11 +605,6 @@ package Gui is
   -------------------------
   -- Track Bar functions --
   -------------------------
-  function Create (Parent_Page        : Page;
-                   The_Title          : String := "";
-                   The_Action_Routine : Action_Routine := null;
-                   The_Title_Size     : Natural := Automatic) return Track_Bar;
-
   function Create (Parent             : Group;
                    The_Action_Routine : Action_Routine := null;
                    Minimum_Width      : Positive := 160) return Track_Bar;
@@ -642,15 +632,6 @@ package Gui is
   ------------------------
   -- Edit Box functions --
   ------------------------
-  function Create (Parent_Page        : Page;
-                   The_Title          : String;
-                   Initial_Text       : String;
-                   The_Action_Routine : Action_Routine := null;
-                   Is_Password        : Boolean := False;
-                   Is_Modifiable      : Boolean := True;
-                   The_Size           : Natural := Automatic;
-                   The_Title_Size     : Natural := Automatic) return Plain_Edit_Box;
-
   function Create (Parent        : Group;
                    Initial_Text  : String;
                    Is_Modifiable : Boolean := False;
@@ -700,13 +681,6 @@ package Gui is
   type Combo_Style is array (Combo_Styles'range) of Boolean;
 
   Default_Combo_Style : constant Combo_Style := [Sorted => True, others => False];
-
-  function Create  (Parent_Page        : Page;
-                    The_Title          : String;
-                    The_Action_Routine : Action_Routine := null;
-                    The_Style          : Combo_Style := Default_Combo_Style;
-                    The_Size           : Natural := Automatic;
-                    The_Title_Size     : Natural := Automatic) return Plain_Combo_Box;
 
   -- Minimum_Width reserves space for the longest expected entry.
   function Create (Parent             : Group;
