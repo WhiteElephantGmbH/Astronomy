@@ -592,8 +592,10 @@ package Gui is
   -------------------------
   -- Text View functions --
   -------------------------
-  function Create (Parent_Page   : Page;
-                   Word_Wrapping : Boolean := False) return Text_View;
+  function Create (Parent         : Group;
+                   Word_Wrapping  : Boolean := False;
+                   Minimum_Width  : Positive := 240;
+                   Minimum_Height : Positive := 120) return Text_View;
 
   procedure Append_To (The_Rich_Edit  : Text_View;
                        The_Text       : String;

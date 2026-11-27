@@ -4975,13 +4975,20 @@ package body Gui is
   end Thaw;
 
 
-  function Create (Parent_Page   : Page;
-                   Word_Wrapping : Boolean := False) return Text_View is
+  function Create (Parent         : Group;
+                   Word_Wrapping  : Boolean := False;
+                   Minimum_Width  : Positive := 240;
+                   Minimum_Height : Positive := 120) return Text_View is
                    The_Text_View : constant Text_View := Text_View'(Ptr => new Child_Information);
   begin
+    if Layout_Complete then
+      raise Sequence_Error;
+    end if;
     The_Text_View.Ptr.The_Window_Id := Next_Child_Id;
     The_Text_View.Ptr.The_Kind := Text_View_Child;
-    Create (The_Text_View.Ptr, Parent_Page);
+    Create (The_Text_View.Ptr, Parent.Owner);
+    The_Text_View.Ptr.Layout_Node := Layout.Control ((Minimum_Width, Minimum_Height), Weight => 1);
+    Layout.Append (Parent.Node, The_Text_View.Ptr.Layout_Node);
     Send_Message (The_Text_View.Ptr.The_Handle,
                   Win32.Comctl.Em_Exlimittext, -- Set the maximum amount of text
                   Win32.WPARAM(0),
@@ -4990,7 +4997,7 @@ package body Gui is
       Send_Message (The_Text_View.Ptr.The_Handle,
                     Win32.Comctl.Em_Settargetdevice,
                     Win32.WPARAM(0),
-                    Win32.LPARAM(1)); -- Set word wapping off
+                    Win32.LPARAM(1)); -- Set word wrapping off
     end if;
     return The_Text_View;
   end Create;

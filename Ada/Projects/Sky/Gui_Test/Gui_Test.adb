@@ -572,6 +572,40 @@ procedure Gui_Test is
   end Test_Options;
 
 
+  Messages : Gui.Text_View;
+
+
+  procedure Append_Messages is
+  begin
+    Gui.Append_To (Messages, "INFO: ", Gui.Blue);
+    Gui.Append_Line_To (Messages, "Processing image");
+    Gui.Append_Line_To (Messages, "WARNING: This is a simulated warning", Gui.Orange);
+    Gui.Append_Line_To (Messages, "ERROR: This is a simulated error", Gui.Red);
+    Gui.Append_Line_To (Messages, "Processing complete", Gui.Green);
+  end Append_Messages;
+
+
+  procedure Clear_Messages is
+  begin
+    Gui.Clear (Messages);
+  end Clear_Messages;
+
+
+  procedure Test_Messages is
+    Messages_Page : constant Gui.Page := Gui.Add_Page ("Messages");
+    Content       : constant Gui.Group := Gui.Create (Messages_Page, Gui.Vertical);
+    Buttons       : Gui.Group;
+    Append_Button : Gui.Button with Unreferenced;
+    Clear_Button  : Gui.Button with Unreferenced;
+  begin
+    Messages := Gui.Create (Content, Word_Wrapping => True);
+    Buttons := Gui.Create (Content, Gui.Vertical, Expand => Gui.Fixed);
+    Append_Button := Gui.Create (Buttons, "Append", Append_Messages'unrestricted_access);
+    Clear_Button := Gui.Create (Buttons, "Clear", Clear_Messages'unrestricted_access);
+    Append_Messages;
+  end Test_Messages;
+
+
   procedure Test_Detached_Window is
     -- Embedded 4 x 4 bitmap with four coloured quadrants.
     Picture : constant Ada.Streams.Stream_Element_Array :=
@@ -664,6 +698,7 @@ procedure Gui_Test is
     Test_Targets;
     Test_Progress;
     Test_Options;
+    Test_Messages;
     Test_Detached_Window;
     Gui.Set_Status_Line ("READY");
   end Startup;
