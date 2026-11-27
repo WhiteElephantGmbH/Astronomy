@@ -1,4 +1,3 @@
-with System.Storage_Elements;
 -- *********************************************************************************************************************
 -- *                       (c) 2002 .. 2026 by White Elephant GmbH, Schaffhausen, Switzerland                          *
 -- *                                               www.white-elephant.ch                                               *
@@ -25,6 +24,7 @@ with Log;
 with Gui.Layout;
 with Gui.Persistent;
 with Semaphore;
+with Win32.Comctl;
 with Win32.Commctrl;
 with Win32.Commdlg;
 with Win32.Shellapi;
@@ -32,6 +32,7 @@ with Win32.Winbase;
 with Win32.Winmain; pragma Elaborate_All (Win32.Winmain);
 with Win32.Winnt;
 with System.Address_To_Access_Conversions;
+with System.Storage_Elements;
 
 package body Gui is
 
@@ -531,7 +532,7 @@ package body Gui is
 
   type Child_Kind is (Button_Child, Progress_Bar_Child, Track_Bar_Child, Edit_Box_Child,
                       Check_Box_Child, Combo_Box_Child, Static_Child, List_View_Child,
-                      Tree_View_Child, Text_View_Child);
+                      Text_View_Child);
 
   Display_Priority : constant array (Child_Kind) of Positive := [Button_Child       => 10,
                                                                  Progress_Bar_Child => 20,
@@ -541,7 +542,6 @@ package body Gui is
                                                                  Combo_Box_Child    => 40,
                                                                  Static_Child       => 60,
                                                                  List_View_Child    => 70,
-                                                                 Tree_View_Child    => 70,
                                                                  Text_View_Child    => 70];
 
   package Column_Names is new Ada.Containers.Indefinite_Vectors (Positive, String);
@@ -1442,10 +1442,9 @@ package body Gui is
                          Win32.INT(Client_Rectangle.top) -
                          Status_Line_Height; -- Available space;
         if Current_Page.Population (List_View_Child) +
-           Current_Page.Population (Tree_View_Child) +
            Current_Page.Population (Text_View_Child) > 0
         then
-          Button_Height := Button_Height / 2;  -- Reserve half for lists and trees
+          Button_Height := Button_Height / 2;  -- Reserve half for list and text views
         end if;
         -- Calculate height of a single box
         if Box_Height < Vertical_Raster then -- Small boxes are made bigger
@@ -1524,13 +1523,12 @@ package body Gui is
               Object_Height := Third_Raster;
               Vertical_Position := Vertical_Position + Third_Raster;
               Vertical_Increment := Vertical_Increment - Third_Raster;
-            when List_View_Child | Tree_View_Child | Text_View_Child =>
+            when List_View_Child | Text_View_Child =>
               if Large_Object_Position = 0 then -- Not yet known
                 Large_Object_Position := Vertical_Position;  -- Start of large objects
               end if;
               Object_Height := (Win32.INT(Client_Rectangle.bottom) - Large_Object_Position) /
                                (Current_Page.Population (List_View_Child) +
-                                Current_Page.Population (Tree_View_Child) +
                                 Current_Page.Population (Text_View_Child));
               Vertical_Increment := Object_Height;
             when Edit_Box_Child | Combo_Box_Child =>
@@ -1814,29 +1812,6 @@ package body Gui is
   end Lparam_Of;
 
 
-  procedure Process_Tree_View_Click (The_Handle    : Win32.Windef.HWND;
-                                     The_Routine   : access procedure (Item : Information)) is
-                                     Selected_Item : aliased Win32.LRESULT;
-                                     The_Item      : aliased Win32.Comctl.Tv_Item_Ansi;
-    function Convert is new Ada.Unchecked_Conversion (System.Address, Win32.LPARAM);
-    function Convert is new Ada.Unchecked_Conversion (Win32.LPARAM, Information);
-  begin
-    if Is_Active and (The_Routine /= null) then
-      Selected_Item := Send_Message (The_Handle,
-                                     Win32.Comctl.Tvm_Getnextitem,
-                                     Win32.Comctl.Tvgn_Caret,
-                                     Convert(Selected_Item'address));
-      The_Item.Hitem := Tree_Item(Selected_Item);
-      The_Item.Mask := Win32.Comctl.Tvif_Param;
-      Send_Message (The_Handle,
-                    Win32.Comctl.Tvm_Getitem_Ansi,
-                    Win32.Comctl.Tvgn_Caret,
-                    Convert(The_Item'address));
-      Execute (The_Routine, Convert (The_Item.Lparam));
-    end if;
-  end Process_Tree_View_Click;
-
-
   function Ansi_Handler (The_Child        : Child_Information_Ptr;
                          For_Column       : Natural;
                          With_Information : Information) return Wide_String is
@@ -2030,24 +2005,6 @@ package body Gui is
                     The_Custom_Draw_Info.Textcolor :=
                                          The_Child.The_Color_Routine (Convert(The_Notification.Item.Lparam));
                   end if;
-                end if;
-              end if;
-            end if;
-          elsif The_Child.The_Kind = Tree_View_Child then
-            if The_Notification.Hdr.Code = Win32.Comctl.Nm_Dblclk then
-              Process_Tree_View_Click (The_Child.The_Handle, The_Child.The_Click_Routine);
-            elsif The_Notification.Hdr.Code = Win32.Comctl.Nm_Customdraw then
-              The_Custom_Draw_Info
-                := Win32.Comctl.Customdraw_Info_Ptr (Customdraw_Info_Conversion.To_Pointer (Convert (Lparam)));
-              if The_Custom_Draw_Info /= null then
-                if (The_Custom_Draw_Info.Nmcd.Drawstage = Win32.Comctl.Cdds_Prepaint) and
-                   (The_Child.The_Color_Routine /= null)
-                then -- Ask to be notified when item is about to be drawn
-                  return Win32.Comctl.Cdrf_Notifyitemdraw;
-                elsif The_Custom_Draw_Info.Nmcd.Drawstage = Win32.Comctl.Cdds_Itemprepaint then
-                  The_Custom_Draw_Info.Bkgndcolor := White; -- Disable blue background for selections
-                  The_Custom_Draw_Info.Textcolor :=
-                                       The_Child.The_Color_Routine (Convert(The_Notification.Item.Lparam));
                 end if;
               end if;
             end if;
@@ -2280,12 +2237,6 @@ package body Gui is
         end if;
       when Progress_Bar_Child =>
         Class_Name := Wide_Text_Address_Of ("msctls_progress32");
-      when Tree_View_Child =>
-        Class_Name := Wide_Text_Address_Of ("SysTreeView32");
-        Window_Style := Window_Style + Win32.Winuser.WS_BORDER +
-                                       Win32.Comctl.Tvs_Haslines +
-                                       Win32.Comctl.Tvs_Hasbuttons +
-                                       Win32.Comctl.Tvs_Linesatroot;
       when Text_View_Child =>
         Class_Name := Wide_Text_Address_Of ("RichEdit20W");
         Window_Style := Window_Style + Win32.Winuser.ES_MULTILINE +
@@ -4595,12 +4546,6 @@ package body Gui is
   end Set_Qualified_Action;
 
 
-  function Parent_Page_Of (The_Child : Child'class) return Page is
-  begin
-    return The_Child.Ptr.Parent_Page;
-  end Parent_Page_Of;
-
-
   function Click_Kind_Of (The_Click_Kind : Click_Kind) return Win32.INT is
   begin
     case The_Click_Kind is
@@ -4610,21 +4555,6 @@ package body Gui is
       return Win32.Comctl.Nm_Dblclk;
     end case;
   end Click_Kind_Of;
-
-
-  function Create (Parent_Page       : Page;
-                   The_Click_Routine : access procedure (Item : Information) := null;
-                   The_Color_Handler : Color_Handler := null) return Tree_View is
-
-    The_Tree_View : constant Tree_View := Tree_View'(Ptr => new Child_Information);
-  begin
-    The_Tree_View.Ptr.The_Window_Id := Next_Child_Id;
-    The_Tree_View.Ptr.The_Kind := Tree_View_Child;
-    The_Tree_View.Ptr.The_Click_Routine := Convert(The_Click_Routine);
-    The_Tree_View.Ptr.The_Color_Routine := The_Color_Handler;
-    Create (The_Tree_View.Ptr, Parent_Page);
-    return The_Tree_View;
-  end Create;
 
 
   function Create (Parent                : Group;
@@ -5413,218 +5343,6 @@ package body Gui is
   begin
     Clear (The_Checked_Combo_Box.Ptr.Buddy_Child);
   end Clear;
-
-
-  function Is_Root (The_Tree_Item : Tree_Item) return Boolean is
-    use type Tree_Item;
-  begin
-    return The_Tree_Item = Root_Item;
-  end Is_Root;
-
-
-  procedure Mark_Has_Children (The_Tree_View : Tree_View;
-                               The_Tree_Item : Tree_Item) is
-                               The_Item      : aliased Win32.Comctl.Tv_Item_Ansi;
-    function Convert is new Ada.Unchecked_Conversion (System.Address, Win32.LPARAM);
-  begin
-    The_Item.Mask := Win32.Comctl.Tvif_Children;
-    The_Item.Hitem := The_Tree_Item;
-    The_Item.Children := 1;
-    Send_Message (The_Tree_View.Ptr.The_Handle,
-                  Win32.Comctl.Tvm_Setitem_Ansi,
-                  0, Convert(The_Item'address));
-  end Mark_Has_Children;
-
-
-  procedure Mark_Has_No_Children (The_Tree_View : Tree_View;
-                                  The_Tree_Item : Tree_Item) is
-                                  The_Item      : aliased Win32.Comctl.Tv_Item_Ansi;
-    function Convert is new Ada.Unchecked_Conversion (System.Address, Win32.LPARAM);
-  begin
-    The_Item.Mask := Win32.Comctl.Tvif_Children;
-    The_Item.Hitem := The_Tree_Item;
-    The_Item.Children := 0;
-    Send_Message (The_Tree_View.Ptr.The_Handle,
-                  Win32.Comctl.Tvm_Setitem_Ansi,
-                  0, Convert(The_Item'address));
-  end Mark_Has_No_Children;
-
-
-  function Add_Item (The_Tree_View   : Tree_View;
-                     The_Title       : String;
-                     The_Parent      : Tree_Item := Root_Item;
-                     After_Item      : Tree_Item;
-                     The_Information : Information := No_Information) return Tree_Item is
-                     Title           : aliased constant String := The_Title & Nul;
-    function Convert is new Ada.Unchecked_Conversion (System.Address, Win32.LPARAM);
-    function Convert is new Ada.Unchecked_Conversion (Information, Win32.LPARAM);
-    The_Item      : aliased Win32.Comctl.Tv_Item_Ansi;
-    The_Insertion : aliased Win32.Comctl.Tv_Insertstruct_Ansi;
-    New_Item      : Tree_Item;
-    use type Win32.UINT;
-  begin
-    The_Item.Mask := Win32.Comctl.Tvif_Text + Win32.Comctl.Tvif_Param + Win32.Comctl.Tvif_Children;
-    The_Item.Text := Win32.Addr(Title);
-    The_Item.Lparam := Convert (The_Information);
-    The_Item.Children := 0;
-    The_Insertion.Parent := The_Parent;
-    The_Insertion.Insertafter := After_Item;
-    The_Insertion.Item := The_Item;
-    New_Item := Tree_Item (Send_Message (The_Tree_View.Ptr.The_Handle,
-                                         Win32.Comctl.Tvm_Insertitem_Ansi,
-                                         0, Convert(The_Insertion'address)));
-    if not Is_Root (The_Parent) then
-      Mark_Has_Children (The_Tree_View, The_Parent);
-    end if;
-    return New_Item;
-  end Add_Item;
-
-
-  function Add_Wide_Item (The_Tree_View   : Tree_View;
-                          The_Title       : Wide_String;
-                          The_Parent      : Tree_Item := Root_Item;
-                          After_Item      : Tree_Item;
-                          The_Information : Information := No_Information) return Tree_Item is
-                          Title           : aliased constant Wide_String := The_Title & Wide_Nul;
-    function Convert is new Ada.Unchecked_Conversion (Information, Win32.LPARAM);
-    function Convert is new Ada.Unchecked_Conversion (System.Address, Win32.LPARAM);
-    The_Item      : aliased Win32.Comctl.Tv_Item_Wide;
-    The_Insertion : aliased Win32.Comctl.Tv_Insertstruct_Wide;
-    New_Item      : Tree_Item;
-    use type Win32.UINT;
-  begin
-    The_Item.Mask := Win32.Comctl.Tvif_Text + Win32.Comctl.Tvif_Param;
-    The_Item.Text := Win32.Addr(Title);
-    The_Item.Lparam := Convert (The_Information);
-    The_Insertion.Parent := The_Parent;
-    The_Insertion.Insertafter := After_Item;
-    The_Insertion.Item := The_Item;
-    New_Item := Tree_Item (Send_Message_Wide (The_Tree_View.Ptr.The_Handle,
-                                              Win32.Comctl.Tvm_Insertitem_Wide,
-                                              0, Convert(The_Insertion'address)));
-    if not Is_Root (The_Parent) then
-      Mark_Has_Children (The_Tree_View, The_Parent);
-    end if;
-    return New_Item;
-  end Add_Wide_Item;
-
-
-  function Add_Item (The_Tree_View   : Tree_View;
-                     The_Title       : String;
-                     The_Parent      : Tree_Item := Root_Item;
-                     The_Position    : Item_Position := Sorted;
-                     The_Information : Information := No_Information) return Tree_Item is
-                     The_Item        : Tree_Item;
-  begin
-    case The_Position is
-    when First  => The_Item := Tree_Item (Win32.Comctl.Tvi_First);
-    when Last   => The_Item := Tree_Item (Win32.Comctl.Tvi_Last);
-    when Sorted => The_Item := Tree_Item (Win32.Comctl.Tvi_Sort);
-    end case;
-    return Add_Wide_Item (The_Tree_View, To_Wide (The_Title), The_Parent, The_Item, The_Information);
-  end Add_Item;
-
-
-  procedure Rename_Item (The_Tree_View : Tree_View;
-                         The_Item      : Tree_Item;
-                         New_Title     : String) is
-                         Title         : aliased constant Wide_String := To_Wide (New_Title) & Wide_Nul;
-    function Convert is new Ada.Unchecked_Conversion (System.Address, Win32.LPARAM);
-    Replacement : Win32.Comctl.Tv_Item_Wide;
-  begin
-    Replacement.Hitem := The_Item;
-    Replacement.Text := Win32.Addr(Title);
-    Replacement.Mask := Win32.Comctl.Tvif_Text;
-    Send_Message_Wide (The_Tree_View.Ptr.The_Handle,
-                       Win32.Comctl.Tvm_Setitem_Wide,
-                       0, Convert (Replacement'address));
-  end Rename_Item;
-
-
-  function Get_Parent (The_Tree_View : Tree_View;
-                       The_Item      : Tree_Item) return Tree_Item is
-    function Convert is new Ada.Unchecked_Conversion (Tree_Item, Win32.LPARAM);
-    Parent : Tree_Item;
-    use type Tree_Item;
-  begin
-    if Is_Root (The_Item) then
-      raise Tree_Item_Is_Root;
-    end if;
-    Parent := Tree_Item (Send_Message (The_Tree_View.Ptr.The_Handle,
-                         Win32.Comctl.Tvm_Getnextitem,
-                         Win32.Comctl.Tvgn_Parent,
-                         Convert (The_Item)));
-    if Parent = 0 then
-      return Root_Item;
-    else
-      return Parent;
-    end if;
-  end Get_Parent;
-
-
-  function Get_First_Child (The_Tree_View : Tree_View;
-                            The_Item      : Tree_Item) return Tree_Item is
-    function Convert is new Ada.Unchecked_Conversion (Tree_Item, Win32.LPARAM);
-    The_Child : Tree_Item;
-    use type Tree_Item;
-  begin
-    The_Child := Tree_Item (Send_Message (The_Tree_View.Ptr.The_Handle,
-                                          Win32.Comctl.Tvm_Getnextitem,
-                                          Win32.Comctl.Tvgn_Child,
-                                          Convert (The_Item)));
-    if The_Child = 0 then
-      return Root_Item;
-    else
-      return The_Child;
-    end if;
-  end Get_First_Child;
-
-
-  procedure Delete_Item (The_Tree_View : Tree_View;
-                         The_Item      : Tree_Item) is
-    function Convert is new Ada.Unchecked_Conversion (Tree_Item, Win32.LPARAM);
-    Parent : Tree_Item := Root_Item;
-  begin
-    if not Is_Root (The_Item) then
-      Parent := Get_Parent (The_Tree_View, The_Item);
-    end if;
-    Send_Message (The_Tree_View.Ptr.The_Handle,
-                  Win32.Comctl.Tvm_Deleteitem,
-                  0, Convert (The_Item));
-    if not Is_Root (Parent) and then
-       Is_Root (Get_First_Child (The_Tree_View, Parent))
-    then
-      Mark_Has_No_Children (The_Tree_View, Parent);
-    end if;
-  end Delete_Item;
-
-
-  procedure Delete_All_Items (The_Tree_View : Tree_View) is
-  begin
-    Delete_Item (The_Tree_View, Root_Item);
-  end Delete_All_Items;
-
-
-  procedure Expand_Item (The_Tree_View : Tree_View;
-                         The_Item      : Tree_Item) is
-    function Convert is new Ada.Unchecked_Conversion (Tree_Item, Win32.LPARAM);
-  begin
-    Send_Message (The_Tree_View.Ptr.The_Handle,
-                  Win32.Comctl.Tvm_Expand,
-                  Win32.Comctl.Tve_Expand,
-                  Convert(The_Item));
-  end Expand_Item;
-
-
-  procedure Ensure_Item_Visible (The_Tree_View : Tree_View;
-                                 The_Item      : Tree_Item) is
-    function Convert is new Ada.Unchecked_Conversion (Tree_Item, Win32.LPARAM);
-  begin
-    Send_Message (The_Tree_View.Ptr.The_Handle,
-                  Win32.Comctl.Tvm_Ensurevisible,
-                  0,
-                  Convert(The_Item));
-  end Ensure_Item_Visible;
 
 
   procedure Pop_Up (The_Page : Page) is

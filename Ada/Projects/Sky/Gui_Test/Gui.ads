@@ -16,7 +16,6 @@
 pragma Style_Astronomy;
 
 with Ada.Streams;
-with Win32.Comctl;
 with Win32.Windef;
 with Win32.Wingdi; pragma Elaborate (Win32.Wingdi);
 with Win32.Winuser;
@@ -28,7 +27,6 @@ package Gui is
   Sequence_Error               : exception;
   Status_Line_Creation_Failure : exception;
   Tab_Creation_Failure         : exception;
-  Tree_Item_Is_Root            : exception;
 
   Automatic : constant Natural := 0;
 
@@ -135,7 +133,6 @@ package Gui is
   type Value_Box is new Child with private;
   type Progress_Bar is new Child with private;
   type List_View is new Child with private;
-  type Tree_View is new Child with private;
   type Text_View is new Child with private;
   type Track_Bar is new Child with private;
   type Edit_Box is abstract new Child with private;
@@ -337,8 +334,6 @@ package Gui is
 
   procedure Set_Focus (The_Child : Child'class);
 
-  function Parent_Page_Of (The_Child : Child'class) return Page;
-
   -------------------
   -- Menu handling --
   -------------------
@@ -466,7 +461,6 @@ package Gui is
     List     : List_View;
   end record;
 
-
   function Create (Parent                : Group;
                    The_Text_Handler      : access function (For_Column       : Natural;
                    With_Information      : Information) return String;
@@ -537,57 +531,6 @@ package Gui is
   procedure Freeze (The_List_View : List_View);
 
   procedure Thaw (The_List_View : List_View);
-
-  -------------------------
-  -- Tree View functions --
-  -------------------------
-  subtype Tree_Item is Win32.Comctl.Htreeitem;
-
-  Root_Item : constant Tree_Item := Win32.Comctl.Tvi_First;
-
-  type Item_Position is (First, Last, Sorted);
-
-  function Create (Parent_Page       : Page;
-                   The_Click_Routine : access procedure (Item : Information) := null;
-                   The_Color_Handler : Color_Handler := null) return Tree_View;
--- Note: If a colour handler is supplied then it is called to define the colour
---       of each tree item. The background colour is fixed to be always white
---       Ie Selected items no longer have a blue background but retain the enclosing frame
---       (so it is still possible to identify which item is selected)
-
-  function Add_Item (The_Tree_View   : Tree_View;
-                     The_Title       : String;
-                     The_Parent      : Tree_Item := Root_Item;
-                     The_Position    : Item_Position := Sorted;
-                     The_Information : Information := No_Information) return Tree_Item;
-
-  function Add_Item (The_Tree_View   : Tree_View;
-                     The_Title       : String;
-                     The_Parent      : Tree_Item := Root_Item;
-                     After_Item      : Tree_Item;
-                     The_Information : Information := No_Information) return Tree_Item;
-
-  function Get_Parent (The_Tree_View : Tree_View;
-                       The_Item      : Tree_Item) return Tree_Item;
-  -- Exception: Tree_Item_Is_Root if The_Item is Root_Item (as this has no parent)
-
-  procedure Rename_Item (The_Tree_View : Tree_View;
-                         The_Item      : Tree_Item;
-                         New_Title     : String);
-
-  procedure Delete_Item (The_Tree_View : Tree_View;
-                         The_Item      : Tree_Item);
-
-  procedure Delete_All_Items (The_Tree_View : Tree_View);
-
-  procedure Expand_Item (The_Tree_View : Tree_View;
-                         The_Item      : Tree_Item);
-
-  procedure Ensure_Item_Visible (The_Tree_View : Tree_View;
-                                 The_Item      : Tree_Item);
-  --
-  -- Expands all ancestor nodes and scrolls Tree_view so that the item is visible
-  --
 
   -------------------------
   -- Text View functions --
@@ -781,7 +724,6 @@ private
   type Value_Box is new Child with null record;
   type Progress_Bar is new Child with null record;
   type List_View is new Child with null record;
-  type Tree_View is new Child with null record;
   type Text_View is new Child with null record;
   type Track_Bar is new Child with null record;
   type Edit_Box is abstract new Child with null record;
