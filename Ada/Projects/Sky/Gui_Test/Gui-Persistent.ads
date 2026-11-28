@@ -29,6 +29,10 @@ private package Gui.Persistent is
 
   procedure Save_Color_Mode (Mode : Color_Mode);
 
+  function Stored_Detached_Fullscreen return Boolean;
+
+  procedure Save_Detached_Fullscreen (Fullscreen : Boolean);
+
   type Column_Widths is array (Positive range <>) of Natural;
 
   function Widths_Of (Id : String) return Column_Widths;

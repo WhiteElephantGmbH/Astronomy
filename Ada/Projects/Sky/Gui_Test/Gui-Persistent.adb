@@ -98,6 +98,24 @@ package body Gui.Persistent is
   end Create;
 
 
+  package Persistent_Detached_Fullscreen is new Standard.Persistent (Boolean, "Detached_Fullscreen");
+
+  The_Detached_Fullscreen_Data : Persistent_Detached_Fullscreen.Data;
+
+
+  function Stored_Detached_Fullscreen return Boolean is
+  begin
+    return The_Detached_Fullscreen_Data.Storage;
+  end Stored_Detached_Fullscreen;
+
+
+  procedure Save_Detached_Fullscreen (Fullscreen : Boolean) is
+  begin
+    The_Detached_Fullscreen_Data.Storage := Fullscreen;
+    Persistent_Detached_Fullscreen.Save (The_Detached_Fullscreen_Data);
+  end Save_Detached_Fullscreen;
+
+
   package Persistent_Detached_Metrics is new Standard.Persistent (Window_Metrics, "Detached_Metrics");
 
   The_Detached_Metrics_Data : Persistent_Detached_Metrics.Data;
@@ -122,6 +140,9 @@ package body Gui.Persistent is
 begin
   if Persistent_Color_Mode.Storage_Is_Empty then
     The_Color_Mode_Data.Storage := Normal;
+  end if;
+  if Persistent_Detached_Fullscreen.Storage_Is_Empty then
+    The_Detached_Fullscreen_Data.Storage := False;
   end if;
   if Persistent_Detached_Metrics.Storage_Is_Empty then
     The_Detached_Metrics := Default_Metrics;

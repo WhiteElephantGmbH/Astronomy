@@ -3655,6 +3655,7 @@ package body Gui is
                 Y_Position => Integer(Place.Normal_Position.top),
                 Width      => Natural(Place.Normal_Position.right - Place.Normal_Position.left),
                 Height     => Natural(Place.Normal_Position.bottom - Place.Normal_Position.top)));
+            Persistent.Save_Detached_Fullscreen (State.Fullscreen);
           end if;
         end;
         Remove_Image_State (Hwnd);
@@ -3693,6 +3694,9 @@ package body Gui is
                                              Normal_Position => (0, 0, 0, 0)),
                                           Next => Images);
       Unused := Win32.Winuser.ShowWindow (Request.Result, Win32.Winuser.SW_SHOW);
+      if Request.On_Close /= null and then Persistent.Stored_Detached_Fullscreen then
+        Set_Detached_Fullscreen (Request.Result, True);
+      end if;
       Unused := Win32.Winuser.UpdateWindow (Request.Result);
     end if;
   end Create_Detached_Window;
